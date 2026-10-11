@@ -15,6 +15,7 @@ public sealed partial class MainWindow
         {
             (Key.F5, KeyModifiers.None) => RefreshAsync,
             (Key.O, KeyModifiers.Control) => ChooseRepositoryAsync,
+            (Key.W, KeyModifiers.Control) => CloseRepositoryAsync,
             (Key.Space, KeyModifiers.Control) => () => ShowWorkflowAsync("Changes"),
             (Key.R, KeyModifiers.Control) => CompareAsync,
             (Key.B, KeyModifiers.Control) => CreateBranchAsync,
@@ -103,6 +104,7 @@ public sealed partial class MainWindow
     private static KeyGesture? BrowserGesture(string label) => label switch
     {
         "Open repository…" => new(Key.O, KeyModifiers.Control),
+        "Close" => new(Key.W, KeyModifiers.Control),
         "Commit…" => new(Key.Space, KeyModifiers.Control),
         "Create branch…" => new(Key.B, KeyModifiers.Control),
         "Create tag…" => new(Key.T, KeyModifiers.Control),

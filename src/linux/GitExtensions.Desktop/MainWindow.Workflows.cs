@@ -130,13 +130,13 @@ public sealed partial class MainWindow
     private async Task CreateBranchAsync()
     {
         if (_repository is null || _busy) { return; }
-        await ShowRepositoryDialogAsync(new CreateBranchDialog(_repository, CurrentRevision));
+        await ShowRepositoryDialogAsync(new CreateBranchDialog(_repository, CurrentRevision, autoNormalize: _preferences.AutoNormaliseBranchName, replacement: _preferences.AutoNormaliseSymbol));
     }
 
     private async Task CheckoutAsync()
     {
         if (_repository is null || _busy) { return; }
-        await ShowRepositoryDialogAsync(new CheckoutBranchDialog(_repository, _references.SelectedItem as GitReference));
+        await ShowRepositoryDialogAsync(new CheckoutBranchDialog(_repository, _references.SelectedItem as GitReference, _preferences.AutoNormaliseBranchName, _preferences.AutoNormaliseSymbol));
     }
 
     private async Task DeleteReferenceAsync()
@@ -162,10 +162,29 @@ public sealed partial class MainWindow
 
     private async Task RenameBranchAsync()
     {
-        GitReference reference = SelectedReference();
-        if (!reference.IsBranch) { _state.Text = "Select a local branch"; return; }
-        string[]? values = await Dialogs.PromptAsync(this, "Rename branch", ("New name", reference.ShortName));
-        if (values is not null) { await RunAsync("Rename branch", r => r.RenameBranchAsync(reference.ShortName, values[0], Token)); }
+        if (_repository is null || _busy) { return; }
+        GitReference? reference = _references.SelectedItem as GitReference;
+        if (reference is not null && !reference.IsBranch) { _state.Text = "Select a local branch"; return; }
+        string? branch = reference?.ShortName;
+        if (branch is null)
+        {
+            GitStatus? status = null;
+            await RunAsync("Select branch", async repository => status = await repository.GetStatusAsync(Token), refresh: false);
+            branch = status?.Branch;
+        }
+        if (branch is null or "(detached)") { _state.Text = T("Select a local branch"); return; }
+        string oldReference = "refs/heads/" + branch;
+        RenameBranchDialog dialog = new(_repository, branch, _preferences.AutoNormaliseBranchName, _preferences.AutoNormaliseSymbol);
+        dialog.Closed += (_, _) =>
+        {
+            if (dialog.RenamedBranch is not string renamed) { return; }
+            _referenceSelectionOverride = "refs/heads/" + renamed;
+            if (_navigation.SelectedItem is TreeViewItem { Tag: GitReference navigationReference } selected && navigationReference.Name == oldReference)
+            { selected.Tag = navigationReference with { Name = _referenceSelectionOverride }; }
+            if (_navigationRevisionFilter == oldReference && _historyRevision.Text == oldReference)
+            { _navigationRevisionFilter = _referenceSelectionOverride; _historyRevision.Text = _referenceSelectionOverride; }
+        };
+        await ShowRepositoryDialogAsync(dialog);
     }
 
     private async Task CreateTagAsync()
@@ -232,20 +251,12 @@ public sealed partial class MainWindow
 
     private async Task CompareAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Compare revisions", ("From", "HEAD~1"), ("To", "HEAD"));
-        if (values is not null)
-        {
-            await RunAsync("Compare", async r =>
-            {
-                string from = await r.ResolveRevisionAsync(values[0], Token);
-                string to = await r.ResolveRevisionAsync(values[1], Token);
-                _revisionFiles.ItemsSource = null;
-                _revisionChanges = null;
-                _diffParent.IsVisible = false;
-                _commitContent?.ClearImage();
-                _diff.Text = (await r.RunAsync(["diff", "--no-ext-diff", "--no-textconv", from, to, "--"], Token)).StandardOutput;
-            }, refresh: false);
-        }
+        if (_repository is null || _busy) { return; }
+        GitCommit[] selected = SelectedComparisonCommits();
+        string compare = CurrentRevision;
+        string from = selected.Length > 1 ? selected[^1].Hash : (_commits.SelectedItem as GitCommit)?.Parents.FirstOrDefault() ?? compare;
+        if (selected.Length > 1) { compare = selected[0].Hash; }
+        await ShowRepositoryDialogAsync(new CompareRevisionsDialog(_repository, from, compare));
     }
 
     private async Task AddRemoteAsync()
@@ -487,8 +498,8 @@ public sealed partial class MainWindow
 
     private async Task ShowRepositoryDialogAsync(RepositoryDialog dialog)
     {
-        await RunAsync(dialog.Title ?? "Open dialog", _ => dialog.InitializeAsync(), refresh: false);
-        await dialog.ShowDialog(WorkflowOwner);
+        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+        await RunAsync(dialog.Title ?? "Open dialog", async _ => await dialog.ShowDialog(WorkflowOwner), refresh: false);
         if (dialog.HasRepositoryChanges) { await RefreshAsync(); }
     }
 

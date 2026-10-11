@@ -90,7 +90,7 @@ public class MainWindowClassicTests
         Directory.CreateDirectory(subdirectory);
         await fixture.Window.OpenRepositoryAsync(subdirectory);
         Assert.That(fixture.Window.Title, Is.EqualTo("Git Extensions — " + fixture.Repository));
-        Assert.That(new PreferencesStore().Load().RecentRepositories.First(), Is.EqualTo(fixture.Repository));
+        Assert.That(new RepositoryHistoryStore().Load().Recent.First().Path, Is.EqualTo(fixture.Repository));
         SelectChanges(fixture.Window);
         ListBox changes = Changes(fixture.Window);
         changes.SelectedIndex = 0;
@@ -348,6 +348,7 @@ public class MainWindowClassicTests
                 fixture.Window = new MainWindow { Width = 1440, Height = 900 };
                 fixture.Window.Show();
                 await fixture.Window.OpenRepositoryAsync(fixture.Repository);
+                fixture.Window.UpdateLayout();
                 return fixture;
             }
             catch { fixture.Dispose(); throw; }

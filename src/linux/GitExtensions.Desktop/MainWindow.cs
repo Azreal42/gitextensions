@@ -21,7 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly TextBox _diff = ReadOnlyText();
     private readonly TextBox _commitMessage = new() { Watermark = "Commit message", AcceptsReturn = true, MinHeight = 86 };
     private readonly CheckBox _amend = new() { Content = "Amend latest commit" };
-    private readonly ListBox _commits = new();
+    private readonly ListBox _commits = new() { SelectionMode = SelectionMode.Multiple };
     private readonly CommitGraph _historyGraph = new();
     private readonly ListBox _changes = new() { SelectionMode = SelectionMode.Multiple };
     private readonly ListBox _references = new();
@@ -50,6 +50,7 @@ public sealed partial class MainWindow : Window
     private int _historyWindow;
     private bool _historyHasMore;
     private string? _navigationRevisionFilter;
+    private string? _referenceSelectionOverride;
 
     internal bool IsBusy => _busy;
     internal Exception? LastException { get; private set; }
@@ -70,7 +71,7 @@ public sealed partial class MainWindow : Window
             AppendOutput($"Unable to read preferences: {exception.Message}");
         }
 
-        _recent.ItemsSource = _preferences.RecentRepositories;
+        LoadRepositoryHistory();
         _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
         _historyWindow = _historyQuery.Count;
         _commits.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
@@ -89,9 +90,9 @@ public sealed partial class MainWindow : Window
         });
         _recent.SelectionChanged += async (_, _) =>
         {
-            if (_recent.SelectedItem is string directory && !_busy)
+            if (_recent.SelectedItem is RepositoryHistoryRow row && !_busy)
             {
-                await OpenRepositoryAsync(directory);
+                await OpenRepositoryAsync(row.Path);
             }
         };
         _commits.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) => new StackPanel
@@ -161,7 +162,7 @@ public sealed partial class MainWindow : Window
             }
 
             _opened = true;
-            string? path = Program.RepositoryPath ?? _preferences.RecentRepositories.FirstOrDefault();
+            string? path = Program.RepositoryPath ?? _repositoryHistory.Recent.FirstOrDefault()?.Path;
             if (path is not null)
             {
                 await OpenRepositoryAsync(path);
@@ -190,7 +191,7 @@ public sealed partial class MainWindow : Window
         Closed += async (_, _) =>
         {
             _lifetime.Cancel(); _operation?.Cancel();
-            _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose();
+            _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose(); _dashboard?.Dispose();
             await _backgroundFetch.DisposeAsync();
         };
         AddHandler(KeyDownEvent, HandleShortcuts, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -309,66 +310,103 @@ public sealed partial class MainWindow : Window
         {
             GitRepository candidate = await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
-            await _backgroundFetch.UnregisterAsync();
-            _repository = candidate;
-            _navigationRevisionFilter = null;
-            _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
-            _historyWindow = _historyQuery.Count;
-            _historyRevision.Text = null;
-            if (candidate.IsBare) { SelectDetailsTab("DiffTab"); }
-            _repositoryPath.Text = candidate.Path;
-            Title = $"Git Extensions — {candidate.Path}";
-            await RefreshDataAsync(candidate);
-            List<string> recent = _preferences.RecentRepositories.Where(r => r != candidate.Path).Prepend(candidate.Path).Take(20).ToList();
-            _preferences = _preferences with { RecentRepositories = recent };
-            _recent.ItemsSource = recent;
-            try { _preferencesStore.Save(_preferences); }
+            await RefreshDataAsync(candidate, opening: true);
+            try { SaveRepositoryHistory(_repositoryHistory.Visit(candidate.Path)); }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { AppendOutput($"Unable to save preferences: {exception.Message}"); }
+            SetDashboardVisible(false);
             await RegisterBackgroundFetchAsync(candidate);
         }, refresh: false, requireRepository: false);
         if (_repository == previous && previous is null) { _state.Text = "Could not open repository. See command output."; }
     }
 
-    private Task RefreshAsync() => RunAsync("Refresh", RefreshDataAsync, refresh: false);
+    private Task RefreshAsync() => _dashboard?.IsVisible == true ? RefreshDashboardAsync() : RunAsync("Refresh", repository => RefreshDataAsync(repository), refresh: false);
 
-    private async Task RefreshDataAsync(GitRepository repository)
+    private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
         _refreshing = true;
         try
         {
-            string? selectedPath = (_changes.SelectedItem as GitChange)?.Path;
-            string? selectedHash = (_commits.SelectedItem as GitCommit)?.Hash;
-            string? selectedReferenceName = (_references.SelectedItem as GitReference)?.Name;
+            bool changedRepository = opening && _repository?.Path != repository.Path;
+            string? selectedPath = changedRepository ? null : (_changes.SelectedItem as GitChange)?.Path;
+            string? selectedHash = changedRepository ? null : (_commits.SelectedItem as GitCommit)?.Hash;
+            HashSet<string> selectedHashes = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
+            string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
+            GitLogQuery configuredQuery = opening ? new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) } : _historyQuery;
+            int historyWindow = opening ? configuredQuery.Count : _historyWindow;
+            string? revision = opening ? null : _historyRevision.Text;
             GitStatus status = await repository.GetStatusAsync(Token);
+            IReadOnlyList<GitReference> references = await repository.GetReferencesAsync(Token);
+            bool missingNavigationReference = !opening && _navigationRevisionFilter is string navigationFilter && revision == navigationFilter && !references.Any(reference => reference.Name == navigationFilter);
+            if (missingNavigationReference)
+            {
+                revision = null;
+                configuredQuery = configuredQuery with { All = true, Revision = null };
+                historyWindow = configuredQuery.Count;
+            }
+            GitLogQuery query = configuredQuery with
+            {
+                Count = historyWindow + 1,
+                Skip = 0,
+                Revision = string.IsNullOrWhiteSpace(revision) ? (configuredQuery.All ? null : "HEAD") : revision
+            };
+            IReadOnlyList<GitCommit> history = status.IsUnborn ? [] : await repository.GetLogAsync(query, Token);
+            IReadOnlyList<GitRemote> remotes = await repository.GetRemotesAsync(Token);
+            IReadOnlyList<GitStash> stashes = await repository.GetStashesAsync(Token);
+            IReadOnlyList<GitWorktree> worktrees = await repository.GetWorktreesAsync(Token);
+            IReadOnlyList<GitSubmodule> submodules = await repository.GetSubmodulesAsync(Token);
+            var configuration = await repository.GetConfigAsync(cancellationToken: Token);
+            GitCommit[] visibleHistory = history.Take(historyWindow).ToArray();
+            string treeRevision = visibleHistory.FirstOrDefault(commit => commit.Hash == selectedHash)?.Hash
+                ?? visibleHistory.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))?.Hash
+                ?? visibleHistory.FirstOrDefault()?.Hash ?? "HEAD";
+            string[] tree = status.IsUnborn ? [] : (await repository.GetTreeAsync(treeRevision, cancellationToken: Token)).Select(entry => entry.Path).ToArray();
+            Token.ThrowIfCancellationRequested();
+            if (opening)
+            {
+                await _backgroundFetch.UnregisterAsync();
+                Token.ThrowIfCancellationRequested();
+                _repository = repository;
+                if (changedRepository) { _comparisonBase = null; }
+                _navigation.SelectedItem = null;
+                _navigationRevisionFilter = null;
+                _repositoryPath.Text = repository.Path;
+                Title = $"Git Extensions — {repository.Path}";
+                if (repository.IsBare) { SelectDetailsTab("DiffTab"); }
+                SetDashboardVisible(false);
+            }
+            if (missingNavigationReference) { _navigationRevisionFilter = null; }
+            _historyQuery = configuredQuery;
+            _historyWindow = historyWindow;
+            _historyRevision.Text = revision;
             _repositorySummary = $"{(repository.IsBare ? T("Bare repository") + "  ·  " : "")}{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
             _state.Text = _repositorySummary;
             _changes.ItemsSource = status.Changes;
             _changes.SelectedItem = status.Changes.FirstOrDefault(change => change.Path == selectedPath);
-            IReadOnlyList<GitReference> references = await repository.GetReferencesAsync(Token);
             _references.ItemsSource = references;
             _references.SelectedItem = references.FirstOrDefault(reference => reference.Name == selectedReferenceName);
-            if (_navigationRevisionFilter is string navigationFilter && _historyRevision.Text == navigationFilter && !references.Any(reference => reference.Name == navigationFilter))
-            {
-                _navigationRevisionFilter = null;
-                _historyRevision.Text = null;
-                _historyQuery = _historyQuery with { All = true, Revision = null };
-                _historyWindow = _historyQuery.Count;
-            }
-            GitLogQuery query = _historyQuery with
-            {
-                Count = _historyWindow + 1,
-                Skip = 0,
-                Revision = string.IsNullOrWhiteSpace(_historyRevision.Text) ? (_historyQuery.All ? null : "HEAD") : _historyRevision.Text
-            };
-            IReadOnlyList<GitCommit> history = status.IsUnborn ? [] : await repository.GetLogAsync(query, Token);
+            _referenceSelectionOverride = null;
+            _remotes.ItemsSource = remotes;
+            _stashes.ItemsSource = stashes;
+            _worktrees.ItemsSource = worktrees;
+            _submodules.ItemsSource = submodules;
+            _configuration.ItemsSource = configuration.Select(entry => $"{entry.Key} = {entry.Value}").ToList();
+            _tree.ItemsSource = tree;
+            UpdateBrowserNavigation(references, stashes, submodules, worktrees);
             _historyHasMore = history.Count > _historyWindow && _historyWindow < 100000;
-            _history = history.Take(_historyWindow).ToArray();
+            _history = visibleHistory;
             if (_historyMore is not null) { _historyMore.IsVisible = _historyHasMore; }
             _historyGraph.Commits = _history;
             _historyGraph.References = references;
             _historyGraph.CurrentHead = status.Head;
             _commits.ItemsSource = _historyGraph.OrderedCommits;
-            _commits.SelectedItem = _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == selectedHash) ?? _historyGraph.OrderedCommits.FirstOrDefault();
+            _commits.SelectedItem = _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == selectedHash)
+                ?? _historyGraph.OrderedCommits.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))
+                ?? _historyGraph.OrderedCommits.FirstOrDefault();
+            foreach (GitCommit selected in _historyGraph.OrderedCommits.Where(commit => selectedHashes.Contains(commit.Hash) && commit.Hash != (_commits.SelectedItem as GitCommit)?.Hash)) { _commits.SelectedItems?.Add(selected); }
+            _revisionFiles.ItemsSource = null; _revisionChanges = null; _diffParent.IsVisible = false;
+            _commitContent?.ClearImage(); _diff.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
+            _changesContent?.ClearImage(); _changesDiff.Text = null; _selectedPatch = null; _hunks.ItemsSource = null;
+            if (changedRepository) { _fileContent?.ClearImage(); _fileView.Text = null; _filePath.Text = null; }
             if (_commits.SelectedItem is GitCommit selectedCommit)
             {
                 await LoadCommitFilesAsync(repository, selectedCommit.Hash);
@@ -380,13 +418,6 @@ public sealed partial class MainWindow : Window
                 _commitContent?.ClearImage(); _commitInfo.Text = null; _gpgInfo.Text = null;
                 _diff.Text = "This repository has no commits yet.";
             }
-            _remotes.ItemsSource = await repository.GetRemotesAsync(Token);
-            _stashes.ItemsSource = await repository.GetStashesAsync(Token);
-            _worktrees.ItemsSource = await repository.GetWorktreesAsync(Token);
-            _submodules.ItemsSource = await repository.GetSubmodulesAsync(Token);
-            UpdateBrowserNavigation(references, _stashes.ItemsSource.Cast<GitStash>().ToArray(), _submodules.ItemsSource.Cast<GitSubmodule>().ToArray(), _worktrees.ItemsSource.Cast<GitWorktree>().ToArray());
-            _configuration.ItemsSource = (await repository.GetConfigAsync(cancellationToken: Token)).Select(entry => $"{entry.Key} = {entry.Value}").ToList();
-            _tree.ItemsSource = status.IsUnborn ? [] : (await repository.GetTreeAsync(CurrentRevision, cancellationToken: Token)).Select(entry => entry.Path).ToArray();
             if (_changes.SelectedItem is GitChange change)
             {
                 bool staged = change.IsStaged && (!change.IsModified || _stagedDiff.IsChecked == true);
@@ -440,6 +471,9 @@ public sealed partial class MainWindow : Window
         foreach (MenuItem menu in _actionMenus) { menu.IsEnabled = enabled && !(_repository?.IsBare == true && menu.Tag is true); }
         _repositoryPath.IsEnabled = enabled;
         _recent.IsEnabled = enabled;
+        _recentMenu.IsEnabled = _favoritesMenu.IsEnabled = enabled;
+        if (_dashboard is not null) { _dashboard.IsEnabled = enabled; }
+        if (_compareToBaseMenu is not null) { _compareToBaseMenu.IsEnabled = enabled && _comparisonBase is not null; }
         Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs, _revisionFiles, _diffParent];
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
@@ -447,7 +481,8 @@ public sealed partial class MainWindow : Window
 
     private static bool RequiresWorktree(string label) => label.StartsWith("Stage ", StringComparison.Ordinal) || label.StartsWith("Unstage ", StringComparison.Ordinal)
         || label is "Commit" or "Commit…" or "Checkout" or "Checkout branch…" or "Checkout revision" or "Merge" or "Merge…" or "Rebase onto" or "Rebase…" or "Interactive rebase…"
-            or "Reset…" or "Reset branch…" or "Cherry-pick" or "Revert" or "Revert commit" or "Discard…" or "Resolve…" or "Pull" or "Pull…";
+            or "Reset…" or "Reset branch…" or "Cherry-pick" or "Revert" or "Revert commit" or "Discard…" or "Resolve…" or "Pull" or "Pull…"
+            or "Compare to working directory" or "Open selected commits with difftool";
 
     private async Task ExecuteAsync(GitRepository repository, params string[] arguments)
     {

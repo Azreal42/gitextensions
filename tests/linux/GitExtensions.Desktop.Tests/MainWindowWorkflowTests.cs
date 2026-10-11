@@ -37,6 +37,7 @@ public class MainWindowWorkflowTests
             window = new MainWindow();
             window.Show();
             await window.OpenRepositoryAsync(repository);
+            window.UpdateLayout();
             Assert.That(window.Title, Does.Contain(repository));
             ListBox history = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitCommit>().Any() is true);
             Assert.That(history.ItemsSource!.OfType<GitCommit>().Single().Subject, Is.EqualTo("Initial commit"));
@@ -63,7 +64,7 @@ public class MainWindowWorkflowTests
             await Until(() => !window.IsBusy);
             GitResult latest = await git.RunAsync(repository, ["log", "-1", "--format=%s"]);
             Assert.That(latest.StandardOutput.Trim(), Is.EqualTo("Commit from Linux desktop"));
-            Assert.That(new PreferencesStore().Load().RecentRepositories, Does.Contain(repository));
+            Assert.That(new RepositoryHistoryStore().Load().Recent.Select(entry => entry.Path), Does.Contain(repository));
         }
         finally
         {

@@ -118,7 +118,7 @@ public class ReferenceDialogTests
         cancelled.Cancel();
         Assert.CatchAsync<OperationCanceledException>(() => fixture.Repository.CreateBranchAsync(new GitCreateBranchOptions("cancelled", Checkout: false), cancelled.Token));
         Assert.That((await fixture.Repository.GetReferencesAsync()).Select(reference => reference.Name), Is.EqualTo(new[] { "refs/heads/main" }));
-        CreateBranchDialog dialog = new(fixture.Repository);
+        CreateBranchDialog dialog = new(fixture.Repository, autoNormalize: false);
         dialog.Show();
         try
         {
@@ -556,7 +556,7 @@ public class ReferenceDialogTests
         return await output;
     }
 
-    private sealed class ReferenceFixture : IDisposable
+    internal sealed class ReferenceFixture : IDisposable
     {
         private readonly string _root = Path.Combine(Path.GetTempPath(), "gitextensions-references-ui-" + Guid.NewGuid().ToString("N"));
         private readonly Dictionary<string, string?> _environment = new();

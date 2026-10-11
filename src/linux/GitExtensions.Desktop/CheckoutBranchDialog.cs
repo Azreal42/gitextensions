@@ -31,14 +31,19 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly Border _remoteOptions;
     private readonly Border _changes;
     private readonly Button _checkout;
+    private readonly bool _autoNormalize;
+    private readonly string _replacement;
     private IReadOnlyList<GitReference> _references = [];
     private bool _dirty;
     private bool _bare;
     private string? _originalStash;
     public GitCheckoutResult? LastResult { get; private set; }
 
-    public CheckoutBranchDialog(GitRepository repository, GitReference? reference = null) : base(repository, "Checkout branch")
+    public CheckoutBranchDialog(GitRepository repository, GitReference? reference = null, bool autoNormalize = true, string replacement = "_") : base(repository, "Checkout branch")
     {
+        _autoNormalize = autoNormalize;
+        _replacement = replacement;
+        if (autoNormalize) { GitBranchNaming.Normalize("", replacement); }
         _initial = reference;
         Width = 660;
         MinWidth = 580;
@@ -88,6 +93,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         foreach (RadioButton radio in new[] { _local, _remote, _detached }) { radio.IsCheckedChanged += (_, _) => { PopulateBranches(); UpdateActions(); }; }
         foreach (RadioButton radio in new[] { _keep, _merge, _stash, _discard }) { radio.IsCheckedChanged += (_, _) => UpdateActions(); }
         _newMode.SelectionChanged += (_, _) => UpdateActions();
+        _newName.LostFocus += (_, _) => NormalizeName();
         _branches.SelectionChanged += (_, _) =>
         {
             if (_branches.SelectedItem is GitReference branch && branch.IsRemote) { _newName.Text = branch.ShortName[(branch.ShortName.IndexOf('/') + 1)..]; }
@@ -125,8 +131,18 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         _remote.IsChecked == true ? (CheckoutNewBranchMode)Math.Max(0, _newMode.SelectedIndex) : CheckoutNewBranchMode.DontCreate,
         _remote.IsChecked == true && _newMode.SelectedIndex > 0 ? (_newName.Text ?? "").Trim() : null, Changes, _includeUntracked.IsChecked == true, Changes == LocalChangesAction.Stash && _reapply.IsChecked == true);
 
+    private void NormalizeName()
+    {
+        if (_remote.IsChecked != true || _newMode.SelectedIndex <= 0) { return; }
+        int caret = _newName.CaretIndex;
+        _newName.Text = GitBranchNaming.NormalizeForInput(_newName.Text, _autoNormalize, _replacement);
+        _newName.CaretIndex = Math.Min(caret, _newName.Text.Length);
+    }
+
     private async Task CheckoutAsync()
     {
+        _checkout.Focus();
+        NormalizeName();
         GitCheckoutOptions options = ReadOptions();
         if (options.Changes == LocalChangesAction.Reset && _dirty && !await Dialogs.ConfirmAsync(this, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
         if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(this, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }

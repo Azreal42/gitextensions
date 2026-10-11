@@ -3,6 +3,10 @@ using System.Net.Http;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -13,8 +17,16 @@ using AvaloniaEdit.Rendering;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using GitExtensions.Linux.Plugins;
+using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Desktop.Controls;
+
+public enum BlameCommand { ThisRevision, PreviousRevision, ShowChanges }
+public sealed class BlameCommandEventArgs(BlameCommand command, GitFileBlameLine line) : EventArgs
+{
+    public BlameCommand Command { get; } = command;
+    public GitFileBlameLine Line { get; } = line;
+}
 
 public sealed class BlameView : UserControl, IDisposable
 {
@@ -30,12 +42,31 @@ public sealed class BlameView : UserControl, IDisposable
     private GitFileBlame? _blame;
     private IBrush[] _ages = [];
     private int _selectedLine;
+    private readonly BlamePreferencesStore _preferencesStore = new();
+    private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
+    private readonly List<Bitmap> _menuIcons = [];
+    private readonly List<Action> _updateMenus = [];
+    private readonly Dictionary<(string Hash, string Path), string> _commitInformation = [];
+    private readonly TextBlock _tooltipText = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 580 };
+    private CancellationTokenSource? _tooltipOperation;
+    private GitFileBlameLine? _contextLine;
+    private string? _hoveredHash;
+    public event EventHandler<BlameCommandEventArgs>? CommandRequested;
+    public event Action<string>? InteractionError;
+    public event Action<BlamePreferences>? PreferencesChanged;
+    public BlamePreferences Preferences { get; private set; } = new();
+    public string? PreferenceError { get; private set; }
+    public Func<GitFileBlameLine, CancellationToken, Task<string>>? CommitInformationProvider { get; set; }
+    public Task TooltipLoading { get; private set; } = Task.CompletedTask;
     public event EventHandler? SelectedLineChanged;
     public GitFileBlameLine? SelectedLine => _blame is not null && _selectedLine > 0 && _selectedLine <= _blame.Lines.Count ? _blame.Lines[_selectedLine - 1] : null;
     public IReadOnlyList<GitFileBlameLine> Lines => _blame?.Lines ?? [];
     public DiffView TextView => _content.TextView;
     public bool ShowAuthor { get; set; } = true;
     public bool ShowDate { get; set; } = true;
+    public bool ShowTime { get; set; } = true;
+    public bool DisplayAuthorFirst { get; set; }
+    public bool ShowLineNumbers { get; set; }
     public bool ShowOriginalPath { get; set; } = true;
     public static IGourceAvatarProvider DefaultAvatarProvider { get; set; } = new GourceAvatarProvider();
     public Task AvatarLoading { get; private set; } = Task.CompletedTask;
@@ -57,18 +88,36 @@ public sealed class BlameView : UserControl, IDisposable
         Uri image = new("avares://GitExtensions/Assets/Icons/User80.png");
         if (AssetLoader.Exists(image)) { using Stream stream = AssetLoader.Open(image); _avatar = new Bitmap(stream); }
         _authors = new(this) { Name = "BlameAuthorMargin", Width = 290 };
+        Border tooltip = new() { Child = _tooltipText, Padding = new Thickness(8), BorderThickness = new Thickness(1) };
+        tooltip.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicTooltipBrush"));
+        tooltip.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicBorderBrush"));
+        _tooltipText.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("ClassicTooltipTextBrush"));
+        ToolTip.SetTip(_authors, tooltip); ToolTip.SetShowDelay(_authors, 0);
+        ToolTip.SetPlacement(_authors, PlacementMode.RightEdgeAlignedTop);
+        ToolTip.SetHorizontalOffset(_authors, 60);
+        _authors.ContextMenu = CreateContextMenu();
+        _authors.DoubleTapped += (_, _) =>
+        {
+            if (SelectedLine is { } line && !line.Line.Hash.All(character => character == '0'))
+            { CommandRequested?.Invoke(this, new(BlameCommand.ThisRevision, line)); }
+        };
+        TextView.Editor.TextArea.TextView.PointerMoved += (_, args) => Hover(LineAt(TextView.Editor.TextArea.TextView, args.GetPosition(TextView.Editor.TextArea.TextView).Y), showTooltip: false);
+        TextView.Editor.TextArea.TextView.PointerExited += (_, _) => ClearHover();
         TextView.Editor.TextArea.LeftMargins.Insert(0, _authors);
         TextView.Editor.TextArea.TextView.BackgroundRenderers.Add(new CommitBackground(this));
         TextView.Editor.TextArea.Caret.PositionChanged += (_, _) => SelectLine(TextView.Editor.TextArea.Caret.Line, moveCaret: false);
         ActualThemeVariantChanged += (_, _) => RefreshDisplay();
-        AttachedToVisualTree += (_, _) => StartAvatarLoading();
-        DetachedFromVisualTree += (_, _) => CancelAvatarLoading();
+        AttachedToVisualTree += (_, _) => { SetPreferences(_preferencesStore.Load(), persist: false); StartAvatarLoading(); };
+        DetachedFromVisualTree += (_, _) => { CancelAvatarLoading(); ClearHover(); };
         Content = _content;
+        SetPreferences(_preferencesStore.Load(), persist: false);
     }
     public void SetBlame(GitFileBlame blame, int initialLine = 1)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         CancelAvatarLoading();
+        ClearHover(); _contextLine = null;
+        _commitInformation.Clear();
         _blame = blame;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         long oldest = Math.Min(now.AddYears(-3).Ticks, blame.Lines.Count == 0 ? now.AddYears(-3).Ticks : blame.Lines.Min(item => item.Line.AuthoredAt.Ticks));
@@ -98,7 +147,7 @@ public sealed class BlameView : UserControl, IDisposable
         TextView.Editor.TextArea.TextView.InvalidateLayer(KnownLayer.Background);
     }
     private IBrush GroupBrush => Brush.Parse(ActualThemeVariant == ThemeVariant.Dark ? "#414141" : "#e3e3e3");
-    private bool IsSelected(GitFileBlameLine line) => SelectedLine?.Line.Hash == line.Line.Hash;
+    private bool IsSelected(GitFileBlameLine line) => (_hoveredHash ?? SelectedLine?.Line.Hash) == line.Line.Hash;
     private static readonly IBrush[] Ages = new[] { "#f7fcf5", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#00441b" }.Select(Brush.Parse).ToArray();
     public void CancelAvatarLoading() { _avatarOperation?.Cancel(); _avatarOperation = null; }
     private void StartAvatarLoading()
@@ -144,10 +193,185 @@ public sealed class BlameView : UserControl, IDisposable
     public void Dispose()
     {
         if (_disposed) { return; }
-        _disposed = true; _lifetime.Cancel(); CancelAvatarLoading();
+        _disposed = true; _lifetime.Cancel(); CancelAvatarLoading(); ClearHover();
         _content.Dispose(); _avatar?.Dispose();
         foreach (Bitmap avatar in _avatars.Values) { avatar.Dispose(); }
+        foreach (Bitmap icon in _menuIcons) { icon.Dispose(); }
         _avatars.Clear(); _lifetime.Dispose();
+    }
+
+    public void SetPreferences(BlamePreferences preferences, bool persist = true)
+    {
+        preferences = preferences.Normalize();
+        bool changed = Preferences != preferences;
+        Preferences = preferences;
+        ShowAuthor = preferences.ShowAuthor; ShowDate = preferences.ShowAuthorDate; ShowTime = preferences.ShowAuthorTime;
+        ShowOriginalPath = preferences.ShowOriginalFilePath; DisplayAuthorFirst = preferences.DisplayAuthorFirst;
+        ShowLineNumbers = preferences.ShowLineNumbers; ShowAvatar = preferences.ShowAuthorAvatar;
+        PreferenceError = null;
+        if (persist)
+        {
+            try { _preferencesStore.Save(preferences); }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { PreferenceError = exception.Message; }
+        }
+        foreach (Action update in _updateMenus) { update(); }
+        RefreshDisplay();
+        if (changed) { PreferencesChanged?.Invoke(preferences); }
+    }
+
+    public string GetAuthorLine(GitFileBlameLine line)
+    {
+        string? author = ShowAuthor ? line.Line.AuthorName : null;
+        string? date = ShowDate ? line.Line.AuthoredAt.ToString(ShowTime ? "g" : "d", CultureInfo.CurrentCulture) : null;
+        return string.Join(" - ", new[]
+        {
+            DisplayAuthorFirst ? author : date, DisplayAuthorFirst ? date : author,
+            ShowOriginalPath && line.OriginalPath != _blame?.Path ? ExportDialogControls.DisplayPath(line.OriginalPath) : null
+        }.Where(value => value is not null));
+    }
+
+    public Button CreateOptionsButton()
+    {
+        Button button = new() { Name = "BlameOptions", Width = 28, Height = 24, Padding = new Thickness(4), Content = MenuIcon("Blame.png") };
+        ToolTip.SetTip(button, Label("toolStripBlameOptions", "Blame options"));
+        ContextMenu menu = CreateOptionsMenu(); button.ContextMenu = menu;
+        button.Click += (_, _) => menu.Open(button);
+        return button;
+    }
+
+    private ContextMenu CreateOptionsMenu()
+    {
+        MenuItem Option(string name, string text, Func<BlamePreferences, bool> read, Func<BlamePreferences, BlamePreferences> toggle)
+        {
+            MenuItem item = new() { Name = "BlameOption_" + name, Header = Label(name, text), ToggleType = MenuItemToggleType.CheckBox, IsChecked = read(Preferences) };
+            item.Click += (_, _) => SetPreferences(toggle(Preferences));
+            _updateMenus.Add(() => { item.IsChecked = read(Preferences); if (name == "showAuthorTimeToolStripMenuItem") { item.IsEnabled = Preferences.ShowAuthorDate; } });
+            return item;
+        }
+        MenuItem heading(string name, string text) => new() { Header = Label(name, text), IsEnabled = false };
+        ContextMenu menu = new() { Name = "BlameDisplayOptions", ItemsSource = new Control[]
+        {
+            heading("blameSettingsToolStripMenuItem", "Blame settings:"),
+            Option("ignoreWhitespaceToolStripMenuItem", "Ignore whitespace", p => p.IgnoreWhitespace, p => p with { IgnoreWhitespace = !p.IgnoreWhitespace }),
+            Option("detectMoveAndCopyInThisFileToolStripMenuItem", "Detect move and copy in this file", p => p.DetectMoves, p => p with { DetectMoves = !p.DetectMoves }),
+            Option("detectMoveAndCopyInAllFilesToolStripMenuItem", "Detect move and copy in all files", p => p.DetectCopies, p => p with { DetectCopies = !p.DetectCopies }),
+            new Separator(), heading("displaySettingsToolStripMenuItem", "Display result settings:"),
+            Option("displayAuthorFirstToolStripMenuItem", "Display author first", p => p.DisplayAuthorFirst, p => p with { DisplayAuthorFirst = !p.DisplayAuthorFirst }),
+            Option("showAuthorAvatarToolStripMenuItem", "Show author avatar", p => p.ShowAuthorAvatar, p => p with { ShowAuthorAvatar = !p.ShowAuthorAvatar }),
+            Option("showAuthorToolStripMenuItem", "Show author", p => p.ShowAuthor, p => p with { ShowAuthor = !p.ShowAuthor, ShowAuthorDate = !p.ShowAuthor || p.ShowAuthorDate }),
+            Option("showAuthorDateToolStripMenuItem", "Show author date", p => p.ShowAuthorDate, p => p with { ShowAuthorDate = !p.ShowAuthorDate, ShowAuthor = p.ShowAuthorDate || p.ShowAuthor }),
+            Option("showAuthorTimeToolStripMenuItem", "Show author time", p => p.ShowAuthorTime, p => p with { ShowAuthorTime = !p.ShowAuthorTime }),
+            Option("showLineNumbersToolStripMenuItem", "Show line numbers", p => p.ShowLineNumbers, p => p with { ShowLineNumbers = !p.ShowLineNumbers }),
+            Option("showOriginalFilePathToolStripMenuItem", "Show original file path", p => p.ShowOriginalFilePath, p => p with { ShowOriginalFilePath = !p.ShowOriginalFilePath }),
+            new Separator(),
+            Option("UseHistogramDiffAlgorithm", "Use histogram diff algorithm", p => p.UseHistogramDiffAlgorithm, p => p with { UseHistogramDiffAlgorithm = !p.UseHistogramDiffAlgorithm })
+        } };
+        foreach (Action update in _updateMenus) { update(); }
+        return menu;
+    }
+
+    private ContextMenu CreateContextMenu()
+    {
+        MenuItem Command(string name, string text, string icon, BlameCommand command)
+        {
+            MenuItem item = new() { Name = name, Header = _translations.Translate("BlameControl", name, "Text", text), Icon = MenuIcon(icon) };
+            item.Click += (_, _) => { if ((_contextLine ?? SelectedLine) is { } line) { CommandRequested?.Invoke(this, new(command, line)); } };
+            return item;
+        }
+        MenuItem thisRevision = Command("blameRevisionToolStripMenuItem", "Blame this revision", "Blame.png", BlameCommand.ThisRevision);
+        MenuItem previousRevision = Command("blamePreviousRevisionToolStripMenuItem", "Blame previous revision", "RecentRepositories.png", BlameCommand.PreviousRevision);
+        previousRevision.Header = _translations.Translate("BlameControl", "_blameActualPreviousRevision", "Text", "Blame previous revision");
+        MenuItem changes = Command("showChangesToolStripMenuItem", "Show changes", "information.png", BlameCommand.ShowChanges);
+        MenuItem Copy(string name, string text, string icon, Func<GitFileBlameLine, CancellationToken, Task<string>> value)
+        {
+            MenuItem item = new() { Name = name, Header = _translations.Translate("BlameControl", name, "Text", text), Icon = MenuIcon(icon) };
+            item.Click += async (_, _) =>
+            {
+                if ((_contextLine ?? SelectedLine) is not { } line || TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard) { return; }
+                try { await ClipboardExtensions.SetTextAsync(clipboard, await value(line, _lifetime.Token)); }
+                catch (OperationCanceledException) { }
+                catch (Exception exception) when (exception is GitCommandException or IOException or InvalidOperationException)
+                { InteractionError?.Invoke(exception.Message); }
+            };
+            return item;
+        }
+        MenuItem copy = new() { Name = "copyToClipboardToolStripMenuItem", Header = _translations.Translate("BlameControl", "copyToClipboardToolStripMenuItem", "Text", "Copy to clipboard"), Icon = MenuIcon("CopyToClipboard.png"), ItemsSource = new[]
+        {
+            Copy("commitHashToolStripMenuItem", "Commit hash", "CommitId.png", (line, _) => Task.FromResult(line.Line.Hash)),
+            Copy("commitMessageToolStripMenuItem", "Commit message", "Message.png", (line, _) => Task.FromResult(line.Line.Summary)),
+            Copy("allCommitInfoToolStripMenuItem", "All commit info", "CommitSummary.png", GetCommitInformationAsync)
+        } };
+        ContextMenu menu = new() { Name = "BlameContextMenu", ItemsSource = new Control[] { thisRevision, previousRevision, changes, new Separator(), copy } };
+        menu.Opening += (_, _) =>
+        {
+            ClearHover();
+            GitFileBlameLine? line = _contextLine ?? SelectedLine;
+            bool committed = line is not null && !line.Line.Hash.All(character => character == '0');
+            thisRevision.IsEnabled = changes.IsEnabled = committed && IsEnabled;
+            previousRevision.IsEnabled = committed && line!.PreviousHash is not null && IsEnabled;
+            copy.IsEnabled = line is not null && IsEnabled;
+        };
+        menu.Closed += (_, _) => _contextLine = null;
+        return menu;
+    }
+
+    public async Task<string> GetCommitInformationAsync(GitFileBlameLine line, CancellationToken token)
+    {
+        if (_commitInformation.TryGetValue((line.Line.Hash, line.OriginalPath), out string? cached)) { return cached; }
+        string information = CommitInformationProvider is null ? BasicInformation(line) : await CommitInformationProvider(line, token);
+        token.ThrowIfCancellationRequested();
+        _commitInformation[(line.Line.Hash, line.OriginalPath)] = information;
+        return information;
+    }
+    private string BasicInformation(GitFileBlameLine line) =>
+        $"{_translations.Translate("Author")}: {line.Line.AuthorName}\n{_translations.Translate("Author date")}: {line.Line.AuthoredAt:G}\n{_translations.Translate("Commit hash")}: {line.Line.Hash[..Math.Min(9, line.Line.Hash.Length)]}\n{_translations.Translate("Summary")}: {line.Line.Summary}\n\n{_translations.Translate("FileName")}: {ExportDialogControls.DisplayPath(line.OriginalPath)}";
+
+    private void Hover(GitFileBlameLine? line, bool showTooltip)
+    {
+        if (_hoveredHash != line?.Line.Hash) { _hoveredHash = line?.Line.Hash; RefreshDisplay(); }
+        if (!showTooltip || line is null) { return; }
+        if (_tooltipText.Tag is ValueTuple<string, string> current && current == (line.Line.Hash, line.OriginalPath)) { return; }
+        _tooltipOperation?.Cancel();
+        CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _tooltipOperation = operation;
+        _tooltipText.Tag = (line.Line.Hash, line.OriginalPath); _tooltipText.Text = BasicInformation(line);
+        ToolTip.SetIsOpen(_authors, true);
+        TooltipLoading = UpdateTooltipAsync(line, operation);
+    }
+    private async Task UpdateTooltipAsync(GitFileBlameLine line, CancellationTokenSource operation)
+    {
+        try
+        {
+            string text = await GetCommitInformationAsync(line, operation.Token);
+            operation.Token.ThrowIfCancellationRequested();
+            _tooltipText.Text = text;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception) when (exception is GitCommandException or IOException or InvalidOperationException) { }
+        finally { if (_tooltipOperation == operation) { _tooltipOperation = null; } operation.Dispose(); }
+    }
+    private void ClearHover()
+    {
+        _tooltipOperation?.Cancel(); _tooltipOperation = null;
+        _hoveredHash = null; _tooltipText.Tag = null; ToolTip.SetIsOpen(_authors, false);
+        RefreshDisplay();
+    }
+    private GitFileBlameLine? LineAt(Control control, double y)
+    {
+        var text = TextView.Editor.TextArea.TextView;
+        if (!text.VisualLinesValid) { return null; }
+        var visual = text.VisualLines.FirstOrDefault(line => y + text.VerticalOffset >= line.VisualTop && y + text.VerticalOffset < line.VisualTop + line.Height);
+        return visual is null ? null : Lines.ElementAtOrDefault(visual.FirstDocumentLine.LineNumber - 1);
+    }
+    private string Label(string name, string fallback) => name == "UseHistogramDiffAlgorithm"
+        ? _translations.Translate("GeneralSettingsPage", "chkUseHistogramDiffAlgorithm", "Text", fallback)
+        : _translations.Translate("FormFileHistory", name, "Text", fallback);
+    private Image? MenuIcon(string name)
+    {
+        Uri uri = new("avares://GitExtensions/Assets/Icons/" + name);
+        if (!AssetLoader.Exists(uri)) { return null; }
+        using Stream stream = AssetLoader.Open(uri); Bitmap icon = new(stream); _menuIcons.Add(icon);
+        return new Image { Source = icon, Width = 16, Height = 16 };
     }
 
     private sealed class AuthorMargin(BlameView owner) : AbstractMargin
@@ -168,21 +392,23 @@ public sealed class BlameView : UserControl, IDisposable
                 if (owner.IsSelected(line)) { context.DrawRectangle(owner.GroupBrush, null, new Rect(0, top, Bounds.Width, visual.Height)); }
                 context.DrawRectangle(owner._ages[index], null, new Rect(0, top, 4, visual.Height));
                 bool first = index == 0 || owner.Lines[index - 1].Line.Hash != line.Line.Hash;
-                if (!first) { continue; }
                 double textY = visual.GetTextLineVisualYPosition(visual.TextLines[0], VisualYPosition.TextTop) - TextView.VerticalOffset;
                 double avatarWidth = owner.ShowAvatar ? Math.Min(visual.Height, 20) : 0;
+                double numberWidth = owner.ShowLineNumbers ? (owner.Lines.Count.ToString(CultureInfo.InvariantCulture).Length + 1) * owner.TextView.Editor.FontSize * .65 : 0;
+                if (owner.ShowLineNumbers)
+                {
+                    FormattedText number = new((index + 1).ToString(CultureInfo.CurrentCulture), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                        new Typeface(owner.TextView.Editor.FontFamily), owner.TextView.Editor.FontSize, owner.TextView.Editor.Foreground);
+                    context.DrawText(number, new Point(8 + avatarWidth, textY));
+                }
+                if (!first) { continue; }
                 Bitmap? avatar = owner._avatars.GetValueOrDefault(line.Line.AuthorEmail.Trim()) ?? owner._avatar;
                 if (owner.ShowAvatar && avatar is not null)
                 { context.DrawImage(avatar, new Rect(avatar.Size), new Rect(6, top, avatarWidth, avatarWidth)); }
-                string text = string.Join(" - ", new[]
-                {
-                    owner.ShowDate ? line.Line.AuthoredAt.ToString("d", CultureInfo.CurrentCulture) : null,
-                    owner.ShowAuthor ? line.Line.AuthorName : null,
-                    owner.ShowOriginalPath && line.OriginalPath != owner._blame!.Path ? line.OriginalPath : null
-                }.Where(value => value is not null));
+                string text = owner.GetAuthorLine(line);
                 FormattedText author = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                     new Typeface(owner.TextView.Editor.FontFamily), owner.TextView.Editor.FontSize, owner.TextView.Editor.Foreground);
-                context.DrawText(author, new Point(8 + avatarWidth, textY));
+                context.DrawText(author, new Point(8 + avatarWidth + numberWidth, textY));
             }
         }
         protected override void OnPointerPressed(PointerPressedEventArgs args)
@@ -191,8 +417,21 @@ public sealed class BlameView : UserControl, IDisposable
             if (TextView?.VisualLinesValid != true) { return; }
             double y = args.GetPosition(this).Y + TextView.VerticalOffset;
             VisualLine? line = TextView.VisualLines.FirstOrDefault(line => y >= line.VisualTop && y < line.VisualTop + line.Height);
-            if (line is not null) { owner.SelectLine(line.FirstDocumentLine.LineNumber); args.Handled = true; }
+            if (line is not null)
+            {
+                if (args.GetCurrentPoint(this).Properties.IsRightButtonPressed) { owner._contextLine = owner.Lines[line.FirstDocumentLine.LineNumber - 1]; }
+                else if (args.GetCurrentPoint(this).Properties.IsLeftButtonPressed) { owner.SelectLine(line.FirstDocumentLine.LineNumber); args.Handled = true; }
+            }
         }
+        protected override void OnPointerMoved(PointerEventArgs args)
+        {
+            base.OnPointerMoved(args);
+            double y = args.GetPosition(this).Y;
+            ToolTip.SetVerticalOffset(this, y + 20);
+            owner.Hover(owner.LineAt(this, y), showTooltip: true);
+        }
+        protected override void OnPointerExited(PointerEventArgs args)
+        { base.OnPointerExited(args); owner.ClearHover(); }
     }
     private sealed class CommitBackground(BlameView owner) : IBackgroundRenderer
     {

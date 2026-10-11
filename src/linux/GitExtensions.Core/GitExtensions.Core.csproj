@@ -18,5 +18,8 @@
     <Compile Include="../../app/GitCommands/Git/Tag/TagOperation.cs" Link="Shared/TagOperation.cs" />
     <Compile Include="../../app/GitCommands/Git/CheckoutNewBranchMode.cs" Link="Shared/CheckoutNewBranchMode.cs" />
     <Compile Include="../../app/GitCommands/Settings/AppSettings.LocalChangesAction.cs" Link="Shared/LocalChangesAction.cs" />
+    <Compile Include="../../app/GitCommands/Git/GitBranchNameNormaliser.cs" Link="Shared/GitBranchNameNormaliser.cs" />
+    <Compile Include="../../app/GitCommands/Git/GitBranchNameOptions.cs" Link="Shared/GitBranchNameOptions.cs" />
+    <Compile Include="../../app/GitCommands/Settings/IgnoreWhitespaceKind.cs" Link="Shared/IgnoreWhitespaceKind.cs" />
   </ItemGroup>
 </Project>

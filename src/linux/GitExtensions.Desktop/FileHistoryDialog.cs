@@ -35,6 +35,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
 
     public FileHistoryDialog(GitRepository repository, string path, string revision = "HEAD") : base(repository, "File History")
     {
+        _blame.CommitInformationProvider = (line, token) => BlameDialog.ReadCommitInformationAsync(repository, line, token);
+        _blame.InteractionError += error => Status.Text = error;
         Width = 1100; Height = 760; MinWidth = 740; MinHeight = 480;
         _file.Text = path; _revision.Text = revision;
         _follow.Content = T("Detect and follow renames"); _exact.Content = T("Exact renames and copies only");
@@ -43,7 +45,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
         Control[] fields = [new TextBlock { Text = T("File") + ":", VerticalAlignment = VerticalAlignment.Center }, _file,
             new TextBlock { Text = T("Revision") + ":", VerticalAlignment = VerticalAlignment.Center }, _revision, Action("LoadFileHistory", "Load", InitializeAsync)];
         for (int index = 0; index < fields.Length; index++) { Grid.SetColumn(fields[index], index); fields[index].Margin = new Avalonia.Thickness(3, 0); paths.Children.Add(fields[index]); }
-        StackPanel options = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Avalonia.Thickness(9, 2), Children = { _follow, _exact, _full, _simplify } };
+        Button blameOptions = _blame.CreateOptionsButton();
+        StackPanel options = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Avalonia.Thickness(9, 2), Children = { _follow, _exact, _full, _simplify, blameOptions } };
         DockPanel.SetDock(paths, Dock.Top); Root.Children.Add(paths); DockPanel.SetDock(options, Dock.Top); Root.Children.Add(options);
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Avalonia.Thickness(6, 4), Children =
         {
@@ -79,7 +82,15 @@ public sealed class FileHistoryDialog : RepositoryDialog
         Grid.SetRow(splitter, 1); layout.Children.Add(splitter); Grid.SetRow(_tabs, 2); layout.Children.Add(_tabs); Root.Children.Add(layout);
         _revisions.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
-        Track(_file, _revision, _follow, _exact, _full, _simplify, _revisions, _tabs);
+        BlamePreferences previousBlamePreferences = _blame.Preferences;
+        _blame.PreferencesChanged += async preferences =>
+        {
+            bool reload = previousBlamePreferences.GitOptions != preferences.GitOptions;
+            previousBlamePreferences = preferences;
+            if (reload && _tabs.SelectedIndex == 3 && !IsBusy && !_loading) { await LoadSelectionAsync(); }
+        };
+        _blame.CommandRequested += async (_, args) => await OpenBlameCommandAsync(args);
+        Track(_file, _revision, _follow, _exact, _full, _simplify, blameOptions, _revisions, _tabs);
         Closed += (_, _) => { _view.Dispose(); _diff.Dispose(); _blame.Dispose(); foreach (Bitmap icon in _tabIcons) { icon.Dispose(); } };
     }
 
@@ -129,7 +140,29 @@ public sealed class FileHistoryDialog : RepositoryDialog
             _diff.ShowDiff(await Repository.GetRevisionFileDiffAsync(revisions, file, token));
         }
         else if (_tabs.SelectedIndex == 2) { _view.ShowFile(entry.Path, await Repository.GetFileBytesAsync(entry.Path, commit.Hash, token)); }
-        else if (_tabs.SelectedIndex == 3) { _blame.SetBlame(await Repository.GetFileBlameAsync(entry.Path, commit.Hash, cancellationToken: token)); }
+        else if (_tabs.SelectedIndex == 3) { _blame.SetBlame(await Repository.GetFileBlameAsync(entry.Path, commit.Hash, _blame.Preferences.GitOptions, token)); }
+    }
+
+    private async Task OpenBlameCommandAsync(BlameCommandEventArgs args)
+    {
+        if (IsBusy) { return; }
+        string hash = args.Line.Line.Hash, path = args.Line.OriginalPath;
+        int line = args.Line.Line.OriginalLine;
+        if (args.Command == BlameCommand.PreviousRevision)
+        {
+            GitBlamePreviousRevision? previous = null;
+            await RunAsync("Blame previous revision", async token => previous = await Repository.GetBlamePreviousRevisionAsync(args.Line,
+                _blame.Preferences.GitOptions, _blame.Preferences.UseHistogramDiffAlgorithm, token));
+            if (LastError is not null || previous is null) { return; }
+            hash = previous.Revision; path = previous.Path; line = previous.Line;
+        }
+        BlameDialog dialog = new(Repository, path, hash, line);
+        dialog.Opened += async (_, _) =>
+        {
+            await dialog.InitializeAsync();
+            if (args.Command == BlameCommand.ShowChanges && dialog.LastError is null) { await dialog.ShowChangesAsync(args.Line); }
+        };
+        await dialog.ShowDialog(this);
     }
 
     public async Task SaveSelectedFileAsync(string destination, CancellationToken cancellationToken = default)

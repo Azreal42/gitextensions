@@ -80,6 +80,7 @@ public class BlameDialogTests
         dialog.Show();
         try
         {
+            Helpers.Field<CheckBox>(dialog, "BlameIgnoreWhitespace").IsChecked = false;
             await dialog.InitializeAsync(); Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(dialog.LastBlame!.Lines[1].Line.AuthorName, Is.EqualTo("Whitespace Author"));
             BlameView view = Helpers.Field<BlameView>(dialog, "BlameView");

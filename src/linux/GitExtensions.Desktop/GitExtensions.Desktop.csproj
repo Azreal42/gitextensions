@@ -16,6 +16,8 @@
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../app/GitUI/Resources/Backgrounds/DashboardBackground*.png" Link="Assets/Backgrounds/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../../setup/assets/Logo/GitExtensionsLogoWide.png" Link="Assets/GitExtensionsLogoWide.png" />
     <AvaloniaResource Include="../../plugins/*/Resources/Icon*.png" Link="Assets/PluginIcons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../plugins/Statistics/*/Resources/Icon*.png" Link="Assets/PluginIcons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../app/GitUI/Themes/invariant.css" Link="Assets/Themes/invariant.css" />

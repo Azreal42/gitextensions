@@ -267,6 +267,7 @@ public class ReferenceMenuTests
         commands.IsSubMenuOpen = false;
         await Until(() => main.OwnedWindows.OfType<T>().Any());
         T dialog = main.OwnedWindows.OfType<T>().Single();
+        await Until(() => !dialog.IsBusy);
         dialog.UpdateLayout();
         Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
         return dialog;
@@ -324,6 +325,7 @@ public class ReferenceMenuTests
         Click(workflow.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == content));
         await Until(() => workflow.OwnedWindows.OfType<T>().Any());
         T dialog = workflow.OwnedWindows.OfType<T>().Single();
+        await Until(() => !dialog.IsBusy);
         dialog.UpdateLayout();
         Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
         return dialog;

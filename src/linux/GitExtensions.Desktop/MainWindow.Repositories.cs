@@ -1,0 +1,130 @@
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Media;
+
+namespace GitExtensions.Linux.Desktop;
+
+public sealed partial class MainWindow
+{
+    private readonly RepositoryHistoryStore _repositoryHistoryStore = new();
+    private RepositoryHistoryState _repositoryHistory = new();
+    private DashboardControl? _dashboard;
+    private StackPanel? _repositoryToolbars;
+    private readonly MenuItem _recentMenu = new();
+    private readonly MenuItem _favoritesMenu = new();
+
+    private void LoadRepositoryHistory()
+    {
+        try { _repositoryHistory = _repositoryHistoryStore.Load(_preferences.RecentRepositories); }
+        catch (Exception exception) when (exception is System.Text.Json.JsonException or IOException or UnauthorizedAccessException)
+        { AppendOutput($"Unable to read repository history: {exception.Message}"); }
+        _recent.ItemTemplate = new FuncDataTemplate<RepositoryHistoryRow>((row, _) => new TextBlock { Text = row?.Caption, FontWeight = row?.IsAnchored == true ? FontWeight.Bold : FontWeight.Normal });
+        UpdateRecentSelector();
+    }
+
+    private void SaveRepositoryHistory(RepositoryHistoryState history)
+    {
+        _repositoryHistoryStore.Save(history);
+        _repositoryHistory = history.Normalize();
+        UpdateRecentSelector();
+        UpdateRepositoryMenus();
+    }
+
+    private void UpdateRecentSelector()
+    {
+        RepositoryHistorySelection selection = RepositoryHistoryPresentation.Select(_repositoryHistory, MeasureRepositoryCaption);
+        _recent.ItemsSource = selection.Top.Concat(selection.Recent).DistinctBy(row => row.Path, StringComparer.Ordinal).ToArray();
+        _recent.Width = _repositoryHistory.RecentReposComboMinWidth > 0 ? _repositoryHistory.RecentReposComboMinWidth : 200;
+    }
+
+    private void UpdateRepositoryMenus()
+    {
+        _recentMenu.Header = T("Recent repositories");
+        _favoritesMenu.Header = T("Favorite repositories");
+        RepositoryHistorySelection selection = RepositoryHistoryPresentation.Select(_repositoryHistory, MeasureRepositoryCaption);
+        _recentMenu.ItemsSource = selection.Top.Concat(selection.Recent).DistinctBy(row => row.Path, StringComparer.Ordinal).Select(row => RepositoryMenuItem(row.Path, row.Caption)).ToArray();
+        List<MenuItem> favorites = [];
+        favorites.Add(RepositoryAction(T("Add to favorites"), () =>
+        {
+            if (_repository is not null) { SaveRepositoryHistory(_repositoryHistory.Favorite(_repository.Path, true)); }
+            return Task.CompletedTask;
+        }));
+        foreach (var group in _repositoryHistory.Favorites.GroupBy(item => item.Category).OrderBy(group => group.Key))
+        {
+            MenuItem[] entries = group.Select(item => RepositoryMenuItem(item.Path)).ToArray();
+            if (group.Key is null) { favorites.AddRange(entries); }
+            else { favorites.Add(new MenuItem { Header = group.Key, ItemsSource = entries }); }
+        }
+        _favoritesMenu.ItemsSource = favorites;
+    }
+
+    private MenuItem RepositoryMenuItem(string path, string? caption = null)
+    {
+        MenuItem item = RepositoryAction(caption ?? RepositoryHistoryPresentation.DisplayPath(path), () => OpenRepositoryAsync(path));
+        ToolTip.SetTip(item, path);
+        return item;
+    }
+    private MenuItem RepositoryAction(string title, Func<Task> action)
+    {
+        MenuItem item = new() { Header = title };
+        item.Click += async (_, _) =>
+        {
+            if (_busy) { return; }
+            try { await action(); }
+            catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
+        };
+        return item;
+    }
+
+    private void SetDashboardVisible(bool visible)
+    {
+        if (_dashboard is not null) { _dashboard.IsVisible = visible; if (visible) { _dashboard.Refresh(); } }
+        if (_browserBody is not null) { _browserBody.IsVisible = !visible; }
+        if (_repositoryToolbars is not null) { _repositoryToolbars.IsVisible = !visible; }
+        if (visible) { Title = "Git Extensions"; }
+    }
+
+    private async Task CloseRepositoryAsync()
+    {
+        if (_busy) { return; }
+        await RunAsync("Close repository", async _ =>
+        {
+            await _backgroundFetch.UnregisterAsync();
+            _repository = null;
+            _comparisonBase = null;
+            _referenceSelectionOverride = null;
+            _refreshing = true;
+            try
+            {
+                _repositoryPath.Text = "";
+                _history = [];
+                _historyGraph.Commits = []; _historyGraph.References = []; _historyGraph.CurrentHead = null;
+                foreach (ListBox list in new[] { _commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _hunks, _revisionFiles }) { list.ItemsSource = null; }
+                _navigation.ItemsSource = null;
+                _diffParent.ItemsSource = null; _diffParent.IsVisible = false; _revisionChanges = null;
+                _navigationRevisionFilter = null; _historyRevision.Text = null;
+                _commitContent?.ClearImage(); _changesContent?.ClearImage(); _fileContent?.ClearImage();
+                _diff.Text = null; _fileView.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
+                _repositorySummary = T("Open a repository to begin");
+                SetDashboardVisible(true);
+            }
+            finally { _refreshing = false; }
+        }, refresh: false, requireRepository: false);
+    }
+
+    private Task RefreshDashboardAsync()
+    {
+        _dashboard?.Refresh();
+        return _dashboard?.MetadataLoading ?? Task.CompletedTask;
+    }
+
+    private async Task RecentRepositorySettingsAsync()
+    {
+        if (_busy) { return; }
+        RecentRepositoriesSettingsDialog dialog = new(_repositoryHistory);
+        RepositoryHistoryState? result = await dialog.ShowDialog<RepositoryHistoryState?>(this);
+        if (result is not null) { SaveRepositoryHistory(result); _dashboard?.Refresh(reload: false); }
+    }
+
+    private double MeasureRepositoryCaption(string text) => new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily), FontSize, Foreground ?? Brushes.Black).Width;
+}

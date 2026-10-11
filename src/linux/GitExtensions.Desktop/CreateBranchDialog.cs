@@ -15,12 +15,17 @@ public sealed class CreateBranchDialog : RepositoryDialog
     private readonly CheckBox _clear = new() { Name = "ClearOrphanWorkingTree" };
     private readonly Button _choose;
     private readonly Button _create;
+    private readonly bool _autoNormalize;
+    private readonly string _replacement;
     private bool _unborn;
     private bool _bare;
     public string? CreatedBranch { get; private set; }
 
-    public CreateBranchDialog(GitRepository repository, string revision = "HEAD", string? name = null) : base(repository, "Create branch")
+    public CreateBranchDialog(GitRepository repository, string revision = "HEAD", string? name = null, bool autoNormalize = true, string replacement = "_") : base(repository, "Create branch")
     {
+        _autoNormalize = autoNormalize;
+        _replacement = replacement;
+        if (autoNormalize) { GitBranchNaming.Normalize("", replacement); }
         Width = 600;
         MinWidth = 540;
         SizeToContent = SizeToContent.Height;
@@ -49,6 +54,7 @@ public sealed class CreateBranchDialog : RepositoryDialog
         Track(_name, _revision, _checkout, _orphan, _clear);
         _orphan.IsCheckedChanged += (_, _) => { if (_orphan.IsChecked == true) { _checkout.IsChecked = true; } else { _clear.IsChecked = false; } UpdateActions(); };
         _name.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateActions(); } };
+        _name.LostFocus += (_, _) => NormalizeName();
         UpdateActions();
         Opened += (_, _) => _name.Focus();
     }
@@ -65,6 +71,13 @@ public sealed class CreateBranchDialog : RepositoryDialog
 
     public GitCreateBranchOptions ReadOptions() => new((_name.Text ?? "").Trim(), _revision.Text ?? "HEAD", _checkout.IsChecked == true, _orphan.IsChecked == true, _clear.IsChecked == true);
 
+    private void NormalizeName()
+    {
+        int caret = _name.CaretIndex;
+        _name.Text = GitBranchNaming.NormalizeForInput(_name.Text, _autoNormalize, _replacement);
+        _name.CaretIndex = Math.Min(caret, _name.Text.Length);
+    }
+
     private async Task ChooseAsync()
     {
         GitCommit? selected = await ExportRevisionPicker.ShowAsync(this, Repository);
@@ -75,6 +88,8 @@ public sealed class CreateBranchDialog : RepositoryDialog
 
     private async Task CreateAsync()
     {
+        _create.Focus();
+        NormalizeName();
         GitCreateBranchOptions options = ReadOptions();
         if (options.ClearWorkingTree && !await Dialogs.ConfirmAsync(this, T("Clear working directory and index"), T("Remove tracked files and the index while creating the orphan branch? Untracked files are preserved."))) { return; }
         await RunAsync("Create branch", async token =>

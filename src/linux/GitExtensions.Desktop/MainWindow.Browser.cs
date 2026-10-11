@@ -60,7 +60,7 @@ public sealed partial class MainWindow
         });
         _commits.ContextMenu = new ContextMenu
         {
-            ItemsSource = new[] { MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync), MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), MenuAction("Compare…", CompareAsync) }
+            ItemsSource = new[] { MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync), MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), BuildComparisonMenu() }
         };
         _navigation.SelectionChanged += async (_, _) =>
         {
@@ -79,6 +79,8 @@ public sealed partial class MainWindow
         StackPanel top = new() { Spacing = 0 };
         DockPanel.SetDock(top, Dock.Top);
         top.Children.Add(BuildMenu());
+        _repositoryToolbars = new StackPanel { Spacing = 0 };
+        top.Children.Add(_repositoryToolbars);
         _repositoryPath.MinWidth = 240;
         _repositoryPath.Width = 300;
         _repositoryPath.Height = 24;
@@ -95,7 +97,7 @@ public sealed partial class MainWindow
                 IconButton("Settings", "Settings.png", () => ShowWorkflowAsync("Configuration"), false), _recent)
         };
         toolbar.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicBorderBrush"));
-        top.Children.Add(toolbar);
+        _repositoryToolbars.Children.Add(toolbar);
         _historyRevision.Height = 24;
         _historyRevision.PropertyChanged += (_, change) =>
         {
@@ -103,7 +105,7 @@ public sealed partial class MainWindow
         };
         _historyMore = Button("Load more", LoadMoreHistoryAsync);
         _historyMore.IsVisible = false;
-        top.Children.Add(Row(new TextBlock { Text = T("Branches:"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0) },
+        _repositoryToolbars.Children.Add(Row(new TextBlock { Text = T("Branches:"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0) },
             _historyRevision, Button("Filter", FilterHistoryAsync), Button("All branches", () => SetHistoryScopeAsync(true)), _historyMore,
             Button("Fetch", () => RunAsync("Fetch", r => r.FetchAsync(cancellationToken: Token))), Button("Cancel operation", () => { _operation?.Cancel(); return Task.CompletedTask; })));
         root.Children.Add(top);
@@ -155,7 +157,11 @@ public sealed partial class MainWindow
         right.Children.Add(_tabs);
         Grid.SetColumn(right, 2);
         _browserBody.Children.Add(right);
-        root.Children.Add(_browserBody);
+        _dashboard = new DashboardControl(this, () => _repositoryHistory, SaveRepositoryHistory, OpenRepositoryAsync, InitializeAsync, ChooseRepositoryAsync, CloneAsync);
+        Grid workspace = new(); workspace.Children.Add(_browserBody); workspace.Children.Add(_dashboard);
+        root.Children.Add(workspace);
+        UpdateRepositoryMenus();
+        SetDashboardVisible(_repository is null);
         return root;
     }
 
@@ -194,8 +200,8 @@ public sealed partial class MainWindow
     {
         ItemsSource = new[]
         {
-            MenuGroup("File", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), MenuAction("Close", () => { Close(); return Task.CompletedTask; })),
-            MenuGroup("Dashboard", MenuAction("Recent repositories", () => { _recent.IsDropDownOpen = true; return Task.CompletedTask; })),
+            MenuGroup("File", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), _favoritesMenu, _recentMenu, MenuAction("Close", CloseRepositoryAsync)),
+            MenuGroup("Dashboard", MenuAction("Recent repositories", CloseRepositoryAsync), MenuAction("Refresh", RefreshDashboardAsync), MenuAction("Recent repositories settings", RecentRepositorySettingsAsync)),
             MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
             MenuGroup("Commands", MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
@@ -286,8 +292,14 @@ public sealed partial class MainWindow
 
     private void UpdateBrowserNavigation(IReadOnlyList<GitReference> references, IReadOnlyList<GitStash> stashes, IReadOnlyList<GitSubmodule> submodules, IReadOnlyList<GitWorktree> worktrees)
     {
-        TreeViewItem Group(string name, IEnumerable<TreeViewItem> children) => new() { Header = T(name), IsExpanded = name != "Tags", ItemsSource = children.ToArray() };
+        TreeViewItem? selected = _navigation.SelectedItem as TreeViewItem;
+        string? selectedReference = (selected?.Tag as GitReference)?.Name;
+        string? selectedWorkflow = selected?.Tag as string;
+        string? selectedGroup = selected?.Tag is null ? selected?.Header as string : null;
+        Dictionary<string, bool> expanded = _navigation.Items.OfType<TreeViewItem>().Where(item => item.Header is string).ToDictionary(item => (string)item.Header!, item => item.IsExpanded, StringComparer.Ordinal);
+        TreeViewItem Group(string name, IEnumerable<TreeViewItem> children) => new() { Header = T(name), IsExpanded = expanded.TryGetValue(T(name), out bool wasExpanded) ? wasExpanded : name != "Tags", ItemsSource = children.ToArray() };
         TreeViewItem Ref(GitReference reference) => new() { Header = IconLabel(reference.ShortName, reference.IsTag ? "Tag.png" : reference.IsRemote ? "BranchRemote.png" : "BranchLocal.png"), Tag = reference };
+        _navigation.SelectedItem = null;
         _navigation.ItemsSource = new[]
         {
             Group("Branches", references.Where(r => r.IsBranch).Select(Ref)),
@@ -297,5 +309,11 @@ public sealed partial class MainWindow
             Group("Submodules", submodules.Select(module => new TreeViewItem { Header = module.Path, Tag = "Submodules" })),
             Group("Worktrees", worktrees.Select(worktree => new TreeViewItem { Header = worktree.Path, Tag = "Worktrees" }))
         };
+        IEnumerable<TreeViewItem> groups = _navigation.Items.OfType<TreeViewItem>();
+        _navigation.SelectedItem = selectedReference is not null
+            ? groups.SelectMany(group => group.Items.OfType<TreeViewItem>()).FirstOrDefault(item => item.Tag is GitReference reference && reference.Name == selectedReference)
+            : selectedWorkflow is not null
+                ? groups.SelectMany(group => group.Items.OfType<TreeViewItem>()).FirstOrDefault(item => item.Tag as string == selectedWorkflow && item.Header as string == selected?.Header as string)
+                : groups.FirstOrDefault(item => item.Header as string == selectedGroup);
     }
 }

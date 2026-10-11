@@ -1,0 +1,211 @@
+using System.Globalization;
+using System.Text;
+using GitCommands.Settings;
+
+namespace GitExtensions.Linux;
+
+public sealed partial class GitRepository
+{
+    public async Task<GitComparison> GetComparisonAsync(GitCompareRevision from, GitCompareRevision to, CancellationToken cancellationToken = default)
+    {
+        GitCompareRevision first = await ResolveComparisonRevisionAsync(from, cancellationToken).ConfigureAwait(false);
+        GitCompareRevision second = await ResolveComparisonRevisionAsync(to, cancellationToken).ConfigureAwait(false);
+        if (first == second) { return new(first, second, [], []); }
+        if (first.Kind == GitCompareRevisionKind.Commit && second.Kind == GitCompareRevisionKind.Commit)
+        {
+            GitRevisionChanges changes = await GetRevisionChangesAsync(second.Revision, first.Revision, cancellationToken).ConfigureAwait(false);
+            return new(first, second, changes.Files, []);
+        }
+        List<string> arguments = ["diff", "--name-status", "-z", "--find-renames", "--no-ext-diff", "--no-textconv"];
+        AddComparisonRevisions(arguments, first, second);
+        arguments.Add("--");
+        List<GitRevisionFile> files = ParseComparisonFiles((await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput);
+        List<string> untracked = [];
+        if (first.Kind == GitCompareRevisionKind.WorkingTree || second.Kind == GitCompareRevisionKind.WorkingTree)
+        {
+            string[] paths = (await ExecuteAsync(["ls-files", "--others", "--exclude-standard", "-z"], cancellationToken).ConfigureAwait(false)).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            foreach (string path in paths.Where(path => !files.Any(file => file.Path == path || file.OriginalPath == path)))
+            {
+                files.Add(new(path, second.Kind == GitCompareRevisionKind.WorkingTree ? 'A' : 'D'));
+                untracked.Add(path);
+            }
+        }
+        return new(first, second, files, untracked);
+    }
+
+    public async Task<string?> GetComparisonMergeBaseAsync(GitCompareRevision from, GitCompareRevision to, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        if (!Enum.IsDefined(from.Kind) || !Enum.IsDefined(to.Kind)) { throw new ArgumentOutOfRangeException(nameof(from)); }
+        GitStatus status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+        string? first = from.Kind == GitCompareRevisionKind.Commit ? await ResolveRevisionAsync(from.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
+        string? second = to.Kind == GitCompareRevisionKind.Commit ? await ResolveRevisionAsync(to.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
+        if (first is null || second is null || first == second) { return null; }
+        GitResult result = await ExecuteAsync(["merge-base", first, second], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
+        return result.Success ? ReadOutputLine(result.StandardOutput) : null;
+    }
+
+    public async Task<GitComparisonCommitCounts?> GetComparisonCommitCountsAsync(GitCompareRevision from, GitCompareRevision to, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        if (!Enum.IsDefined(from.Kind) || !Enum.IsDefined(to.Kind)) { throw new ArgumentOutOfRangeException(nameof(from)); }
+        GitStatus status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+        if (status.Head is null && (from.Kind != GitCompareRevisionKind.Commit || to.Kind != GitCompareRevisionKind.Commit)) { return null; }
+        string first = await ResolveRevisionAsync(from.Kind == GitCompareRevisionKind.Commit ? from.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
+        string second = await ResolveRevisionAsync(to.Kind == GitCompareRevisionKind.Commit ? to.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
+        string[] fields = (await ExecuteAsync(["rev-list", "--left-right", "--count", first + "..." + second, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return new(int.Parse(fields[0], CultureInfo.InvariantCulture), int.Parse(fields[1], CultureInfo.InvariantCulture));
+    }
+
+    public async Task<string> GetComparisonFileDiffAsync(GitComparison comparison, GitRevisionFile file,
+        GitComparisonDiffOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        ArgumentNullException.ThrowIfNull(file);
+        options ??= new();
+        ValidateComparisonOptions(options);
+        string path = ValidatePath(file.Path);
+        if (comparison.UntrackedPaths.Contains(path, StringComparer.Ordinal))
+        {
+            await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+            List<string> untracked = ["diff", "--no-index", "--no-ext-diff", "--no-textconv"];
+            AddComparisonOptions(untracked, options);
+            string fullPath = System.IO.Path.Combine(Path, path);
+            untracked.AddRange(comparison.Compare.Kind == GitCompareRevisionKind.WorkingTree ? ["--", "/dev/null", fullPath] : ["--", fullPath, "/dev/null"]);
+            return (await ExecuteAsync(untracked, cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false)).StandardOutput;
+        }
+        if (comparison.Base.Kind == GitCompareRevisionKind.Commit && comparison.Compare.Kind == GitCompareRevisionKind.Commit && options == new GitComparisonDiffOptions())
+        {
+            return await GetRevisionFileDiffAsync(new(comparison.Compare.Revision, comparison.Base.Revision, comparison.Files), file, cancellationToken).ConfigureAwait(false);
+        }
+        GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, cancellationToken).ConfigureAwait(false);
+        GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, cancellationToken).ConfigureAwait(false);
+        if (first == second) { return ""; }
+        List<string> arguments = ["--literal-pathspecs", "diff", "--find-renames", "--no-ext-diff", "--no-textconv"];
+        AddComparisonOptions(arguments, options);
+        AddComparisonRevisions(arguments, first, second);
+        arguments.Add("--");
+        if (file.OriginalPath is not null) { arguments.Add(ValidatePath(file.OriginalPath)); }
+        arguments.Add(path);
+        return (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+    }
+
+    public async Task<byte[]> GetComparisonFileBytesAsync(GitCompareRevision revision, string path, CancellationToken cancellationToken = default)
+    {
+        GitCompareRevision selected = await ResolveComparisonRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
+        path = ValidatePath(path);
+        if (selected.Kind == GitCompareRevisionKind.Commit)
+        {
+            GitTreeEntry? entry = (await GetTreeAsync(selected.Revision, path, cancellationToken).ConfigureAwait(false)).FirstOrDefault(entry => entry.Path == path);
+            return entry?.Type == "commit" ? Encoding.UTF8.GetBytes("Submodule commit " + entry.Hash + "\n")
+                : await GetFileBytesAsync(path, selected.Revision, cancellationToken).ConfigureAwait(false);
+        }
+        if (selected.Kind == GitCompareRevisionKind.Index)
+        {
+            string output = (await ExecuteAsync(["--literal-pathspecs", "ls-files", "--stage", "-z", "--", path], cancellationToken).ConfigureAwait(false)).StandardOutput;
+            foreach (string item in output.Split('\0', StringSplitOptions.RemoveEmptyEntries))
+            {
+                int tab = item.IndexOf('\t');
+                if (tab < 0 || item[(tab + 1)..] != path) { continue; }
+                string[] fields = item[..tab].Split(' ');
+                if (fields is ["160000", string hash, "0"]) { return Encoding.UTF8.GetBytes("Submodule commit " + hash + "\n"); }
+            }
+            return await GetIndexFileBytesAsync(path, cancellationToken).ConfigureAwait(false);
+        }
+        string fullPath = System.IO.Path.Combine(Path, path);
+        FileInfo info = new(fullPath);
+        if (info.LinkTarget is string link) { return Encoding.UTF8.GetBytes(link); }
+        if (Directory.Exists(fullPath))
+        {
+            GitResult submodule = await _runner.RunAsync(fullPath, ["rev-parse", "--verify", "HEAD"], cancellationToken).ConfigureAwait(false);
+            if (!submodule.Success) { throw new GitCommandException(["rev-parse", "--verify", "HEAD"], submodule); }
+            return Encoding.UTF8.GetBytes("Submodule commit " + ReadOutputLine(submodule.StandardOutput) + "\n");
+        }
+        return await File.ReadAllBytesAsync(fullPath, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<GitResult> OpenComparisonDiffToolAsync(GitComparison comparison, GitRevisionFile? file = null,
+        bool directory = false, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        if (directory && comparison.Base.Kind == GitCompareRevisionKind.WorkingTree)
+        { throw new InvalidOperationException("Directory diff is unavailable when BASE is the working directory."); }
+        if (!directory && file is null) { throw new ArgumentException("Select a file for the diff tool.", nameof(file)); }
+        return await WithMutationAsync(async token =>
+        {
+            await EnsureWorktreeAsync(token).ConfigureAwait(false);
+            GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, token).ConfigureAwait(false);
+            GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, token).ConfigureAwait(false);
+            List<string> arguments = ["--literal-pathspecs", "difftool", "--gui", "--no-prompt", "--find-renames"];
+            if (directory) { arguments.Add("--dir-diff"); }
+            AddComparisonRevisions(arguments, first, second);
+            arguments.Add("--");
+            if (file is not null)
+            {
+                if (file.OriginalPath is not null) { arguments.Add(ValidatePath(file.OriginalPath)); }
+                arguments.Add(ValidatePath(file.Path));
+            }
+            return await ExecuteAsync(arguments, token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<GitCompareRevision> ResolveComparisonRevisionAsync(GitCompareRevision revision, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(revision);
+        if (!Enum.IsDefined(revision.Kind)) { throw new ArgumentOutOfRangeException(nameof(revision)); }
+        if (revision.Kind == GitCompareRevisionKind.Commit) { return revision with { Revision = await ResolveRevisionAsync(revision.Revision, token).ConfigureAwait(false) }; }
+        await EnsureWorktreeAsync(token).ConfigureAwait(false);
+        return revision with { Revision = "" };
+    }
+
+    private static void AddComparisonRevisions(List<string> arguments, GitCompareRevision from, GitCompareRevision to)
+    {
+        if (from.Kind == GitCompareRevisionKind.Commit && to.Kind == GitCompareRevisionKind.Commit) { arguments.AddRange([from.Revision, to.Revision]); }
+        else if (from.Kind == GitCompareRevisionKind.Commit) { if (to.Kind == GitCompareRevisionKind.Index) { arguments.Add("--cached"); } arguments.Add(from.Revision); }
+        else if (to.Kind == GitCompareRevisionKind.Commit) { arguments.Add("-R"); if (from.Kind == GitCompareRevisionKind.Index) { arguments.Add("--cached"); } arguments.Add(to.Revision); }
+        else if (from.Kind == GitCompareRevisionKind.WorkingTree) { arguments.Add("-R"); }
+    }
+
+    private static void ValidateComparisonOptions(GitComparisonDiffOptions options)
+    {
+        if (!Enum.IsDefined(options.IgnoreWhitespace)) { throw new ArgumentOutOfRangeException(nameof(options)); }
+        if (options.ContextLines is < 0 or > 100000) { throw new ArgumentOutOfRangeException(nameof(options)); }
+    }
+
+    private static void AddComparisonOptions(List<string> arguments, GitComparisonDiffOptions options)
+    {
+        ValidateComparisonOptions(options);
+        switch (options.IgnoreWhitespace)
+        {
+            case IgnoreWhitespaceKind.Eol: arguments.Add("--ignore-space-at-eol"); break;
+            case IgnoreWhitespaceKind.Change: arguments.Add("--ignore-space-change"); break;
+            case IgnoreWhitespaceKind.AllSpace: arguments.Add("--ignore-all-space"); break;
+        }
+        arguments.Add("--unified=" + (options.ShowEntireFile ? 9000 : options.ContextLines).ToString(CultureInfo.InvariantCulture));
+        if (options.ShowEntireFile) { arguments.Add("--inter-hunk-context=9000"); }
+        if (options.TreatAllFilesAsText) { arguments.Add("--text"); }
+    }
+
+    private static List<GitRevisionFile> ParseComparisonFiles(string output)
+    {
+        string[] records = output.Split('\0');
+        List<GitRevisionFile> files = [];
+        for (int index = 0; index < records.Length && records[index].Length > 0;)
+        {
+            char status = records[index++][0];
+            if (index >= records.Length || records[index].Length == 0) { throw new FormatException("Incomplete Git comparison record."); }
+            string path = records[index++];
+            if (status is 'R' or 'C')
+            {
+                if (index >= records.Length || records[index].Length == 0) { throw new FormatException("Incomplete Git comparison rename record."); }
+                files.Add(new(records[index++], status, path));
+            }
+            else { files.Add(new(path, status)); }
+        }
+        return files;
+    }
+
+}

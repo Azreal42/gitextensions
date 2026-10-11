@@ -30,6 +30,7 @@ public class ExportDialogTests
         commands.Items.OfType<MenuItem>().Single(item => item.Header as string == "Create patches…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => main.OwnedWindows.OfType<FormatPatchDialog>().Any());
         FormatPatchDialog format = main.OwnedWindows.OfType<FormatPatchDialog>().Single();
+        await Idle(format);
         try
         {
             Assert.That(format.ReadOptions().SelectedRevisions, Is.EqualTo(new[] { selected.Hash }));
@@ -41,10 +42,11 @@ public class ExportDialogTests
             Assert.That(format.LastResult?.Files.Count, Is.EqualTo(1));
         }
         finally { format.Close(); }
-        await Task.Delay(20);
+        await Until(() => !main.IsBusy);
         commands.Items.OfType<MenuItem>().Single(item => item.Header as string == "Apply patch…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => main.OwnedWindows.OfType<ApplyPatchDialog>().Any());
         ApplyPatchDialog apply = main.OwnedWindows.OfType<ApplyPatchDialog>().Single();
+        await Idle(apply);
         Assert.That(apply.AmState?.IsActive, Is.False);
         apply.Close();
         Assert.That(main.LastException, Is.Null, main.LastException?.ToString());

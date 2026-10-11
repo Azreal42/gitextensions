@@ -7,6 +7,8 @@ public sealed record DesktopPreferences
     public List<string> RecentRepositories { get; init; } = [];
     public string Theme { get; init; } = "Light";
     public int HistoryLimit { get; init; } = 300;
+    public bool AutoNormaliseBranchName { get; init; } = true;
+    public string AutoNormaliseSymbol { get; init; } = "_";
     public Dictionary<string, Dictionary<string, string?>> PluginSettings { get; init; } = [];
 }
 
