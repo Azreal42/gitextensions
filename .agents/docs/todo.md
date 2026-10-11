@@ -20,9 +20,10 @@ La case cochée exige une preuve dans le code/tests ou un résultat exécuté. M
 - [ ] Contrat plugins portable, plugins métiers livrés et intégrations CI/hébergeurs.
 - [ ] Traductions XLF existantes et accessibilité des écrans portés.
 - [ ] Intégration Linux : XDG, terminal/outils PATH, askpass/ssh-agent, actions gestionnaire de fichiers.
-- [ ] Build/tests Linux automatisés ; `.deb` construit, dépendances vérifiées, installation et lancement graphique réels.
+- [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
+- [ ] CI distante, installation APT sur OS vierge et validation arm64/Wayland seul.
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
 
-Preuves actuelles : solution Linux Release sans avertissement ; noyau 45 scénarios, plugins 11 scénarios ; 58 tests Desktop couvrant disposition, palettes originales, dialogues Commit/rebase/filtre/sparse/bisect/notes, staging partiel Unicode et askpass. 72 catalogues XLF réemployés. Paquet intermédiaire 177443128 extrait, installé par DPKG dans une racine isolée et lancé sous Xvfb ; APT simulé. Reconstruction avec correctifs filtre/renommage/palette en cours. Cette preuve utilise les bibliothèques/dépendances du host ; APT sur OS vierge et CI distante non exécutés.
+Preuves actuelles : solution Linux Release sans avertissement ; noyau 45 scénarios, plugins 11 scénarios ; 58 tests Desktop couvrant disposition, palettes originales, dialogues Commit/rebase/filtre/sparse/bisect/notes, staging partiel Unicode et askpass. 72 catalogues XLF réemployés. Paquet e42bdf3dd extrait, installé par DPKG dans une racine isolée et lancé sous Xvfb ; APT simulé. Repaquetage à payload/epoch fixes identique octet par octet. Preuves générées sous `artifacts/linux/snapshots/e42bdf3dd/proofs/`. Cette preuve utilise les bibliothèques/dépendances du host ; APT sur OS vierge et CI distante non exécutés.
 
 Reste concret : dialogues historiques et raccourcis restants ; commit superprojet/branche inline, drafts/historique des messages/templates avancés/options persistées/no-verify/commit vide ; diff image/combined/range-diff et graphes très larges ; 13 plugins/CI/hébergeur restants, réécriture FindLargeFiles et chargement tiers ; préférences et intégrations Linux complètes. Aucun retrait du périmètre.

@@ -1,6 +1,6 @@
 # ADR 0004 · Préserver l'interface existante
 
-Statut : accepté, validation visuelle en cours.
+Statut : accepté ; Browse/Commit validés en clair/sombre, autres écrans en cours.
 
 Besoin explicite : garder le look & feel de Git Extensions pendant le portage Linux. Les utilisateurs doivent retrouver leurs repères et leurs gestes.
 
