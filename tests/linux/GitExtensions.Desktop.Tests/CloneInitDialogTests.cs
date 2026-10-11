@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -208,6 +209,52 @@ public class CloneInitDialogTests
         catch (IOException) when (!File.Exists(status)) { return true; }
     }
 
+    [AvaloniaTest]
+    public async Task SuggestedFolderDecodesUrlsPreservesLocalColonsAndShowsTranslatedReadableWarnings()
+    {
+        using Fixture fixture = await Fixture.CreateAsync("base\n", "base\n");
+        string root = Path.GetDirectoryName(fixture.Repository)!;
+        foreach ((string source, string expected) in new[]
+        {
+            ("https://example.invalid/mon%20d%C3%A9p%C3%B4t.git", "mon dépôt"),
+            (Path.Combine(root, "a:b.git"), "a:b"),
+            ("git@example.invalid:mon%20d%C3%A9p%C3%B4t.git", "mon dépôt"),
+            (new Uri(Path.Combine(root, "local dépôt.git")).AbsoluteUri, "local dépôt")
+        })
+        {
+            CloneDialog dialog = new(root, source);
+            dialog.Show();
+            try { Assert.That(Field<TextBox>(dialog, "CloneSubdirectory").Text, Is.EqualTo(expected)); }
+            finally { dialog.Close(); }
+        }
+        System.Globalization.CultureInfo previous = System.Globalization.CultureInfo.CurrentUICulture;
+        System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+        CloneDialog french = new(root);
+        french.Show();
+        try
+        {
+            TextBlock location = Field<TextBlock>(french, "CloneLocation");
+            Assert.That(location.Text, Does.StartWith("Le dépôt sera cloné").And.Contain("Dossier déjà existant"));
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                french.RequestedThemeVariant = theme;
+                string path = Capture(french, "classic-clone-warning-" + theme + ".png");
+                using SkiaSharp.SKBitmap bitmap = SkiaSharp.SKBitmap.Decode(path);
+                SkiaSharp.SKColor background = bitmap.GetPixel(0, 0);
+                Color foreground = ((ISolidColorBrush)location.Foreground!).Color;
+                double a = Luminance(foreground.R, foreground.G, foreground.B), b = Luminance(background.Red, background.Green, background.Blue);
+                Assert.That((Math.Max(a, b) + .05) / (Math.Min(a, b) + .05), Is.GreaterThanOrEqualTo(4.5), "Original warning contrast threshold against rendered " + theme + " background");
+            }
+        }
+        finally { french.Close(); System.Globalization.CultureInfo.CurrentUICulture = previous; }
+
+        static double Luminance(byte r, byte g, byte b)
+        {
+            static double Linear(byte channel) => channel / 255d <= .04045 ? channel / 255d / 12.92 : Math.Pow((channel / 255d + .055) / 1.055, 2.4);
+            return .2126 * Linear(r) + .7152 * Linear(g) + .0722 * Linear(b);
+        }
+    }
+
     private static CloneDialog NewClone(Fixture fixture, string name, string source)
     {
         CloneDialog dialog = new(Path.GetDirectoryName(fixture.Repository)!, source);
@@ -234,7 +281,7 @@ public class CloneInitDialogTests
         while (!done() && DateTime.UtcNow < deadline) { await Task.Delay(20); }
         Assert.That(done(), Is.True, "Native startup dialog did not finish.");
     }
-    private static void Capture(Window dialog, string filename)
+    private static string Capture(Window dialog, string filename)
     {
         dialog.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
@@ -244,5 +291,6 @@ public class CloneInitDialogTests
         string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, filename);
         frame!.Save(path);
         TestContext.AddTestAttachment(path);
+        return path;
     }
 }

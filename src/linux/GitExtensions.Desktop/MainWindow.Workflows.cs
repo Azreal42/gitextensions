@@ -33,7 +33,7 @@ public sealed partial class MainWindow
         string source = (_remotes.ItemsSource?.Cast<GitRemote>().FirstOrDefault(remote => remote.Name == "origin") ?? _remotes.ItemsSource?.Cast<GitRemote>().FirstOrDefault())?.FetchUrls.FirstOrDefault() ?? "";
         CloneDialog dialog = new(destination, source);
         await RunAsync("Clone", async _ => await dialog.ShowDialog(WorkflowOwner), requireRepository: false, refresh: false);
-        if (dialog.CreatedRepository is GitRepository cloned && await Dialogs.ConfirmAsync(this, T("Open"), T("The repository has been cloned successfully.") + "\n" + cloned.Path + "\n" + T("Do you want to open the new repository now?")))
+        if (dialog.CreatedRepository is GitRepository cloned && await Dialogs.ConfirmAsync(this, T("Open"), string.Format(System.Globalization.CultureInfo.CurrentCulture, T("The repository has been cloned successfully.\nDo you want to open the new repository \"{0}\" now?"), cloned.Path)))
         { await OpenRepositoryAsync(cloned.Path); }
     }
 

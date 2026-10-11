@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using System.Globalization;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -48,6 +49,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
         _subdirectory.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateLocation(); } };
         _bare.IsCheckedChanged += (_, _) => UpdateActions();
         _branch.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateActions(); } };
+        PropertyChanged += (_, change) => { if (change.Property == ActualThemeVariantProperty) { UpdateLocation(); } };
         ClonePreferences preferences = _preferences.Load();
         _recursive.IsChecked = preferences.InitializeSubmodules;
         _destination.Text = string.IsNullOrEmpty(destination) ? preferences.Destination : destination;
@@ -119,8 +121,8 @@ public sealed class CloneDialog : StartupRepositoryDialog
         {
             string path = Path.Combine(destination, subdirectory);
             bool exists = Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any();
-            _location.Text = T("The repository will be cloned to a new directory located here:") + "\n" + ExportDialogControls.DisplayPath(path) + "\n" + T(exists ? "(Directory already exists)" : "(New directory)");
-            if (exists) { _location.Foreground = new SolidColorBrush(Color.Parse("#d95040")); }
+            _location.Text = string.Format(CultureInfo.CurrentCulture, T("The repository will be cloned to a new directory located here:\n{0}"), ExportDialogControls.DisplayPath(path)) + "\n" + T(exists ? "(Directory already exists)" : "(New directory)");
+            if (exists) { _location.Foreground = new SolidColorBrush(ClassicTextContrast.AdaptForeground(this, Colors.Red)); }
             else { _location.Bind(TextBlock.ForegroundProperty, new DynamicResourceExtension("ClassicTextBrush")); }
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
@@ -132,8 +134,11 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private static string RepositoryName(string source)
     {
         string path = source.TrimEnd('/');
-        if (Uri.TryCreate(path, UriKind.Absolute, out Uri? uri) && uri.Scheme != "file") { path = uri.AbsolutePath.TrimEnd('/'); }
-        int split = Math.Max(path.LastIndexOf('/'), path.LastIndexOf(':'));
+        if (!Path.IsPathFullyQualified(path) && Uri.TryCreate(path, UriKind.Absolute, out Uri? uri) && uri.Scheme is "http" or "https" or "ssh" or "git" or "file" or "ftp" or "ftps")
+        { path = System.Net.WebUtility.UrlDecode(uri.AbsolutePath).TrimEnd('/'); }
+        else if (!Path.IsPathFullyQualified(path) && path.IndexOf(':') is int colon && colon > 0 && !path[..colon].Contains('/'))
+        { path = System.Net.WebUtility.UrlDecode(path[(colon + 1)..]); }
+        int split = path.LastIndexOf('/');
         string name = path[(split + 1)..];
         return name.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
     }
