@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using GitExtensions.Desktop.Controls;
+using GitExtensions.Linux.Plugins;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -12,15 +13,16 @@ public sealed class BlameDialog : RepositoryDialog
     private readonly CheckBox _whitespace = new() { Name = "BlameIgnoreWhitespace" };
     private readonly CheckBox _moves = new() { Name = "BlameDetectMoves" };
     private readonly CheckBox _copies = new() { Name = "BlameDetectCopies" };
-    private readonly BlameView _view = new() { Name = "BlameView" };
+    private readonly BlameView _view;
     private readonly TextBox _commit = new() { Name = "BlameCommitInfo", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private readonly FileHistoryContentView _changes = new() { Name = "BlameChanges" };
     private readonly TabControl _tabs = new() { Name = "BlameTabs" };
     private readonly int _initialLine;
     public GitFileBlame? LastBlame { get; private set; }
 
-    public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1) : base(repository, "Blame")
+    public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1, IGourceAvatarProvider? avatarProvider = null) : base(repository, "Blame")
     {
+        _view = new(avatarProvider) { Name = "BlameView" };
         Width = 1100; Height = 760; MinWidth = 740; MinHeight = 480;
         _file.Text = path; _revision.Text = revision ?? ""; _initialLine = initialLine;
         Title = T("Blame") + " (" + path + ")";
@@ -50,6 +52,7 @@ public sealed class BlameDialog : RepositoryDialog
         _tabs.SelectedIndex = 0; Grid.SetRow(_tabs, 2); content.Children.Add(_tabs); Root.Children.Add(content);
         _view.SelectedLineChanged += async (_, _) => { if (!IsBusy) { await UpdateInfoAsync(); } };
         Track(_file, _revision, _whitespace, _moves, _copies, _view, _tabs);
+        Closing += (_, _) => _view.CancelAvatarLoading();
         Closed += (_, _) => { _view.Dispose(); _changes.Dispose(); };
     }
 
@@ -78,12 +81,20 @@ public sealed class BlameDialog : RepositoryDialog
     private Task NavigateAsync(bool previous) => RunAsync("Blame", async token =>
     {
         GitFileBlameLine selected = _view.SelectedLine ?? throw new InvalidOperationException(T("Select a line first."));
-        string hash = previous ? selected.PreviousHash ?? throw new InvalidOperationException(T("This line has no previous revision.")) : selected.Line.Hash;
+        string hash = selected.Line.Hash;
         if (hash.All(character => character == '0')) { throw new InvalidOperationException(T("This line has not been committed yet.")); }
-        string path = previous ? selected.PreviousPath ?? selected.OriginalPath : selected.OriginalPath;
-        LastBlame = await Repository.GetFileBlameAsync(path, hash, new(_whitespace.IsChecked == true, _moves.IsChecked == true, _copies.IsChecked == true), token);
+        string path = selected.OriginalPath;
+        int position = selected.Line.OriginalLine;
+        GitFileBlameOptions options = new(_whitespace.IsChecked == true, _moves.IsChecked == true, _copies.IsChecked == true);
+        if (previous)
+        {
+            GitBlamePreviousRevision target = await Repository.GetBlamePreviousRevisionAsync(selected, options, cancellationToken: token)
+                ?? throw new InvalidOperationException(T("This line has no previous revision."));
+            hash = target.Revision; path = target.Path; position = target.Line;
+        }
+        LastBlame = await Repository.GetFileBlameAsync(path, hash, options, token);
         _file.Text = path; _revision.Text = hash;
-        _view.SetBlame(LastBlame, Math.Clamp(selected.Line.OriginalLine, 1, Math.Max(1, LastBlame.Lines.Count)));
+        _view.SetBlame(LastBlame, Math.Clamp(position, 1, Math.Max(1, LastBlame.Lines.Count)));
         _tabs.SelectedIndex = 0;
         await SetCommitInfoAsync(_view.SelectedLine, token);
         Title = T("Blame") + " (" + path + ")";

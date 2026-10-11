@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net.Http;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -6,9 +7,12 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 using GitExtensions.Linux;
+using GitExtensions.Linux.Desktop;
+using GitExtensions.Linux.Plugins;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -17,6 +21,12 @@ public sealed class BlameView : UserControl, IDisposable
     private readonly FileHistoryContentView _content = new() { Name = "BlameCode" };
     private readonly AuthorMargin _authors;
     private readonly Bitmap? _avatar;
+    private readonly IGourceAvatarProvider _avatarProvider;
+    private readonly Dictionary<string, Bitmap> _avatars = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CancellationTokenSource _lifetime = new();
+    private CancellationTokenSource? _avatarOperation;
+    private bool _disposed;
+    private bool _showAvatar = true;
     private GitFileBlame? _blame;
     private IBrush[] _ages = [];
     private int _selectedLine;
@@ -27,10 +37,23 @@ public sealed class BlameView : UserControl, IDisposable
     public bool ShowAuthor { get; set; } = true;
     public bool ShowDate { get; set; } = true;
     public bool ShowOriginalPath { get; set; } = true;
-    public bool ShowAvatar { get; set; } = true;
-
-    public BlameView()
+    public static IGourceAvatarProvider DefaultAvatarProvider { get; set; } = new GourceAvatarProvider();
+    public Task AvatarLoading { get; private set; } = Task.CompletedTask;
+    public bool ShowAvatar
     {
+        get => _showAvatar;
+        set
+        {
+            if (_showAvatar == value) { return; }
+            _showAvatar = value;
+            StartAvatarLoading();
+            RefreshDisplay();
+        }
+    }
+
+    public BlameView(IGourceAvatarProvider? avatarProvider = null)
+    {
+        _avatarProvider = avatarProvider ?? DefaultAvatarProvider;
         Uri image = new("avares://GitExtensions/Assets/Icons/User80.png");
         if (AssetLoader.Exists(image)) { using Stream stream = AssetLoader.Open(image); _avatar = new Bitmap(stream); }
         _authors = new(this) { Name = "BlameAuthorMargin", Width = 290 };
@@ -38,10 +61,14 @@ public sealed class BlameView : UserControl, IDisposable
         TextView.Editor.TextArea.TextView.BackgroundRenderers.Add(new CommitBackground(this));
         TextView.Editor.TextArea.Caret.PositionChanged += (_, _) => SelectLine(TextView.Editor.TextArea.Caret.Line, moveCaret: false);
         ActualThemeVariantChanged += (_, _) => RefreshDisplay();
+        AttachedToVisualTree += (_, _) => StartAvatarLoading();
+        DetachedFromVisualTree += (_, _) => CancelAvatarLoading();
         Content = _content;
     }
     public void SetBlame(GitFileBlame blame, int initialLine = 1)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        CancelAvatarLoading();
         _blame = blame;
         DateTimeOffset now = DateTimeOffset.UtcNow;
         long oldest = Math.Min(now.AddYears(-3).Ticks, blame.Lines.Count == 0 ? now.AddYears(-3).Ticks : blame.Lines.Min(item => item.Line.AuthoredAt.Ticks));
@@ -50,6 +77,7 @@ public sealed class BlameView : UserControl, IDisposable
         _content.ShowFile(blame.Path, blame.Bytes);
         SelectLine(Math.Clamp(initialLine, 1, Math.Max(1, blame.Lines.Count)));
         RefreshDisplay();
+        StartAvatarLoading();
     }
     public void SelectLine(int number, bool moveCaret = true)
     {
@@ -72,7 +100,55 @@ public sealed class BlameView : UserControl, IDisposable
     private IBrush GroupBrush => Brush.Parse(ActualThemeVariant == ThemeVariant.Dark ? "#414141" : "#e3e3e3");
     private bool IsSelected(GitFileBlameLine line) => SelectedLine?.Line.Hash == line.Line.Hash;
     private static readonly IBrush[] Ages = new[] { "#f7fcf5", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#00441b" }.Select(Brush.Parse).ToArray();
-    public void Dispose() { _content.Dispose(); _avatar?.Dispose(); }
+    public void CancelAvatarLoading() { _avatarOperation?.Cancel(); _avatarOperation = null; }
+    private void StartAvatarLoading()
+    {
+        CancelAvatarLoading();
+        if (_disposed || !_showAvatar || _blame is null || this.GetVisualRoot() is null) { return; }
+        CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _avatarOperation = operation;
+        int size = Math.Max(1, (int)Math.Ceiling(TextView.Editor.TextArea.TextView.DefaultLineHeight) + 1);
+        GitBlameLine[] authors = _blame.Lines.Select(line => line.Line)
+            .Where(line => !line.Hash.All(character => character == '0') && !string.IsNullOrWhiteSpace(line.AuthorEmail))
+            .DistinctBy(line => line.AuthorEmail.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(line => !_avatars.ContainsKey(line.AuthorEmail.Trim())).ToArray();
+        AvatarLoading = LoadAvatarsAsync(authors, size, operation);
+    }
+    private async Task LoadAvatarsAsync(GitBlameLine[] authors, int size, CancellationTokenSource operation)
+    {
+        CancellationToken token = operation.Token;
+        try { await Task.WhenAll(authors.Select(LoadAsync)); }
+        finally
+        {
+            if (_avatarOperation == operation) { _avatarOperation = null; }
+            operation.Dispose();
+        }
+        async Task LoadAsync(GitBlameLine author)
+        {
+            try
+            {
+                byte[]? bytes = await _avatarProvider.GetAvatarPngAsync(author.AuthorEmail, author.AuthorName, size, token);
+                token.ThrowIfCancellationRequested();
+                if (bytes is null || _disposed) { return; }
+                using MemoryStream stream = new(bytes, writable: false);
+                Bitmap bitmap = new(stream);
+                if (_avatars.TryGetValue(author.AuthorEmail.Trim(), out Bitmap? previous)) { previous.Dispose(); }
+                _avatars[author.AuthorEmail.Trim()] = bitmap;
+                _authors.InvalidateVisual();
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException or HttpRequestException)
+            { /* An unavailable avatar must keep User80 without breaking the Git view. */ }
+        }
+    }
+    public void Dispose()
+    {
+        if (_disposed) { return; }
+        _disposed = true; _lifetime.Cancel(); CancelAvatarLoading();
+        _content.Dispose(); _avatar?.Dispose();
+        foreach (Bitmap avatar in _avatars.Values) { avatar.Dispose(); }
+        _avatars.Clear(); _lifetime.Dispose();
+    }
 
     private sealed class AuthorMargin(BlameView owner) : AbstractMargin
     {
@@ -95,8 +171,9 @@ public sealed class BlameView : UserControl, IDisposable
                 if (!first) { continue; }
                 double textY = visual.GetTextLineVisualYPosition(visual.TextLines[0], VisualYPosition.TextTop) - TextView.VerticalOffset;
                 double avatarWidth = owner.ShowAvatar ? Math.Min(visual.Height, 20) : 0;
-                if (owner.ShowAvatar && owner._avatar is not null)
-                { context.DrawImage(owner._avatar, new Rect(owner._avatar.Size), new Rect(6, top, avatarWidth, avatarWidth)); }
+                Bitmap? avatar = owner._avatars.GetValueOrDefault(line.Line.AuthorEmail.Trim()) ?? owner._avatar;
+                if (owner.ShowAvatar && avatar is not null)
+                { context.DrawImage(avatar, new Rect(avatar.Size), new Rect(6, top, avatarWidth, avatarWidth)); }
                 string text = string.Join(" - ", new[]
                 {
                     owner.ShowDate ? line.Line.AuthoredAt.ToString("d", CultureInfo.CurrentCulture) : null,
