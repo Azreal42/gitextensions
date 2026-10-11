@@ -37,15 +37,17 @@
 | Fermer une ancienne fenêtre écrase le nouveau MERGE_MSG | Message Git créé après ouverture, baseline éditeur incomplet | Conserver le texte affiché après template/initialisation ; merge externe, fermeture/réouverture et dépôt retiré testés. Résolu. |
 | Icônes de la barre Commit absentes malgré Icon non null | Template Fluent ignore Icon pour les éléments de menu supérieurs | Dessiner les PNG originaux dans le header ; captures rendues claire/sombre vérifiées. Résolu. |
 | Capture dite française garde les menus anglais | Culture modifiée dans une factory async, sans propagation à l'appelant | Fixer la culture dans le test avant construction ; vérifier le popup effectivement rendu. Résolu. |
-
 | Confirmation de commit vide échoue puis tests suivants signalent fonts:SystemFonts | TemplateBinding C# enregistré à LocalValue ; exception d'ouverture masquée par le teardown Avalonia | Lier à BindingPriority.Template ; reproductions et workflows Commit passent sans modifier l'isolation ni les assertions. Résolu. |
 | Chevrons et radios Clone tronqués malgré champs de 24 px | Marges et dimensions minimales internes Fluent plus grandes que le contrôle | Ressources de hauteur compactes et glyphe ComboBox centré ; limites mesurées et captures réellement rendues claire/sombre. Résolu. |
 | Validation console annonce succès sans exécuter les scénarios | dotnet test ne lance pas les projets console IsTestProject=false | Exécuter Core et Plugins avec dotnet run --no-build --no-restore ; compter les scénarios dans leurs logs. Résolu. |
-
-| Selection Filter change le périmètre de Stage all et masque des fichiers | Recherche littérale confondue avec la sélection regex du contrôle original | Combo éditable/MRU de session, regex sélectionnant Unstaged ; listes et Stage all restent complets. Scénarios Git réels et captures vérifiés. Résolu. |
+| Selection Filter change le périmètre de Stage all et masque des fichiers | Recherche littérale confondue avec la sélection regex du contrôle original | Combo éditable/MRU de session, regex sélectionnant les feuilles Unstaged affichées ; listes et portée de Stage all restent indépendantes de ce filtre de sélection. Scénarios Git réels et captures vérifiés. Résolu. |
 | Alt est ignoré dans les premières vérifications de dialogue | Aucun enfant ne détient le focus après Show headless ; le handler natif exige un descendant focalisé | Poser le focus initial original après initialisation, sans reprendre le focus déjà acquis ; tester ensuite les déplacements avec de vrais événements Alt. Résolu. |
-
-Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
 | Série à trois sélections inéligible et bornes à quatre perdues | Tri par graphe au lieu de l’ordre choisi ; les bornes calculées par l’original n’étaient pas transmises | Garder primaire/ordre et bases explicites ; comparer à Git brut et vérifier F5. Résolu. |
 | Refresh revient du range-diff à un fichier ordinaire | Groupe actif effacé avant reconstruction | Préserver le groupe et l’ordre des sélections ; scénarios à deux, trois et quatre révisions. Résolu. |
 | Un fichier ressemblant à un patch peut être interprété comme un diff | Aperçu brut envoyé à l’autodétection/parsing des patches | Mode texte explicite et contrat d’indexabilité ; Git/UI vérifient que l’autre fichier reste intact. Résolu. |
+| Regex invalide signalée mais champ éditable sans couleur de validation | Fond interne Fluent indépendant du ComboBox | Reprendre le fond du vrai éditeur et libérer le binding neutre ; pixels clairs/sombres vérifiés. Résolu. |
+| Icônes encore affichées après libération de leur bitmap | Sources d’images gardées par les templates | Détacher les sources avant libération et annuler les callbacks du contrôle ; cycle de rendu/fermeture testé. Résolu. |
+| Menu Settings présent dans les données mais invisible à l’ouverture | MenuItems parentés par un holder logique invisible | Un seul MenuFlyout visible ; vrai Settings/Toolbar, clics et captures testés. Résolu. |
+| Refresh des groupes de diff échoue après création de l’arbre | Nom du contrôle réassigné après application des styles Avalonia | Fixer le nom lors de la construction, dans le composant partagé ; supprimer la seconde affectation de l’hôte. Les 31 parcours Main concernés passent. Résolu. |
+
+Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
