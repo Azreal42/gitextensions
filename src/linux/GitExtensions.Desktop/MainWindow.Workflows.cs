@@ -129,29 +129,35 @@ public sealed partial class MainWindow
 
     private async Task CreateBranchAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Create branch", ("Name", ""), ("Start point (blank for HEAD)", ""));
-        if (values is not null) { await RunAsync("Create branch", r => r.CreateBranchAsync(values[0], Optional(values[1]), cancellationToken: Token)); }
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new CreateBranchDialog(_repository, CurrentRevision));
     }
 
     private async Task CheckoutAsync()
     {
-        GitReference reference = SelectedReference();
-        if (reference.IsRemote)
-        {
-            string[]? values = await Dialogs.PromptAsync(this, "Track remote branch", ("Local branch", reference.ShortName[(reference.ShortName.IndexOf('/') + 1)..]));
-            if (values is not null) { await RunAsync("Track branch", r => ExecuteAsync(r, "switch", "-c", Value(values[0]), "--track", reference.ShortName)); }
-            return;
-        }
-
-        await RunAsync("Checkout", r => r.CheckoutAsync(reference.IsTag ? reference.Hash : reference.ShortName, detached: reference.IsTag, cancellationToken: Token));
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new CheckoutBranchDialog(_repository, _references.SelectedItem as GitReference));
     }
 
     private async Task DeleteReferenceAsync()
     {
+        if (_repository is null || _busy) { return; }
         GitReference reference = SelectedReference();
         if (reference.IsRemote) { _state.Text = "Remote deletion requires Push with an explicit refspec"; return; }
-        if (!await Dialogs.ConfirmAsync(this, "Delete reference", $"Delete {reference.ShortName}? Unmerged local branches will be preserved.")) { return; }
-        await RunAsync("Delete reference", r => reference.IsTag ? r.DeleteTagAsync(reference.ShortName, Token) : r.DeleteBranchAsync(reference.ShortName, cancellationToken: Token));
+        await ShowRepositoryDialogAsync(reference.IsTag ? new DeleteTagDialog(_repository, reference.ShortName) : new DeleteBranchDialog(_repository, [reference.ShortName]));
+    }
+
+    private async Task DeleteBranchesAsync()
+    {
+        if (_repository is null || _busy) { return; }
+        string[] selected = _references.SelectedItem is GitReference { IsBranch: true } reference ? [reference.ShortName] : [];
+        await ShowRepositoryDialogAsync(new DeleteBranchDialog(_repository, selected));
+    }
+
+    private async Task DeleteTagsAsync()
+    {
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new DeleteTagDialog(_repository, (_references.SelectedItem as GitReference) is { IsTag: true } reference ? reference.ShortName : null));
     }
 
     private async Task RenameBranchAsync()
@@ -164,8 +170,8 @@ public sealed partial class MainWindow
 
     private async Task CreateTagAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Create tag", ("Name", ""), ("Revision", "HEAD"), ("Annotation (blank for lightweight tag)", ""));
-        if (values is not null) { await RunAsync("Create tag", r => r.CreateTagAsync(values[0], Optional(values[1]), Optional(values[2]), Token)); }
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new CreateTagDialog(_repository, CurrentRevision));
     }
 
     private async Task MergeAsync()

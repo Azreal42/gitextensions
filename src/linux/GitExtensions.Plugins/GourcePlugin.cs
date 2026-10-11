@@ -79,10 +79,15 @@ public sealed class GourcePlugin(IGourceAvatarProvider? avatars = null, string? 
             IEnumerable<string[]> authors = log.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Split('\0', 2))
                 .Where(fields => fields.Length == 2 && !string.IsNullOrWhiteSpace(fields[0]) && !string.IsNullOrWhiteSpace(fields[1]))
                 .GroupBy(fields => fields[1], StringComparer.Ordinal).Select(group => group.First());
-            foreach (string[] author in authors)
+            using SemaphoreSlim downloads = new(10);
+            await Task.WhenAll(authors.Select(ExportAuthorAsync)).ConfigureAwait(false);
+            return directory;
+
+            async Task ExportAuthorAsync(string[] author)
             {
                 string name = author[1];
-                if (name.Contains('/') || name.Contains('\\') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { continue; }
+                if (name.Contains('/') || name.Contains('\\') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) { return; }
+                await downloads.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
                     byte[]? png = await avatars.GetAvatarPngAsync(author[0], name, 90, cancellationToken).ConfigureAwait(false);
@@ -90,8 +95,8 @@ public sealed class GourcePlugin(IGourceAvatarProvider? avatars = null, string? 
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch (Exception) { /* A missing avatar must not prevent Gource from starting. */ }
+                finally { downloads.Release(); }
             }
-            return directory;
         }
         catch { Directory.Delete(directory, recursive: true); throw; }
     }

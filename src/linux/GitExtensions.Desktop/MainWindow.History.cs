@@ -10,6 +10,7 @@ public sealed partial class MainWindow
 
     private Task SetHistoryScopeAsync(bool all)
     {
+        _navigationRevisionFilter = null;
         _historyQuery = _historyQuery with { All = all, Revision = all ? null : "HEAD" };
         _historyRevision.Text = _historyQuery.Revision;
         return ReloadHistoryAsync();
@@ -21,6 +22,7 @@ public sealed partial class MainWindow
         HistoryFilterDialog dialog = new(_historyQuery with { Revision = string.IsNullOrWhiteSpace(_historyRevision.Text) ? null : _historyRevision.Text });
         GitLogQuery? query = await dialog.ShowDialog<GitLogQuery?>(this);
         if (query is null) { return; }
+        _navigationRevisionFilter = null;
         _historyQuery = query;
         _historyRevision.Text = query.Revision;
         await ReloadHistoryAsync();

@@ -49,6 +49,7 @@ public sealed partial class MainWindow : Window
     private GitLogQuery _historyQuery = new();
     private int _historyWindow;
     private bool _historyHasMore;
+    private string? _navigationRevisionFilter;
 
     internal bool IsBusy => _busy;
     internal Exception? LastException { get; private set; }
@@ -310,6 +311,7 @@ public sealed partial class MainWindow : Window
             await candidate.GetStatusAsync(Token);
             await _backgroundFetch.UnregisterAsync();
             _repository = candidate;
+            _navigationRevisionFilter = null;
             _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
             _historyWindow = _historyQuery.Count;
             _historyRevision.Text = null;
@@ -345,6 +347,13 @@ public sealed partial class MainWindow : Window
             IReadOnlyList<GitReference> references = await repository.GetReferencesAsync(Token);
             _references.ItemsSource = references;
             _references.SelectedItem = references.FirstOrDefault(reference => reference.Name == selectedReferenceName);
+            if (_navigationRevisionFilter is string navigationFilter && _historyRevision.Text == navigationFilter && !references.Any(reference => reference.Name == navigationFilter))
+            {
+                _navigationRevisionFilter = null;
+                _historyRevision.Text = null;
+                _historyQuery = _historyQuery with { All = true, Revision = null };
+                _historyWindow = _historyQuery.Count;
+            }
             GitLogQuery query = _historyQuery with
             {
                 Count = _historyWindow + 1,
@@ -437,7 +446,7 @@ public sealed partial class MainWindow : Window
     }
 
     private static bool RequiresWorktree(string label) => label.StartsWith("Stage ", StringComparison.Ordinal) || label.StartsWith("Unstage ", StringComparison.Ordinal)
-        || label is "Commit" or "Commit…" or "Checkout" or "Checkout revision" or "Merge" or "Merge…" or "Rebase onto" or "Rebase…" or "Interactive rebase…"
+        || label is "Commit" or "Commit…" or "Checkout" or "Checkout branch…" or "Checkout revision" or "Merge" or "Merge…" or "Rebase onto" or "Rebase…" or "Interactive rebase…"
             or "Reset…" or "Reset branch…" or "Cherry-pick" or "Revert" or "Revert commit" or "Discard…" or "Resolve…" or "Pull" or "Pull…";
 
     private async Task ExecuteAsync(GitRepository repository, params string[] arguments)

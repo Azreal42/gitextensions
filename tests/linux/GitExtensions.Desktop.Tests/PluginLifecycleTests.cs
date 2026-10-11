@@ -130,28 +130,56 @@ public class PluginLifecycleTests
         Environment.SetEnvironmentVariable("GIT_CONFIG_GLOBAL", isolatedGlobal);
         try
         {
-            PluginDialog dialog = await OpenPluginAsync(fixture.Window, new ProxySwitcherPlugin().Descriptor.Name);
+            ProxySwitcherDialog dialog = await OpenProxyAsync();
+            Field<Button>(dialog, "ProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await UntilAsync(() => Task.FromResult(dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Any()));
+            ProxySwitcherSettingsDialog settings = dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Single();
             const string secret = "proxy-secret-été";
-            TextBox password = Field<TextBox>(dialog, "password");
+            TextBox password = Field<TextBox>(settings, "ProxyPassword");
             Assert.That(password.PasswordChar, Is.Not.EqualTo('\0'), "The actual Proxy input must mask typed credentials.");
-            Field<ComboBox>(dialog, "operation").SelectedItem = "set";
-            Field<TextBox>(dialog, "host").Text = "local.example.invalid";
-            Field<TextBox>(dialog, "port").Text = "8080";
-            Field<TextBox>(dialog, "username").Text = "alice";
+            Field<TextBox>(settings, "ProxyHost").Text = "local.example.invalid";
+            Field<TextBox>(settings, "ProxyPort").Text = "8080";
+            Field<TextBox>(settings, "ProxyUsername").Text = "alice";
             password.Text = secret;
-            Field<CheckBox>(dialog, "global").IsChecked = false;
-            await ApplyAsync(dialog);
+            Field<Button>(settings, "SaveProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await UntilAsync(() => Task.FromResult(dialog.CurrentOptions.Host == "local.example.invalid"));
+            Field<CheckBox>(dialog, "ApplyGlobally_CheckBox").IsChecked = false;
+            Field<Button>(dialog, "SetProxy_Button").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await UntilAsync(() => Task.FromResult(!dialog.IsBusy));
+            Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(await LocalConfigAsync(fixture.Git, fixture.Repository, "http.proxy"), Is.EqualTo("alice:" + secret + "@local.example.invalid:8080"));
             Assert.That(await File.ReadAllTextAsync(isolatedGlobal), Is.EqualTo("[http]\n\tproxy = global.example.invalid:3128\n"),
                 "Local Proxy setting changed global configuration.");
+            Assert.That(Field<TextBox>(dialog, "LocalHttpProxy_TextBox").Text, Is.EqualTo("alice:****@local.example.invalid:8080"));
+            Assert.That(Field<TextBox>(dialog, "GlobalHttpProxy_TextBox").Text, Is.EqualTo("global.example.invalid:3128"));
+            Assert.That(dialog.CurrentValues.Values.Any(value => value?.Contains(secret, StringComparison.Ordinal) == true), Is.False);
+            dialog.Close();
+            await UntilAsync(() => Task.FromResult(!fixture.Window.OwnedWindows.Contains(dialog) && !fixture.Window.IsBusy
+                && new PreferencesStore().Load().PluginSettings.GetValueOrDefault(new ProxySwitcherPlugin().Descriptor.Id.ToString())?.GetValueOrDefault("host") == "local.example.invalid"));
             string preferences = await File.ReadAllTextAsync(new PreferencesStore().FilePath);
             Assert.That(preferences, Does.Not.Contain(secret).And.Not.Contain("\"password\""));
-            Assert.That(dialog.LastResult!.Table!.Rows.SelectMany(row => row.Cells).Any(cell => cell.Contains(secret, StringComparison.Ordinal)), Is.False);
-            await ClosePluginAsync(fixture.Window, dialog);
-            PluginDialog reloaded = await OpenPluginAsync(fixture.Window, new ProxySwitcherPlugin().Descriptor.Name);
-            Assert.That(Field<TextBox>(reloaded, "password").Text, Is.Null.Or.Empty);
-            Assert.That(Field<TextBox>(reloaded, "host").Text, Is.EqualTo("local.example.invalid"));
-            await ClosePluginAsync(fixture.Window, reloaded);
+            ProxySwitcherDialog reloaded = await OpenProxyAsync();
+            Assert.That(reloaded.CurrentOptions.Password, Is.Empty);
+            Assert.That(reloaded.CurrentOptions.Host, Is.EqualTo("local.example.invalid"));
+            Field<Button>(reloaded, "ProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await UntilAsync(() => Task.FromResult(reloaded.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Any()));
+            ProxySwitcherSettingsDialog reloadedSettings = reloaded.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Single();
+            Assert.That(Field<TextBox>(reloadedSettings, "ProxyPassword").Text, Is.Null.Or.Empty);
+            Field<Button>(reloadedSettings, "CancelProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await UntilAsync(() => Task.FromResult(!reloadedSettings.IsVisible));
+            reloaded.Close();
+            await UntilAsync(() => Task.FromResult(!fixture.Window.OwnedWindows.Contains(reloaded) && !fixture.Window.IsBusy));
+            Assert.That(fixture.Window.LastException, Is.Null, fixture.Window.LastException?.ToString());
+
+            async Task<ProxySwitcherDialog> OpenProxyAsync()
+            {
+                MenuItem plugins = fixture.Window.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Header as string == "Plugins");
+                MenuItem item = plugins.Items.OfType<MenuItem>().Single(item => item.Header as string == new ProxySwitcherPlugin().Descriptor.Name);
+                Assert.That(item.IsEnabled, Is.True); Assert.That(item.Icon, Is.Not.Null);
+                plugins.IsSubMenuOpen = true; item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); plugins.IsSubMenuOpen = false;
+                await UntilAsync(() => Task.FromResult(fixture.Window.OwnedWindows.OfType<ProxySwitcherDialog>().Any(candidate => !candidate.IsBusy)));
+                return fixture.Window.OwnedWindows.OfType<ProxySwitcherDialog>().Single();
+            }
         }
         finally { Environment.SetEnvironmentVariable("GIT_CONFIG_GLOBAL", previousGlobal); }
     }

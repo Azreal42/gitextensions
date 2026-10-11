@@ -50,6 +50,20 @@ public sealed partial class MainWindow
                 await dialog.ShowDialog(this);
                 SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
             }
+            else if (plugin is ProxySwitcherPlugin)
+            {
+                ProxySwitcherDialog dialog = new(_repository, values);
+                dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+                await dialog.ShowDialog(this);
+                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
+            }
+            else if (plugin is GourcePlugin)
+            {
+                GourceDialog dialog = new(_repository, values);
+                dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+                await dialog.ShowDialog(this);
+                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
+            }
             else
             {
                 PluginDialog dialog = new(_repository, plugin, values, async (settings, token) =>

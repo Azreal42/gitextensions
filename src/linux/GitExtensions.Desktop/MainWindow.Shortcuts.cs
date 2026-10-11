@@ -104,6 +104,8 @@ public sealed partial class MainWindow
     {
         "Open repository…" => new(Key.O, KeyModifiers.Control),
         "Commit…" => new(Key.Space, KeyModifiers.Control),
+        "Create branch…" => new(Key.B, KeyModifiers.Control),
+        "Create tag…" => new(Key.T, KeyModifiers.Control),
         "Merge…" => new(Key.M, KeyModifiers.Control),
         "Rebase…" => new(Key.E, KeyModifiers.Control | KeyModifiers.Shift),
         "Pull…" => new(Key.Down, KeyModifiers.Control),

@@ -68,6 +68,7 @@ public sealed partial class MainWindow
             if (item.Tag is GitReference reference)
             {
                 _references.SelectedItem = reference;
+                _navigationRevisionFilter = reference.Name;
                 _historyRevision.Text = reference.Name;
                 await ReloadHistoryAsync();
             }
@@ -96,6 +97,10 @@ public sealed partial class MainWindow
         toolbar.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicBorderBrush"));
         top.Children.Add(toolbar);
         _historyRevision.Height = 24;
+        _historyRevision.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == TextBox.TextProperty && _historyRevision.Text != _navigationRevisionFilter) { _navigationRevisionFilter = null; }
+        };
         _historyMore = Button("Load more", LoadMoreHistoryAsync);
         _historyMore.IsVisible = false;
         top.Children.Add(Row(new TextBlock { Text = T("Branches:"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0) },
@@ -192,7 +197,7 @@ public sealed partial class MainWindow
             MenuGroup("File", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), MenuAction("Close", () => { Close(); return Task.CompletedTask; })),
             MenuGroup("Dashboard", MenuAction("Recent repositories", () => { _recent.IsDropDownOpen = true; return Task.CompletedTask; })),
             MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
-            MenuGroup("Commands", MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
+            MenuGroup("Commands", MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
             MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Concat(LifecycleSettingsPlugins()).Select(PluginMenuItem).ToArray()),
             MenuGroup("Tools", MenuAction("Settings…", () => ShowWorkflowAsync("Configuration")), MenuAction("Terminal", OpenTerminalAsync), MenuAction("Theme", ChangeThemeAsync), MenuAction("Show left panel", ToggleNavigationAsync)),
@@ -208,9 +213,14 @@ public sealed partial class MainWindow
         if (AssetLoader.Exists(uri)) { using Stream stream = AssetLoader.Open(uri); item.Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16 }; }
         return item;
     }
-    private MenuItem MenuAction(string header, Func<Task> action)
+    private MenuItem MenuAction(string header, Func<Task> action, string? icon = null)
     {
         MenuItem item = new() { Header = T(header), InputGesture = BrowserGesture(header), Tag = RequiresWorktree(header) };
+        if (icon is not null)
+        {
+            using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + icon));
+            item.Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16 };
+        }
         _actionMenus.Add(item);
         item.Click += async (_, _) => { try { await action(); } catch (Exception exception) { AppendOutput(exception.Message); } };
         return item;
