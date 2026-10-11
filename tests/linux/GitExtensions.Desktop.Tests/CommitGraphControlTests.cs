@@ -13,6 +13,28 @@ namespace GitExtensions.Desktop.Tests;
 public class CommitGraphControlTests
 {
     [AvaloniaTest]
+    public void ChangingThemeRedrawsReferenceBadgesWithTheirOriginalColors()
+    {
+        CommitGraph graph = new()
+        {
+            Commits = [Commit("HEAD")], References = [new("refs/heads/main", "HEAD", null, true)], Width = 180
+        };
+        Window window = new() { Width = 210, Height = 80, Content = graph, RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light };
+        try
+        {
+            window.Show();
+            using Avalonia.Media.Imaging.WriteableBitmap? light = window.CaptureRenderedFrame();
+            Assert.That(light, Is.Not.Null);
+            AssertContains(light!, Color.Parse("#008000"));
+            window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            using Avalonia.Media.Imaging.WriteableBitmap? dark = window.CaptureRenderedFrame();
+            Assert.That(dark, Is.Not.Null);
+            AssertContains(dark!, Color.Parse("#7FE28A"));
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaTest]
     public void MergeGraphRendersReferencesAndScrollsWithoutChangingRowHeight()
     {
         GitCommit[] commits =
@@ -59,5 +81,23 @@ public class CommitGraphControlTests
         byte[] data = new byte[pixels.RowBytes * pixels.Size.Height];
         Marshal.Copy(pixels.Address, data, 0, data.Length);
         return data;
+    }
+
+    private static void AssertContains(Avalonia.Media.Imaging.WriteableBitmap bitmap, Color color)
+    {
+        using Avalonia.Platform.ILockedFramebuffer pixels = bitmap.Lock();
+        byte[] data = new byte[pixels.RowBytes * pixels.Size.Height];
+        Marshal.Copy(pixels.Address, data, 0, data.Length);
+        bool bgra = pixels.Format == Avalonia.Platform.PixelFormat.Bgra8888;
+        int count = 0;
+        for (int y = 0; y < pixels.Size.Height; y++)
+        {
+            for (int x = 0; x < pixels.Size.Width; x++)
+            {
+                int offset = y * pixels.RowBytes + x * 4;
+                if (data[offset] == (bgra ? color.B : color.R) && data[offset + 1] == color.G && data[offset + 2] == (bgra ? color.R : color.B) && data[offset + 3] == 255) { count++; }
+            }
+        }
+        Assert.That(count, Is.GreaterThan(0), "Reference badge text must be redrawn in its original theme color (thin antialiased borders have partial alpha).");
     }
 }

@@ -17,7 +17,7 @@ The published dependency metadata and notices are copied from the NuGet cache.
 `verify-installed-deb.sh` verifies installation and launch in an isolated dpkg
 root using `fakeroot` and the host's dependency status.
 
-Targets: Debian 12+ and Ubuntu 24.04+, amd64 or arm64, with Git 2.36+. The package includes .NET;
+Targets: Debian 12+ and Ubuntu 24.04+, amd64 or arm64, with Git 2.38+. The package includes .NET;
 APT installs Git and native dependencies. The GUI needs X11 or XWayland. Install
 `xvfb` and `xauth` for verification outside a desktop session.
 

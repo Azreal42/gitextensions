@@ -21,9 +21,13 @@ mkdir -p "$repo_root/artifacts/linux"
 work_dir=$(mktemp -d "$repo_root/artifacts/linux/.install-check.XXXXXXXX")
 trap 'rm -rf -- "$work_dir"' EXIT
 install_root="$work_dir/root"
-install -d "$install_root/var/lib/dpkg"
+install -d "$install_root/var/lib/dpkg/info" "$install_root/var/log"
 cp /var/lib/dpkg/status "$install_root/var/lib/dpkg/status"
-fakeroot dpkg --root "$install_root" --force-bad-path --no-triggers --install "$package"
+# Copy only installed-file metadata: no maintainer scripts, hooks or triggers.
+find /var/lib/dpkg/info -maxdepth 1 -type f -name '*.list' \
+    -exec cp --target-directory="$install_root/var/lib/dpkg/info" -- {} +
+fakeroot dpkg --root "$install_root" --log "$install_root/var/log/dpkg.log" \
+    --force-bad-path --no-triggers --install "$package"
 status=$(dpkg-query --admindir "$install_root/var/lib/dpkg" --show --showformat='${Status}' gitextensions)
 [[ "$status" == 'install ok installed' ]] || fail "Package was not configured successfully: $status"
 "$install_root/usr/bin/gitextensions" --version

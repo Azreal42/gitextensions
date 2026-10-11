@@ -1,0 +1,7 @@
+#!/bin/sh
+# The helper receives the prompt as data. It never evaluates the prompt or the response.
+case "$0" in
+    */*) askpass_directory=${0%/*} ;;
+    *) exit 1 ;;
+esac
+exec "$askpass_directory/GitExtensions" --askpass "$@"

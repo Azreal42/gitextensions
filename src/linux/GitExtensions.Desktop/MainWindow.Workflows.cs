@@ -466,35 +466,29 @@ public sealed partial class MainWindow
 
     private async Task NotesAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Edit commit note", ("Revision", "HEAD"), ("Note", ""));
-        if (values is null) { return; }
-        await RunAsync("Note", async r =>
-        {
-            string revision = await r.ResolveRevisionAsync(values[0], Token);
-            await ExecuteAsync(r, "notes", "add", "--force", "--message", values[1], "--", revision);
-        });
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new NoteDialog(_repository, CurrentRevision));
     }
 
     private async Task BisectAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Bisect", ("Action: start, good, bad, skip or reset", "start"), ("Revision (optional)", ""));
-        if (values is null) { return; }
-        if (values[0] is not ("start" or "good" or "bad" or "skip" or "reset")) { throw new ArgumentException("Invalid bisect action."); }
-        await RunAsync("Bisect", async r =>
-        {
-            List<string> arguments = ["bisect", values[0]];
-            if (Optional(values[1]) is string revision) { arguments.Add(await r.ResolveRevisionAsync(revision, Token)); }
-            await ExecuteAsync(r, arguments.ToArray());
-        });
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new BisectDialog(_repository));
     }
 
     private async Task SparseCheckoutAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Sparse checkout", ("Directories, one per semicolon (blank to disable)", ""));
-        if (values is null) { return; }
-        await RunAsync("Sparse checkout", r => Optional(values[0]) is null
-            ? ExecuteAsync(r, "sparse-checkout", "disable")
-            : ExecuteAsync(r, ["sparse-checkout", "set", "--cone", "--", .. values[0].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)]));
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new SparseCheckoutDialog(_repository));
+    }
+
+    private Window WorkflowOwner => _workflowViews.Values.Select(TopLevel.GetTopLevel).OfType<Window>().FirstOrDefault(window => window != this && window.IsVisible) ?? this;
+
+    private async Task ShowRepositoryDialogAsync(RepositoryDialog dialog)
+    {
+        await RunAsync(dialog.Title ?? "Open dialog", _ => dialog.InitializeAsync(), refresh: false);
+        await dialog.ShowDialog(WorkflowOwner);
+        if (dialog.HasRepositoryChanges) { await RefreshAsync(); }
     }
 
     private async Task GarbageCollectAsync()

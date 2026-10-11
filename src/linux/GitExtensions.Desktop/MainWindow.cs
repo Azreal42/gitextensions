@@ -16,7 +16,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly TextBox _repositoryPath = new() { Watermark = "Repository directory", MinWidth = 280 };
     private readonly ComboBox _recent = new() { PlaceholderText = "Recent repositories", Width = 200 };
-    private readonly TextBlock _state = new() { Text = "Open a repository to begin", VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _state = new() { Name = "RepositoryStatus", Text = "Open a repository to begin", VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBox _output = ReadOnlyText();
     private readonly TextBox _diff = ReadOnlyText();
     private readonly TextBox _commitMessage = new() { Watermark = "Commit message", AcceptsReturn = true, MinHeight = 86 };
@@ -46,8 +46,12 @@ public sealed partial class MainWindow : Window
     private readonly List<Button> _actionButtons = [];
     private string _repositorySummary = "Open a repository to begin";
     private IReadOnlyList<GitCommit> _history = [];
+    private GitLogQuery _historyQuery = new();
+    private int _historyWindow;
+    private bool _historyHasMore;
 
     internal bool IsBusy => _busy;
+    internal Exception? LastException { get; private set; }
 
     public MainWindow()
     {
@@ -66,6 +70,8 @@ public sealed partial class MainWindow : Window
         }
 
         _recent.ItemsSource = _preferences.RecentRepositories;
+        _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
+        _historyWindow = _historyQuery.Count;
         _commits.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
             Setters =
@@ -139,6 +145,10 @@ public sealed partial class MainWindow : Window
                 await OpenRepositoryAsync(_repositoryPath.Text ?? "");
             }
         };
+        _historyRevision.KeyDown += async (_, e) =>
+        {
+            if (e.Key == Key.Enter && !_busy) { e.Handled = true; await ReloadHistoryAsync(); }
+        };
         Content = BuildLayout();
         ApplyTheme(_preferences.Theme);
         Opened += async (_, _) =>
@@ -176,7 +186,7 @@ public sealed partial class MainWindow : Window
             }
         };
         Closed += (_, _) => { _lifetime.Cancel(); _operation?.Cancel(); };
-        KeyDown += HandleShortcuts;
+        AddHandler(KeyDownEvent, HandleShortcuts, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
 
     private CancellationToken Token => _operation?.Token ?? _lifetime.Token;
@@ -264,7 +274,7 @@ public sealed partial class MainWindow : Window
 
     private Button Button(string label, Func<Task> action)
     {
-        Button button = new() { Content = T(label) };
+        Button button = new() { Content = T(label), Tag = RequiresWorktree(label) };
         if (label != "Cancel operation") { _actionButtons.Add(button); }
         button.Click += async (_, _) =>
         {
@@ -289,9 +299,13 @@ public sealed partial class MainWindow : Window
         GitRepository? previous = _repository;
         await RunAsync("Open repository", async _ =>
         {
-            GitRepository candidate = new(path);
+            GitRepository candidate = await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
             _repository = candidate;
+            _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
+            _historyWindow = _historyQuery.Count;
+            _historyRevision.Text = null;
+            if (candidate.IsBare) { SelectDetailsTab("DiffTab"); }
             _repositoryPath.Text = candidate.Path;
             Title = $"Git Extensions — {candidate.Path}";
             await RefreshDataAsync(candidate);
@@ -315,14 +329,23 @@ public sealed partial class MainWindow : Window
             string? selectedHash = (_commits.SelectedItem as GitCommit)?.Hash;
             string? selectedReferenceName = (_references.SelectedItem as GitReference)?.Name;
             GitStatus status = await repository.GetStatusAsync(Token);
-            _repositorySummary = $"{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
+            _repositorySummary = $"{(repository.IsBare ? T("Bare repository") + "  ·  " : "")}{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
             _state.Text = _repositorySummary;
             _changes.ItemsSource = status.Changes;
             _changes.SelectedItem = status.Changes.FirstOrDefault(change => change.Path == selectedPath);
             IReadOnlyList<GitReference> references = await repository.GetReferencesAsync(Token);
             _references.ItemsSource = references;
             _references.SelectedItem = references.FirstOrDefault(reference => reference.Name == selectedReferenceName);
-            _history = status.IsUnborn ? [] : await repository.GetLogAsync(Math.Clamp(_preferences.HistoryLimit, 1, 5000), string.IsNullOrWhiteSpace(_historyRevision.Text) ? null : _historyRevision.Text, Token);
+            GitLogQuery query = _historyQuery with
+            {
+                Count = _historyWindow + 1,
+                Skip = 0,
+                Revision = string.IsNullOrWhiteSpace(_historyRevision.Text) ? (_historyQuery.All ? null : "HEAD") : _historyRevision.Text
+            };
+            IReadOnlyList<GitCommit> history = status.IsUnborn ? [] : await repository.GetLogAsync(query, Token);
+            _historyHasMore = history.Count > _historyWindow && _historyWindow < 100000;
+            _history = history.Take(_historyWindow).ToArray();
+            if (_historyMore is not null) { _historyMore.IsVisible = _historyHasMore; }
             _historyGraph.Commits = _history;
             _historyGraph.References = references;
             _historyGraph.CurrentHead = status.Head;
@@ -359,6 +382,7 @@ public sealed partial class MainWindow : Window
         if (_busy) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
         _busy = true;
+        LastException = null;
         SetActionsEnabled(false);
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         bool success = false;
@@ -372,6 +396,7 @@ public sealed partial class MainWindow : Window
         catch (OperationCanceledException) { _state.Text = "Operation cancelled"; AppendOutput(label + ": cancelled"); }
         catch (Exception exception)
         {
+            LastException = exception;
             _state.Text = label + " failed — see command output";
             AppendOutput($"{label}: {exception.Message}");
             if (Program.SmokeTest) { Console.Error.WriteLine(exception); _repository = null; }
@@ -388,11 +413,18 @@ public sealed partial class MainWindow : Window
 
     private void SetActionsEnabled(bool enabled)
     {
-        foreach (Button button in _actionButtons) { button.IsEnabled = enabled; }
-        foreach (MenuItem menu in _actionMenus) { menu.IsEnabled = enabled; }
+        foreach (Button button in _actionButtons) { button.IsEnabled = enabled && !(_repository?.IsBare == true && button.Tag is true); }
+        foreach (MenuItem menu in _actionMenus) { menu.IsEnabled = enabled && !(_repository?.IsBare == true && menu.Tag is true); }
         _repositoryPath.IsEnabled = enabled;
         _recent.IsEnabled = enabled;
+        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs];
+        foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
+        foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
     }
+
+    private static bool RequiresWorktree(string label) => label.StartsWith("Stage ", StringComparison.Ordinal) || label.StartsWith("Unstage ", StringComparison.Ordinal)
+        || label is "Commit" or "Commit…" or "Checkout" or "Checkout revision" or "Merge" or "Merge…" or "Rebase onto" or "Rebase…" or "Interactive rebase…"
+            or "Reset…" or "Reset branch…" or "Cherry-pick" or "Revert" or "Revert commit" or "Discard…" or "Resolve…" or "Pull" or "Pull…";
 
     private async Task ExecuteAsync(GitRepository repository, params string[] arguments)
     {
@@ -407,11 +439,4 @@ public sealed partial class MainWindow : Window
         _output.CaretIndex = _output.Text.Length;
     }
 
-    private async void HandleShortcuts(object? sender, KeyEventArgs e)
-    {
-        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) { return; }
-        if (e.Key == Key.O) { e.Handled = true; await ChooseRepositoryAsync(); }
-        else if (e.Key == Key.R) { e.Handled = true; await RefreshAsync(); }
-        else if (e.Key == Key.Enter && (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab") { e.Handled = true; await CommitAsync(); }
-    }
 }

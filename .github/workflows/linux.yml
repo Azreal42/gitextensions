@@ -41,6 +41,9 @@ jobs:
       - name: Exercise Git workflows against real repositories
         run: dotnet run --project tests/linux/GitExtensions.Core.Tests --configuration Release --no-build
 
+      - name: Exercise portable plugins against real repositories
+        run: dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build
+
       - name: Test desktop workflows and graph
         run: dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --logger trx --results-directory artifacts/linux/test-results
 

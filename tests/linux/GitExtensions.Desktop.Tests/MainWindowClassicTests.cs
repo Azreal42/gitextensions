@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
@@ -79,6 +80,70 @@ public class MainWindowClassicTests
         window.RequestedThemeVariant = ThemeVariant.Light;
         window.UpdateLayout();
         Assert.That(((ISolidColorBrush)header.Background!).Color, Is.EqualTo(Color.Parse("#F0F0F0")));
+    }
+
+    [AvaloniaTest]
+    public async Task OpeningFromASubdirectoryNormalizesRootAndBareRepositoryKeepsHistoryReadOnly()
+    {
+        using RepositoryFixture fixture = await RepositoryFixture.CreateAsync("anchor\n", "modified\n", createMerge: true);
+        string subdirectory = Path.Combine(fixture.Repository, "nested");
+        Directory.CreateDirectory(subdirectory);
+        await fixture.Window.OpenRepositoryAsync(subdirectory);
+        Assert.That(fixture.Window.Title, Is.EqualTo("Git Extensions — " + fixture.Repository));
+        Assert.That(new PreferencesStore().Load().RecentRepositories.First(), Is.EqualTo(fixture.Repository));
+        SelectChanges(fixture.Window);
+        ListBox changes = Changes(fixture.Window);
+        changes.SelectedIndex = 0;
+        await Until(() => !fixture.Window.IsBusy && VisibleDiff(fixture.Window).Text.Contains("+modified", StringComparison.Ordinal));
+        Click(fixture.Window, "Stage selected");
+        await Until(() => !fixture.Window.IsBusy && changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached"])).StandardOutput, Does.Contain("+modified"));
+
+        string barePath = Path.Combine(Path.GetDirectoryName(fixture.Repository)!, "bare.git");
+        GitResult clone = await fixture.Git.RunAsync(fixture.Repository, ["clone", "--bare", fixture.Repository, barePath]);
+        Assert.That(clone.Success, Is.True, clone.StandardError);
+        await fixture.Window.OpenRepositoryAsync(barePath);
+        Assert.That(fixture.Window.Title, Is.EqualTo("Git Extensions — " + barePath));
+        Assert.That(History(fixture.Window).ItemsSource!.OfType<GitCommit>().Count(), Is.EqualTo(4));
+        Assert.That((Details(fixture.Window).SelectedItem as TabItem)?.Name, Is.EqualTo("DiffTab"));
+        Assert.That(Details(fixture.Window).Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab").IsEnabled, Is.False);
+        Menu menu = fixture.Window.GetVisualDescendants().OfType<Menu>().Single();
+        MenuItem repositoryMenu = menu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Repository");
+        Assert.That(repositoryMenu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Commit…").IsEnabled, Is.False);
+        Assert.That(fixture.Window.LastException, Is.Null, fixture.Window.LastException?.ToString());
+        Assert.That(fixture.Window.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "RepositoryStatus").Text, Does.StartWith("Bare repository"));
+    }
+
+    [AvaloniaTest]
+    public async Task OriginalShortcutsNavigateHistoryAndFocusDetailTabs()
+    {
+        using RepositoryFixture fixture = await RepositoryFixture.CreateAsync("first line\n", "first line\nsecond line\n", createMerge: true);
+        MainWindow window = fixture.Window;
+        ListBox history = History(window);
+        history.SelectedItem = history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Subject == "Main branch change");
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+Main branch content", StringComparison.Ordinal));
+        history.Focus();
+        Press(window, Key.P, RawInputModifiers.Control);
+        await Until(() => !window.IsBusy && (history.SelectedItem as GitCommit)?.Subject == "Initial commit");
+        Assert.That(VisibleDiff(window).Text, Does.Contain("+first line"));
+        Press(window, Key.N, RawInputModifiers.Control);
+        await Until(() => !window.IsBusy && (history.SelectedItem as GitCommit)?.Parents.Contains(fixtureInitialHash()) == true);
+        Press(window, Key.D3, RawInputModifiers.Control);
+        Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("DiffTab"));
+        Assert.That(VisibleDiff(window).Editor.TextArea.IsFocused, Is.True);
+        Press(window, Key.D4, RawInputModifiers.Control);
+        Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("FileTreeTab"));
+        Press(window, Key.Tab, RawInputModifiers.Control | RawInputModifiers.Shift);
+        Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("DiffTab"));
+        Press(window, Key.Tab, RawInputModifiers.Control);
+        Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("FileTreeTab"));
+
+        SelectChanges(window);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "new.txt"), "F5 refresh\n");
+        Press(window, Key.F5, RawInputModifiers.None);
+        await Until(() => !window.IsBusy && Changes(window).ItemsSource!.OfType<GitChange>().Any(change => change.Path == "new.txt"));
+
+        string fixtureInitialHash() => history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Subject == "Initial commit").Hash;
     }
 
     [AvaloniaTest]
@@ -181,6 +246,22 @@ public class MainWindowClassicTests
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     }
 
+    private static void Press(Window window, Key key, RawInputModifiers modifiers)
+    {
+        PhysicalKey physical = key switch
+        {
+            Key.P => PhysicalKey.P,
+            Key.N => PhysicalKey.N,
+            Key.D3 => PhysicalKey.Digit3,
+            Key.D4 => PhysicalKey.Digit4,
+            Key.Tab => PhysicalKey.Tab,
+            Key.F5 => PhysicalKey.F5,
+            _ => throw new ArgumentOutOfRangeException(nameof(key))
+        };
+        window.KeyPressQwerty(physical, modifiers);
+        window.KeyReleaseQwerty(physical, modifiers);
+    }
+
     private static async Task Until(Func<bool> predicate)
     {
         DateTime deadline = DateTime.UtcNow.AddSeconds(15);
@@ -188,7 +269,7 @@ public class MainWindowClassicTests
         Assert.That(predicate(), Is.True, "Desktop workflow did not complete within 15 seconds.");
     }
 
-    private sealed class RepositoryFixture : IDisposable
+    internal sealed class RepositoryFixture : IDisposable
     {
         private readonly string _temporary = Path.Combine(Path.GetTempPath(), "gitextensions-desktop-tests-" + Guid.NewGuid().ToString("N"));
         private readonly string? _oldConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");

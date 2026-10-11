@@ -16,6 +16,9 @@ public sealed partial class GitRepository
     }
 
     public string Path { get; }
+    /// <summary>Discovery metadata; populated by OpenAsync or GetInfoAsync.</summary>
+    public GitRepositoryInfo? Info { get; private set; }
+    public bool IsBare => Info?.IsBare == true;
 
     public async Task<GitResult> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
     {
@@ -28,50 +31,21 @@ public sealed partial class GitRepository
     }
 
     public async Task<GitStatus> GetStatusAsync(CancellationToken cancellationToken = default)
-        => GitOutputParser.ParseStatus((await ExecuteAsync(["status", "--porcelain=2", "--branch", "-z", "--untracked-files=all"], cancellationToken).ConfigureAwait(false)).StandardOutput);
-
-    public async Task<IReadOnlyList<GitCommit>> GetLogAsync(int count = 100, string? revision = null, CancellationToken cancellationToken = default,
-        bool all = true, string? path = null, int skip = 0, string? author = null, string? search = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
-        ArgumentOutOfRangeException.ThrowIfNegative(skip);
-        if (revision is null && !all && !await HasHeadAsync(cancellationToken).ConfigureAwait(false))
+        if ((await GetInfoAsync(cancellationToken).ConfigureAwait(false)).IsBare)
         {
-            return [];
+            GitResult branch = await ExecuteAsync(["symbolic-ref", "--quiet", "--short", "HEAD"], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
+            string? head = await HasHeadAsync(cancellationToken).ConfigureAwait(false)
+                ? await ResolveRevisionAsync("HEAD", cancellationToken).ConfigureAwait(false) : null;
+            return new GitStatus(branch.Success ? ReadOutputLine(branch.StandardOutput) : "(detached)", head, 0, 0, []);
         }
 
-        List<string> arguments = ["log", "--topo-order", "-z", "--date=iso-strict", "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b", $"--max-count={count.ToString(CultureInfo.InvariantCulture)}"];
-        if (revision is not null)
-        {
-            arguments.Add(await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false));
-        }
-        else if (all)
-        {
-            arguments.Add("--all");
-        }
-
-        if (skip > 0)
-        {
-            arguments.Add($"--skip={skip.ToString(CultureInfo.InvariantCulture)}");
-        }
-
-        if (author is not null)
-        {
-            arguments.Add("--author=" + author);
-        }
-
-        if (search is not null)
-        {
-            arguments.AddRange(["--fixed-strings", "--grep=" + search]);
-        }
-
-        arguments.Add("--");
-        if (path is not null)
-        {
-            arguments.Add(ValidatePath(path));
-        }
-        return GitOutputParser.ParseLog((await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput);
+        return GitOutputParser.ParseStatus((await ExecuteAsync(["status", "--porcelain=2", "--branch", "-z", "--untracked-files=all"], cancellationToken).ConfigureAwait(false)).StandardOutput);
     }
+
+    public Task<IReadOnlyList<GitCommit>> GetLogAsync(int count = 100, string? revision = null, CancellationToken cancellationToken = default,
+        bool all = true, string? path = null, int skip = 0, string? author = null, string? search = null)
+        => GetLogAsync(new GitLogQuery(Count: count, Skip: skip, Revision: revision, All: all, Path: path, Author: author, Message: search), cancellationToken);
 
     public async Task<IReadOnlyList<GitReference>> GetReferencesAsync(CancellationToken cancellationToken = default)
     {
@@ -85,6 +59,7 @@ public sealed partial class GitRepository
 
     public async Task<string> GetDiffAsync(string? path = null, bool staged = false, string? revision = null, CancellationToken cancellationToken = default)
     {
+        await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
         List<string> arguments = ["diff", "--no-ext-diff", "--no-textconv"];
         if (staged)
         {
@@ -221,7 +196,7 @@ public sealed partial class GitRepository
         arguments.Add("--");
         arguments.Add(fullPath);
         await repository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
-        return repository;
+        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
     }
 
     public static async Task<GitRepository> CloneAsync(string source, string destination, bool recursive = true, CancellationToken cancellationToken = default)
@@ -238,7 +213,7 @@ public sealed partial class GitRepository
 
         arguments.AddRange(["--", ValidateValue(source), fullPath]);
         await parentRepository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
-        return new GitRepository(fullPath);
+        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<GitResult> CreateBranchAsync(string name, string? startPoint = null, bool checkout = true, CancellationToken cancellationToken = default)
@@ -263,7 +238,17 @@ public sealed partial class GitRepository
 
     public async Task<IReadOnlyList<GitStash>> GetStashesAsync(CancellationToken cancellationToken = default)
     {
-        GitResult result = await ExecuteAsync(["stash", "list", "-z", "--format=%gd%x00%H%x00%s%x00%cI"], cancellationToken).ConfigureAwait(false);
+        GitResult result;
+        if ((await GetInfoAsync(cancellationToken).ConfigureAwait(false)).IsBare)
+        {
+            GitResult reference = await ExecuteAsync(["show-ref", "--verify", "--quiet", "refs/stash"], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
+            if (!reference.Success) { return []; }
+            result = await ExecuteAsync(["log", "--walk-reflogs", "-z", "--format=%gd%x00%H%x00%s%x00%cI", "refs/stash", "--"], cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            result = await ExecuteAsync(["stash", "list", "-z", "--format=%gd%x00%H%x00%s%x00%cI"], cancellationToken).ConfigureAwait(false);
+        }
         string[] fields = result.StandardOutput.Split('\0');
         List<GitStash> stashes = [];
         for (int i = 0; i + 3 < fields.Length; i += 4)
@@ -594,10 +579,19 @@ public sealed partial class GitRepository
     private async Task<GitResult> ExecuteAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken, string? standardInput = null, int[]? allowedExitCodes = null,
         IReadOnlyDictionary<string, string?>? environment = null)
     {
+        string? command = arguments.FirstOrDefault();
+        bool worktreeRequired = command is "status" or "add" or "rm" or "restore" or "checkout" or "switch" or "commit" or "stash"
+            or "merge" or "rebase" or "cherry-pick" or "revert" or "am" or "apply" or "clean" or "sparse-checkout" or "submodule"
+            or "pull" or "mergetool" or "difftool" || command == "reset" && !arguments.Contains("--soft");
+        if (worktreeRequired)
+        {
+            await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         // Git stash builds internal magic pathspecs while removing untracked files. A global
         // literal-pathspec setting breaks that cleanup (notably for names containing newlines).
         // Enable literal handling only on commands that receive user pathspecs.
-        string[] pathOptions = arguments.FirstOrDefault() is "add" or "reset" or "rm" or "diff" or "show" or "blame" or "restore" or "checkout" or "ls-files" or "ls-tree" or "log" or "grep"
+        string[] pathOptions = arguments.FirstOrDefault() is "add" or "reset" or "rm" or "diff" or "show" or "blame" or "restore" or "checkout" or "ls-files" or "ls-tree" or "log" or "grep" or "bisect"
             ? ["--literal-pathspecs"] : [];
         GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. pathOptions, .. arguments], cancellationToken, standardInput, environment).ConfigureAwait(false);
         if (!result.Success && !(allowedExitCodes?.Contains(result.ExitCode) ?? false))
@@ -606,6 +600,19 @@ public sealed partial class GitRepository
         }
 
         return result;
+    }
+
+    private async Task<T> WithMutationAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
+    {
+        await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await operation(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _mutationLock.Release();
+        }
     }
 
     private string[] ValidatePaths(IEnumerable<string> paths)

@@ -42,6 +42,9 @@ public sealed class DiffView : UserControl
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         };
         _editor.Options.HighlightCurrentLine = false;
+        // The original diff viewer treats URLs and emails as plain, theme-colored text.
+        _editor.Options.EnableHyperlinks = false;
+        _editor.Options.EnableEmailHyperlinks = false;
         _editor.TextArea.SelectionCornerRadius = 0;
         _numbers = new DiffNumberMargin(this);
         _editor.TextArea.LeftMargins.Add(_numbers);

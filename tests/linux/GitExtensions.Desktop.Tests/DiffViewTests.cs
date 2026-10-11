@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
@@ -94,6 +95,57 @@ public class DiffViewTests
             dark!.Save(Path.Combine(TestContext.CurrentContext.WorkDirectory, "diff-view-dark.png"));
         }
         finally { window.Close(); }
+    }
+
+    [AvaloniaTest]
+    public void EmailAndUrlGlyphsRenderInTheOriginalForegroundInBothThemes()
+    {
+        const string text = "author@example.org\nhttps://example.org/repository\n";
+        DiffView view = new(new TextBox { Text = text });
+        Window window = new() { Width = 520, Height = 120, Content = view };
+        try
+        {
+            window.Show();
+            foreach ((ThemeVariant theme, string foreground, string file) in new[]
+                { (ThemeVariant.Light, "#000000", "diff-links-light.png"), (ThemeVariant.Dark, "#f0f0f0", "diff-links-dark.png") })
+            {
+                window.RequestedThemeVariant = theme;
+                using WriteableBitmap? frame = window.CaptureRenderedFrame();
+                Assert.That(frame, Is.Not.Null);
+                frame!.Save(Path.Combine(TestContext.CurrentContext.WorkDirectory, file));
+                Assert.That(view.Text, Is.EqualTo(text));
+                AssertGlyphForeground(frame, window, view, 1, Color.Parse(foreground));
+                AssertGlyphForeground(frame, window, view, 2, Color.Parse(foreground));
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    private static void AssertGlyphForeground(WriteableBitmap bitmap, Window window, DiffView view, int lineNumber, Color foreground)
+    {
+        using ILockedFramebuffer pixels = bitmap.Lock();
+        Assert.That(pixels.Format, Is.EqualTo(PixelFormat.Bgra8888).Or.EqualTo(PixelFormat.Rgba8888));
+        byte[] bytes = new byte[pixels.RowBytes * pixels.Size.Height];
+        Marshal.Copy(pixels.Address, bytes, 0, bytes.Length);
+        bool bgra = pixels.Format == PixelFormat.Bgra8888;
+        AvaloniaEdit.Rendering.TextView textView = view.Editor.TextArea.TextView;
+        AvaloniaEdit.Rendering.VisualLine line = textView.GetVisualLine(lineNumber);
+        Point origin = textView.TranslatePoint(new Point(0, 0), window)!.Value;
+        int firstY = Math.Max(0, (int)Math.Ceiling(origin.Y + line.VisualTop - textView.ScrollOffset.Y));
+        int lastY = Math.Min(pixels.Size.Height, (int)Math.Floor(origin.Y + line.VisualTop - textView.ScrollOffset.Y + line.Height));
+        int matching = 0, blue = 0;
+        for (int y = firstY; y < lastY; y++)
+        {
+            for (int x = Math.Max(0, (int)Math.Ceiling(origin.X)); x < Math.Min(pixels.Size.Width, (int)(origin.X + textView.Bounds.Width)); x++)
+            {
+                int offset = y * pixels.RowBytes + x * 4;
+                byte r = bytes[offset + (bgra ? 2 : 0)], g = bytes[offset + 1], b = bytes[offset + (bgra ? 0 : 2)];
+                if (r == foreground.R && g == foreground.G && b == foreground.B && bytes[offset + 3] == 255) matching++;
+                if (b > r + 30 && b > g + 30) blue++;
+            }
+        }
+        Assert.That(matching, Is.GreaterThan(20), $"Line {lineNumber} must visibly render glyphs in upstream foreground {foreground}.");
+        Assert.That(blue, Is.Zero, $"Line {lineNumber} must not use AvaloniaEdit's blue auto-link foreground.");
     }
 
     private static void AssertColors(WriteableBitmap bitmap, params string[] colors)

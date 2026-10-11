@@ -69,9 +69,20 @@ public sealed record GitTreeEntry(string Mode, string Type, string Hash, string 
 
 public enum GitOperationAction { Continue, Abort, Skip }
 public enum GitConfigScope { Local, Global }
+public sealed record GitRepositoryInfo(string RootPath, string GitDirectory, string CommonDirectory, bool IsBare);
 public enum GitResetMode { Soft, Mixed, Hard, Keep, Merge }
 public sealed record GitSearchMatch(string Path, int LineNumber, string Text);
 public sealed record GitReflogEntry(string Hash, string Selector, string Description, DateTimeOffset CommitDate);
+public sealed record GitSparseCheckoutState(bool Enabled, bool ConeMode, bool SparseIndex, IReadOnlyList<string> Patterns);
+public sealed record GitBisectState(bool IsActive, string? StartingRevision, string? CurrentRevision, string? BadRevision,
+    IReadOnlyList<string> GoodRevisions, IReadOnlyList<string> SkippedRevisions, string? FirstBadRevision, string Log, bool NoCheckout, bool FirstParent)
+{
+    public bool IsInconclusive => Log.Contains("# only skipped commits left to test", StringComparison.Ordinal);
+    public IReadOnlyList<string> PossibleFirstBadRevisions => Log.Split('\n')
+        .Where(line => line.StartsWith("# possible first bad commit: [", StringComparison.Ordinal))
+        .Select(line => line[30..line.IndexOf(']', 30)]).Distinct(StringComparer.Ordinal).ToArray();
+}
+public sealed record GitNote(string ObjectHash, string NoteHash, string NotesRef);
 public sealed record GitCommitOptions(
     string? Message = null,
     bool Amend = false,

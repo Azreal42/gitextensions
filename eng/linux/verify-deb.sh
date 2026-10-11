@@ -31,14 +31,16 @@ done
     md5sum --quiet --check "$work_dir/control/md5sums"
 )
 root="$work_dir/root"
-for path in usr/bin/gitextensions usr/lib/gitextensions/GitExtensions \
+for path in usr/bin/gitextensions usr/lib/gitextensions/GitExtensions usr/lib/gitextensions/gitextensions-askpass \
     usr/lib/gitextensions/libcoreclr.so usr/share/applications/gitextensions.desktop \
     usr/share/metainfo/gitextensions.metainfo.xml usr/share/doc/gitextensions/copyright \
     usr/share/doc/gitextensions/third-party/PACKAGES.txt \
     usr/share/icons/hicolor/256x256/apps/gitextensions.png usr/share/man/man1/gitextensions.1.gz; do
     [[ -f "$root/$path" ]] || fail "Package is missing $path"
 done
-[[ -x "$root/usr/bin/gitextensions" && -x "$root/usr/lib/gitextensions/GitExtensions" ]] || fail "Launchers are not executable"
+[[ -x "$root/usr/bin/gitextensions" && -x "$root/usr/lib/gitextensions/GitExtensions" \
+    && -x "$root/usr/lib/gitextensions/gitextensions-askpass" ]] || fail "Launchers are not executable"
+sh -n "$root/usr/lib/gitextensions/gitextensions-askpass"
 gzip -t "$root/usr/share/man/man1/gitextensions.1.gz"
 if command -v desktop-file-validate >/dev/null; then
     desktop-file-validate "$root/usr/share/applications/gitextensions.desktop"
@@ -48,6 +50,15 @@ if command -v appstreamcli >/dev/null; then
 fi
 if "$runtime_checks"; then
     [[ "$architecture" == "$(dpkg --print-architecture)" ]] || fail "Cross-architecture package: use --no-runtime"
+    if timeout 5s env -u DISPLAY -u WAYLAND_DISPLAY "$root/usr/lib/gitextensions/gitextensions-askpass" \
+        invalid-first invalid-second > "$work_dir/askpass.stdout" 2> "$work_dir/askpass.stderr"; then
+        fail "Askpass accepted two arguments"
+    else
+        askpass_exit=$?
+        [[ "$askpass_exit" == 1 ]] || fail "Unexpected askpass bad-arity exit: $askpass_exit"
+    fi
+    [[ ! -s "$work_dir/askpass.stdout" && ! -s "$work_dir/askpass.stderr" ]] \
+        || fail "Askpass bad-arity protocol emitted unexpected output"
     version_output=$("$root/usr/bin/gitextensions" --version)
     [[ "$version_output" == "Git Extensions "* ]] || fail "Unexpected application version output: $version_output"
     printf '%s\n' "$version_output"

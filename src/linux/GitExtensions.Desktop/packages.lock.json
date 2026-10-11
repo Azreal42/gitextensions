@@ -191,6 +191,12 @@
       },
       "gitextensions.core": {
         "type": "Project"
+      },
+      "gitextensions.plugins": {
+        "type": "Project",
+        "dependencies": {
+          "GitExtensions.Core": "[8.0.0-linux.1, )"
+        }
       }
     }
   }

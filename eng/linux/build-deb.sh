@@ -45,7 +45,7 @@ case "$runtime" in
     linux-arm64) architecture=arm64; elf_machine=183 ;;
     *) fail "Unsupported runtime: $runtime" ;;
 esac
-for tool in dpkg dpkg-deb git gzip find install md5sum od python3 sort touch; do
+for tool in dpkg dpkg-deb git gzip find install md5sum od python3 sh sort touch; do
     command -v "$tool" >/dev/null || fail "Required tool not found: $tool"
 done
 
@@ -88,9 +88,10 @@ fi
 deb_version=${version/-/"~"}
 dpkg --validate-version "$deb_version" || fail "Invalid package version: $deb_version"
 [[ "$deb_version" != *:* ]] || fail "Version epochs are not supported in .NET versions"
-for name in GitExtensions GitExtensions.dll GitExtensions.deps.json GitExtensions.runtimeconfig.json libcoreclr.so; do
+for name in GitExtensions GitExtensions.dll GitExtensions.deps.json GitExtensions.runtimeconfig.json libcoreclr.so gitextensions-askpass; do
     [[ -f "$publish_dir/$name" ]] || fail "Self-contained publish is missing $name"
 done
+sh -n "$publish_dir/gitextensions-askpass"
 elf_header=$(od -An -tx1 -N6 "$publish_dir/GitExtensions" | tr -d ' \n')
 [[ "$elf_header" == 7f454c460201 ]] || fail "Published executable must be a 64-bit little-endian ELF"
 machine=$(od -An -tu2 -j18 -N2 "$publish_dir/GitExtensions" | tr -d ' ')
@@ -104,7 +105,7 @@ cp -a -- "$publish_dir/." "$stage/usr/lib/gitextensions/"
 find "$stage/usr/lib/gitextensions" -type d -exec chmod 0755 {} +
 find "$stage/usr/lib/gitextensions" -type f -perm /111 -exec chmod 0755 {} +
 find "$stage/usr/lib/gitextensions" -type f ! -perm /111 -exec chmod 0644 {} +
-chmod 0755 "$stage/usr/lib/gitextensions/GitExtensions"
+chmod 0755 "$stage/usr/lib/gitextensions/GitExtensions" "$stage/usr/lib/gitextensions/gitextensions-askpass"
 install -m 0755 "$repo_root/setup/linux/gitextensions" "$stage/usr/bin/gitextensions"
 install -m 0644 "$repo_root/setup/linux/gitextensions.desktop" "$stage/usr/share/applications/"
 install -m 0644 "$repo_root/setup/linux/gitextensions.metainfo.xml" "$stage/usr/share/metainfo/"

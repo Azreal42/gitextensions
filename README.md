@@ -11,11 +11,12 @@ The native Linux desktop uses Avalonia and .NET 10. The portable build is separa
 from the Windows solution while the existing workflows are migrated. Feature parity,
 plugins and platform integration remain tracked in [.agents/docs/todo.md](.agents/docs/todo.md).
 
-Build and test with the .NET 10 SDK and Git 2.36 or newer:
+Build and test with the .NET 10 SDK and Git 2.38 or newer:
 
 ```sh
 dotnet build GitExtensions.Linux.slnx
 dotnet run --project tests/linux/GitExtensions.Core.Tests
+dotnet run --project tests/linux/GitExtensions.Plugins.Tests
 dotnet test tests/linux/GitExtensions.Desktop.Tests
 dotnet run --project src/linux/GitExtensions.Desktop -- /path/to/repository
 eng/linux/build-deb.sh

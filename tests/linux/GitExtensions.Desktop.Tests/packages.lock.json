@@ -261,11 +261,18 @@
           "Avalonia.Desktop": "[11.3.22, )",
           "Avalonia.Fonts.Inter": "[11.3.22, )",
           "Avalonia.Themes.Fluent": "[11.3.22, )",
-          "GitExtensions.Core": "[8.0.0-linux.1, )"
+          "GitExtensions.Core": "[8.0.0-linux.1, )",
+          "GitExtensions.Plugins": "[8.0.0-linux.1, )"
         }
       },
       "gitextensions.core": {
         "type": "Project"
+      },
+      "gitextensions.plugins": {
+        "type": "Project",
+        "dependencies": {
+          "GitExtensions.Core": "[8.0.0-linux.1, )"
+        }
       },
       "Avalonia": {
         "type": "CentralTransitive",

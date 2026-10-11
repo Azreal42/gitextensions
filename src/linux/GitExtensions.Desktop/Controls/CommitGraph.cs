@@ -37,6 +37,7 @@ public sealed class CommitGraph : Control
         ClipToBounds = true;
         PointerMoved += ShowCommitTooltip;
         PointerExited += (_, _) => ToolTip.SetTip(this, null);
+        ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
 
     public IReadOnlyList<GitCommit> Commits

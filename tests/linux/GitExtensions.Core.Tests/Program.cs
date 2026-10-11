@@ -1,5 +1,24 @@
 using System.Diagnostics;
+using GitCommands.Git;
 using GitExtensions.Linux;
+
+if (args.FirstOrDefault() is "--fake-askpass" or "--fake-user-askpass")
+{
+    if (args.Length != 2) { return 1; }
+    if (Environment.GetEnvironmentVariable("GITEXTENSIONS_FAKE_EXPECT_CULTURE") is string expectedCulture
+        && Environment.GetEnvironmentVariable("GITEXTENSIONS_UI_CULTURE") != expectedCulture) { return 1; }
+    bool username = args[1].StartsWith("Username", StringComparison.Ordinal);
+    Console.WriteLine(args[0] == "--fake-user-askpass"
+        ? username ? "explicit-user" : "fictitious-explicit-password"
+        : username ? "fallback-user" : "fictitious-password λ '$() &");
+    return 0;
+}
+if (args.FirstOrDefault() == "--fake-slow-askpass")
+{
+    await File.WriteAllTextAsync(Environment.GetEnvironmentVariable("GITEXTENSIONS_FAKE_ASKPASS_PID")!, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    await Task.Delay(Timeout.InfiniteTimeSpan);
+    return 1;
+}
 
 if (GitRebaseEditor.TryHandle(args, out int rebaseEditorExitCode))
 {
@@ -17,15 +36,29 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 (string Name, Func<Task> Run)[] tests =
 [
     ("unborn status and unstage", UnbornAsync),
+    ("repository discovery normalizes subdirectories and metadata to root", DiscoveryAsync),
+    ("repository discovery resolves linked worktree files and metadata", LinkedDiscoveryAsync),
+    ("bare repositories expose history and reject worktree mutations clearly", BareAsync),
+    ("unborn bare repository and newline root discovery", BareUnbornAsync),
     ("literal paths with whitespace, quotes, metacharacters and newlines", LiteralPathsAsync),
     ("rename and mixed index/worktree status", RenameAsync),
     ("history, parents, multiline messages and SHA1 shared identities", HistoryAsync),
     ("history all branches, paging, authors, messages and literal path filters", FilteredHistoryAsync),
+    ("literal author filters alone and combined with message", LiteralAuthorAsync),
+    ("typed history headers, dates, literal paths and explicit diff regex", LogQueryAsync),
+    ("typed history first-parent, merge hiding and history simplification", LogTraversalAsync),
+    ("typed history reflogs recover unreachable commits", LogReflogAsync),
     ("branches, tags, detached HEAD and references", ReferencesAsync),
     ("stash include untracked, apply index, pop and drop", StashAsync),
     ("local remotes, push, fetch, pull and clone", RemotesAsync),
     ("NUL worktree paths and cleanup", WorktreesAsync),
     ("submodule paths, init/update/sync and checkout identities", SubmodulesAsync),
+    ("sparse cone directories are literal and disabling restores checkout", SparseCheckoutAsync),
+    ("explicit non-cone sparse patterns and dirty file preservation", SparsePatternsAsync),
+    ("bisect identifies first bad commit and reset restores branch", BisectAsync),
+    ("bisect no-checkout, first-parent, skips and inconclusive candidates", BisectSkipAsync),
+    ("bisect path filters preserve literal metacharacters", BisectPathsAsync),
+    ("notes preserve exact text, namespaces, commit identity and serialized writes", NotesAsync),
     ("blame authors and line contents", BlameAsync),
     ("tree paths and byte-exact binary blobs", TreeAsync),
     ("partial hunks stage and unstage without touching other changes", HunksAsync),
@@ -46,6 +79,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("command failures and invalid revision/argument handling", ErrorsAsync),
     ("SHA256 repository status/history", Sha256Async),
     ("cancellation terminates Git and descendants", CancellationAsync),
+    ("askpass isolates response streams and preserves explicit helpers", AskpassAsync),
 ];
 
 int failures = 0;
@@ -77,6 +111,123 @@ static async Task UnbornAsync()
     Assert((await fixture.Repository.GetStatusAsync()).Changes.Single().IndexStatus == 'A', "Staged addition");
     await fixture.Repository.UnstageAsync(["new.txt"]);
     Assert(File.Exists(fixture.File("new.txt")) && (await fixture.Repository.GetStatusAsync()).Changes.Single().IsUntracked, "Unstage preserves file");
+}
+
+static async Task DiscoveryAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string nested = fixture.File("nested/dir");
+    Directory.CreateDirectory(nested);
+    GitRepository root = await GitRepository.OpenAsync(nested);
+    Assert(root.Path == fixture.Repository.Path && root.Info is not null && root.Info.RootPath == root.Path && !root.IsBare, "Subdirectory resolves root");
+    Assert(root.Info!.GitDirectory == fixture.File(".git") && root.Info.CommonDirectory == fixture.File(".git"), "Normal metadata locations");
+    GitRepository metadata = await GitRepository.OpenAsync(fixture.File(".git"));
+    Assert(metadata.Path == root.Path && metadata.Info == root.Info, ".git directory resolves worktree root");
+    string literal = ":[root]*?.txt";
+    fixture.Write(literal, "root file\n");
+    fixture.Write("nested/dir/:unrelated*.txt", "nested unrelated\n");
+    await root.StageAsync([literal]);
+    GitStatus status = await root.GetStatusAsync();
+    Assert(status.Changes.Single(change => change.IsStaged).Path == literal && status.Changes.Single(change => change.IsUntracked).Path == "nested/dir/:unrelated*.txt", "Pathspecs use discovered root regardless of caller subdirectory");
+    await root.CommitAsync("Root path commit");
+    string previousDirectory = Environment.CurrentDirectory;
+    try
+    {
+        Environment.CurrentDirectory = fixture.Root;
+        GitRepository relative = await GitRepository.OpenAsync("repository/nested/dir");
+        Assert(relative.Path == root.Path, "Relative opening resolves from unrelated caller cwd");
+        Assert(System.Text.Encoding.UTF8.GetString(await relative.GetFileBytesAsync(literal)) == "root file\n", "Preview reads discovered root regardless of cwd");
+        fixture.Write(literal, "root file\nmodified\n");
+        await relative.StageAsync([literal]);
+        Assert((await relative.GetStatusAsync()).Changes.Single(change => change.IsStaged).Path == literal, "Literal staging does not use ambient cwd");
+        await relative.UnstageAsync([literal]);
+    }
+    finally
+    {
+        Environment.CurrentDirectory = previousDirectory;
+    }
+    await ExpectAsync<GitCommandException>(() => GitRepository.OpenAsync(fixture.Root));
+    await ExpectAsync<DirectoryNotFoundException>(() => GitRepository.OpenAsync(System.IO.Path.Combine(fixture.Root, "missing")));
+    using CancellationTokenSource cancelled = new();
+    cancelled.Cancel();
+    await ExpectAsync<OperationCanceledException>(() => GitRepository.OpenAsync(nested, cancelled.Token));
+}
+
+static async Task LinkedDiscoveryAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string linked = System.IO.Path.Combine(fixture.Root, "linked worktree\nwith space");
+    await fixture.Repository.AddWorktreeAsync(linked, "HEAD", "linked/test");
+    Directory.CreateDirectory(System.IO.Path.Combine(linked, "nested"));
+    GitRepository repository = await GitRepository.OpenAsync(System.IO.Path.Combine(linked, "nested"));
+    Assert(repository.Path == linked && repository.Info is not null && !repository.IsBare && repository.Info.CommonDirectory == fixture.File(".git"), "Linked root and common directory");
+    Assert(repository.Info!.GitDirectory.StartsWith(fixture.File(".git/worktrees/"), StringComparison.Ordinal), "Linked administrative directory");
+    GitRepository gitFile = await GitRepository.OpenAsync(System.IO.Path.Combine(linked, ".git"));
+    GitRepository metadata = await GitRepository.OpenAsync(repository.Info.GitDirectory);
+    Assert(gitFile.Path == linked && metadata.Path == linked && gitFile.Info == repository.Info && metadata.Info == repository.Info, ".git file and linked administrative directory resolve same root");
+    Assert((await repository.GetStatusAsync()).Branch == "linked/test", "Linked branch state");
+    await fixture.Repository.RemoveWorktreeAsync(linked);
+}
+
+static async Task BareAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string barePath = System.IO.Path.Combine(fixture.Root, "bare clone");
+    GitResult cloned = await new GitRunner().RunAsync(fixture.Root, ["clone", "--bare", "--", fixture.Repository.Path, barePath]);
+    Assert(cloned.Success, "Bare clone");
+    GitRepository bare = await GitRepository.OpenAsync(barePath);
+    Assert(bare.IsBare && bare.Info!.RootPath == barePath && bare.Info.GitDirectory == barePath && bare.Info.CommonDirectory == barePath, "Bare discovery metadata");
+    GitStatus status = await bare.GetStatusAsync();
+    Assert(status.Branch == "main" && status.Head == await fixture.Repository.ResolveRevisionAsync("HEAD") && status.Changes.Count == 0, "Bare status exposes branch and HEAD without index");
+    Assert((await bare.GetLogAsync()).Single().Subject == "Initial" && (await bare.GetTreeAsync()).Single().Path == "seed.txt", "Bare history and tree");
+    Assert(System.Text.Encoding.UTF8.GetString(await bare.GetFileBytesAsync("seed.txt")) == "seed\n", "Bare preview uses object database");
+    Assert((await bare.GetCommitDiffAsync("HEAD")).Contains("+seed", StringComparison.Ordinal), "Bare commit diff");
+    Assert((await bare.GetStashesAsync()).Count == 0, "Bare stash list is a read-only operation");
+    fixture.Write("seed.txt", "stashed from source\n");
+    await fixture.Repository.StashAsync("Read stash in bare");
+    GitStash sourceStash = (await fixture.Repository.GetStashesAsync()).Single();
+    await bare.RunAsync(["fetch", fixture.Repository.Path, "refs/stash"]);
+    await bare.RunAsync(["update-ref", "--create-reflog", "-m", "Copied stash", "refs/stash", sourceStash.Hash]);
+    GitStash bareStash = (await bare.GetStashesAsync()).Single();
+    Assert(bareStash.Hash == sourceStash.Hash && bareStash.Reference == "stash@{0}" && bareStash.Subject == sourceStash.Subject, "Bare stash list reads copied reflog with matching selector, hash and subject");
+    InvalidOperationException stage = await ExpectAsync<InvalidOperationException>(() => bare.StageAsync(["seed.txt"]));
+    Assert(stage.Message.Contains("bare", StringComparison.Ordinal) && stage.Message.Contains("working tree", StringComparison.Ordinal), "Bare mutation error is actionable");
+    await ExpectAsync<InvalidOperationException>(() => bare.UnstageAsync(["seed.txt"]));
+    await ExpectAsync<InvalidOperationException>(() => bare.CommitAsync("Cannot commit worktree"));
+    await ExpectAsync<InvalidOperationException>(() => bare.CheckoutAsync("main"));
+    await ExpectAsync<InvalidOperationException>(() => bare.StashAsync());
+    await ExpectAsync<InvalidOperationException>(() => bare.GetDiffAsync("seed.txt"));
+    await ExpectAsync<InvalidOperationException>(() => bare.SetSparseCheckoutAsync(["some-dir"]));
+    await ExpectAsync<InvalidOperationException>(() => bare.RunAsync(["add", "--", "seed.txt"]));
+    await bare.RunAsync(["update-ref", "--no-deref", "HEAD", status.Head!]);
+    Assert((await bare.GetStatusAsync()).IsDetached && (await bare.GetStatusAsync()).Head == status.Head, "Detached bare HEAD state");
+    await bare.RunAsync(["symbolic-ref", "HEAD", "refs/heads/main"]);
+    await bare.ResetAsync("HEAD", GitResetMode.Soft);
+    await ExpectAsync<InvalidOperationException>(() => bare.ResetAsync("HEAD", GitResetMode.Hard));
+    await bare.CreateBranchAsync("metadata-branch", checkout: false);
+    await RepositoryFixture.ConfigureAsync(bare);
+    await bare.CreateTagAsync("bare-tag", "HEAD");
+    await bare.AddNoteAsync("HEAD", "Bare business note");
+    Assert(await bare.GetNoteAsync() == "Bare business note" && (await bare.GetReferencesAsync()).Any(reference => reference.IsTag && reference.ShortName == "bare-tag"), "Metadata mutations remain available in bare repositories");
+    GitRepository constructed = new(barePath);
+    Assert((await constructed.GetStatusAsync()).Changes.Count == 0 && constructed.IsBare, "Existing root constructor discovers bare status");
+    string linked = System.IO.Path.Combine(fixture.Root, "worktree from bare");
+    await bare.AddWorktreeAsync(linked, "HEAD", "bare-worktree");
+    GitRepository worktree = await GitRepository.OpenAsync(linked);
+    Assert(!worktree.IsBare && worktree.Info!.CommonDirectory == barePath && File.Exists(System.IO.Path.Combine(linked, "seed.txt")), "Bare repositories can create usable working trees");
+    await bare.RemoveWorktreeAsync(linked);
+}
+
+static async Task BareUnbornAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string barePath = System.IO.Path.Combine(fixture.Root, "unborn bare\n");
+    GitRepository initialized = await GitRepository.InitAsync(barePath, initialBranch: "new/main", bare: true);
+    Assert(initialized.IsBare && initialized.Info is not null, "Init returns discovered metadata");
+    GitRepository bare = await GitRepository.OpenAsync(barePath);
+    Assert(bare.Path == barePath && bare.Info!.GitDirectory == barePath && bare.Info.CommonDirectory == barePath, "Root's trailing newline is preserved");
+    GitStatus status = await bare.GetStatusAsync();
+    Assert(status.Branch == "new/main" && status.IsUnborn && status.Changes.Count == 0 && (await bare.GetLogAsync()).Count == 0, "Unborn bare history state");
 }
 
 static async Task LiteralPathsAsync()
@@ -152,6 +303,99 @@ static async Task FilteredHistoryAsync()
     Assert((await fixture.Repository.GetLogAsync(author: "Linux Test")).Count == 3, "Author filter");
     IReadOnlyList<GitCommit> full = await fixture.Repository.GetLogAsync();
     Assert((await fixture.Repository.GetLogAsync(1, skip: 1)).Single().Hash == full[1].Hash, "Paged history");
+}
+
+static async Task LiteralAuthorAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    fixture.Write("first.txt", "first\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync(new GitCommitOptions("Business[1]", Author: "name[1] <literal@example.invalid>"));
+    fixture.Write("second.txt", "second\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync(new GitCommitOptions("Business[1]", Author: "name1 <regex@example.invalid>"));
+    Assert((await fixture.Repository.GetLogAsync(author: "name[1]")).Single().AuthorEmail == "literal@example.invalid", "Author alone stays literal");
+    Assert((await fixture.Repository.GetLogAsync(author: "name[1]", search: "Business[1]")).Single().AuthorEmail == "literal@example.invalid", "Author and message both literal");
+}
+
+static async Task LogQueryAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string path = ":[literal]*?.txt";
+    await DatedCommitAsync(fixture, "normal.txt", "Needle0\n", "Release[1]", "author1", "committer1", "2024-01-05T12:00:00+02:00");
+    string expected = await DatedCommitAsync(fixture, path, "Needle42\n", "Release[1]\n\nBusiness reason", "author[1]", "committer[1]", "2024-02-10T12:00:00+02:00");
+    await DatedCommitAsync(fixture, path, "Needle43\n", "Other message", "author[1]", "committer[1]", "2024-03-10T12:00:00+02:00");
+    GitLogQuery query = new(Path: path, Author: "AUTHOR[1]", Committer: "COMMITTER[1]", Message: "RELEASE[1]", IgnoreCase: true,
+        Since: DateTimeOffset.Parse("2024-02-01T00:00:00+02:00"), Until: DateTimeOffset.Parse("2024-02-29T23:59:59+02:00"));
+    Assert((await fixture.Repository.GetLogAsync(query)).Single().Hash == expected, "Date/header/message/path filters combine");
+    Assert((await fixture.Repository.GetLogAsync(query with { IgnoreCase = false })).Count == 0, "Case matching is explicit");
+    Assert((await fixture.Repository.GetLogAsync(new GitLogQuery(Author: "author[1]", DiffContent: "Needle[0-9]+", Path: path))).Count == 2, "Diff regex stays a regex beside literal author");
+    Assert((await fixture.Repository.GetLogAsync(new GitLogQuery(Committer: "committer[1]"))).Count == 2, "Literal committer filter");
+    await ExpectAsync<GitCommandException>(() => fixture.Repository.GetLogAsync(new GitLogQuery(DiffContent: "[")));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.GetLogAsync(query with { Since = query.Until, Until = query.Since }));
+    await ExpectAsync<ArgumentOutOfRangeException>(() => fixture.Repository.GetLogAsync(new GitLogQuery(Count: 0)));
+    await ExpectAsync<ArgumentOutOfRangeException>(() => fixture.Repository.GetLogAsync(new GitLogQuery(Skip: -1)));
+}
+
+static async Task<string> DatedCommitAsync(RepositoryFixture fixture, string path, string contents, string message, string author, string committer, string date)
+{
+    fixture.Write(path, contents);
+    await fixture.Repository.StageAllAsync();
+    GitResult committed = await new GitRunner().RunAsync(fixture.Repository.Path, ["commit", "--file=-"], standardInput: message,
+        environment: new Dictionary<string, string?>
+        {
+            ["GIT_AUTHOR_NAME"] = author, ["GIT_AUTHOR_EMAIL"] = "author@example.invalid", ["GIT_AUTHOR_DATE"] = date,
+            ["GIT_COMMITTER_NAME"] = committer, ["GIT_COMMITTER_EMAIL"] = "committer@example.invalid", ["GIT_COMMITTER_DATE"] = date,
+        });
+    Assert(committed.Success, committed.StandardError);
+    return await fixture.Repository.ResolveRevisionAsync("HEAD");
+}
+
+static async Task LogTraversalAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    await fixture.Repository.CreateBranchAsync("topic");
+    fixture.Write("topic.txt", "topic\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Topic change");
+    string topic = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    await fixture.Repository.CheckoutAsync("main");
+    fixture.Write("main.txt", "main\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Main change");
+    string main = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    await fixture.Repository.MergeAsync("topic", noFastForward: true);
+    string merge = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    GitLogQuery query = new(Revision: "HEAD", All: false);
+    IReadOnlyList<GitCommit> firstParent = await fixture.Repository.GetLogAsync(query with { FirstParent = true });
+    Assert(firstParent.Count == 3 && firstParent.Any(commit => commit.Hash == merge) && firstParent.All(commit => commit.Hash != topic), "First-parent traversal");
+    IReadOnlyList<GitCommit> withoutMerges = await fixture.Repository.GetLogAsync(query with { HideMergeCommits = true });
+    Assert(withoutMerges.Count == 3 && withoutMerges.All(commit => commit.Parents.Count < 2) && withoutMerges.Any(commit => commit.Hash == topic), "Hide merges retains side history");
+    Assert((await fixture.Repository.GetLogAsync(query with { FirstParent = true, HideMergeCommits = true })).Count == 2, "Traversal flags compose");
+    Assert((await fixture.Repository.GetLogAsync(query with { Path = "main.txt", FullHistory = true, SimplifyMerges = true })).Single().Hash == main, "Full file history with simplified merges");
+    await fixture.Repository.DeleteBranchAsync("topic");
+    await fixture.Repository.CreateTagAsync("kept", merge);
+    fixture.Write("main.txt", "main\nintermediate\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Undecorated middle");
+    string hidden = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    fixture.Write("main.txt", "main\nlast\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Last");
+    IReadOnlyList<GitCommit> decorated = await fixture.Repository.GetLogAsync(new GitLogQuery(SimplifyByDecoration: true));
+    Assert(decorated.All(commit => commit.Hash != hidden) && decorated.Any(commit => commit.Hash == merge), "Decoration simplification retains tagged commits");
+}
+
+static async Task LogReflogAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    fixture.Write("lost.txt", "recover me\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Unreachable after reset");
+    string lost = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    await fixture.Repository.ResetAsync("HEAD~1", GitResetMode.Hard);
+    Assert((await fixture.Repository.GetLogAsync()).Count == 1, "Unreachable excluded from normal refs");
+    Assert((await fixture.Repository.GetLogAsync(new GitLogQuery(Reflog: true))).Any(commit => commit.Hash == lost), "Reflog objects included in history");
 }
 
 static async Task ReferencesAsync()
@@ -255,6 +499,185 @@ static async Task SubmodulesAsync()
     await clone.UpdateSubmodulesAsync();
     await clone.SyncSubmodulesAsync();
     Assert((await clone.GetSubmodulesAsync()).Single().IsInitialized, "Module init/update/sync");
+}
+
+static async Task SparseCheckoutAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string[] directories = ["selected space", "--option", "[literal]*?", "quoted \"directory", "étoile", "has\ttab", "has\\backslash"];
+    foreach (string directory in directories.Append("outside"))
+    {
+        fixture.Write(directory + "/file.txt", directory + "\n");
+    }
+
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Sparse directories");
+    Assert(!(await fixture.Repository.GetSparseCheckoutAsync()).Enabled, "Sparse checkout initially disabled");
+    await fixture.Repository.SetSparseCheckoutAsync(directories, sparseIndex: true);
+    GitSparseCheckoutState sparse = await fixture.Repository.GetSparseCheckoutAsync();
+    Assert(sparse.Enabled && sparse.ConeMode && sparse.SparseIndex, "Cone and sparse index state");
+    Assert(sparse.Patterns.ToHashSet().SetEquals(directories), "Literal directory names listed");
+    await fixture.Repository.SetSparseCheckoutAsync(sparse.Patterns, sparseIndex: sparse.SparseIndex);
+    Assert((await fixture.Repository.GetSparseCheckoutAsync()).Patterns.ToHashSet().SetEquals(directories), "Quoted cone names round-trip through state/save");
+    Assert(GitQuotedPath.Decode("\"\\303\\251toile\"") == "étoile", "Octal bytes decode as UTF8");
+    Assert(directories.All(directory => File.Exists(fixture.File(directory + "/file.txt"))) && !File.Exists(fixture.File("outside/file.txt")), "Selected checkout only");
+    Assert(File.Exists(fixture.File("seed.txt")), "Cone retains root files");
+    await fixture.Repository.AddSparseCheckoutAsync(["outside"]);
+    Assert(File.Exists(fixture.File("outside/file.txt")) && (await fixture.Repository.GetSparseCheckoutAsync()).Patterns.Contains("outside"), "Adding directory restores it");
+    await fixture.Repository.ReapplySparseCheckoutAsync();
+    await fixture.Repository.DisableSparseCheckoutAsync();
+    Assert(!(await fixture.Repository.GetSparseCheckoutAsync()).Enabled && directories.Append("outside").All(directory => File.Exists(fixture.File(directory + "/file.txt"))), "Disable restores checkout");
+    Assert((await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Sparse operations do not modify tracked contents");
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.SetSparseCheckoutAsync(["../outside"]));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.SetSparseCheckoutAsync(["line\nname"]));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.SetSparseCheckoutAsync([]));
+    await ExpectAsync<InvalidOperationException>(() => fixture.Repository.AddSparseCheckoutAsync(["outside"]));
+}
+
+static async Task SparsePatternsAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    fixture.Write("included/public/file.txt", "public\n");
+    fixture.Write("included/private/file.txt", "private\n");
+    fixture.Write("excluded/file.txt", "excluded\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Pattern checkout");
+    await fixture.Repository.SetSparsePatternsAsync(["/included/**", "!/included/private/**"]);
+    GitSparseCheckoutState sparse = await fixture.Repository.GetSparseCheckoutAsync();
+    Assert(sparse.Enabled && !sparse.ConeMode && !sparse.SparseIndex && sparse.Patterns.SequenceEqual(["/included/**", "!/included/private/**"]), "Non-cone pattern state");
+    Assert(File.Exists(fixture.File("included/public/file.txt")) && !File.Exists(fixture.File("included/private/file.txt")) && !File.Exists(fixture.File("excluded/file.txt")), "Git pattern selection");
+    await ExpectAsync<InvalidOperationException>(() => fixture.Repository.AddSparseCheckoutAsync(["excluded"]));
+    await fixture.Repository.DisableSparseCheckoutAsync();
+    fixture.Write("excluded/file.txt", "dirty contents\n");
+    await fixture.Repository.SetSparseCheckoutAsync(["included"]);
+    Assert(File.ReadAllText(fixture.File("excluded/file.txt")) == "dirty contents\n", "Sparse checkout preserves dirty excluded file");
+    await fixture.Repository.DisableSparseCheckoutAsync();
+    Assert((await fixture.Repository.GetStatusAsync()).Changes.Single().Path == "excluded/file.txt", "Dirty worktree remains explicit");
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.SetSparsePatternsAsync(["pattern\nsecond"]));
+}
+
+static async Task BisectAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    List<string> commits = [await fixture.Repository.ResolveRevisionAsync("HEAD")];
+    for (int version = 1; version <= 8; version++)
+    {
+        fixture.Write("version.txt", version.ToString());
+        await fixture.Repository.StageAllAsync();
+        await fixture.Repository.CommitAsync("Version " + version);
+        commits.Add(await fixture.Repository.ResolveRevisionAsync("HEAD"));
+    }
+
+    GitBisectState inactive = await fixture.Repository.GetBisectStateAsync();
+    Assert(!inactive.IsActive && inactive.CurrentRevision == commits[8], "Inactive bisect state");
+    await ExpectAsync<InvalidOperationException>(() => fixture.Repository.MarkBisectAsync(GitBisectOption.Good));
+    await fixture.Repository.StartBisectAsync(commits[8], [commits[0]]);
+    await ExpectAsync<InvalidOperationException>(() => fixture.Repository.StartBisectAsync());
+    GitBisectState state = await fixture.Repository.GetBisectStateAsync();
+    Assert(state.IsActive && state.StartingRevision == "main" && state.BadRevision == commits[8] && state.GoodRevisions.Contains(commits[0]), "Active bisect endpoints");
+    for (int step = 0; state.FirstBadRevision is null && step < 12; step++)
+    {
+        int version = commits.IndexOf(state.CurrentRevision!);
+        Assert(version > 0, "Bisect selects known intermediate commit");
+        await fixture.Repository.MarkBisectAsync(version >= 5 ? GitBisectOption.Bad : GitBisectOption.Good);
+        state = await fixture.Repository.GetBisectStateAsync();
+    }
+
+    Assert(state.FirstBadRevision == commits[5] && state.BadRevision == commits[5] && state.Log.Contains("# first bad commit:", StringComparison.Ordinal), "Exact first bad commit");
+    await fixture.Repository.ResetBisectAsync();
+    Assert(!(await fixture.Repository.GetBisectStateAsync()).IsActive && (await fixture.Repository.GetStatusAsync()).Branch == "main"
+        && await fixture.Repository.ResolveRevisionAsync("HEAD") == commits[8] && File.ReadAllText(fixture.File("version.txt")) == "8", "Reset restores original branch and tree");
+    await fixture.Repository.ResetBisectAsync();
+    await ExpectAsync<ArgumentOutOfRangeException>(() => fixture.Repository.MarkBisectAsync((GitBisectOption)999));
+}
+
+static async Task BisectSkipAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string good = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    fixture.Write("version.txt", "1");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Middle");
+    string middle = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    fixture.Write("version.txt", "2");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Bad");
+    string bad = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    await fixture.Repository.StartBisectAsync(bad, [good], noCheckout: true, firstParent: true);
+    GitBisectState started = await fixture.Repository.GetBisectStateAsync();
+    Assert(started.NoCheckout && started.FirstParent && started.CurrentRevision == middle && await fixture.Repository.ResolveRevisionAsync("HEAD") == bad, "No-checkout uses BISECT_HEAD and preserves branch");
+    GitResult skipped = await fixture.Repository.MarkBisectAsync(GitBisectOption.Skip);
+    GitBisectState state = await fixture.Repository.GetBisectStateAsync();
+    Assert(skipped.ExitCode == 2 && state.IsInconclusive && state.SkippedRevisions.Contains(middle), "Skipped-only exit is an explicit inconclusive result");
+    Assert(state.PossibleFirstBadRevisions.ToHashSet().SetEquals([middle, bad]), "Inconclusive candidates preserved");
+    await fixture.Repository.ResetBisectAsync("main");
+    Assert(!File.Exists(fixture.File(".git/BISECT_START")) && (await fixture.Repository.GetStatusAsync()).Branch == "main", "Reset clears session");
+}
+
+static async Task BisectPathsAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string path = ":[literal]*?.txt";
+    fixture.Write(path, "0");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Good selected path");
+    string good = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    fixture.Write("other.txt", "other1");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Unrelated first");
+    fixture.Write(path, "1");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("First bad selected path");
+    string firstBad = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    fixture.Write("other.txt", "other2");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Unrelated second");
+    fixture.Write(path, "2");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Bad selected path");
+    await fixture.Repository.StartBisectAsync("HEAD", [good], [path], noCheckout: true);
+    Assert((await fixture.Repository.GetBisectStateAsync()).CurrentRevision == firstBad, "Literal file filter skips unrelated commits");
+    await fixture.Repository.MarkBisectAsync(GitBisectOption.Bad, firstBad);
+    Assert((await fixture.Repository.GetBisectStateAsync()).FirstBadRevision == firstBad, "Path-limited culprit");
+    await fixture.Repository.ResetBisectAsync();
+    Assert(File.ReadAllText(fixture.File(path)) == "2", "No-checkout bisect preserves worktree");
+}
+
+static async Task NotesAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string initial = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    Assert((await fixture.Repository.GetNotesAsync()).Count == 0 && await fixture.Repository.GetNoteAsync() is null, "Missing note is empty state");
+    string note = "\nBusiness intent $(touch injected)\n\nKeep trailing spaces  ";
+    await fixture.Repository.AddNoteAsync("HEAD", note);
+    Assert(await fixture.Repository.GetNoteAsync() == note && !File.Exists(fixture.File("injected")), "Exact note bytes and shell text stays data");
+    GitNote entry = (await fixture.Repository.GetNotesAsync()).Single();
+    Assert(entry.ObjectHash == initial && entry.NotesRef == "refs/notes/commits" && entry.NoteHash.Length == 40, "Notes object identity");
+    await ExpectAsync<GitCommandException>(() => fixture.Repository.AddNoteAsync("HEAD", "duplicate"));
+    Assert(await fixture.Repository.GetNoteAsync() == note, "Duplicate does not replace note");
+    await fixture.Repository.AddNoteAsync("HEAD", "Replacement", replace: true);
+    await fixture.Repository.AddNoteAsync("HEAD", "Review namespace", notesRef: "business/review");
+    Assert(await fixture.Repository.GetNoteAsync(notesRef: "business/review") == "Review namespace" && await fixture.Repository.GetNoteAsync() == "Replacement", "Notes namespaces independent");
+    await fixture.Repository.RemoveNoteAsync("HEAD", "business/review");
+    await fixture.Repository.RemoveNoteAsync("HEAD", "business/review");
+    Assert(await fixture.Repository.GetNoteAsync(notesRef: "business/review") is null && (await fixture.Repository.GetNotesAsync("business/review")).Count == 0, "Remove is idempotent");
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.AddNoteAsync("HEAD", "bad", notesRef: "refs/heads/main"));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.GetNotesAsync("bad namespace"));
+    await fixture.Repository.SetConfigAsync("core.notesRef", "refs/notes/team");
+    await fixture.Repository.AddNoteAsync("HEAD", "Team note");
+    Assert(await fixture.Repository.GetNoteAsync() == "Team note" && await fixture.Repository.GetNoteAsync(notesRef: "commits") == "Replacement", "Configured default notes reference");
+    await fixture.Repository.UnsetConfigAsync("core.notesRef");
+    fixture.Write("second.txt", "second\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Second");
+    string second = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    await Task.WhenAll(fixture.Repository.AddNoteAsync(initial, "First concurrent", notesRef: "concurrent"), fixture.Repository.AddNoteAsync(second, "Second concurrent", notesRef: "concurrent"));
+    Assert((await fixture.Repository.GetNotesAsync("concurrent")).Count == 2, "Serialized notes writes do not lose entries");
+    Assert(await fixture.Repository.ResolveRevisionAsync("HEAD") == second && (await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Notes do not rewrite the user branch or worktree");
+    using CancellationTokenSource cancelled = new();
+    cancelled.Cancel();
+    await ExpectAsync<OperationCanceledException>(() => fixture.Repository.AddNoteAsync("HEAD", "Cancelled", notesRef: "cancelled", cancellationToken: cancelled.Token));
+    Assert((await fixture.Repository.GetNotesAsync("cancelled")).Count == 0, "Cancelled note does not mutate state");
 }
 
 static async Task BlameAsync()
@@ -627,6 +1050,116 @@ static async Task Sha256Async()
     Assert(status.Head?.Length == 64 && status.Changes.Single().Path == "sha256.txt", "Field count instead of SHA1 byte offsets");
     GitCommit commit = (await repository.GetLogAsync()).Single();
     Assert(commit.Hash.Length == 64 && commit.Sha1Id is null, "SHA256 identities preserved");
+}
+
+static async Task AskpassAsync()
+{
+    if (OperatingSystem.IsWindows()) { return; }
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string fallback = System.IO.Path.Combine(fixture.Root, "fallback askpass");
+    string explicitHelper = System.IO.Path.Combine(fixture.Root, "user askpass");
+    foreach ((string path, string mode) in new[] { (fallback, "--fake-askpass"), (explicitHelper, "--fake-user-askpass") })
+    {
+        await File.WriteAllTextAsync(path, $"#!/bin/sh\nexec \"$GITEXTENSIONS_FAKE_ASKPASS_PROCESS\" {mode} \"$@\"\n");
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+    }
+
+    string? originalFallback = GitRunner.AskpassFallbackPath;
+    string? originalCulture = GitRunner.AskpassUiCulture;
+    string[] keys = ["GIT_ASKPASS", "SSH_ASKPASS", "SSH_ASKPASS_REQUIRE", "DISPLAY", "WAYLAND_DISPLAY"];
+    Dictionary<string, string?> previous = keys.ToDictionary(key => key, Environment.GetEnvironmentVariable);
+    try
+    {
+        foreach (string key in keys) { Environment.SetEnvironmentVariable(key, null); }
+        Environment.SetEnvironmentVariable("WAYLAND_DISPLAY", "fake-wayland-display");
+        GitRunner.AskpassFallbackPath = fallback;
+        GitRunner.AskpassUiCulture = "fr-FR";
+        GitRunner runner = new();
+        Dictionary<string, string?> environment = new() { ["GITEXTENSIONS_FAKE_ASKPASS_PROCESS"] = Environment.ProcessPath! };
+        environment["GITEXTENSIONS_FAKE_EXPECT_CULTURE"] = "fr-FR";
+        const string request = "protocol=https\nhost=authentication.example.invalid\n\n";
+        string[] command = ["-c", "credential.helper=", "credential", "fill"];
+        GitResult result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardError.Length == 0, "Git obtains fake credentials via askpass without diagnostic pollution");
+        Assert(result.StandardOutput == "protocol=https\nhost=authentication.example.invalid\nusername=fallback-user\npassword=fictitious-password λ '$() &\n", "Only credential protocol fields enter Git stdout, with Unicode and shell characters unchanged");
+        Assert(Environment.GetEnvironmentVariable("GIT_ASKPASS") is null && Environment.GetEnvironmentVariable("SSH_ASKPASS") is null, "Askpass configuration is isolated to child processes");
+        environment.Remove("GITEXTENSIONS_FAKE_EXPECT_CULTURE");
+
+        string nativeDirectory = System.IO.Path.Combine(fixture.Root, "native helper λ");
+        Directory.CreateDirectory(nativeDirectory);
+        string nativeHelper = System.IO.Path.Combine(nativeDirectory, "gitextensions-askpass");
+        string sourceHelper = System.IO.Path.GetFullPath("../../../../../../src/linux/GitExtensions.Desktop/gitextensions-askpass", AppContext.BaseDirectory);
+        File.Copy(sourceHelper, nativeHelper);
+        string sibling = System.IO.Path.Combine(nativeDirectory, "GitExtensions");
+        await File.WriteAllTextAsync(sibling, "#!/bin/sh\n[ \"$1\" = --askpass ] || exit 1\nshift\nexec \"$GITEXTENSIONS_FAKE_ASKPASS_PROCESS\" --fake-askpass \"$@\"\n");
+        File.SetUnixFileMode(nativeHelper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        File.SetUnixFileMode(sibling, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        GitRunner.AskpassFallbackPath = nativeHelper;
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardOutput.Contains("username=fallback-user\n", StringComparison.Ordinal) && result.StandardError.Length == 0, "Published helper dispatches to sibling apphost with the askpass mode, preserving spaced Unicode paths");
+        string injection = System.IO.Path.Combine(fixture.Root, "prompt-was-interpolated");
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: $"protocol=https\nhost=authentication.example.invalid/$(touch '{injection}')\n\n", environment: environment);
+        Assert(result.Success && !File.Exists(injection), "Prompt shell characters are forwarded as data by the actual helper script");
+        GitRunner.AskpassFallbackPath = fallback;
+
+        environment["GIT_ASKPASS"] = explicitHelper;
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardOutput.Contains("username=explicit-user\npassword=fictitious-explicit-password\n", StringComparison.Ordinal), "Explicit GIT_ASKPASS is preserved");
+        environment.Remove("GIT_ASKPASS");
+        environment["SSH_ASKPASS"] = explicitHelper;
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardOutput.Contains("username=explicit-user\n", StringComparison.Ordinal), "Explicit SSH_ASKPASS is preserved without being superseded by a Git fallback");
+        environment.Remove("SSH_ASKPASS");
+        await fixture.Repository.SetConfigAsync("core.askpass", explicitHelper);
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardOutput.Contains("username=explicit-user\n", StringComparison.Ordinal), "Repository core.askpass retains its precedence");
+        await fixture.Repository.UnsetConfigAsync("core.askpass");
+        result = await runner.RunAsync(fixture.Repository.Path, ["-c", "credential.helper=", "-c", "core.askpass=" + explicitHelper, "credential", "fill"], standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardOutput.Contains("username=explicit-user\n", StringComparison.Ordinal), "Command-local core.askpass is preserved");
+
+        string credentials = System.IO.Path.Combine(fixture.Root, "credential-provider");
+        await File.WriteAllTextAsync(credentials, "#!/bin/sh\nprintf 'username=credential-provider\\npassword=fictitious-provider-password\\n'\n");
+        File.SetUnixFileMode(credentials, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        result = await runner.RunAsync(fixture.Repository.Path, ["-c", "credential.helper=", "-c", "credential.helper=" + credentials, "credential", "fill"], standardInput: request, environment: environment);
+        Assert(result.Success && result.StandardOutput.Contains("username=credential-provider\n", StringComparison.Ordinal), "Credential providers continue to run before askpass");
+
+        Environment.SetEnvironmentVariable("WAYLAND_DISPLAY", null);
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(!result.Success && result.StandardOutput.Length == 0 && result.StandardError.Contains("terminal prompts disabled", StringComparison.Ordinal), "Without a display authentication fails promptly without fallback UI");
+        Environment.SetEnvironmentVariable("DISPLAY", ":fake-display");
+        GitRunner.AskpassFallbackPath = System.IO.Path.Combine(fixture.Root, "missing-helper");
+        result = await runner.RunAsync(fixture.Repository.Path, command, standardInput: request, environment: environment);
+        Assert(!result.Success && result.StandardOutput.Length == 0, "Missing packaged helper leaves no unusable override");
+
+        string pidFile = System.IO.Path.Combine(fixture.Root, "waiting-askpass-pid");
+        await File.WriteAllTextAsync(fallback, "#!/bin/sh\nexec \"$GITEXTENSIONS_FAKE_ASKPASS_PROCESS\" --fake-slow-askpass \"$@\"\n");
+        environment["GITEXTENSIONS_FAKE_ASKPASS_PID"] = pidFile;
+        GitRunner.AskpassFallbackPath = fallback;
+        using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(8));
+        Task<GitResult> waiting = runner.RunAsync(fixture.Repository.Path, command, cancellation.Token, request, environment);
+        try
+        {
+            Stopwatch timeout = Stopwatch.StartNew();
+            while (!File.Exists(pidFile) && timeout.Elapsed < TimeSpan.FromSeconds(5)) { await Task.Delay(25); }
+            Assert(File.Exists(pidFile), "Waiting fake askpass was started");
+            int helperPid = int.Parse(await File.ReadAllTextAsync(pidFile), System.Globalization.CultureInfo.InvariantCulture);
+            cancellation.Cancel();
+            await ExpectAsync<OperationCanceledException>(() => waiting);
+            string processStatus = $"/proc/{helperPid}/status";
+            Assert(!File.Exists(processStatus) || File.ReadLines(processStatus).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z')), "Cancelling Git also terminates its waiting askpass descendant");
+        }
+        finally
+        {
+            cancellation.Cancel();
+            try { await waiting; } catch (OperationCanceledException) { }
+        }
+    }
+    finally
+    {
+        GitRunner.AskpassFallbackPath = originalFallback;
+        GitRunner.AskpassUiCulture = originalCulture;
+        foreach ((string key, string? value) in previous) { Environment.SetEnvironmentVariable(key, value); }
+    }
 }
 
 static async Task CancellationAsync()

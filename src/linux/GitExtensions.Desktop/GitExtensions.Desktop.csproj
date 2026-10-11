@@ -7,13 +7,18 @@
     <IsPublishable>true</IsPublishable>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="gitextensions-askpass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="../GitExtensions.Core/GitExtensions.Core.csproj" />
+    <ProjectReference Include="../GitExtensions.Plugins/GitExtensions.Plugins.csproj" />
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../plugins/*/Resources/Icon*.png" Link="Assets/PluginIcons/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../app/GitUI/Themes/invariant.css" Link="Assets/Themes/invariant.css" />
+    <AvaloniaResource Include="../../app/GitUI/Themes/dark.css" Link="Assets/Themes/dark.css" />
     <AvaloniaResource Include="../../../setup/assets/Logo/git-extensions-logo.ico" Link="Assets/git-extensions-logo.ico" />
   </ItemGroup>
   <ItemGroup>

@@ -14,5 +14,6 @@
     <Compile Include="../../app/GitExtensions.Extensibility/Delimiters.cs" Link="Shared/Delimiters.cs" />
     <Compile Include="../../app/GitCommands/Utils/EncodingHelper.cs" Link="Shared/EncodingHelper.cs" />
     <Compile Include="../../app/GitCommands/Patches/PatchManager.cs" Link="Shared/PatchManager.cs" />
+    <Compile Include="../../app/GitCommands/Git/GitBisectOption.cs" Link="Shared/GitBisectOption.cs" />
   </ItemGroup>
 </Project>

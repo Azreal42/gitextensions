@@ -5,7 +5,7 @@ Priority: optional
 Architecture: @ARCHITECTURE@
 Maintainer: @MAINTAINER@
 Installed-Size: @INSTALLED_SIZE@
-Depends: git (>= 2.36), openssh-client, xdg-utils, ca-certificates, tzdata, libc6 (>= 2.34), libgcc-s1, libgssapi-krb5-2, libstdc++6, zlib1g, libbrotli1, libssl3t64 | libssl3, libicu78 | libicu76 | libicu74 | libicu72 | libicu70, libx11-6, libice6, libsm6, libfontconfig1, fonts-dejavu-core
+Depends: git (>= 2.38), openssh-client, xdg-utils, ca-certificates, tzdata, libc6 (>= 2.34), libgcc-s1, libgssapi-krb5-2, libstdc++6, zlib1g, libbrotli1, libssl3t64 | libssl3, libicu78 | libicu76 | libicu74 | libicu72 | libicu70, libx11-6, libice6, libsm6, libfontconfig1, fonts-dejavu-core
 Homepage: https://github.com/Azreal42/gitextensions
 Description: graphical Git repository manager
  Browse repository history, inspect changes, stage files, create commits,

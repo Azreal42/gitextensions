@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../GitExtensions.Core/GitExtensions.Core.csproj" />
+    <!-- Reuse the original portable release-note model and parser unchanged. -->
+    <Compile Include="../../plugins/ReleaseNotesGenerator/LogLine.cs" Link="Shared/LogLine.cs" />
+    <Compile Include="../../plugins/ReleaseNotesGenerator/GitLogLineParser.cs" Link="Shared/GitLogLineParser.cs" />
+  </ItemGroup>
+</Project>

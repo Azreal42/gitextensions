@@ -29,6 +29,11 @@ public sealed class GitCommandException : Exception
 /// <summary>Runs Git directly. Paths, revision names and messages never pass through a shell.</summary>
 public sealed class GitRunner(string executable = "git")
 {
+    /// <summary>Optional desktop fallback. Applied only to child processes with a display, preserving explicit user helpers.</summary>
+    public static string? AskpassFallbackPath { get; set; }
+    /// <summary>The desktop UI culture name, propagated only to its askpass fallback. It never contains credential data.</summary>
+    public static string? AskpassUiCulture { get; set; }
+
     public async Task<GitResult> RunAsync(
         string workingDirectory,
         IReadOnlyList<string> arguments,
@@ -47,6 +52,15 @@ public sealed class GitRunner(string executable = "git")
         CancellationToken cancellationToken = default,
         byte[]? standardInput = null,
         IReadOnlyDictionary<string, string?>? environment = null)
+        => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true).ConfigureAwait(false);
+
+    private async Task<GitBinaryResult> RunBinaryCoreAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken,
+        byte[]? standardInput,
+        IReadOnlyDictionary<string, string?>? environment,
+        bool applyAskpass)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ProcessStartInfo startInfo = new(executable)
@@ -84,6 +98,11 @@ public sealed class GitRunner(string executable = "git")
             {
                 startInfo.Environment[setting.Key] = setting.Value;
             }
+        }
+
+        if (applyAskpass)
+        {
+            await ApplyAskpassAsync(startInfo, arguments, cancellationToken).ConfigureAwait(false);
         }
 
         using Process process = new() { StartInfo = startInfo };
@@ -143,5 +162,75 @@ public sealed class GitRunner(string executable = "git")
             await Task.WhenAll(output, error).ConfigureAwait(false);
             throw;
         }
+    }
+
+    private async Task ApplyAskpassAsync(ProcessStartInfo startInfo, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    {
+        string? helper = AskpassFallbackPath;
+        startInfo.Environment.TryGetValue("DISPLAY", out string? display);
+        startInfo.Environment.TryGetValue("WAYLAND_DISPLAY", out string? waylandDisplay);
+        if (string.IsNullOrEmpty(helper) || !Path.IsPathFullyQualified(helper) || !File.Exists(helper)
+            || string.IsNullOrWhiteSpace(display) && string.IsNullOrWhiteSpace(waylandDisplay))
+        {
+            return;
+        }
+
+        if (!OperatingSystem.IsWindows() && (File.GetUnixFileMode(helper) & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) == 0)
+        {
+            return;
+        }
+
+        bool explicitGitHelper = startInfo.Environment.ContainsKey("GIT_ASKPASS");
+        bool explicitSshHelper = startInfo.Environment.ContainsKey("SSH_ASKPASS");
+        bool nativeHelper = false;
+        if (!explicitGitHelper && !explicitSshHelper)
+        {
+            // core.askpass sits between GIT_ASKPASS and SSH_ASKPASS in Git's precedence.
+            // Probe with the same global options/environment so repository, -c and config-env choices are respected.
+            string[] prefix = GlobalArguments(arguments);
+            GitBinaryResult configured = await RunBinaryCoreAsync(startInfo.WorkingDirectory, [.. prefix, "config", "--get", "core.askpass"],
+                cancellationToken, null, new Dictionary<string, string?>(startInfo.Environment), applyAskpass: false).ConfigureAwait(false);
+            if (configured.ExitCode == 1)
+            {
+                startInfo.Environment["GIT_ASKPASS"] = helper;
+                nativeHelper = true;
+            }
+        }
+
+        if (!explicitSshHelper)
+        {
+            startInfo.Environment["SSH_ASKPASS"] = helper;
+            nativeHelper = true;
+            // force also permits a Wayland-only desktop, where OpenSSH's default checks DISPLAY.
+            // Authentication still goes through the SSH agent before an askpass is requested.
+            if (!startInfo.Environment.ContainsKey("SSH_ASKPASS_REQUIRE"))
+            {
+                startInfo.Environment["SSH_ASKPASS_REQUIRE"] = "force";
+            }
+        }
+
+        if (nativeHelper && !string.IsNullOrWhiteSpace(AskpassUiCulture))
+        {
+            startInfo.Environment["GITEXTENSIONS_UI_CULTURE"] = AskpassUiCulture;
+        }
+    }
+
+    private static string[] GlobalArguments(IReadOnlyList<string> arguments)
+    {
+        int index = 0;
+        while (index < arguments.Count && arguments[index].StartsWith('-') && arguments[index] != "--")
+        {
+            string option = arguments[index++];
+            if (option is "-c" or "-C" or "--git-dir" or "--work-tree" or "--namespace" or "--config-env")
+            {
+                if (index == arguments.Count)
+                {
+                    break;
+                }
+                index++;
+            }
+        }
+
+        return arguments.Take(index).ToArray();
     }
 }

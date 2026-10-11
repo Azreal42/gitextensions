@@ -4,10 +4,11 @@ using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Platform;
-using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Plugins;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -20,6 +21,7 @@ public sealed partial class MainWindow
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly List<MenuItem> _actionMenus = [];
     private Grid? _browserBody;
+    private Button? _historyMore;
 
     private string T(string source) => _translations.Translate(source);
 
@@ -67,7 +69,7 @@ public sealed partial class MainWindow
             {
                 _references.SelectedItem = reference;
                 _historyRevision.Text = reference.Name;
-                await RefreshAsync();
+                await ReloadHistoryAsync();
             }
             else if (item.Tag is string workflow) { await ShowWorkflowAsync(workflow); }
         };
@@ -80,9 +82,9 @@ public sealed partial class MainWindow
         _repositoryPath.Width = 300;
         _repositoryPath.Height = 24;
         _recent.Height = 24;
-        top.Children.Add(new Border
+        Border toolbar = new()
         {
-            BorderThickness = new Thickness(0, 0, 0, 1), BorderBrush = Brush.Parse("#B4B4B4"), Padding = new Thickness(4, 2),
+            BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(4, 2),
             Child = Row(IconButton("Refresh", "ReloadRevisions.png", RefreshAsync, false),
                 IconButton("Toggle left panel", "LayoutSidebarLeft.png", ToggleNavigationAsync, false),
                 IconButton("Open repository", "FolderClosed.png", ChooseRepositoryAsync, false), _repositoryPath,
@@ -90,19 +92,23 @@ public sealed partial class MainWindow
                 IconButton("Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes")),
                 IconButton("Stash", "stash.png", StashAsync), IconButton("Console", "Console.png", OpenTerminalAsync, false),
                 IconButton("Settings", "Settings.png", () => ShowWorkflowAsync("Configuration"), false), _recent)
-        });
+        };
+        toolbar.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicBorderBrush"));
+        top.Children.Add(toolbar);
         _historyRevision.Height = 24;
+        _historyMore = Button("Load more", LoadMoreHistoryAsync);
+        _historyMore.IsVisible = false;
         top.Children.Add(Row(new TextBlock { Text = T("Branches:"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0) },
-            _historyRevision, Button("Filter", RefreshAsync), Button("All branches", () => { _historyRevision.Text = null; return RefreshAsync(); }),
+            _historyRevision, Button("Filter", FilterHistoryAsync), Button("All branches", () => SetHistoryScopeAsync(true)), _historyMore,
             Button("Fetch", () => RunAsync("Fetch", r => r.FetchAsync(cancellationToken: Token))), Button("Cancel operation", () => { _operation?.Cancel(); return Task.CompletedTask; })));
         root.Children.Add(top);
 
-        Border status = new() { BorderThickness = new Thickness(0, 1, 0, 0), BorderBrush = Brush.Parse("#B4B4B4"), Padding = new Thickness(6, 3), Child = _state };
+        Border status = ClassicChrome.Border(_state, new Thickness(0, 1, 0, 0), new Thickness(6, 3));
         DockPanel.SetDock(status, Dock.Bottom);
         root.Children.Add(status);
 
         _browserBody = new Grid { ColumnDefinitions = new ColumnDefinitions("220,4,*") };
-        _browserBody.Children.Add(new Border { BorderThickness = new Thickness(0, 0, 1, 0), BorderBrush = Brush.Parse("#B4B4B4"), Child = _navigation });
+        _browserBody.Children.Add(ClassicChrome.Border(_navigation, new Thickness(0, 0, 1, 0)));
         GridSplitter navigationSplitter = new() { Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch };
         Grid.SetColumn(navigationSplitter, 1);
         _browserBody.Children.Add(navigationSplitter);
@@ -165,8 +171,9 @@ public sealed partial class MainWindow
         Grid.SetColumn(columns, 1);
         headers.Children.Add(columns);
         DockPanel.SetDock(headers, Dock.Top);
-        Border header = new() { Name = "RevisionHeader", Background = Brush.Parse("#F0F0F0"), BorderThickness = new Thickness(0, 0, 0, 1), BorderBrush = Brush.Parse("#B4B4B4"), Child = headers };
-        header.ActualThemeVariantChanged += (_, _) => header.Background = Brush.Parse(header.ActualThemeVariant == ThemeVariant.Dark ? "#373737" : "#F0F0F0");
+        Border header = ClassicChrome.Border(headers, new Thickness(0, 0, 0, 1));
+        header.Name = "RevisionHeader";
+        header.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicMenuBrush"));
         panel.Children.Add(header);
         DockPanel.SetDock(panel.Children[0], Dock.Top);
         Grid body = new() { ColumnDefinitions = new ColumnDefinitions("180,*") };
@@ -187,16 +194,23 @@ public sealed partial class MainWindow
             MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
             MenuGroup("Commands", MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
-            MenuGroup("Plugins", new MenuItem { Header = T("Plugins unavailable in this preview"), IsEnabled = false }),
+            MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Select(PluginMenuItem).ToArray()),
             MenuGroup("Tools", MenuAction("Settings…", () => ShowWorkflowAsync("Configuration")), MenuAction("Terminal", OpenTerminalAsync), MenuAction("Theme", ChangeThemeAsync), MenuAction("Show left panel", ToggleNavigationAsync)),
             MenuGroup("Help", MenuAction("Online manual", () => { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { "https://git-extensions-documentation.readthedocs.io/" } }); return Task.CompletedTask; }))
         }
     };
 
     private MenuItem MenuGroup(string header, params MenuItem[] items) => new() { Header = T(header), ItemsSource = items };
+    private MenuItem PluginMenuItem(INativePlugin plugin)
+    {
+        MenuItem item = MenuAction(plugin.Descriptor.Name, () => ShowPluginAsync(plugin));
+        Uri uri = new($"avares://GitExtensions/Assets/PluginIcons/{plugin.Descriptor.IconResource}.png");
+        if (AssetLoader.Exists(uri)) { using Stream stream = AssetLoader.Open(uri); item.Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16 }; }
+        return item;
+    }
     private MenuItem MenuAction(string header, Func<Task> action)
     {
-        MenuItem item = new() { Header = T(header) };
+        MenuItem item = new() { Header = T(header), InputGesture = BrowserGesture(header), Tag = RequiresWorktree(header) };
         _actionMenus.Add(item);
         item.Click += async (_, _) => { try { await action(); } catch (Exception exception) { AppendOutput(exception.Message); } };
         return item;
@@ -236,7 +250,16 @@ public sealed partial class MainWindow
 
     private async Task ShowWorkflowAsync(string name)
     {
-        if (name == "Changes") { SelectDetailsTab("ChangesTab"); _commitMessage.Focus(); return; }
+        if (name == "Changes")
+        {
+            if (_repository is null || _busy) { return; }
+            if (_repository.IsBare) { _state.Text = T("Open a worktree to commit changes in a bare repository."); return; }
+            CommitDialog commit = new(_repository);
+            await RunAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
+            await commit.ShowDialog(this);
+            if (commit.HasRepositoryChanges) { await RefreshAsync(); }
+            return;
+        }
         Control content = _workflowViews[name];
         if (content.Parent is not null) { return; }
         Window dialog = new() { Title = T(name) + " — Git Extensions", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner };
