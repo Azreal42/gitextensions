@@ -1,0 +1,80 @@
+name: Linux
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_CLI_HOME: ${{ github.workspace }}/artifacts/dotnet-home
+  NUGET_PACKAGES: ${{ github.workspace }}/artifacts/nuget
+
+jobs:
+  linux:
+    name: Linux desktop and Debian package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Linux verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y dpkg-dev desktop-file-utils appstream xvfb xauth libx11-6 libice6 libsm6 libfontconfig1
+
+      - name: Build Linux solution
+        run: dotnet build GitExtensions.Linux.slnx --configuration Release
+
+      - name: Exercise Git workflows against real repositories
+        run: dotnet run --project tests/linux/GitExtensions.Core.Tests --configuration Release --no-build
+
+      - name: Test desktop workflows and graph
+        run: dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --logger trx --results-directory artifacts/linux/test-results
+
+      - name: Build Debian package
+        run: eng/linux/build-deb.sh
+
+      - name: Verify extracted package and GUI
+        run: eng/linux/verify-deb.sh artifacts/linux/deb/gitextensions_*_amd64.deb
+
+      - name: Verify reproducible archive
+        run: |
+          package=$(find artifacts/linux/deb -maxdepth 1 -name 'gitextensions_*_amd64.deb' -print -quit)
+          dpkg-deb --extract "$package" artifacts/linux/package-payload
+          version=$(dotnet msbuild src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj -nologo -getProperty:Version)
+          eng/linux/build-deb.sh --publish-directory artifacts/linux/package-payload/usr/lib/gitextensions --version "$version" --output artifacts/linux/reproduced
+          cmp "$package" "artifacts/linux/reproduced/${package##*/}"
+
+      - name: Install package and open repository
+        run: |
+          sudo apt-get install --no-install-recommends -y ./artifacts/linux/deb/gitextensions_*_amd64.deb
+          gitextensions --version
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a gitextensions --smoke-test "$GITHUB_WORKSPACE"
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: gitextensions-linux-amd64
+          path: artifacts/linux/deb/*.deb
+          if-no-files-found: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: linux-test-results
+          path: artifacts/linux/test-results/*.trx
+          if-no-files-found: ignore

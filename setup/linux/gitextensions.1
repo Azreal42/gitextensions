@@ -1,0 +1,35 @@
+.TH GITEXTENSIONS 1 "" "Git Extensions" "User Commands"
+.SH NAME
+gitextensions \- browse and manage Git repositories
+.SH SYNOPSIS
+.B gitextensions
+.RI [ repository ]
+.br
+.B gitextensions --version
+.br
+.B gitextensions --help
+.br
+.B gitextensions --smoke-test
+.RI [ repository ]
+.SH DESCRIPTION
+Git Extensions provides a graphical interface to Git. Pass a repository directory
+to open it, or launch from the repository's working directory.
+The application runs in an X11 desktop session, including XWayland.
+.SH OPTIONS
+.TP
+.B --version
+Print the application version and exit without starting a graphical session.
+.TP
+.B --help
+Print usage and exit.
+.TP
+.B --smoke-test
+Start the graphical application, verify that its window and repository load,
+then exit automatically. A failure produces a nonzero exit status.
+.SH FILES
+.I /usr/lib/gitextensions/
+contains the application and its bundled .NET runtime.
+.SH SEE ALSO
+.BR git (1)
+.SH BUGS
+https://github.com/Azreal42/gitextensions/issues

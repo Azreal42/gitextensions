@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Git Extensions
+GenericName=Git repository manager
+Comment=Browse history and manage Git repositories
+Exec=gitextensions %f
+TryExec=gitextensions
+Icon=gitextensions
+Terminal=false
+Categories=Development;RevisionControl;
+Keywords=Git;Repository;Commit;Branch;
+StartupWMClass=GitExtensions

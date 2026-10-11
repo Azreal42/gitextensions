@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Keep the upstream pure identity and hosting parsers as the source of truth. -->
+    <Compile Include="../../app/GitExtensions.Extensibility/Git/ObjectId.cs" Link="Shared/ObjectId.cs" />
+    <Compile Include="../../app/GitCommands/Remotes/RemoteParser.cs" Link="Shared/RemoteParser.cs" />
+    <Compile Include="../../app/GitCommands/Remotes/GitHostingRemoteParser.cs" Link="Shared/GitHostingRemoteParser.cs" />
+    <Compile Include="../../app/GitCommands/Remotes/GitHubRemoteParser.cs" Link="Shared/GitHubRemoteParser.cs" />
+    <Compile Include="../../app/GitCommands/Remotes/AzureDevOpsRemoteParser.cs" Link="Shared/AzureDevOpsRemoteParser.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Delimiters.cs" Link="Shared/Delimiters.cs" />
+    <Compile Include="../../app/GitCommands/Utils/EncodingHelper.cs" Link="Shared/EncodingHelper.cs" />
+    <Compile Include="../../app/GitCommands/Patches/PatchManager.cs" Link="Shared/PatchManager.cs" />
+  </ItemGroup>
+</Project>

@@ -5,6 +5,31 @@
 Git Extensions is a standalone Windows UI tool for managing git repositories.
 It also integrates with Windows Explorer and Microsoft Visual Studio.
 
+## Linux port (in progress)
+
+The native Linux desktop uses Avalonia and .NET 10. The portable build is separate
+from the Windows solution while the existing workflows are migrated. Feature parity,
+plugins and platform integration remain tracked in [.agents/docs/todo.md](.agents/docs/todo.md).
+
+Build and test with the .NET 10 SDK and Git 2.36 or newer:
+
+```sh
+dotnet build GitExtensions.Linux.slnx
+dotnet run --project tests/linux/GitExtensions.Core.Tests
+dotnet test tests/linux/GitExtensions.Desktop.Tests
+dotnet run --project src/linux/GitExtensions.Desktop -- /path/to/repository
+eng/linux/build-deb.sh
+eng/linux/verify-deb.sh artifacts/linux/deb/gitextensions_*_amd64.deb
+```
+
+Install the generated package on Debian 12+ or Ubuntu 24.04+ with
+`sudo apt install ./artifacts/linux/deb/gitextensions_*_amd64.deb`, then run
+`gitextensions /path/to/repository` or launch it from the desktop menu. The package
+includes .NET; users only need its declared system dependencies. GUI verification
+uses X11/XWayland or Xvfb. Build outputs live in `artifacts/linux/`.
+
+Architecture intentions and decisions: [.agents/docs](.agents/docs/README.md).
+
 ## Online manual
 
 [git-extensions-documentation.readthedocs.org](https://git-extensions-documentation.readthedocs.org/)

@@ -17,3 +17,10 @@
 *.bin binary diff=text
 *RevisionReaderTests.*.approved.* binary diff=text
 *DoAutoCRLF*.approved.* binary diff=text
+
+# Linux launchers and portable build files must retain Unix line endings.
+setup/linux/** text eol=lf
+src/linux/**/*.targets text eol=lf
+tests/linux/**/*.targets text eol=lf
+src/linux/Directory.Build.targets text eol=lf
+tests/linux/Directory.Build.targets text eol=lf

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+# Keep the user's working directory: a launch without a path opens that repository.
+# Resolving relative to the launcher also allows validation of an extracted .deb.
+launcher=$(readlink -f -- "$0")
+prefix=$(dirname -- "$(dirname -- "$launcher")")
+exec "$prefix/lib/gitextensions/GitExtensions" "$@"

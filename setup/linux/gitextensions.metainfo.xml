@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.gitextensions.GitExtensions</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Git Extensions</name>
+  <summary>Browse history and manage Git repositories</summary>
+  <description>
+    <p>Git Extensions is a graphical interface for local Git repositories.
+    Browse commits, inspect changes, stage files, create commits, and manage branches.</p>
+  </description>
+  <launchable type="desktop-id">gitextensions.desktop</launchable>
+  <url type="homepage">https://github.com/Azreal42/gitextensions</url>
+  <url type="bugtracker">https://github.com/Azreal42/gitextensions/issues</url>
+  <provides>
+    <binary>gitextensions</binary>
+  </provides>
+  <categories>
+    <category>Development</category>
+    <category>RevisionControl</category>
+  </categories>
+</component>

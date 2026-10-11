@@ -1,0 +1,237 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Headless.NUnit;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using GitExtensions.Desktop.Controls;
+using GitExtensions.Linux;
+using GitExtensions.Linux.Desktop;
+using NUnit.Framework;
+using System.Globalization;
+
+namespace GitExtensions.Desktop.Tests;
+
+[NonParallelizable]
+public class MainWindowClassicTests
+{
+    [AvaloniaTest]
+    public async Task BrowserKeepsClassicMenusNavigationAndCompactRevisionTableAboveDetails()
+    {
+        using RepositoryFixture fixture = await RepositoryFixture.CreateAsync("first line\n", "first line\nsecond line\n", createMerge: true);
+        MainWindow window = fixture.Window;
+        ListBox history = History(window);
+        history.SelectedItem = history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Subject == "Main branch change");
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+Main branch content", StringComparison.Ordinal));
+        window.UpdateLayout();
+
+        Menu menu = window.GetVisualDescendants().OfType<Menu>().Single();
+        TreeView navigation = window.GetVisualDescendants().OfType<TreeView>().Single(tree => tree.Name == "RepositoryNavigation");
+        TabControl details = Details(window);
+        CommitGraph graph = window.GetVisualDescendants().OfType<CommitGraph>().Single();
+        GitCommit selected = (GitCommit)history.SelectedItem!;
+        TextBox information = window.GetVisualDescendants().OfType<TextBox>().Single(text => text.IsEffectivelyVisible && text.Text?.Contains(selected.Hash, StringComparison.Ordinal) is true && text.Text.Contains("Author:", StringComparison.Ordinal));
+
+        Assert.That(menu.Items.OfType<MenuItem>().Select(item => item.Header), Is.EqualTo(new[] { "File", "Dashboard", "Repository", "Commands", "Git hosts", "Plugins", "Tools", "Help" }));
+        Assert.That(navigation.Items.OfType<TreeViewItem>().Select(item => item.Header), Is.EqualTo(new[] { "Branches", "Remotes", "Tags", "Stashes", "Submodules", "Worktrees" }));
+        Assert.That(graph.Commits.Any(commit => commit.Parents.Count == 2), Is.True, "The real repository must render a merge graph.");
+        Assert.That(graph.Bounds.Width, Is.EqualTo(180));
+        Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Select(item => item.Bounds.Height), Is.All.EqualTo(24));
+        Rect menuBounds = InWindow(window, menu);
+        Rect navigationBounds = InWindow(window, navigation);
+        Rect historyBounds = InWindow(window, history);
+        Rect graphBounds = InWindow(window, graph);
+        Rect informationBounds = InWindow(window, information);
+        Rect detailsBounds = InWindow(window, details);
+        Assert.Multiple(() =>
+        {
+            Assert.That(menuBounds.Y, Is.LessThan(navigationBounds.Y), "Menus must remain above the browser.");
+            Assert.That(navigationBounds.Right, Is.LessThanOrEqualTo(graphBounds.X), "Repository references must remain in the left sidebar.");
+            Assert.That(graphBounds.Right, Is.EqualTo(historyBounds.X).Within(1), "Graph lanes must remain alongside the revision table.");
+            Assert.That(historyBounds.Right, Is.LessThanOrEqualTo(informationBounds.X), "Commit details must remain to the right of history.");
+            Assert.That(informationBounds.Y, Is.LessThan(detailsBounds.Y));
+            Assert.That(historyBounds.Bottom, Is.LessThanOrEqualTo(detailsBounds.Y), "Diff tabs must remain below history.");
+            Assert.That(detailsBounds.X, Is.EqualTo(graphBounds.X).Within(1));
+            Assert.That(detailsBounds.Right, Is.EqualTo(informationBounds.Right).Within(1));
+            Assert.That(navigationBounds.Bottom, Is.GreaterThan(detailsBounds.Y), "The sidebar must span both history and details.");
+            Assert.That(VisibleDiff(window).Bounds.Width, Is.GreaterThan(400), "The visible native diff must fill the lower pane.");
+        });
+
+        using Avalonia.Media.Imaging.WriteableBitmap? frame = window.CaptureRenderedFrame();
+        Assert.That(frame, Is.Not.Null);
+        string screenshot = Path.Combine(TestContext.CurrentContext.WorkDirectory, "classic-browser.png");
+        frame!.Save(screenshot);
+        TestContext.AddTestAttachment(screenshot, "Classic Linux browser with real merge history and native diff");
+    }
+
+    [AvaloniaTest]
+    public async Task StagesAndUnstagesOnlySelectedHunkWithoutLosingOtherWorktreeChanges()
+    {
+        string initial = string.Join('\n', Enumerable.Range(1, 30).Select(index => $"original line {index:00}")) + "\n";
+        string changed = initial.Replace("original line 02", "selected change", StringComparison.Ordinal)
+            .Replace("original line 26", "remaining change", StringComparison.Ordinal);
+        using RepositoryFixture fixture = await RepositoryFixture.CreateAsync(initial, changed);
+        MainWindow window = fixture.Window;
+        SelectChanges(window);
+        ListBox changes = Changes(window);
+        changes.SelectedIndex = 0;
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+remaining change", StringComparison.Ordinal));
+        ListBox hunks = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitPatchHunk>().Count() == 2);
+        hunks.SelectedIndex = 0;
+        Click(window, "Stage selected hunks");
+        await Until(() => !window.IsBusy && changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        GitResult staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
+        GitResult unstaged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--", "file.txt"]);
+        Assert.Multiple(() =>
+        {
+            Assert.That(staged.StandardOutput, Does.Contain("+selected change").And.Not.Contain("+remaining change"));
+            Assert.That(unstaged.StandardOutput, Does.Contain("+remaining change").And.Not.Contain("+selected change"));
+            Assert.That(File.ReadAllText(Path.Combine(fixture.Repository, "file.txt")), Is.EqualTo(changed));
+        });
+
+        CheckBox stagedDiff = window.GetVisualDescendants().OfType<CheckBox>().Single(check => check.Content as string == "Show staged changes");
+        stagedDiff.IsChecked = true;
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+selected change", StringComparison.Ordinal));
+        hunks.SelectedIndex = 0;
+        Click(window, "Unstage selected hunks");
+        await Until(() => !window.IsBusy && !changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
+        Assert.That(staged.StandardOutput, Is.Empty);
+        stagedDiff.IsChecked = false;
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+remaining change", StringComparison.Ordinal));
+        Assert.That(VisibleDiff(window).Text, Does.Contain("+selected change"));
+    }
+
+    [AvaloniaTest]
+    public async Task StagesAndUnstagesOneUnicodeLineFromTheVisibleDiff()
+    {
+        const string initial = "anchor\nend\n";
+        const string changed = "anchor\npremière ligne λ🧪\nremaining addition\nend\n";
+        const string selectedLine = "+première ligne λ🧪";
+        using RepositoryFixture fixture = await RepositoryFixture.CreateAsync(initial, changed);
+        MainWindow window = fixture.Window;
+        SelectChanges(window);
+        ListBox changes = Changes(window);
+        changes.SelectedIndex = 0;
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+remaining addition", StringComparison.Ordinal));
+        DiffView diff = VisibleDiff(window);
+        diff.Select(diff.Text.IndexOf(selectedLine, StringComparison.Ordinal), selectedLine.Length);
+        Click(window, "Stage selected lines");
+        await Until(() => !window.IsBusy && changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        GitResult staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
+        GitResult unstaged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--", "file.txt"]);
+        Assert.Multiple(() =>
+        {
+            Assert.That(staged.StandardOutput, Does.Contain(selectedLine).And.Not.Contain("+remaining addition"));
+            Assert.That(unstaged.StandardOutput, Does.Contain("+remaining addition").And.Not.Contain(selectedLine));
+            Assert.That(File.ReadAllText(Path.Combine(fixture.Repository, "file.txt")), Is.EqualTo(changed));
+        });
+
+        CheckBox stagedDiff = window.GetVisualDescendants().OfType<CheckBox>().Single(check => check.Content as string == "Show staged changes");
+        stagedDiff.IsChecked = true;
+        await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains(selectedLine, StringComparison.Ordinal));
+        diff.Select(diff.Text.IndexOf(selectedLine, StringComparison.Ordinal), selectedLine.Length);
+        Click(window, "Unstage selected lines");
+        await Until(() => !window.IsBusy && !changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
+        Assert.That(staged.StandardOutput, Is.Empty);
+        Assert.That(File.ReadAllText(Path.Combine(fixture.Repository, "file.txt")), Is.EqualTo(changed));
+    }
+
+    private static ListBox History(Window window) => window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "RevisionHistory");
+    private static ListBox Changes(Window window) => window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitChange>().Any() is true);
+    private static TabControl Details(Window window) => window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");
+    private static DiffView VisibleDiff(Window window) => window.GetVisualDescendants().OfType<DiffView>().Single(view => view.IsEffectivelyVisible);
+
+    private static void SelectChanges(Window window)
+    {
+        TabControl tabs = Details(window);
+        tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
+        window.UpdateLayout();
+    }
+
+    private static Rect InWindow(Window window, Control control)
+    {
+        Point? origin = control.TranslatePoint(default, window);
+        Assert.That(origin, Is.Not.Null);
+        return new Rect(origin!.Value, control.Bounds.Size);
+    }
+
+    private static void Click(Window window, string content)
+    {
+        Button button = window.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == content);
+        Assert.That(button.IsEffectivelyVisible && button.IsEnabled, Is.True, $"{content} must be available in the visible workflow.");
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    }
+
+    private static async Task Until(Func<bool> predicate)
+    {
+        DateTime deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!predicate() && DateTime.UtcNow < deadline) { await Task.Delay(20); }
+        Assert.That(predicate(), Is.True, "Desktop workflow did not complete within 15 seconds.");
+    }
+
+    private sealed class RepositoryFixture : IDisposable
+    {
+        private readonly string _temporary = Path.Combine(Path.GetTempPath(), "gitextensions-desktop-tests-" + Guid.NewGuid().ToString("N"));
+        private readonly string? _oldConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        private readonly CultureInfo _oldCulture = CultureInfo.CurrentUICulture;
+        public GitRunner Git { get; } = new();
+        public string Repository => Path.Combine(_temporary, "repository");
+        public MainWindow Window { get; private set; } = null!;
+
+        public static async Task<RepositoryFixture> CreateAsync(string initialContent, string changedContent, bool createMerge = false)
+        {
+            RepositoryFixture fixture = new();
+            try
+            {
+                Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(fixture._temporary, "configuration"));
+                CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
+                Directory.CreateDirectory(fixture.Repository);
+                await fixture.RunGit("init", "-b", "main");
+                await fixture.RunGit("config", "user.name", "Desktop Tester");
+                await fixture.RunGit("config", "user.email", "desktop@example.com");
+                await fixture.RunGit("config", "commit.gpgsign", "false");
+                await fixture.RunGit("config", "core.hooksPath", Path.Combine(fixture._temporary, "no-hooks"));
+                await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "file.txt"), initialContent);
+                await fixture.RunGit("add", "--", "file.txt");
+                await fixture.RunGit("commit", "-m", "Initial commit");
+                if (createMerge)
+                {
+                    await fixture.RunGit("tag", "v1.0");
+                    await fixture.RunGit("checkout", "-b", "feature");
+                    await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "feature.txt"), "Feature branch content\n");
+                    await fixture.RunGit("add", "--", "feature.txt");
+                    await fixture.RunGit("commit", "-m", "Feature branch change");
+                    await fixture.RunGit("checkout", "main");
+                    await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "README.md"), "Main branch content\n");
+                    await fixture.RunGit("add", "--", "README.md");
+                    await fixture.RunGit("commit", "-m", "Main branch change");
+                    await fixture.RunGit("merge", "--no-ff", "feature", "-m", "Merge feature branch");
+                    await fixture.RunGit("update-ref", "refs/remotes/origin/main", "HEAD");
+                }
+
+                await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "file.txt"), changedContent);
+                fixture.Window = new MainWindow { Width = 1440, Height = 900 };
+                fixture.Window.Show();
+                await fixture.Window.OpenRepositoryAsync(fixture.Repository);
+                return fixture;
+            }
+            catch { fixture.Dispose(); throw; }
+        }
+
+        private async Task RunGit(params string[] arguments)
+        {
+            GitResult result = await Git.RunAsync(Repository, arguments);
+            Assert.That(result.Success, Is.True, result.StandardError);
+        }
+
+        public void Dispose()
+        {
+            Window?.Close();
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", _oldConfig);
+            CultureInfo.CurrentUICulture = _oldCulture;
+            if (Directory.Exists(_temporary)) { Directory.Delete(_temporary, true); }
+        }
+    }
+}

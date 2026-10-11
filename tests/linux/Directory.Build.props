@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="../../src/linux/Directory.Build.props" />
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

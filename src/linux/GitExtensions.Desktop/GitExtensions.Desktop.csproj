@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>GitExtensions</AssemblyName>
+    <ApplicationIcon>../../../setup/assets/Logo/git-extensions-logo.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <IsPublishable>true</IsPublishable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../GitExtensions.Core/GitExtensions.Core.csproj" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <AvaloniaResource Include="../../app/GitUI/Resources/Icons/*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../../setup/assets/Logo/git-extensions-logo.ico" Link="Assets/git-extensions-logo.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Keep the existing translation format and catalogues as the source of truth. -->
+    <Compile Include="../../app/GitExtensions.Extensibility/Translations/ITranslation.cs" Link="Localization/Shared/ITranslation.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationSerializer.cs" Link="Localization/Shared/TranslationSerializer.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationFile.cs" Link="Localization/Shared/TranslationFile.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationCategory.cs" Link="Localization/Shared/TranslationCategory.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationBody.cs" Link="Localization/Shared/TranslationBody.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationItem.cs" Link="Localization/Shared/TranslationItem.cs" />
+    <Content Include="../../app/GitUI/Translation/*.xlf" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
