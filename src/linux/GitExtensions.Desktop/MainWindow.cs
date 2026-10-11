@@ -23,7 +23,7 @@ public sealed partial class MainWindow : Window
     private readonly CheckBox _amend = new() { Content = "Amend latest commit" };
     private readonly ListBox _commits = new() { SelectionMode = SelectionMode.Multiple };
     private readonly CommitGraph _historyGraph = new();
-    private readonly ListBox _changes = new() { SelectionMode = SelectionMode.Multiple };
+    private readonly TreeView _changes = new() { Name = "WorkingFiles", SelectionMode = SelectionMode.Multiple };
     private readonly ListBox _references = new();
     private readonly ListBox _remotes = new();
     private readonly ListBox _stashes = new();
@@ -104,7 +104,6 @@ public sealed partial class MainWindow : Window
                 new TextBlock { Text = commit is null ? "" : $"{commit.Hash[..Math.Min(9, commit.Hash.Length)]}  ·  {commit.AuthorName}  ·  {commit.AuthoredAt.LocalDateTime:g}", FontSize = 11, Opacity = 0.7 }
             }
         });
-        _changes.ItemTemplate = TextTemplate<GitChange>(change => $"{change.IndexStatus}{change.WorkTreeStatus}  {change.Path}{(change.OriginalPath is null ? "" : " ← " + change.OriginalPath)}{(change.IsConflict ? "  [conflict]" : "")}");
         _references.ItemTemplate = TextTemplate<GitReference>(reference => $"{(reference.IsCurrent ? "● " : "  ")}{reference.ShortName}{(reference.IsTag ? "  [tag]" : reference.IsRemote ? "  [remote]" : "")}{(reference.Upstream is null ? "" : " → " + reference.Upstream)}");
         _remotes.ItemTemplate = TextTemplate<GitRemote>(remote => $"{remote.Name}  {string.Join(", ", remote.FetchUrls)}");
         _stashes.ItemTemplate = TextTemplate<GitStash>(stash => $"{stash.Reference}  {stash.Subject}");
@@ -127,9 +126,10 @@ public sealed partial class MainWindow : Window
         };
         _changes.SelectionChanged += async (_, _) =>
         {
-            if (!_refreshing && _changes.SelectedItem is GitChange)
+            if (!_refreshing && _changesFilesView?.IsUpdating != true && !_busy)
             {
-                await LoadSelectedDiffAsync();
+                if (SelectedWorkingChange is not null) { await LoadSelectedDiffAsync(); }
+                else { ClearWorkingDiff(); }
             }
         };
         _tree.SelectionChanged += async (_, _) =>
@@ -192,6 +192,7 @@ public sealed partial class MainWindow : Window
         {
             _lifetime.Cancel(); _operation?.Cancel();
             _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose(); _dashboard?.Dispose();
+            _revisionFilesView?.Dispose(); _changesFilesView?.Dispose();
             await _backgroundFetch.DisposeAsync();
         };
         AddHandler(KeyDownEvent, HandleShortcuts, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -208,7 +209,7 @@ public sealed partial class MainWindow : Window
         historyBody.Children.Add(_commits);
         DockPanel history = Panel(historyBody, Row(_historyRevision, Button("Load history", RefreshAsync),
             Button("Compare…", CompareAsync), Button("Cherry-pick", CherryPickAsync), Button("Revert", RevertAsync), Button("Reset…", ResetAsync)));
-        DockPanel changes = Panel(_changes, Row(Button("Stage selected", () => StageAsync(false)), Button("Stage all", () => StageAsync(true)),
+        DockPanel changes = Panel(BuildWorkingFilesView(), Row(Button("Stage selected", () => StageAsync(false)), Button("Stage all", () => StageAsync(true)),
             Button("Unstage selected", () => UnstageAsync(false)), Button("Unstage all", () => UnstageAsync(true)),
                 Button("Discard…", DiscardAsync), Button("Resolve…", ResolveConflictAsync)));
         StackPanel commit = new() { Spacing = 8, Children = { _commitMessage, Row(_amend, Button("Commit", CommitAsync)) }, Margin = new Thickness(0, 8, 0, 0) };
@@ -327,7 +328,7 @@ public sealed partial class MainWindow : Window
         try
         {
             bool changedRepository = opening && _repository?.Path != repository.Path;
-            string? selectedPath = changedRepository ? null : (_changes.SelectedItem as GitChange)?.Path;
+            string? selectedPath = changedRepository ? null : SelectedWorkingChange?.Path;
             string? selectedHash = changedRepository ? null : (_commits.SelectedItem as GitCommit)?.Hash;
             string[] selectedHashOrder = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).Distinct(StringComparer.Ordinal).ToArray();
             HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
@@ -382,8 +383,7 @@ public sealed partial class MainWindow : Window
             _historyRevision.Text = revision;
             _repositorySummary = $"{(repository.IsBare ? T("Bare repository") + "  ·  " : "")}{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
             _state.Text = _repositorySummary;
-            _changes.ItemsSource = status.Changes;
-            _changes.SelectedItem = status.Changes.FirstOrDefault(change => change.Path == selectedPath);
+            SetWorkingFiles(status.Changes, selectedPath, preserveSelection: !changedRepository);
             _references.ItemsSource = references;
             _references.SelectedItem = references.FirstOrDefault(reference => reference.Name == selectedReferenceName);
             _referenceSelectionOverride = null;
@@ -424,7 +424,7 @@ public sealed partial class MainWindow : Window
                 _commitContent?.ClearImage(); _commitInfo.Text = null; _gpgInfo.Text = null;
                 _diff.Text = "This repository has no commits yet.";
             }
-            if (_changes.SelectedItem is GitChange change)
+            if (SelectedWorkingChange is GitChange change)
             {
                 bool staged = change.IsStaged && (!change.IsModified || _stagedDiff.IsChecked == true);
                 _stagedDiff.IsChecked = staged;
@@ -481,7 +481,8 @@ public sealed partial class MainWindow : Window
         if (_dashboard is not null) { _dashboard.IsEnabled = enabled; }
         if (_compareToBaseMenu is not null) { _compareToBaseMenu.IsEnabled = enabled && _comparisonBase is not null; }
         Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs, _revisionFiles];
-        if (_revisionDiffSettings is not null) { _revisionDiffSettings.IsEnabled = enabled; }
+        if (_revisionFilesView is not null) { _revisionFilesView.IsEnabled = enabled; }
+        if (_changesFilesView is not null) { _changesFilesView.IsEnabled = enabled; }
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
     }

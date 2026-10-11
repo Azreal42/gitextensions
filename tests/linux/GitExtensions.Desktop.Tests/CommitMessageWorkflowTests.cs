@@ -276,8 +276,8 @@ public class CommitMessageWorkflowTests
         dialog.KeyPressQwerty(PhysicalKey.F, RawInputModifiers.Control); dialog.KeyReleaseQwerty(PhysicalKey.F, RawInputModifiers.Control);
         ComboBox filter = Field<ComboBox>(dialog, "SelectionFilter"); filter.Text = "visible";
         await Until(() => filter.Items.OfType<string>().Contains("visible")); await Idle(dialog);
-        Assert.That(Field<ListBox>(dialog, "Unstaged").ItemCount, Is.EqualTo(2));
-        Assert.That(Field<ListBox>(dialog, "Unstaged").SelectedItems!.OfType<GitChange>().Single().Path, Is.EqualTo(visible));
+        Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Unstaged")).Count(), Is.EqualTo(2));
+        Assert.That(Field<TreeView>(dialog, "Unstaged").SelectedItems!.OfType<TreeViewItem>().Select(item => item.Tag).OfType<GitChange>().Single().Path, Is.EqualTo(visible));
         Message(dialog).Text = "Only visible change";
         string head = await fixture.Repository.ResolveRevisionAsync("HEAD");
         string indexLock = await GitPath(fixture.Repository, "index.lock"); await File.WriteAllTextAsync(indexLock, "locked");

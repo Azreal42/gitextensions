@@ -7,7 +7,6 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 using System.Text;
@@ -22,8 +21,10 @@ public sealed class CommitDialog : Window
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly CancellationTokenSource _lifetime = new();
     private readonly List<Control> _interactive = [];
-    private readonly ListBox _unstaged = new() { Name = "Unstaged", SelectionMode = SelectionMode.Multiple };
-    private readonly ListBox _staged = new() { Name = "Staged", SelectionMode = SelectionMode.Multiple };
+    private readonly TreeView _unstaged = new() { Name = "Unstaged", SelectionMode = SelectionMode.Multiple };
+    private readonly TreeView _staged = new() { Name = "Staged", SelectionMode = SelectionMode.Multiple };
+    private readonly FileStatusListView _unstagedView;
+    private readonly FileStatusListView _stagedView;
     private readonly ComboBox _filter = new() { Name = "SelectionFilter", IsEditable = true, Width = 121, Height = 24, Padding = new Thickness(2, 0) };
     private readonly List<string> _selectionFilterHistory = [];
     private Control? _selectionFilterToolbar;
@@ -65,6 +66,8 @@ public sealed class CommitDialog : Window
     private readonly Button _push;
     private readonly Button _stage;
     private readonly Button _unstage;
+    private readonly Button _stageAll;
+    private readonly Button _unstageAll;
     private readonly Button _stageHunk;
     private readonly Button _unstageHunk;
     private readonly Button _stageLines;
@@ -95,6 +98,9 @@ public sealed class CommitDialog : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _diff = new DiffView(_source) { Name = "SelectedDiff" };
         _content = new FileContentView(_source, _diff);
+        FileStatusListPreferencesStore fileListPreferences = new(Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!);
+        _unstagedView = new FileStatusListView(_unstaged, FileHeader, fileListPreferences) { Name = "UnstagedFileStatusList" };
+        _stagedView = new FileStatusListView(_staged, FileHeader, fileListPreferences) { Name = "StagedFileStatusList" };
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
         _sign.ItemsSource = new[] { T("Git default GPG signing"), T("Do not sign commit"), T("Sign with default GPG"), T("Sign with specific GPG") };
@@ -122,14 +128,16 @@ public sealed class CommitDialog : Window
         _onlyMyMessages.Click += async (_, _) => await LoadHistoryAsync();
         _stage = Action("Stage", "toolStageItem", "Stage", "Stage.png", () => StageAsync(false));
         _unstage = Action("Unstage", "toolUnstageItem", "Unstage", "Unstage.png", () => UnstageAsync(false));
+        _stageAll = Action("StageAll", "", "Stage all", "StageAll.png", () => StageAsync(true), false);
+        _unstageAll = Action("UnstageAll", "", "Unstage all", "UnstageAll.png", () => UnstageAsync(true), false);
         _commit = Action("Commit", "Commit", "Commit", "RepoStateClean.png", () => CommitAsync(false));
         _push = Action("CommitAndPush", "_commitAndPush", "Commit & push", "ArrowUp.png", () => CommitAsync(true));
         _stageHunk = Action("StageHunk", "", "Stage hunk", "Stage.png", () => ApplyPatchAsync(false, false));
         _unstageHunk = Action("UnstageHunk", "", "Unstage hunk", "Unstage.png", () => ApplyPatchAsync(true, false));
         _stageLines = Action("StageLines", "", "Stage selected line(s)", "Stage.png", () => ApplyPatchAsync(false, true), false);
         _unstageLines = Action("UnstageLines", "", "Unstage selected line(s)", "Unstage.png", () => ApplyPatchAsync(true, true), false);
-        ConfigureList(_unstaged, false);
-        ConfigureList(_staged, true);
+        ConfigureList(_unstagedView, false);
+        ConfigureList(_stagedView, true);
         _interactive.AddRange([_filter, _message, _amend, _resetAuthor, _author, _sign, _signingKey, _kind, _target]);
         Content = BuildLayout();
         ToolTip.SetTip(_filter, C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
@@ -156,10 +164,10 @@ public sealed class CommitDialog : Window
         };
         _message.GotFocus += async (_, _) =>
         {
-            if (!_busy && _selectStaged.IsChecked && _staged.ItemCount > 0)
+            if (!_busy && _selectStaged.IsChecked && _stagedView.FilteredEntries.Count > 0)
             {
-                _staged.SelectedIndex = Math.Max(0, _staged.SelectedIndex);
-                if (!_viewStaged) { await SelectFileAsync(_staged, true); }
+                if (!_stagedView.SelectedTags.OfType<GitChange>().Any()) { _stagedView.SelectTags([_stagedView.FilteredEntries[0].Tag]); }
+                if (!_viewStaged) { await SelectFileAsync(_stagedView, true); }
             }
         };
         _amend.IsCheckedChanged += async (_, _) =>
@@ -207,7 +215,7 @@ public sealed class CommitDialog : Window
                 }
             }
         };
-        Closed += (_, _) => { _lifetime.Cancel(); _selectionFilterOperation?.Cancel(); _historyOperation?.Cancel(); _content.Dispose(); };
+        Closed += (_, _) => { _lifetime.Cancel(); _selectionFilterOperation?.Cancel(); _historyOperation?.Cancel(); _unstagedView.Dispose(); _stagedView.Dispose(); _content.Dispose(); };
         UpdateAvailability();
     }
 
@@ -246,11 +254,10 @@ public sealed class CommitDialog : Window
         _selectionFilterToolbar = Row(new TextBlock { Text = C("toolStripLabel1", "Selection Filter"), VerticalAlignment = VerticalAlignment.Center }, _filter);
         _selectionFilterToolbar.Name = "SelectionFilterToolbar";
         _selectionFilterToolbar.IsVisible = false; // AppSettings.CommitDialogSelectionFilter defaults to false.
-        DockPanel unstaged = Pane(_unstaged, _selectionFilterToolbar, T("Unstaged"));
+        DockPanel unstaged = Pane(_unstagedView, _selectionFilterToolbar, T("Unstaged"));
         files.Children.Add(unstaged);
         files.Children.Add(Splitter(1, true));
-        DockPanel staged = Pane(_staged, Row(Action("UnstageAll", "", "Unstage all", "UnstageAll.png", () => UnstageAsync(true), false), _unstage,
-            _stage, Action("StageAll", "", "Stage all", "StageAll.png", () => StageAsync(true), false)), C("commitStagedCountLabel", "Staged"));
+        DockPanel staged = Pane(_stagedView, Row(_unstageAll, _unstage, _stage, _stageAll), C("commitStagedCountLabel", "Staged"));
         Grid.SetRow(staged, 2);
         files.Children.Add(staged);
         main.Children.Add(files);
@@ -308,29 +315,42 @@ public sealed class CommitDialog : Window
         return root;
     }
 
-    private void ConfigureList(ListBox list, bool staged)
+    private Control FileHeader(FileStatusListEntry entry)
     {
+        GitChange change = (GitChange)entry.Tag;
+        string icon = FileStatusListView.IconName(entry);
+        string path = ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path);
+        Control label = IconLabel(change.OriginalPath is null ? path : $"{ExportDialogControls.DisplayPath(change.OriginalPath)} → {path}", icon);
+        ToolTip.SetTip(label, change.Path + (change.IsConflict ? " — " + T("There are unresolved merge conflicts") : ""));
+        return label;
+    }
+
+    private void ConfigureList(FileStatusListView view, bool staged)
+    {
+        TreeView list = view.Tree;
         list.Focusable = true;
-        _interactive.Add(list);
-        list.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
+        _interactive.AddRange([view, list]);
+        list.SelectionChanged += async (_, args) =>
         {
-            Setters =
-            {
-                new Setter(HeightProperty, 24d), new Setter(MinHeightProperty, 24d), new Setter(PaddingProperty, new Thickness(3, 0)),
-                new Setter(ListBoxItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch)
-            }
-        });
-        list.ItemTemplate = new FuncDataTemplate<GitChange>((change, _) =>
-        {
-            if (change is null) { return new TextBlock(); }
-            char status = staged ? change.IndexStatus : change.WorkTreeStatus;
-            string icon = change.IsConflict ? "FileStatusUnknown.png" : change.IsUntracked || status == 'A' ? "FileStatusAdded.png" : status == 'D' ? "FileStatusRemoved.png" : status == 'R' ? "FileStatusRenamed.png" : "FileStatusModified.png";
-            Control label = IconLabel(change.OriginalPath is null ? change.Path : $"{change.OriginalPath} → {change.Path}", icon);
-            ToolTip.SetTip(label, change.Path + (change.IsConflict ? " — " + T("There are unresolved merge conflicts") : ""));
-            return label;
-        });
-        list.SelectionChanged += async (_, _) => { if (!_refreshing && !_busy) { await SelectFileAsync(list, staged); } };
+            if (ReferenceEquals(args.Source, list) && !view.IsUpdating && !_refreshing && !_busy) { await SelectFileAsync(view, staged); }
+        };
         list.DoubleTapped += async (_, _) => { if (!_busy) { if (staged) { await UnstageAsync(false); } else { await StageAsync(false); } } };
+        view.DisplayChanged += async (_, _) =>
+        {
+            UpdateAllButton(_stageAll, _unstagedView, false);
+            UpdateAllButton(_unstageAll, _stagedView, true);
+            UpdateAvailability();
+            UpdateStatus();
+            if (!_refreshing && !_busy && _viewStaged == staged) { await SelectFileAsync(view, staged); }
+        };
+    }
+
+    private void UpdateAllButton(Button button, FileStatusListView view, bool staged)
+    {
+        bool filtered = !string.IsNullOrEmpty(view.FilterText);
+        button.Content = IconLabel("", staged ? filtered ? "UnstageAllFiltered.png" : "UnstageAll.png" : filtered ? "StageAllFiltered.png" : "StageAll.png");
+        ToolTip.SetTip(button, staged ? filtered ? C("_unstageFiltered", "Unstage filtered") : C("_unstageAll", "Unstage all")
+            : filtered ? C("_stageFiltered", "Stage filtered") : C("_stageAll", "Stage all"));
     }
 
     private async Task RefreshDataAsync()
@@ -354,23 +374,34 @@ public sealed class CommitDialog : Window
         _refreshing = true;
         try
         {
-            string[] unstagedSelection = _unstaged.SelectedItems?.OfType<GitChange>().Select(change => change.Path).ToArray() ?? [];
-            string[] stagedSelection = _staged.SelectedItems?.OfType<GitChange>().Select(change => change.Path).ToArray() ?? [];
-            _unstaged.SelectedItems!.Clear();
-            _staged.SelectedItems!.Clear();
-            _unstaged.ItemsSource = _status.Changes.Where(change => (change.IsModified || change.IsConflict) && !change.IsIgnored).ToArray();
-            _staged.ItemsSource = _status.Changes.Where(change => change.IsStaged && !change.IsConflict).ToArray();
-            foreach (GitChange change in _unstaged.Items.OfType<GitChange>().Where(change => unstagedSelection.Contains(change.Path, StringComparer.Ordinal))) { _unstaged.SelectedItems!.Add(change); }
-            foreach (GitChange change in _staged.Items.OfType<GitChange>().Where(change => stagedSelection.Contains(change.Path, StringComparer.Ordinal))) { _staged.SelectedItems!.Add(change); }
-            ListBox current = _viewStaged ? _staged : _unstaged;
-            if (current.SelectedItems?.Count == 0) { current.SelectedItem = current.Items.OfType<GitChange>().FirstOrDefault(change => change.Path == _path) ?? current.Items.OfType<GitChange>().FirstOrDefault(); }
-            if (current.SelectedItem is null)
+            HashSet<string> unstagedSelection = _unstagedView.SelectedTags.OfType<GitChange>().Select(change => change.Path).ToHashSet(StringComparer.Ordinal);
+            HashSet<string> stagedSelection = _stagedView.SelectedTags.OfType<GitChange>().Select(change => change.Path).ToHashSet(StringComparer.Ordinal);
+            _unstagedView.SetGroups([new FileStatusListGroup(_unstaged, "unstaged", new TextBlock(),
+                _status.Changes.Where(change => (change.IsModified || change.IsConflict) && !change.IsIgnored)
+                    .Select(change => new FileStatusListEntry(change, change.Path, change.OriginalPath,
+                        change.IsConflict ? 'U' : change.IsUntracked ? 'A' : change.WorkTreeStatus != '.' ? change.WorkTreeStatus : change.IndexStatus,
+                        change.SimilarityPercent)).ToArray())]);
+            _stagedView.SetGroups([new FileStatusListGroup(_staged, "staged", new TextBlock(),
+                _status.Changes.Where(change => change.IsStaged && !change.IsConflict)
+                    .Select(change => new FileStatusListEntry(change, change.Path, change.OriginalPath, change.IndexStatus, change.SimilarityPercent)).ToArray())]);
+            // SetGroups chooses a first leaf for ordinary browsers. Commit has two
+            // lists: preserve empty inactive selections so its first click still
+            // changes the active diff from working tree to index (or vice versa).
+            _unstagedView.SelectTags(_unstagedView.FilteredEntries.Where(entry => unstagedSelection.Contains(entry.Path)).Select(entry => entry.Tag));
+            _stagedView.SelectTags(_stagedView.FilteredEntries.Where(entry => stagedSelection.Contains(entry.Path)).Select(entry => entry.Tag));
+            FileStatusListView current = _viewStaged ? _stagedView : _unstagedView;
+            if (!current.SelectedTags.OfType<GitChange>().Any())
+            {
+                FileStatusListEntry? entry = current.FilteredEntries.FirstOrDefault(entry => entry.Path == _path) ?? current.FilteredEntries.FirstOrDefault();
+                if (entry is not null) { current.SelectTags([entry.Tag]); }
+            }
+            if (!current.SelectedTags.OfType<GitChange>().Any())
             {
                 _viewStaged = !_viewStaged;
-                current = _viewStaged ? _staged : _unstaged;
-                current.SelectedItem = current.Items.OfType<GitChange>().FirstOrDefault();
+                current = _viewStaged ? _stagedView : _unstagedView;
+                if (current.FilteredEntries.FirstOrDefault() is FileStatusListEntry entry) { current.SelectTags([entry.Tag]); }
             }
-            _path = (current.SelectedItem as GitChange)?.Path;
+            _path = SelectedChange(current)?.Path;
         }
         finally { _refreshing = false; }
         UpdateAvailability();
@@ -399,7 +430,7 @@ public sealed class CommitDialog : Window
         try
         {
             Regex regex = new(expression, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
-            matches = _unstaged.Items.OfType<GitChange>().Where(change => regex.IsMatch(change.Path)).ToArray();
+            matches = _unstagedView.FilteredEntries.Select(entry => (GitChange)entry.Tag).Where(change => regex.IsMatch(change.Path)).ToArray();
             ToolTip.SetTip(_filter, C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
         }
         catch (Exception exception) when (exception is ArgumentException or RegexMatchTimeoutException)
@@ -410,9 +441,8 @@ public sealed class CommitDialog : Window
         _refreshing = true;
         try
         {
-            _unstaged.SelectedItems!.Clear();
-            _staged.SelectedItems!.Clear();
-            foreach (GitChange change in matches) { _unstaged.SelectedItems.Add(change); }
+            _unstagedView.SelectTags(matches);
+            _stagedView.ClearSelection();
             _viewStaged = false;
             _path = matches.FirstOrDefault()?.Path;
         }
@@ -428,11 +458,21 @@ public sealed class CommitDialog : Window
         await RunAsync(T("Diff"), LoadDiffAsync);
     }
 
-    private Task SelectFileAsync(ListBox list, bool staged)
+    private static GitChange? SelectedChange(FileStatusListView view)
+        => view.Tree.SelectedItem is TreeViewItem { Tag: GitChange change } ? change : view.SelectedTags.OfType<GitChange>().FirstOrDefault();
+
+    private Task SelectFileAsync(FileStatusListView view, bool staged)
     {
-        if (list.SelectedItem is not GitChange selected) { return Task.CompletedTask; }
+        GitChange? selected = SelectedChange(view);
+        if (selected is null && _viewStaged != staged) { return Task.CompletedTask; }
         _viewStaged = staged;
-        _path = selected.Path;
+        _path = selected?.Path;
+        if (selected is not null)
+        {
+            _refreshing = true;
+            try { (staged ? _unstagedView : _stagedView).ClearSelection(); }
+            finally { _refreshing = false; }
+        }
         return RunAsync(T("Diff"), LoadDiffAsync);
     }
 
@@ -452,7 +492,7 @@ public sealed class CommitDialog : Window
         }
         else if (change.OriginalPath is not null)
         {
-            List<string> arguments = ["diff", "--no-ext-diff", "--no-textconv"];
+            List<string> arguments = ["diff", "--no-ext-diff", "--no-textconv", "--no-color", "--find-renames", "--find-copies"];
             if (_viewStaged) { arguments.Add("--cached"); }
             arguments.AddRange(["--", change.OriginalPath, change.Path]);
             _source.Text = (await _repository.RunAsync(arguments, OperationToken)).StandardOutput;
@@ -464,19 +504,37 @@ public sealed class CommitDialog : Window
     private static string[] FilePaths(IEnumerable<GitChange> changes)
         => changes.SelectMany(change => change.OriginalPath is null ? new[] { change.Path } : new[] { change.Path, change.OriginalPath })
             .Distinct(StringComparer.Ordinal).ToArray();
-    private static string[] SelectedPaths(ListBox list) => FilePaths(list.SelectedItems?.OfType<GitChange>() ?? []);
     private Task StageAsync(bool all)
     {
-        IEnumerable<GitChange> changes = all ? _unstaged.Items.OfType<GitChange>() : _unstaged.SelectedItems?.OfType<GitChange>() ?? [];
-        // A staged rename has already removed its old path from the index.
-        // Stage the current name, as FormCommit.StageFiles does.
-        string[] paths = changes.Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
-        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Stage"), () => _repository.StageAsync(paths, OperationToken));
+        GitChange[] changes = (all ? _unstagedView.FilteredEntries.Select(entry => entry.Tag) : _unstagedView.SelectedTags).OfType<GitChange>().ToArray();
+        return RunAsync(T("Stage"), async () =>
+        {
+            string[] paths = await StageablePathsAsync(changes);
+            if (paths.Length > 0) { await _repository.StageAsync(paths, OperationToken); HasRepositoryChanges = true; }
+            if (all) { _unstagedView.ClearFilter(); }
+            await RefreshDataAsync();
+            if (paths.Length > 0) { RepositoryChanged?.Invoke(this, EventArgs.Empty); }
+        });
+    }
+    private async Task<string[]> StageablePathsAsync(IEnumerable<GitChange> changes)
+    {
+        HashSet<string> protectedPaths = (await _repository.GetIndexFlagsAsync(OperationToken))
+            .Where(flags => flags.IsAssumeUnchanged || flags.IsSkipWorktree).Select(flags => flags.Path).ToHashSet(StringComparer.Ordinal);
+        // A staged rename already removed its old name from the index. Stage only
+        // current names, keeping literal paths and protected index flags intact.
+        return changes.Where(change => !change.IsIgnored && !protectedPaths.Contains(change.Path))
+            .Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
     }
     private Task UnstageAsync(bool all)
     {
-        string[] paths = all ? FilePaths(_staged.Items.OfType<GitChange>()) : SelectedPaths(_staged);
-        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Unstage"), () => _repository.UnstageAsync(paths, OperationToken));
+        string[] paths = FilePaths((all ? _stagedView.FilteredEntries.Select(entry => entry.Tag) : _stagedView.SelectedTags).OfType<GitChange>());
+        if (paths.Length == 0) { if (all) { _stagedView.ClearFilter(); } return Task.CompletedTask; }
+        return MutateAsync(T("Unstage"), async () =>
+        {
+            GitResult result = await _repository.UnstageAsync(paths, OperationToken);
+            if (all) { _stagedView.ClearFilter(); }
+            return result;
+        });
     }
 
     private Task ApplyPatchAsync(bool reverse, bool lines) => MutateAsync(reverse ? T("Unstage") : T("Stage"), async () =>
@@ -516,7 +574,7 @@ public sealed class CommitDialog : Window
         if (LastError is not null || !IsVisible || _lifetime.IsCancellationRequested) { return; }
         CommitEmptyChoice choice = CommitEmptyChoice.MakeEmpty;
         bool noStaged = !_status.Changes.Any(change => change.IsStaged);
-        string[] paths = _unstaged.Items.OfType<GitChange>().Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
+        GitChange[] unstagedChanges = _unstagedView.FilteredEntries.Select(entry => entry.Tag).OfType<GitChange>().ToArray();
         _confirmationOpen = true;
         try
         {
@@ -532,7 +590,7 @@ public sealed class CommitDialog : Window
                 }
                 else
                 {
-                    CommitEmptyDialog dialog = new(paths.Length > 0, filtered: false);
+                    CommitEmptyDialog dialog = new(unstagedChanges.Length > 0, filtered: !string.IsNullOrEmpty(_unstagedView.FilterText));
                     choice = await dialog.ShowDialog<CommitEmptyChoice>(this);
                     if (choice == CommitEmptyChoice.Cancel) { return; }
                 }
@@ -554,7 +612,10 @@ public sealed class CommitDialog : Window
             _drafts = await CommitDraftStore.OpenAsync(_repository, OperationToken);
             if (noStaged && choice == CommitEmptyChoice.StageUnstaged)
             {
+                string[] paths = await StageablePathsAsync(unstagedChanges);
+                if (paths.Length == 0) { throw new InvalidOperationException(C("_noStagedChanges", "There are no staged changes")); }
                 await _repository.StageAsync(paths, OperationToken);
+                _unstagedView.ClearFilter();
                 HasRepositoryChanges = true;
                 await RefreshDataAsync();
                 RepositoryChanged?.Invoke(this, EventArgs.Empty);
@@ -715,8 +776,8 @@ public sealed class CommitDialog : Window
     {
         foreach (Control control in _interactive) { control.IsEnabled = !_busy; }
         if (_busy) { return; }
-        _stage.IsEnabled = _unstaged.SelectedItems?.Count > 0;
-        _unstage.IsEnabled = _staged.SelectedItems?.Count > 0;
+        _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
+        _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();
         _target.IsEnabled = _kind.SelectedIndex != 0;
         _signingKey.IsEnabled = _sign.SelectedIndex == 3;
         _signingKey.IsVisible = _sign.SelectedIndex == 3;

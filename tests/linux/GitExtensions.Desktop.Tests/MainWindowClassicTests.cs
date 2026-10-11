@@ -93,11 +93,11 @@ public class MainWindowClassicTests
         Assert.That(fixture.Window.Title, Is.EqualTo("Git Extensions — " + fixture.Repository));
         Assert.That(new RepositoryHistoryStore().Load().Recent.First().Path, Is.EqualTo(fixture.Repository));
         SelectChanges(fixture.Window);
-        ListBox changes = Changes(fixture.Window);
-        changes.SelectedIndex = 0;
+        TreeView changes = Changes(fixture.Window);
+        FileStatusTestHelpers.Select(changes, FileStatusTestHelpers.Changes(changes).First().Path);
         await Until(() => !fixture.Window.IsBusy && VisibleDiff(fixture.Window).Text.Contains("+modified", StringComparison.Ordinal));
         Click(fixture.Window, "Stage selected");
-        await Until(() => !fixture.Window.IsBusy && changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        await Until(() => !fixture.Window.IsBusy && FileStatusTestHelpers.Changes(changes).Single().IsStaged);
         Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached"])).StandardOutput, Does.Contain("+modified"));
 
         string barePath = Path.Combine(Path.GetDirectoryName(fixture.Repository)!, "bare.git");
@@ -127,10 +127,10 @@ public class MainWindowClassicTests
         await File.AppendAllTextAsync(Path.Combine(fixture.Repository, renamed), addition);
         await fixture.Window.OpenRepositoryAsync(fixture.Repository);
         SelectChanges(fixture.Window);
-        ListBox changes = Changes(fixture.Window);
-        GitChange change = changes.ItemsSource!.OfType<GitChange>().Single();
+        TreeView changes = Changes(fixture.Window);
+        GitChange change = FileStatusTestHelpers.Changes(changes).Single();
         Assert.That(change.OriginalPath, Is.EqualTo("file.txt"));
-        changes.SelectedItem = change;
+        FileStatusTestHelpers.Select(changes, change.Path);
         await Until(() => !fixture.Window.IsBusy);
 
         Click(fixture.Window, "Stage selected");
@@ -139,8 +139,10 @@ public class MainWindowClassicTests
         GitResult indexed = await fixture.Git.RunAsync(fixture.Repository, ["show", ":" + renamed]);
         Assert.That(indexed.Success, Is.True, indexed.StandardError);
         Assert.That(indexed.StandardOutput, Is.EqualTo(initial + addition));
+        Assert.That(VisibleDiff(fixture.Window).Text, Does.Contain("rename from file.txt").And.Contain("rename to " + renamed),
+            "The viewer must include both paths to preserve Git's actual rename patch, rather than displaying only the destination as an addition.");
 
-        changes.SelectedItem = changes.ItemsSource!.OfType<GitChange>().Single();
+        FileStatusTestHelpers.Select(changes, FileStatusTestHelpers.Changes(changes).Single().Path);
         await Until(() => !fixture.Window.IsBusy);
         Click(fixture.Window, "Unstage selected");
         await Until(() => !fixture.Window.IsBusy);
@@ -177,7 +179,7 @@ public class MainWindowClassicTests
         SelectChanges(window);
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "new.txt"), "F5 refresh\n");
         Press(window, Key.F5, RawInputModifiers.None);
-        await Until(() => !window.IsBusy && Changes(window).ItemsSource!.OfType<GitChange>().Any(change => change.Path == "new.txt"));
+        await Until(() => !window.IsBusy && FileStatusTestHelpers.Changes(Changes(window)).Any(change => change.Path == "new.txt"));
 
         string fixtureInitialHash() => history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Subject == "Initial commit").Hash;
     }
@@ -191,13 +193,13 @@ public class MainWindowClassicTests
         using RepositoryFixture fixture = await RepositoryFixture.CreateAsync(initial, changed);
         MainWindow window = fixture.Window;
         SelectChanges(window);
-        ListBox changes = Changes(window);
-        changes.SelectedIndex = 0;
+        TreeView changes = Changes(window);
+        FileStatusTestHelpers.Select(changes, FileStatusTestHelpers.Changes(changes).First().Path);
         await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+remaining change", StringComparison.Ordinal));
         ListBox hunks = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitPatchHunk>().Count() == 2);
         hunks.SelectedIndex = 0;
         Click(window, "Stage selected hunks");
-        await Until(() => !window.IsBusy && changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        await Until(() => !window.IsBusy && FileStatusTestHelpers.Changes(changes).Single().IsStaged);
         GitResult staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
         GitResult unstaged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--", "file.txt"]);
         Assert.Multiple(() =>
@@ -212,7 +214,7 @@ public class MainWindowClassicTests
         await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+selected change", StringComparison.Ordinal));
         hunks.SelectedIndex = 0;
         Click(window, "Unstage selected hunks");
-        await Until(() => !window.IsBusy && !changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        await Until(() => !window.IsBusy && !FileStatusTestHelpers.Changes(changes).Single().IsStaged);
         staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
         Assert.That(staged.StandardOutput, Is.Empty);
         stagedDiff.IsChecked = false;
@@ -229,13 +231,13 @@ public class MainWindowClassicTests
         using RepositoryFixture fixture = await RepositoryFixture.CreateAsync(initial, changed);
         MainWindow window = fixture.Window;
         SelectChanges(window);
-        ListBox changes = Changes(window);
-        changes.SelectedIndex = 0;
+        TreeView changes = Changes(window);
+        FileStatusTestHelpers.Select(changes, FileStatusTestHelpers.Changes(changes).First().Path);
         await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains("+remaining addition", StringComparison.Ordinal));
         DiffView diff = VisibleDiff(window);
         diff.Select(diff.Text.IndexOf(selectedLine, StringComparison.Ordinal), selectedLine.Length);
         Click(window, "Stage selected lines");
-        await Until(() => !window.IsBusy && changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        await Until(() => !window.IsBusy && FileStatusTestHelpers.Changes(changes).Single().IsStaged);
         GitResult staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
         GitResult unstaged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--", "file.txt"]);
         Assert.Multiple(() =>
@@ -250,14 +252,14 @@ public class MainWindowClassicTests
         await Until(() => !window.IsBusy && VisibleDiff(window).Text.Contains(selectedLine, StringComparison.Ordinal));
         diff.Select(diff.Text.IndexOf(selectedLine, StringComparison.Ordinal), selectedLine.Length);
         Click(window, "Unstage selected lines");
-        await Until(() => !window.IsBusy && !changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+        await Until(() => !window.IsBusy && !FileStatusTestHelpers.Changes(changes).Single().IsStaged);
         staged = await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached", "--", "file.txt"]);
         Assert.That(staged.StandardOutput, Is.Empty);
         Assert.That(File.ReadAllText(Path.Combine(fixture.Repository, "file.txt")), Is.EqualTo(changed));
     }
 
     private static ListBox History(Window window) => window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "RevisionHistory");
-    private static ListBox Changes(Window window) => window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitChange>().Any() is true);
+    private static TreeView Changes(Window window) => window.GetVisualDescendants().OfType<TreeView>().Single(tree => tree.Name == "WorkingFiles");
     private static TabControl Details(Window window) => window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");
     private static DiffView VisibleDiff(Window window) => window.GetVisualDescendants().OfType<DiffView>().Single(view => view.IsEffectivelyVisible);
 

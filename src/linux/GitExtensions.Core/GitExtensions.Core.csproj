@@ -7,6 +7,7 @@
   <ItemGroup>
     <!-- Keep the upstream pure identity and hosting parsers as the source of truth. -->
     <Compile Include="../../app/GitExtensions.Extensibility/Git/ObjectId.cs" Link="Shared/ObjectId.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/Git/DiffBranchStatus.cs" Link="Shared/DiffBranchStatus.cs" />
     <Compile Include="../../app/GitCommands/Remotes/RemoteParser.cs" Link="Shared/RemoteParser.cs" />
     <Compile Include="../../app/GitCommands/Remotes/GitHostingRemoteParser.cs" Link="Shared/GitHostingRemoteParser.cs" />
     <Compile Include="../../app/GitCommands/Remotes/GitHubRemoteParser.cs" Link="Shared/GitHubRemoteParser.cs" />

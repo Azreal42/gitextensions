@@ -52,18 +52,18 @@ public class MainWindowWorkflowTests
 
             tabs.SelectedItem = tabs.ItemsSource!.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
             window.UpdateLayout();
-            ListBox changes = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitChange>().Any() is true);
-            changes.SelectedIndex = 0;
+            TreeView changes = window.GetVisualDescendants().OfType<TreeView>().Single(tree => tree.Name == "WorkingFiles");
+            FileStatusTestHelpers.Select(changes, FileStatusTestHelpers.Changes(changes).First().Path);
             await Until(() => VisibleDiffContains(window, "+second line"));
             await Until(() => !window.IsBusy);
             Click(window, "Stage selected");
-            await Until(() => changes.ItemsSource!.OfType<GitChange>().Single().IsStaged);
+            await Until(() => FileStatusTestHelpers.Changes(changes).Single().IsStaged);
             await Until(() => !window.IsBusy);
 
             TextBox message = window.GetVisualDescendants().OfType<TextBox>().Single(text => text.Watermark == "Commit message");
             message.Text = "Commit from Linux desktop";
             Click(window, "Commit");
-            await Until(() => !changes.ItemsSource!.OfType<GitChange>().Any());
+            await Until(() => !FileStatusTestHelpers.Changes(changes).Any());
             await Until(() => !window.IsBusy);
             GitResult latest = await git.RunAsync(repository, ["log", "-1", "--format=%s"]);
             Assert.That(latest.StandardOutput.Trim(), Is.EqualTo("Commit from Linux desktop"));

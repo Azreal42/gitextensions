@@ -48,6 +48,7 @@ public static class GitOutputParser
                 }
 
                 string? originalPath = null;
+                int? similarityPercent = null;
                 if (entry[0] == '2')
                 {
                     if (++i >= entries.Length || entries[i].Length == 0)
@@ -56,9 +57,18 @@ public static class GitOutputParser
                     }
 
                     originalPath = entries[i];
+                    ReadOnlySpan<char> score = fields[8].AsSpan();
+                    if (score.Length < 2 || score[0] is not ('R' or 'C')
+                        || score[1..].IndexOfAnyExceptInRange('0', '9') >= 0
+                        || !int.TryParse(score[1..], NumberStyles.None, CultureInfo.InvariantCulture, out int percentage) || percentage > 100)
+                    {
+                        throw new FormatException("Invalid Git porcelain rename/copy percentage.");
+                    }
+                    similarityPercent = percentage;
                 }
 
-                changes.Add(new GitChange(fields[^1], originalPath, fields[1][0], fields[1][1], entry[0] == 'u', fields[2].StartsWith('S')));
+                changes.Add(new GitChange(fields[^1], originalPath, fields[1][0], fields[1][1], entry[0] == 'u', fields[2].StartsWith('S'))
+                    { SimilarityPercent = similarityPercent });
             }
         }
 

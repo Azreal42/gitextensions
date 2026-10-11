@@ -16,10 +16,10 @@ public sealed partial class GitRepository
             GitRevisionChanges changes = await GetRevisionChangesAsync(second.Revision, first.Revision, cancellationToken).ConfigureAwait(false);
             return new(first, second, changes.Files, []);
         }
-        List<string> arguments = ["diff", "--name-status", "-z", "--find-renames", "--no-ext-diff", "--no-textconv"];
+        List<string> arguments = ["diff", "--name-status", "-z", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
         AddComparisonRevisions(arguments, first, second);
         arguments.Add("--");
-        List<GitRevisionFile> files = ParseComparisonFiles((await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput);
+        List<GitRevisionFile> files = [.. GitRevisionFileParser.ParseNameStatus((await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput)];
         List<string> untracked = [];
         if (first.Kind == GitCompareRevisionKind.WorkingTree || second.Kind == GitCompareRevisionKind.WorkingTree)
         {
@@ -84,7 +84,7 @@ public sealed partial class GitRepository
         GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, cancellationToken).ConfigureAwait(false);
         GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, cancellationToken).ConfigureAwait(false);
         if (first == second) { return ""; }
-        List<string> arguments = ["--literal-pathspecs", "diff", "--no-color", "--find-renames", "--no-ext-diff", "--no-textconv"];
+        List<string> arguments = ["--literal-pathspecs", "diff", "--no-color", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
         AddComparisonOptions(arguments, options);
         AddComparisonRevisions(arguments, first, second);
         arguments.Add("--");
@@ -187,25 +187,6 @@ public sealed partial class GitRepository
         arguments.Add("--unified=" + (options.ShowEntireFile ? 9000 : options.ContextLines).ToString(CultureInfo.InvariantCulture));
         if (options.ShowEntireFile) { arguments.Add("--inter-hunk-context=9000"); }
         if (options.TreatAllFilesAsText) { arguments.Add("--text"); }
-    }
-
-    private static List<GitRevisionFile> ParseComparisonFiles(string output)
-    {
-        string[] records = output.Split('\0');
-        List<GitRevisionFile> files = [];
-        for (int index = 0; index < records.Length && records[index].Length > 0;)
-        {
-            char status = records[index++][0];
-            if (index >= records.Length || records[index].Length == 0) { throw new FormatException("Incomplete Git comparison record."); }
-            string path = records[index++];
-            if (status is 'R' or 'C')
-            {
-                if (index >= records.Length || records[index].Length == 0) { throw new FormatException("Incomplete Git comparison rename record."); }
-                files.Add(new(records[index++], status, path));
-            }
-            else { files.Add(new(path, status)); }
-        }
-        return files;
     }
 
 }

@@ -28,18 +28,18 @@ public class CommitDialogTests
         await Idle(dialog);
         Find<TextBox>(dialog, "Message").Text = "Préserver la disposition originale";
         dialog.UpdateLayout();
-        ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
-        ListBox staged = Find<ListBox>(dialog, "Staged");
+        TreeView unstaged = Find<TreeView>(dialog, "Unstaged");
+        TreeView staged = Find<TreeView>(dialog, "Staged");
         TextBox message = Find<TextBox>(dialog, "Message");
         Button commit = Find<Button>(dialog, "Commit");
         Assert.That(dialog.Title, Is.EqualTo("Commiter"));
         Assert.That(ButtonText(commit), Is.EqualTo("Commiter"));
         Assert.That(ButtonText(Find<Button>(dialog, "Stage")), Is.EqualTo("Indexer"));
         Assert.That(Find<CheckBox>(dialog, "Amend").Content, Is.EqualTo("Rectifier le commit"));
-        Assert.That(unstaged.Items.OfType<GitChange>().Single().Path, Is.EqualTo("file.txt"));
-        Assert.That(staged.Items.OfType<GitChange>().Single().Path, Is.EqualTo("file.txt"));
-        Assert.That(unstaged.GetVisualDescendants().OfType<ListBoxItem>().Single().Bounds.Height, Is.EqualTo(24));
-        Assert.That(staged.GetVisualDescendants().OfType<ListBoxItem>().Single().Bounds.Height, Is.EqualTo(24));
+        Assert.That(FileStatusTestHelpers.Changes(unstaged).Single().Path, Is.EqualTo("file.txt"));
+        Assert.That(FileStatusTestHelpers.Changes(staged).Single().Path, Is.EqualTo("file.txt"));
+        Assert.That(unstaged.GetVisualDescendants().OfType<TreeViewItem>().Single().Bounds.Height, Is.EqualTo(24));
+        Assert.That(staged.GetVisualDescendants().OfType<TreeViewItem>().Single().Bounds.Height, Is.EqualTo(24));
         Rect unstagedBounds = Bounds(dialog, unstaged);
         Rect stagedBounds = Bounds(dialog, staged);
         Rect diffBounds = Bounds(dialog, diff);
@@ -77,29 +77,31 @@ public class CommitDialogTests
         using Fixture fixture = await Fixture.CreateAsync(PartialInitial, PartialChanged);
         CommitDialog dialog = fixture.Dialog;
         DiffView diff = Find<DiffView>(dialog, "SelectedDiff");
-        ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
-        ListBox staged = Find<ListBox>(dialog, "Staged");
+        TreeView unstaged = Find<TreeView>(dialog, "Unstaged");
+        TreeView staged = Find<TreeView>(dialog, "Staged");
         diff.Select(diff.Text.IndexOf("+selected addition", StringComparison.Ordinal), 1);
         Click(dialog, "StageHunk");
         await Idle(dialog);
         await AssertIndex(fixture, "selected addition", "remaining addition");
-        Assert.That(unstaged.ItemCount, Is.EqualTo(1));
-        Assert.That(staged.ItemCount, Is.EqualTo(1));
-        staged.SelectedIndex = 0;
+        Assert.That(FileStatusTestHelpers.Changes(unstaged).Count(), Is.EqualTo(1));
+        Assert.That(FileStatusTestHelpers.Changes(staged).Count(), Is.EqualTo(1));
+        FileStatusTestHelpers.Select(staged, FileStatusTestHelpers.Changes(staged).First().Path);
         await Idle(dialog);
+        Assert.That(unstaged.SelectedItems, Is.Empty, "Selecting an indexed leaf clears the inactive working-tree selection, as in the original dialog.");
         const string selected = "+selected addition λ🧪";
         diff.Select(diff.Text.IndexOf(selected, StringComparison.Ordinal), selected.Length);
         Click(dialog, "UnstageLines");
         await Idle(dialog);
         Assert.That((await fixture.Run("diff", "--cached")).StandardOutput, Is.Empty);
 
-        unstaged.SelectedIndex = 0;
+        FileStatusTestHelpers.Select(unstaged, FileStatusTestHelpers.Changes(unstaged).First().Path);
         await Idle(dialog);
+        Assert.That(staged.SelectedItems, Is.Empty, "Selecting a working-tree leaf clears the inactive index selection.");
         diff.Select(diff.Text.IndexOf(selected, StringComparison.Ordinal), selected.Length);
         Click(dialog, "StageLines");
         await Idle(dialog);
         await AssertIndex(fixture, "selected addition", "remaining addition");
-        staged.SelectedIndex = 0;
+        FileStatusTestHelpers.Select(staged, FileStatusTestHelpers.Changes(staged).First().Path);
         await Idle(dialog);
         diff.Select(diff.Text.IndexOf(selected, StringComparison.Ordinal), 0);
         Click(dialog, "UnstageHunk");
@@ -135,8 +137,8 @@ public class CommitDialogTests
         string index = (await fixture.Run("diff", "--cached")).StandardOutput;
         fixture.WriteHook("pre-commit", "printf 'hook rejected this commit\\n' >&2\nexit 1\n");
         Click(dialog, "Commit");
-        Assert.That(Find<ListBox>(dialog, "Unstaged").IsEnabled, Is.False);
-        Assert.That(Find<ListBox>(dialog, "Staged").IsEnabled, Is.False);
+        Assert.That(Find<TreeView>(dialog, "Unstaged").IsEnabled, Is.False);
+        Assert.That(Find<TreeView>(dialog, "Staged").IsEnabled, Is.False);
         Assert.That(message.IsEnabled, Is.False);
         Assert.That(Find<Button>(dialog, "Cancel").IsEnabled, Is.True);
         await Idle(dialog, expectError: true);
@@ -167,7 +169,7 @@ public class CommitDialogTests
         Assert.That(message.Text, Is.Empty);
         Assert.That(dialog.HasCommitted, Is.True);
         Assert.That(repositoryChanges, Is.EqualTo(1));
-        Assert.That(Find<ListBox>(dialog, "Staged").ItemCount, Is.Zero);
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Count(), Is.Zero);
     }
 
     [AvaloniaTest]
@@ -224,30 +226,30 @@ public class CommitDialogTests
         using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\nchanged\n");
         CommitDialog dialog = fixture.Dialog;
         Press(dialog, PhysicalKey.Digit1, RawInputModifiers.Control);
-        Assert.That(Find<ListBox>(dialog, "Unstaged").IsKeyboardFocusWithin, Is.True);
+        Assert.That(Find<TreeView>(dialog, "Unstaged").IsKeyboardFocusWithin, Is.True);
         Press(dialog, PhysicalKey.Digit2, RawInputModifiers.Control);
         Assert.That(Find<DiffView>(dialog, "SelectedDiff").IsKeyboardFocusWithin, Is.True);
         Press(dialog, PhysicalKey.Digit3, RawInputModifiers.Control);
-        Assert.That(Find<ListBox>(dialog, "Staged").IsKeyboardFocusWithin, Is.True);
+        Assert.That(Find<TreeView>(dialog, "Staged").IsKeyboardFocusWithin, Is.True);
         Press(dialog, PhysicalKey.Digit4, RawInputModifiers.Control);
         Assert.That(Find<TextBox>(dialog, "Message").IsKeyboardFocusWithin, Is.True);
         Press(dialog, PhysicalKey.S, RawInputModifiers.Control);
         await Idle(dialog);
-        Assert.That(Find<ListBox>(dialog, "Unstaged").ItemCount, Is.Zero);
-        Assert.That(Find<ListBox>(dialog, "Staged").ItemCount, Is.EqualTo(1));
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Unstaged")).Count(), Is.Zero);
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Count(), Is.EqualTo(1));
         Click(dialog, "UnstageAll");
         await Idle(dialog);
         const string literalPath = "new λ; $(touch should-not-exist).txt";
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, literalPath), "untracked content\n");
         Press(dialog, PhysicalKey.F5);
         await Idle(dialog);
-        ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
-        unstaged.SelectedItem = unstaged.Items.OfType<GitChange>().Single(change => change.Path == literalPath);
+        TreeView unstaged = Find<TreeView>(dialog, "Unstaged");
+        FileStatusTestHelpers.Select(unstaged, literalPath);
         await Idle(dialog);
         Assert.That(Find<DiffView>(dialog, "SelectedDiff").Text, Is.EqualTo("untracked content\n"));
         Click(dialog, "Stage");
         await Idle(dialog);
-        Assert.That(Find<ListBox>(dialog, "Staged").Items.OfType<GitChange>().Single().Path, Is.EqualTo(literalPath));
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Single().Path, Is.EqualTo(literalPath));
         Assert.That(File.Exists(Path.Combine(fixture.Repository.Path, "should-not-exist")), Is.False);
         Find<TextBox>(dialog, "Message").Text = "Commit with keyboard";
         Find<TextBox>(dialog, "Message").Focus();
@@ -285,10 +287,10 @@ public class CommitDialogTests
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
         while (!filter.Items.OfType<string>().Contains(expression)) { await Task.Delay(20, timeout.Token); }
         await Idle(dialog);
-        ListBox unstaged = Find<ListBox>(dialog, "Unstaged"), staged = Find<ListBox>(dialog, "Staged");
-        Assert.That(unstaged.ItemCount, Is.EqualTo(2));
-        Assert.That(unstaged.SelectedItems!.OfType<GitChange>().Single().Path, Is.EqualTo(selectedPath));
-        Assert.That(staged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(otherPath), "Selection Filter does not hide indexed files.");
+        TreeView unstaged = Find<TreeView>(dialog, "Unstaged"), staged = Find<TreeView>(dialog, "Staged");
+        Assert.That(FileStatusTestHelpers.Changes(unstaged).Count(), Is.EqualTo(2));
+        Assert.That(unstaged.SelectedItems!.OfType<TreeViewItem>().Select(item => item.Tag).OfType<GitChange>().Single().Path, Is.EqualTo(selectedPath));
+        Assert.That(FileStatusTestHelpers.Changes(staged).Single().Path, Is.EqualTo(otherPath), "Selection Filter does not hide indexed files.");
         for (int attempt = 0; attempt < 2; attempt++)
         {
             if (attempt == 0) { Click(dialog, "StageAll"); }
@@ -296,13 +298,13 @@ public class CommitDialogTests
             await Idle(dialog);
             Assert.That((await fixture.Run("show", ":" + selectedPath)).StandardOutput, Is.EqualTo(selectedChanged));
             Assert.That((await fixture.Run("show", ":" + otherPath)).StandardOutput, Is.EqualTo(otherChanged));
-            Assert.That(unstaged.ItemCount, Is.Zero);
-            Assert.That(staged.ItemCount, Is.EqualTo(2));
+            Assert.That(FileStatusTestHelpers.Changes(unstaged).Count(), Is.Zero);
+            Assert.That(FileStatusTestHelpers.Changes(staged).Count(), Is.EqualTo(2));
             Click(dialog, "UnstageAll"); await Idle(dialog);
             Assert.That((await fixture.Run("show", ":" + selectedPath)).StandardOutput, Is.EqualTo(initial));
             Assert.That((await fixture.Run("show", ":" + otherPath)).StandardOutput, Is.EqualTo(initial));
-            Assert.That(unstaged.ItemCount, Is.EqualTo(2));
-            Assert.That(staged.ItemCount, Is.Zero);
+            Assert.That(FileStatusTestHelpers.Changes(unstaged).Count(), Is.EqualTo(2));
+            Assert.That(FileStatusTestHelpers.Changes(staged).Count(), Is.Zero);
         }
         Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, selectedPath)), Is.EqualTo(selectedChanged));
         Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, otherPath)), Is.EqualTo(otherChanged));
@@ -324,7 +326,7 @@ public class CommitDialogTests
         {
             dialog.Show();
             await dialog.InitializeAsync();
-            Assert.That(Find<ListBox>(dialog, "Staged").ItemCount, Is.Zero);
+            Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Count(), Is.Zero);
             Assert.That(Find<TextBox>(dialog, "Message").Text, Does.Contain("Merge branch 'feature'"));
             Assert.That(Find<Button>(dialog, "Commit").IsEnabled, Is.True);
             Click(dialog, "Commit");
@@ -354,7 +356,7 @@ public class CommitDialogTests
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
         while (!filter.Items.OfType<string>().Contains("RENAMED λ")) { await Task.Delay(20, timeout.Token); }
         await Idle(dialog);
-        Assert.That(Find<ListBox>(dialog, "Unstaged").Items.OfType<GitChange>().Single().Path, Is.EqualTo(renamed),
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Unstaged")).Single().Path, Is.EqualTo(renamed),
             "Selection matches the current name without changing Git's case-sensitive path identity.");
         Click(dialog, "StageAll");
         await Idle(dialog);
@@ -374,11 +376,11 @@ public class CommitDialogTests
         Assert.That(Find<CheckBox>(dialog, "Amend").IsEnabled, Is.False);
         Click(dialog, "StageAll");
         await Idle(dialog);
-        Assert.That(Find<ListBox>(dialog, "Staged").Items.OfType<GitChange>().Single().IsStaged, Is.True);
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Single().IsStaged, Is.True);
         Click(dialog, "UnstageAll");
         await Idle(dialog);
-        Assert.That(Find<ListBox>(dialog, "Staged").ItemCount, Is.Zero);
-        Assert.That(Find<ListBox>(dialog, "Unstaged").Items.OfType<GitChange>().Single().Path, Is.EqualTo(renamed));
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Count(), Is.Zero);
+        Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Unstaged")).Single().Path, Is.EqualTo(renamed));
         Assert.That(File.Exists(Path.Combine(fixture.Repository.Path, renamed)), Is.True);
     }
 

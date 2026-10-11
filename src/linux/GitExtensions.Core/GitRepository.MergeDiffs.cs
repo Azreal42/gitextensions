@@ -84,8 +84,10 @@ public sealed partial class GitRepository
         { groups.Add(new(GitRevisionDiffGroupKind.RangeDiff, target, first, [], RangeDiff: range)); }
         GitRevisionChanges baseToSecond = await GetRevisionChangesAsync(target, range.CommonAncestor, cancellationToken).ConfigureAwait(false);
         GitRevisionChanges baseToFirst = await GetRevisionChangesAsync(first, range.CommonAncestor, cancellationToken).ConfigureAwait(false);
-        groups.Add(new(GitRevisionDiffGroupKind.BaseToSecond, target, range.CommonAncestor, baseToSecond.Files));
-        groups.Add(new(GitRevisionDiffGroupKind.BaseToFirst, first, range.CommonAncestor, baseToFirst.Files));
+        GitRevisionFileClassification classification = GitRevisionFileClassifier.Classify(comparison.Files, baseToFirst.Files, baseToSecond.Files, cancellationToken);
+        groups[0] = groups[0] with { Files = classification.AToB };
+        groups.Add(new(GitRevisionDiffGroupKind.BaseToSecond, target, range.CommonAncestor, classification.BaseToB));
+        groups.Add(new(GitRevisionDiffGroupKind.BaseToFirst, first, range.CommonAncestor, classification.BaseToA));
         return groups;
     }
 

@@ -101,6 +101,16 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("combined and range-diff work without a worktree in bare repositories", MergeRangeDiffScenarios.BareDiffsAsync),
     ("ordinary revision diff overload retains display options and plain output", MergeRangeDiffScenarios.OrdinaryDiffOptionsAsync),
     ("combined and range-diff cancellation terminates child processes", MergeRangeDiffScenarios.CancellationAsync),
+    ("A/B groups classify identical, unequal and one-sided real changes", ABClassificationScenarios.ProvenanceAsync),
+    ("A/B rename scores distinguish exact moves from changed content", ABClassificationScenarios.RenameScoresAsync),
+    ("A/B copy detection retains exact and partial similarity without harder search", ABClassificationScenarios.CopyScoresAsync),
+    ("classification BASE stays distinct from explicit range bounds", ABClassificationScenarios.ExplicitBasesAsync),
+    ("pairwise rename overlap does not form a transitive file identity", ABClassificationScenarios.PairwiseNamesAsync),
+    ("NUL name-status records reject truncation, invalid scores and empty names", ABClassificationScenarios.MalformedRecordsAsync),
+    ("bare classification preserves patches and ineligible groups remain unclassified", ABClassificationScenarios.BareAndEligibilityAsync),
+    ("index flags retain literal names, mixed flags and unique conflict paths", ABClassificationScenarios.IndexFlagsAsync),
+    ("porcelain rename status retains exact and partial scores with literal paths", StatusSimilarityScenarios.RealRenamesAsync),
+    ("porcelain copy scores and malformed records preserve status contracts", StatusSimilarityScenarios.MalformedAndCopyScoresAsync),
 ];
 
 int failures = 0;

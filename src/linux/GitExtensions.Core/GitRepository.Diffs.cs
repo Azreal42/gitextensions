@@ -1,8 +1,12 @@
+using GitExtensions.Extensibility.Git;
+
 namespace GitExtensions.Linux;
 
 public sealed record GitRevisionFile(string Path, char Status, string? OriginalPath = null)
 {
     public bool IsDeleted => Status == 'D';
+    public int? SimilarityPercent { get; init; }
+    public DiffBranchStatus DiffStatus { get; init; } = DiffBranchStatus.Unknown;
 }
 
 public sealed record GitRevisionChanges(string Revision, string? BaseRevision, IReadOnlyList<GitRevisionFile> Files);
@@ -17,22 +21,10 @@ public sealed partial class GitRepository
                 .StandardOutput.TrimEnd('\r', '\n').Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault()
             : await ResolveRevisionAsync(baseRevision, cancellationToken).ConfigureAwait(false);
         string[] arguments = parent is null
-            ? ["diff-tree", "--root", "-r", "--no-commit-id", "--name-status", "-z", "--find-renames", "--no-ext-diff", "--no-textconv", target, "--"]
-            : ["diff", "--name-status", "-z", "--find-renames", "--no-ext-diff", "--no-textconv", parent, target, "--"];
-        string[] fields = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput.Split('\0');
-        List<GitRevisionFile> files = [];
-        for (int i = 0; i < fields.Length && fields[i].Length > 0;)
-        {
-            char status = fields[i++][0];
-            if (i >= fields.Length) { throw new FormatException("Incomplete Git file-change record."); }
-            string path = fields[i++];
-            if (status is 'R' or 'C')
-            {
-                if (i >= fields.Length) { throw new FormatException("Incomplete Git rename record."); }
-                files.Add(new(fields[i++], status, path));
-            }
-            else { files.Add(new(path, status)); }
-        }
+            ? ["diff-tree", "--root", "-r", "--no-commit-id", "--name-status", "-z", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv", target, "--"]
+            : ["diff", "--name-status", "-z", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv", parent, target, "--"];
+        IReadOnlyList<GitRevisionFile> files = GitRevisionFileParser.ParseNameStatus(
+            (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput);
         return new(target, parent, files);
     }
 
@@ -51,7 +43,7 @@ public sealed partial class GitRepository
         string[] paths = file.OriginalPath is null ? [ValidatePath(file.Path)] : [ValidatePath(file.OriginalPath), ValidatePath(file.Path)];
         List<string> arguments = parent is null
             ? ["diff-tree", "--root", "-r", "--no-commit-id", "--patch", "--no-ext-diff", "--no-textconv", "--no-color"]
-            : ["diff", "--find-renames", "--no-ext-diff", "--no-textconv", "--no-color"];
+            : ["diff", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv", "--no-color"];
         AddComparisonOptions(arguments, options);
         if (parent is not null) { arguments.Add(parent); }
         arguments.AddRange([target, "--", .. paths]);

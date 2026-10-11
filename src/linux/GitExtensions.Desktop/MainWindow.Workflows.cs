@@ -22,7 +22,7 @@ public sealed partial class MainWindow
     private GitRemote SelectedRemote() => _remotes.SelectedItem as GitRemote ?? throw new InvalidOperationException("Select a remote first.");
     private GitStash SelectedStash() => _stashes.SelectedItem as GitStash ?? throw new InvalidOperationException("Select a stash first.");
     private string[] SelectedPaths(bool includeOriginalPath = true)
-        => _changes.SelectedItems?.Cast<GitChange>()
+        => SelectedWorkingChanges
             .SelectMany(change => includeOriginalPath && change.OriginalPath is not null ? new[] { change.Path, change.OriginalPath } : new[] { change.Path })
             .Distinct(StringComparer.Ordinal).ToArray() ?? [];
 
@@ -48,15 +48,28 @@ public sealed partial class MainWindow
         if (dialog.CreatedRepository is GitRepository initialized) { await OpenRepositoryAsync(initialized.Path); }
     }
 
-    private Task StageAsync(bool all) => RunAsync("Stage", repository => all ? repository.StageAllAsync(Token) : repository.StageAsync(SelectedPaths(includeOriginalPath: false), Token));
+    private Task StageAsync(bool all) => RunAsync("Stage", async repository =>
+    {
+        IEnumerable<GitChange> changes = all ? FilteredWorkingChanges.Where(change => change.IsModified || change.IsConflict) : SelectedWorkingChanges;
+        HashSet<string> excluded = (await repository.GetIndexFlagsAsync(Token)).Where(file => file.IsAssumeUnchanged || file.IsSkipWorktree)
+            .Select(file => file.Path).ToHashSet(StringComparer.Ordinal);
+        string[] paths = changes.Where(change => !excluded.Contains(change.Path)).Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
+        if (paths.Length > 0) { await repository.StageAsync(paths, Token); }
+        if (all) { _changesFilesView?.ClearFilter(); }
+    });
 
-    private Task UnstageAsync(bool all) => RunAsync("Unstage", repository => repository.UnstageAsync(all
-        ? (_changes.ItemsSource?.Cast<GitChange>().Where(c => c.IsStaged).SelectMany(c => c.OriginalPath is null ? new[] { c.Path } : new[] { c.Path, c.OriginalPath }).Distinct(StringComparer.Ordinal) ?? [])
-        : SelectedPaths(), Token));
+    private Task UnstageAsync(bool all) => RunAsync("Unstage", async repository =>
+    {
+        IEnumerable<GitChange> changes = all ? FilteredWorkingChanges.Where(change => change.IsStaged) : SelectedWorkingChanges;
+        string[] paths = changes.SelectMany(change => change.OriginalPath is null ? new[] { change.Path } : new[] { change.Path, change.OriginalPath })
+            .Distinct(StringComparer.Ordinal).ToArray();
+        if (paths.Length > 0) { await repository.UnstageAsync(paths, Token); }
+        if (all) { _changesFilesView?.ClearFilter(); }
+    });
 
     private Task LoadSelectedDiffAsync()
     {
-        if (_refreshing || _changes.SelectedItem is not GitChange change) { return Task.CompletedTask; }
+        if (_refreshing || SelectedWorkingChange is not GitChange change) { return Task.CompletedTask; }
         return RunAsync("File diff", async repository =>
         {
             bool staged = change.IsStaged && (_stagedDiff.IsChecked == true || !change.IsModified);
@@ -69,7 +82,7 @@ public sealed partial class MainWindow
 
     private async Task ApplyHunksAsync(bool reverse)
     {
-        if (_selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
+        if (SelectedWorkingChange is null || _selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging hunks" : "Show unstaged changes before staging hunks"; return; }
         string patch = _selectedPatch.SelectHunks(_hunks.SelectedItems.Cast<GitPatchHunk>().Select(h => h.Index));
         await RunAsync(reverse ? "Unstage hunks" : "Stage hunks", r => r.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: Token));
@@ -78,7 +91,7 @@ public sealed partial class MainWindow
 
     private async Task ApplyLinesAsync(bool reverse)
     {
-        if (_changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || _changes.SelectedItem is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
+        if (_changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging lines" : "Show unstaged changes before staging lines"; return; }
         string? patch = GitPatch.SelectLines(_changesDiffView.Text, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
             staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
@@ -117,7 +130,7 @@ public sealed partial class MainWindow
 
     private async Task ResolveConflictAsync()
     {
-        string[] paths = _changes.SelectedItems?.Cast<GitChange>().Where(c => c.IsConflict).Select(c => c.Path).ToArray() ?? [];
+        string[] paths = SelectedWorkingChanges.Where(c => c.IsConflict).Select(c => c.Path).ToArray() ?? [];
         if (paths.Length == 0) { _state.Text = "Select conflicted files first"; return; }
         string[]? values = await Dialogs.PromptAsync(this, "Resolve conflicts", ("Keep version: ours or theirs (leave blank to stage your manual edits)", ""));
         if (values is null) { return; }

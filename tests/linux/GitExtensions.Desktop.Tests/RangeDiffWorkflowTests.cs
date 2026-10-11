@@ -177,7 +177,7 @@ public class RangeDiffWorkflowTests
         using SeriesFixture fixture = await SeriesFixture.CreateAsync();
         MainWindow main = fixture.Main;
         await SelectAsync(main, fixture.SecondTip, fixture.FirstTip);
-        MenuFlyout settings = (MenuFlyout)Field<Button>(main, "RevisionDiffSettings").Flyout!;
+        var settings = Field<FileStatusListView>(main, "RevisionFileStatusList").SettingsMenu;
         MenuItem all = settings.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionDiffAllParents");
         all.IsChecked = false; Invoke(all); await MainIdleAsync(main);
         RevisionDiffPreferencesStore store = new();

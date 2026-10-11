@@ -227,7 +227,7 @@ public class RevisionDiffGroupTests
     private static GitRevisionFile File(TreeViewItem item) => ((RevisionDiffFileSelection)item.Tag!).File;
     private static DiffView Visible(MainWindow main) => main.GetVisualDescendants().OfType<DiffView>().Single(view => view.IsEffectivelyVisible);
     private static T Find<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(item => item.Name == name);
-    private static MenuItem Setting(MainWindow main, string name) => ((MenuFlyout)Find<Button>(main, "RevisionDiffSettings").Flyout!).ItemsSource!.Cast<MenuItem>().Single(item => item.Name == name);
+    private static MenuItem Setting(MainWindow main, string name) => Find<FileStatusListView>(main, "RevisionFileStatusList").SettingsMenu.Items.OfType<MenuItem>().Single(item => item.Name == name);
     private static void Click(MainWindow main, string name) => Find<Button>(main, name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     private static async Task Idle(MainWindow main)
     {

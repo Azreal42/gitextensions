@@ -63,7 +63,7 @@ public class CommitSelectionFilterTests
         }
         Press(dialog, PhysicalKey.F, RawInputModifiers.Control);
         Assert.That(toolbar.IsVisible, Is.False);
-        Assert.That(Field<ListBox>(dialog, "Unstaged").IsFocused, Is.True);
+        Assert.That(Field<TreeView>(dialog, "Unstaged").IsKeyboardFocusWithin, Is.True);
         dialog.Close();
         CommitDialog reopened = await fixture.OpenAsync();
         Assert.That(Field<Control>(reopened, "SelectionFilterToolbar").IsVisible, Is.False, "The original toggle is local to the dialog.");
@@ -79,14 +79,14 @@ public class CommitSelectionFilterTests
         CommitDialog dialog = await fixture.OpenAsync();
         await SetRegex(dialog, @"^SRC/.*\.cs$");
         Assert.That(Selected(dialog), Is.EquivalentTo(new[] { "src/one.cs", "src/TWO.cs" }));
-        Assert.That(Field<ListBox>(dialog, "Unstaged").ItemCount, Is.EqualTo(3));
-        Assert.That(Field<ListBox>(dialog, "Staged").ItemCount, Is.EqualTo(1));
+        Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Unstaged")).Count(), Is.EqualTo(3));
+        Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Staged")).Count(), Is.EqualTo(1));
         Click(dialog, "Stage"); await Idle(dialog);
         Assert.That((await fixture.Git("diff", "--cached", "--", "indexed.txt")).StandardOutput, Is.EqualTo(indexedBefore));
         Assert.That((await fixture.Git("show", ":src/other.txt")).StandardOutput, Is.EqualTo(Fixture.Initial));
-        Assert.That(Field<ListBox>(dialog, "Staged").ItemCount, Is.EqualTo(3));
-        ListBox staged = Field<ListBox>(dialog, "Staged");
-        foreach (GitChange change in staged.Items.OfType<GitChange>().Where(change => change.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))) { staged.SelectedItems!.Add(change); }
+        Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Staged")).Count(), Is.EqualTo(3));
+        TreeView staged = Field<TreeView>(dialog, "Staged");
+        foreach (GitChange change in FileStatusTestHelpers.Changes(staged).Where(change => change.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))) { staged.SelectedItems!.Add(FileStatusTestHelpers.Rows(staged).Single(item => item.Tag is GitChange value && value.Path == change.Path)); }
         await Idle(dialog); Click(dialog, "Unstage"); await Idle(dialog);
         Assert.That((await fixture.Git("diff", "--cached")).StandardOutput, Is.EqualTo(indexedBefore));
         Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "src/one.cs")), Is.EqualTo(Fixture.Changed));
@@ -105,7 +105,7 @@ public class CommitSelectionFilterTests
         await Until(() => ToolTip.GetTip(filter) is string text && text.StartsWith("Erreur ", StringComparison.Ordinal));
         Assert.That(Selected(dialog), Is.EqualTo(new[] { "first.txt" }));
         Assert.That(filter.Items.OfType<string>(), Is.EqualTo(new[] { "first" }));
-        Assert.That(Field<ListBox>(dialog, "Unstaged").ItemCount, Is.EqualTo(2));
+        Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Unstaged")).Count(), Is.EqualTo(2));
         Assert.That((await fixture.Git("diff", "--cached")).StandardOutput, Is.Empty);
         Assert.That(await fixture.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(head));
         Assert.That(Field<TextBox>(dialog, "Message").Text, Is.EqualTo("Brouillon λ🧪"));
@@ -160,7 +160,7 @@ public class CommitSelectionFilterTests
         await Until(() => Selected(dialog).Length == 0);
         Assert.That(Field<Button>(dialog, "Stage").IsEnabled, Is.False);
         Assert.That(Field<Button>(dialog, "StageAll").IsEnabled, Is.True);
-        Assert.That(Field<ListBox>(dialog, "Unstaged").ItemCount, Is.EqualTo(2));
+        Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Unstaged")).Count(), Is.EqualTo(2));
         Field<TextBox>(dialog, "Message").Text = "Both displayed files";
         Click(dialog, "Commit"); await Until(() => dialog.OwnedWindows.OfType<CommitEmptyDialog>().Any());
         CommitEmptyDialog prompt = dialog.OwnedWindows.OfType<CommitEmptyDialog>().Single();
@@ -172,7 +172,7 @@ public class CommitSelectionFilterTests
         Assert.That((await fixture.Repository.GetStatusAsync()).Changes, Is.Empty);
     }
 
-    private static string[] Selected(CommitDialog dialog) => Field<ListBox>(dialog, "Unstaged").SelectedItems!.OfType<GitChange>().Select(change => change.Path).ToArray();
+    private static string[] Selected(CommitDialog dialog) => Field<TreeView>(dialog, "Unstaged").SelectedItems!.OfType<TreeViewItem>().Select(item => item.Tag).OfType<GitChange>().Select(change => change.Path).ToArray();
     private static T Field<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static void Click(CommitDialog window, string name) { Button button = Field<Button>(window, name); Assert.That(button.IsEnabled, Is.True); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
     private static void Press(Window window, PhysicalKey key, RawInputModifiers modifiers) { window.KeyPressQwerty(key, modifiers); if (window.IsVisible) { window.KeyReleaseQwerty(key, modifiers); } }

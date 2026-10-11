@@ -5,6 +5,7 @@ namespace GitExtensions.Linux;
 
 public sealed record GitChange(string Path, string? OriginalPath, char IndexStatus, char WorkTreeStatus, bool IsConflict, bool IsSubmodule)
 {
+    public int? SimilarityPercent { get; init; }
     public bool IsStaged => IndexStatus is not ('.' or '?' or '!');
     public bool IsUntracked => IndexStatus == '?';
     public bool IsIgnored => IndexStatus == '!';

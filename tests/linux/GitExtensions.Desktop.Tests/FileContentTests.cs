@@ -92,8 +92,8 @@ public class FileContentTests
         TabControl tabs = Find<TabControl>(fixture.Window, "DetailsTabs");
         tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
         fixture.Window.UpdateLayout();
-        ListBox changes = fixture.Window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Items.OfType<GitChange>().Any());
-        changes.SelectedItem = changes.Items.OfType<GitChange>().Single(change => change.Path == "example.patch");
+        TreeView changes = Find<TreeView>(fixture.Window, "WorkingFiles");
+        FileStatusTestHelpers.Select(changes, "example.patch");
         await Until(() => !fixture.Window.IsBusy);
         DiffView mainDiff = Find<DiffView>(fixture.Window, "WorktreeDiff");
         Assert.That(mainDiff.Text, Is.EqualTo(fake));
@@ -109,8 +109,8 @@ public class FileContentTests
         try
         {
             await dialog.InitializeAsync();
-            ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
-            unstaged.SelectedItem = unstaged.Items.OfType<GitChange>().Single(change => change.Path == "example.patch");
+            TreeView unstaged = Find<TreeView>(dialog, "Unstaged");
+            FileStatusTestHelpers.Select(unstaged, "example.patch");
             await Until(() => !dialog.IsBusy);
             DiffView diff = Find<DiffView>(dialog, "SelectedDiff");
             Assert.That(diff.Text, Is.EqualTo(fake));
@@ -182,8 +182,8 @@ public class FileContentTests
         TabControl tabs = Find<TabControl>(fixture.Window, "DetailsTabs");
         tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
         fixture.Window.UpdateLayout();
-        ListBox changes = fixture.Window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Items.OfType<GitChange>().Any());
-        changes.SelectedItem = changes.Items.OfType<GitChange>().Single(change => change.Path == path);
+        TreeView changes = Find<TreeView>(fixture.Window, "WorkingFiles");
+        FileStatusTestHelpers.Select(changes, path);
         await Until(() => !fixture.Window.IsBusy && VisibleContent(fixture.Window).IsImage);
         Assert.That(VisibleContent(fixture.Window).Bitmap!.PixelSize, Is.EqualTo(new PixelSize(6, 7)));
         CheckBox staged = fixture.Window.GetVisualDescendants().OfType<CheckBox>().Single(check => check.Content as string == "Show staged changes");
@@ -219,18 +219,18 @@ public class FileContentTests
         try
         {
             await dialog.InitializeAsync();
-            ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
-            unstaged.SelectedItem = unstaged.Items.OfType<GitChange>().Single(change => change.Path == path);
+            TreeView unstaged = Find<TreeView>(dialog, "Unstaged");
+            FileStatusTestHelpers.Select(unstaged, path);
             await Until(() => !dialog.IsBusy && VisibleContent(dialog).IsImage);
             Assert.That(VisibleContent(dialog).Bitmap!.PixelSize, Is.EqualTo(new PixelSize(6, 7)));
-            ListBox staged = Find<ListBox>(dialog, "Staged");
-            staged.SelectedItem = staged.Items.OfType<GitChange>().Single(change => change.Path == path);
+            TreeView staged = Find<TreeView>(dialog, "Staged");
+            FileStatusTestHelpers.Select(staged, path);
             await Until(() => !dialog.IsBusy && VisibleContent(dialog).Bitmap?.PixelSize == new PixelSize(4, 5));
             Assert.That((await File.ReadAllBytesAsync(Path.Combine(repository.Path, path))).SequenceEqual(working), Is.True);
             File.Delete(Path.Combine(repository.Path, path));
             await repository.StageAsync([path]);
             await dialog.RefreshAsync();
-            staged.SelectedItem = staged.Items.OfType<GitChange>().Single(change => change.Path == path);
+            FileStatusTestHelpers.Select(staged, path);
             await Until(() => !dialog.IsBusy && VisibleContent(dialog).IsImage);
             Assert.That(VisibleContent(dialog).Bitmap!.PixelSize, Is.EqualTo(new PixelSize(2, 3)), "A staged deletion previews its parent blob.");
             Assert.That(dialog.LastError, Is.Null);
@@ -252,8 +252,7 @@ public class FileContentTests
         return stream.ToArray();
     }
 
-    private static IEnumerable<TreeViewItem> FileRows(TreeView tree) => tree.Items.OfType<TreeViewItem>()
-        .SelectMany(item => item.Tag is RevisionDiffFileSelection ? new[] { item } : item.Items.OfType<TreeViewItem>());
+    private static IEnumerable<TreeViewItem> FileRows(TreeView tree) => FileStatusTestHelpers.Rows(tree).Where(item => item.Tag is RevisionDiffFileSelection);
     private static RevisionDiffFileSelection Selection(TreeViewItem item) => (RevisionDiffFileSelection)item.Tag!;
     private static T Find<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static FileContentView VisibleContent(Window window) => window.GetVisualDescendants().OfType<FileContentView>().Single(view => view.IsEffectivelyVisible);
