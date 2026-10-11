@@ -422,7 +422,7 @@ public sealed partial class MainWindow
     {
         StackPanel tools = new() { Spacing = 10, Margin = new Thickness(16) };
         tools.Children.Add(new TextBlock { Text = "History and repository maintenance", FontSize = 20 });
-        tools.Children.Add(Row(Button("Reflog", () => ShowCommandAsync("Reflog", "reflog", "--date=iso")), Button("Verify objects", () => ShowCommandAsync("Verify", "fsck", "--full")), Button("Repository statistics", () => ShowCommandAsync("Statistics", "count-objects", "-vH"))));
+        tools.Children.Add(Row(Button("Reflog", () => ShowCommandAsync("Reflog", "reflog", "--date=iso")), Button("Verify objects", VerifyObjectsAsync), Button("Repository statistics", StatisticsAsync)));
         tools.Children.Add(Row(Button("Export archive…", ExportArchiveAsync), Button("Create patches…", FormatPatchAsync), Button("Apply patch…", ApplyPatchAsync), Button("Notes…", NotesAsync)));
         tools.Children.Add(Row(Button("Bisect…", BisectAsync), Button("Sparse checkout…", SparseCheckoutAsync), Button("Garbage collection…", GarbageCollectAsync)));
         tools.Children.Add(new TextBlock { Text = "Output", FontSize = 16 });
@@ -441,34 +441,20 @@ public sealed partial class MainWindow
 
     private async Task ExportArchiveAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Export archive", ("Revision", "HEAD"), ("Output .zip or .tar path", ""));
-        if (values is null) { return; }
-        await RunAsync("Archive", async r =>
-        {
-            string revision = await r.ResolveRevisionAsync(values[0], Token);
-            string path = Path.GetFullPath(values[1]);
-            if (File.Exists(path)) { throw new IOException("The destination already exists."); }
-            await ExecuteAsync(r, "archive", "--output=" + path, revision);
-        });
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new ArchiveDialog(_repository, CurrentRevision));
     }
 
     private async Task FormatPatchAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Create patches", ("Since revision", "HEAD~1"), ("Output directory", ""));
-        if (values is null) { return; }
-        await RunAsync("Create patches", async r =>
-        {
-            string since = await r.ResolveRevisionAsync(values[0], Token);
-            await ExecuteAsync(r, "format-patch", "--output-directory=" + Path.GetFullPath(values[1]), since, "--");
-        });
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new FormatPatchDialog(_repository, CurrentRevision));
     }
 
     private async Task ApplyPatchAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Apply patch", ("Patch path", ""), ("Mode: apply or am", "apply"));
-        if (values is null) { return; }
-        if (values[1] is not ("apply" or "am")) { throw new ArgumentException("Choose apply or am."); }
-        await RunAsync("Apply patch", r => ExecuteAsync(r, values[1], "--", Path.GetFullPath(values[0])));
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new ApplyPatchDialog(_repository));
     }
 
     private async Task NotesAsync()
@@ -500,6 +486,13 @@ public sealed partial class MainWindow
 
     private async Task GarbageCollectAsync()
     {
-        if (await Dialogs.ConfirmAsync(this, "Optimize repository", "Run Git garbage collection with its normal retention policy?")) { await RunAsync("Garbage collection", r => ExecuteAsync(r, "gc")); }
+        if (await Dialogs.ConfirmAsync(this, "Optimize repository", "Run Git garbage collection with its normal retention policy?"))
+        {
+            await RunAsync("Garbage collection", async repository =>
+            {
+                GitResult result = await repository.GarbageCollectAsync(Token);
+                AppendOutput(result.StandardOutput + result.StandardError);
+            });
+        }
     }
 }
