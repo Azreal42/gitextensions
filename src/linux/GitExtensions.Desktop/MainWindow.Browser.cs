@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 
@@ -164,7 +165,9 @@ public sealed partial class MainWindow
         Grid.SetColumn(columns, 1);
         headers.Children.Add(columns);
         DockPanel.SetDock(headers, Dock.Top);
-        panel.Children.Add(new Border { Background = Brush.Parse("#F0F0F0"), BorderThickness = new Thickness(0, 0, 0, 1), BorderBrush = Brush.Parse("#B4B4B4"), Child = headers });
+        Border header = new() { Name = "RevisionHeader", Background = Brush.Parse("#F0F0F0"), BorderThickness = new Thickness(0, 0, 0, 1), BorderBrush = Brush.Parse("#B4B4B4"), Child = headers };
+        header.ActualThemeVariantChanged += (_, _) => header.Background = Brush.Parse(header.ActualThemeVariant == ThemeVariant.Dark ? "#373737" : "#F0F0F0");
+        panel.Children.Add(header);
         DockPanel.SetDock(panel.Children[0], Dock.Top);
         Grid body = new() { ColumnDefinitions = new ColumnDefinitions("180,*") };
         _historyGraph.Width = 180;

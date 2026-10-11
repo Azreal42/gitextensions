@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
@@ -62,6 +64,21 @@ public class MainWindowClassicTests
         string screenshot = Path.Combine(TestContext.CurrentContext.WorkDirectory, "classic-browser.png");
         frame!.Save(screenshot);
         TestContext.AddTestAttachment(screenshot, "Classic Linux browser with real merge history and native diff");
+
+        Border header = window.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "RevisionHeader");
+        window.RequestedThemeVariant = ThemeVariant.Dark;
+        window.UpdateLayout();
+        Assert.That(((ISolidColorBrush)header.Background!).Color, Is.EqualTo(Color.Parse("#373737")), "The history header must follow the dark palette to keep its labels readable.");
+        using (Avalonia.Media.Imaging.WriteableBitmap? darkFrame = window.CaptureRenderedFrame())
+        {
+            Assert.That(darkFrame, Is.Not.Null);
+            string darkScreenshot = Path.Combine(TestContext.CurrentContext.WorkDirectory, "classic-browser-dark.png");
+            darkFrame!.Save(darkScreenshot);
+            TestContext.AddTestAttachment(darkScreenshot, "Classic Linux browser in the dark theme");
+        }
+        window.RequestedThemeVariant = ThemeVariant.Light;
+        window.UpdateLayout();
+        Assert.That(((ISolidColorBrush)header.Background!).Color, Is.EqualTo(Color.Parse("#F0F0F0")));
     }
 
     [AvaloniaTest]

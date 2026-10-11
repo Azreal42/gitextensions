@@ -193,7 +193,7 @@ public sealed class DiffView : UserControl
                 ? owner._lines.Max(line => Math.Max(line.Old ?? 0, line.New ?? 0))
                 : owner._lines.Count;
             int digits = Math.Max(1, maximum.ToString(CultureInfo.InvariantCulture).Length);
-            _columnWidth = CreateText(new string('9', digits) + " ").Width;
+            _columnWidth = CreateText(new string('9', digits) + " ").WidthIncludingTrailingWhitespace;
             return new Size(4 + _columnWidth * (owner._isPatch ? 2 : 1), 0);
         }
 
