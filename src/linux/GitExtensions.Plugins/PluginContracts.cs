@@ -33,7 +33,8 @@ public interface INativePlugin
 public static class NativePluginCatalog
 {
     public static IReadOnlyList<INativePlugin> BuiltIn { get; } =
-        [new CreateLocalBranchesPlugin(), new DeleteUnusedBranchesPlugin(), new FindLargeFilesPlugin(), new ReleaseNotesGeneratorPlugin()];
+        [new CreateLocalBranchesPlugin(), new DeleteUnusedBranchesPlugin(), new FindLargeFilesPlugin(), new ReleaseNotesGeneratorPlugin(),
+         new StatisticsPlugin(), new GitImpactPlugin(), new ProxySwitcherPlugin(), new GourcePlugin()];
 }
 
 internal static class PluginValues

@@ -1,6 +1,7 @@
 using System.Globalization;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Plugins;
+using GitExtensions.Plugins.Tests;
 
 // Exercise actual Git repositories and local bare remotes; no network or test adapter is needed.
 Environment.SetEnvironmentVariable("GIT_CONFIG_GLOBAL", "/dev/null");
@@ -23,6 +24,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("release notes honour range, order, Unicode bodies and HTML escaping", ReleaseNotesAsync),
     ("invalid ranges and cancelled execution leave the repository untouched", InvalidAndCancelledAsync),
 ];
+tests = [.. tests, .. StatisticsScenarios.All, .. LocalAutomationScenarios.All];
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)
 {

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Formats.Tar;
+using System.IO.Compression;
 using GitCommands.Git;
 using GitExtensions.Linux;
 
@@ -80,6 +82,15 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("SHA256 repository status/history", Sha256Async),
     ("cancellation terminates Git and descendants", CancellationAsync),
     ("askpass isolates response streams and preserves explicit helpers", AskpassAsync),
+    ("ZIP and TAR exports preserve committed bytes, literal paths and revision filters", ArchiveExportsAsync),
+    ("mailbox exports retain root, inclusive range and individual selection semantics", FormatPatchExportsAsync),
+    ("raw patch options apply, check, reverse, stage and fix whitespace", DiffPatchFilesAsync),
+    ("mailbox application preserves authors, signoffs and directory order", MailboxApplyAsync),
+    ("mailbox conflict state survives resolution, abort and skip", MailboxConflictAsync),
+    ("object verification, byte statistics and normal garbage collection", MaintenanceAsync),
+    ("revision file lists preserve renames and literal paths", DiffScenarios.RevisionFilesAsync),
+    ("merge diffs expose each parent", DiffScenarios.MergeParentsAsync),
+    ("index previews preserve exact bytes", DiffScenarios.IndexBytesAsync),
 ];
 
 int failures = 0;
@@ -1050,6 +1061,296 @@ static async Task Sha256Async()
     Assert(status.Head?.Length == 64 && status.Changes.Single().Path == "sha256.txt", "Field count instead of SHA1 byte offsets");
     GitCommit commit = (await repository.GetLogAsync()).Single();
     Assert(commit.Hash.Length == 64 && commit.Sha1Id is null, "SHA256 identities preserved");
+}
+
+static async Task ArchiveExportsAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string literal = ":[archive]*? λ\n.bin";
+    byte[] firstBytes = [0, 255, 10, 128, 42];
+    await File.WriteAllBytesAsync(fixture.File(literal), firstBytes);
+    fixture.Write("old-name.txt", "rename content\n");
+    fixture.Write("ignored.txt", "export ignored\n");
+    fixture.Write(".gitattributes", "ignored.txt export-ignore\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Archive baseline");
+    string baseline = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    string output = System.IO.Path.Combine(fixture.Root, "exports λ\n");
+    string zipPath = System.IO.Path.Combine(output, "literal '$().zip");
+    GitArchiveResult zip = await fixture.Repository.ExportArchiveAsync(new(zipPath, Prefix: "release λ", Paths: [literal], CompressionLevel: 0));
+    Assert(zip.OutputPath == zipPath && zip.Revision == baseline && zip.BytesWritten == new FileInfo(zipPath).Length && zip.Paths.Single() == literal, "Archive result records resolved revision and file metadata");
+    using (ZipArchive archive = ZipFile.OpenRead(zipPath))
+    {
+        ZipArchiveEntry file = archive.Entries.Single(entry => !entry.FullName.EndsWith('/'));
+        Assert(file.FullName == "release λ/" + literal, "ZIP literal path and normalized prefix");
+        using MemoryStream bytes = new();
+        await file.Open().CopyToAsync(bytes);
+        Assert(bytes.ToArray().SequenceEqual(firstBytes), "ZIP bytes are exact, including NUL and invalid text bytes");
+    }
+
+    byte[] sentinel = await File.ReadAllBytesAsync(zipPath);
+    await ExpectAsync<IOException>(() => fixture.Repository.ExportArchiveAsync(new(zipPath)));
+    Assert((await File.ReadAllBytesAsync(zipPath)).SequenceEqual(sentinel), "Existing export remains byte-identical");
+    string allZip = System.IO.Path.Combine(output, "all.zip");
+    await fixture.Repository.ExportArchiveAsync(new(allZip));
+    using (ZipArchive archive = ZipFile.OpenRead(allZip))
+    {
+        Assert(archive.Entries.Any(entry => entry.FullName == literal) && archive.Entries.All(entry => entry.FullName != "ignored.txt"), "Git archive keeps committed export-ignore attributes");
+    }
+
+    byte[] changedBytes = [42, 0, 10, 255];
+    await File.WriteAllBytesAsync(fixture.File(literal), changedBytes);
+    File.Delete(fixture.File("seed.txt"));
+    const string renamed = "renamed [a]*?\n.txt";
+    File.Move(fixture.File("old-name.txt"), fixture.File(renamed));
+    fixture.Write("added/file.txt", "added\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Archive changes");
+    string tarPath = System.IO.Path.Combine(output, "changed.tar");
+    GitArchiveResult tar = await fixture.Repository.ExportArchiveAsync(new(tarPath, Format: GitArchiveFormat.Tar, Prefix: "changes/", DiffRevision: baseline));
+    Assert(tar.Paths.ToHashSet(StringComparer.Ordinal).SetEquals([literal, renamed, "added/file.txt"]), "Comparison archives changed target files and omits deleted paths");
+    Dictionary<string, byte[]> entries = [];
+    await using (FileStream stream = File.OpenRead(tarPath))
+    using (TarReader reader = new(stream))
+    {
+        TarEntry? entry;
+        while ((entry = reader.GetNextEntry()) is not null)
+        {
+            if (entry.DataStream is null) { continue; }
+            using MemoryStream bytes = new();
+            await entry.DataStream.CopyToAsync(bytes);
+            entries.Add(entry.Name, bytes.ToArray());
+        }
+    }
+    Assert(entries.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(tar.Paths.Select(path => "changes/" + path)) && entries["changes/" + literal].SequenceEqual(changedBytes), "TAR archive has the exact filtered names and binary contents");
+    string missing = System.IO.Path.Combine(output, "missing.zip");
+    await ExpectAsync<GitCommandException>(() => fixture.Repository.ExportArchiveAsync(new(missing, Paths: ["missing path"])));
+    Assert(!File.Exists(missing) && !Directory.GetFiles(output, ".gitextensions-archive-*").Any(), "Failed Git archive leaves no final or temporary artifact");
+    await ExpectAsync<InvalidOperationException>(() => fixture.Repository.ExportArchiveAsync(new(missing, DiffRevision: "HEAD")));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.ExportArchiveAsync(new(missing, Prefix: "../outside")));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.ExportArchiveAsync(new(missing, Paths: [literal], DiffRevision: baseline)));
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.ExportArchiveAsync(new(missing, Format: GitArchiveFormat.Tar, CompressionLevel: 5)));
+    using CancellationTokenSource cancelled = new();
+    cancelled.Cancel();
+    await ExpectAsync<OperationCanceledException>(() => fixture.Repository.ExportArchiveAsync(new(missing), cancelled.Token));
+    Assert(!File.Exists(missing) && (await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Cancelled exports leave no artifacts and exports do not dirty the repository");
+
+    string barePath = System.IO.Path.Combine(fixture.Root, "bare archive.git");
+    GitResult clone = await new GitRunner().RunAsync(fixture.Root, ["clone", "--bare", "--", fixture.Repository.Path, barePath]);
+    Assert(clone.Success, "Bare archive source");
+    GitRepository bare = await GitRepository.OpenAsync(barePath);
+    await bare.ExportArchiveAsync(new(System.IO.Path.Combine(output, "bare.zip"), Paths: [literal]));
+    Assert(bare.IsBare && (await bare.GetStatusAsync()).Changes.Count == 0, "Archives work from a bare object database");
+}
+
+static async Task FormatPatchExportsAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string root = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    List<string> revisions = [];
+    for (int index = 1; index <= 4; index++)
+    {
+        fixture.Write($"feature-{index}.txt", $"feature {index}\n");
+        if (index == 1) { await File.WriteAllBytesAsync(fixture.File("binary λ\n.bin"), [0, 255, 128, 10]); }
+        await fixture.Repository.StageAllAsync();
+        await fixture.Repository.CommitAsync(new GitCommitOptions(Message: "Feature " + index, Author: "Patch Author <patch-author@example.invalid>"));
+        revisions.Add(await fixture.Repository.ResolveRevisionAsync("HEAD"));
+    }
+    string exports = System.IO.Path.Combine(fixture.Root, "patch exports λ\n");
+    GitFormatPatchResult initial = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(exports, "root"), SelectedRevisions: [root]));
+    Assert(initial.Files.Count == 1 && (await File.ReadAllTextAsync(initial.Files[0])).Contains("Subject: [PATCH] Initial", StringComparison.Ordinal), "Selecting root exports the root commit");
+    GitFormatPatchResult single = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(exports, "single"), SelectedRevisions: [revisions[1]]));
+    Assert(single.Files.Count == 1 && (await File.ReadAllTextAsync(single.Files[0])).Contains("Subject: [PATCH] Feature 2", StringComparison.Ordinal), "One selected revision excludes its parent");
+    GitFormatPatchResult range = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(exports, "range"), SelectedRevisions: [revisions[0], revisions[2]]));
+    Assert(range.Files.Count == 3 && (await File.ReadAllTextAsync(range.Files[1])).Contains("Feature 2", StringComparison.Ordinal), "Two endpoints include both selected commits and the commit between them");
+    GitFormatPatchResult individual = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(exports, "individual"), SelectedRevisions: [revisions[0], revisions[2], revisions[3]], StartNumber: 7));
+    Assert(individual.Files.Select(file => System.IO.Path.GetFileName(file)[..4]).SequenceEqual(["0007", "0008", "0009"]), "Individual selection advances historical patch file numbering");
+    string[] individualText = await Task.WhenAll(individual.Files.Select(file => File.ReadAllTextAsync(file)));
+    Assert(individualText.Length == 3 && individualText.All(text => !text.Contains("Subject: [PATCH] Feature 2", StringComparison.Ordinal)), "More than two selections export only individual commits");
+    GitFormatPatchOptions options = new(System.IO.Path.Combine(exports, "full series"), FromRevision: root, CoverLetter: true, SignOff: true, SubjectPrefix: "REVIEW", Numbered: true);
+    GitFormatPatchResult series = await fixture.Repository.FormatPatchAsync(options);
+    Assert(series.Files.Count == 5 && System.IO.Path.GetFileName(series.Files[0]).Contains("cover-letter", StringComparison.Ordinal), "Contiguous range includes a cover letter");
+    string text = await File.ReadAllTextAsync(series.Files[1]);
+    Assert(text.Contains("Subject: [REVIEW 1/4] Feature 1", StringComparison.Ordinal) && text.Contains("Signed-off-by: Linux Test <linux-test@example.invalid>", StringComparison.Ordinal) && text.Contains("GIT binary patch", StringComparison.Ordinal), "Business options retain numbered subject, signoff and binary data");
+    Dictionary<string, byte[]> contents = [];
+    foreach (string file in series.Files) { contents[file] = await File.ReadAllBytesAsync(file); }
+    await ExpectAsync<IOException>(() => fixture.Repository.FormatPatchAsync(options));
+    foreach ((string file, byte[] bytes) in contents) { Assert((await File.ReadAllBytesAsync(file)).SequenceEqual(bytes), "Existing mailbox file is not overwritten"); }
+    Assert(!Directory.GetDirectories(options.OutputDirectory, ".gitextensions-patches-*").Any(), "Temporary patch directories are removed on a destination collision");
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(exports, "duplicate"), SelectedRevisions: [root, root])));
+    await ExpectAsync<InvalidOperationException>(() => fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(exports, "empty"), FromRevision: "HEAD")));
+    Assert((await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Patch exports leave the source worktree and index unchanged");
+
+    string recipientPath = System.IO.Path.Combine(fixture.Root, "patch recipient");
+    GitRepository recipient = await GitRepository.CloneAsync(fixture.Repository.Path, recipientPath, recursive: false);
+    await RepositoryFixture.ConfigureAsync(recipient);
+    await recipient.CreateBranchAsync("recipient", root);
+    await recipient.ApplyMailboxPatchesAsync(range.Files);
+    Assert((await recipient.GetLogAsync(3, all: false)).Select(commit => commit.Subject).SequenceEqual(["Feature 3", "Feature 2", "Feature 1"]), "Inclusive exported series reapplies as commits in chronological order");
+    Assert((await recipient.GetFileBytesAsync("binary λ\n.bin")).SequenceEqual(new byte[] { 0, 255, 128, 10 }), "Mailbox patches restore exact binary content");
+}
+
+static async Task DiffPatchFilesAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    fixture.Write("seed.txt", "seed\nnew line\n");
+    string patchFile = System.IO.Path.Combine(fixture.Root, "raw patch λ\n.patch");
+    await File.WriteAllTextAsync(patchFile, await fixture.Repository.GetDiffAsync());
+    await fixture.Repository.ResetAsync("HEAD", GitResetMode.Hard);
+    Assert(await GitRepository.GetPatchFileKindAsync(patchFile) == GitPatchFileKind.Diff, "Raw diff detection retains the original dialog's prefix rule");
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(CheckOnly: true));
+    Assert((await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Check-only application does not mutate files or index");
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile);
+    Assert((await fixture.Repository.GetStatusAsync()).Changes.Single() is { IsStaged: false, WorkTreeStatus: 'M' }, "Default raw application affects the worktree only");
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Reverse: true));
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Target: GitPatchTarget.Index));
+    Assert(await File.ReadAllTextAsync(fixture.File("seed.txt")) == "seed\n" && (await fixture.Repository.GetStatusAsync()).Changes.Single().IsStaged, "Cached application changes the index without editing the file");
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Target: GitPatchTarget.Index, Reverse: true));
+    // Refresh stat data after worktree-only edits; git apply --index deliberately requires an up-to-date index.
+    await fixture.Repository.RunAsync(["update-index", "--refresh"]);
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Target: GitPatchTarget.IndexAndWorkingTree));
+    Assert(await File.ReadAllTextAsync(fixture.File("seed.txt")) == "seed\nnew line\n" && (await fixture.Repository.GetStatusAsync()).Changes.Single().IsStaged, "Index-and-worktree application updates both");
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Target: GitPatchTarget.IndexAndWorkingTree, Reverse: true));
+
+    fixture.Write("nested/seed.txt", "seed\n");
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Directory: "nested"));
+    Assert(await File.ReadAllTextAsync(fixture.File("nested/seed.txt")) == "seed\nnew line\n" && await File.ReadAllTextAsync(fixture.File("seed.txt")) == "seed\n", "Directory-prefix application stays inside the selected repository path");
+    await ExpectAsync<ArgumentException>(() => fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Directory: "../outside")));
+    File.Delete(fixture.File("nested/seed.txt"));
+    fixture.Write("seed.txt", "anchor\tvalue\nold\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Whitespace baseline");
+    fixture.Write("seed.txt", "anchor\tvalue\nnew\n");
+    string whitespacePatch = (await fixture.Repository.GetDiffAsync()).Replace(" anchor\tvalue", " anchor value", StringComparison.Ordinal);
+    await File.WriteAllTextAsync(patchFile, whitespacePatch);
+    await fixture.Repository.ResetAsync("HEAD", GitResetMode.Hard);
+    await ExpectAsync<GitCommandException>(() => fixture.Repository.ApplyDiffPatchAsync(patchFile));
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(IgnoreWhitespace: true));
+    Assert(await File.ReadAllTextAsync(fixture.File("seed.txt")) == "anchor\tvalue\nnew\n", "Ignore-whitespace matches differing context while retaining original context bytes");
+    await fixture.Repository.ResetAsync("HEAD", GitResetMode.Hard);
+    fixture.Write("seed.txt", "anchor\tvalue\nnew trailing  \n");
+    await File.WriteAllTextAsync(patchFile, await fixture.Repository.GetDiffAsync());
+    await fixture.Repository.ResetAsync("HEAD", GitResetMode.Hard);
+    await ExpectAsync<GitCommandException>(() => fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Whitespace: GitPatchWhitespace.ErrorAll)));
+    await fixture.Repository.ApplyDiffPatchAsync(patchFile, new(Whitespace: GitPatchWhitespace.Fix));
+    Assert(await File.ReadAllTextAsync(fixture.File("seed.txt")) == "anchor\tvalue\nnew trailing\n", "Whitespace fix removes trailing added whitespace");
+    string indexPatch = System.IO.Path.Combine(fixture.Root, "svn.patch");
+    await File.WriteAllTextAsync(indexPatch, "Index: seed.txt\n");
+    Assert(await GitRepository.GetPatchFileKindAsync(indexPatch) == GitPatchFileKind.Diff, "Original Index: diff prefix remains recognized");
+}
+
+static async Task MailboxApplyAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string initial = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    for (int index = 1; index <= 2; index++)
+    {
+        fixture.Write("seed.txt", "seed\n" + string.Concat(Enumerable.Range(1, index).Select(value => $"change {value}\n")));
+        await fixture.Repository.StageAllAsync();
+        await fixture.Repository.CommitAsync(new GitCommitOptions(Message: "Mailbox change " + index, Author: "Patch Author <patch-author@example.invalid>"));
+    }
+    GitFormatPatchResult patches = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(fixture.Root, "mailbox files"), FromRevision: initial));
+    Assert(await GitRepository.GetPatchFileKindAsync(patches.Files[0]) == GitPatchFileKind.Mailbox, "Mailbox detection recognizes Git format-patch output");
+    string folder = System.IO.Path.Combine(fixture.Root, "directory mailbox λ\n");
+    Directory.CreateDirectory(folder);
+    File.Copy(patches.Files[1], System.IO.Path.Combine(folder, "0002 λ\n.patch"));
+    File.Copy(patches.Files[0], System.IO.Path.Combine(folder, "0001 λ\n.patch"));
+    GitRepository target = await GitRepository.CloneAsync(fixture.Repository.Path, System.IO.Path.Combine(fixture.Root, "am recipient"), recursive: false);
+    await RepositoryFixture.ConfigureAsync(target);
+    await target.CreateBranchAsync("recipient", initial);
+    await target.ApplyPatchDirectoryAsync(folder, new(SignOff: true, CommitterDateIsAuthorDate: true));
+    IReadOnlyList<GitCommit> commits = await target.GetLogAsync(2, all: false);
+    Assert(commits.Select(commit => commit.Subject).SequenceEqual(["Mailbox change 2", "Mailbox change 1"]) && commits.All(commit => commit.AuthorName == "Patch Author" && commit.Body.Contains("Signed-off-by: Linux Test <linux-test@example.invalid>", StringComparison.Ordinal)), "Directory mailbox ordering preserves authors and applies signoff");
+    GitResult dates = await target.RunAsync(["show", "--no-patch", "--format=%aI%x00%cI", "HEAD"]);
+    string[] date = dates.StandardOutput.TrimEnd('\n').Split('\0');
+    Assert(date.Length == 2 && date[0] == date[1], "Mailbox committer-date option adopts the author timestamp");
+    Assert(!(await target.GetAmStateAsync()).IsActive && (await target.GetStatusAsync()).Changes.Count == 0, "Successful mailbox application clears state and leaves a clean index");
+    await ExpectAsync<InvalidOperationException>(() => target.ManageAmAsync(GitOperationAction.Continue));
+    await ExpectAsync<ArgumentOutOfRangeException>(() => target.ManageAmAsync((GitOperationAction)999));
+    GitFormatPatchResult rootPatch = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(fixture.Root, "root mail"), SelectedRevisions: [initial]));
+    GitRepository unborn = await GitRepository.InitAsync(System.IO.Path.Combine(fixture.Root, "unborn am"));
+    await RepositoryFixture.ConfigureAsync(unborn);
+    await unborn.ApplyMailboxPatchesAsync(rootPatch.Files);
+    Assert((await unborn.GetLogAsync()).Single().Subject == "Initial" && await File.ReadAllTextAsync(System.IO.Path.Combine(unborn.Path, "seed.txt")) == "seed\n", "Mailbox application imports a root commit into an unborn repository");
+}
+
+static async Task MailboxConflictAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string initial = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    fixture.Write("seed.txt", "source conflicting change\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Conflict patch");
+    fixture.Write("later.txt", "later independent patch\n");
+    await fixture.Repository.StageAllAsync();
+    await fixture.Repository.CommitAsync("Later patch");
+    GitFormatPatchResult patches = await fixture.Repository.FormatPatchAsync(new(System.IO.Path.Combine(fixture.Root, "conflict mailbox"), FromRevision: initial));
+    foreach (GitOperationAction action in new[] { GitOperationAction.Continue, GitOperationAction.Abort, GitOperationAction.Skip })
+    {
+        GitRepository target = await GitRepository.CloneAsync(fixture.Repository.Path, System.IO.Path.Combine(fixture.Root, action.ToString()), recursive: false);
+        await RepositoryFixture.ConfigureAsync(target);
+        await target.CreateBranchAsync("recipient", initial);
+        await File.WriteAllTextAsync(System.IO.Path.Combine(target.Path, "seed.txt"), "target conflicting change\n");
+        await target.StageAllAsync();
+        await target.CommitAsync("Target change");
+        string original = await target.ResolveRevisionAsync("HEAD");
+        await ExpectAsync<GitCommandException>(() => target.ApplyMailboxPatchesAsync(patches.Files));
+        GitRepository reopened = await GitRepository.OpenAsync(target.Path);
+        GitAmState state = await reopened.GetAmStateAsync();
+        Assert(state.IsActive && state.CurrentPatch == 1 && state.PatchCount == 2 && state.Subject == "Conflict patch" && state.OriginalHead == original && state.ConflictedPaths.SequenceEqual(["seed.txt"]) && state.CurrentPatchDiff?.Contains("+source conflicting change", StringComparison.Ordinal) == true, "Mailbox conflict state survives reopening with current patch and conflicted paths");
+        await ExpectAsync<InvalidOperationException>(() => reopened.ApplyMailboxPatchesAsync(patches.Files));
+        if (action == GitOperationAction.Continue)
+        {
+            await File.WriteAllTextAsync(System.IO.Path.Combine(target.Path, "seed.txt"), "resolved source and target\n");
+            await reopened.StageAsync(["seed.txt"]);
+        }
+        await reopened.ManageAmAsync(action);
+        Assert(!(await reopened.GetAmStateAsync()).IsActive && (await reopened.GetStatusAsync()).Changes.Count == 0, "Mailbox continuation action clears active state and leaves index clean");
+        string seed = await File.ReadAllTextAsync(System.IO.Path.Combine(target.Path, "seed.txt"));
+        if (action == GitOperationAction.Abort)
+        {
+            Assert(await reopened.ResolveRevisionAsync("HEAD") == original && seed == "target conflicting change\n" && !File.Exists(System.IO.Path.Combine(target.Path, "later.txt")), "Abort restores the original branch, worktree and commit");
+        }
+        else if (action == GitOperationAction.Skip)
+        {
+            Assert(seed == "target conflicting change\n" && File.Exists(System.IO.Path.Combine(target.Path, "later.txt")) && (await reopened.GetLogAsync(1, all: false)).Single().Subject == "Later patch", "Skip omits only the conflicted patch and applies the following patch");
+        }
+        else
+        {
+            Assert(seed == "resolved source and target\n" && (await reopened.GetLogAsync(2, all: false)).Select(commit => commit.Subject).SequenceEqual(["Later patch", "Conflict patch"]), "Continue commits the staged resolution and finishes the mailbox series");
+        }
+    }
+}
+
+static async Task MaintenanceAsync()
+{
+    using RepositoryFixture fixture = await RepositoryFixture.CreateAsync();
+    string head = await fixture.Repository.ResolveRevisionAsync("HEAD");
+    GitRepositoryStatistics loose = await fixture.Repository.GetStatisticsAsync();
+    Assert(loose.LooseObjects >= 3 && loose.LooseSizeBytes > 0 && loose.PackedObjects == 0 && loose.PackFiles == 0, "Fresh repository statistics expose loose object counts and bytes");
+    GitResult dangling = await new GitRunner().RunAsync(fixture.Repository.Path, ["hash-object", "-w", "--stdin"], standardInput: "recent unreferenced bytes\n");
+    Assert(dangling.Success, "Temporary unreachable object");
+    string objectHash = dangling.StandardOutput.TrimEnd('\n');
+    GitFsckResult verified = await fixture.Repository.VerifyObjectsAsync(new(IncludeUnreachable: true, NoReflogs: true, Strict: true));
+    Assert(verified.IsValid && verified.Issues.Any(issue => issue.Hash == objectHash && issue.ObjectType == "blob" && issue.Kind == GitFsckIssueKind.Unreachable), "Typed integrity report includes unreachable objects without deleting them");
+    await fixture.Repository.GarbageCollectAsync();
+    GitRepositoryStatistics packed = await fixture.Repository.GetStatisticsAsync();
+    Assert(packed.PackFiles >= 1 && packed.PackedObjects >= 3 && packed.PackedSizeBytes > 0 && packed.GarbageObjects == 0, "Normal garbage collection packs reachable objects with byte-based statistics");
+    GitResult retained = await new GitRunner().RunAsync(fixture.Repository.Path, ["cat-file", "blob", objectHash]);
+    Assert(retained.Success && retained.StandardOutput == "recent unreferenced bytes\n" && await fixture.Repository.ResolveRevisionAsync("HEAD") == head && (await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Normal collection keeps recent unreachable objects, branch identity and worktree contents");
+    Assert((await fixture.Repository.VerifyObjectsAsync()).IsValid, "Packed object verification remains healthy");
+    string barePath = System.IO.Path.Combine(fixture.Root, "maintenance bare.git");
+    Assert((await new GitRunner().RunAsync(fixture.Root, ["clone", "--bare", "--", fixture.Repository.Path, barePath])).Success, "Bare maintenance fixture");
+    GitRepository bare = await GitRepository.OpenAsync(barePath);
+    await bare.GarbageCollectAsync();
+    Assert((await bare.VerifyObjectsAsync()).IsValid && (await bare.GetStatisticsAsync()).PackedObjects >= 3, "Maintenance operates on bare repositories");
+
+    using RepositoryFixture corrupt = await RepositoryFixture.CreateAsync();
+    GitResult blob = await new GitRunner().RunAsync(corrupt.Repository.Path, ["rev-parse", "HEAD:seed.txt"]);
+    string missing = blob.StandardOutput.TrimEnd('\n');
+    File.Delete(corrupt.File(".git/objects/" + missing[..2] + "/" + missing[2..]));
+    GitFsckResult failed = await corrupt.Repository.VerifyObjectsAsync();
+    Assert(!failed.IsValid && failed.ExitCode != 0 && (failed.StandardOutput + failed.StandardError).Contains(missing, StringComparison.Ordinal), "Corrupt objects return an actionable nonzero report instead of losing diagnostics in an exception");
 }
 
 static async Task AskpassAsync()
