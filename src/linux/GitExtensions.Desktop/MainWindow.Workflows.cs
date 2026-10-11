@@ -28,20 +28,21 @@ public sealed partial class MainWindow
 
     private async Task CloneAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Clone", ("Repository URL or local path", ""), ("Destination directory", ""));
-        if (values is null) { return; }
-        GitRepository? cloned = null;
-        await RunAsync("Clone", async _ => cloned = await GitRepository.CloneAsync(values[0], values[1], cancellationToken: Token), requireRepository: false, refresh: false);
-        if (cloned is not null) { await OpenRepositoryAsync(cloned.Path); }
+        if (_busy) { return; }
+        string destination = _repository is null ? "" : Path.GetDirectoryName(_repository.Path) ?? "";
+        string source = (_remotes.ItemsSource?.Cast<GitRemote>().FirstOrDefault(remote => remote.Name == "origin") ?? _remotes.ItemsSource?.Cast<GitRemote>().FirstOrDefault())?.FetchUrls.FirstOrDefault() ?? "";
+        CloneDialog dialog = new(destination, source);
+        await RunAsync("Clone", async _ => await dialog.ShowDialog(WorkflowOwner), requireRepository: false, refresh: false);
+        if (dialog.CreatedRepository is GitRepository cloned && await Dialogs.ConfirmAsync(this, T("Open"), T("The repository has been cloned successfully.") + "\n" + cloned.Path + "\n" + T("Do you want to open the new repository now?")))
+        { await OpenRepositoryAsync(cloned.Path); }
     }
 
     private async Task InitializeAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Initialize repository", ("Directory", _repositoryPath.Text ?? ""), ("Initial branch", "main"));
-        if (values is null) { return; }
-        GitRepository? initialized = null;
-        await RunAsync("Initialize", async _ => initialized = await GitRepository.InitAsync(values[0], values[1], cancellationToken: Token), requireRepository: false, refresh: false);
-        if (initialized is not null) { await OpenRepositoryAsync(initialized.Path); }
+        if (_busy) { return; }
+        InitDialog dialog = new(string.IsNullOrEmpty(_repositoryPath.Text) ? new ClonePreferencesStore().Load().Destination : _repositoryPath.Text);
+        await RunAsync("Create new repository", async _ => await dialog.ShowDialog(WorkflowOwner), requireRepository: false, refresh: false);
+        if (dialog.CreatedRepository is GitRepository initialized) { await OpenRepositoryAsync(initialized.Path); }
     }
 
     private Task StageAsync(bool all) => RunAsync("Stage", repository => all ? repository.StageAllAsync(Token) : repository.StageAsync(SelectedPaths(includeOriginalPath: false), Token));
@@ -348,15 +349,16 @@ public sealed partial class MainWindow
 
     private Task BlameAsync() => RunAsync("Blame", async r =>
     {
-        _fileContent?.ClearImage();
-        IReadOnlyList<GitBlameLine> lines = await r.GetBlameAsync(_filePath.Text ?? "", CurrentRevision, Token);
-        _fileView.Text = string.Join('\n', lines.Select(line => $"{line.Hash[..Math.Min(9, line.Hash.Length)]} {line.AuthorName,-18} {line.LineNumber,5}  {line.Text}"));
+        BlameDialog dialog = new(r, _filePath.Text ?? "", CurrentRevision);
+        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+        await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);
 
     private Task FileHistoryAsync() => RunAsync("File history", async r =>
     {
-        _fileContent?.ClearImage();
-        _fileView.Text = (await r.RunAsync(["log", "--follow", "--format=fuller", "--stat", CurrentRevision, "--", _filePath.Text ?? ""], Token)).StandardOutput;
+        FileHistoryDialog dialog = new(r, _filePath.Text ?? "", CurrentRevision);
+        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+        await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);
 
     private async Task SearchAsync()

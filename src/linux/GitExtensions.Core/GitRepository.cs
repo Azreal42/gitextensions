@@ -182,39 +182,11 @@ public sealed partial class GitRepository
         return result.Success;
     }
 
-    public static async Task<GitRepository> InitAsync(string path, string initialBranch = "main", bool bare = false, CancellationToken cancellationToken = default)
-    {
-        string fullPath = System.IO.Path.GetFullPath(path);
-        Directory.CreateDirectory(fullPath);
-        GitRepository repository = new(fullPath);
-        List<string> arguments = ["init", "--initial-branch=" + ValidateValue(initialBranch)];
-        if (bare)
-        {
-            arguments.Add("--bare");
-        }
+    public static Task<GitRepository> InitAsync(string path, string initialBranch = "main", bool bare = false, CancellationToken cancellationToken = default)
+        => InitAsync(path, new GitInitOptions(initialBranch, bare), cancellationToken);
 
-        arguments.Add("--");
-        arguments.Add(fullPath);
-        await repository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
-        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
-    }
-
-    public static async Task<GitRepository> CloneAsync(string source, string destination, bool recursive = true, CancellationToken cancellationToken = default)
-    {
-        string fullPath = System.IO.Path.GetFullPath(destination);
-        string parent = System.IO.Path.GetDirectoryName(fullPath) ?? throw new ArgumentException("Clone destination requires a parent.", nameof(destination));
-        Directory.CreateDirectory(parent);
-        GitRepository parentRepository = new(parent);
-        List<string> arguments = ["clone"];
-        if (recursive)
-        {
-            arguments.Add("--recurse-submodules");
-        }
-
-        arguments.AddRange(["--", ValidateValue(source), fullPath]);
-        await parentRepository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
-        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
-    }
+    public static Task<GitRepository> CloneAsync(string source, string destination, bool recursive = true, CancellationToken cancellationToken = default)
+        => CloneAsync(source, destination, new GitCloneOptions(RecurseSubmodules: recursive), cancellationToken);
 
     public Task<GitResult> CreateBranchAsync(string name, string? startPoint = null, bool checkout = true, CancellationToken cancellationToken = default)
     {
