@@ -29,12 +29,15 @@ public sealed partial class MainWindow
     private async Task CloneAsync()
     {
         if (_busy) { return; }
-        string destination = _repository is null ? "" : Path.GetDirectoryName(_repository.Path) ?? "";
-        string source = (_remotes.ItemsSource?.Cast<GitRemote>().FirstOrDefault(remote => remote.Name == "origin") ?? _remotes.ItemsSource?.Cast<GitRemote>().FirstOrDefault())?.FetchUrls.FirstOrDefault() ?? "";
-        CloneDialog dialog = new(destination, source);
+        CloneDialog dialog = new(repository: _repository);
         await RunAsync("Clone", async _ => await dialog.ShowDialog(WorkflowOwner), requireRepository: false, refresh: false);
-        if (dialog.CreatedRepository is GitRepository cloned && await Dialogs.ConfirmAsync(this, T("Open"), string.Format(System.Globalization.CultureInfo.CurrentCulture, T("The repository has been cloned successfully.\nDo you want to open the new repository \"{0}\" now?"), cloned.Path)))
-        { await OpenRepositoryAsync(cloned.Path); }
+        if (dialog.CreatedRepository is GitRepository cloned)
+        {
+            LoadRepositoryHistory(); UpdateRepositoryMenus();
+            if (_dashboard?.IsVisible == true) { _dashboard.Refresh(); }
+            if (await Dialogs.YesNoAsync(this, T("Open"), string.Format(System.Globalization.CultureInfo.CurrentCulture, T("The repository has been cloned successfully.\nDo you want to open the new repository \"{0}\" now?"), cloned.Path)))
+            { await OpenRepositoryAsync(cloned.Path); }
+        }
     }
 
     private async Task InitializeAsync()
@@ -136,7 +139,11 @@ public sealed partial class MainWindow
     private async Task CheckoutAsync()
     {
         if (_repository is null || _busy) { return; }
-        await ShowRepositoryDialogAsync(new CheckoutBranchDialog(_repository, _references.SelectedItem as GitReference, _preferences.AutoNormaliseBranchName, _preferences.AutoNormaliseSymbol));
+        GitRepository repository = _repository;
+        CheckoutBranchDialog? dialog = null;
+        dialog = new CheckoutBranchDialog(repository, _references.SelectedItem as GitReference, _preferences.AutoNormaliseBranchName, _preferences.AutoNormaliseSymbol,
+            token => AfterSubmoduleUpdateAsync(repository, dialog!, token));
+        await ShowRepositoryDialogAsync(dialog);
     }
 
     private async Task DeleteReferenceAsync()

@@ -10,6 +10,7 @@ using Avalonia.Platform;
 using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
+using System.Text;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -40,6 +41,21 @@ public sealed class CommitDialog : Window
     private readonly MenuItem _closeAfterCommit;
     private readonly MenuItem _closeWhenClean;
     private readonly MenuItem _selectStaged;
+    private readonly MenuItem _refreshOnFocus;
+    private readonly MenuItem _onlyMyMessages;
+    private readonly MenuItem _noVerify;
+    private readonly MenuItem _historyMenu = new() { Name = "CommitMessageHistory" };
+    private MenuItem? _signingKeyMenu;
+    private readonly CommitPreferencesStore _preferencesStore;
+    private CommitPreferences _preferences;
+    private CommitDraftStore? _drafts;
+    private CancellationTokenSource? _operation;
+    private CancellationTokenSource? _historyOperation;
+    private bool _initialized;
+    private bool _closeWhenIdle;
+    private bool _confirmationOpen;
+    private bool _draftReset;
+    private CancellationToken OperationToken => _operation?.Token ?? _lifetime.Token;
     private readonly Button _commit;
     private readonly Button _push;
     private readonly Button _stage;
@@ -60,10 +76,12 @@ public sealed class CommitDialog : Window
     private GitCommit? _headCommit;
     private bool _mergePending;
 
-    public CommitDialog(GitRepository repository)
+    public CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore = null)
     {
         ArgumentNullException.ThrowIfNull(repository);
         _repository = repository;
+        _preferencesStore = preferencesStore ?? new CommitPreferencesStore();
+        _preferences = _preferencesStore.Load();
         Title = C("$this", "Commit");
         Width = 1100;
         Height = 760;
@@ -74,7 +92,7 @@ public sealed class CommitDialog : Window
         _content = new FileContentView(_source, _diff);
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
-        _sign.ItemsSource = new[] { T("Use Git configuration"), T("Do not sign"), T("Sign commit") };
+        _sign.ItemsSource = new[] { T("Git default GPG signing"), T("Do not sign commit"), T("Sign with default GPG"), T("Sign with specific GPG") };
         _kind.ItemsSource = new[] { T("Normal commit"), "Fixup", "Squash" };
         _sign.SelectedIndex = _kind.SelectedIndex = 0;
         _target.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) => new TextBlock
@@ -83,9 +101,20 @@ public sealed class CommitDialog : Window
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         _signOff = Toggle("signOffToolStripMenuItem", "Sign-off commit");
-        _closeAfterCommit = Toggle("closeDialogAfterEachCommitToolStripMenuItem", "Close dialog after each commit", true);
-        _closeWhenClean = Toggle("closeDialogAfterAllFilesCommittedToolStripMenuItem", "Close dialog when all changes are committed", true);
-        _selectStaged = Toggle("tsmiSelectStagedOnEnterMessage", "Select staged on entering message editor", true);
+        _closeAfterCommit = Toggle("closeDialogAfterEachCommitToolStripMenuItem", "Close dialog after each commit", _preferences.CloseAfterEachCommit);
+        _closeWhenClean = Toggle("closeDialogAfterAllFilesCommittedToolStripMenuItem", "Close dialog when all changes are committed", _preferences.CloseWhenAllChangesCommitted);
+        _selectStaged = Toggle("tsmiSelectStagedOnEnterMessage", "Select staged on entering message editor", _preferences.SelectStagedOnMessageFocus);
+        _refreshOnFocus = Toggle("refreshDialogOnFormFocusToolStripMenuItem", "Refresh dialog on form focus", _preferences.RefreshOnFormFocus);
+        _onlyMyMessages = Toggle("ShowOnlyMyMessagesToolStripMenuItem", "Show only my messages", _preferences.ShowOnlyMyMessages);
+        _noVerify = Toggle("noVerifyToolStripMenuItem", "No verify");
+        foreach (MenuItem item in new[] { _closeAfterCommit, _closeWhenClean, _selectStaged, _refreshOnFocus, _onlyMyMessages })
+        {
+            item.Click += (_, _) => SavePreferences();
+        }
+        _historyMenu.Header = IconLabel(C("commitMessageToolStripMenuItem", "Commit message"), "WorkingDirChanges.png");
+        _historyMenu.ItemsSource = new MenuItem[] { new() { Name = "HistoryLoading", Header = T("Loading…"), IsEnabled = false }, _onlyMyMessages };
+        _historyMenu.SubmenuOpened += async (_, args) => { if (ReferenceEquals(args.Source, _historyMenu)) { await LoadHistoryAsync(); } };
+        _onlyMyMessages.Click += async (_, _) => await LoadHistoryAsync();
         _stage = Action("Stage", "toolStageItem", "Stage", "Stage.png", () => StageAsync(false));
         _unstage = Action("Unstage", "toolUnstageItem", "Unstage", "Unstage.png", () => UnstageAsync(false));
         _commit = Action("Commit", "Commit", "Commit", "RepoStateClean.png", () => CommitAsync(false));
@@ -108,7 +137,7 @@ public sealed class CommitDialog : Window
         };
         _message.PropertyChanged += (_, change) =>
         {
-            if (change.Property == TextBox.TextProperty) { UpdateAvailability(); UpdateStatus(); }
+            if (change.Property == TextBox.TextProperty) { if (!string.IsNullOrEmpty(_message.Text)) { _draftReset = false; } UpdateAvailability(); UpdateStatus(); }
             else if (change.Property == TextBox.CaretIndexProperty) { UpdateStatus(); }
         };
         _message.GotFocus += async (_, _) =>
@@ -127,7 +156,7 @@ public sealed class CommitDialog : Window
             {
                 await RunAsync(T("Commit message"), async () =>
                 {
-                    GitCommit? previous = (await _repository.GetLogAsync(1, all: false, cancellationToken: _lifetime.Token)).FirstOrDefault();
+                    GitCommit? previous = (await _repository.GetLogAsync(1, all: false, cancellationToken: OperationToken)).FirstOrDefault();
                     if (previous is not null) { _message.Text = previous.Subject + (previous.Body.Length == 0 ? "" : "\n\n" + previous.Body.TrimEnd()); }
                 });
             }
@@ -140,7 +169,31 @@ public sealed class CommitDialog : Window
         _diff.Editor.TextArea.SelectionChanged += (_, _) => UpdateAvailability();
         KeyDown += HandleShortcut;
         Opened += async (_, _) => { await InitializeAsync(); _unstaged.Focus(); };
-        Closed += (_, _) => { _lifetime.Cancel(); _content.Dispose(); };
+        Activated += async (_, _) =>
+        {
+            if (_initialized && !_busy && !_confirmationOpen && !_closeWhenIdle && _refreshOnFocus.IsChecked) { await RefreshAsync(); }
+        };
+        Closing += (_, args) =>
+        {
+            if (_busy)
+            {
+                args.Cancel = true;
+                _closeWhenIdle = true;
+                _operation?.Cancel();
+                return;
+            }
+            if (_initialized && _kind.SelectedIndex == 0 && (!_draftReset || !string.IsNullOrEmpty(_message.Text) || _amend.IsChecked == true))
+            {
+                try { _drafts?.Save(_message.Text, _amend.IsChecked == true, _preferences.RememberAmendCommitState); }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
+                {
+                    args.Cancel = true;
+                    _closeWhenIdle = false;
+                    ShowFailure(T("Cannot save commit message"), exception);
+                }
+            }
+        };
+        Closed += (_, _) => { _lifetime.Cancel(); _historyOperation?.Cancel(); _content.Dispose(); };
         UpdateAvailability();
     }
 
@@ -152,14 +205,20 @@ public sealed class CommitDialog : Window
     public Task InitializeAsync() => _initialization ??= RunAsync(T("Refresh"), async () =>
     {
         await RefreshDataAsync();
-        if (!string.IsNullOrEmpty(_message.Text)) { return; }
-        foreach (string name in new[] { "MERGE_MSG", "SQUASH_MSG" })
+        _drafts = await CommitDraftStore.OpenAsync(_repository, OperationToken);
+        (string message, bool amend) = await _drafts.LoadAsync(_preferences.RememberAmendCommitState, OperationToken);
+        if (!_drafts.IsMergeCommit && amend) { _amend.IsChecked = true; }
+        if (string.IsNullOrEmpty(_message.Text))
         {
-            string path = await GetGitPathAsync(name);
-            if (File.Exists(path)) { _message.Text = await File.ReadAllTextAsync(path, _lifetime.Token); return; }
+            if (!string.IsNullOrEmpty(message)) { _message.Text = message; }
+            else
+            {
+                _loadedTemplate = await _repository.GetCommitTemplateAsync(cancellationToken: OperationToken);
+                _message.Text = _loadedTemplate ?? "";
+            }
         }
-        _loadedTemplate = await _repository.GetCommitTemplateAsync(cancellationToken: _lifetime.Token);
-        _message.Text = _loadedTemplate ?? "";
+        _drafts.RememberDisplayedMessage(_message.Text ?? "");
+        _initialized = true;
     });
 
     public Task RefreshAsync() => RunAsync(T("Refresh"), RefreshDataAsync);
@@ -196,18 +255,22 @@ public sealed class CommitDialog : Window
             Action("ResetUnstaged", "btnResetUnstagedChanges", "Reset unstaged changes", "ResetWorkingDirChanges.png", () => ResetChangesAsync(false)), cancel
         }};
         editor.Children.Add(actions);
-        Menu options = new() { Name = "CommitToolbar", ItemsSource = new[]
+        _signingKeyMenu = InputMenu(T("Signing key"), _signingKey);
+        MenuItem optionsMenu = new() { Name = "Options", Header = C("tsmiOptions", "Options"), ItemsSource = new MenuItem[]
         {
-            new MenuItem { Header = C("commitMessageToolStripMenuItem", "Commit message"), ItemsSource = new[] { MenuAction("PreviousMessage", T("Previous commit message"), LoadPreviousMessageAsync) } },
-            new MenuItem { Name = "Options", Header = C("tsmiOptions", "Options"), ItemsSource = new MenuItem[]
-            {
-                _closeAfterCommit, _closeWhenClean, _selectStaged, _signOff,
-                InputMenu(C("toolAuthorLabelItem", "Author: (Format: \"name <mail>\")"), _author),
-                InputMenu(T("Sign commit"), _sign), InputMenu(T("Signing key"), _signingKey),
-                InputMenu(T("Commit kind"), _kind), InputMenu(T("Target commit"), _target)
-            } },
-            new MenuItem { Header = C("commitTemplatesToolStripMenuItem", "Commit templates"), ItemsSource = new[] { MenuAction("LoadTemplate", T("Load configured template"), LoadTemplateAsync) } }
-        }};
+            _closeAfterCommit, _closeWhenClean, _refreshOnFocus, _selectStaged,
+            new() { Header = "-" }, _signOff,
+            InputMenu(C("toolAuthorLabelItem", "Author: (Format: \"name <mail>\")"), _author), _noVerify,
+            new() { Header = "-" }, InputMenu(T("Sign commit"), _sign), _signingKeyMenu,
+            InputMenu(T("Commit kind"), _kind), InputMenu(T("Target commit"), _target)
+        } };
+        DockPanel.SetDock(_historyMenu, Dock.Left);
+        DockPanel.SetDock(optionsMenu, Dock.Right);
+        MenuItem templates = new() { Header = IconLabel(C("commitTemplatesToolStripMenuItem", "Commit templates"), "CommitTemplates.png"),
+            ItemsSource = new[] { MenuAction("LoadTemplate", T("Load configured template"), LoadTemplateAsync) } };
+        DockPanel.SetDock(templates, Dock.Left);
+        Menu options = new() { Name = "CommitToolbar", Height = 28, HorizontalAlignment = HorizontalAlignment.Stretch,
+            ItemsPanel = new FuncTemplate<Panel?>(() => new DockPanel { LastChildFill = false }), ItemsSource = new[] { _historyMenu, optionsMenu, templates } };
         _interactive.Add(options);
         DockPanel message = new() { LastChildFill = true };
         DockPanel.SetDock(options, Dock.Top);
@@ -256,12 +319,12 @@ public sealed class CommitDialog : Window
 
     private async Task RefreshDataAsync()
     {
-        _status = await _repository.GetStatusAsync(_lifetime.Token);
+        _status = await _repository.GetStatusAsync(OperationToken);
         _mergePending = File.Exists(await GetGitPathAsync("MERGE_HEAD"));
-        IReadOnlyList<KeyValuePair<string, string>> configuration = await _repository.GetConfigAsync("^user\\.(name|email)$", cancellationToken: _lifetime.Token);
+        IReadOnlyList<KeyValuePair<string, string>> configuration = await _repository.GetConfigAsync("^user\\.(name|email)$", cancellationToken: OperationToken);
         _committer = $"{configuration.LastOrDefault(item => item.Key == "user.name").Value} <{configuration.LastOrDefault(item => item.Key == "user.email").Value}>";
         string? target = (_target.SelectedItem as GitCommit)?.Hash;
-        IReadOnlyList<GitCommit> history = _status.IsUnborn ? Array.Empty<GitCommit>() : await _repository.GetLogAsync(100, cancellationToken: _lifetime.Token, all: false);
+        IReadOnlyList<GitCommit> history = _status.IsUnborn ? Array.Empty<GitCommit>() : await _repository.GetLogAsync(100, cancellationToken: OperationToken, all: false);
         _target.ItemsSource = history;
         _headCommit = history.FirstOrDefault();
         _target.SelectedItem = history.FirstOrDefault(commit => commit.Hash == target);
@@ -306,12 +369,12 @@ public sealed class CommitDialog : Window
         _content.ClearImage();
         GitChange? change = _status?.Changes.FirstOrDefault(change => change.Path == _path);
         if (change is null) { _source.Text = T("Select a file to view its changes."); _patch = null; return; }
-        if (await _content.ShowChangedImageAsync(_repository, change, _viewStaged, _lifetime.Token)) { _patch = null; return; }
+        if (await _content.ShowChangedImageAsync(_repository, change, _viewStaged, OperationToken)) { _patch = null; return; }
         if (change.IsUntracked)
         {
             await using FileStream stream = File.OpenRead(Path.Combine(_repository.Path, change.Path));
             byte[] bytes = new byte[(int)Math.Min(2_000_000, stream.Length)];
-            await stream.ReadExactlyAsync(bytes, _lifetime.Token);
+            await stream.ReadExactlyAsync(bytes, OperationToken);
             _source.Text = bytes.Take(8192).Contains((byte)0) ? T("Binary file") + $" ({stream.Length:N0} bytes)" : System.Text.Encoding.UTF8.GetString(bytes) + (stream.Length > bytes.Length ? "\n[Preview limited to 2 MB]" : "");
         }
         else if (change.OriginalPath is not null)
@@ -319,9 +382,9 @@ public sealed class CommitDialog : Window
             List<string> arguments = ["diff", "--no-ext-diff", "--no-textconv"];
             if (_viewStaged) { arguments.Add("--cached"); }
             arguments.AddRange(["--", change.OriginalPath, change.Path]);
-            _source.Text = (await _repository.RunAsync(arguments, _lifetime.Token)).StandardOutput;
+            _source.Text = (await _repository.RunAsync(arguments, OperationToken)).StandardOutput;
         }
-        else { _source.Text = await _repository.GetDiffAsync(change.Path, _viewStaged, cancellationToken: _lifetime.Token); }
+        else { _source.Text = await _repository.GetDiffAsync(change.Path, _viewStaged, cancellationToken: OperationToken); }
         _patch = GitPatch.Parse(_source.Text ?? "").FirstOrDefault();
     }
 
@@ -335,12 +398,12 @@ public sealed class CommitDialog : Window
         // A staged rename has already removed its old path from the index.
         // Stage the current name, as FormCommit.StageFiles does.
         string[] paths = changes.Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
-        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Stage"), () => _repository.StageAsync(paths, _lifetime.Token));
+        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Stage"), () => _repository.StageAsync(paths, OperationToken));
     }
     private Task UnstageAsync(bool all)
     {
         string[] paths = all ? FilePaths(_staged.Items.OfType<GitChange>()) : SelectedPaths(_staged);
-        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Unstage"), () => _repository.UnstageAsync(paths, _lifetime.Token));
+        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Unstage"), () => _repository.UnstageAsync(paths, OperationToken));
     }
 
     private Task ApplyPatchAsync(bool reverse, bool lines) => MutateAsync(reverse ? T("Unstage") : T("Stage"), async () =>
@@ -368,64 +431,170 @@ public sealed class CommitDialog : Window
             patch = _patch.SelectHunks(indices);
         }
         if (patch is null) { throw new InvalidOperationException(T("The selected text contains no changed lines.")); }
-        return await _repository.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: _lifetime.Token);
+        return await _repository.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: OperationToken);
     });
 
     private async Task CommitAsync(bool push)
     {
-        if (_busy) { return; }
-        if (_amend.IsChecked == true && !await Dialogs.ConfirmAsync(this, C("_amendCommitCaption", "Amend commit"), C("_amendCommit", "You are about to rewrite history.\nOnly use Amend if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
+        if (_busy || _confirmationOpen || _status is null) { return; }
+        // Git can start a merge or update the index while this dialog stays open.
+        // Confirm the current operation state while preserving the edited message.
+        await RunAsync(T("Refresh"), RefreshDataAsync);
+        if (LastError is not null || !IsVisible || _lifetime.IsCancellationRequested) { return; }
+        CommitEmptyChoice choice = CommitEmptyChoice.MakeEmpty;
+        bool noStaged = !_status.Changes.Any(change => change.IsStaged);
+        string[] paths = _unstaged.Items.OfType<GitChange>().Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
+        _confirmationOpen = true;
+        try
+        {
+            if (_amend.IsChecked == true)
+            {
+                if (!await Dialogs.ConfirmAsync(this, C("_amendCommitCaption", "Amend commit"), C("_amendCommit", "You are about to rewrite history.\nOnly use Amend if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
+            }
+            else if (noStaged)
+            {
+                if (_mergePending)
+                {
+                    if (!await Dialogs.YesNoAsync(this, C("_noStagedChanges", "There are no staged changes"), C("_noFilesStagedAndConfirmAnEmptyMergeCommit", "There are no files staged for this commit.\nAre you sure you want to commit?"))) { return; }
+                }
+                else
+                {
+                    CommitEmptyDialog dialog = new(paths.Length > 0, !string.IsNullOrEmpty(_filter.Text));
+                    choice = await dialog.ShowDialog<CommitEmptyChoice>(this);
+                    if (choice == CommitEmptyChoice.Cancel) { return; }
+                }
+            }
+        }
+        finally { _confirmationOpen = false; }
+        if (!IsVisible || _lifetime.IsCancellationRequested) { return; }
         await RunAsync(C("Commit", "Commit"), async () =>
         {
+            string rawMessage = _message.Text ?? "";
+            string message = CommitDraftStore.FormatMessage(rawMessage, !string.IsNullOrEmpty(_loadedTemplate), _preferences.EnsureCommitMessageSecondLineEmpty);
+            if (_kind.SelectedIndex != 1)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(message);
+                if (message.Contains('\0')) { throw new ArgumentException("Commit messages cannot contain NUL."); }
+                Encoding encoding = await _repository.GetCommitMessageEncodingAsync(OperationToken);
+                _ = encoding.GetBytes(message);
+            }
+            _drafts = await CommitDraftStore.OpenAsync(_repository, OperationToken);
+            if (noStaged && choice == CommitEmptyChoice.StageUnstaged)
+            {
+                await _repository.StageAsync(paths, OperationToken);
+                HasRepositoryChanges = true;
+                await RefreshDataAsync();
+                RepositoryChanged?.Invoke(this, EventArgs.Empty);
+                if (!_status!.Changes.Any(change => change.IsStaged)) { throw new InvalidOperationException(C("_noStagedChanges", "There are no staged changes")); }
+                noStaged = false;
+            }
+            if (_kind.SelectedIndex != 1)
+            {
+                _preferences = _preferencesStore.Load() with { LastCommitMessage = rawMessage };
+                _preferencesStore.Save(_preferences);
+                _drafts?.WriteForCommit(message, merge: false);
+            }
             GitCommit? target = _target.SelectedItem as GitCommit;
             GitCommitOptions options = new(
-                Message: _kind.SelectedIndex == 1 ? null : _message.Text,
+                Message: _kind.SelectedIndex == 1 ? null : message,
                 Amend: _amend.IsChecked == true,
                 SignOff: _signOff.IsChecked,
-                Sign: _sign.SelectedIndex == 0 ? null : _sign.SelectedIndex == 2,
-                SigningKey: _sign.SelectedIndex == 2 ? EmptyToNull(_signingKey.Text) : null,
+                Sign: _sign.SelectedIndex == 0 ? null : _sign.SelectedIndex > 1,
+                SigningKey: _sign.SelectedIndex == 3 ? EmptyToNull(_signingKey.Text) : null,
                 FixupRevision: _kind.SelectedIndex == 1 ? target?.Hash : null,
                 SquashRevision: _kind.SelectedIndex == 2 ? target?.Hash : null,
+                AllowEmpty: noStaged,
                 ResetAuthor: _amend.IsChecked == true && _resetAuthor.IsChecked == true,
-                Author: EmptyToNull(_author.Text));
-            GitResult result = await _repository.CommitAsync(options, _lifetime.Token);
+                Author: EmptyToNull(_author.Text),
+                NoVerify: _noVerify.IsChecked);
+            GitResult result = await _repository.CommitAsync(options, OperationToken);
             HasCommitted = true;
             HasRepositoryChanges = true;
             _output.Text = result.StandardOutput + result.StandardError;
             _output.IsVisible = false;
             _message.Text = "";
             _amend.IsChecked = false;
+            _noVerify.IsChecked = false;
             _kind.SelectedIndex = 0;
+            _drafts?.Reset();
+            _draftReset = true;
             await RefreshDataAsync();
             RepositoryChanged?.Invoke(this, EventArgs.Empty);
-            if (push) { await _repository.PushAsync(cancellationToken: _lifetime.Token); }
-            if (_closeAfterCommit.IsChecked || (_closeWhenClean.IsChecked && _status!.Changes.Count == 0)) { Close(); }
+            if (push) { await _repository.PushAsync(cancellationToken: OperationToken); }
+            if (_closeAfterCommit.IsChecked || (_closeWhenClean.IsChecked && _status!.Changes.Count == 0)) { _closeWhenIdle = true; }
         });
     }
 
     private Task LoadTemplateAsync() => RunAsync(T("Commit templates"), async () =>
     {
-        string? template = await _repository.GetCommitTemplateAsync(cancellationToken: _lifetime.Token);
+        string? template = await _repository.GetCommitTemplateAsync(cancellationToken: OperationToken);
         if (template is null) { throw new InvalidOperationException(T("No commit template is configured.")); }
         _loadedTemplate = template;
         _message.Text = template;
     });
-    private Task LoadPreviousMessageAsync() => RunAsync(T("Commit message"), async () =>
+    private async Task LoadHistoryAsync()
     {
-        GitCommit? commit = (await _repository.GetLogAsync(1, cancellationToken: _lifetime.Token, all: false)).FirstOrDefault();
-        if (commit is not null) { _message.Text = commit.Subject + (commit.Body.Length == 0 ? "" : "\n\n" + commit.Body.TrimEnd()); }
-    });
+        if (_busy) { return; }
+        _historyOperation?.Cancel();
+        CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _historyOperation = operation;
+        _historyMenu.ItemsSource = new MenuItem[] { new() { Name = "HistoryLoading", Header = T("Loading…"), IsEnabled = false }, _onlyMyMessages };
+        try
+        {
+            CommitPreferences preferences = _preferencesStore.Load();
+            List<string> messages = [.. await _repository.GetPreviousCommitMessagesAsync(preferences.NumberOfPreviousMessages, _onlyMyMessages.IsChecked, operation.Token)];
+            if (!string.IsNullOrWhiteSpace(preferences.LastCommitMessage) && !messages.Contains(preferences.LastCommitMessage))
+            {
+                if (messages.Count == preferences.NumberOfPreviousMessages) { messages.RemoveAt(messages.Count - 1); }
+                messages.Insert(0, preferences.LastCommitMessage);
+            }
+            operation.Token.ThrowIfCancellationRequested();
+            List<MenuItem> items = [];
+            foreach (string message in messages)
+            {
+                string label = message.Split('\n')[0];
+                if (label.Length > 72) { label = label[..69] + "..."; }
+                MenuItem item = new() { Name = "PreviousMessage", Header = label, Tag = message };
+                ToolTip.SetTip(item, message);
+                item.Click += (_, _) => { if (!_busy) { _message.SelectAll(); _message.SelectedText = message.Trim(); _message.Focus(); } };
+                items.Add(item);
+            }
+            items.Add(new MenuItem { Header = "-" });
+            items.Add(_onlyMyMessages);
+            _historyMenu.ItemsSource = items;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception) { ShowFailure(T("Commit message"), exception); _historyMenu.ItemsSource = new[] { _onlyMyMessages }; }
+        finally { if (ReferenceEquals(_historyOperation, operation)) { _historyOperation = null; } operation.Dispose(); }
+    }
+
+    private void SavePreferences()
+    {
+        try
+        {
+            _preferences = _preferencesStore.Load() with
+            {
+                CloseAfterEachCommit = _closeAfterCommit.IsChecked,
+                CloseWhenAllChangesCommitted = _closeWhenClean.IsChecked,
+                RefreshOnFormFocus = _refreshOnFocus.IsChecked,
+                SelectStagedOnMessageFocus = _selectStaged.IsChecked,
+                ShowOnlyMyMessages = _onlyMyMessages.IsChecked
+            };
+            _preferencesStore.Save(_preferences);
+        }
+        catch (Exception exception) { ShowFailure(T("Options"), exception); }
+    }
     private async Task ResetSoftAsync()
     {
         if (!await Dialogs.ConfirmAsync(this, C("ResetSoft", "Reset soft"), C("_amendResetSoft", "You are about to rewrite history by Soft Reset to the previous commit.\nOnly use Amend / Reset if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
-        await MutateAsync(C("ResetSoft", "Reset soft"), () => _repository.ResetAsync("HEAD^", GitResetMode.Soft, _lifetime.Token));
+        await MutateAsync(C("ResetSoft", "Reset soft"), () => _repository.ResetAsync("HEAD^", GitResetMode.Soft, OperationToken));
     }
-    private Task StashStagedAsync() => MutateAsync(C("StashStaged", "Stash staged changes"), () => _repository.RunAsync(["stash", "push", "--staged"], _lifetime.Token));
+    private Task StashStagedAsync() => MutateAsync(C("StashStaged", "Stash staged changes"), () => _repository.RunAsync(["stash", "push", "--staged"], OperationToken));
     private async Task ResetChangesAsync(bool all)
     {
         string title = all ? C("btnResetAllChanges", "Reset all changes") : C("btnResetUnstagedChanges", "Reset unstaged changes");
         if (!await Dialogs.ConfirmAsync(this, title, T("Discard tracked changes? Untracked files are preserved."))) { return; }
-        await MutateAsync(title, () => _repository.RunAsync(all ? ["restore", "--staged", "--worktree", "--source=HEAD", "--", "."] : ["restore", "--worktree", "--", "."], _lifetime.Token));
+        await MutateAsync(title, () => _repository.RunAsync(all ? ["restore", "--staged", "--worktree", "--source=HEAD", "--", "."] : ["restore", "--worktree", "--", "."], OperationToken));
     }
 
     private Task MutateAsync(string label, Func<Task<GitResult>> action) => RunAsync(label, async () =>
@@ -439,23 +608,34 @@ public sealed class CommitDialog : Window
     {
         if (_busy) { return; }
         _busy = true;
+        _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         LastError = null;
         _output.IsVisible = false;
         _state.Text = label + "…";
         UpdateAvailability();
         try { await action(); }
         catch (OperationCanceledException) { _state.Text = T("Operation cancelled"); }
-        catch (Exception exception)
+        catch (Exception exception) { ShowFailure(label, exception); }
+        finally
         {
-            LastError = exception is GitCommandException command
-                ? !string.IsNullOrWhiteSpace(command.Result.StandardError) ? command.Result.StandardError
-                    : !string.IsNullOrWhiteSpace(command.Result.StandardOutput) ? command.Result.StandardOutput : exception.Message
-                : exception.Message;
-            _output.Text = LastError;
-            _output.IsVisible = true;
-            _state.Text = label + ": " + LastError.Trim();
+            _operation.Dispose();
+            _operation = null;
+            _busy = false;
+            UpdateAvailability();
+            if (LastError is null) { UpdateStatus(); }
+            if (_closeWhenIdle) { Close(); }
         }
-        finally { _busy = false; UpdateAvailability(); if (LastError is null) { UpdateStatus(); } }
+    }
+
+    private void ShowFailure(string label, Exception exception)
+    {
+        LastError = exception is GitCommandException command
+            ? !string.IsNullOrWhiteSpace(command.Result.StandardError) ? command.Result.StandardError
+                : !string.IsNullOrWhiteSpace(command.Result.StandardOutput) ? command.Result.StandardOutput : exception.Message
+            : exception.Message;
+        _output.Text = LastError;
+        _output.IsVisible = true;
+        _state.Text = label + ": " + LastError.Trim();
     }
 
     private void UpdateAvailability()
@@ -465,7 +645,9 @@ public sealed class CommitDialog : Window
         _stage.IsEnabled = _unstaged.SelectedItems?.Count > 0;
         _unstage.IsEnabled = _staged.SelectedItems?.Count > 0;
         _target.IsEnabled = _kind.SelectedIndex != 0;
-        _signingKey.IsEnabled = _sign.SelectedIndex == 2;
+        _signingKey.IsEnabled = _sign.SelectedIndex == 3;
+        _signingKey.IsVisible = _sign.SelectedIndex == 3;
+        if (_signingKeyMenu is not null) { _signingKeyMenu.IsVisible = _sign.SelectedIndex == 3; }
         _message.IsEnabled = _kind.SelectedIndex != 1;
         _amend.IsEnabled = _kind.SelectedIndex == 0 && _status is not null && !_status.IsUnborn;
         if (!_amend.IsEnabled && _amend.IsChecked == true) { _amend.IsChecked = false; }
@@ -474,8 +656,9 @@ public sealed class CommitDialog : Window
         Button? soft = _interactive.OfType<Button>().FirstOrDefault(button => button.Name == "ResetSoft");
         if (soft is not null) { soft.IsVisible = _amend.IsChecked == true; soft.IsEnabled = _headCommit?.Parents.Count > 0; }
         bool targetValid = _kind.SelectedIndex == 0 || _target.SelectedItem is GitCommit;
-        bool messageValid = _kind.SelectedIndex == 1 || (!string.IsNullOrWhiteSpace(_message.Text) && _message.Text != _loadedTemplate);
-        bool committable = _status is not null && !_status.Changes.Any(change => change.IsConflict) && (_status.Changes.Any(change => change.IsStaged) || _amend.IsChecked == true || _mergePending);
+        string formatted = CommitDraftStore.FormatMessage(_message.Text ?? "", !string.IsNullOrEmpty(_loadedTemplate), _preferences.EnsureCommitMessageSecondLineEmpty);
+        bool messageValid = _kind.SelectedIndex == 1 || (!string.IsNullOrWhiteSpace(formatted) && !formatted.Contains('\0') && _message.Text != _loadedTemplate);
+        bool committable = _status is not null && !_status.Changes.Any(change => change.IsConflict);
         _commit.IsEnabled = _push.IsEnabled = targetValid && messageValid && committable;
         _stageHunk.IsEnabled = !_viewStaged && _patch?.Hunks.Count > 0;
         _unstageHunk.IsEnabled = _viewStaged && _patch?.Hunks.Count > 0;
@@ -515,7 +698,7 @@ public sealed class CommitDialog : Window
     private static string? EmptyToNull(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;
     private async Task<string> GetGitPathAsync(string name)
     {
-        GitResult result = await _repository.RunAsync(["rev-parse", "--git-path", name], _lifetime.Token);
+        GitResult result = await _repository.RunAsync(["rev-parse", "--git-path", name], OperationToken);
         return Path.GetFullPath(result.StandardOutput.TrimEnd('\r', '\n'), _repository.Path);
     }
     private MenuItem Toggle(string item, string text, bool value = false) => new() { Name = item, Header = C(item, text), ToggleType = MenuItemToggleType.CheckBox, IsChecked = value, StaysOpenOnClick = true };

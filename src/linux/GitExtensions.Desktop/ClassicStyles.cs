@@ -96,6 +96,14 @@ internal static class ClassicStyles
                     new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(0))
                 }
             },
+            new Style(selector => selector.OfType<ComboBox>().Class("classic-arrow-only").Template().OfType<PathIcon>().Name("DropDownGlyph"))
+            {
+                Setters =
+                {
+                    new Setter(Layoutable.MarginProperty, new Thickness(0)),
+                    new Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Center)
+                }
+            },
             new Style(selector => selector.OfType<TabControl>())
             {
                 Setters =
@@ -264,6 +272,10 @@ internal static class ClassicStyles
             ["Tooltip"] = "Info", ["TooltipText"] = "InfoText"
         };
         ResourceDictionary resources = new();
+        // Fluent also uses these dimensions inside its templates. A 24 px
+        // control otherwise clips glyphs still laid out in a 32 px container.
+        resources["CheckBoxMinHeight"] = 24d;
+        resources["RadioButtonMinHeight"] = 24d;
         foreach ((string resource, string color) in names)
         {
             resources["Classic" + resource + "Brush"] = Brush.Parse(colors[color]);

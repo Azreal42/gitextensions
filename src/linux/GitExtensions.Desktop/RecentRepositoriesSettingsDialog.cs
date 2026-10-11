@@ -69,6 +69,7 @@ public sealed class RecentRepositoriesSettingsDialog : Window
         foreach (RadioButton radio in new[] { _none, _middle, _significant })
         {
             radio.Height = 20; radio.MinHeight = 0; radio.Padding = new Thickness(4, 0, 0, 0); radio.Margin = new Thickness(0);
+            radio.Resources["RadioButtonMinHeight"] = 20d;
             radio.VerticalContentAlignment = VerticalAlignment.Center;
         }
         StackPanel radios = new() { Spacing = 2, Children = { _none, _middle, _significant } };
@@ -268,6 +269,7 @@ public sealed class RecentRepositoriesSettingsDialog : Window
         Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,20"), MinHeight = 23 };
         row.Children.Add(new TextBlock { Text = caption, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap });
         box.Height = 20; box.MinHeight = 0; box.Padding = new Thickness(0); box.Margin = new Thickness(0);
+        box.Resources["CheckBoxMinHeight"] = 20d;
         box.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(box, 1); row.Children.Add(box); FullRow(grid, row);
     }
     private static void FullRow(Grid grid, Control control, double margin = 0)

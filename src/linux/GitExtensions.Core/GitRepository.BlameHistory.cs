@@ -22,7 +22,7 @@ public sealed partial class GitRepository
         options ??= new();
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Count);
         string target = await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
-        List<string> arguments = ["--literal-pathspecs", "log", "--topo-order", "--parents", "-z", "--name-status", "--no-ext-diff", "--no-textconv",
+        List<string> arguments = ["--literal-pathspecs", "log", "--encoding=UTF-8", "--topo-order", "--parents", "-z", "--name-status", "--no-ext-diff", "--no-textconv",
             "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b", "--max-count=" + options.Count.ToString(CultureInfo.InvariantCulture)];
         if (options.FollowRenames) { arguments.Add("--follow"); }
         arguments.Add(options.ExactRenames ? "--find-renames=100%" : "--find-renames");
@@ -108,7 +108,7 @@ public sealed partial class GitRepository
         byte[] bytes;
         if (target is null) { await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false); bytes = await File.ReadAllBytesAsync(System.IO.Path.Combine(Path, path), cancellationToken).ConfigureAwait(false); }
         else { bytes = await GetFileBytesAsync(path, target, cancellationToken).ConfigureAwait(false); }
-        List<string> arguments = ["--literal-pathspecs", "blame", "--line-porcelain"];
+        List<string> arguments = ["--literal-pathspecs", "blame", "--encoding=UTF-8", "--line-porcelain"];
         if (options.IgnoreWhitespace) { arguments.Add("-w"); }
         if (options.DetectMoves) { arguments.Add("-M"); }
         if (options.DetectCopies) { arguments.Add("-C"); }

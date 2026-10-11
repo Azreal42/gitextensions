@@ -3,6 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Controls.Templates;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 using System.Globalization;
 
 namespace GitExtensions.Linux.Desktop;
@@ -10,6 +13,14 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class CloneDialog : StartupRepositoryDialog
 {
     private readonly ClonePreferencesStore _preferences = new();
+    private readonly CloneSourcesStore _sourcesStore = new();
+    private readonly RepositoryHistoryStore _localHistoryStore = new();
+    private readonly GitRepository? _context;
+    private readonly bool _explicitSource;
+    private readonly ComboBox _sourceHistory = new() { Name = "CloneSources", Width = 28, Height = 24 };
+    private readonly ComboBox _destinationHistory = new() { Name = "CloneDestinations", Width = 28, Height = 24 };
+    private Task? _initialization;
+    private long _sourceVersion;
     private readonly TextBox _source = new() { Name = "CloneSource", Height = 24 };
     private readonly TextBox _destination = new() { Name = "CloneDestination", Height = 24 };
     private readonly TextBox _subdirectory = new() { Name = "CloneSubdirectory", Height = 24 };
@@ -23,8 +34,10 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private readonly string _defaultBranch;
     private readonly string _noCheckout;
 
-    public CloneDialog(string destination = "", string source = "") : base("Clone repository")
+    public CloneDialog(string destination = "", string source = "", GitRepository? repository = null) : base("Clone repository")
     {
+        _context = repository;
+        _explicitSource = !string.IsNullOrEmpty(source);
         Width = 655;
         _defaultBranch = T("(default: remote HEAD)");
         _noCheckout = T("(none: don't checkout after clone)");
@@ -34,11 +47,13 @@ public sealed class CloneDialog : StartupRepositoryDialog
         _recursive.Content = T("Initialize all submodules");
         _fullHistory.Content = T("Download full history");
         _branches.ItemsSource = new[] { _defaultBranch, _noCheckout };
+        ConfigureArrowOnly(_branches);
         _branches.SelectionChanged += (_, _) => { if (_branches.SelectedItem is string branch) { _branch.Text = branch; } };
         _branches.DropDownOpened += async (_, _) => await LoadBranchesAsync();
         _source.PropertyChanged += (_, change) =>
         {
             if (change.Property != TextBox.TextProperty) { return; }
+            _sourceVersion++;
             string name = RepositoryName(_source.Text ?? "");
             if (name.Length > 0) { _subdirectory.Text = name; }
             _branch.Text = _defaultBranch;
@@ -53,11 +68,13 @@ public sealed class CloneDialog : StartupRepositoryDialog
         ClonePreferences preferences = _preferences.Load();
         _recursive.IsChecked = preferences.InitializeSubmodules;
         _destination.Text = string.IsNullOrEmpty(destination) ? preferences.Destination : destination;
-        _source.Text = source;
+        if (string.IsNullOrWhiteSpace(_destination.Text) && repository is not null) { _destination.Text = Path.GetDirectoryName(repository.Path); }
+        _source.Text = _explicitSource ? source : _sourcesStore.Load().FirstOrDefault() ?? "";
         Grid fields = ExportDialogControls.Fields();
         fields.ColumnDefinitions = new ColumnDefinitions("150,*,Auto");
-        ExportDialogControls.Field(fields, T("Repository to clone:"), _source, Action("BrowseCloneSource", "Browse", () => BrowseAsync(_source)));
-        ExportDialogControls.Field(fields, T("Destination:"), _destination, Action("BrowseCloneDestination", "Browse", () => BrowseAsync(_destination)));
+        ExportDialogControls.Field(fields, T("Repository to clone:"), HistoryInput(_source, _sourceHistory, _sourcesStore.Load()), Action("BrowseCloneSource", "Browse", () => BrowseAsync(_source)));
+        string[] destinations = LoadLocalHistory().Recent.Select(item => Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(item.Path))).Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray();
+        ExportDialogControls.Field(fields, T("Destination:"), HistoryInput(_destination, _destinationHistory, destinations), Action("BrowseCloneDestination", "Browse", () => BrowseAsync(_destination)));
         ExportDialogControls.Field(fields, T("Subdirectory to create:"), _subdirectory);
         Grid branch = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         branch.Children.Add(_branch);
@@ -73,9 +90,61 @@ public sealed class CloneDialog : StartupRepositoryDialog
         DockPanel.SetDock(buttons, Dock.Bottom);
         Root.Children.Add(buttons);
         Root.Children.Add(body);
-        Track(_source, _destination, _subdirectory, _branch, _branches, _personal, _bare, _recursive, _fullHistory);
+        Track(_source, _destination, _subdirectory, _branch, _branches, _sourceHistory, _destinationHistory, _personal, _bare, _recursive, _fullHistory);
         UpdateLocation();
         UpdateActions();
+        Opened += async (_, _) => await InitializeAsync();
+    }
+
+    public Task InitializeAsync() => _initialization ??= _explicitSource ? Task.CompletedTask : RunAsync("Load repository", async token =>
+    {
+        long sourceVersion = _sourceVersion;
+        string? proposed = null;
+        try
+        {
+            if (Clipboard is not null && TryExtractSource(await ClipboardExtensions.TryGetTextAsync(Clipboard).WaitAsync(token) ?? "", out string clipboardSource)) { proposed = clipboardSource; }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch { /* Clipboard availability does not decide whether cloning is possible. */ }
+        proposed ??= string.IsNullOrWhiteSpace(_source.Text) && _context is not null ? await _context.GetDefaultCloneSourceAsync(token) : null;
+        token.ThrowIfCancellationRequested();
+        if (proposed is not null && sourceVersion == _sourceVersion) { _source.Text = proposed; }
+    });
+
+    internal static bool TryExtractSource(string text, out string source)
+    {
+        source = text.Split(' ').FirstOrDefault(IsSource) ?? "";
+        return source.Length > 0;
+        static bool IsSource(string candidate) => !string.IsNullOrWhiteSpace(candidate)
+            && (Uri.IsWellFormedUriString(candidate, UriKind.Absolute) && !candidate.Contains('?') && !candidate.Contains('#')
+                || candidate.EndsWith(".git", StringComparison.CurrentCultureIgnoreCase) || candidate.EndsWith(".git/", StringComparison.CurrentCultureIgnoreCase)
+                || Directory.Exists(Path.Combine(candidate, ".git")) || File.Exists(Path.Combine(candidate, ".git"))
+                || File.Exists(Path.Combine(candidate, "HEAD")) && Directory.Exists(Path.Combine(candidate, "objects")));
+    }
+
+    private RepositoryHistoryState LoadLocalHistory()
+    {
+        try { return _localHistoryStore.Load(new PreferencesStore().Load().RecentRepositories); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { return new(); }
+    }
+
+    private static Control HistoryInput(TextBox text, ComboBox history, IEnumerable<string> paths)
+    {
+        ConfigureArrowOnly(history);
+        history.ItemsSource = paths.ToArray();
+        history.ItemTemplate = new FuncDataTemplate<string>((path, _) => new TextBlock { Text = ExportDialogControls.DisplayPath(path ?? ""), MinWidth = 180, MaxWidth = 600, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(4, 1) });
+        history.SelectionChanged += (_, _) => { if (history.SelectedItem is string path) { text.Text = path; } };
+        Grid input = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        input.Children.Add(text); Grid.SetColumn(history, 1); input.Children.Add(history);
+        return input;
+    }
+
+    private static void ConfigureArrowOnly(ComboBox choice)
+    {
+        choice.Classes.Add("classic-arrow-only");
+        choice.Resources["ComboBoxThemeMinWidth"] = 0d;
+        choice.Padding = new Thickness(0);
+        choice.SelectionBoxItemTemplate = new FuncDataTemplate<string>((_, _) => new TextBlock());
     }
 
     public GitCloneOptions ReadOptions()
@@ -110,6 +179,10 @@ public sealed class CloneDialog : StartupRepositoryDialog
         string path = Path.GetFullPath(Path.Combine(directory, subdirectory));
         GitRepository cloned = await GitRepository.CloneAsync(_source.Text ?? "", path, ReadOptions(), token);
         _preferences.Save(new(directory, _recursive.IsChecked == true));
+        RepositoryHistoryState history = LoadLocalHistory();
+        _sourcesStore.Visit(_source.Text ?? "", history.HistorySize);
+        try { _localHistoryStore.Save(history.Visit(cloned.Path)); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         Complete(cloned);
     });
 

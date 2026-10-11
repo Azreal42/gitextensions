@@ -97,16 +97,24 @@ public sealed partial class MainWindow
     private Task UpdateSubmodulesAndBuildAsync() => RunAsync("Update submodules", async repository =>
     {
         await repository.UpdateSubmodulesAsync(cancellationToken: Token);
+        await AfterSubmoduleUpdateAsync(repository, WorkflowOwner, Token);
+    });
+
+    private async Task AfterSubmoduleUpdateAsync(GitRepository repository, Window owner, CancellationToken token)
+    {
         AutoCompileSubmodulesResult builds = await _autoCompile.AfterSubmoduleUpdateAsync(repository, actionSucceeded: true,
-            AutoCompileSubmodulesOptions.FromValues(PluginSettings(AutoCompileSubmodulesService.Descriptor)), ConfirmSubmoduleBuildAsync, Token);
+            AutoCompileSubmodulesOptions.FromValues(PluginSettings(AutoCompileSubmodulesService.Descriptor)), (request, cancellation) => ConfirmSubmoduleBuildAsync(request, cancellation, owner), token);
         foreach (AutoCompileBuildResult build in builds.Builds)
         {
             if (build.Result is not null) { AppendOutput(build.SolutionPath + "\n" + build.Result.StandardOutput + build.Result.StandardError); }
             if (build.Error is not null) { AppendOutput(build.SolutionPath + "\n" + build.Error); }
         }
-    });
+    }
 
-    private async Task<AutoCompileDecision> ConfirmSubmoduleBuildAsync(AutoCompileBuildRequest request, CancellationToken token)
+    private async Task<AutoCompileDecision> ConfirmSubmoduleBuildAsync(AutoCompileBuildRequest request, CancellationToken token, Window owner)
+        => await Dispatcher.UIThread.InvokeAsync(() => ConfirmSubmoduleBuildOnUiAsync(request, token, owner));
+
+    private async Task<AutoCompileDecision> ConfirmSubmoduleBuildOnUiAsync(AutoCompileBuildRequest request, CancellationToken token, Window owner)
     {
         Window dialog = new() { Title = T("Auto compile submodules"), Width = 560, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
@@ -123,7 +131,7 @@ public sealed partial class MainWindow
         } };
         using CancellationTokenRegistration cancellation = token.Register(() => Dispatcher.UIThread.Post(() => dialog.Close(AutoCompileDecision.Cancel)));
         token.ThrowIfCancellationRequested();
-        return await dialog.ShowDialog<AutoCompileDecision?>(this) ?? AutoCompileDecision.Cancel;
+        return await dialog.ShowDialog<AutoCompileDecision?>(owner) ?? AutoCompileDecision.Cancel;
     }
 
     // These entries edit lifecycle settings; the services run at repository opening or after submodule update.

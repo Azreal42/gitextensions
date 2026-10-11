@@ -33,16 +33,21 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly Button _checkout;
     private readonly bool _autoNormalize;
     private readonly string _replacement;
+    private readonly Func<CancellationToken, Task>? _afterSubmoduleUpdateAsync;
+    private readonly SubmoduleCheckoutPreferencesStore _submodulePreferences = new();
+    private Window? _owner;
+    private bool _closeOwnerWhenIdle;
     private IReadOnlyList<GitReference> _references = [];
     private bool _dirty;
     private bool _bare;
     private string? _originalStash;
     public GitCheckoutResult? LastResult { get; private set; }
 
-    public CheckoutBranchDialog(GitRepository repository, GitReference? reference = null, bool autoNormalize = true, string replacement = "_") : base(repository, "Checkout branch")
+    public CheckoutBranchDialog(GitRepository repository, GitReference? reference = null, bool autoNormalize = true, string replacement = "_", Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Checkout branch")
     {
         _autoNormalize = autoNormalize;
         _replacement = replacement;
+        _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         if (autoNormalize) { GitBranchNaming.Normalize("", replacement); }
         _initial = reference;
         Width = 660;
@@ -100,7 +105,19 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
             UpdateActions();
         };
         UpdateActions();
+        Opened += (_, _) => { _owner = Owner as Window; if (_owner is not null) { _owner.Closed += OwnerClosed; } };
+        Closing += (_, args) => { if (IsBusy && args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closeOwnerWhenIdle = true; } };
+        Closed += (_, _) =>
+        {
+            if (_owner is not null)
+            {
+                _owner.Closed -= OwnerClosed;
+                if (_closeOwnerWhenIdle) { _owner.Close(); }
+            }
+        };
     }
+
+    private void OwnerClosed(object? sender, EventArgs args) => Close();
 
     public override Task InitializeAsync() => RunAsync("Checkout branch", async token =>
     {
@@ -148,6 +165,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(this, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }
         await RunAsync("Checkout", async token =>
         {
+            string? previousHead = (await Repository.GetStatusAsync(token)).Head;
             try { LastResult = await Repository.CheckoutAsync(options, token); }
             finally
             {
@@ -162,6 +180,20 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                 RemoteCheckoutMode = _remote.IsChecked == true ? options.NewBranchMode : preferences.RemoteCheckoutMode,
                 IncludeUntracked = _includeUntracked.IsChecked == true, ReapplyStash = _reapply.IsChecked == true
             });
+            if (previousHead != (await Repository.GetStatusAsync(token)).Head && (await Repository.GetSubmodulesAsync(token)).Count > 0)
+            {
+                bool? update = _submodulePreferences.Load().Decision;
+                if (update is null)
+                {
+                    SubmoduleCheckoutDecision? decision = await CheckoutSubmodulePrompt.ShowAsync(this, token);
+                    update = decision?.Update;
+                    if (decision is { Remember: true }) { _submodulePreferences.Remember(decision.Update); }
+                }
+                if (update == true && await SubmoduleUpdateDialog.ShowAsync(this, Repository, token) && _afterSubmoduleUpdateAsync is not null)
+                {
+                    await _afterSubmoduleUpdateAsync(token);
+                }
+            }
             Close();
         });
     }

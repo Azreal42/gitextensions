@@ -166,7 +166,7 @@ public sealed class BlameDialog : RepositoryDialog
         string committer = "";
         if (!line.Hash.All(character => character == '0'))
         {
-            GitResult result = await repository.RunAsync(["show", "--no-patch", "--format=%cn%x00%ce%x00%cI", line.Hash, "--"], token);
+            GitResult result = await repository.RunAsync(["show", "--encoding=UTF-8", "--no-patch", "--format=%cn%x00%ce%x00%cI", line.Hash, "--"], token);
             string[] fields = result.StandardOutput.TrimEnd('\r', '\n').Split('\0');
             DateTimeOffset committed = DateTimeOffset.Parse(fields[2], CultureInfo.InvariantCulture);
             if (fields[0] != line.AuthorName || committed != line.AuthoredAt)

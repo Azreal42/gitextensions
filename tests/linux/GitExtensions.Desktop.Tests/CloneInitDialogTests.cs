@@ -33,6 +33,7 @@ public class CloneInitDialogTests
         file.Items.OfType<MenuItem>().Single(item => item.Header as string == "Clone repository…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => fixture.Window.OwnedWindows.OfType<CloneDialog>().Any());
         CloneDialog clone = fixture.Window.OwnedWindows.OfType<CloneDialog>().Single();
+        await clone.InitializeAsync();
         Capture(clone, "classic-clone-light.png");
         clone.RequestedThemeVariant = ThemeVariant.Dark;
         Capture(clone, "classic-clone-dark.png");

@@ -94,4 +94,5 @@ public sealed record GitCommitOptions(
     string? TemplatePath = null,
     bool AllowEmpty = false,
     bool ResetAuthor = false,
-    string? Author = null);
+    string? Author = null,
+    bool NoVerify = false);

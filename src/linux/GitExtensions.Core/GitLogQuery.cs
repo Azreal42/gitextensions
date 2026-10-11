@@ -39,7 +39,7 @@ public sealed partial class GitRepository
             return [];
         }
 
-        List<string> arguments = ["log", "--topo-order", "-z", "--date=iso-strict", "--no-ext-diff", "--no-textconv",
+        List<string> arguments = ["log", "--encoding=UTF-8", "--topo-order", "-z", "--date=iso-strict", "--no-ext-diff", "--no-textconv",
             "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b", $"--max-count={query.Count.ToString(CultureInfo.InvariantCulture)}"];
         if (query.Skip > 0)
         {

@@ -69,15 +69,7 @@ public sealed partial class GitRepository
             return [];
         }
 
-        GitResult result = await ExecuteAsync(["reflog", "show", "-z", "--format=%H%x00%gd%x00%gs%x00%cI", $"--max-count={count.ToString(CultureInfo.InvariantCulture)}", ValidateValue(reference), "--"], cancellationToken).ConfigureAwait(false);
-        string[] fields = result.StandardOutput.Split('\0');
-        List<GitReflogEntry> entries = [];
-        for (int i = 0; i + 3 < fields.Length; i += 4)
-        {
-            entries.Add(new GitReflogEntry(fields[i], fields[i + 1], fields[i + 2], DateTimeOffset.Parse(fields[i + 3], CultureInfo.InvariantCulture)));
-        }
-
-        return entries;
+        return await ReadReflogEntriesAsync(count, reference, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<GitResult> ResetAsync(string revision, GitResetMode mode = GitResetMode.Mixed, CancellationToken cancellationToken = default)
@@ -108,7 +100,10 @@ public sealed partial class GitRepository
             templatePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), templatePath[2..]);
         }
 
-        return await File.ReadAllTextAsync(System.IO.Path.GetFullPath(templatePath, Path), cancellationToken).ConfigureAwait(false);
+        System.Text.Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);
+        byte[] bytes = await File.ReadAllBytesAsync(System.IO.Path.GetFullPath(templatePath, Path), cancellationToken).ConfigureAwait(false);
+        int offset = encoding.CodePage == System.Text.Encoding.UTF8.CodePage && bytes.AsSpan().StartsWith(new byte[] { 0xef, 0xbb, 0xbf }) ? 3 : 0;
+        return encoding.GetString(bytes, offset, bytes.Length - offset);
     }
 
     public async Task<GitResult> CommitAsync(GitCommitOptions options, CancellationToken cancellationToken = default)
@@ -125,6 +120,7 @@ public sealed partial class GitRepository
         }
 
         List<string> arguments = ["commit"];
+        if (options.NoVerify) { arguments.Add("--no-verify"); }
         if (options.Amend)
         {
             arguments.Add("--amend");
@@ -190,6 +186,6 @@ public sealed partial class GitRepository
             throw new ArgumentException("Provide an edited commit message or a template.", nameof(options));
         }
 
-        return await MutateAsync(arguments, cancellationToken, message).ConfigureAwait(false);
+        return await CommitEncodedAsync(arguments, message, cancellationToken).ConfigureAwait(false);
     }
 }

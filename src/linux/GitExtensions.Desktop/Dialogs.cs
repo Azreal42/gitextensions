@@ -59,7 +59,10 @@ internal static class Dialogs
         return await dialog.ShowDialog<string[]?>(ActiveOwner(owner));
     }
 
-    public static async Task<bool> ConfirmAsync(Window owner, string title, string message)
+    public static Task<bool> YesNoAsync(Window owner, string title, string message)
+        => ConfirmAsync(owner, title, message, "Yes", "No", true);
+
+    public static async Task<bool> ConfirmAsync(Window owner, string title, string message, string? acceptLabel = null, string? cancelLabel = null, bool acceptIsDefault = false)
     {
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
         title = translations.Translate(title);
@@ -72,8 +75,8 @@ internal static class Dialogs
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
-        Button cancel = new() { Content = translations.Translate("Cancel"), IsCancel = true, IsDefault = true };
-        Button accept = new() { Content = title };
+        Button cancel = new() { Content = translations.Translate(cancelLabel ?? "Cancel"), IsCancel = true, IsDefault = !acceptIsDefault };
+        Button accept = new() { Content = translations.Translate(acceptLabel ?? title), IsDefault = acceptIsDefault };
         cancel.Click += (_, _) => dialog.Close(false);
         accept.Click += (_, _) => dialog.Close(true);
         dialog.Content = new StackPanel

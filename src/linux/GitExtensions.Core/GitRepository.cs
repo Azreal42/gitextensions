@@ -82,7 +82,7 @@ public sealed partial class GitRepository
 
     public async Task<string> GetCommitDiffAsync(string revision, string? path = null, CancellationToken cancellationToken = default)
     {
-        List<string> arguments = ["show", "--format=fuller", "--no-ext-diff", "--no-textconv", await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false), "--"];
+        List<string> arguments = ["show", "--encoding=UTF-8", "--format=fuller", "--no-ext-diff", "--no-textconv", await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false), "--"];
         if (path is not null)
         {
             arguments.Add(ValidatePath(path));
@@ -170,7 +170,7 @@ public sealed partial class GitRepository
             throw new ArgumentException("Commit messages cannot contain NUL.", nameof(message));
         }
 
-        return MutateAsync(amend ? ["commit", "--amend", "--file=-"] : ["commit", "--file=-"], cancellationToken, message);
+        return CommitAsync(new GitCommitOptions(message, Amend: amend), cancellationToken);
     }
 
     public async Task<string> ResolveRevisionAsync(string revision, CancellationToken cancellationToken = default)
@@ -215,11 +215,11 @@ public sealed partial class GitRepository
         {
             GitResult reference = await ExecuteAsync(["show-ref", "--verify", "--quiet", "refs/stash"], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
             if (!reference.Success) { return []; }
-            result = await ExecuteAsync(["log", "--walk-reflogs", "-z", "--format=%gd%x00%H%x00%s%x00%cI", "refs/stash", "--"], cancellationToken).ConfigureAwait(false);
+            result = await ExecuteAsync(["log", "--encoding=UTF-8", "--walk-reflogs", "-z", "--format=%gd%x00%H%x00%s%x00%cI", "refs/stash", "--"], cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            result = await ExecuteAsync(["stash", "list", "-z", "--format=%gd%x00%H%x00%s%x00%cI"], cancellationToken).ConfigureAwait(false);
+            result = await ExecuteAsync(["stash", "list", "--encoding=UTF-8", "-z", "--format=%gd%x00%H%x00%s%x00%cI"], cancellationToken).ConfigureAwait(false);
         }
         string[] fields = result.StandardOutput.Split('\0');
         List<GitStash> stashes = [];
@@ -466,7 +466,7 @@ public sealed partial class GitRepository
 
     public async Task<IReadOnlyList<GitBlameLine>> GetBlameAsync(string path, string? revision = null, CancellationToken cancellationToken = default)
     {
-        List<string> arguments = ["blame", "--line-porcelain"];
+        List<string> arguments = ["blame", "--encoding=UTF-8", "--line-porcelain"];
         if (revision is not null)
         {
             arguments.Add(await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false));

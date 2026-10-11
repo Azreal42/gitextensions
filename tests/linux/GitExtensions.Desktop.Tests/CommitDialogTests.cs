@@ -183,7 +183,7 @@ public class CommitDialogTests
         Click(dialog, "StageAll");
         await Idle(dialog);
         Click(dialog, "Commit");
-        Window confirmation = dialog.OwnedWindows.Single();
+        Window confirmation = await Confirmation(dialog);
         confirmation.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Amend commit").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Idle(dialog);
         Assert.That((await fixture.Run("rev-list", "--count", "HEAD")).StandardOutput.Trim(), Is.EqualTo("1"));
@@ -342,6 +342,8 @@ public class CommitDialogTests
             Assert.That(Find<TextBox>(dialog, "Message").Text, Does.Contain("Merge branch 'feature'"));
             Assert.That(Find<Button>(dialog, "Commit").IsEnabled, Is.True);
             Click(dialog, "Commit");
+            Window confirmation = await Confirmation(dialog);
+            confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await Idle(dialog);
             Assert.That(dialog.HasCommitted, Is.True);
             Assert.That(dialog.IsVisible, Is.False);
@@ -426,9 +428,17 @@ public class CommitDialogTests
         Assert.That((await fixture.Run("diff")).StandardOutput, Does.Contain("+" + remaining).And.Not.Contain("+" + selected));
     }
 
+    private static async Task<Window> Confirmation(CommitDialog dialog)
+    {
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
+        while (!dialog.OwnedWindows.Any()) { await Task.Delay(20, timeout.Token); }
+        return dialog.OwnedWindows.Single();
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly CultureInfo _culture = CultureInfo.CurrentUICulture;
+        private readonly string? _xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
         public string Temporary { get; } = Path.Combine(Path.GetTempPath(), "gitextensions-commit-tests-" + Guid.NewGuid().ToString("N"));
         public GitRepository Repository { get; private set; } = null!;
         public CommitDialog Dialog { get; private set; } = null!;
@@ -437,6 +447,7 @@ public class CommitDialogTests
             Fixture fixture = new();
             try
             {
+                Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(fixture.Temporary, "config"));
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
                 string path = Path.Combine(fixture.Temporary, "repository");
                 Directory.CreateDirectory(path);
@@ -474,6 +485,7 @@ public class CommitDialogTests
         {
             Dialog?.Close();
             CultureInfo.CurrentUICulture = _culture;
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", _xdg);
             if (Directory.Exists(Temporary)) { Directory.Delete(Temporary, true); }
         }
     }
