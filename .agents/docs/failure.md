@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | `dotnet --info` via `/snap/bin/dotnet` échoue dans le sandbox ; aucun SDK réel installé | Lanceur Snap / confinement | SDK officiel 10.0.401 installé dans `.dotnet`, utiliser ce binaire. Résolu. |
 | `global.json` : version `10.0` invalide | Version SDK incomplète | `10.0.100` + `latestFeature`. Résolu. |
-| Exécutable actuel cible `net10.0-windows` et WinForms | Architecture Windows, pas un défaut de packaging | UI et frontières OS à porter ; chantier ouvert. |
+| Solution originale cible `net10.0-windows` et WinForms | Architecture Windows, pas un défaut de packaging | UI et frontières OS à porter ; chantier ouvert. |
 | Téléchargement via `curl` impossible | Outil absent | Utiliser `wget` ; SDK installé. Résolu. |
 | Actions UI cliquables pendant un refresh, clic suivant perdu | Verrou busy sans état visuel | Désactiver actions pendant l'opération ; attendre idle dans tests. Corrigé, testé. |
 | Stash de nom contenant newline laissé en place malgré exit 0 | Option globale `--literal-pathspecs` incompatible avec `stash push -u` | Limiter cette option aux commandes à pathspec ; test réel. Résolu. |
@@ -46,3 +46,6 @@
 | Alt est ignoré dans les premières vérifications de dialogue | Aucun enfant ne détient le focus après Show headless ; le handler natif exige un descendant focalisé | Poser le focus initial original après initialisation, sans reprendre le focus déjà acquis ; tester ensuite les déplacements avec de vrais événements Alt. Résolu. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
+| Série à trois sélections inéligible et bornes à quatre perdues | Tri par graphe au lieu de l’ordre choisi ; les bornes calculées par l’original n’étaient pas transmises | Garder primaire/ordre et bases explicites ; comparer à Git brut et vérifier F5. Résolu. |
+| Refresh revient du range-diff à un fichier ordinaire | Groupe actif effacé avant reconstruction | Préserver le groupe et l’ordre des sélections ; scénarios à deux, trois et quatre révisions. Résolu. |
+| Un fichier ressemblant à un patch peut être interprété comme un diff | Aperçu brut envoyé à l’autodétection/parsing des patches | Mode texte explicite et contrat d’indexabilité ; Git/UI vérifient que l’autre fichier reste intact. Résolu. |
