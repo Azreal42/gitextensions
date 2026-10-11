@@ -5,10 +5,12 @@ La case cochée exige une preuve dans le code/tests ou un résultat exécuté. M
 - [x] Cloner le fork et ses sous-modules ; état initial propre.
 - [x] Identifier WinForms/Win32 comme dépendances de runtime ; SDK .NET 10 local.
 - [x] Créer documentation C4, arbre ADR, suivi des échecs.
-- [x] Noyau Git portable initial : 45 scénarios réels (noms difficiles, binaires, hunks/lignes, conflits, réseau local, signature SSH, rebase interactif, cancellation).
+- [x] Noyau Git portable : 54 scénarios réels (noms difficiles, binaires, hunks/lignes, conflits, réseau local, signature SSH, rebase interactif, cancellation).
 - [x] Reprendre Browse et Commit : panneaux et lignes compactes, icônes et palettes originales, raccourcis historiques ; captures headless et X11 claire/sombre vérifiées, accent OS maîtrisé.
 - [x] Filtre historique, notes, bisect, sparse checkout, ouverture sous-dossier/worktree/bare et askpass natifs testés.
-- [x] Quatre plugins portés : CreateLocalBranches, DeleteUnusedBranches, FindLargeFiles (analyse), ReleaseNotesGenerator ; 11 scénarios réels.
+- [x] APIs d’archive ZIP/TAR, format-patch, apply/am avec reprise de conflit, fsck/statistiques et GC normal ; tests Git réels.
+- [x] Liste de fichiers du commit, choix du parent de merge, images historiques/index/worktree ; centrage et ajustement testés sur pixels.
+- [x] Huit plugins accessibles et deux services liés au dépôt ; calculs Statistics/Impact, rendu des graphiques et cycle des services testés. Parité des dialogues et avatars Gource encore ouverte.
 - [ ] Fidélité du look & feel : disposition, densité, icônes, thèmes, dialogues et raccourcis historiques ; comparaison visuelle et fonctionnelle.
 - [ ] Ouvrir/initialiser/cloner, dépôts récents/favoris, historique/graph/ref/filtrage.
 - [ ] Status index/worktree, staging fichiers et hunks/lignes, diff texte/image/binaire/combined/range-diff, commit/amend/fixup/squash/templates/signature.
@@ -24,6 +26,6 @@ La case cochée exige une preuve dans le code/tests ou un résultat exécuté. M
 - [ ] CI distante, installation APT sur OS vierge et validation arm64/Wayland seul.
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
 
-Preuves actuelles : solution Linux Release sans avertissement ; noyau 45 scénarios, plugins 11 scénarios ; 58 tests Desktop couvrant disposition, palettes originales, dialogues Commit/rebase/filtre/sparse/bisect/notes, staging partiel Unicode et askpass. 72 catalogues XLF réemployés. Paquet e42bdf3dd extrait, installé par DPKG dans une racine isolée et lancé sous Xvfb ; APT simulé. Repaquetage à payload/epoch fixes identique octet par octet. Preuves générées sous `artifacts/linux/snapshots/e42bdf3dd/proofs/`. Cette preuve utilise les bibliothèques/dépendances du host ; APT sur OS vierge et CI distante non exécutés.
+Preuves actuelles : noyau 54 scénarios, plugins 35 scénarios ; 70 tests Desktop, aucun ignoré. Source `257be49b7` ; Release sans avertissement. 72 catalogues XLF réemployés. Nouveau paquet et preuves d’installation en cours de vérification depuis ce commit propre ; le paquet vérifié précédent reste `e42bdf3dd` jusqu’à remplacement confirmé.
 
-Reste concret : dialogues historiques et raccourcis restants ; commit superprojet/branche inline, drafts/historique des messages/templates avancés/options persistées/no-verify/commit vide ; diff image/combined/range-diff et graphes très larges ; 13 plugins/CI/hébergeur restants, réécriture FindLargeFiles et chargement tiers ; préférences et intégrations Linux complètes. Aucun retrait du périmètre.
+Reste concret : dialogues d’export/patch/maintenance en cours de raccord aux APIs ; dialogues et raccourcis historiques restants ; commit superprojet/branche inline, drafts/historique des messages/templates avancés/options persistées/no-verify/commit vide ; diff combined/range-diff, familles de codecs image et graphes très larges ; plugins CI/hébergeur, réécriture FindLargeFiles et chargement tiers ; fenêtres Proxy/Gource originales, fournisseur d’avatars Gource et sortie AutoCompile continue ; préférences et intégrations Linux complètes. Aucun retrait du périmètre.
