@@ -49,5 +49,6 @@
 | Icônes encore affichées après libération de leur bitmap | Sources d’images gardées par les templates | Détacher les sources avant libération et annuler les callbacks du contrôle ; cycle de rendu/fermeture testé. Résolu. |
 | Menu Settings présent dans les données mais invisible à l’ouverture | MenuItems parentés par un holder logique invisible | Un seul MenuFlyout visible ; vrai Settings/Toolbar, clics et captures testés. Résolu. |
 | Refresh des groupes de diff échoue après création de l’arbre | Nom du contrôle réassigné après application des styles Avalonia | Fixer le nom lors de la construction, dans le composant partagé ; supprimer la seconde affectation de l’hôte. Les 31 parcours Main concernés passent. Résolu. |
+| Nouveaux boutons de tri FileStatusList orange en X11 clair malgré les captures headless bleues | États checked du ToggleButton Fluent alimentés par l’accent OS | Forcer localement les brosses originales pour chemin/extension/statut ; régression sur palette orange reproduite avant correction, puis 19 scénarios verts. Nouveau paquet/captures X11 en vérification ; candidat ebc retenu, livré e5 conservé. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
