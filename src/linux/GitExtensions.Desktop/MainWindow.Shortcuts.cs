@@ -76,7 +76,8 @@ public sealed partial class MainWindow
         SelectDetailsTab(name);
         _tabs.UpdateLayout();
         Control? content = (_tabs.SelectedItem as TabItem)?.Content as Control;
-        if (content is DiffView diff) { diff.Editor.TextArea.Focus(); }
+        if (name == "DiffTab" && _commitContent?.IsImage is false) { _commitContent.TextView.Editor.TextArea.Focus(); }
+        else if (content is DiffView diff) { diff.Editor.TextArea.Focus(); }
         else if (name == "FileTreeTab") { _tree.Focus(); }
         else if (name == "GpgTab") { _gpgInfo.Focus(); }
         else if (name == "ConsoleTab") { _output.Focus(); }

@@ -25,6 +25,7 @@ public sealed class CommitDialog : Window
     private readonly TextBox _filter = new() { Name = "SelectionFilter", Width = 180, Height = 24 };
     private readonly TextBox _source = new();
     private readonly DiffView _diff;
+    private readonly FileContentView _content;
     private readonly TextBox _message = new() { Name = "Message", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private readonly CheckBox _amend = new() { Name = "Amend", Height = 24, MinHeight = 24 };
     private readonly CheckBox _resetAuthor = new() { Name = "ResetAuthor", IsVisible = false, Height = 24, MinHeight = 24 };
@@ -70,6 +71,7 @@ public sealed class CommitDialog : Window
         MinHeight = 600;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _diff = new DiffView(_source) { Name = "SelectedDiff" };
+        _content = new FileContentView(_source, _diff);
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
         _sign.ItemsSource = new[] { T("Use Git configuration"), T("Do not sign"), T("Sign commit") };
@@ -138,7 +140,7 @@ public sealed class CommitDialog : Window
         _diff.Editor.TextArea.SelectionChanged += (_, _) => UpdateAvailability();
         KeyDown += HandleShortcut;
         Opened += async (_, _) => { await InitializeAsync(); _unstaged.Focus(); };
-        Closed += (_, _) => _lifetime.Cancel();
+        Closed += (_, _) => { _lifetime.Cancel(); _content.Dispose(); };
         UpdateAvailability();
     }
 
@@ -180,7 +182,7 @@ public sealed class CommitDialog : Window
         main.Children.Add(Splitter(1, false));
 
         Grid right = new() { RowDefinitions = new RowDefinitions("68*,5,32*") };
-        right.Children.Add(Pane(_diff, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines)));
+        right.Children.Add(Pane(_content, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines)));
         right.Children.Add(Splitter(1, true));
         Grid editor = new() { ColumnDefinitions = new ColumnDefinitions("175,5,*") };
         Button cancel = new() { Name = "Cancel", Content = C("Cancel", "Cancel"), IsCancel = true, Height = 26 };
@@ -301,8 +303,10 @@ public sealed class CommitDialog : Window
 
     private async Task LoadDiffAsync()
     {
+        _content.ClearImage();
         GitChange? change = _status?.Changes.FirstOrDefault(change => change.Path == _path);
         if (change is null) { _source.Text = T("Select a file to view its changes."); _patch = null; return; }
+        if (await _content.ShowChangedImageAsync(_repository, change, _viewStaged, _lifetime.Token)) { _patch = null; return; }
         if (change.IsUntracked)
         {
             await using FileStream stream = File.OpenRead(Path.Combine(_repository.Path, change.Path));

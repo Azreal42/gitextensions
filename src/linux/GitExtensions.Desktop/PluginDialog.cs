@@ -13,6 +13,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class PluginDialog : RepositoryDialog
 {
     private readonly INativePlugin _plugin;
+    private readonly Func<IReadOnlyDictionary<string, string?>, CancellationToken, Task>? _applySettings;
     private readonly Dictionary<string, Func<string?>> _values = [];
     private readonly Dictionary<string, Control> _fields = [];
     private readonly ListBox _rows = new() { Name = "PluginRows", SelectionMode = SelectionMode.Multiple };
@@ -22,15 +23,21 @@ public sealed class PluginDialog : RepositoryDialog
     private readonly StackPanel _links = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
     public PluginResult? LastResult { get; private set; }
 
-    public PluginDialog(GitRepository repository, INativePlugin plugin) : base(repository, plugin.Descriptor.Name)
+    public PluginDialog(GitRepository repository, INativePlugin plugin, IReadOnlyDictionary<string, string?>? savedValues = null,
+        Func<IReadOnlyDictionary<string, string?>, CancellationToken, Task>? applySettings = null) : base(repository, plugin.Descriptor.Name)
     {
         _plugin = plugin;
+        _applySettings = applySettings;
         Width = 1040;
         Height = 740;
         MinWidth = 720;
         MinHeight = 500;
         Grid fields = new() { ColumnDefinitions = new ColumnDefinitions("260,*"), Margin = new Thickness(10, 6) };
-        foreach (PluginParameter parameter in plugin.Descriptor.Parameters) { AddParameter(fields, parameter); }
+        foreach (PluginParameter parameter in plugin.Descriptor.Parameters)
+        {
+            AddParameter(fields, savedValues?.TryGetValue(parameter.Key, out string? saved) is true && saved is not null
+                ? parameter with { DefaultValue = saved } : parameter);
+        }
         StackPanel header = new() { Children = { new TextBlock { Text = T(plugin.Descriptor.Description), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10) }, fields } };
         DockPanel.SetDock(header, Dock.Top);
         Root.Children.Add(header);
@@ -98,6 +105,7 @@ public sealed class PluginDialog : RepositoryDialog
                 break;
             default:
                 TextBox text = new() { Text = parameter.DefaultValue, AcceptsReturn = parameter.Kind == PluginParameterKind.Multiline, MinHeight = parameter.Kind == PluginParameterKind.Multiline ? 50 : 24, MaxHeight = parameter.Kind == PluginParameterKind.Multiline ? 80 : 24 };
+                if (parameter.Key.Equals("password", StringComparison.OrdinalIgnoreCase)) { text.PasswordChar = '●'; }
                 _values[parameter.Key] = () => text.Text;
                 input = text;
                 break;
@@ -126,6 +134,7 @@ public sealed class PluginDialog : RepositoryDialog
         await RunAsync(_plugin.Descriptor.Name, async token =>
         {
             LastResult = await _plugin.ExecuteAsync(new PluginContext(Repository, confirmed), values, token);
+            if (LastResult.Success && _applySettings is not null) { await _applySettings(values, token); }
             if (LastResult.RepositoryChanged) { MarkRepositoryChanged(); }
             _text.Text = LastResult.Text;
             ShowTable(LastResult.Table);

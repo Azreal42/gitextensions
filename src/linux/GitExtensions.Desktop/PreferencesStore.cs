@@ -7,6 +7,7 @@ public sealed record DesktopPreferences
     public List<string> RecentRepositories { get; init; } = [];
     public string Theme { get; init; } = "Light";
     public int HistoryLimit { get; init; } = 300;
+    public Dictionary<string, Dictionary<string, string?>> PluginSettings { get; init; } = [];
 }
 
 public sealed class PreferencesStore

@@ -114,9 +114,10 @@ public sealed partial class MainWindow : Window
             {
                 await RunAsync("Commit diff", async repository =>
                 {
-                    _diff.Text = await repository.GetCommitDiffAsync(commit.Hash, cancellationToken: Token);
+                    await LoadCommitFilesAsync(repository, commit.Hash);
                     UpdateCommitInfo(commit);
                     _tree.ItemsSource = (await repository.GetTreeAsync(commit.Hash, cancellationToken: Token)).Select(entry => entry.Path).ToArray();
+                    _fileContent?.ClearImage();
                     _fileView.Text = null;
                     _gpgInfo.Text = null;
                 }, refresh: false);
@@ -185,7 +186,12 @@ public sealed partial class MainWindow : Window
                 }, TimeSpan.FromMilliseconds(600));
             }
         };
-        Closed += (_, _) => { _lifetime.Cancel(); _operation?.Cancel(); };
+        Closed += async (_, _) =>
+        {
+            _lifetime.Cancel(); _operation?.Cancel();
+            _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose();
+            await _backgroundFetch.DisposeAsync();
+        };
         AddHandler(KeyDownEvent, HandleShortcuts, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
 
@@ -214,8 +220,8 @@ public sealed partial class MainWindow : Window
             new TabItem { Header = "Remotes", Content = Panel(_remotes, Row(Button("Add…", AddRemoteAsync), Button("Edit URL…", EditRemoteAsync), Button("Remove…", RemoveRemoteAsync), Button("Fetch all", () => RunAsync("Fetch all", r => ExecuteAsync(r, "fetch", "--all", "--prune"))), Button("Pull…", PullAsync), Button("Push…", PushAsync), Button("Browse host", BrowseRemoteAsync))) },
             new TabItem { Header = "Stashes", Content = Panel(_stashes, Row(Button("Create…", StashAsync), Button("Apply", () => ApplyStashAsync(false)), Button("Pop", () => ApplyStashAsync(true)), Button("Delete…", DropStashAsync), Button("Show diff", ShowStashAsync))) },
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", () => RunAsync("Prune worktrees", r => r.PruneWorktreesAsync(cancellationToken: Token))))) },
-            new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Initialize / update", () => RunAsync("Update submodules", r => r.UpdateSubmodulesAsync(cancellationToken: Token))), Button("Sync URLs", () => RunAsync("Sync submodules", r => r.SyncSubmodulesAsync(cancellationToken: Token))), Button("Open", OpenSubmoduleAsync))) },
-            new TabItem { Header = "Files", Content = Split(Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), Button("Search…", SearchAsync))), _fileView) },
+            new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Initialize / update", UpdateSubmodulesAndBuildAsync), Button("Sync URLs", () => RunAsync("Sync submodules", r => r.SyncSubmodulesAsync(cancellationToken: Token))), Button("Open", OpenSubmoduleAsync))) },
+            new TabItem { Header = "Files", Content = Split(Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), Button("Search…", SearchAsync))), _fileContent = new FileContentView(_fileView)) },
             new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync))) },
             new TabItem { Header = "Repository", Content = BuildRepositoryTools() }
         ];
@@ -232,7 +238,8 @@ public sealed partial class MainWindow : Window
         _changesDiffView = new DiffView(_changesDiff) { Name = "WorktreeDiff" };
         _hunks.ItemTemplate = TextTemplate<GitPatchHunk>(hunk => hunk.Header);
         _stagedDiff.IsCheckedChanged += async (_, _) => await LoadSelectedDiffAsync();
-        DockPanel panel = Panel(_changesDiffView, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync)),
+        _changesContent = new FileContentView(_changesDiff, _changesDiffView);
+        DockPanel panel = Panel(_changesContent, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync)),
             Row(Button("Stage selected lines", () => ApplyLinesAsync(false)), Button("Unstage selected lines", () => ApplyLinesAsync(true))),
             Row(Button("Stage selected hunks", () => ApplyHunksAsync(false)), Button("Unstage selected hunks", () => ApplyHunksAsync(true))), _hunks);
         return panel;
@@ -301,6 +308,7 @@ public sealed partial class MainWindow : Window
         {
             GitRepository candidate = await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
+            await _backgroundFetch.UnregisterAsync();
             _repository = candidate;
             _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
             _historyWindow = _historyQuery.Count;
@@ -314,6 +322,7 @@ public sealed partial class MainWindow : Window
             _recent.ItemsSource = recent;
             try { _preferencesStore.Save(_preferences); }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { AppendOutput($"Unable to save preferences: {exception.Message}"); }
+            await RegisterBackgroundFetchAsync(candidate);
         }, refresh: false, requireRepository: false);
         if (_repository == previous && previous is null) { _state.Text = "Could not open repository. See command output."; }
     }
@@ -353,10 +362,15 @@ public sealed partial class MainWindow : Window
             _commits.SelectedItem = _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == selectedHash) ?? _historyGraph.OrderedCommits.FirstOrDefault();
             if (_commits.SelectedItem is GitCommit selectedCommit)
             {
-                _diff.Text = await repository.GetCommitDiffAsync(selectedCommit.Hash, cancellationToken: Token);
+                await LoadCommitFilesAsync(repository, selectedCommit.Hash);
                 UpdateCommitInfo(selectedCommit);
             }
-            else { _diff.Text = "This repository has no commits yet."; }
+            else
+            {
+                _revisionFiles.ItemsSource = null; _revisionChanges = null; _diffParent.IsVisible = false;
+                _commitContent?.ClearImage(); _commitInfo.Text = null; _gpgInfo.Text = null;
+                _diff.Text = "This repository has no commits yet.";
+            }
             _remotes.ItemsSource = await repository.GetRemotesAsync(Token);
             _stashes.ItemsSource = await repository.GetStashesAsync(Token);
             _worktrees.ItemsSource = await repository.GetWorktreesAsync(Token);
@@ -368,11 +382,11 @@ public sealed partial class MainWindow : Window
             {
                 bool staged = change.IsStaged && (!change.IsModified || _stagedDiff.IsChecked == true);
                 _stagedDiff.IsChecked = staged;
-                _changesDiff.Text = await repository.GetDiffAsync(change.Path, staged: staged, cancellationToken: Token);
-                _selectedPatch = GitPatch.Parse(_changesDiff.Text).FirstOrDefault();
+                await LoadChangedFileContentAsync(repository, change, staged);
+                _selectedPatch = GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault();
                 _hunks.ItemsSource = _selectedPatch?.Hunks;
             }
-            else { _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
+            else { _changesContent?.ClearImage(); _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
         }
         finally { _refreshing = false; }
     }
@@ -417,7 +431,7 @@ public sealed partial class MainWindow : Window
         foreach (MenuItem menu in _actionMenus) { menu.IsEnabled = enabled && !(_repository?.IsBare == true && menu.Tag is true); }
         _repositoryPath.IsEnabled = enabled;
         _recent.IsEnabled = enabled;
-        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs];
+        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs, _revisionFiles, _diffParent];
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
     }

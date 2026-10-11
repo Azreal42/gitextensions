@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
+using GitExtensions.Desktop.Controls;
 using Avalonia.Layout;
 using Avalonia.Styling;
 
@@ -56,21 +57,8 @@ public sealed partial class MainWindow
         {
             bool staged = change.IsStaged && (_stagedDiff.IsChecked == true || !change.IsModified);
             if (_stagedDiff.IsChecked != staged) { _stagedDiff.IsChecked = staged; }
-            if (change.IsUntracked)
-            {
-                string path = Path.GetFullPath(Path.Combine(repository.Path, change.Path));
-                if (!path.StartsWith(repository.Path + Path.DirectorySeparatorChar, StringComparison.Ordinal)) { throw new ArgumentException("File must belong to the repository."); }
-                await using FileStream stream = File.OpenRead(path);
-                byte[] bytes = new byte[(int)Math.Min(stream.Length, 2_000_000)];
-                await stream.ReadExactlyAsync(bytes, Token);
-                _changesDiff.Text = DisplayBytes(bytes, stream.Length > bytes.Length);
-                _selectedPatch = null;
-                _hunks.ItemsSource = null;
-                return;
-            }
-
-            _changesDiff.Text = await repository.GetDiffAsync(change.Path, staged: staged, cancellationToken: Token);
-            _selectedPatch = GitPatch.Parse(_changesDiff.Text).FirstOrDefault();
+            await LoadChangedFileContentAsync(repository, change, staged);
+            _selectedPatch = GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault();
             _hunks.ItemsSource = _selectedPatch?.Hunks;
         }, refresh: false);
     }
@@ -244,6 +232,10 @@ public sealed partial class MainWindow
             {
                 string from = await r.ResolveRevisionAsync(values[0], Token);
                 string to = await r.ResolveRevisionAsync(values[1], Token);
+                _revisionFiles.ItemsSource = null;
+                _revisionChanges = null;
+                _diffParent.IsVisible = false;
+                _commitContent?.ClearImage();
                 _diff.Text = (await r.RunAsync(["diff", "--no-ext-diff", "--no-textconv", from, to, "--"], Token)).StandardOutput;
             }, refresh: false);
         }
@@ -316,6 +308,7 @@ public sealed partial class MainWindow
         GitStash stash = SelectedStash();
         return RunAsync("Stash diff", async r =>
         {
+            _fileContent?.ClearImage();
             _fileView.Text = (await r.RunAsync(["stash", "show", "-p", "--include-untracked", stash.Reference], Token)).StandardOutput;
             SelectDetailsTab("FileTreeTab");
         }, refresh: false);
@@ -345,17 +338,24 @@ public sealed partial class MainWindow
 
     private Task ShowFileAsync(string path) => RunAsync("File contents", async r =>
     {
-        _fileView.Text = DisplayBytes(await r.GetFileBytesAsync(path, CurrentRevision, Token));
+        _fileContent?.ClearImage();
+        GitTreeEntry? entry = (await r.GetTreeAsync(CurrentRevision, path, Token)).FirstOrDefault(item => item.Path == path);
+        if (entry?.IsSubmodule == true) { _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}"; return; }
+        byte[] bytes = await r.GetFileBytesAsync(path, CurrentRevision, Token);
+        if (FileContentView.IsImagePath(path) && _fileContent is not null) { _fileContent.ShowImageOrHex(path, bytes); }
+        else { _fileView.Text = DisplayBytes(bytes); }
     }, refresh: false);
 
     private Task BlameAsync() => RunAsync("Blame", async r =>
     {
+        _fileContent?.ClearImage();
         IReadOnlyList<GitBlameLine> lines = await r.GetBlameAsync(_filePath.Text ?? "", CurrentRevision, Token);
         _fileView.Text = string.Join('\n', lines.Select(line => $"{line.Hash[..Math.Min(9, line.Hash.Length)]} {line.AuthorName,-18} {line.LineNumber,5}  {line.Text}"));
     }, refresh: false);
 
     private Task FileHistoryAsync() => RunAsync("File history", async r =>
     {
+        _fileContent?.ClearImage();
         _fileView.Text = (await r.RunAsync(["log", "--follow", "--format=fuller", "--stat", CurrentRevision, "--", _filePath.Text ?? ""], Token)).StandardOutput;
     }, refresh: false);
 
@@ -363,7 +363,11 @@ public sealed partial class MainWindow
     {
         string[]? values = await Dialogs.PromptAsync(this, "Search repository", ("Pattern", ""));
         if (values is null) { return; }
-        await RunAsync("Search", async r => _fileView.Text = string.Join('\n', (await r.SearchAsync(values[0], revision: CurrentRevision, cancellationToken: Token)).Select(match => $"{match.Path}:{match.LineNumber}: {match.Text}")), refresh: false);
+        await RunAsync("Search", async r =>
+        {
+            _fileContent?.ClearImage();
+            _fileView.Text = string.Join('\n', (await r.SearchAsync(values[0], revision: CurrentRevision, cancellationToken: Token)).Select(match => $"{match.Path}:{match.LineNumber}: {match.Text}"));
+        }, refresh: false);
     }
 
     private async Task SetConfigurationAsync(GitConfigScope scope)
