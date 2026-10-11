@@ -42,4 +42,7 @@
 | Chevrons et radios Clone tronqués malgré champs de 24 px | Marges et dimensions minimales internes Fluent plus grandes que le contrôle | Ressources de hauteur compactes et glyphe ComboBox centré ; limites mesurées et captures réellement rendues claire/sombre. Résolu. |
 | Validation console annonce succès sans exécuter les scénarios | dotnet test ne lance pas les projets console IsTestProject=false | Exécuter Core et Plugins avec dotnet run --no-build --no-restore ; compter les scénarios dans leurs logs. Résolu. |
 
+| Selection Filter change le périmètre de Stage all et masque des fichiers | Recherche littérale confondue avec la sélection regex du contrôle original | Combo éditable/MRU de session, regex sélectionnant Unstaged ; listes et Stage all restent complets. Scénarios Git réels et captures vérifiés. Résolu. |
+| Alt est ignoré dans les premières vérifications de dialogue | Aucun enfant ne détient le focus après Show headless ; le handler natif exige un descendant focalisé | Poser le focus initial original après initialisation, sans reprendre le focus déjà acquis ; tester ensuite les déplacements avec de vrais événements Alt. Résolu. |
+
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
