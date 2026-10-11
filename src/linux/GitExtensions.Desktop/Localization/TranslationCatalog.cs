@@ -127,6 +127,32 @@ public sealed class TranslationCatalog
         return source;
     }
 
+    /// <summary>Keep the original contextual mnemonic, using Avalonia's access-key marker.</summary>
+    public string TranslateAccessKeys(string category, string item, string property, string source)
+    {
+        string text = source;
+        for (int index = _catalogues.Count - 1; index >= 0; index--)
+        {
+            TranslationItem? translation = _catalogues[index].GetTranslationCategory(category)?.Body.GetTranslationItem(item, property);
+            if (!string.IsNullOrWhiteSpace(translation?.Value)) { text = translation.Value; break; }
+        }
+
+        StringBuilder result = new(text.Length);
+        for (int index = 0; index < text.Length; index++)
+        {
+            char character = text[index];
+            if (character == '_') { result.Append("__"); }
+            else if (character == '&' && index + 1 < text.Length && !char.IsWhiteSpace(text[index + 1]))
+            {
+                if (text[index + 1] == '&') { result.Append('&'); index++; }
+                else { result.Append('_'); }
+            }
+            else { result.Append(character); }
+        }
+        string marked = result.ToString();
+        return marked.EndsWith("...", StringComparison.Ordinal) ? marked[..^3] + "…" : marked;
+    }
+
     private static void AddTranslation(Dictionary<string, string?> dictionary, string source, string target)
     {
         if (!dictionary.TryGetValue(source, out string? previous))

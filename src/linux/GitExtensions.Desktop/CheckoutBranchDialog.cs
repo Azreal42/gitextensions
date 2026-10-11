@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using GitCommands;
@@ -16,7 +17,9 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly RadioButton _detached = new() { Name = "CheckoutRevisionMode", GroupName = "CheckoutKind" };
     private readonly ComboBox _branches = ReferenceDialogControls.Choice("CheckoutBranchSelection");
     private readonly TextBox _revision = ReferenceDialogControls.Text("CheckoutRevision", "HEAD");
-    private readonly TextBlock _selectionLabel = new() { Name = "CheckoutSelectionLabel" };
+    private readonly AccessText _selectionLabel = new() { Name = "CheckoutSelectionLabel" };
+    private readonly TextBlock _revisionLabel = new() { Name = "CheckoutSelectionLabel" };
+    private readonly Label _selectionAccess = new() { Name = "CheckoutSelectionAccess", Padding = new Thickness(0) };
     private readonly ComboBox _newMode = ReferenceDialogControls.Choice("RemoteCheckoutMode");
     private readonly TextBox _newName = ReferenceDialogControls.Text("CheckoutLocalName");
     private readonly RadioButton _keep = new() { Name = "CheckoutKeepChanges", GroupName = "CheckoutChanges", IsChecked = true };
@@ -53,14 +56,16 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         Width = 660;
         MinWidth = 580;
         SizeToContent = SizeToContent.Height;
-        _local.Content = T("Local branch");
-        _remote.Content = T("Remote branch");
+        _local.Content = AccessCaption("LocalBranch", "Local &branch");
+        _remote.Content = AccessCaption("Remotebranch", "Remote &branch");
         _detached.Content = T("Revision (detached)");
-        _keep.Content = T("Don't change");
-        _merge.Content = T("Merge");
-        _stash.Content = T("Stash");
-        _discard.Content = T("Reset");
-        _default.Content = T("Set as default");
+        _selectionLabel.Text = Translations.TranslateAccessKeys("FormCheckoutBranch", "label1", "Text", "&Select branch");
+        _revisionLabel.Text = T("Revision");
+        _keep.Content = AccessCaption("rbDontChange", "Do&n't change");
+        _merge.Content = AccessCaption("rbMerge", "&Merge");
+        _stash.Content = AccessCaption("rbStash", "S&tash");
+        _discard.Content = AccessCaption("rbReset", "&Reset");
+        _default.Content = AccessCaption("chkSetLocalChangesActionAsDefault", "Set as &default");
         _includeUntracked.Content = T("Include untracked files");
         _reapply.Content = T("Reapply after checkout");
         ReferenceDialogControls.Compact(_local, _remote, _detached, _keep, _merge, _stash, _discard, _default, _includeUntracked, _reapply);
@@ -74,12 +79,14 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         else if (reference?.IsTag == true) { _detached.IsChecked = true; _revision.Text = reference.Name; }
         ReferenceDialogControls.ReferenceTemplate(_branches);
         _checkout = Action("CheckoutBranch", "Checkout", CheckoutAsync);
+        _checkout.Content = AccessCaption("Ok", "&Checkout");
         _checkout.IsDefault = true;
         StackPanel buttons = ExportDialogControls.Buttons(Action("CancelCheckoutBranch", "Cancel", () => { Close(); return Task.CompletedTask; }), _checkout);
         DockPanel.SetDock(buttons, Dock.Bottom);
         Root.Children.Add(buttons);
         Grid selection = ReferenceDialogControls.Fields();
-        ReferenceDialogControls.Field(selection, _selectionLabel, new Panel { Children = { _branches, _revision } });
+        _selectionAccess.Content = _selectionLabel;
+        ReferenceDialogControls.Field(selection, _selectionAccess, new Panel { Children = { _branches, _revision } });
         Grid remoteOptions = ReferenceDialogControls.Fields();
         ReferenceDialogControls.Field(remoteOptions, T("Remote checkout"), _newMode);
         ReferenceDialogControls.Field(remoteOptions, T("Local branch name"), _newName);
@@ -119,19 +126,29 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
 
     private void OwnerClosed(object? sender, EventArgs args) => Close();
 
-    public override Task InitializeAsync() => RunAsync("Checkout branch", async token =>
+    private AccessText AccessCaption(string item, string source)
+        => new() { Text = Translations.TranslateAccessKeys("FormCheckoutBranch", item, "Text", source) };
+
+    public override async Task InitializeAsync()
     {
-        _bare = (await Repository.GetInfoAsync(token)).IsBare;
-        GitStatus status = await Repository.GetStatusAsync(token);
-        _dirty = status.Changes.Count > 0;
-        _references = await Repository.GetReferencesAsync(token);
-        _originalStash = (await Repository.GetStashesAsync(token)).FirstOrDefault()?.Hash;
-        PopulateBranches();
-        _branches.SelectedItem = _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault(branch => branch.Name == _initial?.Name || _initial is null && branch.IsCurrent)
-            ?? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault();
-        _current.Text = T("Current branch:") + " " + status.Branch + (_dirty ? "    " + status.Changes.Count + " " + T("Local changes") : "");
-        Status.Text = _bare ? T("This operation requires a working tree.") : T("Select branch");
-    });
+        await RunAsync("Checkout branch", async token =>
+        {
+            _bare = (await Repository.GetInfoAsync(token)).IsBare;
+            GitStatus status = await Repository.GetStatusAsync(token);
+            _dirty = status.Changes.Count > 0;
+            _references = await Repository.GetReferencesAsync(token);
+            _originalStash = (await Repository.GetStashesAsync(token)).FirstOrDefault()?.Hash;
+            PopulateBranches();
+            _branches.SelectedItem = _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault(branch => branch.Name == _initial?.Name || _initial is null && branch.IsCurrent)
+                ?? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault();
+            _current.Text = T("Current branch:") + " " + status.Branch + (_dirty ? "    " + status.Changes.Count + " " + T("Local changes") : "");
+            Status.Text = _bare ? T("This operation requires a working tree.") : T("Select branch");
+        });
+        if (IsVisible && !IsKeyboardFocusWithin)
+        {
+            (_remote.IsChecked == true ? _remote : _detached.IsChecked == true ? _detached : _local).Focus();
+        }
+    }
 
     private void PopulateBranches()
     {
@@ -201,7 +218,8 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     protected override void UpdateActions()
     {
         bool revision = _detached.IsChecked == true;
-        _selectionLabel.Text = T(revision ? "Revision" : "Select branch");
+        _selectionAccess.Content = revision ? _revisionLabel : _selectionLabel;
+        _selectionAccess.Target = revision ? _revision : _branches;
         _branches.IsVisible = !revision;
         _revision.IsVisible = revision;
         _remoteOptions.IsVisible = _remote.IsChecked == true;

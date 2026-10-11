@@ -51,7 +51,7 @@ public sealed partial class MainWindow
             {
                 case Key.D0: _navigation.Focus(); break;
                 case Key.D1: _commits.Focus(); break;
-                case Key.D2: _commitInfo.Focus(); break;
+                case Key.D2: FocusCommitInformation(); break;
                 case Key.D3: FocusDetail("DiffTab"); break;
                 case Key.D4: FocusDetail("FileTreeTab"); break;
                 case Key.D5: FocusDetail("GpgTab"); break;

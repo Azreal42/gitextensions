@@ -11,6 +11,7 @@ using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -23,7 +24,11 @@ public sealed class CommitDialog : Window
     private readonly List<Control> _interactive = [];
     private readonly ListBox _unstaged = new() { Name = "Unstaged", SelectionMode = SelectionMode.Multiple };
     private readonly ListBox _staged = new() { Name = "Staged", SelectionMode = SelectionMode.Multiple };
-    private readonly TextBox _filter = new() { Name = "SelectionFilter", Width = 180, Height = 24 };
+    private readonly ComboBox _filter = new() { Name = "SelectionFilter", IsEditable = true, Width = 121, Height = 24, Padding = new Thickness(2, 0) };
+    private readonly List<string> _selectionFilterHistory = [];
+    private Control? _selectionFilterToolbar;
+    private CancellationTokenSource? _selectionFilterOperation;
+    private bool _updatingSelectionFilterHistory;
     private readonly TextBox _source = new();
     private readonly DiffView _diff;
     private readonly FileContentView _content;
@@ -127,12 +132,21 @@ public sealed class CommitDialog : Window
         ConfigureList(_staged, true);
         _interactive.AddRange([_filter, _message, _amend, _resetAuthor, _author, _sign, _signingKey, _kind, _target]);
         Content = BuildLayout();
+        ToolTip.SetTip(_filter, C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
         _filter.PropertyChanged += async (_, change) =>
         {
-            if (change.Property == TextBox.TextProperty && !_busy)
+            if (change.Property == ComboBox.TextProperty && !_busy && !_updatingSelectionFilterHistory)
             {
-                ApplyFileLists();
-                await RunAsync(T("Diff"), LoadDiffAsync);
+                await ScheduleSelectionFilterAsync();
+            }
+        };
+        _filter.SelectionChanged += async (_, _) =>
+        {
+            if (!_updatingSelectionFilterHistory && !_busy && _filter.SelectedItem is string expression)
+            {
+                _selectionFilterOperation?.Cancel();
+                _filter.Text = expression;
+                await ApplySelectionFilterAsync(expression);
             }
         };
         _message.PropertyChanged += (_, change) =>
@@ -193,7 +207,7 @@ public sealed class CommitDialog : Window
                 }
             }
         };
-        Closed += (_, _) => { _lifetime.Cancel(); _historyOperation?.Cancel(); _content.Dispose(); };
+        Closed += (_, _) => { _lifetime.Cancel(); _selectionFilterOperation?.Cancel(); _historyOperation?.Cancel(); _content.Dispose(); };
         UpdateAvailability();
     }
 
@@ -229,8 +243,10 @@ public sealed class CommitDialog : Window
     {
         Grid main = new() { ColumnDefinitions = new ColumnDefinitions("43*,5,57*"), Margin = new Thickness(6, 6, 6, 0) };
         Grid files = new() { RowDefinitions = new RowDefinitions("45*,5,55*") };
-        DockPanel unstaged = Pane(_unstaged, Row(new TextBlock { Text = C("toolStripLabel1", "Selection Filter"), VerticalAlignment = VerticalAlignment.Center }, _filter,
-            Action("Refresh", "", "Refresh", "ReloadRevisions.png", RefreshAsync, false)), T("Unstaged"));
+        _selectionFilterToolbar = Row(new TextBlock { Text = C("toolStripLabel1", "Selection Filter"), VerticalAlignment = VerticalAlignment.Center }, _filter);
+        _selectionFilterToolbar.Name = "SelectionFilterToolbar";
+        _selectionFilterToolbar.IsVisible = false; // AppSettings.CommitDialogSelectionFilter defaults to false.
+        DockPanel unstaged = Pane(_unstaged, _selectionFilterToolbar, T("Unstaged"));
         files.Children.Add(unstaged);
         files.Children.Add(Splitter(1, true));
         DockPanel staged = Pane(_staged, Row(Action("UnstageAll", "", "Unstage all", "UnstageAll.png", () => UnstageAsync(true), false), _unstage,
@@ -338,11 +354,16 @@ public sealed class CommitDialog : Window
         _refreshing = true;
         try
         {
-            bool Matches(GitChange change) => string.IsNullOrEmpty(_filter.Text) || change.Path.Contains(_filter.Text, StringComparison.OrdinalIgnoreCase) || change.OriginalPath?.Contains(_filter.Text, StringComparison.OrdinalIgnoreCase) is true;
-            _unstaged.ItemsSource = _status.Changes.Where(change => (change.IsModified || change.IsConflict) && !change.IsIgnored && Matches(change)).ToArray();
-            _staged.ItemsSource = _status.Changes.Where(change => change.IsStaged && !change.IsConflict && Matches(change)).ToArray();
+            string[] unstagedSelection = _unstaged.SelectedItems?.OfType<GitChange>().Select(change => change.Path).ToArray() ?? [];
+            string[] stagedSelection = _staged.SelectedItems?.OfType<GitChange>().Select(change => change.Path).ToArray() ?? [];
+            _unstaged.SelectedItems!.Clear();
+            _staged.SelectedItems!.Clear();
+            _unstaged.ItemsSource = _status.Changes.Where(change => (change.IsModified || change.IsConflict) && !change.IsIgnored).ToArray();
+            _staged.ItemsSource = _status.Changes.Where(change => change.IsStaged && !change.IsConflict).ToArray();
+            foreach (GitChange change in _unstaged.Items.OfType<GitChange>().Where(change => unstagedSelection.Contains(change.Path, StringComparer.Ordinal))) { _unstaged.SelectedItems!.Add(change); }
+            foreach (GitChange change in _staged.Items.OfType<GitChange>().Where(change => stagedSelection.Contains(change.Path, StringComparer.Ordinal))) { _staged.SelectedItems!.Add(change); }
             ListBox current = _viewStaged ? _staged : _unstaged;
-            current.SelectedItem = current.Items.OfType<GitChange>().FirstOrDefault(change => change.Path == _path) ?? current.Items.OfType<GitChange>().FirstOrDefault();
+            if (current.SelectedItems?.Count == 0) { current.SelectedItem = current.Items.OfType<GitChange>().FirstOrDefault(change => change.Path == _path) ?? current.Items.OfType<GitChange>().FirstOrDefault(); }
             if (current.SelectedItem is null)
             {
                 _viewStaged = !_viewStaged;
@@ -354,6 +375,57 @@ public sealed class CommitDialog : Window
         finally { _refreshing = false; }
         UpdateAvailability();
         UpdateStatus();
+    }
+
+    private async Task ScheduleSelectionFilterAsync()
+    {
+        _selectionFilterOperation?.Cancel();
+        using CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _selectionFilterOperation = operation;
+        string expression = _filter.Text ?? "";
+        try
+        {
+            await Task.Delay(250, operation.Token);
+            while (_busy) { await Task.Delay(20, operation.Token); }
+            await ApplySelectionFilterAsync(expression);
+        }
+        catch (OperationCanceledException) when (operation.IsCancellationRequested) { }
+        finally { if (ReferenceEquals(_selectionFilterOperation, operation)) { _selectionFilterOperation = null; } }
+    }
+
+    private async Task ApplySelectionFilterAsync(string expression)
+    {
+        GitChange[] matches;
+        try
+        {
+            Regex regex = new(expression, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+            matches = _unstaged.Items.OfType<GitChange>().Where(change => regex.IsMatch(change.Path)).ToArray();
+            ToolTip.SetTip(_filter, C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
+        }
+        catch (Exception exception) when (exception is ArgumentException or RegexMatchTimeoutException)
+        {
+            ToolTip.SetTip(_filter, string.Format(C("_selectionFilterErrorToolTip", "Error {0}"), exception.Message));
+            return;
+        }
+        _refreshing = true;
+        try
+        {
+            _unstaged.SelectedItems!.Clear();
+            _staged.SelectedItems!.Clear();
+            foreach (GitChange change in matches) { _unstaged.SelectedItems.Add(change); }
+            _viewStaged = false;
+            _path = matches.FirstOrDefault()?.Path;
+        }
+        finally { _refreshing = false; }
+        if (matches.Length > 0 && !_selectionFilterHistory.Contains(expression, StringComparer.Ordinal))
+        {
+            if (_selectionFilterHistory.Count >= 10) { _selectionFilterHistory.RemoveAt(9); }
+            _selectionFilterHistory.Insert(0, expression);
+            _updatingSelectionFilterHistory = true;
+            try { _filter.ItemsSource = _selectionFilterHistory.ToArray(); _filter.Text = expression; }
+            finally { _updatingSelectionFilterHistory = false; }
+        }
+        await RunAsync(T("Diff"), LoadDiffAsync);
     }
 
     private Task SelectFileAsync(ListBox list, bool staged)
@@ -459,7 +531,7 @@ public sealed class CommitDialog : Window
                 }
                 else
                 {
-                    CommitEmptyDialog dialog = new(paths.Length > 0, !string.IsNullOrEmpty(_filter.Text));
+                    CommitEmptyDialog dialog = new(paths.Length > 0, filtered: false);
                     choice = await dialog.ShowDialog<CommitEmptyChoice>(this);
                     if (choice == CommitEmptyChoice.Cancel) { return; }
                 }
@@ -686,6 +758,12 @@ public sealed class CommitDialog : Window
                 case Key.D2: _diff.Editor.TextArea.Focus(); break;
                 case Key.D3: _staged.Focus(); break;
                 case Key.D4: _message.Focus(); break;
+                case Key.F:
+                    if (_selectionFilterToolbar is null) { return; }
+                    _selectionFilterToolbar.IsVisible = !_selectionFilterToolbar.IsVisible;
+                    if (_selectionFilterToolbar.IsVisible) { _filter.Focus(); }
+                    else { _unstaged.Focus(); }
+                    break;
                 case Key.S: await StageAsync(true); break;
                 case Key.Enter: if (_commit.IsEnabled) { await CommitAsync(false); } break;
                 default: return;

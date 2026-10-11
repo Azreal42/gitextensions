@@ -42,6 +42,7 @@ public abstract class StartupRepositoryDialog : Window
     }
 
     protected string T(string text) => _translations.Translate(text);
+    protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] inputs) => _inputs.AddRange(inputs);
     protected Button Action(string name, string text, Func<Task> action)
     {

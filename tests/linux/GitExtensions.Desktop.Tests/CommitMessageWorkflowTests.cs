@@ -266,22 +266,25 @@ public class CommitMessageWorkflowTests
     }
 
     [AvaloniaTest]
-    public async Task StageAndCommitOnlyUsesVisibleLiteralPathsAndAStageFailureNeverCreatesAnEmptyCommit()
+    public async Task StageAndCommitUsesAllDisplayedLiteralPathsAndAStageFailureNeverCreatesAnEmptyCommit()
     {
         using Fixture fixture = await Fixture.CreateAsync();
         const string visible = "visible [literal] λ.txt", hidden = "hidden.txt";
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, visible), "visible contents\n");
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, hidden), "hidden contents\n");
         CommitDialog dialog = await fixture.OpenAsync();
-        Field<TextBox>(dialog, "SelectionFilter").Text = "visible"; await Idle(dialog);
-        Assert.That(Field<ListBox>(dialog, "Unstaged").ItemCount, Is.EqualTo(1));
+        dialog.KeyPressQwerty(PhysicalKey.F, RawInputModifiers.Control); dialog.KeyReleaseQwerty(PhysicalKey.F, RawInputModifiers.Control);
+        ComboBox filter = Field<ComboBox>(dialog, "SelectionFilter"); filter.Text = "visible";
+        await Until(() => filter.Items.OfType<string>().Contains("visible")); await Idle(dialog);
+        Assert.That(Field<ListBox>(dialog, "Unstaged").ItemCount, Is.EqualTo(2));
+        Assert.That(Field<ListBox>(dialog, "Unstaged").SelectedItems!.OfType<GitChange>().Single().Path, Is.EqualTo(visible));
         Message(dialog).Text = "Only visible change";
         string head = await fixture.Repository.ResolveRevisionAsync("HEAD");
         string indexLock = await GitPath(fixture.Repository, "index.lock"); await File.WriteAllTextAsync(indexLock, "locked");
         try
         {
             Click(dialog, "Commit"); CommitEmptyDialog prompt = await EmptyDialog(dialog);
-            Assert.That(ButtonText(Field<Button>(prompt, "StageUnstaged")), Is.EqualTo("Stage and commit the unstaged files that match your filter"));
+            Assert.That(ButtonText(Field<Button>(prompt, "StageUnstaged")), Is.EqualTo("Stage and commit all unstaged files"));
             Click(prompt, "StageUnstaged"); await Idle(dialog, error: true);
             Assert.That(dialog.LastError, Does.Contain("index.lock"));
             Assert.That(await fixture.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(head));
@@ -290,9 +293,8 @@ public class CommitMessageWorkflowTests
         }
         finally { File.Delete(indexLock); }
         Click(dialog, "Commit"); CommitEmptyDialog successful = await EmptyDialog(dialog); Click(successful, "StageUnstaged"); await Idle(dialog);
-        Assert.That((await fixture.Git("diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")).StandardOutput.Trim(), Is.EqualTo(visible));
-        GitChange remaining = (await fixture.Repository.GetStatusAsync()).Changes.Single();
-        Assert.That(remaining.Path, Is.EqualTo(hidden)); Assert.That(remaining.IsUntracked, Is.True);
+        Assert.That((await fixture.Git("diff-tree", "--no-commit-id", "--name-only", "-z", "-r", "HEAD")).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries), Is.EquivalentTo(new[] { visible, hidden }));
+        Assert.That((await fixture.Repository.GetStatusAsync()).Changes, Is.Empty);
         Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, hidden)), Is.EqualTo("hidden contents\n"));
     }
 

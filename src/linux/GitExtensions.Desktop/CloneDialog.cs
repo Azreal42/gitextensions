@@ -4,8 +4,11 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Controls.Templates;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using System.Globalization;
 
 namespace GitExtensions.Linux.Desktop;
@@ -42,10 +45,10 @@ public sealed class CloneDialog : StartupRepositoryDialog
         _defaultBranch = T("(default: remote HEAD)");
         _noCheckout = T("(none: don't checkout after clone)");
         _branch.Text = _defaultBranch;
-        _personal.Content = T("Personal repository");
-        _bare.Content = T("Public repository, no working directory  (--bare)");
+        _personal.Content = AccessCaption("PersonalRepository", "&Personal repository");
+        _bare.Content = AccessCaption("CentralRepository", "P&ublic repository, no working directory  (--bare)");
         _recursive.Content = T("Initialize all submodules");
-        _fullHistory.Content = T("Download full history");
+        _fullHistory.Content = AccessCaption("cbDownloadFullHistory", "Download full &history");
         _branches.ItemsSource = new[] { _defaultBranch, _noCheckout };
         ConfigureArrowOnly(_branches);
         _branches.SelectionChanged += (_, _) => { if (_branches.SelectedItem is string branch) { _branch.Text = branch; } };
@@ -72,15 +75,15 @@ public sealed class CloneDialog : StartupRepositoryDialog
         _source.Text = _explicitSource ? source : _sourcesStore.Load().FirstOrDefault() ?? "";
         Grid fields = ExportDialogControls.Fields();
         fields.ColumnDefinitions = new ColumnDefinitions("150,*,Auto");
-        ExportDialogControls.Field(fields, T("Repository to clone:"), HistoryInput(_source, _sourceHistory, _sourcesStore.Load()), Action("BrowseCloneSource", "Browse", () => BrowseAsync(_source)));
+        ExportDialogControls.Field(fields, AccessLabel("repositoryLabel", "Repository to &clone:", _source), HistoryInput(_source, _sourceHistory, _sourcesStore.Load()), BrowseButton("BrowseCloneSource", "FromBrowse", "&Browse", _source));
         string[] destinations = LoadLocalHistory().Recent.Select(item => Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(item.Path))).Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray();
-        ExportDialogControls.Field(fields, T("Destination:"), HistoryInput(_destination, _destinationHistory, destinations), Action("BrowseCloneDestination", "Browse", () => BrowseAsync(_destination)));
-        ExportDialogControls.Field(fields, T("Subdirectory to create:"), _subdirectory);
+        ExportDialogControls.Field(fields, AccessLabel("destinationLabel", "&Destination:", _destination), HistoryInput(_destination, _destinationHistory, destinations), BrowseButton("BrowseCloneDestination", "ToBrowse", "B&rowse", _destination));
+        ExportDialogControls.Field(fields, AccessLabel("subdirectoryLabel", "&Subdirectory to create:", _subdirectory), _subdirectory);
         Grid branch = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         branch.Children.Add(_branch);
         Grid.SetColumn(_branches, 1);
         branch.Children.Add(_branches);
-        ExportDialogControls.Field(fields, T("Branch:"), branch, Action("RefreshCloneBranches", "Refresh", LoadBranchesAsync));
+        ExportDialogControls.Field(fields, AccessLabel("brachLabel", "Br&anch:", _branch), branch, Action("RefreshCloneBranches", "Refresh", LoadBranchesAsync));
         StackPanel body = new() { Margin = new Thickness(12), Spacing = 8 };
         body.Children.Add(fields);
         body.Children.Add(_location);
@@ -93,7 +96,11 @@ public sealed class CloneDialog : StartupRepositoryDialog
         Track(_source, _destination, _subdirectory, _branch, _branches, _sourceHistory, _destinationHistory, _personal, _bare, _recursive, _fullHistory);
         UpdateLocation();
         UpdateActions();
-        Opened += async (_, _) => await InitializeAsync();
+        Opened += async (_, _) =>
+        {
+            await InitializeAsync();
+            if (IsVisible && !IsKeyboardFocusWithin) { _source.Focus(); }
+        };
     }
 
     public Task InitializeAsync() => _initialization ??= _explicitSource ? Task.CompletedTask : RunAsync("Load repository", async token =>
@@ -145,6 +152,26 @@ public sealed class CloneDialog : StartupRepositoryDialog
         choice.Resources["ComboBoxThemeMinWidth"] = 0d;
         choice.Padding = new Thickness(0);
         choice.SelectionBoxItemTemplate = new FuncDataTemplate<string>((_, _) => new TextBlock());
+    }
+
+    private AccessText AccessCaption(string item, string source)
+        => new() { Text = Translations.TranslateAccessKeys("FormClone", item, "Text", source), TextWrapping = TextWrapping.Wrap };
+
+    private Label AccessLabel(string item, string source, Control target)
+        => new() { Name = "CloneAccess" + item, Content = AccessCaption(item, source), Target = target, Padding = new Thickness(0) };
+
+    private Button BrowseButton(string name, string item, string source, TextBox target)
+    {
+        Button button = Action(name, "Browse", () => BrowseAsync(target));
+        button.MinWidth = 94;
+        Uri icon = new("avares://GitExtensions/Assets/Icons/BrowseFileExplorer.png");
+        using Stream stream = AssetLoader.Open(icon);
+        button.Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5, Children =
+        {
+            new Image { Source = new Bitmap(stream), Width = 16, Height = 16 },
+            AccessCaption(item, source)
+        } };
+        return button;
     }
 
     public GitCloneOptions ReadOptions()

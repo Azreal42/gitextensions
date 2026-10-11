@@ -64,6 +64,25 @@ public class TranslationCatalogTests
     }
 
     [Test]
+    public void ContextualAccessKeysKeepTheOriginalTranslatedMnemonicAndLeavePlainTranslationsUnchanged()
+    {
+        TranslationCatalog french = TranslationCatalog.Load(CatalogueDirectory, CultureInfo.GetCultureInfo("fr-FR"));
+        Assert.That(french.TranslateAccessKeys("FormCheckoutBranch", "rbMerge", "Text", "&Merge"), Is.EqualTo("_Fusionner"));
+        Assert.That(french.TranslateAccessKeys("FormClone", "brachLabel", "Text", "Br&anch:"), Is.EqualTo("Br_anche :"));
+        Assert.That(french.Translate("FormCheckoutBranch", "rbMerge", "Text", "&Merge"), Is.EqualTo("Fusionner"));
+        TranslationCatalog english = TranslationCatalog.Load(CatalogueDirectory, CultureInfo.GetCultureInfo("en"));
+        Assert.That(english.TranslateAccessKeys("FormClone", "repositoryLabel", "Text", "Repository to &clone:"), Is.EqualTo("Repository to _clone:"));
+    }
+
+    [Test]
+    public void AccessKeyConversionPreservesLiteralAmpersandsUnderscoresAndFallbackText()
+    {
+        TranslationCatalog missing = TranslationCatalog.Load("/nonexistent-catalogue", CultureInfo.GetCultureInfo("en"));
+        Assert.That(missing.TranslateAccessKeys("Missing", "item", "Text", "&Open_file && directory..."), Is.EqualTo("_Open__file & directory…"));
+        Assert.That(missing.TranslateAccessKeys("Missing", "item", "Text", "A & B &"), Is.EqualTo("A & B &"));
+    }
+
+    [Test]
     public void AmbiguousEmptyAndBrokenTranslationsFallBackToEnglish()
     {
         string directory = Path.Combine(Path.GetTempPath(), "gitextensions-localization-tests-" + Guid.NewGuid().ToString("N"));

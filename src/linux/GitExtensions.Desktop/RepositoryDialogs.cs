@@ -42,6 +42,7 @@ public abstract class RepositoryDialog : Window
     internal Exception? LastException { get; private set; }
     public abstract Task InitializeAsync();
     protected string T(string source) => _translations.Translate(source);
+    protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
 

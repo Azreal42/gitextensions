@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -258,69 +259,54 @@ public class CommitDialogTests
     }
 
     [AvaloniaTest]
-    public async Task FilteredStageAllButtonsAndShortcutOnlyChangeVisibleLiteralPaths()
+    public async Task SelectionRegexKeepsBothListsAndStageAllButtonsAndShortcutStageAllLiteralPaths()
     {
         using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\n");
         CommitDialog dialog = fixture.Dialog;
-        const string visiblePath = "visible λ[1]; $(touch should-not-exist).txt";
-        const string hiddenPath = "visible λ1; $(touch should-not-exist).txt";
+        const string selectedPath = "visible λ[1]; $(touch should-not-exist).txt";
+        const string otherPath = "visible λ1; $(touch should-not-exist).txt";
         const string initial = "initial\n";
-        const string visibleChanged = "initial\nvisible change\n";
-        const string hiddenStaged = "initial\nhidden staged change\n";
-        const string hiddenChanged = "initial\nhidden staged change\nhidden unstaged change\n";
-        await fixture.Run("mv", "file.txt", hiddenPath);
-        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, visiblePath), initial);
-        await fixture.Run("add", "--", visiblePath);
+        const string selectedChanged = "initial\nselected change\n";
+        const string otherStaged = "initial\nstaged change\n";
+        const string otherChanged = "initial\nstaged change\nunstaged change\n";
+        await fixture.Run("mv", "file.txt", otherPath);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, selectedPath), initial);
+        await fixture.Run("add", "--", selectedPath);
         await fixture.Run("commit", "-m", "Add literal file path");
-        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, hiddenPath), hiddenStaged);
-        await fixture.Run("add", "--", hiddenPath);
-        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, hiddenPath), hiddenChanged);
-        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, visiblePath), visibleChanged);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, otherPath), otherStaged);
+        await fixture.Run("add", "--", otherPath);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, otherPath), otherChanged);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, selectedPath), selectedChanged);
         await dialog.RefreshAsync();
-        TextBox filter = Find<TextBox>(dialog, "SelectionFilter");
-        filter.Text = "VISIBLE λ[1]";
+        Press(dialog, PhysicalKey.F, RawInputModifiers.Control);
+        ComboBox filter = Find<ComboBox>(dialog, "SelectionFilter");
+        string expression = "^" + Regex.Escape(selectedPath.ToUpperInvariant()) + "$";
+        filter.Text = expression;
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
+        while (!filter.Items.OfType<string>().Contains(expression)) { await Task.Delay(20, timeout.Token); }
         await Idle(dialog);
-        ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
-        ListBox staged = Find<ListBox>(dialog, "Staged");
-        Assert.That(unstaged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(visiblePath));
-        Assert.That(staged.ItemCount, Is.Zero, "The already staged hidden file must not be displayed by this filter.");
-        string hiddenIndexDiff = (await fixture.Run("diff", "--cached", "--", hiddenPath)).StandardOutput;
-
+        ListBox unstaged = Find<ListBox>(dialog, "Unstaged"), staged = Find<ListBox>(dialog, "Staged");
+        Assert.That(unstaged.ItemCount, Is.EqualTo(2));
+        Assert.That(unstaged.SelectedItems!.OfType<GitChange>().Single().Path, Is.EqualTo(selectedPath));
+        Assert.That(staged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(otherPath), "Selection Filter does not hide indexed files.");
         for (int attempt = 0; attempt < 2; attempt++)
         {
             if (attempt == 0) { Click(dialog, "StageAll"); }
             else { Press(dialog, PhysicalKey.S, RawInputModifiers.Control); }
             await Idle(dialog);
-            Assert.That((await fixture.Run("show", ":" + visiblePath)).StandardOutput, Is.EqualTo(visibleChanged));
+            Assert.That((await fixture.Run("show", ":" + selectedPath)).StandardOutput, Is.EqualTo(selectedChanged));
+            Assert.That((await fixture.Run("show", ":" + otherPath)).StandardOutput, Is.EqualTo(otherChanged));
             Assert.That(unstaged.ItemCount, Is.Zero);
-            Assert.That(staged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(visiblePath));
-            await AssertHiddenUnchanged();
-
-            Click(dialog, "UnstageAll");
-            await Idle(dialog);
-            Assert.That((await fixture.Run("show", ":" + visiblePath)).StandardOutput, Is.EqualTo(initial));
-            Assert.That(unstaged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(visiblePath));
+            Assert.That(staged.ItemCount, Is.EqualTo(2));
+            Click(dialog, "UnstageAll"); await Idle(dialog);
+            Assert.That((await fixture.Run("show", ":" + selectedPath)).StandardOutput, Is.EqualTo(initial));
+            Assert.That((await fixture.Run("show", ":" + otherPath)).StandardOutput, Is.EqualTo(initial));
+            Assert.That(unstaged.ItemCount, Is.EqualTo(2));
             Assert.That(staged.ItemCount, Is.Zero);
-            await AssertHiddenUnchanged();
         }
-
-        filter.Text = "no matching file";
-        await Idle(dialog);
-        Press(dialog, PhysicalKey.S, RawInputModifiers.Control);
-        await Idle(dialog);
-        Click(dialog, "UnstageAll");
-        await Idle(dialog);
-        await AssertHiddenUnchanged();
-        Assert.That((await fixture.Run("show", ":" + visiblePath)).StandardOutput, Is.EqualTo(initial));
-        Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, visiblePath)), Is.EqualTo(visibleChanged));
+        Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, selectedPath)), Is.EqualTo(selectedChanged));
+        Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, otherPath)), Is.EqualTo(otherChanged));
         Assert.That(File.Exists(Path.Combine(fixture.Repository.Path, "should-not-exist")), Is.False);
-
-        async Task AssertHiddenUnchanged()
-        {
-            Assert.That((await fixture.Run("show", ":" + hiddenPath)).StandardOutput, Is.EqualTo(hiddenStaged));
-            Assert.That((await fixture.Run("diff", "--cached", "--", hiddenPath)).StandardOutput, Is.EqualTo(hiddenIndexDiff));
-            Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, hiddenPath)), Is.EqualTo(hiddenChanged));
-        }
     }
 
     [AvaloniaTest]
@@ -362,11 +348,14 @@ public class CommitDialogTests
         await fixture.Run("mv", "file.txt", renamed);
         await File.AppendAllTextAsync(Path.Combine(fixture.Repository.Path, renamed), "renamed change\n");
         await dialog.RefreshAsync();
-        TextBox filter = Find<TextBox>(dialog, "SelectionFilter");
-        filter.Text = "FILE.TXT";
+        Press(dialog, PhysicalKey.F, RawInputModifiers.Control);
+        ComboBox filter = Find<ComboBox>(dialog, "SelectionFilter");
+        filter.Text = "RENAMED λ";
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
+        while (!filter.Items.OfType<string>().Contains("RENAMED λ")) { await Task.Delay(20, timeout.Token); }
         await Idle(dialog);
         Assert.That(Find<ListBox>(dialog, "Unstaged").Items.OfType<GitChange>().Single().Path, Is.EqualTo(renamed),
-            "A rename must match its old name without changing Git's case-sensitive path identity.");
+            "Selection matches the current name without changing Git's case-sensitive path identity.");
         Click(dialog, "StageAll");
         await Idle(dialog);
         DiffView diff = Find<DiffView>(dialog, "SelectedDiff");

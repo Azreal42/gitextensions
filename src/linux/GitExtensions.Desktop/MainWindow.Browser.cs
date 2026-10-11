@@ -9,6 +9,7 @@ using Avalonia.Platform;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 using GitExtensions.Linux.Plugins;
+using GitCommands;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -22,11 +23,23 @@ public sealed partial class MainWindow
     private readonly List<MenuItem> _actionMenus = [];
     private Grid? _browserBody;
     private Button? _historyMore;
+    private readonly BrowserLayoutPreferencesStore _browserLayoutPreferences = new();
+    private CommitInfoPosition _commitInfoPosition;
+    private Grid? _revisionPanels;
+    private Control? _revisionTable;
+    private GridSplitter? _commitInfoSplitter;
+    private TabItem? _commitInfoTab;
+    private IReadOnlyList<TabItem> _browserDetailTabs = [];
+    private Button? _commitInfoPositionButton;
+    private MenuItem[] _commitInfoPositionItems = [];
+    private double _commitInfoWidth = 490;
+    private bool _layingOutCommitInfo;
 
     private string T(string source) => _translations.Translate(source);
 
     private Control BuildLayout()
     {
+        _commitInfoPosition = _browserLayoutPreferences.Load().CommitInfoPosition;
         // Reuse the same workflow controls in dialogs; keep the Browse layout from FormBrowse.
         IReadOnlyList<TabItem> views = BuildTabs();
         Grid previousHistory = (Grid)views[0].Content!;
@@ -46,6 +59,7 @@ public sealed partial class MainWindow
         _commits.Name = "RevisionHistory";
         _commitInfo.TextWrapping = TextWrapping.Wrap;
         _commitInfo.FontFamily = FontFamily.Default;
+        _commitInfo.Name = "CommitInformation";
         _commits.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) =>
         {
             Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,120,130,75"), Height = CommitGraph.RowHeight - 2 };
@@ -90,6 +104,7 @@ public sealed partial class MainWindow
             BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(4, 2),
             Child = Row(IconButton("Refresh", "ReloadRevisions.png", RefreshAsync, false),
                 IconButton("Toggle left panel", "LayoutSidebarLeft.png", ToggleNavigationAsync, false),
+                BuildCommitInfoPositionButton(),
                 IconButton("Open repository", "FolderClosed.png", ChooseRepositoryAsync, false), _repositoryPath,
                 IconButton("Pull", "Pull.png", PullAsync), IconButton("Push", "Push.png", PushAsync),
                 IconButton("Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes")),
@@ -121,20 +136,20 @@ public sealed partial class MainWindow
         _browserBody.Children.Add(navigationSplitter);
 
         Grid right = new() { RowDefinitions = new RowDefinitions("2*,4,3*") };
-        Grid revisions = new() { ColumnDefinitions = new ColumnDefinitions("3*,4,1*") };
-        revisions.Children.Add(BuildRevisionTable());
-        GridSplitter infoSplitter = new() { Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch };
-        Grid.SetColumn(infoSplitter, 1);
-        revisions.Children.Add(infoSplitter);
-        Grid.SetColumn(_commitInfo, 2);
-        revisions.Children.Add(_commitInfo);
-        right.Children.Add(revisions);
-        GridSplitter detailsSplitter = new() { Height = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Rows };
+        _revisionPanels = new Grid { Name = "RevisionPanels" };
+        _revisionPanels.SizeChanged += (_, _) => LimitCommitInfoWidth();
+        _revisionTable = BuildRevisionTable();
+        _commitInfoSplitter = new GridSplitter { Name = "CommitInfoSplitter", Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Columns };
+        _revisionPanels.Children.Add(_revisionTable);
+        _revisionPanels.Children.Add(_commitInfoSplitter);
+        right.Children.Add(_revisionPanels);
+        GridSplitter detailsSplitter = new() { Name = "DetailsSplitter", Height = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Rows };
         Grid.SetRow(detailsSplitter, 1);
         right.Children.Add(detailsSplitter);
 
         _tabs.Name = "DetailsTabs";
-        _tabs.ItemsSource = new[]
+        _commitInfoTab = new TabItem { Name = "CommitInfoTab", Header = T("Commit") };
+        _browserDetailTabs = new[]
         {
             new TabItem { Name = "DiffTab", Header = IconLabel("Diff", "Diff.png"), Content = BuildCommitFilesView() },
             new TabItem { Name = "FileTreeTab", Header = IconLabel("File tree", "FileTree.png"), Content = _workflowViews["Files"] },
@@ -144,7 +159,7 @@ public sealed partial class MainWindow
         };
         _tabs.SelectionChanged += async (_, args) =>
         {
-            if (args.Source == _tabs && (_tabs.SelectedItem as TabItem)?.Name == "GpgTab")
+            if (!_layingOutCommitInfo && args.Source == _tabs && (_tabs.SelectedItem as TabItem)?.Name == "GpgTab")
             {
                 await RunAsync("Commit signature", async repository =>
                 {
@@ -155,6 +170,7 @@ public sealed partial class MainWindow
         };
         Grid.SetRow(_tabs, 2);
         right.Children.Add(_tabs);
+        ApplyCommitInfoLayout(_commitInfoPosition, persist: false);
         Grid.SetColumn(right, 2);
         _browserBody.Children.Add(right);
         _dashboard = new DashboardControl(this, () => _repositoryHistory, SaveRepositoryHistory, OpenRepositoryAsync, InitializeAsync, ChooseRepositoryAsync, CloneAsync);
@@ -163,6 +179,120 @@ public sealed partial class MainWindow
         UpdateRepositoryMenus();
         SetDashboardVisible(_repository is null);
         return root;
+    }
+
+    private Control BuildCommitInfoPositionButton()
+    {
+        _commitInfoPositionItems = Enum.GetValues<CommitInfoPosition>().Select(position =>
+        {
+            MenuItem item = new()
+            {
+                Name = "CommitInfoPosition_" + position, Header = T(CommitInfoLayoutDescription(position).Label),
+                Icon = CommitInfoLayoutImage(position), Tag = position, ToggleType = MenuItemToggleType.Radio,
+                GroupName = "CommitInfoPosition"
+            };
+            item.Click += (_, _) => ApplyCommitInfoLayout(position, persist: true);
+            return item;
+        }).ToArray();
+        _commitInfoPositionButton = new Button
+        {
+            Name = "CommitInfoPosition", Width = 22, Height = 24, MinWidth = 0, MinHeight = 24, Padding = new Thickness(0)
+        };
+        _commitInfoPositionButton.Click += (_, _) => ApplyCommitInfoLayout(
+            (CommitInfoPosition)(((int)_commitInfoPosition + 1) % Enum.GetValues<CommitInfoPosition>().Length), persist: true);
+        Button dropdown = new()
+        {
+            Name = "CommitInfoPositionMenu", Width = 10, Height = 24, MinWidth = 0, MinHeight = 24, Padding = new Thickness(0),
+            Content = new TextBlock { Text = "▾", FontSize = 10 }, Flyout = new MenuFlyout { ItemsSource = _commitInfoPositionItems }
+        };
+        ToolTip.SetTip(dropdown, T("Commit info position"));
+        Grid splitButton = new() { Name = "CommitInfoPositionControl", ColumnDefinitions = new ColumnDefinitions("22,10"), Height = 24 };
+        splitButton.Children.Add(_commitInfoPositionButton);
+        Grid.SetColumn(dropdown, 1);
+        splitButton.Children.Add(dropdown);
+        UpdateCommitInfoPositionButton();
+        return splitButton;
+    }
+
+    private static (string Label, string Icon) CommitInfoLayoutDescription(CommitInfoPosition position) => position switch
+    {
+        CommitInfoPosition.BelowList => ("Commit info below graph", "LayoutFooterTab.png"),
+        CommitInfoPosition.LeftwardFromList => ("Commit info left of graph", "LayoutSidebarTopLeft.png"),
+        CommitInfoPosition.RightwardFromList => ("Commit info right of graph", "LayoutSidebarTopRight.png"),
+        _ => throw new ArgumentOutOfRangeException(nameof(position))
+    };
+
+    private static Image CommitInfoLayoutImage(CommitInfoPosition position)
+    {
+        string icon = CommitInfoLayoutDescription(position).Icon;
+        using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + icon));
+        return new Image { Source = new Bitmap(stream), Width = 16, Height = 16, Tag = icon };
+    }
+
+    private void UpdateCommitInfoPositionButton()
+    {
+        if (_commitInfoPositionButton is not null)
+        {
+            _commitInfoPositionButton.Content = CommitInfoLayoutImage(_commitInfoPosition);
+            ToolTip.SetTip(_commitInfoPositionButton, T(CommitInfoLayoutDescription(_commitInfoPosition).Label));
+        }
+        foreach (MenuItem item in _commitInfoPositionItems) { item.IsChecked = Equals(item.Tag, _commitInfoPosition); }
+    }
+
+    private void ApplyCommitInfoLayout(CommitInfoPosition position, bool persist)
+    {
+        if (_revisionPanels is null || _revisionTable is null || _commitInfoSplitter is null || _commitInfoTab is null) { return; }
+        if (!Enum.IsDefined(position)) { throw new ArgumentOutOfRangeException(nameof(position)); }
+        TabItem? selected = _tabs.SelectedItem as TabItem;
+        if (_commitInfo.Parent == _revisionPanels && _commitInfo.Bounds.Width > 0) { _commitInfoWidth = _commitInfo.Bounds.Width; }
+        _layingOutCommitInfo = true;
+        try
+        {
+            // Reparent the existing information control, just as FormBrowse.LayoutRevisionInfo does.
+            _commitInfoTab.Content = null;
+            _revisionPanels.Children.Remove(_commitInfo);
+            _commitInfoPosition = position;
+            _commitInfoSplitter.IsVisible = position != CommitInfoPosition.BelowList;
+            if (position == CommitInfoPosition.BelowList)
+            {
+                _revisionPanels.ColumnDefinitions = new ColumnDefinitions("*");
+                Grid.SetColumn(_revisionTable, 0);
+                _commitInfoTab.Content = _commitInfo;
+                _tabs.ItemsSource = new[] { _commitInfoTab }.Concat(_browserDetailTabs).ToArray();
+                _tabs.SelectedItem = _commitInfoTab;
+            }
+            else
+            {
+                bool left = position == CommitInfoPosition.LeftwardFromList;
+                _revisionPanels.ColumnDefinitions = new ColumnDefinitions(left ? "Auto,4,*" : "*,4,Auto");
+                int infoColumn = left ? 0 : 2;
+                _revisionPanels.ColumnDefinitions[infoColumn].Width = new GridLength(_commitInfoWidth);
+                Grid.SetColumn(_revisionTable, left ? 2 : 0);
+                Grid.SetColumn(_commitInfoSplitter, 1);
+                Grid.SetColumn(_commitInfo, infoColumn);
+                _revisionPanels.Children.Add(_commitInfo);
+                _tabs.ItemsSource = _browserDetailTabs.ToArray();
+                _tabs.SelectedItem = selected is not null && selected != _commitInfoTab ? selected : _browserDetailTabs[0];
+                LimitCommitInfoWidth();
+            }
+            UpdateCommitInfoPositionButton();
+        }
+        finally { _layingOutCommitInfo = false; }
+        if (persist) { _browserLayoutPreferences.Save(new(position)); }
+    }
+
+    private void LimitCommitInfoWidth()
+    {
+        if (_revisionPanels is null || _commitInfoPosition == CommitInfoPosition.BelowList || _revisionPanels.Bounds.Width <= 0) { return; }
+        // Keep the information panel fixed on resize, while leaving space for the graph and history at narrow widths.
+        _revisionPanels.ColumnDefinitions[_commitInfoPosition == CommitInfoPosition.LeftwardFromList ? 0 : 2].MaxWidth = Math.Max(120, _revisionPanels.Bounds.Width - 300);
+    }
+
+    private void FocusCommitInformation()
+    {
+        if (_commitInfoPosition == CommitInfoPosition.BelowList) { SelectDetailsTab("CommitInfoTab"); }
+        _tabs.UpdateLayout();
+        _commitInfo.Focus();
     }
 
     private Control BuildRevisionTable()

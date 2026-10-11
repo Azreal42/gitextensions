@@ -57,7 +57,7 @@ public class ReferenceMenuTests
             references.SelectedItem = references.Items.OfType<GitReference>().Single(reference => reference.ShortName == "menu-topic");
             CheckoutBranchDialog checkout = await OpenAsync<CheckoutBranchDialog>(workflow, "Checkout");
             Assert.That(checkout.ReadOptions().Revision, Is.EqualTo("refs/heads/menu-topic"), "Checkout must retain the selected branch.");
-            Assert.That(Field<TextBlock>(checkout, "CheckoutSelectionLabel").Text, Is.EqualTo("Select branch"));
+            Assert.That(Field<Avalonia.Controls.Primitives.AccessText>(checkout, "CheckoutSelectionLabel").Text, Is.EqualTo("_Select branch"));
             ClickNamed(checkout, "CheckoutBranch");
             await ClosedAsync(main, workflow, checkout);
             Assert.That((await repository.GetStatusAsync()).Branch, Is.EqualTo("menu-topic"));

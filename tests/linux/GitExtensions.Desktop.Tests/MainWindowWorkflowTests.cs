@@ -43,10 +43,13 @@ public class MainWindowWorkflowTests
             Assert.That(history.ItemsSource!.OfType<GitCommit>().Single().Subject, Is.EqualTo("Initial commit"));
             Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single().Bounds.Height, Is.EqualTo(24), "History rows must retain the original compact density.");
             history.SelectedIndex = 0;
+            // A fresh profile now uses the original Commit tab below the graph.
+            TabControl tabs = window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");
+            tabs.SelectedItem = tabs.ItemsSource!.OfType<TabItem>().Single(tab => tab.Name == "DiffTab");
+            window.UpdateLayout();
             await Until(() => VisibleDiffContains(window, "+first line"));
             await Until(() => !window.IsBusy);
 
-            TabControl tabs = window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");
             tabs.SelectedItem = tabs.ItemsSource!.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
             window.UpdateLayout();
             ListBox changes = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitChange>().Any() is true);

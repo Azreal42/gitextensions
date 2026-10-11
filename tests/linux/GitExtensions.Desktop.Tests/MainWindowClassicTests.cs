@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
+using GitCommands;
 using NUnit.Framework;
 using System.Globalization;
 
@@ -313,7 +314,8 @@ public class MainWindowClassicTests
         public string Repository => Path.Combine(_temporary, "repository");
         public MainWindow Window { get; private set; } = null!;
 
-        public static async Task<RepositoryFixture> CreateAsync(string initialContent, string changedContent, bool createMerge = false)
+        public static async Task<RepositoryFixture> CreateAsync(string initialContent, string changedContent, bool createMerge = false,
+            CommitInfoPosition? commitInfoPosition = CommitInfoPosition.RightwardFromList)
         {
             RepositoryFixture fixture = new();
             try
@@ -345,6 +347,9 @@ public class MainWindowClassicTests
                 }
 
                 await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "file.txt"), changedContent);
+                // These existing scenarios exercise the right-hand information variant explicitly.
+                // A null position represents a new profile with the original BelowList default.
+                if (commitInfoPosition is not null) { new BrowserLayoutPreferencesStore().Save(new(commitInfoPosition.Value)); }
                 fixture.Window = new MainWindow { Width = 1440, Height = 900 };
                 fixture.Window.Show();
                 await fixture.Window.OpenRepositoryAsync(fixture.Repository);
