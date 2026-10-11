@@ -1,6 +1,6 @@
 # ADR 0013 · Avatars natifs
 
-Statut : accepté ; raccord blame en cours.
+Statut : accepté ; raccord blame au checkpoint `0c7ddd43e`.
 
 Besoin : conserver les avatars et fallback initials de l'original, notamment dans Gource, avec annulation et cache local.
 

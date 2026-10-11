@@ -26,6 +26,11 @@
 | Tests Avalonia bloqués malgré opération annulée et fenêtre prête à fermer | Assert.ThrowsAsync attend synchroniquement une continuation capturée sur le dispatcher UI | Attendre normalement dans le test async, avec délai borné ; tests History/Blame et HTTP concernés. Résolu. |
 | Le clonage réinitialise le sous-dossier saisi | TextChanged différé arrive après l’édition utilisateur | Observer TextProperty immédiatement ; clone réel vers le dossier choisi testé. Résolu. |
 | Nom de clone encodé et avertissement moins lisible que l’original | URL non décodée, deux-points local traité comme SCP et couleur fixe | Distinguer URL/SCP/local, reprendre adaptation de contraste originale et templates XLF complets ; scénario rendu clair/sombre/français. Résolu. |
-| Supprimer une référence sélectionnée dans la navigation bloque le refresh | Le filtre de révision automatique vise la ref disparue | Marquer les filtres de navigation et revenir à All quand la ref disparaît ; auteur/message/FirstParent conservés, saisie manuelle inchangée. Scénarios réels verts. |
+| Supprimer une référence sélectionnée dans la navigation bloque le refresh | Le filtre de révision automatique vise la ref disparue | Marquer les filtres de navigation et revenir à All quand la ref disparaît ; auteur/message/FirstParent conservés, saisie manuelle inchangée. Après Rename, reconstruire aussi SelectedItem et garder l’expansion des groupes. Scénarios réels verts. |
+
+| Valeurs des champs numériques compacts invisibles malgré leur contenu correct | MinWidth interne Fluent incompatible avec les 61 px du dialogue original | Template numérique local compact ; valeurs, flèches et options réellement rendues en clair/sombre. Résolu. |
+
+| Annuler l’ouverture laisse un backend différent des listes affichées | Dépôt remplacé avant la fin des lectures | Charger les métadonnées avant le changement ; vrai processus log annulé, dépôt/filtre/BASE/récents conservés et backend confirmé par F5. Résolu. |
+| Filtrer une multisélection ajoute un commit non choisi | Fallback au premier résultat avant restauration du secondaire | Choisir d’abord un commit sélectionné survivant ; scénario filtre et comparaison parent/commit réel. Résolu. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
