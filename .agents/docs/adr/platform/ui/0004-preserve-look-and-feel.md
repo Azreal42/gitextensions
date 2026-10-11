@@ -1,10 +1,10 @@
 # ADR 0004 · Préserver l'interface existante
 
-Statut : accepté ; Browse/Commit validés en clair/sombre, autres écrans en cours.
+Statut : accepté ; Browse/Commit et dialogues portés comparés en clair/sombre, audit final en cours.
 
 Besoin explicite : garder le look & feel de Git Extensions pendant le portage Linux. Les utilisateurs doivent retrouver leurs repères et leurs gestes.
 
-Décision : conserver menus, barres d'outils compactes, icônes existantes, navigation des refs à gauche, table/graphe et informations du commit en haut, diff/arbre/console en bas. Réutiliser les couleurs des thèmes historiques ; porter les dialogues et raccourcis plutôt que redessiner les workflows.
+Décision : conserver menus, barres d'outils compactes, icônes existantes, navigation des refs à gauche, table/graphe et informations du commit en haut, diff/arbre/console en bas. Réutiliser les couleurs des thèmes historiques ; porter les dialogues et raccourcis plutôt que redessiner les workflows. Garder aussi les choix natifs des confirmations, dont les liens de commande du commit sans index.
 
 Conséquence : aucune validation finale sur le seul démarrage. Comparer les écrans portés au `FormBrowse.Designer.cs` et aux écrans historiques, puis vérifier les interactions réelles.
 
