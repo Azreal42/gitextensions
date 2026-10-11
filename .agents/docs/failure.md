@@ -21,9 +21,11 @@
 | Annulation d’un outil externe rend la main avant la fin du processus | WaitForExit annulé ne collecte pas le processus tué | Tuer l’arbre puis attendre la sortie réelle ; test de PID. Résolu. |
 | Impact conserve un fond clair en thème sombre | Recherche de ressource sans variante effective | Résoudre avec ActualThemeVariant ; pixels clairs/sombres testés. Résolu. |
 | Petite image de hauteur impaire rendue floue | Centrage interne sur un demi-pixel | Dimensionner avant centrage et arrondir le layout ; taille/position mesurées sur les pixels. Résolu. |
-
 | Tests de cancellation échouent pendant la lecture de procfs | Le descendant disparaît entre File.Exists et ReadLines | Relecture après IOException, état absent/zombie exigé et délai borné ; 54 scénarios passent. Résolu. |
-
 | Skip am avance mais la ligne suivante est marquée appliquée | Un second conflit produit exit non nul après avancement | Relire état am et repérer les indices ; série à deux conflits testée. Résolu. |
+
+| Tests Avalonia bloqués malgré opération annulée et fenêtre prête à fermer | Assert.ThrowsAsync attend synchroniquement une continuation capturée sur le dispatcher UI | Attendre normalement dans le test async, avec délai borné ; tests History/Blame et HTTP concernés. Résolu. |
+| Le clonage réinitialise le sous-dossier saisi | TextChanged différé arrive après l’édition utilisateur | Observer TextProperty immédiatement ; clone réel vers le dossier choisi testé. Résolu. |
+| Nom de clone encodé et avertissement moins lisible que l’original | URL non décodée, deux-points local traité comme SCP et couleur fixe | Distinguer URL/SCP/local, reprendre adaptation de contraste originale et templates XLF complets ; scénario rendu clair/sombre/français. Résolu. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
