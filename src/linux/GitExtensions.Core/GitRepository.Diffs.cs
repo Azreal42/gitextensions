@@ -36,14 +36,25 @@ public sealed partial class GitRepository
         return new(target, parent, files);
     }
 
-    public async Task<string> GetRevisionFileDiffAsync(GitRevisionChanges revisions, GitRevisionFile file, CancellationToken cancellationToken = default)
+    public Task<string> GetRevisionFileDiffAsync(GitRevisionChanges revisions, GitRevisionFile file, CancellationToken cancellationToken = default)
+        => GetRevisionFileDiffAsync(revisions, file, new GitComparisonDiffOptions(), cancellationToken);
+
+    public async Task<string> GetRevisionFileDiffAsync(GitRevisionChanges revisions, GitRevisionFile file,
+        GitComparisonDiffOptions options, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(revisions);
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(options);
+        ValidateComparisonOptions(options);
         string target = await ResolveRevisionAsync(revisions.Revision, cancellationToken).ConfigureAwait(false);
         string? parent = revisions.BaseRevision is null ? null : await ResolveRevisionAsync(revisions.BaseRevision, cancellationToken).ConfigureAwait(false);
         string[] paths = file.OriginalPath is null ? [ValidatePath(file.Path)] : [ValidatePath(file.OriginalPath), ValidatePath(file.Path)];
-        string[] arguments = parent is null
-            ? ["diff-tree", "--root", "-r", "--no-commit-id", "--patch", "--no-ext-diff", "--no-textconv", target, "--", .. paths]
-            : ["diff", "--find-renames", "--no-ext-diff", "--no-textconv", parent, target, "--", .. paths];
+        List<string> arguments = parent is null
+            ? ["diff-tree", "--root", "-r", "--no-commit-id", "--patch", "--no-ext-diff", "--no-textconv", "--no-color"]
+            : ["diff", "--find-renames", "--no-ext-diff", "--no-textconv", "--no-color"];
+        AddComparisonOptions(arguments, options);
+        if (parent is not null) { arguments.Add(parent); }
+        arguments.AddRange([target, "--", .. paths]);
         // diff-tree also receives literal paths, unlike its root-only name listing above.
         return (await ExecuteAsync(["--literal-pathspecs", .. arguments], cancellationToken).ConfigureAwait(false)).StandardOutput;
     }

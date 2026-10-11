@@ -26,12 +26,14 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
     public void ShowFile(string path, byte[] bytes)
     {
         _syntaxPath = path;
+        TextView.Mode = DiffViewMode.PlainText;
         if (!_content.TryShowImage(path, bytes)) { _source.Text = DecodeBytes(bytes); }
         ApplySyntax();
     }
     public void ShowDiff(string text)
     {
         _syntaxPath = null;
+        TextView.Mode = DiffViewMode.Auto;
         _content.ClearImage();
         _source.Text = text;
         ApplySyntax();

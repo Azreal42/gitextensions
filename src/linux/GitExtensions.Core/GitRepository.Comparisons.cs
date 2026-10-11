@@ -71,7 +71,7 @@ public sealed partial class GitRepository
         if (comparison.UntrackedPaths.Contains(path, StringComparer.Ordinal))
         {
             await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
-            List<string> untracked = ["diff", "--no-index", "--no-ext-diff", "--no-textconv"];
+            List<string> untracked = ["diff", "--no-color", "--no-index", "--no-ext-diff", "--no-textconv"];
             AddComparisonOptions(untracked, options);
             string fullPath = System.IO.Path.Combine(Path, path);
             untracked.AddRange(comparison.Compare.Kind == GitCompareRevisionKind.WorkingTree ? ["--", "/dev/null", fullPath] : ["--", fullPath, "/dev/null"]);
@@ -84,7 +84,7 @@ public sealed partial class GitRepository
         GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, cancellationToken).ConfigureAwait(false);
         GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, cancellationToken).ConfigureAwait(false);
         if (first == second) { return ""; }
-        List<string> arguments = ["--literal-pathspecs", "diff", "--find-renames", "--no-ext-diff", "--no-textconv"];
+        List<string> arguments = ["--literal-pathspecs", "diff", "--no-color", "--find-renames", "--no-ext-diff", "--no-textconv"];
         AddComparisonOptions(arguments, options);
         AddComparisonRevisions(arguments, first, second);
         arguments.Add("--");

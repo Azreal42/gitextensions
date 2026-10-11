@@ -329,7 +329,9 @@ public sealed partial class MainWindow : Window
             bool changedRepository = opening && _repository?.Path != repository.Path;
             string? selectedPath = changedRepository ? null : (_changes.SelectedItem as GitChange)?.Path;
             string? selectedHash = changedRepository ? null : (_commits.SelectedItem as GitCommit)?.Hash;
-            HashSet<string> selectedHashes = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
+            string[] selectedHashOrder = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).Distinct(StringComparer.Ordinal).ToArray();
+            HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
+            object? selectedRevisionDiff = changedRepository ? null : (_revisionFiles.SelectedItem as TreeViewItem)?.Tag;
             string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
             GitLogQuery configuredQuery = opening ? new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) } : _historyQuery;
             int historyWindow = opening ? configuredQuery.Count : _historyWindow;
@@ -402,19 +404,23 @@ public sealed partial class MainWindow : Window
             _commits.SelectedItem = _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == selectedHash)
                 ?? _historyGraph.OrderedCommits.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))
                 ?? _historyGraph.OrderedCommits.FirstOrDefault();
-            foreach (GitCommit selected in _historyGraph.OrderedCommits.Where(commit => selectedHashes.Contains(commit.Hash) && commit.Hash != (_commits.SelectedItem as GitCommit)?.Hash)) { _commits.SelectedItems?.Add(selected); }
-            _revisionFiles.ItemsSource = null; _revisionChanges = null; _diffParent.IsVisible = false;
+            foreach (string hash in selectedHashOrder)
+            {
+                GitCommit? selected = _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == hash);
+                if (selected is not null && selected.Hash != (_commits.SelectedItem as GitCommit)?.Hash) { _commits.SelectedItems?.Add(selected); }
+            }
+            ClearRevisionDiff();
             _commitContent?.ClearImage(); _diff.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
             _changesContent?.ClearImage(); _changesDiff.Text = null; _selectedPatch = null; _hunks.ItemsSource = null;
             if (changedRepository) { _fileContent?.ClearImage(); _fileView.Text = null; _filePath.Text = null; }
             if (_commits.SelectedItem is GitCommit selectedCommit)
             {
-                await LoadCommitFilesAsync(repository, selectedCommit.Hash);
+                await LoadCommitFilesAsync(repository, selectedCommit.Hash, selectedRevisionDiff);
                 UpdateCommitInfo(selectedCommit);
             }
             else
             {
-                _revisionFiles.ItemsSource = null; _revisionChanges = null; _diffParent.IsVisible = false;
+                ClearRevisionDiff();
                 _commitContent?.ClearImage(); _commitInfo.Text = null; _gpgInfo.Text = null;
                 _diff.Text = "This repository has no commits yet.";
             }
@@ -423,7 +429,7 @@ public sealed partial class MainWindow : Window
                 bool staged = change.IsStaged && (!change.IsModified || _stagedDiff.IsChecked == true);
                 _stagedDiff.IsChecked = staged;
                 await LoadChangedFileContentAsync(repository, change, staged);
-                _selectedPatch = GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault();
+                _selectedPatch = _changesDiffView?.CanStagePatch == true ? GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault() : null;
                 _hunks.ItemsSource = _selectedPatch?.Hunks;
             }
             else { _changesContent?.ClearImage(); _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
@@ -474,7 +480,8 @@ public sealed partial class MainWindow : Window
         _recentMenu.IsEnabled = _favoritesMenu.IsEnabled = enabled;
         if (_dashboard is not null) { _dashboard.IsEnabled = enabled; }
         if (_compareToBaseMenu is not null) { _compareToBaseMenu.IsEnabled = enabled && _comparisonBase is not null; }
-        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs, _revisionFiles, _diffParent];
+        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs, _revisionFiles];
+        if (_revisionDiffSettings is not null) { _revisionDiffSettings.IsEnabled = enabled; }
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
     }

@@ -22,7 +22,8 @@ public sealed partial class MainWindow
             }),
             _compareToBaseMenu,
             MenuAction("Compare to working directory", () => ShowComparisonAsync(new(CurrentRevision), new("", GitCompareRevisionKind.WorkingTree))),
-            MenuAction("Compare selected commits", CompareSelectedCommitsAsync));
+            MenuAction("Compare selected commits", CompareSelectedCommitsAsync),
+            MenuAction("Range diff", ShowSelectedRangeDiffAsync, "DiffR.png"));
     }
 
     private Task ShowComparisonAsync(GitCompareRevision from, GitCompareRevision to)

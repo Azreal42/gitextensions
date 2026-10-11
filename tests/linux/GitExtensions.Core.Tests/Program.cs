@@ -91,6 +91,16 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("revision file lists preserve renames and literal paths", DiffScenarios.RevisionFilesAsync),
     ("merge diffs expose each parent", DiffScenarios.MergeParentsAsync),
     ("index previews preserve exact bytes", DiffScenarios.IndexBytesAsync),
+    ("combined diffs retain NUL literal paths and actual merge parents", MergeRangeDiffScenarios.CombinedPathsAsync),
+    ("combined default -c retains picked-parent hunks while --cc explicitly omits them", MergeRangeDiffScenarios.OmittedHunksAsync),
+    ("root and clean merge groups omit empty combined content", MergeRangeDiffScenarios.CleanAndRootGroupsAsync),
+    ("real three-parent combined merges preserve all columns", MergeRangeDiffScenarios.ThreeParentCombinedAsync),
+    ("range-diff two, three and four selections preserve all explicit bounds", MergeRangeDiffScenarios.RangeSelectionsAsync),
+    ("range-diff context, whitespace, histogram, colors and literal paths", MergeRangeDiffScenarios.RangeOptionsAndPathsAsync),
+    ("invalid range series retain ordinary comparisons and reject injection", MergeRangeDiffScenarios.InvalidRangeSelectionsAsync),
+    ("combined and range-diff work without a worktree in bare repositories", MergeRangeDiffScenarios.BareDiffsAsync),
+    ("ordinary revision diff overload retains display options and plain output", MergeRangeDiffScenarios.OrdinaryDiffOptionsAsync),
+    ("combined and range-diff cancellation terminates child processes", MergeRangeDiffScenarios.CancellationAsync),
 ];
 
 int failures = 0;

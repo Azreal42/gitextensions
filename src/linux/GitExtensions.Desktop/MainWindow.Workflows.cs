@@ -62,7 +62,7 @@ public sealed partial class MainWindow
             bool staged = change.IsStaged && (_stagedDiff.IsChecked == true || !change.IsModified);
             if (_stagedDiff.IsChecked != staged) { _stagedDiff.IsChecked = staged; }
             await LoadChangedFileContentAsync(repository, change, staged);
-            _selectedPatch = GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault();
+            _selectedPatch = _changesDiffView?.CanStagePatch == true ? GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault() : null;
             _hunks.ItemsSource = _selectedPatch?.Hunks;
         }, refresh: false);
     }
@@ -78,7 +78,7 @@ public sealed partial class MainWindow
 
     private async Task ApplyLinesAsync(bool reverse)
     {
-        if (_changesDiffView is null || _changesDiffView.SelectionLength == 0 || _changes.SelectedItem is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
+        if (_changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || _changes.SelectedItem is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging lines" : "Show unstaged changes before staging lines"; return; }
         string? patch = GitPatch.SelectLines(_changesDiffView.Text, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
             staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
@@ -334,6 +334,7 @@ public sealed partial class MainWindow
         return RunAsync("Stash diff", async r =>
         {
             _fileContent?.ClearImage();
+            if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.Auto; }
             _fileView.Text = (await r.RunAsync(["stash", "show", "-p", "--include-untracked", stash.Reference], Token)).StandardOutput;
             SelectDetailsTab("FileTreeTab");
         }, refresh: false);
@@ -364,6 +365,7 @@ public sealed partial class MainWindow
     private Task ShowFileAsync(string path) => RunAsync("File contents", async r =>
     {
         _fileContent?.ClearImage();
+        if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.PlainText; }
         GitTreeEntry? entry = (await r.GetTreeAsync(CurrentRevision, path, Token)).FirstOrDefault(item => item.Path == path);
         if (entry?.IsSubmodule == true) { _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}"; return; }
         byte[] bytes = await r.GetFileBytesAsync(path, CurrentRevision, Token);
@@ -392,6 +394,7 @@ public sealed partial class MainWindow
         await RunAsync("Search", async r =>
         {
             _fileContent?.ClearImage();
+            if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.PlainText; }
             _fileView.Text = string.Join('\n', (await r.SearchAsync(values[0], revision: CurrentRevision, cancellationToken: Token)).Select(match => $"{match.Path}:{match.LineNumber}: {match.Text}"));
         }, refresh: false);
     }

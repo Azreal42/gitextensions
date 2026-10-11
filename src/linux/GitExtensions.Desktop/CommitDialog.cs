@@ -440,7 +440,8 @@ public sealed class CommitDialog : Window
     {
         _content.ClearImage();
         GitChange? change = _status?.Changes.FirstOrDefault(change => change.Path == _path);
-        if (change is null) { _source.Text = T("Select a file to view its changes."); _patch = null; return; }
+        if (change is null) { _diff.Mode = DiffViewMode.Auto; _source.Text = T("Select a file to view its changes."); _patch = null; return; }
+        _diff.Mode = change.IsUntracked ? DiffViewMode.PlainText : DiffViewMode.Auto;
         if (await _content.ShowChangedImageAsync(_repository, change, _viewStaged, OperationToken)) { _patch = null; return; }
         if (change.IsUntracked)
         {
@@ -457,7 +458,7 @@ public sealed class CommitDialog : Window
             _source.Text = (await _repository.RunAsync(arguments, OperationToken)).StandardOutput;
         }
         else { _source.Text = await _repository.GetDiffAsync(change.Path, _viewStaged, cancellationToken: OperationToken); }
-        _patch = GitPatch.Parse(_source.Text ?? "").FirstOrDefault();
+        _patch = _diff.CanStagePatch ? GitPatch.Parse(_source.Text ?? "").FirstOrDefault() : null;
     }
 
     private static string[] FilePaths(IEnumerable<GitChange> changes)

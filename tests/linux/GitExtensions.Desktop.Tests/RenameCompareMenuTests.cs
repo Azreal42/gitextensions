@@ -170,7 +170,7 @@ public class RenameCompareMenuTests
         Assert.That(group.Items.OfType<MenuItem>().Select(item => item.Header as string), Is.EqualTo(new[]
         {
             "Open selected commits with difftool", "Compare to branch…", "Compare with current branch", "Select as BASE to compare",
-            "Compare to BASE", "Compare to working directory", "Compare selected commits"
+            "Compare to BASE", "Compare to working directory", "Compare selected commits", "Range diff"
         }));
         Assert.That(ContextAction(group, "Compare to BASE").IsEnabled, Is.False);
         await SelectAsync(main, history, latest);

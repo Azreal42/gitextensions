@@ -99,9 +99,9 @@ public sealed partial class MainWindow
                 _repositoryPath.Text = "";
                 _history = [];
                 _historyGraph.Commits = []; _historyGraph.References = []; _historyGraph.CurrentHead = null;
-                foreach (ListBox list in new[] { _commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _hunks, _revisionFiles }) { list.ItemsSource = null; }
+                foreach (ListBox list in new[] { _commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _hunks }) { list.ItemsSource = null; }
                 _navigation.ItemsSource = null;
-                _diffParent.ItemsSource = null; _diffParent.IsVisible = false; _revisionChanges = null;
+                ClearRevisionDiff();
                 _navigationRevisionFilter = null; _historyRevision.Text = null;
                 _commitContent?.ClearImage(); _changesContent?.ClearImage(); _fileContent?.ClearImage();
                 _diff.Text = null; _fileView.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;

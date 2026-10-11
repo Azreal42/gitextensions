@@ -1,18 +1,26 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
+using GitCommands.Settings;
 
 namespace GitExtensions.Linux.Desktop;
 
+internal sealed record RevisionDiffFileSelection(GitRevisionDiffGroup Group, GitRevisionFile File);
+
 public sealed partial class MainWindow
 {
-    private readonly ListBox _revisionFiles = new() { Name = "RevisionFiles" };
-    private readonly ComboBox _diffParent = new() { Name = "RevisionDiffParent", MinWidth = 220, IsVisible = false };
-    private GitRevisionChanges? _revisionChanges;
+    private readonly TreeView _revisionFiles = new() { Name = "RevisionFiles" };
+    private readonly RevisionDiffPreferencesStore _revisionDiffPreferencesStore = new();
+    private RevisionDiffPreferences _revisionDiffPreferences = new();
+    private IReadOnlyList<GitRevisionDiffGroup> _revisionDiffGroups = [];
+    private Button? _revisionDiffSettings;
+    private GitComparisonDiffOptions _revisionViewerOptions = new();
+    private MenuItem? _revisionWholeFile;
+    private MenuItem? _revisionTreatAsText;
+    private MenuItem[] _revisionWhitespaceOptions = [];
     private FileContentView? _commitContent;
     private FileContentView? _changesContent;
     private FileContentView? _fileContent;
@@ -20,84 +28,310 @@ public sealed partial class MainWindow
 
     private Control BuildCommitFilesView()
     {
+        _revisionDiffPreferences = _revisionDiffPreferencesStore.Load();
         _commitContent = new FileContentView(_diff, new DiffView(_diff) { Name = "CommitDiff" });
-        _revisionFiles.ItemTemplate = new FuncDataTemplate<GitRevisionFile>((file, _) => file is null ? new TextBlock() : IconLabel(
-            file.Path + (file.OriginalPath is null ? "" : " ← " + file.OriginalPath),
-            file.Status switch { 'A' => "DiffA.png", 'D' => "DiffR.png", 'R' => "DiffC.png", _ => "Edit.png" }));
-        _revisionFiles.Styles.Add(new Avalonia.Styling.Style(selector => selector.OfType<ListBoxItem>())
+        _revisionFiles.Styles.Add(new Style(selector => selector.OfType<TreeViewItem>())
         {
-            Setters = { new Avalonia.Styling.Setter(HeightProperty, 24d), new Avalonia.Styling.Setter(PaddingProperty, new Thickness(0)) }
+            Setters = { new Setter(PaddingProperty, new Thickness(0)), new Setter(MinHeightProperty, 24d) }
         });
-        _revisionFiles.SelectionChanged += async (_, _) =>
+        _revisionFiles.SelectionChanged += async (_, args) =>
         {
-            if (!_loadingCommitFiles && !_refreshing && !_busy && _revisionFiles.SelectedItem is GitRevisionFile file)
+            if (args.Source == _revisionFiles && !_loadingCommitFiles && !_refreshing && !_busy
+                && _revisionFiles.SelectedItem is TreeViewItem item)
             {
-                await RunAsync("File diff", repository => ShowRevisionFileAsync(repository, file), refresh: false);
+                await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, item), refresh: false);
             }
         };
-        _diffParent.SelectionChanged += async (_, _) =>
+
+        MenuItem allParents = new()
         {
-            if (!_loadingCommitFiles && !_refreshing && !_busy && _commits.SelectedItem is GitCommit commit)
-            {
-                await RunAsync("Parent diff", repository => LoadCommitFilesAsync(repository, commit.Hash, preserveParent: true), refresh: false);
-            }
+            Name = "RevisionDiffAllParents", Header = T("Show file differences for all parents in browse dialog"),
+            ToggleType = MenuItemToggleType.CheckBox, IsChecked = _revisionDiffPreferences.ShowDiffForAllParents
         };
-        Grid split = new() { ColumnDefinitions = new ColumnDefinitions("230,4,*") };
-        split.Children.Add(ClassicChrome.Border(_revisionFiles, new Thickness(0, 0, 1, 0)));
-        GridSplitter splitter = new() { Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch };
+        MenuItem omit = new()
+        {
+            Name = "RevisionDiffOmitUninteresting", Header = T("Omit uninteresting diff hunks"),
+            ToggleType = MenuItemToggleType.CheckBox, IsChecked = _revisionDiffPreferences.OmitUninterestingDiff
+        };
+        allParents.Click += async (_, _) => await ChangeRevisionDiffPreferencesAsync(
+            _revisionDiffPreferences with { ShowDiffForAllParents = allParents.IsChecked });
+        omit.Click += async (_, _) => await ChangeRevisionDiffPreferencesAsync(
+            _revisionDiffPreferences with { OmitUninterestingDiff = omit.IsChecked });
+        _revisionDiffSettings = RevisionDiffIconButton("RevisionDiffSettings", "Settings", "Settings.png", () => Task.CompletedTask);
+        _revisionDiffSettings.Flyout = new MenuFlyout { ItemsSource = new[] { allParents, omit } };
+        ToolTip.SetTip(_revisionDiffSettings, T("Settings"));
+        DockPanel files = new();
+        StackPanel fileToolbar = new() { Orientation = Orientation.Horizontal, Height = 24 };
+        fileToolbar.Children.Add(RevisionDiffIconButton("RevisionDiffCollapse", "Collapse all groups, otherwise expand the selected group", "CollapseAll.png", () =>
+        {
+            TreeViewItem[] groups = _revisionFiles.Items.OfType<TreeViewItem>().Where(item => item.Tag is GitRevisionDiffGroup).ToArray();
+            if (groups.Any(item => item.IsExpanded)) { foreach (TreeViewItem group in groups) { group.IsExpanded = false; } }
+            else if (_revisionFiles.SelectedItem is TreeViewItem selected)
+            {
+                TreeViewItem? group = selected.Tag is GitRevisionDiffGroup ? selected : groups.FirstOrDefault(item => item.Items.Contains(selected));
+                if (group is not null) { group.IsExpanded = true; }
+            }
+            return Task.CompletedTask;
+        }));
+        fileToolbar.Children.Add(RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
+            _commits.SelectedItem is GitCommit commit ? RunAsync("File diff", repository => LoadCommitFilesAsync(repository, commit.Hash), refresh: false) : Task.CompletedTask));
+        fileToolbar.Children.Add(_revisionDiffSettings);
+        files.Children.Add(ClassicChrome.Border(fileToolbar, new Thickness(0, 0, 0, 1)));
+        DockPanel.SetDock(files.Children[0], Dock.Top);
+        files.Children.Add(_revisionFiles);
+        Grid split = new() { Name = "RevisionDiffSplit", ColumnDefinitions = new ColumnDefinitions("300,7,*") };
+        split.Children.Add(ClassicChrome.Border(files, new Thickness(0, 0, 1, 0)));
+        GridSplitter splitter = new() { Name = "RevisionDiffSplitter", Width = 7, HorizontalAlignment = HorizontalAlignment.Stretch };
         Grid.SetColumn(splitter, 1);
         split.Children.Add(splitter);
-        Grid.SetColumn(_commitContent, 2);
-        split.Children.Add(_commitContent);
-        DockPanel view = new();
-        DockPanel.SetDock(_diffParent, Dock.Top);
-        view.Children.Add(_diffParent);
-        view.Children.Add(split);
-        return view;
+        DockPanel viewer = new();
+        Control viewerToolbar = BuildRevisionViewerToolbar();
+        DockPanel.SetDock(viewerToolbar, Dock.Top);
+        viewer.Children.Add(viewerToolbar);
+        viewer.Children.Add(_commitContent);
+        Grid.SetColumn(viewer, 2);
+        split.Children.Add(viewer);
+        return split;
     }
 
-    private async Task LoadCommitFilesAsync(GitRepository repository, string revision, bool preserveParent = false)
+    private Button RevisionDiffIconButton(string name, string tooltip, string icon, Func<Task> action)
     {
-        string? selected = (_revisionFiles.SelectedItem as GitRevisionFile)?.Path;
+        Button button = new() { Name = name, Width = 24, Height = 24, MinWidth = 0, Padding = new Thickness(0) };
+        StackPanel content = (StackPanel)IconLabel(tooltip, icon);
+        content.Children.RemoveAt(content.Children.Count - 1);
+        button.Content = content;
+        ToolTip.SetTip(button, T(tooltip));
+        button.Click += async (_, _) =>
+        {
+            if (_busy) { return; }
+            try { await action(); } catch (Exception exception) { AppendOutput(exception.Message); }
+        };
+        _actionButtons.Add(button);
+        return button;
+    }
+
+    private Control BuildRevisionViewerToolbar()
+    {
+        StackPanel toolbar = new() { Name = "RevisionViewerToolbar", Orientation = Orientation.Horizontal, Height = 24 };
+        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffNextChange", "Next change", "ArrowDown.png", () => { _commitContent?.TextView.GoToNextChange(); return Task.CompletedTask; }));
+        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffPreviousChange", "Previous change", "ArrowUp.png", () => { _commitContent?.TextView.GoToPreviousChange(); return Task.CompletedTask; }));
+        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffIncreaseContext", "Increase the number of lines of context", "NumberOfLinesIncrease.png",
+            () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ContextLines = Math.Min(100000, _revisionViewerOptions.ContextLines + 1), ShowEntireFile = false })));
+        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffDecreaseContext", "Decrease the number of lines of context", "NumberOfLinesDecrease.png",
+            () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ContextLines = Math.Max(0, _revisionViewerOptions.ContextLines - 1), ShowEntireFile = false })));
+        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffEntireFile", "Show entire file", "ShowEntireFile.png",
+            () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = !_revisionViewerOptions.ShowEntireFile })));
+        _revisionWholeFile = new MenuItem { Name = "RevisionDiffEntireFileMenu", Header = T("Show entire file"), ToggleType = MenuItemToggleType.CheckBox };
+        _revisionWholeFile.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = _revisionWholeFile.IsChecked });
+        _revisionTreatAsText = new MenuItem { Name = "RevisionDiffTreatAsText", Header = T("Treat all files as text"), ToggleType = MenuItemToggleType.CheckBox };
+        _revisionTreatAsText.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { TreatAllFilesAsText = _revisionTreatAsText.IsChecked });
+        string[] whitespaceLabels = ["Do not ignore whitespace", "Ignore whitespace changes at end of line", "Ignore changes in amount of whitespace", "Ignore all whitespace changes"];
+        IgnoreWhitespaceKind[] values = [IgnoreWhitespaceKind.None, IgnoreWhitespaceKind.Eol, IgnoreWhitespaceKind.Change, IgnoreWhitespaceKind.AllSpace];
+        _revisionWhitespaceOptions = values.Select((value, index) =>
+        {
+            MenuItem item = new() { Name = "RevisionDiffWhitespace_" + value, Header = T(whitespaceLabels[index]), ToggleType = MenuItemToggleType.Radio,
+                GroupName = "RevisionDiffWhitespace", IsChecked = value == _revisionViewerOptions.IgnoreWhitespace };
+            item.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { IgnoreWhitespace = value });
+            return item;
+        }).ToArray();
+        _commitContent!.TextView.ContextMenu = new ContextMenu { ItemsSource = new[] { _revisionWholeFile, _revisionTreatAsText }.Concat(_revisionWhitespaceOptions).ToArray() };
+        return ClassicChrome.Border(toolbar, new Thickness(0, 0, 0, 1));
+    }
+
+    private async Task ChangeRevisionViewerOptionsAsync(GitComparisonDiffOptions options)
+    {
+        if (_busy) { return; }
+        _revisionViewerOptions = options;
+        if (_revisionWholeFile is not null) { _revisionWholeFile.IsChecked = options.ShowEntireFile; }
+        if (_revisionTreatAsText is not null) { _revisionTreatAsText.IsChecked = options.TreatAllFilesAsText; }
+        foreach (MenuItem item in _revisionWhitespaceOptions) { item.IsChecked = item.Name == "RevisionDiffWhitespace_" + options.IgnoreWhitespace; }
+        if (_revisionFiles.SelectedItem is TreeViewItem selected)
+        {
+            await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, selected), refresh: false);
+        }
+    }
+
+    private async Task ChangeRevisionDiffPreferencesAsync(RevisionDiffPreferences preferences)
+    {
+        if (_busy) { return; }
+        _revisionDiffPreferences = preferences;
+        _revisionDiffPreferencesStore.Save(preferences);
+        if (_commits.SelectedItem is GitCommit commit)
+        {
+            await RunAsync("File diff", repository => LoadCommitFilesAsync(repository, commit.Hash), refresh: false);
+        }
+    }
+
+    private void ClearRevisionDiff()
+    {
+        _revisionFiles.ItemsSource = null;
+        _revisionDiffGroups = [];
+        if (_commitContent is not null) { _commitContent.TextView.Mode = DiffViewMode.Auto; }
+    }
+
+    private async Task LoadCommitFilesAsync(GitRepository repository, string revision, object? preservedSelection = null)
+    {
+        object? previous = (_revisionFiles.SelectedItem as TreeViewItem)?.Tag ?? preservedSelection;
         _loadingCommitFiles = true;
         try
         {
-            if (!preserveParent)
+            GitCommit[] selectedCommits = SelectedRevisionDiffCommits();
+            string[] revisions = selectedCommits.Length > 0 ? selectedCommits.Select(commit => commit.Hash).ToArray() : [revision];
+            IReadOnlyList<GitRevisionDiffGroup> groups = await repository.GetRevisionDiffGroupsAsync(
+                revisions, _revisionDiffPreferences.ShowDiffForAllParents, Token);
+            List<TreeViewItem> roots = [];
+            List<TreeViewItem> fileItems = [];
+            bool showGroups = groups.Count > 1;
+            foreach (GitRevisionDiffGroup group in groups)
             {
-                IReadOnlyList<string> parents = (_commits.SelectedItem as GitCommit)?.Parents ?? [];
-                _diffParent.ItemsSource = parents;
-                _diffParent.SelectedIndex = parents.Count > 0 ? 0 : -1;
-                _diffParent.IsVisible = parents.Count > 1;
+                if (group.Kind == GitRevisionDiffGroupKind.RangeDiff)
+                {
+                    roots.Add(new TreeViewItem { Name = "RevisionDiffGroup_RangeDiff", Header = RevisionDiffGroupHeader(group), Tag = group });
+                    continue;
+                }
+                TreeViewItem[] children = group.Files.Select(file => new TreeViewItem
+                {
+                    Header = RevisionDiffFileHeader(file),
+                    Tag = new RevisionDiffFileSelection(group, file)
+                }).ToArray();
+                fileItems.AddRange(children);
+                if (showGroups)
+                {
+                    TreeViewItem root = new()
+                    {
+                        Name = "RevisionDiffGroup_" + group.Kind, Header = RevisionDiffGroupHeader(group), Tag = group,
+                        ItemsSource = children, IsExpanded = groups.Count < 3 || group == groups[0]
+                    };
+                    roots.Add(root);
+                }
+                else { roots.AddRange(children); }
             }
-            _revisionChanges = await repository.GetRevisionChangesAsync(revision, _diffParent.SelectedItem as string, Token);
-            _revisionFiles.ItemsSource = _revisionChanges.Files;
-            _revisionFiles.SelectedItem = _revisionChanges.Files.FirstOrDefault(file => file.Path == selected) ?? _revisionChanges.Files.FirstOrDefault();
-            if (_revisionFiles.SelectedItem is GitRevisionFile file) { await ShowRevisionFileAsync(repository, file); }
-            else { _diff.Text = await repository.GetCommitDiffAsync(revision, cancellationToken: Token); }
+            Token.ThrowIfCancellationRequested();
+            _revisionDiffGroups = groups;
+            _revisionFiles.ItemsSource = roots;
+            TreeViewItem? selected = previous switch
+            {
+                RevisionDiffFileSelection old => fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate
+                    && candidate.Group.Kind == old.Group.Kind && candidate.Group.BaseRevision == old.Group.BaseRevision
+                    && candidate.File.Path == old.File.Path)
+                    ?? fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate && candidate.File.Path == old.File.Path),
+                GitRevisionDiffGroup old => roots.FirstOrDefault(item => item.Tag is GitRevisionDiffGroup candidate
+                    && candidate.Kind == old.Kind && candidate.BaseRevision == old.BaseRevision),
+                _ => null
+            };
+            selected ??= fileItems.FirstOrDefault() ?? roots.FirstOrDefault();
+            if (selected is not null)
+            {
+                foreach (TreeViewItem parent in roots.Where(item => item.Items.Contains(selected))) { parent.IsExpanded = true; }
+                _revisionFiles.SelectedItem = selected;
+                await ShowRevisionDiffItemAsync(repository, selected);
+            }
+            else
+            {
+                _commitContent?.ClearImage();
+                if (_commitContent is not null) { _commitContent.TextView.Mode = DiffViewMode.Auto; }
+                _diff.Text = await repository.GetCommitDiffAsync(revision, cancellationToken: Token);
+            }
         }
         finally { _loadingCommitFiles = false; }
     }
 
-    private async Task ShowRevisionFileAsync(GitRepository repository, GitRevisionFile file)
+    private Control RevisionDiffFileHeader(GitRevisionFile file)
     {
-        if (_revisionChanges is null) { return; }
-        _commitContent?.ClearImage();
-        if (FileContentView.IsImagePath(file.Path))
+        string caption = ExportDialogControls.DisplayPath(file.Path)
+            + (file.OriginalPath is null ? "" : " ← " + ExportDialogControls.DisplayPath(file.OriginalPath));
+        StackPanel source = (StackPanel)IconLabel(caption, file.Status switch
         {
-            string? revision = file.IsDeleted ? _revisionChanges.BaseRevision : _revisionChanges.Revision;
-            if (revision is not null && _commitContent is not null
-                && (await repository.GetTreeAsync(revision, file.Path, Token)).FirstOrDefault(entry => entry.Path == file.Path)?.IsSubmodule is not true)
+            'A' => "FileStatusAdded.png", 'D' => "FileStatusRemoved.png", 'R' => "FileStatusRenamed.png",
+            'C' => "FileStatusCopied.png", _ => "FileStatusModified.png"
+        });
+        Image image = (Image)source.Children[0];
+        source.Children.Remove(image);
+        TextBlock label = new() { Text = caption, Margin = new Thickness(4, 0), VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis };
+        Grid header = new() { ColumnDefinitions = new ColumnDefinitions("16,*"), Height = 24, ClipToBounds = true };
+        header.Children.Add(image);
+        Grid.SetColumn(label, 1); header.Children.Add(label);
+        ToolTip.SetTip(header, caption);
+        return header;
+    }
+
+    private Control RevisionDiffGroupHeader(GitRevisionDiffGroup group)
+    {
+        string shortRevision = group.BaseRevision is null ? group.Revision[..Math.Min(9, group.Revision.Length)]
+            : group.BaseRevision[..Math.Min(9, group.BaseRevision.Length)];
+        return group.Kind switch
+        {
+            GitRevisionDiffGroupKind.Combined => IconLabel("Combined diff", "DiffC.png"),
+            GitRevisionDiffGroupKind.RangeDiff => IconLabel(T("Range diff") + " " + group.RangeDiff!.First.CommitCount + "↓ "
+                + group.RangeDiff.Second.CommitCount + "↑ BASE " + group.RangeDiff.CommonAncestor[..Math.Min(9, group.RangeDiff.CommonAncestor.Length)], "DiffR.png"),
+            GitRevisionDiffGroupKind.BaseToSecond => IconLabel(T("Diff BASE with") + " B " + group.Revision[..Math.Min(9, group.Revision.Length)], "DiffB.png"),
+            GitRevisionDiffGroupKind.BaseToFirst => IconLabel(T("Diff BASE with") + " A " + group.Revision[..Math.Min(9, group.Revision.Length)], "DiffA.png"),
+            _ => IconLabel(T("Diff with A ") + shortRevision, "Diff.png")
+        };
+    }
+
+    private bool SelectRevisionDiffGroup(GitRevisionDiffGroupKind kind)
+    {
+        TreeViewItem? item = _revisionFiles.Items.OfType<TreeViewItem>().FirstOrDefault(root => root.Tag is GitRevisionDiffGroup group && group.Kind == kind);
+        if (item is null) { return false; }
+        _revisionFiles.SelectedItem = item;
+        return true;
+    }
+
+    private async Task ShowRevisionDiffItemAsync(GitRepository repository, TreeViewItem item)
+    {
+        if (_commitContent is null) { return; }
+        _commitContent.ClearImage();
+        if (item.Tag is GitRevisionDiffGroup group)
+        {
+            if (group.Kind == GitRevisionDiffGroupKind.RangeDiff && group.RangeDiff is not null)
             {
-                _commitContent.ShowImageOrHex(file.Path, await repository.GetFileBytesAsync(file.Path, revision, Token));
+                _commitContent.TextView.Mode = DiffViewMode.RangeDiff;
+                _diff.Text = await repository.GetRangeDiffAsync(group.RangeDiff, new GitRangeDiffOptions
+                {
+                    ContextLines = _revisionViewerOptions.ContextLines,
+                    ShowEntireFile = _revisionViewerOptions.ShowEntireFile,
+                    IgnoreWhitespace = _revisionViewerOptions.IgnoreWhitespace,
+                    TreatAllFilesAsText = _revisionViewerOptions.TreatAllFilesAsText
+                }, Token);
+            }
+            else
+            {
+                _commitContent.TextView.Mode = DiffViewMode.Auto;
+                _diff.Text = T("Select a file to inspect its diff.");
+            }
+            return;
+        }
+        if (item.Tag is not RevisionDiffFileSelection selection) { return; }
+        if (selection.Group.Kind == GitRevisionDiffGroupKind.Combined && selection.Group.CombinedDiff is not null)
+        {
+            _commitContent.TextView.Mode = DiffViewMode.Combined;
+            string text = await repository.GetCombinedFileDiffAsync(selection.Group.CombinedDiff, selection.File,
+                new GitCombinedDiffOptions { OmitUninterestingDiff = _revisionDiffPreferences.OmitUninterestingDiff, DiffOptions = _revisionViewerOptions }, Token);
+            _diff.Text = string.IsNullOrWhiteSpace(text) ? T("Uninteresting diff hunks are omitted.") : text;
+            return;
+        }
+        _commitContent.TextView.Mode = DiffViewMode.Unified;
+        GitRevisionChanges changes = new(selection.Group.Revision, selection.Group.BaseRevision, selection.Group.Files);
+        GitRevisionFile file = selection.File;
+        if (!_revisionViewerOptions.TreatAllFilesAsText && FileContentView.IsImagePath(file.Path))
+        {
+            string? imageRevision = file.IsDeleted ? changes.BaseRevision : changes.Revision;
+            if (imageRevision is not null
+                && (await repository.GetTreeAsync(imageRevision, file.Path, Token)).FirstOrDefault(entry => entry.Path == file.Path)?.IsSubmodule is not true)
+            {
+                _commitContent.ShowImageOrHex(file.Path, await repository.GetFileBytesAsync(file.Path, imageRevision, Token));
                 return;
             }
         }
-        _diff.Text = await repository.GetRevisionFileDiffAsync(_revisionChanges, file, Token);
+        _diff.Text = await repository.GetRevisionFileDiffAsync(changes, file, _revisionViewerOptions, Token);
     }
 
     private async Task LoadChangedFileContentAsync(GitRepository repository, GitChange change, bool staged)
     {
         _changesContent?.ClearImage();
+        if (_changesContent is not null) { _changesContent.TextView.Mode = change.IsUntracked ? DiffViewMode.PlainText : DiffViewMode.Auto; }
         if (_changesContent is not null && await _changesContent.ShowChangedImageAsync(repository, change, staged, Token)) { return; }
         if (change.IsUntracked)
         {

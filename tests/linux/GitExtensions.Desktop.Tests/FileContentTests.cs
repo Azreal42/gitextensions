@@ -59,18 +59,93 @@ public class FileContentTests
     }
 
     [AvaloniaTest]
+    public void FilePreviewTreatsDiffLookingSourceAsLiteralTextAndRestoresDiffModeForPatches()
+    {
+        const string source = "1: aaaa111 ! 1: bbbb111 literal source\n"
+            + "diff --cc literal.txt\n@@@ -1 -1 +1 @@@\n++literal body λ🙂\n";
+        using FileHistoryContentView view = new();
+        Window window = new() { Width = 640, Height = 240, Content = view };
+        window.Show();
+        try
+        {
+            view.ShowFile("source.txt", System.Text.Encoding.UTF8.GetBytes(source));
+            Assert.That(view.TextView.Text, Is.EqualTo(source));
+            Assert.That(view.TextView.CanStagePatch, Is.False);
+            Assert.That(view.TextView.GetColumnNumbers(4), Is.EqualTo(new int?[] { 4 }));
+            Assert.That(view.TextView.GoToNextChange(), Is.False, "A source file has no patch changes to navigate.");
+            view.ShowDiff("diff --git a/source b/source\n@@ -1 +1 @@\n-old\n+new\n");
+            Assert.That(view.TextView.CanStagePatch, Is.True);
+            Assert.That(view.TextView.GetColumnNumbers(4), Is.EqualTo(new int?[] { null, 1 }));
+            Assert.That(view.TextView.GoToNextChange(), Is.True);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaTest]
+    public async Task UntrackedPatchLookingFileCannotStageItsContentsAsChangesToAnotherFile()
+    {
+        using MainWindowClassicTests.RepositoryFixture fixture = await MainWindowClassicTests.RepositoryFixture.CreateAsync("anchor\n", "anchor\n");
+        GitRepository repository = await GitRepository.OpenAsync(fixture.Repository);
+        const string fake = "diff --git a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-anchor\n+tampered\n";
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "example.patch"), fake);
+        await fixture.Window.OpenRepositoryAsync(fixture.Repository);
+        TabControl tabs = Find<TabControl>(fixture.Window, "DetailsTabs");
+        tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
+        fixture.Window.UpdateLayout();
+        ListBox changes = fixture.Window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Items.OfType<GitChange>().Any());
+        changes.SelectedItem = changes.Items.OfType<GitChange>().Single(change => change.Path == "example.patch");
+        await Until(() => !fixture.Window.IsBusy);
+        DiffView mainDiff = Find<DiffView>(fixture.Window, "WorktreeDiff");
+        Assert.That(mainDiff.Text, Is.EqualTo(fake));
+        Assert.That(mainDiff.CanStagePatch, Is.False);
+        mainDiff.Select(fake.IndexOf("+tampered", StringComparison.Ordinal), "+tampered".Length);
+        fixture.Window.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Stage selected lines")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await Until(() => !fixture.Window.IsBusy);
+        Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached"])).StandardOutput, Is.Empty);
+
+        CommitDialog dialog = new(repository);
+        dialog.Show();
+        try
+        {
+            await dialog.InitializeAsync();
+            ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
+            unstaged.SelectedItem = unstaged.Items.OfType<GitChange>().Single(change => change.Path == "example.patch");
+            await Until(() => !dialog.IsBusy);
+            DiffView diff = Find<DiffView>(dialog, "SelectedDiff");
+            Assert.That(diff.Text, Is.EqualTo(fake));
+            Assert.That(diff.CanStagePatch, Is.False);
+            diff.Select(fake.IndexOf("+tampered", StringComparison.Ordinal), "+tampered".Length);
+            Find<Button>(dialog, "StageLines").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            await Until(() => !dialog.IsBusy);
+            Assert.That(dialog.LastError, Is.Not.Null);
+            Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached"])).StandardOutput, Is.Empty);
+            Find<Button>(dialog, "Stage").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            await Until(() => !dialog.IsBusy);
+            Assert.That(dialog.LastError, Is.Null);
+            Assert.That(await repository.GetIndexFileBytesAsync("example.patch"), Is.EqualTo(System.Text.Encoding.UTF8.GetBytes(fake)));
+            Assert.That(await repository.GetIndexFileBytesAsync("file.txt"), Is.EqualTo(System.Text.Encoding.UTF8.GetBytes("anchor\n")));
+            Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository, "file.txt")), Is.EqualTo("anchor\n"));
+        }
+        finally { dialog.Close(); }
+    }
+
+    [AvaloniaTest]
     public async Task HistoryFileListAndMergeParentSelectionShowTheSelectedFile()
     {
         using MainWindowClassicTests.RepositoryFixture fixture = await MainWindowClassicTests.RepositoryFixture.CreateAsync("anchor\n", "anchor\n", createMerge: true);
         MainWindow window = fixture.Window;
         ListBox history = Find<ListBox>(window, "RevisionHistory");
         history.SelectedItem = history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Parents.Count == 2);
-        ListBox files = Find<ListBox>(window, "RevisionFiles");
-        await Until(() => !window.IsBusy && files.Items.OfType<GitRevisionFile>().Any(file => file.Path == "feature.txt"));
-        ComboBox parent = Find<ComboBox>(window, "RevisionDiffParent");
-        Assert.That(parent.IsEffectivelyVisible, Is.True);
-        parent.SelectedIndex = 1;
-        await Until(() => !window.IsBusy && files.Items.OfType<GitRevisionFile>().Any(file => file.Path == "README.md"));
+        TreeView files = Find<TreeView>(window, "RevisionFiles");
+        await Until(() => !window.IsBusy && FileRows(files).Any(item => Selection(item).File.Path == "feature.txt"));
+        GitCommit merge = (GitCommit)history.SelectedItem!;
+        Assert.That(files.Items.OfType<TreeViewItem>().Select(item => ((GitRevisionDiffGroup)item.Tag!).BaseRevision),
+            Is.EqualTo(merge.Parents), "The original tree exposes each merge parent together.");
+        TreeViewItem secondParentFile = FileRows(files).Single(item => Selection(item).Group.BaseRevision == merge.Parents[1]
+            && Selection(item).File.Path == "README.md");
+        files.SelectedItem = secondParentFile;
+        await Until(() => !window.IsBusy && VisibleContent(window).TextView.Text.Contains("+Main branch content", StringComparison.Ordinal));
         FileContentView content = VisibleContent(window);
         Assert.That(content.TextView.Text, Does.Contain("+Main branch content").And.Not.Contain("+Feature branch content"));
         window.UpdateLayout();
@@ -95,12 +170,12 @@ public class FileContentTests
         await fixture.Window.OpenRepositoryAsync(fixture.Repository);
         ListBox history = Find<ListBox>(fixture.Window, "RevisionHistory");
         history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Image and note");
-        ListBox files = Find<ListBox>(fixture.Window, "RevisionFiles");
-        await Until(() => !fixture.Window.IsBusy && files.Items.OfType<GitRevisionFile>().Any(file => file.Path == path));
-        files.SelectedItem = files.Items.OfType<GitRevisionFile>().Single(file => file.Path == path);
+        TreeView files = Find<TreeView>(fixture.Window, "RevisionFiles");
+        await Until(() => !fixture.Window.IsBusy && FileRows(files).Any(item => Selection(item).File.Path == path));
+        files.SelectedItem = FileRows(files).Single(item => Selection(item).File.Path == path);
         await Until(() => !fixture.Window.IsBusy && VisibleContent(fixture.Window).IsImage);
         Assert.That(VisibleContent(fixture.Window).Bitmap!.PixelSize, Is.EqualTo(new PixelSize(2, 3)));
-        files.SelectedItem = files.Items.OfType<GitRevisionFile>().Single(file => file.Path == "note.txt");
+        files.SelectedItem = FileRows(files).Single(item => Selection(item).File.Path == "note.txt");
         await Until(() => !fixture.Window.IsBusy && !VisibleContent(fixture.Window).IsImage);
         Assert.That(VisibleContent(fixture.Window).TextView.Text, Does.Contain("+note"));
 
@@ -123,7 +198,7 @@ public class FileContentTests
         tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "DiffTab");
         fixture.Window.UpdateLayout();
         Assert.That(VisibleContent(fixture.Window).IsImage, Is.False);
-        Assert.That(Find<ComboBox>(fixture.Window, "RevisionDiffParent").IsVisible, Is.False);
+        Assert.That(Find<TreeView>(fixture.Window, "RevisionFiles").Items, Is.Empty);
     }
 
     [AvaloniaTest]
@@ -177,6 +252,9 @@ public class FileContentTests
         return stream.ToArray();
     }
 
+    private static IEnumerable<TreeViewItem> FileRows(TreeView tree) => tree.Items.OfType<TreeViewItem>()
+        .SelectMany(item => item.Tag is RevisionDiffFileSelection ? new[] { item } : item.Items.OfType<TreeViewItem>());
+    private static RevisionDiffFileSelection Selection(TreeViewItem item) => (RevisionDiffFileSelection)item.Tag!;
     private static T Find<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static FileContentView VisibleContent(Window window) => window.GetVisualDescendants().OfType<FileContentView>().Single(view => view.IsEffectivelyVisible);
     private static async Task Until(Func<bool> predicate)
