@@ -24,4 +24,6 @@
 
 | Tests de cancellation échouent pendant la lecture de procfs | Le descendant disparaît entre File.Exists et ReadLines | Relecture après IOException, état absent/zombie exigé et délai borné ; 54 scénarios passent. Résolu. |
 
+| Skip am avance mais la ligne suivante est marquée appliquée | Un second conflit produit exit non nul après avancement | Relire état am et repérer les indices ; série à deux conflits testée. Résolu. |
+
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
