@@ -14,6 +14,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.Themes.Fluent;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Extensibility.Git;
@@ -220,6 +221,78 @@ public class FileStatusListViewTests
     }
 
     [AvaloniaTest]
+    public void OrangeFluentAccentCannotReplaceRenderedSortButtonStatesInEitherTheme()
+    {
+        FluentTheme fluent = Application.Current!.Styles.OfType<FluentTheme>().Single();
+        fluent.Palettes.TryGetValue(ThemeVariant.Light, out ColorPaletteResources? previousLight);
+        fluent.Palettes.TryGetValue(ThemeVariant.Dark, out ColorPaletteResources? previousDark);
+        Color orange = Color.Parse("#e95420");
+        fluent.Palettes[ThemeVariant.Light] = new ColorPaletteResources { Accent = orange };
+        fluent.Palettes[ThemeVariant.Dark] = new ColorPaletteResources { Accent = orange };
+        try
+        {
+            using Fixture fixture = new();
+            fixture.View.SetGroups([Group("files", [Entry("src/a.cs", DiffBranchStatus.OnlyAChange), Entry("src/b.txt", DiffBranchStatus.OnlyBChange)]) with { IsBaseComparison = true }]);
+            fixture.Window.Show();
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                fixture.Window.RequestedThemeVariant = theme; fixture.Window.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+                Assert.That(((IResourceNode)fluent).TryGetResource("SystemAccentColor", theme, out object? accent), Is.True);
+                Assert.That(accent, Is.EqualTo(orange), "The underlying Fluent palette must really supply the Ubuntu accent.");
+                Color highlight = Color.Parse(theme == ThemeVariant.Dark ? "#2864b4" : "#0078d7");
+                fixture.View.SortMode = FileStatusListSortMode.FileStatus;
+                foreach (string role in new[] { "ByPath", "ByExtension", "ByStatus" })
+                {
+                    ToggleButton button = Field<ToggleButton>(fixture.Window, "Files" + role);
+                    ClickRendered(button);
+                    fixture.Window.MouseMove(new Point(fixture.Window.Width - 4, fixture.Window.Height - 4));
+                    using WriteableBitmap frame = Capture(fixture.Window, "file-status-orange-accent-" + role + "-" + theme + ".png");
+                    ContentPresenter presenter = button.GetVisualDescendants().OfType<ContentPresenter>().Single(item => item.Name == "PART_ContentPresenter");
+                    Assert.That(button.IsChecked, Is.True);
+                    Assert.That(((ISolidColorBrush)presenter.Background!).Color, Is.EqualTo(highlight), "The actual checked template must ignore the Fluent accent.");
+                    Rect bounds = new(presenter.TranslatePoint(default, fixture.Window)!.Value, presenter.Bounds.Size);
+                    Assert.That(CountColor(frame, bounds, highlight), Is.GreaterThan(80));
+                    Assert.That(CountColor(frame, bounds, orange), Is.Zero);
+                    Assert.That(button.Bounds.Size, Is.EqualTo(new Size(24, 24)));
+                    Assert.That(presenter.CornerRadius, Is.EqualTo(new CornerRadius(0)));
+                    Assert.That(button.GetVisualDescendants().OfType<Image>().Single().Bounds.Size, Is.EqualTo(new Size(16, 16)));
+                    Point point = button.TranslatePoint(new Point(12, 12), fixture.Window)!.Value;
+                    fixture.Window.MouseMove(point);
+                    AssertRenderedState("hover");
+                    fixture.Window.MouseDown(point, MouseButton.Left);
+                    try { AssertRenderedState("pressed"); }
+                    finally
+                    {
+                        fixture.Window.MouseMove(new Point(fixture.Window.Width - 4, fixture.Window.Height - 4));
+                        fixture.Window.MouseUp(new Point(fixture.Window.Width - 4, fixture.Window.Height - 4), MouseButton.Left);
+                    }
+
+                    void AssertRenderedState(string state)
+                    {
+                        using WriteableBitmap stateFrame = Capture(fixture.Window, "file-status-orange-accent-" + role + "-" + state + "-" + theme + ".png");
+                        Assert.That(((ISolidColorBrush)presenter.Background!).Color, Is.EqualTo(highlight), "Checked " + state + " must use the original palette too.");
+                        Assert.That(CountColor(stateFrame, bounds, highlight), Is.GreaterThan(80));
+                        Assert.That(CountColor(stateFrame, bounds, orange), Is.Zero);
+                    }
+                }
+                Color neutral = theme == ThemeVariant.Dark ? Color.Parse("#323232") : Colors.White;
+                foreach (string role in new[] { "Unequal", "OnlyB", "OnlyA", "Same" })
+                {
+                    ToggleButton button = Field<ToggleButton>(fixture.Window, "Files" + role);
+                    ContentPresenter presenter = button.GetVisualDescendants().OfType<ContentPresenter>().Single(item => item.Name == "PART_ContentPresenter");
+                    Assert.That(((ISolidColorBrush)presenter.Background!).Color, Is.EqualTo(neutral), "The four semantic indicators retain their separate neutral surfaces.");
+                    Assert.That(((ISolidColorBrush)presenter.BorderBrush!).Color, Is.EqualTo(highlight));
+                }
+            }
+        }
+        finally
+        {
+            if (previousLight is null) { fluent.Palettes.Remove(ThemeVariant.Light); } else { fluent.Palettes[ThemeVariant.Light] = previousLight; }
+            if (previousDark is null) { fluent.Palettes.Remove(ThemeVariant.Dark); } else { fluent.Palettes[ThemeVariant.Dark] = previousDark; }
+        }
+    }
+
+    [AvaloniaTest]
     public async Task LiteralFilteredGitPathsRemainTheOnlyMutationTargetsEvenWhenTheirFoldersAreCollapsed()
     {
         using Fixture fixture = new(); string repository = Path.Combine(fixture.Directory, "repository"); Directory.CreateDirectory(repository);
@@ -293,6 +366,20 @@ public class FileStatusListViewTests
         Color expected = Color.Parse(color); bool bgra = pixels.Format == PixelFormat.Bgra8888; int count = 0;
         for (int y = 0; y < pixels.Size.Height; y++) { for (int x = 0; x < pixels.Size.Width; x++) { int offset = y * pixels.RowBytes + x * 4; if (bytes[offset + (bgra ? 2 : 0)] == expected.R && bytes[offset + 1] == expected.G && bytes[offset + (bgra ? 0 : 2)] == expected.B) { count++; } } }
         Assert.That(count, Is.GreaterThan(minimum), "The original validation background must reach the rendered editable text box.");
+    }
+    private static int CountColor(WriteableBitmap frame, Rect bounds, Color color)
+    {
+        using ILockedFramebuffer pixels = frame.Lock(); byte[] bytes = new byte[pixels.RowBytes * pixels.Size.Height]; Marshal.Copy(pixels.Address, bytes, 0, bytes.Length);
+        bool bgra = pixels.Format == PixelFormat.Bgra8888; int count = 0;
+        for (int y = Math.Max(0, (int)Math.Floor(bounds.Y)); y < Math.Min(pixels.Size.Height, (int)Math.Ceiling(bounds.Bottom)); y++)
+        {
+            for (int x = Math.Max(0, (int)Math.Floor(bounds.X)); x < Math.Min(pixels.Size.Width, (int)Math.Ceiling(bounds.Right)); x++)
+            {
+                int offset = y * pixels.RowBytes + x * 4;
+                if (bytes[offset + (bgra ? 2 : 0)] == color.R && bytes[offset + 1] == color.G && bytes[offset + (bgra ? 0 : 2)] == color.B) { count++; }
+            }
+        }
+        return count;
     }
     private static void AssertColorGlyph(WriteableBitmap frame, Rect bounds, Color foreground, Color background, int minimum)
     {

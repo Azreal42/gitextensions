@@ -308,7 +308,8 @@ public sealed class FileStatusListView : UserControl, IDisposable
     }
     private ToggleButton SortButton(string name, string tip, string icon, FileStatusListSortMode basis)
     {
-        ToggleButton button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = 24, MinHeight = 24, Padding = new Thickness(2, 0) };
+        ToggleButton button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = 24, MinHeight = 24,
+            CornerRadius = new CornerRadius(0), BorderThickness = new Thickness(1), Padding = new Thickness(2, 0) };
         ToolTip.SetTip(button, T(tip)); button.Click += (_, _) => { if (!_updatingToolbar) { SortMode = IsFlat ? (FileStatusListSortMode)((int)basis + 1) : basis; } };
         _toolbar.Children.Add(button); _toolbarRoles[button] = name; return button;
     }
@@ -363,7 +364,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
                 bool contextual = role is "Unequal" or "OnlyB" or "OnlyA" or "Same" ? comparison : true;
                 control.IsVisible = contextual && !_options.HiddenToolbarItems.Contains(role, StringComparer.Ordinal);
             }
-            ApplyDiffButtonColors();
+            ApplySortButtonPalette(); ApplyDiffButtonColors();
         }
         finally { _updatingToolbar = false; }
     }
@@ -386,7 +387,30 @@ public sealed class FileStatusListView : UserControl, IDisposable
             _toolbarMenu.Items.Add(item);
         }
     }
-    private void ThemeChanged(object? sender, EventArgs args) { ApplyFilterPalette(); ApplyDiffButtonColors(); }
+    private void ThemeChanged(object? sender, EventArgs args) { ApplyFilterPalette(); ApplySortButtonPalette(); ApplyDiffButtonColors(); }
+    private void ApplySortButtonPalette()
+    {
+        // Fluent's checked styles draw on their ContentPresenter, bypassing Background setters.
+        // Resolve every sort-button state from the original palette rather than the Linux accent.
+        foreach (ToggleButton button in new[] { _byPath, _byExtension, _byStatus })
+        {
+            foreach ((string state, string background, string border, string foreground) in new[]
+            {
+                ("", "Button", "ButtonBorder", "ControlText"), ("PointerOver", "Hover", "ButtonBorder", "ControlText"),
+                ("Pressed", "Pressed", "ButtonBorder", "ControlText"), ("Disabled", "Button", "ButtonBorder", "Disabled"),
+                ("Checked", "Highlight", "Highlight", "HighlightText"), ("CheckedPointerOver", "Highlight", "Highlight", "HighlightText"),
+                ("CheckedPressed", "Highlight", "Highlight", "HighlightText"), ("CheckedDisabled", "Button", "ButtonBorder", "Disabled")
+            })
+            {
+                SetBrush("Background", background); SetBrush("BorderBrush", border); SetBrush("Foreground", foreground);
+                void SetBrush(string role, string source)
+                {
+                    if (button.TryFindResource("Classic" + source + "Brush", button.ActualThemeVariant, out object? value))
+                    { button.Resources["ToggleButton" + role + state] = value!; }
+                }
+            }
+        }
+    }
     private void ApplyFilterPalette()
     {
         bool dark = ActualThemeVariant == ThemeVariant.Dark;
