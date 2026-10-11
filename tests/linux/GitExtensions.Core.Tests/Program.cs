@@ -1447,7 +1447,18 @@ static async Task AskpassAsync()
             cancellation.Cancel();
             await ExpectAsync<OperationCanceledException>(() => waiting);
             string processStatus = $"/proc/{helperPid}/status";
-            Assert(!File.Exists(processStatus) || File.ReadLines(processStatus).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z')), "Cancelling Git also terminates its waiting askpass descendant");
+            bool terminated;
+            try
+            {
+                terminated = !File.Exists(processStatus) || File.ReadLines(processStatus).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z'));
+            }
+            catch (IOException) when (!File.Exists(processStatus))
+            {
+                // The killed process can disappear between the existence check
+                // and reading procfs. A missing status still proves termination.
+                terminated = true;
+            }
+            Assert(terminated, "Cancelling Git also terminates its waiting askpass descendant");
         }
         finally
         {
