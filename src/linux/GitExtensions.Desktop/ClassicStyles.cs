@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
@@ -154,7 +155,7 @@ internal static class ClassicStyles
                 Setters =
                 {
                     new Setter(TemplatedControl.BackgroundProperty, Resource("MenuHighlight")),
-                    new Setter(TemplatedControl.ForegroundProperty, Resource("HighlightText"))
+                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuHighlightText"))
                 }
             },
             new Style(selector => selector.OfType<MenuItem>().Class(":disabled"))
@@ -177,6 +178,12 @@ internal static class ClassicStyles
                     new Setter(TemplatedControl.BackgroundProperty, Resource("Highlight")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("HighlightText"))
                 }
+            },
+            // Fluent sets selected text on the inner presenter independently of
+            // ListBoxItem.Foreground. Keep that actual template surface readable.
+            new Style(selector => selector.OfType<ListBoxItem>().Class(":selected").Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"))
+            {
+                Setters = { new Setter(ContentPresenter.ForegroundProperty, Resource("HighlightText")) }
             },
             new Style(selector => selector.OfType<TreeViewItem>())
             {
@@ -232,8 +239,8 @@ internal static class ClassicStyles
         {
             ThemeDictionaries =
             {
-                [ThemeVariant.Light] = Resources(light),
-                [ThemeVariant.Dark] = Resources(dark)
+                [ThemeVariant.Light] = Resources(light, dark: false),
+                [ThemeVariant.Dark] = Resources(dark, dark: true)
             }
         };
         return styles;
@@ -241,7 +248,7 @@ internal static class ClassicStyles
 
     private static DynamicResourceExtension Resource(string name) => new("Classic" + name + "Brush");
 
-    private static ResourceDictionary Resources(IReadOnlyDictionary<string, string> colors)
+    private static ResourceDictionary Resources(IReadOnlyDictionary<string, string> colors, bool dark)
     {
         // The application colors come from CSS; native system colors come from the
         // explicit light CSS and SystemColorMode.Dark table documented in dark.css.
@@ -251,7 +258,8 @@ internal static class ClassicStyles
             ["Control"] = "Control", ["ControlText"] = "ControlText", ["Menu"] = "Menu",
             ["MenuText"] = "MenuText", ["Border"] = "ActiveBorder", ["Button"] = "ButtonFace",
             ["ButtonBorder"] = "ButtonShadow", ["Hover"] = "ControlLight", ["Pressed"] = "ControlDark",
-            ["Disabled"] = "GrayText", ["Highlight"] = "Highlight", ["HighlightText"] = "HighlightText",
+            ["Disabled"] = "GrayText", ["Highlight"] = "Highlight", ["HighlightText"] = dark ? "WindowText" : "HighlightText",
+            ["MenuHighlightText"] = "HighlightText",
             ["MenuHighlight"] = "MenuHighlight", ["Selection"] = "Selection",
             ["Tooltip"] = "Info", ["TooltipText"] = "InfoText"
         };
@@ -259,6 +267,50 @@ internal static class ClassicStyles
         foreach ((string resource, string color) in names)
         {
             resources["Classic" + resource + "Brush"] = Brush.Parse(colors[color]);
+        }
+
+        // The Fluent 11 templates resolve these resources on their own presenters,
+        // selection pipes and focus borders; control-level setters cannot override
+        // them. Bind those rendered states to the original palette, not the OS accent.
+        foreach (string suffix in new[] { "", "Light1", "Light2", "Light3", "Dark1", "Dark2", "Dark3" })
+        {
+            resources["SystemAccentColor" + suffix] = Color.Parse(colors["Highlight"]);
+        }
+        Dictionary<string, string> templateBrushes = new(StringComparer.Ordinal)
+        {
+            ["SystemControlHighlightListAccentLowBrush"] = "Highlight",
+            ["SystemControlHighlightListAccentMediumBrush"] = "Highlight",
+            ["SystemControlHighlightListAccentHighBrush"] = "Highlight",
+            ["SystemControlHighlightAltListAccentLowBrush"] = "Highlight",
+            ["SystemControlHighlightAltListAccentMediumBrush"] = "Highlight",
+            ["SystemControlHighlightAltListAccentHighBrush"] = "Highlight",
+            ["SystemControlHighlightAccentBrush"] = "Highlight",
+            ["SystemControlHighlightAltAccentBrush"] = "Highlight",
+            ["TreeViewItemBackgroundSelected"] = "Highlight",
+            ["TreeViewItemBackgroundSelectedPointerOver"] = "Highlight",
+            ["TreeViewItemBackgroundSelectedPressed"] = "Highlight",
+            ["TreeViewItemForegroundSelected"] = "HighlightText",
+            ["TreeViewItemForegroundSelectedPointerOver"] = "HighlightText",
+            ["TreeViewItemForegroundSelectedPressed"] = "HighlightText",
+            ["TabItemHeaderSelectedPipeFill"] = "Highlight",
+            ["TextControlBorderBrushFocused"] = "Highlight",
+            ["TextControlBackgroundFocused"] = "Editor",
+            ["TextControlForegroundFocused"] = "Text",
+            ["CheckBoxCheckBackgroundFillChecked"] = "Highlight",
+            ["CheckBoxCheckBackgroundFillCheckedPointerOver"] = "Highlight",
+            ["CheckBoxCheckBackgroundFillCheckedPressed"] = "Highlight",
+            ["CheckBoxCheckBackgroundStrokeCheckedPointerOver"] = "Highlight",
+            ["CheckBoxCheckBackgroundStrokeCheckedPressed"] = "Highlight",
+            ["CheckBoxCheckBackgroundFillIndeterminate"] = "Highlight",
+            ["CheckBoxCheckBackgroundFillIndeterminatePointerOver"] = "Highlight",
+            ["CheckBoxCheckBackgroundFillIndeterminatePressed"] = "Highlight",
+            ["CheckBoxCheckBackgroundStrokeIndeterminate"] = "Highlight",
+            ["CheckBoxCheckBackgroundStrokeIndeterminatePointerOver"] = "Highlight",
+            ["CheckBoxCheckBackgroundStrokeIndeterminatePressed"] = "Highlight"
+        };
+        foreach ((string resource, string classic) in templateBrushes)
+        {
+            resources[resource] = resources["Classic" + classic + "Brush"];
         }
         return resources;
     }

@@ -20,7 +20,10 @@ public sealed partial class MainWindow
     private GitCommit SelectedCommit() => _commits.SelectedItem as GitCommit ?? throw new InvalidOperationException("Select a commit in History first.");
     private GitRemote SelectedRemote() => _remotes.SelectedItem as GitRemote ?? throw new InvalidOperationException("Select a remote first.");
     private GitStash SelectedStash() => _stashes.SelectedItem as GitStash ?? throw new InvalidOperationException("Select a stash first.");
-    private string[] SelectedPaths() => _changes.SelectedItems?.Cast<GitChange>().SelectMany(change => change.OriginalPath is null ? new[] { change.Path } : new[] { change.Path, change.OriginalPath }).Distinct(StringComparer.Ordinal).ToArray() ?? [];
+    private string[] SelectedPaths(bool includeOriginalPath = true)
+        => _changes.SelectedItems?.Cast<GitChange>()
+            .SelectMany(change => includeOriginalPath && change.OriginalPath is not null ? new[] { change.Path, change.OriginalPath } : new[] { change.Path })
+            .Distinct(StringComparer.Ordinal).ToArray() ?? [];
 
     private async Task CloneAsync()
     {
@@ -40,7 +43,7 @@ public sealed partial class MainWindow
         if (initialized is not null) { await OpenRepositoryAsync(initialized.Path); }
     }
 
-    private Task StageAsync(bool all) => RunAsync("Stage", repository => all ? repository.StageAllAsync(Token) : repository.StageAsync(SelectedPaths(), Token));
+    private Task StageAsync(bool all) => RunAsync("Stage", repository => all ? repository.StageAllAsync(Token) : repository.StageAsync(SelectedPaths(includeOriginalPath: false), Token));
 
     private Task UnstageAsync(bool all) => RunAsync("Unstage", repository => repository.UnstageAsync(all
         ? (_changes.ItemsSource?.Cast<GitChange>().Where(c => c.IsStaged).SelectMany(c => c.OriginalPath is null ? new[] { c.Path } : new[] { c.Path, c.OriginalPath }).Distinct(StringComparer.Ordinal) ?? [])

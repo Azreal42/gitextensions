@@ -321,9 +321,23 @@ public sealed class CommitDialog : Window
         _patch = GitPatch.Parse(_source.Text ?? "").FirstOrDefault();
     }
 
-    private string[] SelectedPaths(ListBox list) => list.SelectedItems?.OfType<GitChange>().SelectMany(change => change.OriginalPath is null ? new[] { change.Path } : new[] { change.Path, change.OriginalPath }).Distinct(StringComparer.Ordinal).ToArray() ?? [];
-    private Task StageAsync(bool all) => MutateAsync(T("Stage"), () => all ? _repository.StageAllAsync(_lifetime.Token) : _repository.StageAsync(SelectedPaths(_unstaged), _lifetime.Token));
-    private Task UnstageAsync(bool all) => MutateAsync(T("Unstage"), () => _repository.UnstageAsync(all ? _status?.Changes.Where(change => change.IsStaged && !change.IsConflict).SelectMany(change => change.OriginalPath is null ? new[] { change.Path } : new[] { change.Path, change.OriginalPath }).Distinct(StringComparer.Ordinal) ?? [] : SelectedPaths(_staged), _lifetime.Token));
+    private static string[] FilePaths(IEnumerable<GitChange> changes)
+        => changes.SelectMany(change => change.OriginalPath is null ? new[] { change.Path } : new[] { change.Path, change.OriginalPath })
+            .Distinct(StringComparer.Ordinal).ToArray();
+    private static string[] SelectedPaths(ListBox list) => FilePaths(list.SelectedItems?.OfType<GitChange>() ?? []);
+    private Task StageAsync(bool all)
+    {
+        IEnumerable<GitChange> changes = all ? _unstaged.Items.OfType<GitChange>() : _unstaged.SelectedItems?.OfType<GitChange>() ?? [];
+        // A staged rename has already removed its old path from the index.
+        // Stage the current name, as FormCommit.StageFiles does.
+        string[] paths = changes.Select(change => change.Path).Distinct(StringComparer.Ordinal).ToArray();
+        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Stage"), () => _repository.StageAsync(paths, _lifetime.Token));
+    }
+    private Task UnstageAsync(bool all)
+    {
+        string[] paths = all ? FilePaths(_staged.Items.OfType<GitChange>()) : SelectedPaths(_staged);
+        return paths.Length == 0 ? Task.CompletedTask : MutateAsync(T("Unstage"), () => _repository.UnstageAsync(paths, _lifetime.Token));
+    }
 
     private Task ApplyPatchAsync(bool reverse, bool lines) => MutateAsync(reverse ? T("Unstage") : T("Stage"), async () =>
     {

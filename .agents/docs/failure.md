@@ -16,4 +16,8 @@
 | Tableau plugin plante après suppression | Template Avalonia reçoit un élément null pendant le renouvellement | Garde null ; aperçu/annulation/suppression réelle validés. Résolu. |
 | Badges du graphe gardent les couleurs claires | Rendu non invalidé au changement de thème | Invalidation et test de pixels clair/sombre. Résolu. |
 
+| Indexer/désindexer tout touche des fichiers masqués par le filtre Commit | Action globale au lieu des éléments visibles | Chemins visibles uniquement, scénario avec index partiel et noms littéraux. Corrigé, testé. |
+| Indexer un renommage modifié échoue : ancien pathspec absent | Ancien et nouveau noms transmis à git add après git mv | Indexer le nom courant ; désindexer les deux noms. Corrigé, test UI réel. |
+| Sélections X11 restent orange malgré les palettes reprises | Accent OS encore consommé par les templates Fluent | Ressources des templates et texte sélectionné repris ; tests pixels/contraste et captures X11 claire/sombre. Résolu. |
+
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.

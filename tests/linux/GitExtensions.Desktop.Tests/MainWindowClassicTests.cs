@@ -115,6 +115,41 @@ public class MainWindowClassicTests
     }
 
     [AvaloniaTest]
+    public async Task WorkingDirectoryStagesModifiedRenameAndUnstagesBothNamesWithoutChangingFiles()
+    {
+        string initial = string.Join('\n', Enumerable.Range(1, 30).Select(index => $"original line {index:00}")) + "\n";
+        using RepositoryFixture fixture = await RepositoryFixture.CreateAsync(initial, initial);
+        const string renamed = "renamed λ[1].txt";
+        const string addition = "renamed change\n";
+        GitResult move = await fixture.Git.RunAsync(fixture.Repository, ["mv", "--", "file.txt", renamed]);
+        Assert.That(move.Success, Is.True, move.StandardError);
+        await File.AppendAllTextAsync(Path.Combine(fixture.Repository, renamed), addition);
+        await fixture.Window.OpenRepositoryAsync(fixture.Repository);
+        SelectChanges(fixture.Window);
+        ListBox changes = Changes(fixture.Window);
+        GitChange change = changes.ItemsSource!.OfType<GitChange>().Single();
+        Assert.That(change.OriginalPath, Is.EqualTo("file.txt"));
+        changes.SelectedItem = change;
+        await Until(() => !fixture.Window.IsBusy);
+
+        Click(fixture.Window, "Stage selected");
+        await Until(() => !fixture.Window.IsBusy);
+        Assert.That(fixture.Window.LastException, Is.Null, fixture.Window.LastException?.ToString());
+        GitResult indexed = await fixture.Git.RunAsync(fixture.Repository, ["show", ":" + renamed]);
+        Assert.That(indexed.Success, Is.True, indexed.StandardError);
+        Assert.That(indexed.StandardOutput, Is.EqualTo(initial + addition));
+
+        changes.SelectedItem = changes.ItemsSource!.OfType<GitChange>().Single();
+        await Until(() => !fixture.Window.IsBusy);
+        Click(fixture.Window, "Unstage selected");
+        await Until(() => !fixture.Window.IsBusy);
+        Assert.That(fixture.Window.LastException, Is.Null, fixture.Window.LastException?.ToString());
+        Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["diff", "--cached"])).StandardOutput, Is.Empty);
+        Assert.That(File.Exists(Path.Combine(fixture.Repository, "file.txt")), Is.False);
+        Assert.That(File.ReadAllText(Path.Combine(fixture.Repository, renamed)), Is.EqualTo(initial + addition));
+    }
+
+    [AvaloniaTest]
     public async Task OriginalShortcutsNavigateHistoryAndFocusDetailTabs()
     {
         using RepositoryFixture fixture = await RepositoryFixture.CreateAsync("first line\n", "first line\nsecond line\n", createMerge: true);

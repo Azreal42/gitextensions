@@ -258,6 +258,72 @@ public class CommitDialogTests
     }
 
     [AvaloniaTest]
+    public async Task FilteredStageAllButtonsAndShortcutOnlyChangeVisibleLiteralPaths()
+    {
+        using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\n");
+        CommitDialog dialog = fixture.Dialog;
+        const string visiblePath = "visible λ[1]; $(touch should-not-exist).txt";
+        const string hiddenPath = "visible λ1; $(touch should-not-exist).txt";
+        const string initial = "initial\n";
+        const string visibleChanged = "initial\nvisible change\n";
+        const string hiddenStaged = "initial\nhidden staged change\n";
+        const string hiddenChanged = "initial\nhidden staged change\nhidden unstaged change\n";
+        await fixture.Run("mv", "file.txt", hiddenPath);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, visiblePath), initial);
+        await fixture.Run("add", "--", visiblePath);
+        await fixture.Run("commit", "-m", "Add literal file path");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, hiddenPath), hiddenStaged);
+        await fixture.Run("add", "--", hiddenPath);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, hiddenPath), hiddenChanged);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Repository.Path, visiblePath), visibleChanged);
+        await dialog.RefreshAsync();
+        TextBox filter = Find<TextBox>(dialog, "SelectionFilter");
+        filter.Text = "VISIBLE λ[1]";
+        await Idle(dialog);
+        ListBox unstaged = Find<ListBox>(dialog, "Unstaged");
+        ListBox staged = Find<ListBox>(dialog, "Staged");
+        Assert.That(unstaged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(visiblePath));
+        Assert.That(staged.ItemCount, Is.Zero, "The already staged hidden file must not be displayed by this filter.");
+        string hiddenIndexDiff = (await fixture.Run("diff", "--cached", "--", hiddenPath)).StandardOutput;
+
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            if (attempt == 0) { Click(dialog, "StageAll"); }
+            else { Press(dialog, PhysicalKey.S, RawInputModifiers.Control); }
+            await Idle(dialog);
+            Assert.That((await fixture.Run("show", ":" + visiblePath)).StandardOutput, Is.EqualTo(visibleChanged));
+            Assert.That(unstaged.ItemCount, Is.Zero);
+            Assert.That(staged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(visiblePath));
+            await AssertHiddenUnchanged();
+
+            Click(dialog, "UnstageAll");
+            await Idle(dialog);
+            Assert.That((await fixture.Run("show", ":" + visiblePath)).StandardOutput, Is.EqualTo(initial));
+            Assert.That(unstaged.Items.OfType<GitChange>().Single().Path, Is.EqualTo(visiblePath));
+            Assert.That(staged.ItemCount, Is.Zero);
+            await AssertHiddenUnchanged();
+        }
+
+        filter.Text = "no matching file";
+        await Idle(dialog);
+        Press(dialog, PhysicalKey.S, RawInputModifiers.Control);
+        await Idle(dialog);
+        Click(dialog, "UnstageAll");
+        await Idle(dialog);
+        await AssertHiddenUnchanged();
+        Assert.That((await fixture.Run("show", ":" + visiblePath)).StandardOutput, Is.EqualTo(initial));
+        Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, visiblePath)), Is.EqualTo(visibleChanged));
+        Assert.That(File.Exists(Path.Combine(fixture.Repository.Path, "should-not-exist")), Is.False);
+
+        async Task AssertHiddenUnchanged()
+        {
+            Assert.That((await fixture.Run("show", ":" + hiddenPath)).StandardOutput, Is.EqualTo(hiddenStaged));
+            Assert.That((await fixture.Run("diff", "--cached", "--", hiddenPath)).StandardOutput, Is.EqualTo(hiddenIndexDiff));
+            Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, hiddenPath)), Is.EqualTo(hiddenChanged));
+        }
+    }
+
+    [AvaloniaTest]
     public async Task MergeWithIdenticalTreesCanBeCommittedAndDefaultCloseOccursOnlyAfterSuccess()
     {
         using Fixture fixture = await Fixture.CreateAsync("same content\n", "same content\n");
@@ -294,15 +360,22 @@ public class CommitDialogTests
         await fixture.Run("mv", "file.txt", renamed);
         await File.AppendAllTextAsync(Path.Combine(fixture.Repository.Path, renamed), "renamed change\n");
         await dialog.RefreshAsync();
+        TextBox filter = Find<TextBox>(dialog, "SelectionFilter");
+        filter.Text = "FILE.TXT";
+        await Idle(dialog);
+        Assert.That(Find<ListBox>(dialog, "Unstaged").Items.OfType<GitChange>().Single().Path, Is.EqualTo(renamed),
+            "A rename must match its old name without changing Git's case-sensitive path identity.");
         Click(dialog, "StageAll");
         await Idle(dialog);
         DiffView diff = Find<DiffView>(dialog, "SelectedDiff");
         Assert.That(diff.Text, Does.Contain("rename from file.txt").And.Contain("rename to renamed λ.txt"));
-        Click(dialog, "Unstage");
+        Click(dialog, "UnstageAll");
         await Idle(dialog);
         Assert.That((await fixture.Run("diff", "--cached")).StandardOutput, Is.Empty);
         Assert.That(File.Exists(Path.Combine(fixture.Repository.Path, "file.txt")), Is.False);
         Assert.That(File.ReadAllText(Path.Combine(fixture.Repository.Path, renamed)), Is.EqualTo(PartialInitial + "renamed change\n"));
+        filter.Text = "";
+        await Idle(dialog);
 
         await fixture.Run("checkout", "--orphan", "unborn");
         await fixture.Run("rm", "--cached", "--", "file.txt");
