@@ -1446,19 +1446,7 @@ static async Task AskpassAsync()
             int helperPid = int.Parse(await File.ReadAllTextAsync(pidFile), System.Globalization.CultureInfo.InvariantCulture);
             cancellation.Cancel();
             await ExpectAsync<OperationCanceledException>(() => waiting);
-            string processStatus = $"/proc/{helperPid}/status";
-            bool terminated;
-            try
-            {
-                terminated = !File.Exists(processStatus) || File.ReadLines(processStatus).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z'));
-            }
-            catch (IOException) when (!File.Exists(processStatus))
-            {
-                // The killed process can disappear between the existence check
-                // and reading procfs. A missing status still proves termination.
-                terminated = true;
-            }
-            Assert(terminated, "Cancelling Git also terminates its waiting askpass descendant");
+            await VerifyProcessTerminatedAsync(helperPid, "Cancelling Git also terminates its waiting askpass descendant");
         }
         finally
         {
@@ -1492,9 +1480,29 @@ static async Task CancellationAsync()
     source.Cancel();
     await ExpectAsync<OperationCanceledException>(() => operation);
     Assert(duration.Elapsed < TimeSpan.FromSeconds(5), "Cancellation bounded");
-    string procStatus = $"/proc/{childPid}/status";
-    Assert(!File.Exists(procStatus) || File.ReadLines(procStatus).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z')), "Descendant terminated");
+    await VerifyProcessTerminatedAsync(childPid, "Descendant terminated");
     Assert(await fixture.Repository.IsRepositoryAsync(), "Later commands work");
+}
+
+static async Task VerifyProcessTerminatedAsync(int pid, string message)
+{
+    string status = $"/proc/{pid}/status";
+    bool Terminated()
+    {
+        try
+        {
+            return !File.Exists(status) || File.ReadLines(status).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z'));
+        }
+        catch (IOException) when (!File.Exists(status))
+        {
+            // Procfs disappears during termination. Recheck after a failed read
+            // so an unrelated I/O error while the process exists is not ignored.
+            return true;
+        }
+    }
+    Stopwatch deadline = Stopwatch.StartNew();
+    while (!Terminated() && deadline.Elapsed < TimeSpan.FromSeconds(2)) { await Task.Delay(20); }
+    Assert(Terminated(), message);
 }
 
 static async Task<RepositoryFixture> ConflictingBranchesAsync()
