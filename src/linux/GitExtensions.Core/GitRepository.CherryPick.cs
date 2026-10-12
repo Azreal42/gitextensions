@@ -13,10 +13,11 @@ public sealed record GitCherryPickResult(GitResult CommandResult, GitCherryPickS
 public sealed class GitCherryPickSession
 {
     internal GitCherryPickSession(GitCherryPickOptions options, string root, string gitDirectory, string head, string? reference,
-        byte[]? index, string? sharedIndex, byte[]? sharedBytes, IReadOnlyList<CherryPickSavedPath> files, IReadOnlyList<string> newDirectories, IReadOnlyDictionary<string, byte[]?> metadata)
+        byte[]? index, string? sharedIndex, byte[]? sharedBytes, IReadOnlyList<CherryPickSavedPath> files, IReadOnlyList<string> newDirectories,
+        IReadOnlySet<string> untrackedBefore, IReadOnlyDictionary<string, byte[]?> metadata)
     {
         Options = options; Root = root; GitDirectory = gitDirectory; OriginalHead = head; Reference = reference;
-        Index = index; SharedIndex = sharedIndex; SharedBytes = sharedBytes; Files = files; NewDirectories = newDirectories; Metadata = metadata;
+        Index = index; SharedIndex = sharedIndex; SharedBytes = sharedBytes; Files = files; NewDirectories = newDirectories; UntrackedBefore = untrackedBefore; Metadata = metadata;
     }
     public GitCherryPickOptions Options { get; }
     public bool Completed { get; internal set; }
@@ -30,6 +31,7 @@ public sealed class GitCherryPickSession
     internal byte[]? SharedBytes { get; }
     internal IReadOnlyList<CherryPickSavedPath> Files { get; }
     internal IReadOnlyList<string> NewDirectories { get; }
+    internal IReadOnlySet<string> UntrackedBefore { get; }
     internal IReadOnlyDictionary<string, byte[]?> Metadata { get; }
 }
 
@@ -74,7 +76,7 @@ public sealed partial class GitRepository
             if (before.Changes.Any(change => change.IsConflict) || CherryPickOperationExists(info.GitDirectory))
             { throw new InvalidOperationException("Finish or abort the current repository operation before cherry-picking another commit."); }
             options = options with { Revision = revision.Commit.Hash };
-            GitCherryPickSession session = await CaptureCherryPickSessionAsync(options, revision.Commit, info, before.Head!, cancellationToken).ConfigureAwait(false);
+            GitCherryPickSession session = await CaptureCherryPickSessionAsync(options, revision.Commit, info, before, cancellationToken).ConfigureAwait(false);
             List<string> arguments = ["cherry-pick"];
             if (!options.AutoCommit) { arguments.Add("--no-commit"); }
             if (options.AddCommitReference) { arguments.Add("-x"); }
@@ -162,7 +164,7 @@ public sealed partial class GitRepository
         => GitOutputParser.ParseStatus((await ExecuteAsync(["status", "--porcelain=2", "--branch", "-z", "--untracked-files=all"], token,
             environment: new Dictionary<string, string?> { ["GIT_OPTIONAL_LOCKS"] = "0" }).ConfigureAwait(false)).StandardOutput);
 
-    private async Task<GitCherryPickSession> CaptureCherryPickSessionAsync(GitCherryPickOptions options, GitCommit commit, GitRepositoryInfo info, string head, CancellationToken token)
+    private async Task<GitCherryPickSession> CaptureCherryPickSessionAsync(GitCherryPickOptions options, GitCommit commit, GitRepositoryInfo info, GitStatus before, CancellationToken token)
     {
         GitResult reference = await ExecuteAsync(["symbolic-ref", "--quiet", "HEAD"], token, allowedExitCodes: [1]).ConfigureAwait(false);
         EnsureCherryPickMetadataSafety(info.GitDirectory);
@@ -175,10 +177,29 @@ public sealed partial class GitRepository
             List<string> names = ["diff-tree", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", "--root"];
             if (commit.Parents.Count > 0) { names.Add(commit.Parents[(options.MainlineParent ?? 1) - 1]); }
             names.AddRange([commit.Hash, "--"]);
-            string[] paths = (await ExecuteAsync(names, token).ConfigureAwait(false)).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            HashSet<string> paths = new((await ExecuteAsync(names, token).ConfigureAwait(false)).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries), StringComparer.Ordinal);
+            HashSet<string> sourcePaths = new(paths, StringComparer.Ordinal);
+            if (commit.Parents.Count > 0)
+            {
+                // Inspect names only. A historical parent can differ from HEAD in millions of unrelated bytes.
+                string parent = commit.Parents[(options.MainlineParent ?? 1) - 1];
+                string[] changes = (await ExecuteAsync(["diff-tree", "--no-commit-id", "--name-status", "--find-renames", "-r", "-z", parent, before.Head!, "--"], token).ConfigureAwait(false)).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+                for (int cursor = 0; cursor < changes.Length;)
+                {
+                    string status = changes[cursor++];
+                    if (cursor >= changes.Length) { throw new FormatException("Missing checkout diff pathname."); }
+                    string original = changes[cursor++];
+                    if (status[0] is not ('R' or 'C')) { continue; }
+                    if (cursor >= changes.Length) { throw new FormatException("Missing checkout rename destination."); }
+                    string destination = changes[cursor++];
+                    if (sourcePaths.Contains(original) || sourcePaths.Contains(destination)) { paths.Add(original); paths.Add(destination); }
+                }
+            }
+            foreach (GitChange change in before.Changes.Where(change => !change.IsUntracked))
+            { paths.Add(change.Path); if (change.OriginalPath is string original) { paths.Add(original); } }
             List<CherryPickSavedPath> files = [];
             HashSet<string> directories = new(StringComparer.Ordinal);
-            foreach (string name in paths)
+            foreach (string name in paths.Order(StringComparer.Ordinal))
             {
                 GitResult indexed = await ExecuteAsync(["ls-files", "--stage", "-z", "--", name], token).ConfigureAwait(false);
                 bool gitlink = indexed.StandardOutput.StartsWith("160000 ", StringComparison.Ordinal)
@@ -210,9 +231,10 @@ public sealed partial class GitRepository
                 string file = System.IO.Path.Combine(info.GitDirectory, name);
                 metadata[name] = File.Exists(file) ? await File.ReadAllBytesAsync(file, token).ConfigureAwait(false) : null;
             }
-            return new(options, Path, info.GitDirectory, head, reference.Success ? reference.StandardOutput.TrimEnd('\r', '\n') : null,
+            return new(options, Path, info.GitDirectory, before.Head!, reference.Success ? reference.StandardOutput.TrimEnd('\r', '\n') : null,
                 File.Exists(index) ? await File.ReadAllBytesAsync(index, token).ConfigureAwait(false) : null, sharedIndex, sharedBytes,
-                files, directories.OrderByDescending(name => name.Length).ToArray(), metadata);
+                files, directories.OrderByDescending(name => name.Length).ToArray(),
+                new HashSet<string>(before.Changes.Where(change => change.IsUntracked).Select(change => change.Path), StringComparer.Ordinal), metadata);
         }
         finally { await snapshotLock.DisposeAsync().ConfigureAwait(false); File.Delete(indexLock); }
     }
@@ -228,12 +250,15 @@ public sealed partial class GitRepository
         if (session.SharedIndex is not null && File.Exists(session.SharedIndex)
             && !(await File.ReadAllBytesAsync(session.SharedIndex, CancellationToken.None).ConfigureAwait(false)).SequenceEqual(session.SharedBytes!))
         { throw new IOException("The shared index changed outside the cherry-pick; recovery cannot replace it."); }
+        await ValidateCherryPickRecoveryCoverageAsync(session).ConfigureAwait(false);
         string index = System.IO.Path.Combine(session.GitDirectory, "index");
         string indexLock = index + ".lock";
         await using FileStream locked = new(indexLock, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         bool ownsLock = true;
         try
         {
+            await ValidateCherryPickSessionIdentityAsync(session).ConfigureAwait(false);
+            await ValidateCherryPickRecoveryCoverageAsync(session).ConfigureAwait(false);
             // --quit only clears the native sequencer: --abort would discard the index that existed before -n.
             if (File.Exists(System.IO.Path.Combine(session.GitDirectory, "CHERRY_PICK_HEAD")) || Directory.Exists(System.IO.Path.Combine(session.GitDirectory, "sequencer")))
             { await ExecuteAsync(["cherry-pick", "--quit"], CancellationToken.None).ConfigureAwait(false); }
@@ -290,6 +315,22 @@ public sealed partial class GitRepository
         string current = await ResolveRevisionAsync("HEAD", CancellationToken.None).ConfigureAwait(false);
         if (current != session.OriginalHead)
         { throw new InvalidOperationException("HEAD changed during the cherry-pick; its ownership cannot be proven. Recovery leaves the current refs, index and files intact."); }
+    }
+
+    private async Task ValidateCherryPickRecoveryCoverageAsync(GitCherryPickSession session)
+    {
+        HashSet<string> covered = new(session.Files.Select(saved => saved.Path), StringComparer.Ordinal);
+        GitStatus current = await ReadCherryPickStatusAsync(CancellationToken.None).ConfigureAwait(false);
+        string[] unknown = current.Changes
+            .Where(change => !(change.IsUntracked && session.UntrackedBefore.Contains(change.Path)))
+            .SelectMany(change => change.OriginalPath is string original ? new[] { change.Path, original } : new[] { change.Path })
+            .Where(path => !covered.Contains(path)).Distinct(StringComparer.Ordinal).ToArray();
+        if (unknown.Length != 0)
+        {
+            string display = string.Join(", ", unknown.Select(path => path.Replace("\r", "\\r", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal)));
+            throw new InvalidOperationException("Cherry-pick changed paths outside its recovery snapshot: " + display
+                + ". Recovery cannot safely restore them; the current refs, index, operation metadata and files have been left intact.");
+        }
     }
 
     private void EnsureCherryPickPathSafety(string name, bool allowDirectory)

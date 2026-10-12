@@ -8,4 +8,6 @@ Une sélection multiple ouvre un dialogue par commit, dans l'ordre inverse des l
 
 Le mode sans commit conserve l'index existant et les changements appliqués pour un commit ultérieur. Un conflit avec -n peut ne créer aucun CHERRY_PICK_HEAD : sa reprise conserve les fichiers résolus sans inventer un commit, et l'abandon doit restaurer la situation précédant la tentative. Le mode automatique utilise la reprise Git native.
 
+La récupération inclut les cibles de renommage prévisibles et les changements suivis préexistants. Si Git redirige vers un chemin hors sauvegarde, refuser avant toute écriture et conserver l’état interrompu ; la récupération de ces déplacements de dossier reste à compléter. Ne pas lire les octets des jeux de données non suivis sans rapport avec le commit.
+
 Repères : FormCherryPick, GitUICommands.StartCherryPickDialog ; GitRepository.CherryPick, CherryPickDialog, CherryPickSequence, MainWindow.Workflows.

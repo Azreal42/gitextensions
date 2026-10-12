@@ -15,6 +15,8 @@ internal static class CherryPickScenarios
         ("cherry-pick automatic conflict continues through native Git", AutoConflictAsync),
         ("cherry-pick no-commit conflict completes without creating a commit", NoCommitConflictAsync),
         ("cherry-pick abort and skip restore preexisting staged and unstaged data", RecoveryAsync),
+        ("cherry-pick abort and skip restore renamed checkout and pre-staged rename targets", RenameRecoveryAsync),
+        ("cherry-pick recovery refuses uncovered directory relocation without any rollback", DirectoryCoverageAsync),
         ("cherry-pick recovery refuses external branch switches and child commits", ExternalHeadAsync),
         ("cherry-pick rejects symlink parent swaps and unexpected directories", PathSafetyAsync),
         ("cherry-pick respects concurrent locks and split-index recovery", IndexSafetyAsync),
@@ -120,6 +122,52 @@ internal static class CherryPickScenarios
             else { await f.Git("update-ref", "refs/heads/external", await f.Head()); await f.Git("symbolic-ref", "HEAD", "refs/heads/external"); }
             string external = await f.Snapshot(); await ExpectAsync<InvalidOperationException>(() => f.Repository.ResumeCherryPickAsync(pending.Session, GitOperationAction.Abort));
             Check(await f.Snapshot() == external && !pending.Session.Aborted, "Recovery must fail closed without overwriting an external branch or child commit.");
+        }
+    }
+
+    private static async Task RenameRecoveryAsync()
+    {
+        foreach (bool committedRename in new[] { false, true })
+        foreach (bool automatic in committedRename ? new[] { false, true } : new[] { false })
+        foreach (GitOperationAction action in new[] { GitOperationAction.Abort, GitOperationAction.Skip })
+        {
+            using Fixture f = await Fixture.CreateAsync(); await f.Commit("old.txt", "line1\nline2\nline3\n", "Rename base");
+            string pick = await f.TopicAsync("old.txt", "line1\ntheirs\nline3\n");
+            await f.Git("mv", "old.txt", "new.txt");
+            if (committedRename) { await f.Git("commit", "-m", "Rename checkout"); }
+            f.Write("new.txt", "line1\nours\nline3\n");
+            if (committedRename) { await f.Git("commit", "-am", "Checkout modification"); }
+            else { await f.Git("add", "new.txt"); }
+            if (!automatic) { f.Write("prior.txt", "preexisting staged\n"); await f.Git("add", "prior.txt"); f.Write("prior.txt", "preexisting worktree\n"); }
+            // A large sparse untracked dataset is a name baseline, never a byte snapshot.
+            string dataset = f.File("untracked-data.bin"); using (FileStream stream = new(dataset, FileMode.CreateNew)) { stream.SetLength(8L * 1024 * 1024 * 1024); }
+            string index = Digest(File.ReadAllBytes(f.Metadata("index"))), head = await f.Head(), refs = await f.Text("for-each-ref");
+            GitCherryPickResult pending = await f.Repository.CherryPickAsync(new GitCherryPickOptions(pick, AutoCommit: automatic));
+            Check(!pending.Success && pending.ConflictedPaths.SequenceEqual(new[] { "new.txt" }), "The actual native conflict must be redirected to the checkout rename.");
+            Check(File.ReadAllText(f.File("new.txt")).Contains("<<<<<<<", StringComparison.Ordinal), "The renamed worktree really must contain conflict markers before recovery.");
+            GitCherryPickResult restored = await f.Repository.ResumeCherryPickAsync(pending.Session, action);
+            Check(restored.Success && pending.Session.Aborted && File.ReadAllText(f.File("new.txt")) == "line1\nours\nline3\n" && !File.Exists(f.File("old.txt")), "Abort and Skip must restore the real renamed worktree target.");
+            Check(Digest(File.ReadAllBytes(f.Metadata("index"))) == index && await f.Head() == head && await f.Text("for-each-ref") == refs, "Raw original index and every ref must be restored exactly.");
+            if (!automatic) { Check(await f.Text("show", ":prior.txt") == "preexisting staged" && File.ReadAllText(f.File("prior.txt")) == "preexisting worktree\n", "Preexisting staged and separate worktree bytes survive renamed recovery."); }
+            Check(new FileInfo(dataset).Length == 8L * 1024 * 1024 * 1024, "Unrelated untracked data remains intact without copying its bytes.");
+        }
+    }
+
+    private static async Task DirectoryCoverageAsync()
+    {
+        foreach (GitOperationAction action in new[] { GitOperationAction.Abort, GitOperationAction.Skip })
+        {
+            using Fixture f = await Fixture.CreateAsync(); await f.Commit("old-directory/seed.txt", "directory seed\n", "Directory base");
+            string pick = await f.TopicAsync("old-directory/added.txt", "source addition\n");
+            await f.Git("mv", "old-directory", "new-directory"); await f.Git("commit", "-m", "Move checkout directory");
+            await f.Git("config", "merge.directoryRenames", "conflict");
+            f.Write("prior.txt", "preexisting staged\n"); await f.Git("add", "prior.txt");
+            GitCherryPickResult pending = await f.Repository.CherryPickAsync(new GitCherryPickOptions(pick));
+            Check(!pending.Success && pending.ConflictedPaths.Contains("new-directory/added.txt"), "Native location conflict must create the unexpected relocated target.");
+            string interrupted = await f.Snapshot();
+            InvalidOperationException error = await ExpectAsync<InvalidOperationException>(() => f.Repository.ResumeCherryPickAsync(pending.Session, action));
+            Check(error.Message.Contains("new-directory/added.txt", StringComparison.Ordinal) && error.Message.Contains("outside its recovery snapshot", StringComparison.Ordinal), "Recovery must explain the exact uncovered target.");
+            Check(!pending.Session.Aborted && !pending.Session.Completed && await f.Snapshot() == interrupted && !File.Exists(f.Metadata("index.lock")), "An uncovered directory relocation must fail before cleanup or rollback, preserving all refs/index/metadata/worktree bytes.");
         }
     }
     private static async Task PathSafetyAsync()

@@ -62,12 +62,13 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - Cherry-pick : options persistantes, parent de merge, choix de révision et dialogue par commit sélectionné ; fermeture du parent contrôlée.
 - Sous-modules : retrait guidé de l'enregistrement/index, avec conservation des fichiers et du dépôt interne comme Windows.
 
-Pull avancé, Cherry-pick et retrait de sous-modules : 33 tests UI ciblés passent. Le contrôle Core du futur snapshot couvrira aussi la dernière protection des permissions temporaires. Aucun de ces ajouts ne remplace encore le dernier paquet livré.
+Pull avancé, Cherry-pick et retrait de sous-modules : 34 tests UI ciblés et 221 scénarios Core passent. Le candidat 3d1016603 a été arrêté avant paquet après un défaut de récupération de renommage ; le correctif passe 221 scénarios Core locaux, dont restauration des cibles renommées et refus conservant les déplacements hors couverture. Le nouveau paquet reste à construire et à valider. Aucun de ces ajouts ne remplace encore le dernier paquet livré.
 
 ## Prochains écarts concrets
 
 - Barre Browse : le filtre « Branches: » doit rester une combo éditable avec suggestions de refs ; le menu de checkout de la branche courante est un contrôle distinct. Repère historique : FilterToolBar.tscboBranchFilter.
 
+- Cherry-pick : reprise après fermeture du dialogue et déplacements de dossier hors couverture de récupération ; le refus conserve le dépôt interrompu.
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
 - Pull : sortie Git continue, scripts Before/After, source URL et destination locale Fetch.
 - Historique/blame : navigateur des fichiers du commit, filtres de grille, difftools, dossiers/sous-modules et audit natif étendu.

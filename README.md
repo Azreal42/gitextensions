@@ -1,4 +1,4 @@
-![Git Extensions logo](https://cdn.rawgit.com/gitextensions/gitextensions/master/setup/assets/Logo/git-extensions-logo.svg)
+![Git Extensions logo](setup/assets/Logo/git-extensions-logo.svg)
 
 # Git Extensions — Linux fork
 

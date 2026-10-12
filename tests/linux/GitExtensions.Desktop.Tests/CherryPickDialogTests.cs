@@ -64,6 +64,7 @@ public class CherryPickDialogTests
         Assert.That((revisions.SelectedItem as GitCommit)?.Hash, Is.EqualTo(merge), "Original current revision must be preselected.");
         Pointer(Field<Button>(picker, "ChooseCherryPickCommit")); await Until(() => !picker.IsVisible && !dialog.IsBusy);
         Assert.That(dialog.ReadOptions().MainlineParent, Is.EqualTo(1), "Choosing a revision creates its own first-parent selection.");
+        await Until(() => { Pump(dialog); return parents.ContainerFromIndex(1) is Control; });
         Pointer((Control)parents.ContainerFromIndex(1)!); Pointer(Field<Button>(dialog, "ExecuteCherryPick")); await Until(() => !dialog.IsVisible && !dialog.IsBusy);
         Assert.That(dialog.Applied, Is.True, dialog.LastError); Assert.That(File.Exists(f.File("left.txt")), Is.True); Assert.That(File.Exists(f.File("right.txt")), Is.False);
     }
@@ -129,11 +130,49 @@ public class CherryPickDialogTests
     public async Task ClosingPendingDialoguePreservesGitConflictAndExplicitSkipRestoresTheSavedIndex()
     {
         await using Fixture f = await Fixture.CreateAsync(); string pick = await f.ConflictAsync(); f.Write("prior.txt", "prior\n"); await f.Git("add", "prior.txt"); string head = await f.Head(); byte[] index = File.ReadAllBytes(f.Metadata("index"));
-        CherryPickDialog dialog = await f.ShowAsync(pick); Pointer(Field<Button>(dialog, "ExecuteCherryPick")); await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible); Pointer(Field<Button>(dialog, "CancelCherryPick")); await Until(() => !dialog.IsVisible);
+        CherryPickDialog dialog = await f.ShowAsync(pick);
+        int pickClicks = 0, cancelClicks = 0;
+        Field<Button>(dialog, "ExecuteCherryPick").AddHandler(Button.ClickEvent, (_, _) => pickClicks++, RoutingStrategies.Tunnel, handledEventsToo: true);
+        Field<Button>(dialog, "CancelCherryPick").AddHandler(Button.ClickEvent, (_, _) => cancelClicks++, RoutingStrategies.Tunnel, handledEventsToo: true);
+        string State() => $"visible={dialog.IsVisible}, busy={dialog.IsBusy}, recovery={Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible}, pickClicks={pickClicks}, cancelClicks={cancelClicks}, error={dialog.LastError}, exception={dialog.LastException}";
+        Pointer(Field<Button>(dialog, "ExecuteCherryPick"));
+        await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible, () => "First pick recovery: " + State());
+        Button cancel = Field<Button>(dialog, "CancelCherryPick");
+        TestContext.WriteLine("Before cancellation layout: " + PointerTarget(cancel).Description);
+        await Until(() => { Pump(dialog); return PointerTarget(cancel).Ready; }, () => "Cancel pointer target: " + PointerTarget(cancel).Description + "; " + State());
+        TestContext.WriteLine("Cancellation pointer target: " + PointerTarget(cancel).Description);
+        Pointer(cancel);
+        await Until(() => !dialog.IsVisible, () => "Cancel pending dialogue: " + State());
         Assert.That((await f.Repository.GetStatusAsync()).Changes.Any(change => change.IsConflict), Is.True, "Original dialogue Abort cancels the dialogue, retaining native pending resolution."); Assert.That(await f.Head(), Is.EqualTo(head));
         await f.Git("reset", "--hard", head); f.Write("prior.txt", "prior\n"); await f.Git("add", "prior.txt"); index = File.ReadAllBytes(f.Metadata("index"));
-        dialog = await f.ShowAsync(pick); Pointer(Field<Button>(dialog, "ExecuteCherryPick")); await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible); Pointer(Field<Button>(dialog, "SkipCherryPick")); await Until(() => !dialog.IsVisible && !dialog.IsBusy);
+        dialog = await f.ShowAsync(pick); Pointer(Field<Button>(dialog, "ExecuteCherryPick")); await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible);
+        Button skip = Field<Button>(dialog, "SkipCherryPick");
+        TestContext.WriteLine("Before skip layout: " + PointerTarget(skip).Description);
+        await Until(() => { Pump(dialog); return PointerTarget(skip).Ready; }, () => "Skip pointer target: " + PointerTarget(skip).Description + "; " + State());
+        TestContext.WriteLine("Skip pointer target: " + PointerTarget(skip).Description);
+        Pointer(skip); await Until(() => !dialog.IsVisible && !dialog.IsBusy);
         Assert.That(dialog.Skipped && dialog.SequenceAccepted, Is.True); Assert.That(File.ReadAllBytes(f.Metadata("index")), Is.EqualTo(index)); Assert.That(File.ReadAllText(f.File("base.txt")), Is.EqualTo("ours\n")); Assert.That(await f.Head(), Is.EqualTo(head));
+    }
+    [AvaloniaTest]
+    public async Task RenamedConflictAbortAndSkipRestoreActualTargetAndThePreexistingIndex()
+    {
+        foreach (bool skip in new[] { false, true })
+        {
+            await using Fixture f = await Fixture.CreateAsync(); await f.Commit("original.txt", "line1\nline2\nline3\n", "Rename base");
+            string pick = await f.TopicAsync("original.txt", "line1\ntheirs\nline3\n"); await f.Git("mv", "original.txt", "renamed.txt"); await f.Git("commit", "-m", "Rename checkout"); await f.Commit("renamed.txt", "line1\nours\nline3\n", "Checkout change");
+            f.Write("prior.txt", "preexisting staged\n"); await f.Git("add", "prior.txt"); f.Write("prior.txt", "preexisting worktree\n");
+            byte[] index = File.ReadAllBytes(f.Metadata("index")); string head = await f.Head();
+            CherryPickDialog dialog = await f.ShowAsync(pick); Pointer(Field<Button>(dialog, "ExecuteCherryPick")); await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible);
+            Assert.That(Field<ListBox>(dialog, "CherryPickConflictFiles").SelectedItem, Is.EqualTo("renamed.txt"));
+            Pointer(Field<Button>(dialog, skip ? "SkipCherryPick" : "AbortCherryPickOperation"));
+            if (!skip)
+            {
+                await Until(() => dialog.OwnedWindows.Any()); Window confirmation = dialog.OwnedWindows.Single(); Pointer(confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel));
+            }
+            await Until(() => !dialog.IsVisible && !dialog.IsBusy);
+            Assert.That(dialog.LastError, Is.Null); Assert.That(dialog.Skipped, Is.EqualTo(skip)); Assert.That(File.ReadAllText(f.File("renamed.txt")), Is.EqualTo("line1\nours\nline3\n")); Assert.That(File.Exists(f.File("original.txt")), Is.False);
+            Assert.That(File.ReadAllBytes(f.Metadata("index")), Is.EqualTo(index)); Assert.That(await f.Head(), Is.EqualTo(head)); Assert.That(await f.Text("show", ":prior.txt"), Is.EqualTo("preexisting staged")); Assert.That(File.ReadAllText(f.File("prior.txt")), Is.EqualTo("preexisting worktree\n"));
+        }
     }
     [AvaloniaTest]
     public async Task ExplicitAbortRequiresConfirmationThenRestoresPendingGitStateWithoutSavingOptions()
@@ -225,8 +264,17 @@ public class CherryPickDialogTests
     private static void Press(TopLevel window, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None)
     { window.KeyPressQwerty(key, modifiers); if (window is not Window native || native.IsVisible) { window.KeyReleaseQwerty(key, modifiers); } Dispatcher.UIThread.RunJobs(); }
     private static void Pump(TopLevel window) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
-    private static async Task Until(Func<bool> condition)
-    { Stopwatch timer = Stopwatch.StartNew(); while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(15)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); } Assert.That(condition(), Is.True, "Timed out waiting for real Cherry-pick UI/Git."); }
+    private static (bool Ready, string Description) PointerTarget(Control control)
+    {
+        TopLevel top = TopLevel.GetTopLevel(control)!; top.UpdateLayout();
+        Point? center = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), top);
+        Visual? hit = center is Point point ? top.InputHitTest(point) as Visual : null;
+        bool contained = center is Point target && new Rect(default, top.ClientSize).Contains(target);
+        bool ready = contained && control.IsEffectivelyVisible && control.IsEnabled && hit?.GetSelfAndVisualAncestors().Contains(control) == true;
+        return (ready, $"name={control.Name}, bounds={control.Bounds}, point={center}, client={top.ClientSize}, contained={contained}, hit={hit?.GetType().Name}, ready={ready}");
+    }
+    private static async Task Until(Func<bool> condition, Func<string>? diagnostic = null)
+    { Stopwatch timer = Stopwatch.StartNew(); while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(15)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); } bool reached = condition(); Assert.That(reached, Is.True, reached ? null : "Timed out waiting for real Cherry-pick UI/Git. " + diagnostic?.Invoke()); }
     private static void Capture(TopLevel window, string name)
     { Pump(window); using var frame = window.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null); string directory = Path.GetFullPath("artifacts/linux/screenshots"); Directory.CreateDirectory(directory); string path = Path.Combine(directory, name); frame!.Save(path); TestContext.AddTestAttachment(path); }
     private sealed class Fixture : IAsyncDisposable
