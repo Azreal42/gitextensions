@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -195,8 +196,11 @@ public class ReferenceMenuTests
         MainWindow main = fixture.Window;
         await main.OpenRepositoryAsync(fixture.Repository);
         await SelectNavigationReferenceAsync(main, "refs/heads/manual-filter");
-        TextBox expression = main.GetVisualDescendants().OfType<TextBox>().Single(text => text.Name == "BranchHistoryFilter");
+        ComboBox expression = main.GetVisualDescendants().OfType<ComboBox>().Single(text => text.Name == "BranchHistoryFilter");
         expression.Text = "manual-filter";
+        expression.GetVisualDescendants().OfType<TextBox>().Single().Focus();
+        main.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        await Until(() => !main.IsBusy);
         DeleteBranchDialog delete = await OpenDirectAsync<DeleteBranchDialog>(main, "Delete branch…");
         Assert.That(delete.ReadOptions().Names, Is.EqualTo(new[] { "manual-filter" }));
         ClickNamed(delete, "DeleteBranches");

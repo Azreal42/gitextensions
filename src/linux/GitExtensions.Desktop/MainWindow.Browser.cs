@@ -91,8 +91,7 @@ public sealed partial class MainWindow
             if (item.Tag is GitReference reference)
             {
                 _references.SelectedItem = reference;
-                _navigationRevisionFilter = reference.Name;
-                _historyRevision.Text = reference.Name;
+                SetNavigationBranchFilter(reference.Name);
                 await ReloadHistoryAsync();
             }
             else if (item.Tag is string workflow) { await ShowWorkflowAsync(workflow); }

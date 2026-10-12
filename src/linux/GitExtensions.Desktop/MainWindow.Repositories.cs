@@ -109,7 +109,7 @@ public sealed partial class MainWindow
                 _changesFilesView?.SetGroups([], preserveSelection: false);
                 _navigation.ItemsSource = null;
                 ClearRevisionDiff();
-                _navigationRevisionFilter = null; _historyRevision.Text = null;
+                _navigationRevisionFilter = null; ResetBranchFilter();
                 _commitContent?.ClearImage(); _changesContent?.ClearImage(); _fileContent?.ClearImage();
                 _diff.Text = null; _fileView.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
                 _repositorySummary = T("Open a repository to begin");

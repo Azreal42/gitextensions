@@ -221,7 +221,7 @@ public class MainWindowSelectionTests
     { await File.WriteAllTextAsync(Path.Combine(repository.Path, "file.txt"), content); await repository.StageAllAsync(); await repository.CommitAsync(message); }
     private static T Field<T>(Window owner, string name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static TextBox RepositoryPath(MainWindow main) => main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Watermark == "Repository directory");
-    private static TextBox RevisionFilter(MainWindow main) => main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Name == "BranchHistoryFilter");
+    private static ComboBox RevisionFilter(MainWindow main) => main.GetVisualDescendants().OfType<ComboBox>().Single(box => box.Name == "BranchHistoryFilter");
     private static string[] HistoryHashes(MainWindow main) => Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
     private static string[] SelectedHashes(MainWindow main) => Field<ListBox>(main, "RevisionHistory").SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
     private static IEnumerable<TreeViewItem> NavigationNodes(MainWindow main) => BrowseTestHelpers.NavigationNodes(Field<TreeView>(main, "RepositoryNavigation"));

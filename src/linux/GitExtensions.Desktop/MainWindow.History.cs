@@ -10,22 +10,17 @@ public sealed partial class MainWindow
 
     private Task SetHistoryScopeAsync(bool all)
     {
-        _navigationRevisionFilter = null;
-        _historyQuery = _historyQuery with { All = all, Revision = all ? null : "HEAD" };
-        _historyRevision.Text = _historyQuery.Revision;
-        return ReloadHistoryAsync();
+        return SetHistoryBranchScopeAsync(all ? HistoryBranchScope.All : HistoryBranchScope.Current);
     }
 
     private async Task FilterHistoryAsync()
     {
         if (_repository is null || _busy) { return; }
-        HistoryFilterDialog dialog = new(_historyQuery with { Revision = string.IsNullOrWhiteSpace(_historyRevision.Text) ? null : _historyRevision.Text });
+        HistoryFilterDialog dialog = new(_historyQuery, _acceptedBranchFilter, _historyBranchScope == HistoryBranchScope.Filtered)
+        { RequestedThemeVariant = ActualThemeVariant };
         GitLogQuery? query = await dialog.ShowDialog<GitLogQuery?>(this);
         if (query is null) { return; }
-        _navigationRevisionFilter = null;
-        _historyQuery = query;
-        _historyRevision.Text = query.Revision;
-        await ReloadHistoryAsync();
+        await ApplyBranchFilterAsync(query, dialog.RememberedBranchFilter, dialog.IsBranchFilterEnabled);
     }
 
     private Task LoadMoreHistoryAsync()

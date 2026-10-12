@@ -34,23 +34,25 @@ public class WindowsBrowseReferenceTests
             Field<ListBox>(main, "RevisionHistory").Focus();
             main.MouseMove(new Point(650, 107));
             main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
-            TextBox branch = toolbar.OverflowFlyout.ItemsSource!.Cast<Control>().SelectMany(item => item.GetVisualDescendants().OfType<TextBox>()).Single(text => text.Name == "BranchHistoryFilterOverflow");
+            main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+            ComboBox branch = toolbar.OverflowFlyout.ItemsSource!.Cast<Control>().SelectMany(item => item.GetVisualDescendants().OfType<ComboBox>()).Single(text => text.Name == "BranchHistoryFilterOverflow");
             MenuItem filter = toolbar.OverflowFlyout.ItemsSource!.Cast<MenuItem>().Single(item => item.Header as string == "Filter:");
             // This is the framework signal emitted when a popup maps beneath the
             // stationary mouse. It must not select Filter or start its 400 ms timer.
             filter.RaiseEvent(new RoutedEventArgs(MenuItem.PointerEnteredItemEvent) { Source = filter });
             await Task.Delay(450); await Layout(main);
-            Assert.That(branch.IsFocused, Is.True);
+            Assert.That(branch.IsKeyboardFocusWithin, Is.True);
             Assert.That(filter.IsSubMenuOpen, Is.False);
             main.KeyTextInput("feature");
             Assert.That(branch.Text, Is.EqualTo("feature"));
-            Assert.That(Field<TextBox>(main, "BranchHistoryFilter").Text, Is.EqualTo("feature"));
+            Assert.That(Field<ComboBox>(main, "BranchHistoryFilter").Text, Is.EqualTo("feature"));
             main.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
             await Until(() => !main.IsBusy && !toolbar.OverflowFlyout.IsOpen);
             Assert.That(Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Subject), Is.EqualTo(new[] { "Feature branch change", "Initial commit" }));
 
             Field<ListBox>(main, "RevisionHistory").Focus();
             main.MouseMove(new Point(650, 107));
+            main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
             main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
             filter.RaiseEvent(new RoutedEventArgs(MenuItem.PointerEnteredItemEvent) { Source = filter });
             main.MouseMove(new Point(651, 107));
@@ -178,13 +180,14 @@ public class WindowsBrowseReferenceTests
         Assert.That(toolbar.OverflowFlyout.ItemsSource!.Cast<Control>().OfType<MenuItem>().Any(item => item.Header as string == "Branches:" || item.Header is Grid), Is.True);
         toolbar.OverflowFlyout.Hide();
         main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+        main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
         Assert.That(toolbar.OverflowFlyout.IsOpen, Is.True);
-        TextBox overflowBranch = toolbar.OverflowFlyout.ItemsSource!.Cast<Control>().SelectMany(item => item.GetVisualDescendants().OfType<TextBox>()).Single(text => text.Name == "BranchHistoryFilterOverflow");
-        Assert.That(overflowBranch.IsFocused, Is.True, "Ctrl+E must focus the usable overflow field at narrow widths.");
+        ComboBox overflowBranch = toolbar.OverflowFlyout.ItemsSource!.Cast<Control>().SelectMany(item => item.GetVisualDescendants().OfType<ComboBox>()).Single(text => text.Name == "BranchHistoryFilterOverflow");
+        Assert.That(overflowBranch.IsKeyboardFocusWithin, Is.True, "The second Ctrl+E must focus the usable branch overflow editor at narrow widths.");
         overflowBranch.Text = "feature";
         main.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
         await Until(() => !main.IsBusy && !toolbar.OverflowFlyout.IsOpen);
-        Assert.That(Field<TextBox>(main, "BranchHistoryFilter").Text, Is.EqualTo("feature"));
+        Assert.That(Field<ComboBox>(main, "BranchHistoryFilter").Text, Is.EqualTo("feature"));
         Assert.That(Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Subject), Is.EqualTo(new[] { "Feature branch change", "Initial commit" }));
         main.Width = 1440; await Layout(main);
         Button scope = Field<Button>(main, "BrowseHistoryScope");
@@ -212,7 +215,7 @@ public class WindowsBrowseReferenceTests
         TreeView tree = Field<TreeView>(main, "RepositoryNavigation");
         TreeViewItem leaf = BrowseTestHelpers.NavigationNodes(tree).Single(node => node.Tag is GitReference reference && reference.Name == "refs/remotes/origin/preprocessing/api/search");
         Assert.That(leaf.GetVisualAncestors().OfType<TreeViewItem>().Count(), Is.EqualTo(4), "Remotes are nested under the remote name and branch folders.");
-        Click(main, leaf); await Until(() => !main.IsBusy && Field<TextBox>(main, "BranchHistoryFilter").Text == "refs/remotes/origin/preprocessing/api/search"); await Layout(main);
+        Click(main, leaf); await Until(() => !main.IsBusy && Field<ComboBox>(main, "BranchHistoryFilter").Text == "refs/remotes/origin/preprocessing/api/search"); await Layout(main);
         string[] before = Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
         TextBox search = Field<TextBox>(main, "RepositoryNavigationSearch"); search.Text = "api/search"; await Layout(main);
         Assert.That(BrowseTestHelpers.NavigationNodes(tree).Where(node => node.Tag is GitReference).Select(node => ((GitReference)node.Tag!).ShortName), Is.EquivalentTo(new[] { "preprocessing/api/search", "origin/preprocessing/api/search" }));

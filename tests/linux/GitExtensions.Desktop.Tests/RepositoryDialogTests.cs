@@ -215,7 +215,7 @@ public class RepositoryDialogTests
             Field<CheckBox>(dialog, "CurrentBranchOnly").IsChecked = false;
             Field<CheckBox>(dialog, "BranchFilterCheck").IsChecked = true;
             Field<TextBox>(dialog, "BranchFilter").Text = "feature";
-            Assert.That(dialog.ReadQuery().Revision, Is.EqualTo("feature"));
+            Assert.That(dialog.ReadQuery().BranchFilter, Is.EqualTo("feature"));
             Assert.That(Field<TextBox>(dialog, "BranchFilter").IsEnabled, Is.True);
             Capture(dialog, "classic-history-filter.png");
         }

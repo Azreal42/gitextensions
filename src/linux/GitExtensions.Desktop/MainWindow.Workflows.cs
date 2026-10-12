@@ -195,8 +195,7 @@ public sealed partial class MainWindow
             _referenceSelectionOverride = "refs/heads/" + renamed;
             if (_navigation.SelectedItem is TreeViewItem { Tag: GitReference navigationReference } selected && navigationReference.Name == oldReference)
             { selected.Tag = navigationReference with { Name = _referenceSelectionOverride }; }
-            if (_navigationRevisionFilter == oldReference && _historyRevision.Text == oldReference)
-            { _navigationRevisionFilter = _referenceSelectionOverride; _historyRevision.Text = _referenceSelectionOverride; }
+            RenameNavigationBranchFilter(oldReference, _referenceSelectionOverride);
         };
         await ShowRepositoryDialogAsync(dialog);
     }

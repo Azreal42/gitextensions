@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window
     private readonly ListBox _submodules = new() { Name = "SubmodulesList" };
     private readonly ListBox _configuration = new();
     private readonly ListBox _tree = new();
-    private readonly TextBox _historyRevision = new() { Watermark = "Revision (default: all refs)", Width = 240 };
+    private readonly BranchHistoryFilterComboBox _historyRevision = new();
     private readonly TextBox _filePath = new() { Watermark = "Repository-relative file path", MinWidth = 240 };
     private readonly TextBox _fileView = ReadOnlyText();
     private readonly TabControl _tabs = new();
@@ -149,10 +149,6 @@ public sealed partial class MainWindow : Window
                 e.Handled = true;
                 await OpenRepositoryAsync(_repositoryPath.Text ?? "");
             }
-        };
-        _historyRevision.KeyDown += async (_, e) =>
-        {
-            if (e.Key == Key.Enter && !_busy) { e.Handled = true; await ReloadHistoryAsync(); }
         };
         Content = BuildLayout();
         ApplyTheme(_preferences.Theme);
@@ -333,7 +329,16 @@ public sealed partial class MainWindow : Window
         if (_repository == previous && previous is null) { _state.Text = "Could not open repository. See command output."; }
     }
 
-    private Task RefreshAsync() => _dashboard?.IsVisible == true ? RefreshDashboardAsync() : RunAsync("Refresh", repository => RefreshDataAsync(repository), refresh: false);
+    private async Task RefreshAsync()
+    {
+        BranchHistoryFilterComboBox? editing = _historyRevision.IsKeyboardFocusWithin ? _historyRevision
+            : _branchFilterOverflow?.IsKeyboardFocusWithin == true ? _branchFilterOverflow : null;
+        var bookmark = editing?.CaptureEditorSelection();
+        if (_dashboard?.IsVisible == true) { await RefreshDashboardAsync(); }
+        else { await RunAsync("Refresh", repository => RefreshDataAsync(repository), refresh: false); }
+        if (!IsBranchFilterOwnerClosing && editing is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true } && bookmark is { } selection)
+        { editing.RestoreEditorSelection(selection); }
+    }
 
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
@@ -349,21 +354,24 @@ public sealed partial class MainWindow : Window
             string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
             GitLogQuery configuredQuery = opening ? new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) } : _historyQuery;
             int historyWindow = opening ? configuredQuery.Count : _historyWindow;
-            string? revision = opening ? null : _historyRevision.Text;
+            // The toolbar editor is a draft. Refresh/background fetch/load more
+            // may only query the expression explicitly accepted by the user.
+            string? revision = configuredQuery.BranchFilter ?? configuredQuery.Revision;
             GitStatus status = await repository.GetStatusAsync(Token);
             IReadOnlyList<GitReference> references = await repository.GetReferencesAsync(Token);
             bool missingNavigationReference = !opening && _navigationRevisionFilter is string navigationFilter && revision == navigationFilter && !references.Any(reference => reference.Name == navigationFilter);
             if (missingNavigationReference)
             {
                 revision = null;
-                configuredQuery = configuredQuery with { All = true, Revision = null };
+                configuredQuery = configuredQuery with { All = true, Revision = null, BranchFilter = null };
                 historyWindow = configuredQuery.Count;
             }
             GitLogQuery query = configuredQuery with
             {
                 Count = historyWindow + 1,
                 Skip = 0,
-                Revision = string.IsNullOrWhiteSpace(revision) ? (configuredQuery.All ? null : "HEAD") : revision
+                Revision = configuredQuery.Revision,
+                BranchFilter = configuredQuery.BranchFilter
             };
             IReadOnlyList<GitCommit> history = status.IsUnborn ? [] : await repository.GetLogAsync(query, Token);
             IReadOnlyList<GitRemote> remotes = await repository.GetRemotesAsync(Token);
@@ -391,10 +399,14 @@ public sealed partial class MainWindow : Window
                 if (repository.IsBare) { SelectDetailsTab("DiffTab"); }
                 SetDashboardVisible(false);
             }
-            if (missingNavigationReference) { _navigationRevisionFilter = null; }
+            if (missingNavigationReference)
+            {
+                if (_historyRevision.Text == _navigationRevisionFilter) { SetBranchFilterDraft(null); }
+                _navigationRevisionFilter = null; _acceptedBranchFilter = null; _historyBranchScope = HistoryBranchScope.All;
+            }
             _historyQuery = configuredQuery;
             _historyWindow = historyWindow;
-            _historyRevision.Text = revision;
+            UpdateBranchFilterReferences(references, opening);
             _repositorySummary = $"{(repository.IsBare ? T("Bare repository") + "  ·  " : "")}{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
             _state.Text = _repositorySummary;
             UpdateBrowserToolbar(status);

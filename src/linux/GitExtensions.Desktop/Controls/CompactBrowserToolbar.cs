@@ -90,7 +90,18 @@ internal sealed class CompactBrowserToolbar : Border
         _keyboardReveal = true; _revealPointerScreen = _lastPointerScreen;
         _flyout.ShowAt(Overflow);
         entry.Popup.UpdateLayout();
-        return entry.Popup.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() ?? control;
+        if (entry.Popup is MenuItem { HasSubMenu: true } submenu)
+        {
+            submenu.IsSubMenuOpen = true; submenu.UpdateLayout();
+            foreach (Control header in submenu.Items.OfType<MenuItem>().Select(item => item.Header).OfType<Control>())
+            {
+                Control? editor = (Control?)header.GetVisualDescendants().OfType<BranchHistoryFilterComboBox>().FirstOrDefault()
+                    ?? header.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+                if (editor is not null) { return editor; }
+            }
+        }
+        return (Control?)entry.Popup.GetVisualDescendants().OfType<BranchHistoryFilterComboBox>().FirstOrDefault()
+            ?? entry.Popup.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() ?? control;
     }
 
     private void SuspendHover(object? sender, RoutedEventArgs args)

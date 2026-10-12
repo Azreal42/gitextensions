@@ -61,7 +61,7 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 
 ## Prochains écarts concrets
 
-- Barre Browse : le filtre « Branches: » doit rester une combo éditable avec suggestions de refs ; le menu de checkout de la branche courante est un contrôle distinct. Repère historique : FilterToolBar.tscboBranchFilter.
+- Combo éditable « Branches: » implémentée : suggestions/types, brouillon vs filtre appliqué, expressions et avertissements ; 235 scénarios Core et 37 tests Desktop ciblés passent. Suite complète, audit natif du contenu exact et paquet de ce lot encore attendus. [ADR 0042](adr/workflows/history/0042-branch-filter-combo.md). Le menu de checkout reste distinct.
 
 - Cherry-pick : reprise après fermeture du dialogue et déplacements de dossier hors couverture de récupération ; le refus conserve le dépôt interrompu.
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.

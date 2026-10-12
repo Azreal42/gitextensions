@@ -108,22 +108,17 @@ public sealed partial class MainWindow
         Command("BrowseConsole", "Console", "Console.png", OpenTerminalAsync);
         Command("BrowseSettings", "Settings", "Settings.png", () => ShowWorkflowAsync("Configuration"));
         Command("BrowseAdvancedFilter", "Filter revisions", "FunnelPencil.png", FilterHistoryAsync);
-        MenuItem[] ScopeChoices() => [MenuAction("All branches", () => SetHistoryScopeAsync(true)),
-            MenuAction("Current branch", () => SetHistoryScopeAsync(false)),
-            MenuAction("Filtered branches", () => { FocusBranchFilter(); return Task.CompletedTask; })];
-        _scopeOverflow = new MenuItem { Header = T("All branches"), ItemsSource = ScopeChoices() };
+        _scopeOverflow = new MenuItem { Header = T("All branches"), ItemsSource = HistoryScopeChoices("Overflow") };
         // The scope button opens choices; it must not also change the query on its first click.
-        _scopeButton = new Button { Name = "BrowseHistoryScope", Width = 110, Height = 24, MinHeight = 24,
-            Padding = new Thickness(2, 0), Content = IconLabel("All branches", "BranchLocal.png"), Flyout = new MenuFlyout { ItemsSource = ScopeChoices() } };
+        _scopeButton = new Button { Name = "BrowseHistoryScope", MinWidth = 110, Height = 24, MinHeight = 24,
+            Padding = new Thickness(2, 0), Content = IconLabel("All branches", "BranchLocal.png"), Flyout = new MenuFlyout { ItemsSource = HistoryScopeChoices("") } };
         ConfigureBrowserFlyout((MenuFlyout)_scopeButton.Flyout!, _scopeButton);
         _actionButtons.Add(_scopeButton);
         toolbar.Add(_scopeButton, _scopeOverflow);
-        _historyRevision.Name = "BranchHistoryFilter"; _historyRevision.Width = 95; _historyRevision.Height = 24;
-        _historyRevision.Watermark = ""; ToolTip.SetTip(_historyRevision, T("Branch filter"));
-        _historyRevision.PropertyChanged += (_, change) =>
-        { if (change.Property == TextBox.TextProperty && _historyRevision.Text != _navigationRevisionFilter) { _navigationRevisionFilter = null; } };
+        ConfigureBranchFilter(_historyRevision, "BranchHistoryFilter");
         Grid branchFilter = ToolbarField(T("Branches:"), _historyRevision);
-        toolbar.Add(branchFilter, ToolbarInput("BranchHistoryFilterOverflow", "Branches:", _historyRevision, ReloadHistoryAsync));
+        toolbar.Add(branchFilter, BranchFilterOverflow());
+        toolbar.Add(BranchSuggestionButton(), BranchSuggestionOverflow());
         _quickHistoryFilter.KeyDown += async (_, args) =>
         { if (args.Key == Key.Enter && !_busy) { args.Handled = true; await ApplyQuickHistoryFilterAsync(); } };
         Button type = new() { Name = "RevisionQuickFilterType", Content = OriginalIconImage("FunnelPencil.png"),
@@ -211,7 +206,7 @@ public sealed partial class MainWindow
         arrow.Bind(PathIcon.ForegroundProperty, new Binding(nameof(TemplatedControl.Foreground)) { Source = owner });
         return arrow;
     }
-    private static Grid ToolbarField(string label, TextBox input, Control? trailing = null)
+    private static Grid ToolbarField(string label, Control input, Control? trailing = null)
     {
         Grid field = new() { ColumnDefinitions = new ColumnDefinitions(trailing is null ? "Auto,Auto" : "Auto,Auto,Auto"), Height = 24 };
         field.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 2, 0) });
@@ -222,6 +217,11 @@ public sealed partial class MainWindow
     private MenuItem ToolbarInput(string name, string label, TextBox original, Func<Task> accept)
     {
         TextBox input = new() { Name = name, Width = 190, Height = 24, MinHeight = 24 };
+        if (name == "RevisionQuickFilterOverflow")
+        {
+            _quickFilterOverflowInput = input;
+            input.AddHandler(KeyDownEvent, RelayBranchFilterFocusShortcut, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        }
         input.Bind(TextBox.TextProperty, new Binding(nameof(TextBox.Text)) { Source = original, Mode = BindingMode.TwoWay });
         input.KeyDown += async (_, args) =>
         {
@@ -230,11 +230,6 @@ public sealed partial class MainWindow
         };
         MenuItem item = new() { Header = ToolbarField(T(label), input), StaysOpenOnClick = true };
         _actionMenus.Add(item); return item;
-    }
-    private void FocusBranchFilter()
-    {
-        Control input = _browserToolbar?.Reveal(_historyRevision) ?? _historyRevision;
-        input.Focus(); if (input is TextBox text) { text.SelectAll(); }
     }
     private string? QuickFilterValue() => _quickHistoryFilterKind switch
     { "Author" => _historyQuery.Author, "Committer" => _historyQuery.Committer, "DiffContent" => _historyQuery.DiffContent, _ => _historyQuery.Message };
@@ -273,10 +268,7 @@ public sealed partial class MainWindow
             string icon = count == 0 ? "RepoStateClean.png" : status.Changes.Any(change => change.IsStaged) ? "RepoStateStaged.png" : "RepoStateDirty.png";
             _commitToolbarButton.Content = IconLabel(T("Commit") + " (" + count + ")", icon);
         }
-        string scope = string.IsNullOrWhiteSpace(_historyRevision.Text) ? T("All branches")
-            : _historyRevision.Text == "HEAD" ? T("Current branch") : T("Filtered branches");
-        if (_scopeButton is not null) { _scopeButton.Content = IconLabel(scope, "BranchLocal.png"); }
-        if (_scopeOverflow is not null) { _scopeOverflow.Header = scope; }
+        UpdateHistoryScopePresentation();
         _quickHistoryFilter.Text = QuickFilterValue();
         _browserToolbar?.Place();
         if (_repository is not null) { Title = Path.GetFileName(_repository.Path.TrimEnd(Path.DirectorySeparatorChar)) + " (" + status.Branch + ") — Git Extensions"; }

@@ -23,7 +23,10 @@ public sealed class HistoryFilterDialog : Window
     private readonly CheckBox _fullHistory = new() { Name = "FullHistory" };
     private readonly CheckBox _simplifyMerges = new() { Name = "SimplifyMerges" };
 
-    public HistoryFilterDialog(GitLogQuery query)
+    public string RememberedBranchFilter => _textFields["BranchFilter"].Input.Text?.Trim() ?? "";
+    public bool IsBranchFilterEnabled => _textFields["BranchFilter"].Enabled.IsChecked == true;
+
+    public HistoryFilterDialog(GitLogQuery query, string? rememberedBranchFilter = null, bool? branchFilterEnabled = null)
     {
         Title = L("$this", "Filter revisions");
         Width = 520;
@@ -39,10 +42,12 @@ public sealed class HistoryFilterDialog : Window
         AddText(fields, "DiffContent", "Diff content", query.DiffContent);
         ToolTip.SetTip(_textFields["DiffContent"].Input, _translations.Translate("Regular expression"));
         AddText(fields, "PathFilter", "Path", query.Path);
-        AddText(fields, "BranchFilter", "Branch", query.Revision == "HEAD" && !query.All ? null : query.Revision);
+        bool currentBranch = !query.All && (query.BranchFilter ?? query.Revision) == "HEAD";
+        AddText(fields, "BranchFilter", "Branch", rememberedBranchFilter ?? (currentBranch ? null : query.BranchFilter ?? query.Revision));
+        _textFields["BranchFilter"].Enabled.IsChecked = branchFilterEnabled ?? (!currentBranch && (query.BranchFilter ?? query.Revision) is not null);
         _limit.Value = query.Count;
         AddField(fields, L("_NO_TRANSLATE_lblLimit", "Limit"), null, _limit);
-        AddOption(fields, _currentBranch, "CurrentBranchOnlyCheck", "Current branch only", query.Revision == "HEAD" && !query.All);
+        AddOption(fields, _currentBranch, "CurrentBranchOnlyCheck", "Current branch only", currentBranch);
         AddOption(fields, _ignoreCase, "IgnoreCase", "Ignore case", query.IgnoreCase);
         AddOption(fields, _reflog, "ReflogCheck", "Reflog", query.Reflog);
         AddOption(fields, _firstParent, "OnlyFirstParentCheck", "Only first parent", query.FirstParent);
@@ -56,7 +61,13 @@ public sealed class HistoryFilterDialog : Window
         Button reset = new() { Content = _translations.Translate("Reset") };
         Button cancel = new() { Content = _translations.Translate("Cancel"), IsCancel = true };
         Button accept = new() { Content = L("Ok", "OK"), IsDefault = true };
-        reset.Click += (_, _) => Close(new GitLogQuery { Count = query.Count });
+        reset.Click += (_, _) =>
+        {
+            _textFields["BranchFilter"].Enabled.IsChecked = false;
+            Close(new GitLogQuery { Count = query.Count, Revision = _currentBranch.IsChecked == true ? "HEAD" : null,
+                All = _currentBranch.IsChecked != true, Reflog = _reflog.IsChecked == true, IgnoreCase = _ignoreCase.IsChecked == true,
+                FullHistory = _fullHistory.IsChecked == true, SimplifyMerges = _simplifyMerges.IsChecked == true });
+        };
         cancel.Click += (_, _) => Close(null);
         accept.Click += (_, _) => Close(ReadQuery());
         DockPanel root = new() { LastChildFill = true };
@@ -70,7 +81,8 @@ public sealed class HistoryFilterDialog : Window
     public GitLogQuery ReadQuery() => new()
     {
         Count = (int)(_limit.Value ?? 300),
-        Revision = _currentBranch.IsChecked == true ? "HEAD" : Text("BranchFilter"),
+        Revision = _currentBranch.IsChecked == true ? "HEAD" : null,
+        BranchFilter = _currentBranch.IsChecked == true || !IsBranchFilterEnabled ? null : RememberedBranchFilter,
         All = _currentBranch.IsChecked != true,
         Author = Text("Author"),
         Committer = Text("Committer"),

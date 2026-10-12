@@ -59,7 +59,7 @@ public class RenameCompareMenuTests
             Assert.That((navigation.SelectedItem as TreeViewItem)?.Tag, Is.TypeOf<GitReference>());
             Assert.That(((GitReference)((TreeViewItem)navigation.SelectedItem!).Tag!).Name, Is.EqualTo("refs/heads/new_topic"));
             Assert.That(NavigationNodes(main), Does.Contain(navigation.SelectedItem), "The selection must belong to the visible, refreshed navigation tree.");
-            TextBox expression = main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Name == "BranchHistoryFilter");
+            ComboBox expression = main.GetVisualDescendants().OfType<ComboBox>().Single(box => box.Name == "BranchHistoryFilter");
             Assert.That(expression.Text, Is.EqualTo("refs/heads/new_topic"));
             Assert.That((Field<ListBox>(main, "RevisionHistory").SelectedItem as GitCommit)?.Hash, Is.EqualTo(selectedHash));
             ClickLabel(workflow, "Rename…");
@@ -73,7 +73,7 @@ public class RenameCompareMenuTests
         GitLogQuery query = filter.ReadQuery();
         Assert.Multiple(() =>
         {
-            Assert.That(query.Revision, Is.EqualTo("refs/heads/new_topic"));
+            Assert.That(query.BranchFilter, Is.EqualTo("refs/heads/new_topic"));
             Assert.That(query.Author, Is.EqualTo("Desktop Tester"));
             Assert.That(query.Message, Is.EqualTo("Initial commit"));
             Assert.That(query.FirstParent, Is.True);
