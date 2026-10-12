@@ -66,13 +66,13 @@ public abstract class RepositoryDialog : Window
         return button;
     }
 
-    protected async Task RunAsync(string label, Func<CancellationToken, Task> action, bool changes = false)
+    protected async Task RunAsync(string label, Func<CancellationToken, Task> action, bool changes = false, CancellationToken cancellationToken = default)
     {
         if (IsBusy) { return; }
         IsBusy = true;
         LastError = null;
         LastException = null;
-        _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token, cancellationToken);
         foreach (Control input in _inputs) { input.IsEnabled = false; }
         Status.Text = T(label) + "…";
         try

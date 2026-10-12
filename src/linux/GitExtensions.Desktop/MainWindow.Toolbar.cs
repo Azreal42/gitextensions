@@ -64,7 +64,7 @@ public sealed partial class MainWindow
         _currentBranchButton = ToolbarButton("BrowseCurrentBranch", "Checkout branch…", "BranchLocal.png", CheckoutAsync, text: true);
         _currentBranchButton.Width = 132;
         toolbar.Add(_currentBranchButton, MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"));
-        Command("BrowsePull", "Pull", "Pull.png", PullAsync);
+        toolbar.Add(BuildPullButton(), new MenuItem { Name = "PullOverflow", Header = T("Pull/Fetch…"), Icon = OriginalIconImage("Pull.png"), ItemsSource = CreatePullMenu("PullOverflow") });
         Command("BrowsePush", "Push", "Push.png", PushAsync);
         _commitToolbarButton = ToolbarButton("BrowseCommit", "Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes"), text: true);
         toolbar.Add(_commitToolbarButton, MenuAction("Commit…", () => ShowWorkflowAsync("Changes"), "RepoStateClean.png"));

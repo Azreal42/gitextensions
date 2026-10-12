@@ -292,14 +292,6 @@ public sealed partial class MainWindow
         if (await Dialogs.ConfirmAsync(this, "Remove remote", $"Remove {remote.Name} and its tracking refs?")) { await RunAsync("Remove remote", r => r.RemoveRemoteAsync(remote.Name, Token)); }
     }
 
-    private async Task PullAsync()
-    {
-        string[]? values = await Dialogs.PromptAsync(this, "Pull", ("Remote (blank for upstream)", (_remotes.SelectedItem as GitRemote)?.Name ?? ""), ("Branch (blank for default)", ""), ("Mode: ff-only or rebase", "ff-only"));
-        if (values is null) { return; }
-        if (values[2] is not ("ff-only" or "rebase")) { throw new ArgumentException("Pull mode must be ff-only or rebase."); }
-        await RunAsync("Pull", r => r.PullAsync(Optional(values[0]), Optional(values[1]), values[2] == "rebase", Token));
-    }
-
     private async Task PushAsync()
     {
         string[]? values = await Dialogs.PromptAsync(this, "Push", ("Remote (blank for upstream)", (_remotes.SelectedItem as GitRemote)?.Name ?? ""), ("Branch or refspec (blank for default)", ""), ("Set upstream: yes or no", "no"), ("Force with lease: yes or no", "no"));
