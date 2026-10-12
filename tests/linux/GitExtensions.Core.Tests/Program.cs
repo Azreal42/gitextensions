@@ -122,6 +122,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. DiffDisplayScenarios.All,
     .. FileEncodingScenarios.All,
     .. FilePreviewScenarios.All,
+    .. BlameEncodingScenarios.All,
     ("difftastic formatter retains original sample gutters and right column", DifftasticScenarios.OriginalFixtureAsync),
     ("difftastic strips number colors and aligns growing column prefixes", DifftasticScenarios.ColumnsAndColorsAsync),
     ("difftastic one-sided and zero-context Unicode lines retain correct gutters", DifftasticScenarios.OneSidedAndUnicodeAsync),

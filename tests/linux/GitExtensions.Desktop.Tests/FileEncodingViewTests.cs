@@ -157,6 +157,57 @@ public class FileEncodingViewTests
         Assert.That(File.ReadAllBytes(Path.Combine(cp.Repository.Path, ".git/config")), Is.EqualTo(config));
     }
 
+    [AvaloniaTest]
+    public void UnchangedBlobReloadReleasesSearchAndKeepsPositionWhileAnotherIdentityStartsAtOne()
+    {
+        const string text = "first\r\nshared second\r\nthird\n";
+        byte[] bytes = Encoding.UTF8.GetBytes(text);
+        TextBox source = new();
+        using FileContentView content = new(source);
+        DiffView view = content.TextView;
+        Window window = new() { Width = 640, Height = 300, Content = content };
+        window.Show();
+        try
+        {
+            view.DocumentIdentity = "repository\0first.cs\0revision\0blob";
+            view.BeginDocumentLoad(); content.ShowFile("first.cs", bytes);
+            int selected = text.IndexOf("second", StringComparison.Ordinal);
+            view.Select(selected, "second".Length);
+            int caret = view.CaretOffset;
+            int notifications = 0;
+            source.PropertyChanged += (_, args) => { if (args.Property == TextBox.TextProperty) { notifications++; } };
+            view.Search.Query = "third";
+            view.BeginDocumentLoad();
+            Assert.That(view.Search.FindNext(), Is.Null, "The old display is unavailable during loading.");
+            content.ShowFile("first.cs", bytes);
+            Assert.Multiple(() =>
+            {
+                Assert.That(notifications, Is.Zero, "Identical source text emits no property change.");
+                Assert.That(view.Search.IsAvailable, Is.True);
+                Assert.That(view.SelectionStart, Is.EqualTo(selected));
+                Assert.That(view.SelectionLength, Is.EqualTo("second".Length));
+                Assert.That(view.CaretOffset, Is.EqualTo(caret));
+                Assert.That(view.CurrentFileLine, Is.EqualTo(2));
+                Assert.That(view.Text, Is.EqualTo(text));
+                Assert.That(view.CanStagePatch, Is.False);
+            });
+            Assert.That(view.Search.FindNext()?.Offset, Is.EqualTo(text.IndexOf("third", StringComparison.Ordinal)));
+            view.DocumentIdentity = "repository\0other.cs\0revision\0blob";
+            view.BeginDocumentLoad(); content.ShowFile("other.cs", bytes);
+            Assert.Multiple(() =>
+            {
+                Assert.That(notifications, Is.Zero);
+                Assert.That(view.CurrentFileLine, Is.EqualTo(1));
+                Assert.That(view.SelectionLength, Is.Zero);
+                Assert.That(view.Search.IsAvailable, Is.True);
+            });
+            view.CaretOffset = selected;
+            view.BeginDocumentLoad(); content.ShowFile("other.cs", bytes);
+            Assert.That(view.CurrentFileLine, Is.EqualTo(2), "The successfully loaded identity also owns the next refresh.");
+        }
+        finally { window.Close(); }
+    }
+
     private static string? Name(object choice) => (string?)choice.GetType().GetProperty("Name")!.GetValue(choice);
     private static void Capture(WriteableBitmap frame, string name)
     {

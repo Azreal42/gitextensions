@@ -85,4 +85,9 @@
 | Choix d’encodage inaccessible après un reload échoué | Barre flottante conditionnée à un document autorisé plutôt qu’à la fin de l’activité de l’hôte | Garder le codec au survol pour réessayer ; staging/comparaison restent bloqués. Régression Git et absence de mutation vérifiées. Résolu localement. |
 | Pixels sélectionnés absents ou rejetés dans les captures de tests | Frame différée puis seuil exigeant des pixels opaques pour un glyphe diagonal anticrénelé | Tick avant capture, vraie sélection exigée et comparaison au mélange foreground/background ; ancienne couleur exclue. Calibrations rouges conservées. |
 
+| Attribution legacy corrompue puis navigation hors des lignes affichées | Porcelain blame entièrement décodé en UTF-8 malgré le codec du fichier | Décoder séparément métadonnées et contenu ; source Latin1/CP1252 réelle, métadonnées Unicode, bare/rename, erreurs et annulation vérifiés. Résolu localement. |
+| Reload de texte identique laisse le lecteur indisponible | TextBox ne produit aucun changement quand les octets décodés sont identiques | Compléter explicitement une lecture source réussie sans changer sélection/scroll ; recherche et prochaine identité testées. Résolu localement. |
+| Autre fichier conserve un ancien commit après suivi de copie/renommage | Identité de la requête historique absente du choix de révision conservé | Conserver ce choix seulement pour le même fichier demandé ; nouvelle requête choisit sa première entrée. Résolu localement. |
+| Fixture Browse ne trouve pas le nouveau fichier du commit | Réouverture du même dépôt conserve intentionnellement le commit sélectionné | Sélectionner le vrai nouveau commit avant File tree ; rouge initial conservé, bouton natif Blame et ligne180 vérifiés. |
+
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.

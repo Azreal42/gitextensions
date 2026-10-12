@@ -447,18 +447,6 @@ public sealed partial class GitRepository
     public Task<GitResult> SyncSubmodulesAsync(CancellationToken cancellationToken = default)
         => MutateAsync(["submodule", "sync", "--recursive"], cancellationToken);
 
-    public async Task<IReadOnlyList<GitBlameLine>> GetBlameAsync(string path, string? revision = null, CancellationToken cancellationToken = default)
-    {
-        List<string> arguments = ["blame", "--encoding=UTF-8", "--line-porcelain"];
-        if (revision is not null)
-        {
-            arguments.Add(await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false));
-        }
-
-        arguments.AddRange(["--", ValidatePath(path)]);
-        return GitOutputParser.ParseBlame((await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput);
-    }
-
     public Task<GitResult> MergeAsync(string revision, bool noFastForward = false, CancellationToken cancellationToken = default)
         => MutateAsync(noFastForward ? ["merge", "--no-edit", "--no-ff", "--", ValidateValue(revision)] : ["merge", "--no-edit", "--", ValidateValue(revision)], cancellationToken);
 

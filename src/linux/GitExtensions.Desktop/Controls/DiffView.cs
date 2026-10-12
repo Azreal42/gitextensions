@@ -218,6 +218,20 @@ public sealed class DiffView : UserControl, IDisposable
         ReadingMenu.Refresh();
     }
 
+    internal void CompletePlainTextDocumentLoad()
+    {
+        if (Mode != DiffViewMode.PlainText) { throw new InvalidOperationException("Only a successfully loaded source preview can complete this way."); }
+        // An options reload or a different file can contain the very same text.
+        // TextBox then raises no change notification, but the host still owns a
+        // successfully loaded document and must release the reading commands.
+        _document = null;
+        _documentReady = true;
+        _loadedIdentity = DocumentIdentity;
+        UpdateAppearanceContext();
+        Search.DocumentUpdated(changed: false);
+        ReadingMenu.Refresh();
+    }
+
     public void ShowDocument(GitDiffDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);

@@ -28,7 +28,9 @@ public sealed class FileHistoryDialog : RepositoryDialog
     private readonly BlameView _blame = new() { Name = "FileHistoryBlame" };
     private readonly List<Bitmap> _tabIcons = [];
     private IReadOnlyList<GitFileHistoryEntry> _history = [];
+    private string? _loadedHistoryPath;
     private bool _loading;
+    private (int Line, string? Encoding)? _initialBlamePosition;
     private int _limit = 300;
     public IReadOnlyList<GitFileHistoryEntry> History => _history;
     public GitFileHistoryEntry? SelectedEntry => _revisions.SelectedItem is GitCommit commit ? _history.FirstOrDefault(entry => entry.Commit.Hash == commit.Hash) : null;
@@ -87,7 +89,19 @@ public sealed class FileHistoryDialog : RepositoryDialog
         layout.Children.Add(table); GridSplitter splitter = new() { Height = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Rows };
         Grid.SetRow(splitter, 1); layout.Children.Add(splitter); Grid.SetRow(_tabs, 2); layout.Children.Add(_tabs); Root.Children.Add(layout);
         _revisions.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
-        _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
+        _tabs.SelectionChanged += async (_, args) =>
+        {
+            if (args.Source != _tabs || _loading || IsBusy) { return; }
+            if (_tabs.SelectedIndex == 3 && SelectedEntry is { } entry)
+            {
+                TabItem? previous = args.RemovedItems.OfType<TabItem>().FirstOrDefault();
+                if (previous?.Name == "FileHistoryViewTab" && _view.TextView.IsDocumentReady && _view.TextView.DocumentIdentity == string.Join('\0', Repository.Path, entry.Path, entry.Commit.Hash, "blob"))
+                { _initialBlamePosition = (_view.TextView.CurrentFileLine, _view.TextView.FileEncodingName); }
+                else if (previous?.Name == "FileHistoryDiffTab" && _diff.TextView.IsDocumentReady && _diff.TextView.DocumentIdentity?.StartsWith(string.Join('\0', Repository.Path, entry.Path, entry.Commit.Hash) + '\0', StringComparison.Ordinal) == true)
+                { _initialBlamePosition = (_diff.TextView.CurrentFileLine, _diff.TextView.FileEncodingName); }
+            }
+            await LoadSelectionAsync();
+        };
         BlamePreferences previousBlamePreferences = _blame.Preferences;
         _blame.PreferencesChanged += async preferences =>
         {
@@ -96,6 +110,10 @@ public sealed class FileHistoryDialog : RepositoryDialog
             if (reload && _tabs.SelectedIndex == 3 && !IsBusy && !_loading) { await LoadSelectionAsync(); }
         };
         _blame.CommandRequested += async (_, args) => await OpenBlameCommandAsync(args);
+        _blame.TextView.FileEncodingChanged += async (_, _) =>
+        {
+            if (_tabs.SelectedIndex == 3 && !IsBusy && !_loading) { await LoadSelectionAsync(); }
+        };
         Track(_file, _revision, _follow, _exact, _full, _simplify, blameOptions, _revisions, _tabs);
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
         {
@@ -109,9 +127,11 @@ public sealed class FileHistoryDialog : RepositoryDialog
         _loading = true;
         try
         {
-            string? selected = SelectedEntry?.Commit.Hash;
-            _history = await Repository.GetFileHistoryAsync(_file.Text ?? "", _revision.Text ?? "HEAD",
+            string path = _file.Text ?? "";
+            string? selected = _loadedHistoryPath == path ? SelectedEntry?.Commit.Hash : null;
+            _history = await Repository.GetFileHistoryAsync(path, _revision.Text ?? "HEAD",
                 new(_follow.IsChecked == true, _exact.IsChecked == true, _full.IsChecked == true, _simplify.IsChecked == true, _limit), token);
+            _loadedHistoryPath = path;
             _graph.Commits = _history.Select(entry => entry.Commit).ToArray();
             _graph.References = await Repository.GetReferencesAsync(token);
             _graph.CurrentHead = await Repository.ResolveRevisionAsync("HEAD", token);
@@ -155,10 +175,22 @@ public sealed class FileHistoryDialog : RepositoryDialog
         }
         else if (_tabs.SelectedIndex == 2)
         {
+            _view.TextView.BeginDocumentLoad();
             _view.TextView.DocumentIdentity = string.Join('\0', Repository.Path, entry.Path, commit.Hash, "blob");
+            await _view.TextView.ConfigureRepositoryAsync(Repository, token);
             _view.ShowFile(entry.Path, await Repository.GetFileBytesAsync(entry.Path, commit.Hash, token), await Repository.GetFileEncodingNameAsync(token));
+            if (!_view.IsImage) { _view.TextView.CompletePlainTextDocumentLoad(); }
         }
-        else if (_tabs.SelectedIndex == 3) { _blame.SetBlame(await Repository.GetFileBlameAsync(entry.Path, commit.Hash, _blame.Preferences.GitOptions, token)); }
+        else if (_tabs.SelectedIndex == 3)
+        {
+            (int Line, string? Encoding)? initialPosition = _initialBlamePosition;
+            _initialBlamePosition = null;
+            await _blame.ConfigureRepositoryAsync(Repository, token);
+            if (initialPosition is { } position) { _blame.TextView.FileEncodingName = position.Encoding; }
+            _blame.TextView.BeginDocumentLoad();
+            _blame.SetBlame(await Repository.GetFileBlameAsync(entry.Path, commit.Hash, _blame.Preferences.GitOptions, token,
+                _blame.TextView.FileEncodingName), initialPosition?.Line);
+        }
     }
 
     private async Task OpenBlameCommandAsync(BlameCommandEventArgs args)
@@ -174,7 +206,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
             if (LastError is not null || previous is null) { return; }
             hash = previous.Revision; path = previous.Path; line = previous.Line;
         }
-        BlameDialog dialog = new(Repository, path, hash, line);
+        BlameDialog dialog = new(Repository, path, hash, line, fileEncodingName: _blame.TextView.FileEncodingName);
         dialog.Opened += async (_, _) =>
         {
             await dialog.InitializeAsync();

@@ -40,6 +40,9 @@ public sealed class BlameView : UserControl, IDisposable
     private bool _disposed;
     private bool _showAvatar = true;
     private GitFileBlame? _blame;
+    private string? _repositoryPath;
+    private string? _displayedRepositoryPath;
+    private bool _settingBlame;
     private IBrush[] _ages = [];
     private int _selectedLine;
     private readonly BlamePreferencesStore _preferencesStore = new();
@@ -62,6 +65,8 @@ public sealed class BlameView : UserControl, IDisposable
     public GitFileBlameLine? SelectedLine => _blame is not null && _selectedLine > 0 && _selectedLine <= _blame.Lines.Count ? _blame.Lines[_selectedLine - 1] : null;
     public IReadOnlyList<GitFileBlameLine> Lines => _blame?.Lines ?? [];
     public DiffView TextView => _content.TextView;
+    public int CurrentFileLine => TextView.CurrentFileLine;
+    public string CurrentFileEncodingName => _content.CurrentFileEncodingName;
     public bool ShowAuthor { get; set; } = true;
     public bool ShowDate { get; set; } = true;
     public bool ShowTime { get; set; } = true;
@@ -105,26 +110,59 @@ public sealed class BlameView : UserControl, IDisposable
         TextView.Editor.TextArea.TextView.PointerExited += (_, _) => ClearHover();
         TextView.Editor.TextArea.LeftMargins.Insert(0, _authors);
         TextView.Editor.TextArea.TextView.BackgroundRenderers.Add(new CommitBackground(this));
-        TextView.Editor.TextArea.Caret.PositionChanged += (_, _) => SelectLine(TextView.Editor.TextArea.Caret.Line, moveCaret: false);
+        TextView.Editor.TextArea.Caret.PositionChanged += (_, _) =>
+        {
+            if (!_settingBlame && !TextView.IsUpdatingText) { SelectLine(TextView.Editor.TextArea.Caret.Line, moveCaret: false); }
+        };
         ActualThemeVariantChanged += (_, _) => RefreshDisplay();
         AttachedToVisualTree += (_, _) => { SetPreferences(_preferencesStore.Load(), persist: false); StartAvatarLoading(); };
         DetachedFromVisualTree += (_, _) => { CancelAvatarLoading(); ClearHover(); };
         Content = _content;
         SetPreferences(_preferencesStore.Load(), persist: false);
     }
-    public void SetBlame(GitFileBlame blame, int initialLine = 1)
+    public async Task ConfigureRepositoryAsync(GitRepository repository, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        _settingBlame = true;
+        TextView.BeginDocumentLoad();
+        try
+        {
+            await TextView.ConfigureRepositoryAsync(repository, cancellationToken);
+            _repositoryPath = repository.Path;
+        }
+        finally { TextView.BeginDocumentLoad(); _settingBlame = false; }
+    }
+    public void SetBlame(GitFileBlame blame, int? initialLine = null)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        bool sameFile = _blame?.Path == blame.Path && _displayedRepositoryPath == _repositoryPath;
+        int target = Math.Clamp(initialLine ?? (sameFile ? CurrentFileLine : 1), 1, Math.Max(1, blame.Lines.Count));
+        string identity = string.Join('\0', _repositoryPath, blame.Path, blame.Revision, "blame");
+        bool sameIdentity = TextView.DocumentIdentity == identity;
         CancelAvatarLoading();
         ClearHover(); _contextLine = null;
         _commitInformation.Clear();
-        _blame = blame;
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-        long oldest = Math.Min(now.AddYears(-3).Ticks, blame.Lines.Count == 0 ? now.AddYears(-3).Ticks : blame.Lines.Min(item => item.Line.AuthoredAt.Ticks));
-        long interval = Math.Max(1, (now.Ticks - oldest + 1) / Ages.Length);
-        _ages = blame.Lines.Select(line => Ages[(int)Math.Clamp((line.Line.AuthoredAt.Ticks - oldest) / interval, 0, Ages.Length - 1)]).ToArray();
-        _content.ShowFile(blame.Path, blame.Bytes);
-        SelectLine(Math.Clamp(initialLine, 1, Math.Max(1, blame.Lines.Count)));
+        _settingBlame = true;
+        try
+        {
+            _blame = blame;
+            _displayedRepositoryPath = _repositoryPath;
+            TextView.DocumentIdentity = identity;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            long oldest = Math.Min(now.AddYears(-3).Ticks, blame.Lines.Count == 0 ? now.AddYears(-3).Ticks : blame.Lines.Min(item => item.Line.AuthoredAt.Ticks));
+            long interval = Math.Max(1, (now.Ticks - oldest + 1) / Ages.Length);
+            _ages = blame.Lines.Select(line => Ages[(int)Math.Clamp((line.Line.AuthoredAt.Ticks - oldest) / interval, 0, Ages.Length - 1)]).ToArray();
+            _content.ShowFile(blame.Path, blame.Bytes, blame.FileEncodingName);
+            if (!_content.IsImage) { TextView.CompletePlainTextDocumentLoad(); }
+            if (blame.Lines.Count == 0) { _selectedLine = 0; }
+            else
+            {
+                // A same-document refresh lets DiffView retain the complete selection and scroll.
+                // Navigation supplies an explicit remapped line and must replace that position.
+                SelectLine(target, moveCaret: initialLine.HasValue || !sameIdentity || CurrentFileLine != target);
+            }
+        }
+        finally { _settingBlame = false; }
         RefreshDisplay();
         StartAvatarLoading();
     }
@@ -133,7 +171,7 @@ public sealed class BlameView : UserControl, IDisposable
         if (_blame is null || number < 1 || number > _blame.Lines.Count) { return; }
         bool changed = number != _selectedLine;
         _selectedLine = number;
-        if (moveCaret)
+        if (moveCaret && !_content.IsBinary && !_content.IsImage && number <= TextView.Editor.Document.LineCount)
         {
             TextView.CaretOffset = TextView.Editor.Document.GetLineByNumber(number).Offset;
             TextView.Editor.ScrollToLine(number);

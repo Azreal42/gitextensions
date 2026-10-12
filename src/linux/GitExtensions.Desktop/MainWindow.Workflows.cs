@@ -387,7 +387,11 @@ public sealed partial class MainWindow
 
     private Task BlameAsync() => RunAsync("Blame", async r =>
     {
-        BlameDialog dialog = new(r, _filePath.Text ?? "", CurrentRevision);
+        string path = _filePath.Text ?? "";
+        string identity = string.Join('\0', r.Path, path, CurrentRevision, "blob");
+        bool sameFile = _fileContent is { } content && content.TextView.IsDocumentReady && content.TextView.DocumentIdentity == identity;
+        int line = sameFile ? _fileContent!.TextView.CurrentFileLine : 1;
+        BlameDialog dialog = new(r, path, CurrentRevision, line, fileEncodingName: sameFile ? _fileContent!.TextView.FileEncodingName : null);
         dialog.Opened += async (_, _) => await dialog.InitializeAsync();
         await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);

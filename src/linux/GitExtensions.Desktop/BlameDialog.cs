@@ -20,11 +20,15 @@ public sealed class BlameDialog : RepositoryDialog
     private readonly FileHistoryContentView _changes = new() { Name = "BlameChanges" };
     private readonly TabControl _tabs = new() { Name = "BlameTabs" };
     private readonly int _initialLine;
+    private readonly string _initialPath;
+    private readonly string? _initialFileEncodingName;
+    private bool _initialFileEncodingApplied;
     private bool _synchronizingPreferences;
     private bool _preferencesFromCheckboxes;
     public GitFileBlame? LastBlame { get; private set; }
 
-    public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1, IGourceAvatarProvider? avatarProvider = null) : base(repository, "Blame")
+    public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1,
+        IGourceAvatarProvider? avatarProvider = null, string? fileEncodingName = null) : base(repository, "Blame")
     {
         _changes.TextView.ContextMenu = new ContextMenu { ItemsSource = _changes.TextView.CreateContextMenuItems("BlameDiff") };
         _changes.Toolbar.SetNames("BlameDiff");
@@ -36,7 +40,8 @@ public sealed class BlameDialog : RepositoryDialog
         _view.CommitInformationProvider = (line, token) => ReadCommitInformationAsync(repository, line, token);
         _view.InteractionError += error => Status.Text = error;
         Width = 1100; Height = 760; MinWidth = 740; MinHeight = 480;
-        _file.Text = path; _revision.Text = revision ?? ""; _initialLine = initialLine;
+        _file.Text = path; _revision.Text = revision ?? ""; _initialLine = initialLine; _initialPath = path;
+        _initialFileEncodingName = fileEncodingName;
         Title = T("Blame") + " (" + path + ")";
         Grid paths = new() { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,240,Auto"), Margin = new Avalonia.Thickness(6, 4) };
         Control[] fields = [new TextBlock { Text = T("File") + ":", VerticalAlignment = VerticalAlignment.Center }, _file,
@@ -79,6 +84,10 @@ public sealed class BlameDialog : RepositoryDialog
             if (_view.PreferenceError is string error) { Status.Text = error; }
             if (reload && !_preferencesFromCheckboxes && LastBlame is not null && !IsBusy) { await InitializeAsync(); }
         };
+        _view.TextView.FileEncodingChanged += async (_, _) =>
+        {
+            if (LastBlame is not null && !IsBusy) { await InitializeAsync(); }
+        };
         SynchronizePreferences();
         _whitespace.IsCheckedChanged += (_, _) => SaveCheckboxPreferences();
         _moves.IsCheckedChanged += (_, _) => SaveCheckboxPreferences();
@@ -96,8 +105,15 @@ public sealed class BlameDialog : RepositoryDialog
     {
         string path = _file.Text ?? "";
         string? revision = string.IsNullOrWhiteSpace(_revision.Text) ? null : _revision.Text;
-        int selectedLine = _view.SelectedLine?.Line.LineNumber ?? _initialLine;
-        LastBlame = await Repository.GetFileBlameAsync(path, revision, _view.Preferences.GitOptions, token);
+        int? selectedLine = LastBlame is null && path == _initialPath ? _initialLine : null;
+        await _view.ConfigureRepositoryAsync(Repository, token);
+        if (!_initialFileEncodingApplied)
+        {
+            _view.TextView.FileEncodingName = _initialFileEncodingName;
+            _initialFileEncodingApplied = true;
+        }
+        _view.TextView.BeginDocumentLoad();
+        LastBlame = await Repository.GetFileBlameAsync(path, revision, _view.Preferences.GitOptions, token, _view.TextView.FileEncodingName);
         _view.SetBlame(LastBlame, selectedLine);
         _tabs.SelectedIndex = 0;
         await SetCommitInfoAsync(_view.SelectedLine, token);
@@ -120,6 +136,7 @@ public sealed class BlameDialog : RepositoryDialog
         GitFileBlameLine selected = contextLine ?? _view.SelectedLine ?? throw new InvalidOperationException(T("Select a line first."));
         string hash = selected.Line.Hash;
         if (hash.All(character => character == '0')) { throw new InvalidOperationException(T("This line has not been committed yet.")); }
+        _view.TextView.BeginDocumentLoad();
         string path = selected.OriginalPath;
         int position = selected.Line.OriginalLine;
         GitFileBlameOptions options = _view.Preferences.GitOptions;
@@ -129,7 +146,8 @@ public sealed class BlameDialog : RepositoryDialog
                 ?? throw new InvalidOperationException(T("This line has no previous revision."));
             hash = target.Revision; path = target.Path; position = target.Line;
         }
-        LastBlame = await Repository.GetFileBlameAsync(path, hash, options, token);
+        await _view.ConfigureRepositoryAsync(Repository, token);
+        LastBlame = await Repository.GetFileBlameAsync(path, hash, options, token, _view.TextView.FileEncodingName);
         _file.Text = path; _revision.Text = hash;
         _view.SetBlame(LastBlame, Math.Clamp(position, 1, Math.Max(1, LastBlame.Lines.Count)));
         _tabs.SelectedIndex = 0;

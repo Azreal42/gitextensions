@@ -11,7 +11,10 @@ public sealed record GitFileHistoryOptions(bool FollowRenames = true, bool Exact
     bool SimplifyMerges = false, int Count = 300);
 public sealed record GitFileBlameOptions(bool IgnoreWhitespace = false, bool DetectMoves = false, bool DetectCopies = false);
 public sealed record GitFileBlameLine(GitBlameLine Line, string OriginalPath, string? PreviousHash = null, string? PreviousPath = null, bool IsBoundary = false);
-public sealed record GitFileBlame(string Path, string? Revision, IReadOnlyList<GitFileBlameLine> Lines, byte[] Bytes);
+public sealed record GitFileBlame(string Path, string? Revision, IReadOnlyList<GitFileBlameLine> Lines, byte[] Bytes)
+{
+    public string FileEncodingName { get; init; } = "utf-8";
+}
 
 public sealed partial class GitRepository
 {
@@ -99,8 +102,20 @@ public sealed partial class GitRepository
         return history;
     }
 
+    public async Task<IReadOnlyList<GitBlameLine>> GetBlameAsync(string path, string? revision = null, CancellationToken cancellationToken = default)
+    {
+        path = ValidatePath(path);
+        string? target = revision is null ? null : await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
+        Encoding encoding = GitFileEncodingCodec.GetEncoding(await GetFileEncodingNameAsync(cancellationToken).ConfigureAwait(false));
+        string output = await ReadFileBlameOutputAsync(path, target, new(), encoding, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        IReadOnlyList<GitBlameLine> parsed = GitOutputParser.ParseBlame(output);
+        cancellationToken.ThrowIfCancellationRequested();
+        return parsed;
+    }
+
     public async Task<GitFileBlame> GetFileBlameAsync(string path, string? revision = "HEAD", GitFileBlameOptions? options = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, string? fileEncodingName = null)
     {
         path = ValidatePath(path);
         options ??= new();
@@ -108,13 +123,9 @@ public sealed partial class GitRepository
         byte[] bytes;
         if (target is null) { await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false); bytes = await File.ReadAllBytesAsync(System.IO.Path.Combine(Path, path), cancellationToken).ConfigureAwait(false); }
         else { bytes = await GetFileBytesAsync(path, target, cancellationToken).ConfigureAwait(false); }
-        List<string> arguments = ["--literal-pathspecs", "blame", "--encoding=UTF-8", "--line-porcelain"];
-        if (options.IgnoreWhitespace) { arguments.Add("-w"); }
-        if (options.DetectMoves) { arguments.Add("-M"); }
-        if (options.DetectCopies) { arguments.Add("-C"); }
-        if (target is not null) { arguments.Add(target); }
-        arguments.AddRange(["--", path]);
-        string output = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        Encoding encoding = GitFileEncodingCodec.GetEncoding(fileEncodingName ?? await GetFileEncodingNameAsync(cancellationToken).ConfigureAwait(false));
+        string output = await ReadFileBlameOutputAsync(path, target, options, encoding, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         IReadOnlyList<GitBlameLine> parsed = GitOutputParser.ParseBlame(output);
         List<GitFileBlameLine> lines = [];
         Dictionary<string, string> metadata = new(StringComparer.Ordinal);
@@ -136,7 +147,46 @@ public sealed partial class GitRepository
                 if (!IsObjectId(key)) { metadata[key] = space < 0 ? "" : line[(space + 1)..]; }
             }
         }
-        return new(path, target, lines, bytes);
+        return new(path, target, lines, bytes) { FileEncodingName = encoding.WebName };
+    }
+
+    private async Task<string> ReadFileBlameOutputAsync(string path, string? target, GitFileBlameOptions options,
+        Encoding encoding, CancellationToken cancellationToken)
+    {
+        List<string> arguments = ["--literal-pathspecs", "blame", "--encoding=UTF-8", "--line-porcelain"];
+        if (options.IgnoreWhitespace) { arguments.Add("-w"); }
+        if (options.DetectMoves) { arguments.Add("-M"); }
+        if (options.DetectCopies) { arguments.Add("-C"); }
+        if (target is not null) { arguments.Add(target); }
+        arguments.AddRange(["--", path]);
+        GitBinaryResult result = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken).ConfigureAwait(false);
+        if (!result.Success) { throw new GitCommandException(arguments, new(result.ExitCode, "", result.StandardError)); }
+        return DecodeFileBlameOutput(result.StandardOutput, encoding, cancellationToken);
+    }
+
+    private static string DecodeFileBlameOutput(byte[] bytes, Encoding encoding, CancellationToken cancellationToken)
+    {
+        // GitModule.ParseGitBlame likewise separates the lossless file records
+        // from commit metadata. --encoding only recodes metadata: decoding the
+        // entire stream as UTF-8 destroys legacy file bytes before parsing.
+        // Keep the existing porcelain parser and decode each record according
+        // to its grammar; no replacement fallback or configuration writes.
+        UTF8Encoding metadata = new(false, true);
+        StringBuilder output = new();
+        int start = 0;
+        while (start < bytes.Length)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int newline = bytes.AsSpan(start).IndexOf((byte)'\n');
+            int end = newline < 0 ? bytes.Length : start + newline;
+            ReadOnlySpan<byte> record = bytes.AsSpan(start, end - start);
+            if (record.StartsWith("\t"u8)) { output.Append('\t'); output.Append(encoding.GetString(record[1..])); }
+            else { output.Append(metadata.GetString(record)); }
+            if (newline >= 0) { output.Append('\n'); }
+            start = end + 1;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        return output.ToString();
     }
 
     private static bool IsObjectId(string value) => value.Length is 40 or 64 && value.All(Uri.IsHexDigit);

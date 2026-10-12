@@ -74,6 +74,7 @@ public sealed class FileContentView : UserControl, IDisposable
             GitDecodedFile decoded = GitFileEncodingCodec.DecodeFile(_fileBytes, TextView.FileEncodingName ?? _defaultEncodingName, _truncated);
             _source.Text = decoded.Text + (_truncated ? "\n[Preview limited to 2 MB]" : "");
             TextView.SyntaxPath = decoded.IsBinary ? null : _filePath;
+            TextView.CompletePlainTextDocumentLoad();
         }
         finally { _settingFile = false; }
     }
