@@ -1,6 +1,6 @@
 # Repères
 
-But : proposer les workflows Git Extensions sur un bureau Linux, installables en `.deb`, sans runtime Windows. La migration reste ouverte tant que les workflows existants ne sont pas couverts.
+But : proposer les workflows Git Extensions sur un bureau Linux, installables en `.deb`, en gardant la disposition, les palettes, les icônes et les gestes de l’application originale. La migration reste ouverte tant que les workflows existants ne sont pas couverts.
 
 - [C4](c4.md) : périmètre et points d'entrée.
 - [Décisions](adr/) : classées par sujet/sous-sujet.

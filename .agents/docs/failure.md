@@ -67,3 +67,4 @@
 | Fichier UTF-8 valide affiché en hex après limite de 2 Mo | Le buffer coupe un caractère final et le décodeur strict traite ce préfixe comme un EOF complet | Decoder sans flush seulement pour preview tronqué ; UTF-8/16/32, erreurs intérieures/EOF et changement de codec sur cache brut vérifiés. Résolu. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
+| Copier ne fournit aucun contenu quand l’app est le premier client X11 | Avalonia 11.3.22 met en cache des atoms inexistants ; créer ces noms après le démarrage est trop tard | Initialiser les sept atoms du protocole avant la plateforme, conserver la connexion ; classe de production : 4/4 copies natives sans seed/manager sur serveur neuf. Candidat ba925 retenu, preuve rouge conservée. Paquet corrigé en validation. |
