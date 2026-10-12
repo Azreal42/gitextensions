@@ -43,6 +43,7 @@ La case cochée exige une preuve dans le code/tests ou un résultat exécuté. M
 - [ ] Fetch/prune/pull/push/force-with-lease, remotes et configuration SSH/proxy.
 - [x] Menu Pull/Fetch original : bouton scindé, six actions avec icônes/XLF, sous-menu de défaut exclusif restant ouvert sans commande Git, deux préférences XDG distinctes et raccourcis Ctrl+Down/F8/Ctrl+Shift+Down/Ctrl+Shift+P. Merge/rebase divergents, portée des fetchs/prune, confirmations, conflits/résolution/continue/abort, bare et HEAD détaché contrôlés. Douze nouveaux scénarios Core et dix-sept UI verts ; Core 147/147, six projets Release sans diagnostic. Paquet 94f44d78f accepté et livré : 656 tests complets, six groupes natifs clair/sombre, 42 cadres, 24 traces toutes vertes, 28 assertions Git et deux copies zeta exactes. Ancrage à gauche et radios bleus confirmés ; préférences, annulation et absence de commande lors du choix du défaut vérifiées.
 - [ ] Historique fichier/blame/grep/arbre/export archive et patches.
+- [x] Menu Stash scindé et fenêtre FormStash native (Create/Manage, all/selected, Keep index, untracked, Apply/Pop/Drop, raccourcis, conflits) : huit scénarios Core et treize UI/Git locaux verts ; paquet final en préparation. ADR 0033.
 - [ ] Stashes, sous-modules, worktrees, sparse checkout, reflog, bisect, notes, fsck/cleanup.
 - [ ] Préférences globales/locales/distribuées, raccourcis/thèmes/outils externes/scripts/hooks/liens/avatars.
 - [ ] Contrat plugins portable, plugins métiers livrés et intégrations CI/hébergeurs.

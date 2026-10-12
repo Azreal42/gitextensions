@@ -309,22 +309,16 @@ public sealed partial class MainWindow
         return Task.CompletedTask;
     }
 
-    private async Task StashAsync()
-    {
-        string[]? values = await Dialogs.PromptAsync(this, "Stash changes", ("Message", ""));
-        if (values is not null) { await RunAsync("Stash", r => r.StashAsync(Optional(values[0]), cancellationToken: Token)); }
-    }
-
     private Task ApplyStashAsync(bool pop)
     {
         GitStash stash = SelectedStash();
-        return RunAsync(pop ? "Pop stash" : "Apply stash", r => r.ApplyStashAsync(stash.Reference, pop, cancellationToken: Token));
+        return RunQuickStashAsync(pop ? "Pop stash" : "Apply stash", r => r.ApplyStashAsync(stash, pop, cancellationToken: Token));
     }
 
     private async Task DropStashAsync()
     {
         GitStash stash = SelectedStash();
-        if (await Dialogs.ConfirmAsync(this, "Delete stash", $"Permanently delete {stash.Subject}?")) { await RunAsync("Delete stash", r => r.DropStashAsync(stash.Reference, Token)); }
+        if (await Dialogs.ConfirmAsync(this, "Delete stash", $"Permanently delete {stash.Subject}?")) { await RunAsync("Delete stash", r => r.DropStashAsync(stash, Token)); }
     }
 
     private Task ShowStashAsync()

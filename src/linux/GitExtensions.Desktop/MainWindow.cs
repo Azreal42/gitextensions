@@ -366,6 +366,7 @@ public sealed partial class MainWindow : Window
             IReadOnlyList<GitCommit> history = status.IsUnborn ? [] : await repository.GetLogAsync(query, Token);
             IReadOnlyList<GitRemote> remotes = await repository.GetRemotesAsync(Token);
             IReadOnlyList<GitStash> stashes = await repository.GetStashesAsync(Token);
+            _supportsStashStaged ??= await repository.SupportsStashStagedAsync(Token);
             IReadOnlyList<GitWorktree> worktrees = await repository.GetWorktreesAsync(Token);
             IReadOnlyList<GitSubmodule> submodules = await repository.GetSubmodulesAsync(Token);
             var configuration = await repository.GetConfigAsync(cancellationToken: Token);
@@ -512,6 +513,7 @@ public sealed partial class MainWindow : Window
         UpdatePartialStageActions();
         if (_cancelToolbarButton is not null) { _cancelToolbarButton.IsVisible = !enabled && _operation is not null; _cancelToolbarButton.IsEnabled = _operation is not null; }
         RefreshPullMenu();
+        RefreshStashMenu();
         _browserToolbar?.Place();
     }
 

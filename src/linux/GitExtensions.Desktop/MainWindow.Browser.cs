@@ -379,6 +379,7 @@ public sealed partial class MainWindow
 
     private async Task ShowWorkflowAsync(string name)
     {
+        if (name == "Stashes") { await ShowStashDialogAsync(); return; }
         if (name == "Changes")
         {
             if (_repository is null || _busy) { return; }

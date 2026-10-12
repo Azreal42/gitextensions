@@ -87,7 +87,7 @@ public sealed partial class MainWindow
         Command("BrowsePush", "Push", "Push.png", PushAsync);
         _commitToolbarButton = ToolbarButton("BrowseCommit", "Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes"), text: true);
         toolbar.Add(_commitToolbarButton, MenuAction("Commit…", () => ShowWorkflowAsync("Changes"), "RepoStateClean.png"));
-        Command("BrowseStash", "Stash", "stash.png", StashAsync);
+        toolbar.Add(BuildStashButton(), new MenuItem { Name = "StashOverflow", Header = T("Stash"), Icon = OriginalIconImage("stash.png"), ItemsSource = CreateStashMenu("StashOverflow") });
         Command("BrowseFileExplorer", "Open repository in file manager", "BrowseFileExplorer.png", OpenRepositoryFolderAsync);
         Command("BrowseConsole", "Console", "Console.png", OpenTerminalAsync);
         Command("BrowseSettings", "Settings", "Settings.png", () => ShowWorkflowAsync("Configuration"));
