@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using GitExtensions.Extensibility.Git;
 
@@ -39,6 +40,22 @@ public sealed class PullDialog : RepositoryDialog
         _merge.Content = T("Merge"); _rebase.Content = T("Rebase"); _fetch.Content = T("Do not merge, only fetch");
         _prune.Content = T("Prune remote branches");
         ReferenceDialogControls.Compact(_merge, _rebase, _fetch, _prune);
+        foreach (RadioButton mode in new[] { _merge, _rebase, _fetch })
+        {
+            foreach (ThemeVariant variant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(variant == ThemeVariant.Dark);
+                ResourceDictionary resources = new();
+                foreach (string state in new[] { "", "PointerOver", "Pressed" })
+                {
+                    resources["RadioButtonOuterEllipseCheckedFill" + state] = Brush.Parse(colors["Highlight"]);
+                    resources["RadioButtonOuterEllipseCheckedStroke" + state] = Brush.Parse(colors["Highlight"]);
+                    resources["RadioButtonCheckGlyphFill" + state] = Brush.Parse(colors["HighlightText"]);
+                    resources["RadioButtonCheckGlyphStroke" + state] = Brush.Parse(colors["HighlightText"]);
+                }
+                mode.Resources.ThemeDictionaries[variant] = resources;
+            }
+        }
         _execute = Action("ExecutePull", "Pull", async () => { await ExecuteAsync(this); if (Succeeded) { Close(); } });
         _execute.IsDefault = true;
         Button close = new() { Name = "ClosePull", Content = T("Cancel"), IsCancel = true };

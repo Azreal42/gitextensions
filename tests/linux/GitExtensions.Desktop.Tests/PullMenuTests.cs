@@ -6,6 +6,8 @@ using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
 using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Themes.Fluent;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -20,6 +22,51 @@ namespace GitExtensions.Desktop.Tests;
 [NonParallelizable]
 public class PullMenuTests
 {
+    [AvaloniaTest]
+    public async Task PullModesKeepTheirRenderedWindowsPaletteWithAnOrangePlatformAccent()
+    {
+        FluentTheme fluent = Application.Current!.Styles.OfType<FluentTheme>().Single();
+        fluent.Palettes.TryGetValue(ThemeVariant.Light, out ColorPaletteResources? previousLight);
+        fluent.Palettes.TryGetValue(ThemeVariant.Dark, out ColorPaletteResources? previousDark);
+        Color orange = Color.Parse("#e95420");
+        fluent.Palettes[ThemeVariant.Light] = new ColorPaletteResources { Accent = orange };
+        fluent.Palettes[ThemeVariant.Dark] = new ColorPaletteResources { Accent = orange };
+        try
+        {
+            await using Fixture f = await Fixture.CreateAsync(); MainWindow main = await f.ShowAsync();
+            PullDialog dialog = new(new GitRepository(f.Client), GitPullAction.Fetch);
+            Task shown = dialog.ShowDialog(main); await dialog.InitializeAsync();
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark, ThemeVariant.Light })
+            {
+                dialog.RequestedThemeVariant = theme; Pump(dialog);
+                Assert.That(((IResourceNode)fluent).TryGetResource("SystemAccentColor", theme, out object? accent), Is.True);
+                Assert.That(accent, Is.EqualTo(orange));
+                Color expected = Color.Parse(theme == ThemeVariant.Dark ? "#2864b4" : "#0078d7");
+                foreach (string name in new[] { "PullMerge", "PullRebase", "PullFetch" })
+                {
+                    RadioButton mode = Field<RadioButton>(dialog, name); mode.IsChecked = true; Pump(dialog); AssertChecked();
+                    Point point = mode.TranslatePoint(new Point(10, 10), dialog)!.Value;
+                    dialog.MouseMove(point); Pump(dialog); AssertChecked();
+                    dialog.MouseDown(point, MouseButton.Left); Pump(dialog); AssertChecked();
+                    dialog.MouseMove(new Point(dialog.Width - 2, dialog.Height - 2));
+                    dialog.MouseUp(new Point(dialog.Width - 2, dialog.Height - 2), MouseButton.Left); Pump(dialog);
+                    void AssertChecked()
+                    {
+                        Avalonia.Controls.Shapes.Ellipse circle = mode.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>().Single(item => item.Name == "CheckOuterEllipse");
+                        Assert.That(((ISolidColorBrush)circle.Fill!).Color, Is.EqualTo(expected), "The real checked/hover/pressed radio must retain the Windows palette.");
+                    }
+                }
+                Capture(dialog, "pull-radio-palette-" + theme + ".png");
+            }
+            dialog.Close(); await shown;
+        }
+        finally
+        {
+            if (previousLight is null) { fluent.Palettes.Remove(ThemeVariant.Light); } else { fluent.Palettes[ThemeVariant.Light] = previousLight; }
+            if (previousDark is null) { fluent.Palettes.Remove(ThemeVariant.Dark); } else { fluent.Palettes[ThemeVariant.Dark] = previousDark; }
+        }
+    }
+
     [AvaloniaTest]
     public async Task OriginalMenuAndDefaultSubmenuHaveTheirIconsAndChangingDefaultLeavesTheMenuOpenWithoutGit()
     {
@@ -258,7 +305,7 @@ public class PullMenuTests
         Assert.That(Field<AutoCompleteBox>(dialog, "PullRemote").Text, Is.EqualTo("alpha"));
         Assert.That(dialog.LastError, Is.Not.Null, "Without an upstream Git requires a branch; expose that error and let the user choose.");
         Assert.That(await f.Ref("HEAD"), Is.EqualTo(f.Initial));
-        Field<AutoCompleteBox>(dialog, "PullBranch").Text = "main";
+        EnterAutoComplete(dialog, "PullBranch", "main");
         Click(Field<Button>(dialog, "ExecutePull")); await Idle(main);
         Assert.That(main.OwnedWindows, Is.Empty);
         Assert.That(await f.Ref("HEAD"), Is.EqualTo(alpha));
@@ -317,14 +364,14 @@ public class PullMenuTests
         try
         {
             await dialog.InitializeAsync();
-            Field<AutoCompleteBox>(dialog, "PullRemote").Text = "[ All ]"; Pump(dialog);
+            EnterAutoComplete(dialog, "PullRemote", "[ All ]");
             Assert.That(Field<RadioButton>(dialog, "PullFetch").IsChecked, Is.True);
             Assert.That(Field<RadioButton>(dialog, "PullMerge").IsEnabled, Is.False);
             Assert.That(Field<RadioButton>(dialog, "PullRebase").IsEnabled, Is.False);
             Assert.That(Field<Button>(dialog, "ExecutePull").IsEnabled, Is.True);
             Assert.That(dialog.Attempted, Is.False);
             Assert.That(await f.Ref("HEAD"), Is.EqualTo(f.Initial));
-            Field<AutoCompleteBox>(dialog, "PullRemote").Text = "zeta"; Pump(dialog);
+            EnterAutoComplete(dialog, "PullRemote", "zeta");
             Assert.That(Field<RadioButton>(dialog, "PullMerge").IsEnabled, Is.True);
             Assert.That(Field<RadioButton>(dialog, "PullRebase").IsEnabled, Is.True);
         }
@@ -391,6 +438,13 @@ public class PullMenuTests
     }
     private static MenuItem Item(MenuFlyout menu, string name) => menu.Items.OfType<MenuItem>().Single(item => item.Name == name);
     private static T Field<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(item => item.Name == name);
+    private static void EnterAutoComplete(Window dialog, string name, string value)
+    {
+        TextBox text = Field<AutoCompleteBox>(dialog, name).GetVisualDescendants().OfType<TextBox>().First();
+        text.Focus(); text.SelectAll(); dialog.KeyTextInput(value); Pump(dialog);
+        Press(dialog, PhysicalKey.Tab, RawInputModifiers.None);
+        Assert.That(Field<AutoCompleteBox>(dialog, name).Text, Is.EqualTo(value));
+    }
     private static void Pump(TopLevel root) { root.UpdateLayout(); Dispatcher.UIThread.RunJobs(); root.UpdateLayout(); }
     private static void Press(TopLevel root, PhysicalKey key, RawInputModifiers modifiers)
     { root.KeyPressQwerty(key, modifiers); root.KeyReleaseQwerty(key, modifiers); Pump(root); }
