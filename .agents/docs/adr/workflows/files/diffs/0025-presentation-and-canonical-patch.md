@@ -6,4 +6,6 @@ Le patch destiné à l’index reste indépendant du texte affiché. Une sélect
 
 Les réglages de couleur sont partagés entre viewers. L’apparence est temporaire, sauf choix explicite de la mémoriser ; ouvrir un nouveau viewer recharge alors l’apparence enregistrée, comme dans l’original. Difftastic utilise la commande `difftool.difftastic.cmd` existante et ses numéros rejoignent les colonnes du viewer.
 
+Les raccourcis du viewer focalisé ont priorité sur ceux de Browse quand leur action est disponible ; hors du viewer, les commandes historiques du navigateur restent accessibles.
+
 Repères : `GitRepository.DiffDocuments`, `GitAnsiColorParser`, `GitDiffInlineHighlighter`, `GitDifftasticFormatter`, `DiffView`, `DiffViewerColors`, `DiffViewerPreferencesStore`, `DiffViewerAppearanceMenu`.
