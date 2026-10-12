@@ -14,7 +14,9 @@ public sealed partial class MainWindow
     private readonly PullPreferencesStore _pullPreferencesStore = new();
     private PullPreferences _pullPreferences = new();
     private readonly List<(MenuItem Item, GitPullAction Action, bool Default)> _pullMenuItems = [];
-    private readonly MenuFlyout _pullFlyout = new();
+    // The original split menu begins at the primary icon's left edge. Its
+    // target is the ten-pixel arrow immediately after the 24-pixel button.
+    private readonly MenuFlyout _pullFlyout = new() { Placement = PlacementMode.BottomEdgeAlignedLeft, HorizontalOffset = -24 };
     private Button? _pullButton, _pullDropdown;
     private GitPullAction? _shownPullAction;
 

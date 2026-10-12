@@ -32,6 +32,9 @@ public class PullMenuTests
             Button dropdown = Field<Button>(main, "BrowsePullDropdown"); Click(dropdown);
             MenuFlyout menu = (MenuFlyout)dropdown.Flyout!;
             Assert.That(menu.IsOpen, Is.True);
+            MenuFlyoutPresenter popup = Item(menu, "PullMenuNone").GetVisualAncestors().OfType<MenuFlyoutPresenter>().First();
+            PixelPoint pullOrigin = Field<Button>(main, "BrowsePull").PointToScreen(default);
+            Assert.That(popup.PointToScreen(default).X, Is.EqualTo(pullOrigin.X).Within(2), "The original dropdown aligns with the left edge of the whole split button.");
             Assert.That(menu.Items.OfType<MenuItem>().Select(item => item.Name), Is.EqualTo(new[]
             { "PullMenuNone", "PullMenuMerge", "PullMenuRebase", "PullMenuFetch", "PullMenuFetchAll", "PullMenuFetchPruneAll", "PullMenuSetDefault" }));
             Assert.That(menu.Items.OfType<Separator>().Count(), Is.EqualTo(2));
