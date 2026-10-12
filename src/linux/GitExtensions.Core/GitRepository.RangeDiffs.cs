@@ -59,6 +59,10 @@ public sealed partial class GitRepository
 
     public async Task<string> GetRangeDiffAsync(GitRangeDiffComparison comparison, GitRangeDiffOptions? options = null,
         CancellationToken cancellationToken = default)
+        => await ExecuteDiffReadAsync(await BuildRangeDiffArgumentsAsync(comparison, options, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+
+    private async Task<GitDiffReadCommand> BuildRangeDiffArgumentsAsync(GitRangeDiffComparison comparison, GitRangeDiffOptions? options,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(comparison);
         ArgumentNullException.ThrowIfNull(comparison.First);
@@ -83,7 +87,7 @@ public sealed partial class GitRepository
         // Keep both explicit bounds. Upstream calculated these for four selections but lost them before executing Git.
         arguments.AddRange([resolved.First.BaseRevision + ".." + resolved.First.TipRevision, resolved.Second.BaseRevision + ".." + resolved.Second.TipRevision]);
         if (paths.Length > 0) { arguments.AddRange(["--", .. paths]); }
-        return (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        return new(arguments);
     }
 
     private Task<string> ResolveRangeRevisionAsync(string revision, CancellationToken cancellationToken)

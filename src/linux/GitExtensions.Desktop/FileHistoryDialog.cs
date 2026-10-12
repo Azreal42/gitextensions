@@ -91,6 +91,10 @@ public sealed class FileHistoryDialog : RepositoryDialog
         };
         _blame.CommandRequested += async (_, args) => await OpenBlameCommandAsync(args);
         Track(_file, _revision, _follow, _exact, _full, _simplify, blameOptions, _revisions, _tabs);
+        _diff.TextView.DisplayOptionsChanged += async (_, _) =>
+        {
+            if (_tabs.SelectedIndex == 1) { await RequestDiffReloadAsync(LoadSelectionAsync); }
+        };
         Closed += (_, _) => { _view.Dispose(); _diff.Dispose(); _blame.Dispose(); foreach (Bitmap icon in _tabIcons) { icon.Dispose(); } };
     }
 
@@ -137,7 +141,9 @@ public sealed class FileHistoryDialog : RepositoryDialog
             GitRevisionChanges revisions = await Repository.GetRevisionChangesAsync(commit.Hash, other?.Hash, token);
             GitRevisionFile file = revisions.Files.FirstOrDefault(file => file.Path == entry.Path || file.OriginalPath == entry.Path)
                 ?? new(entry.Path, entry.Status, entry.PreviousPath);
-            _diff.ShowDiff(await Repository.GetRevisionFileDiffAsync(revisions, file, token));
+            await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
+            _diff.ShowDiff(await Repository.GetRevisionFileDiffDocumentAsync(revisions, file,
+                displayOptions: _diff.TextView.DisplayOptions, cancellationToken: token));
         }
         else if (_tabs.SelectedIndex == 2) { _view.ShowFile(entry.Path, await Repository.GetFileBytesAsync(entry.Path, commit.Hash, token)); }
         else if (_tabs.SelectedIndex == 3) { _blame.SetBlame(await Repository.GetFileBlameAsync(entry.Path, commit.Hash, _blame.Preferences.GitOptions, token)); }

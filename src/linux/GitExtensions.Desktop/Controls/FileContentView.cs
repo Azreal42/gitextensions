@@ -110,5 +110,6 @@ public sealed class FileContentView : UserControl, IDisposable
     {
         _source.PropertyChanged -= SourceChanged;
         ClearImage();
+        TextView.Dispose();
     }
 }

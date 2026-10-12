@@ -18,6 +18,10 @@ public sealed partial class GitRepository
 
     public async Task<string> GetCombinedFileDiffAsync(GitCombinedDiff diff, GitRevisionFile file,
         GitCombinedDiffOptions? options = null, CancellationToken cancellationToken = default)
+        => await ExecuteDiffReadAsync(await BuildCombinedFileDiffArgumentsAsync(diff, file, options, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+
+    private async Task<GitDiffReadCommand> BuildCombinedFileDiffArgumentsAsync(GitCombinedDiff diff, GitRevisionFile file,
+        GitCombinedDiffOptions? options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(diff);
         ArgumentNullException.ThrowIfNull(file);
@@ -34,7 +38,7 @@ public sealed partial class GitRepository
         if (options.UseHistogram) { arguments.Add("--histogram"); }
         AddComparisonOptions(arguments, display);
         arguments.AddRange([target, "--", path]);
-        return (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        return new(arguments);
     }
 
     /// <summary>Upstream FileStatusDiffCalculator groups in caller order: B,A; B,BASE,A; or B,baseB,A,baseA.</summary>

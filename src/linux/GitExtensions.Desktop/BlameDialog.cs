@@ -78,6 +78,10 @@ public sealed class BlameDialog : RepositoryDialog
         _moves.IsCheckedChanged += (_, _) => SaveCheckboxPreferences();
         _copies.IsCheckedChanged += (_, _) => SaveCheckboxPreferences();
         Track(_file, _revision, _whitespace, _moves, _copies, optionsButton, _view, _tabs);
+        _changes.TextView.DisplayOptionsChanged += async (_, _) =>
+        {
+            if (_tabs.SelectedIndex == 1 && _view.SelectedLine is not null) { await RequestDiffReloadAsync(() => ShowChangesAsync()); }
+        };
         Closing += (_, _) => _view.CancelAvatarLoading();
         Closed += (_, _) => { _view.Dispose(); _changes.Dispose(); };
     }
@@ -133,7 +137,9 @@ public sealed class BlameDialog : RepositoryDialog
         if (selected.Line.Hash.All(character => character == '0')) { throw new InvalidOperationException(T("This line has not been committed yet.")); }
         GitRevisionChanges revisions = await Repository.GetRevisionChangesAsync(selected.Line.Hash, cancellationToken: token);
         GitRevisionFile file = revisions.Files.FirstOrDefault(file => file.Path == selected.OriginalPath) ?? new(selected.OriginalPath, 'M');
-        _changes.ShowDiff(await Repository.GetRevisionFileDiffAsync(revisions, file, token));
+        await _changes.TextView.ConfigureRepositoryAsync(Repository, token);
+        _changes.ShowDiff(await Repository.GetRevisionFileDiffDocumentAsync(revisions, file,
+            displayOptions: _changes.TextView.DisplayOptions, cancellationToken: token));
         _tabs.SelectedIndex = 1;
     });
 

@@ -58,26 +58,21 @@ public sealed partial class GitRepository
     }
 
     public async Task<string> GetDiffAsync(string? path = null, bool staged = false, string? revision = null, CancellationToken cancellationToken = default)
+        => await ExecuteDiffReadAsync(await BuildWorktreeDiffArgumentsAsync(path, staged, revision, null, null, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+
+    private async Task<GitDiffReadCommand> BuildWorktreeDiffArgumentsAsync(string? path, bool staged, string? revision,
+        GitComparisonDiffOptions? options, string? originalPath, CancellationToken cancellationToken)
     {
         await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
-        List<string> arguments = ["diff", "--no-ext-diff", "--no-textconv"];
-        if (staged)
-        {
-            arguments.Add("--cached");
-        }
-
-        if (revision is not null)
-        {
-            arguments.Add(await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false));
-        }
-
+        List<string> arguments = ["--literal-pathspecs", "diff", "--no-ext-diff", "--no-textconv", "--no-color"];
+        if (options is not null) { AddComparisonOptions(arguments, options); }
+        if (originalPath is not null) { arguments.AddRange(["--find-renames", "--find-copies"]); }
+        if (staged) { arguments.Add("--cached"); }
+        if (revision is not null) { arguments.Add(await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false)); }
         arguments.Add("--");
-        if (path is not null)
-        {
-            arguments.Add(ValidatePath(path));
-        }
-
-        return (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        if (originalPath is not null) { arguments.Add(ValidatePath(originalPath)); }
+        if (path is not null) { arguments.Add(ValidatePath(path)); }
+        return new(arguments);
     }
 
     public async Task<string> GetCommitDiffAsync(string revision, string? path = null, CancellationToken cancellationToken = default)

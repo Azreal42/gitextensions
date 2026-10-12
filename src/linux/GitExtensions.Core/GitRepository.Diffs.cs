@@ -33,6 +33,10 @@ public sealed partial class GitRepository
 
     public async Task<string> GetRevisionFileDiffAsync(GitRevisionChanges revisions, GitRevisionFile file,
         GitComparisonDiffOptions options, CancellationToken cancellationToken = default)
+        => await ExecuteDiffReadAsync(await BuildRevisionFileDiffArgumentsAsync(revisions, file, options, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+
+    private async Task<GitDiffReadCommand> BuildRevisionFileDiffArgumentsAsync(GitRevisionChanges revisions, GitRevisionFile file,
+        GitComparisonDiffOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(revisions);
         ArgumentNullException.ThrowIfNull(file);
@@ -48,7 +52,7 @@ public sealed partial class GitRepository
         if (parent is not null) { arguments.Add(parent); }
         arguments.AddRange([target, "--", .. paths]);
         // diff-tree also receives literal paths, unlike its root-only name listing above.
-        return (await ExecuteAsync(["--literal-pathspecs", .. arguments], cancellationToken).ConfigureAwait(false)).StandardOutput;
+        return new(["--literal-pathspecs", .. arguments]);
     }
 
     public async Task<byte[]> GetIndexFileBytesAsync(string path, CancellationToken cancellationToken = default)

@@ -82,7 +82,7 @@ public sealed partial class MainWindow
 
     private async Task ApplyHunksAsync(bool reverse)
     {
-        if (SelectedWorkingChange is null || _selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
+        if (SelectedWorkingChange is null || _changesDiffView?.CanStagePatch != true || _selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging hunks" : "Show unstaged changes before staging hunks"; return; }
         string patch = _selectedPatch.SelectHunks(_hunks.SelectedItems.Cast<GitPatchHunk>().Select(h => h.Index));
         await RunAsync(reverse ? "Unstage hunks" : "Stage hunks", r => r.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: Token));
@@ -93,7 +93,7 @@ public sealed partial class MainWindow
     {
         if (_changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging lines" : "Show unstaged changes before staging lines"; return; }
-        string? patch = GitPatch.SelectLines(_changesDiffView.Text, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
+        string? patch = GitPatch.SelectLines(_changesDiffView.CanonicalText, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
             staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
         if (patch is null) { _state.Text = "The selected text contains no changed lines"; return; }
         await RunAsync(reverse ? "Unstage lines" : "Stage lines", repository => repository.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: Token));

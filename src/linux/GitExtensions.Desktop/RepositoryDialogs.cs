@@ -15,6 +15,7 @@ public abstract class RepositoryDialog : Window
     private readonly List<Control> _inputs = [];
     private CancellationTokenSource? _operation;
     private bool _closeWhenIdle;
+    private Func<Task>? _pendingDiffReload;
     protected readonly GitRepository Repository;
     protected readonly TextBlock Status = new() { Name = "OperationStatus", TextWrapping = TextWrapping.Wrap };
     protected readonly DockPanel Root = new() { LastChildFill = true };
@@ -45,6 +46,13 @@ public abstract class RepositoryDialog : Window
     protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
+
+    protected async Task RequestDiffReloadAsync(Func<Task> reload)
+    {
+        if (_lifetime.IsCancellationRequested) { return; }
+        if (IsBusy) { _pendingDiffReload = reload; return; }
+        await reload();
+    }
 
     protected Button Action(string name, string label, Func<Task> action)
     {
@@ -82,6 +90,11 @@ public abstract class RepositoryDialog : Window
             foreach (Control input in _inputs) { input.IsEnabled = true; }
             UpdateActions();
             if (_closeWhenIdle) { Close(); }
+            else if (_pendingDiffReload is Func<Task> reload && !_lifetime.IsCancellationRequested)
+            {
+                _pendingDiffReload = null;
+                await reload();
+            }
         }
     }
 

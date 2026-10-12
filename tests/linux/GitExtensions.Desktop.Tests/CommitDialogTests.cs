@@ -18,6 +18,67 @@ namespace GitExtensions.Desktop.Tests;
 public class CommitDialogTests
 {
     [AvaloniaTest]
+    public async Task ConfiguredDifftasticShortcutDisplaysReadOnlyColumnsWithoutChangingIndexOrWorktree()
+    {
+        using Fixture fixture = await Fixture.CreateAsync(PartialInitial, PartialChanged);
+        CommitDialog dialog = fixture.Dialog;
+        DiffView diff = Find<DiffView>(dialog, "SelectedDiff");
+        string patch = diff.CanonicalText;
+        string worktree = await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "file.txt"));
+        string tool = Path.Combine(fixture.Temporary, "controlled-difftastic");
+        await File.WriteAllTextAsync(tool, "#!/bin/sh\nprintf 'file.txt --- Text\\n\\033[31m1 old\\033[m\\n\\033[32m2 new\\033[m\\n'\n");
+        if (!OperatingSystem.IsWindows()) { File.SetUnixFileMode(tool, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+        await fixture.Run("config", "difftool.difftastic.cmd", "'" + tool + "' \"$LOCAL\" \"$REMOTE\"");
+        await diff.ConfigureRepositoryAsync(fixture.Repository);
+        diff.Editor.TextArea.Focus();
+        Press(dialog, PhysicalKey.T, RawInputModifiers.Control);
+        await Idle(dialog);
+        Assert.That(diff.AppearanceMenu.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.Difftastic));
+        Assert.That(diff.EffectiveMode, Is.EqualTo(DiffViewMode.Difftastic));
+        Assert.That(diff.Text, Does.Contain("old").And.Contain("new"));
+        Assert.That(diff.GetColumnNumbers(2), Is.EqualTo(new int?[] { 1, null }));
+        Assert.That(diff.GetColumnNumbers(3), Is.EqualTo(new int?[] { null, 2 }));
+        Assert.That(diff.CanonicalText, Is.EqualTo(patch));
+        Assert.That(Find<Button>(dialog, "StageHunk").IsEnabled, Is.False);
+        Assert.That(Find<Button>(dialog, "StageLines").IsEnabled, Is.False);
+        Assert.That((await fixture.Run("diff", "--cached")).StandardOutput, Is.Empty);
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "file.txt")), Is.EqualTo(worktree));
+    }
+
+    [AvaloniaTest]
+    public async Task WordDiffShortcutDisablesPartialStageThenPatchStagesExactUnicodeSelection()
+    {
+        using Fixture fixture = await Fixture.CreateAsync(PartialInitial, PartialChanged);
+        CommitDialog dialog = fixture.Dialog;
+        DiffView diff = Find<DiffView>(dialog, "SelectedDiff");
+        string canonical = diff.CanonicalText;
+        Assert.That(diff.AnsiSpans, Is.Not.Empty, "The real Git reader supplies colors while preserving a canonical patch.");
+        Assert.That(canonical, Does.Not.Contain("\u001b["));
+        string worktree = await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "file.txt"));
+        diff.Editor.TextArea.Focus();
+        Press(dialog, PhysicalKey.D, RawInputModifiers.Control);
+        await Idle(dialog);
+        Assert.That(diff.AppearanceMenu.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.GitWordDiff));
+        Assert.That(diff.CanStagePatch, Is.False);
+        Assert.That(Find<Button>(dialog, "StageHunk").IsEnabled, Is.False);
+        Assert.That(Find<Button>(dialog, "StageLines").IsEnabled, Is.False);
+        Assert.That(diff.CanonicalText, Is.EqualTo(canonical));
+        Assert.That((await fixture.Run("diff", "--cached")).StandardOutput, Is.Empty);
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "file.txt")), Is.EqualTo(worktree));
+
+        diff.Editor.TextArea.Focus();
+        Press(dialog, PhysicalKey.D, RawInputModifiers.Control);
+        await Idle(dialog);
+        Assert.That(diff.CanStagePatch, Is.True);
+        const string selected = "+selected addition λ🧪";
+        diff.Select(diff.Text.IndexOf(selected, StringComparison.Ordinal), selected.Length);
+        Click(dialog, "StageLines");
+        await Idle(dialog);
+        await AssertIndex(fixture, "selected addition", "remaining addition");
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "file.txt")), Is.EqualTo(worktree));
+    }
+
+    [AvaloniaTest]
     public async Task ClassicFrenchDialogKeepsTwoCompactFileListsBesideDiffAndMessage()
     {
         using Fixture fixture = await Fixture.CreateAsync(PartialInitial, PartialChanged, "fr-FR");

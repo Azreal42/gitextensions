@@ -122,6 +122,10 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _filter.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty && !_loading) { ApplyFileFilter(); } };
         _find.KeyDown += (_, args) => { if (args.Key == Key.Enter) { args.Handled = true; Find(args.KeyModifiers != KeyModifiers.Shift); } };
         AddHandler(KeyDownEvent, async (_, args) => await HandleKeyAsync(args), RoutingStrategies.Tunnel);
+        _diff.TextView.DisplayOptionsChanged += async (_, _) =>
+        {
+            if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(LoadSelectionAsync); }
+        };
         Closed += (_, _) => { _base.Dispose(); _compare.Dispose(); _diff.Dispose(); _baseView.Dispose(); _compareView.Dispose(); foreach (Bitmap icon in _icons) { icon.Dispose(); } };
         UpdateActions();
     }
@@ -173,7 +177,11 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         if (_tabs.SelectedIndex == 1 && !tabs[1].IsEnabled || _tabs.SelectedIndex == 2 && !tabs[2].IsEnabled) { _tabs.SelectedIndex = 0; }
         _fileCaption.Text = file is null ? T("No differences") : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
         if (file is null || _comparison is null) { _diff.ShowDiff(T("No differences")); _baseView.ShowDiff(""); _compareView.ShowDiff(""); return; }
-        if (_tabs.SelectedIndex == 0) { _diff.ShowDiff(await Repository.GetComparisonFileDiffAsync(_comparison, file, ReadDiffOptions(), token)); }
+        if (_tabs.SelectedIndex == 0)
+        {
+            await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
+            _diff.ShowDiff(await Repository.GetComparisonFileDiffDocumentAsync(_comparison, file, ReadDiffOptions(), _diff.TextView.DisplayOptions, token));
+        }
         else if (_tabs.SelectedIndex == 1) { _baseView.ShowFile(file.OriginalPath ?? file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Base, file.OriginalPath ?? file.Path, token)); }
         else { _compareView.ShowFile(file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Compare, file.Path, token)); }
     }

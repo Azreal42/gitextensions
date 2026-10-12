@@ -62,6 +62,10 @@ public sealed partial class GitRepository
 
     public async Task<string> GetComparisonFileDiffAsync(GitComparison comparison, GitRevisionFile file,
         GitComparisonDiffOptions? options = null, CancellationToken cancellationToken = default)
+        => await ExecuteDiffReadAsync(await BuildComparisonFileDiffArgumentsAsync(comparison, file, options, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+
+    private async Task<GitDiffReadCommand> BuildComparisonFileDiffArgumentsAsync(GitComparison comparison, GitRevisionFile file,
+        GitComparisonDiffOptions? options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(comparison);
         ArgumentNullException.ThrowIfNull(file);
@@ -75,22 +79,22 @@ public sealed partial class GitRepository
             AddComparisonOptions(untracked, options);
             string fullPath = System.IO.Path.Combine(Path, path);
             untracked.AddRange(comparison.Compare.Kind == GitCompareRevisionKind.WorkingTree ? ["--", "/dev/null", fullPath] : ["--", fullPath, "/dev/null"]);
-            return (await ExecuteAsync(untracked, cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false)).StandardOutput;
+            return new(["--literal-pathspecs", .. untracked], [1]);
         }
         if (comparison.Base.Kind == GitCompareRevisionKind.Commit && comparison.Compare.Kind == GitCompareRevisionKind.Commit && options == new GitComparisonDiffOptions())
         {
-            return await GetRevisionFileDiffAsync(new(comparison.Compare.Revision, comparison.Base.Revision, comparison.Files), file, cancellationToken).ConfigureAwait(false);
+            return await BuildRevisionFileDiffArgumentsAsync(new(comparison.Compare.Revision, comparison.Base.Revision, comparison.Files), file, options, cancellationToken).ConfigureAwait(false);
         }
         GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, cancellationToken).ConfigureAwait(false);
         GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, cancellationToken).ConfigureAwait(false);
-        if (first == second) { return ""; }
+        if (first == second) { return new([]); }
         List<string> arguments = ["--literal-pathspecs", "diff", "--no-color", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
         AddComparisonOptions(arguments, options);
         AddComparisonRevisions(arguments, first, second);
         arguments.Add("--");
         if (file.OriginalPath is not null) { arguments.Add(ValidatePath(file.OriginalPath)); }
         arguments.Add(path);
-        return (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        return new(arguments);
     }
 
     public async Task<byte[]> GetComparisonFileBytesAsync(GitCompareRevision revision, string path, CancellationToken cancellationToken = default)

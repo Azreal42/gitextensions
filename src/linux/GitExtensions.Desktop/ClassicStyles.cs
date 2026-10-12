@@ -240,9 +240,8 @@ internal static class ClassicStyles
                 }
             }
         ];
-        Dictionary<string, string> light = ReadColors(ReadCss("invariant.css"), includeSystemTable: false);
-        Dictionary<string, string> dark = new(light, StringComparer.Ordinal);
-        foreach ((string name, string value) in ReadColors(ReadCss("dark.css"), includeSystemTable: true)) { dark[name] = value; }
+        IReadOnlyDictionary<string, string> light = OriginalColors(dark: false);
+        IReadOnlyDictionary<string, string> dark = OriginalColors(dark: true);
         styles.Resources = new ResourceDictionary
         {
             ThemeDictionaries =
@@ -255,6 +254,16 @@ internal static class ClassicStyles
     }
 
     private static DynamicResourceExtension Resource(string name) => new("Classic" + name + "Brush");
+
+    internal static IReadOnlyDictionary<string, string> OriginalColors(bool dark)
+    {
+        Dictionary<string, string> colors = ReadColors(ReadCss("invariant.css"), includeSystemTable: false);
+        if (dark)
+        {
+            foreach ((string name, string value) in ReadColors(ReadCss("dark.css"), includeSystemTable: true)) { colors[name] = value; }
+        }
+        return colors;
+    }
 
     private static ResourceDictionary Resources(IReadOnlyDictionary<string, string> colors, bool dark)
     {

@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
+using GitExtensions.Linux;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -36,6 +37,14 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
         TextView.Mode = DiffViewMode.Auto;
         _content.ClearImage();
         _source.Text = text;
+        ApplySyntax();
+    }
+    public void ShowDiff(GitDiffDocument document)
+    {
+        _syntaxPath = null;
+        TextView.Mode = DiffViewMode.Auto;
+        _content.ClearImage();
+        TextView.ShowDocument(document);
         ApplySyntax();
     }
     private void ApplySyntax()

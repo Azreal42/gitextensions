@@ -111,6 +111,19 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("index flags retain literal names, mixed flags and unique conflict paths", ABClassificationScenarios.IndexFlagsAsync),
     ("porcelain rename status retains exact and partial scores with literal paths", StatusSimilarityScenarios.RealRenamesAsync),
     ("porcelain copy scores and malformed records preserve status contracts", StatusSimilarityScenarios.MalformedAndCopyScoresAsync),
+    ("ANSI port retains the original terminal and malformed-text fixtures", DiffColorScenarios.OriginalAnsiFixturesAsync),
+    ("ANSI injected light/dark palettes preserve attributes, 256 colors and RGB", DiffColorScenarios.AnsiPaletteAndAttributesAsync),
+    ("ANSI CRLF merging and malformed SGR preserve UTF16 canonical offsets", DiffColorScenarios.AnsiMergingAndMalformedAsync),
+    ("theme adaptation and double-dim intraline segments match original RGB", DiffColorScenarios.ThemeAdaptationAndDoubleDimAsync),
+    ("intraline anchors retain Unicode combined and nested range prefixes", DiffColorScenarios.InlineAnchorsAndPrefixOffsetsAsync),
+    ("line/word matches remain ordered and pairwise across original cases", DiffColorScenarios.OrderedLineMatchingAsync),
+    ("intraline bounds, five-line context blocks and moved exclusions", DiffColorScenarios.InlineBoundsAndBlocksAsync),
+    ("original gaps patch retains content-only markers and empty-line anchors", DiffColorScenarios.OriginalGapFixtureAsync),
+    .. DiffDisplayScenarios.All,
+    ("difftastic formatter retains original sample gutters and right column", DifftasticScenarios.OriginalFixtureAsync),
+    ("difftastic strips number colors and aligns growing column prefixes", DifftasticScenarios.ColumnsAndColorsAsync),
+    ("difftastic one-sided and zero-context Unicode lines retain correct gutters", DifftasticScenarios.OneSidedAndUnicodeAsync),
+    ("difftastic unexpected output and malformed bounds remain deterministic", DifftasticScenarios.UnexpectedOutputAndBoundsAsync),
 ];
 
 int failures = 0;

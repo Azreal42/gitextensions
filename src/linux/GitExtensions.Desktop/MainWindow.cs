@@ -239,6 +239,7 @@ public sealed partial class MainWindow : Window
     private Control BuildChangesDiff()
     {
         _changesDiffView = new DiffView(_changesDiff) { Name = "WorktreeDiff" };
+        _changesDiffView.DisplayOptionsChanged += RequestDiffAppearanceReload;
         _hunks.ItemTemplate = TextTemplate<GitPatchHunk>(hunk => hunk.Header);
         _stagedDiff.IsCheckedChanged += async (_, _) => await LoadSelectedDiffAsync();
         _changesContent = new FileContentView(_changesDiff, _changesDiffView);
@@ -468,6 +469,7 @@ public sealed partial class MainWindow : Window
             _busy = false;
             SetActionsEnabled(true);
             if (success) { _state.Text = _repositorySummary; }
+            if (_pendingDiffAppearance && !_lifetime.IsCancellationRequested) { await ReloadDiffAppearancesAsync(); }
         }
     }
 
