@@ -464,6 +464,9 @@ public sealed class DiffView : UserControl, IDisposable
         long version = ++_readingVersion;
         void RestoreScroll()
         {
+            // A whole-file reload changes the scroll extent. Apply the offset
+            // against the new layout instead of clamping it to the previous patch.
+            TopLevel.GetTopLevel(this)?.UpdateLayout();
             int row = exact ? Math.Clamp(position.ScrollAnchor.Row, 1, _editor.Document.LineCount)
                 : _editor.Document.GetLineByOffset(ResolveAnchor(position.ScrollAnchor)).LineNumber;
             double vertical = _editor.TextArea.TextView.GetVisualTopByDocumentLine(row) + position.ScrollRemainder * _editor.TextArea.TextView.DefaultLineHeight;

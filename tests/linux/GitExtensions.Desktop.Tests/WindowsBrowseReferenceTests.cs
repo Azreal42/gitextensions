@@ -176,6 +176,29 @@ public class WindowsBrowseReferenceTests
         finally { french?.Close(); System.Globalization.CultureInfo.CurrentUICulture = previous; }
     }
 
+    [AvaloniaTest]
+    public async Task RefreshUpdatesInlineReferencesWhenTheCommitItselfHasNotChanged()
+    {
+        using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\n", commitInfoPosition: null);
+        MainWindow main = fixture.Window;
+        string head = await new GitRepository(fixture.Repository).ResolveRevisionAsync("HEAD");
+        await Git(fixture, "branch", "feature/new-reference");
+        await Git(fixture, "tag", "v-reference");
+        main.KeyPressQwerty(PhysicalKey.F5, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.F5, RawInputModifiers.None);
+        await Until(() => !main.IsBusy); await Layout(main);
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        Assert.That(history.Items.OfType<GitCommit>().Single().Hash, Is.EqualTo(head));
+        string[] Names() => history.GetVisualDescendants().OfType<Border>().Where(badge => badge.Name == "RevisionReference").Select(badge => ((GitReference)badge.Tag!).Name).ToArray();
+        Assert.That(Names(), Does.Contain("refs/heads/feature/new-reference").And.Contain("refs/tags/v-reference"));
+        await Git(fixture, "branch", "-m", "feature/new-reference", "feature/renamed-reference");
+        await Git(fixture, "tag", "-d", "v-reference");
+        main.KeyPressQwerty(PhysicalKey.F5, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.F5, RawInputModifiers.None);
+        await Until(() => !main.IsBusy); await Layout(main);
+        Assert.That(Names(), Does.Contain("refs/heads/feature/renamed-reference").And.Not.Contain("refs/heads/feature/new-reference").And.Not.Contain("refs/tags/v-reference"));
+        Assert.That((await new GitRepository(fixture.Repository).GetStatusAsync()).Changes, Is.Empty);
+        Assert.That(main.LastException, Is.Null);
+    }
+
     private static T Field<T>(Window main, string? name) where T : Control => main.GetVisualDescendants().OfType<T>().Single(control => name is null || control.Name == name);
     private static Rect InWindow(Window main, Control control) => new(control.TranslatePoint(default, main)!.Value, control.Bounds.Size);
     private static void Click(Window main, Control control)
