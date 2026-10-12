@@ -325,6 +325,47 @@ public class CommitDialogTests
     }
 
     [AvaloniaTest]
+    public Task EnteringMessageFromStagedViewPreservesFocusAndCtrlEnterCommits()
+        => CheckStagedMessageKeyboardAsync(clearSelection: false);
+
+    [AvaloniaTest]
+    public Task EnteringMessageFromEmptyStagedSelectionPreservesFocusAndCtrlEnterCommits()
+        => CheckStagedMessageKeyboardAsync(clearSelection: true);
+
+    private static async Task CheckStagedMessageKeyboardAsync(bool clearSelection)
+    {
+        using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\nchanged\n");
+        CommitDialog dialog = fixture.Dialog;
+        Click(dialog, "StageAll");
+        await Idle(dialog);
+        TreeView staged = Find<TreeView>(dialog, "Staged");
+        FileStatusTestHelpers.Select(staged, "file.txt");
+        await Idle(dialog);
+        Assert.That(Find<DiffView>(dialog, "SelectedDiff").Text, Does.Contain("+changed"));
+        if (clearSelection)
+        {
+            staged.SelectedItem = null;
+            await Idle(dialog);
+            Assert.That(staged.SelectedItems, Is.Empty);
+        }
+        TextBox message = Find<TextBox>(dialog, "Message");
+        message.Text = "Commit from staged view";
+        Assert.That(message.Focus(), Is.True);
+        await Idle(dialog);
+        Assert.That(message.IsKeyboardFocusWithin, Is.True, "Selecting the staged preview on message focus must keep the editor focused.");
+        Assert.That(staged.SelectedItem, Is.Not.Null);
+        Assert.That(Find<DiffView>(dialog, "SelectedDiff").Text, Does.Contain("+changed"));
+        Assert.That(Find<Button>(dialog, "Commit").IsEnabled, Is.True);
+        Press(dialog, PhysicalKey.Enter, RawInputModifiers.Control);
+        Assert.That(message.Text, Is.EqualTo("Commit from staged view"), "The commit gesture must not insert an editor newline.");
+        await Idle(dialog);
+        Assert.That(dialog.HasCommitted, Is.True);
+        Assert.That((await fixture.Run("log", "-1", "--format=%B")).StandardOutput.TrimEnd(), Is.EqualTo("Commit from staged view"));
+        Assert.That((await fixture.Run("rev-list", "--count", "HEAD")).StandardOutput.Trim(), Is.EqualTo("2"));
+        Assert.That((await fixture.Run("status", "--porcelain")).StandardOutput, Is.Empty);
+    }
+
+    [AvaloniaTest]
     public async Task SelectionRegexKeepsBothListsAndStageAllButtonsAndShortcutStageAllLiteralPaths()
     {
         using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\n");

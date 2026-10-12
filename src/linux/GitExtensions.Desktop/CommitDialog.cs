@@ -174,8 +174,15 @@ public sealed class CommitDialog : Window
         {
             if (!_busy && _selectStaged.IsChecked && _stagedView.FilteredEntries.Count > 0)
             {
-                if (!_stagedView.SelectedTags.OfType<GitChange>().Any()) { _stagedView.SelectTags([_stagedView.FilteredEntries[0].Tag]); }
-                if (!_viewStaged)
+                bool selectFirst = !_stagedView.SelectedTags.OfType<GitChange>().Any();
+                if (selectFirst)
+                {
+                    bool refreshing = _refreshing;
+                    _refreshing = true;
+                    try { _stagedView.SelectTags([_stagedView.FilteredEntries[0].Tag]); }
+                    finally { _refreshing = refreshing; }
+                }
+                if (selectFirst || !_viewStaged)
                 {
                     await SelectFileAsync(_stagedView, true);
                     // Loading the selected diff temporarily disables the editor.
