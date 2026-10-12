@@ -33,11 +33,15 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 - [x] Push natif : branches/tags/mappings multiples, remote/URL, tracking, récursion, force/lease et reprise après rejet. ADR 0036.
 - [x] Grep du commit : codec, filtre de fichiers, navigation ligne/colonne, MRU et aperçus binaires sans coordonnées inventées. ADR 0037.
 - [x] Palette radio historique commune : coché, survol et pression vérifiés dans les thèmes clair/sombre.
+- [x] Push rapide : Ctrl+Maj+↑ et Maj-clic ; réussite directe, options initialisées après échec/refus. ADR 0038.
+- [x] Pull avancé : tags/prune/unshallow, autostash historique et proposition de réapplication ; workflow de sous-modules partagé avec Checkout. ADR 0039.
+- [x] Cherry-pick : options mémorisées, parent de merge, choix de révision et dialogue par sélection ; récupération des cibles renommées couvertes. ADR 0040.
+- [x] Retrait de sous-module : confirmation, index/configuration préparés sous verrous ; fichiers et dépôt interne conservés. ADR 0041.
 - [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
 
-Dernier paquet local vérifié et livré : source `f4ba18594`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/f4ba18594/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 743 tests (182 Core, 35 Plugins, 526 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé et repaquetage identique. Push, Grep, actions de fichiers Stash et palette radio ont été vérifiés nativement en clair/sombre sur le contenu exact du paquet. Ce nouveau paquet n'a pas remplacé l'ancienne version déjà installée sur l'hôte ; aucun push de ce lot.
+Dernier paquet local vérifié et livré : source `0cf3b7026`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/0cf3b7026/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 819 tests (221 Core, 35 Plugins, 563 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé et repaquetage identique. Push rapide, options Pull, Cherry-pick et retrait de sous-module ont été vérifiés nativement en clair/sombre sur le contenu exact du paquet. Ce paquet n'a pas remplacé l'ancienne version déjà installée sur l'hôte ; aucun push de ce lot.
 
-Les preuves des paquets précédents restent dans [les snapshots](../../artifacts/linux/snapshots/). Chaque audit natif garde son SHA et son périmètre : les contrôles courants ne valent pas nouvel audit étendu du sélecteur de branche, de Pull, de Blame ou du reader.
+Les preuves des paquets précédents restent dans [les snapshots](../../artifacts/linux/snapshots/). Chaque audit natif garde son SHA et son périmètre : les contrôles courants ne valent pas nouvel audit étendu du sélecteur de branche, de tous les workflows Pull, de Blame ou du reader.
 
 ## Familles encore ouvertes
 
@@ -54,15 +58,6 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - [ ] Intégration Linux : XDG, terminal/outils PATH, askpass/ssh-agent, actions gestionnaire de fichiers.
 - [ ] CI distante, installation APT sur OS vierge et validation arm64/Wayland seul.
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
-
-## Travail local en cours
-
-- Push rapide : raccourci et Maj-clic, formulaire après échec/refus ; 17 tests Push passent, audit natif/paquet à renouveler. ADR 0038.
-- Pull avancé : tags/unshallow et autostash historique ; mise à jour des sous-modules réutilisant le workflow Checkout.
-- Cherry-pick : options persistantes, parent de merge, choix de révision et dialogue par commit sélectionné ; fermeture du parent contrôlée.
-- Sous-modules : retrait guidé de l'enregistrement/index, avec conservation des fichiers et du dépôt interne comme Windows.
-
-Pull avancé, Cherry-pick et retrait de sous-modules : 34 tests UI ciblés et 221 scénarios Core passent. Le candidat 3d1016603 a été arrêté avant paquet après un défaut de récupération de renommage ; le correctif passe 221 scénarios Core locaux, dont restauration des cibles renommées et refus conservant les déplacements hors couverture. Le nouveau paquet reste à construire et à valider. Aucun de ces ajouts ne remplace encore le dernier paquet livré.
 
 ## Prochains écarts concrets
 

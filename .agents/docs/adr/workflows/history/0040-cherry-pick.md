@@ -1,6 +1,6 @@
 # ADR 0040 · Cherry-pick de commits
 
-Statut : implémenté et contrôlé localement ; audit natif et paquet à renouveler dans le [TODO](../../../todo.md).
+Statut : sous-périmètre implémenté, vérifié et livré ; compléments dans le [TODO](../../../todo.md).
 
 Besoin : retrouver FormCherryPick : choix de révision, parent numéroté d'un merge, création automatique du commit et ajout de sa référence. Les deux cases sont désactivées par défaut et mémorisées après acceptation ; les anciens appelants Core qui créent un commit gardent leur comportement.
 

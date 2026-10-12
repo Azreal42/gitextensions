@@ -1,6 +1,6 @@
 # ADR 0039 · Options historiques de Pull
 
-Statut : implémenté et contrôlé localement ; audit natif et paquet à renouveler dans le [TODO](../../../todo.md).
+Statut : sous-périmètre implémenté, vérifié et livré ; compléments dans le [TODO](../../../todo.md).
 
 Besoin : retrouver les choix de tags, unshallow et autostash de FormPull. Suivre tagopt reste le défaut ; Fetch seul autorise tous les tags, Merge/Rebase rétablissent ce défaut. Unshallow concerne uniquement un dépôt shallow et reste un choix de session.
 

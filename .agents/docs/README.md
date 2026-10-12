@@ -6,6 +6,6 @@ But : proposer les workflows Git Extensions sur un bureau Linux, installables en
 - [Décisions](adr/) : classées par sujet/sous-sujet.
 - [TODO](todo.md) : périmètre restant et état de livraison.
 - [Failures](failure.md) : causes et pièges à ne pas reproduire.
-- [Dernière preuve de livraison](../../artifacts/linux/snapshots/f4ba18594/proofs/delivery-verification.json) : source, paquet et contrôles exécutés.
+- [Dernière preuve de livraison](../../artifacts/linux/snapshots/0cf3b7026/proofs/delivery-verification.json) : source, paquet et contrôles exécutés.
 
 Le code, les tests et les scripts sont la source de vérité. Ces notes gardent l'intention et les chemins utiles ; les logs, captures, checksums et preuves historiques restent dans `artifacts/linux/`, avec leur source d'origine.
