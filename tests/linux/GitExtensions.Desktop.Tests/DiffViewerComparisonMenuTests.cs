@@ -153,6 +153,124 @@ public class DiffViewerComparisonMenuTests
         Task<string> Diff() => repository.Repository.GetComparisonFileDiffAsync(comparison, file, fixture.Controller.Options);
     }
 
+    [AvaloniaTest]
+    public void RealWhitespaceAssetsAndSelectedMenuPixelsFollowEachInheritedThemeWithoutChangingTheOtherIcons()
+    {
+        using Fixture fixture = new();
+        (string Suffix, string Asset, int OpaquePixels)[] glyphs =
+        [
+            ("Whitespace_Eol", "WhitespaceIgnoreEol.png", 75), ("Whitespace_Change", "WhitespaceIgnore.png", 39),
+            ("Whitespace_AllSpace", "WhitespaceIgnoreAll.png", 37)
+        ];
+        Dictionary<string, byte[]> originals = new(StringComparer.Ordinal);
+        Dictionary<string, IImage?> light = new(StringComparer.Ordinal), dark = new(StringComparer.Ordinal);
+        foreach ((string suffix, string asset, int opaque) in glyphs)
+        {
+            using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + asset)); using Bitmap original = new(stream);
+            byte[] pixels = ReadBitmap(original); originals.Add(suffix, pixels);
+            Assert.That(pixels.Where((_, index) => index % 4 == 3).Count(alpha => alpha == 255), Is.EqualTo(opaque));
+        }
+        Bitmap zoom = (Bitmap)((Image)fixture.Increase.Content!).Source!; byte[] zoomPixels = ReadBitmap(zoom);
+        Click(fixture.Open("Whitespace_AllSpace"));
+        Assert.That(fixture.Controller.Options.IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.AllSpace));
+        int visit = 0;
+        foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark, ThemeVariant.Light, ThemeVariant.Dark })
+        {
+            fixture.Menu.Close(); fixture.Window.RequestedThemeVariant = theme; Pump(fixture.Window);
+            MenuItem anchor = fixture.Open("IncreaseContextMenu"); Hover(anchor); TopLevel root = TopLevel.GetTopLevel(anchor)!;
+            foreach ((string suffix, _, _) in glyphs)
+            {
+                MenuItem item = fixture.Item(suffix); Image icon = (Image)item.Icon!; Bitmap source = (Bitmap)icon.Source!;
+                Assert.That(icon.ActualThemeVariant, Is.EqualTo(theme), "Each Image must use its inherited effective theme, including a popup surface.");
+                Assert.That(item.IsSelected, Is.False); Assert.That(item.IsChecked, Is.True, "Original All-space cumulative checks remain unchanged.");
+                byte[] actual = ReadBitmap(source), expected = originals[suffix];
+                for (int offset = 0; offset < expected.Length; offset += 4)
+                {
+                    Assert.That(actual[offset + 3], Is.EqualTo(expected[offset + 3]), "Theme adaptation must preserve every source alpha byte.");
+                    if (theme == ThemeVariant.Light) { Assert.That(actual.AsSpan(offset, 4).ToArray(), Is.EqualTo(expected.AsSpan(offset, 4).ToArray())); }
+                    else if (expected[offset + 3] != 0)
+                    { Assert.That(actual.AsSpan(offset, 3).ToArray(), Is.EqualTo(new byte[] { 240, 240, 240 }), "Black maps exactly to original Dark WindowText."); }
+                }
+                Dictionary<string, IImage?> cache = theme == ThemeVariant.Light ? light : dark;
+                if (cache.TryGetValue(suffix, out IImage? previous)) { Assert.That(icon.Source, Is.SameAs(previous), "Theme round trips reuse local caches rather than transform an already adapted bitmap."); }
+                else { cache.Add(suffix, icon.Source); }
+            }
+            Assert.That(((Image)fixture.Increase.Content!).Source, Is.SameAs(zoom)); Assert.That(ReadBitmap(zoom), Is.EqualTo(zoomPixels), "The colored context icon is outside this monochrome correction.");
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            using (WriteableBitmap frame = root.CaptureRenderedFrame() ?? throw new AssertionException("No unselected whitespace menu frame."))
+            {
+                foreach ((string suffix, _, int opaque) in glyphs) { AssertWhitespacePixels(frame, root, fixture.Item(suffix), theme, opaque); }
+                Attach(frame, "diff-whitespace-unselected-" + theme + "-" + visit + ".png");
+            }
+            foreach ((string suffix, _, int opaque) in glyphs)
+            {
+                MenuItem item = fixture.Item(suffix); Image icon = (Image)item.Icon!; IImage? previous = icon.Source;
+                Hover(item); Assert.That(item.IsSelected, Is.True); Assert.That(icon.Source, Is.SameAs(previous), "Original AdaptLightness does not recolor a bitmap for selection.");
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                using WriteableBitmap frame = root.CaptureRenderedFrame() ?? throw new AssertionException("No selected whitespace menu frame.");
+                AssertWhitespacePixels(frame, root, item, theme, opaque);
+                Attach(frame, "diff-whitespace-selected-" + suffix + "-" + theme + "-" + visit + ".png");
+            }
+            visit++;
+        }
+        Image[] held = glyphs.Select(glyph => (Image)fixture.Item(glyph.Suffix).Icon!).ToArray();
+        fixture.Menu.Close(); fixture.Controller.Dispose();
+        Assert.That(held.All(icon => icon.Source is null), Is.True);
+        fixture.Window.RequestedThemeVariant = ThemeVariant.Light; Pump(fixture.Window);
+        Assert.That(held.All(icon => icon.Source is null), Is.True, "Disposed images must not react to later theme changes or reuse released bitmaps.");
+    }
+
+    [AvaloniaTest]
+    public void MonochromeAdaptationPreservesAllAlphaValuesAndNeverMutatesItsInput()
+    {
+        using WriteableBitmap original = new(new PixelSize(16, 16), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        using (ILockedFramebuffer buffer = original.Lock())
+        {
+            byte[] pixels = new byte[buffer.RowBytes * buffer.Size.Height];
+            for (int index = 0; index < 256; index++) { pixels[(index / 16) * buffer.RowBytes + (index % 16) * 4 + 3] = (byte)index; }
+            Marshal.Copy(pixels, 0, buffer.Address, pixels.Length);
+        }
+        byte[] before = ReadBitmap(original); using Bitmap adapted = DiffViewerMonochromeBitmap.CreateDark(original, Color.Parse("#f0f0f0"));
+        byte[] after = ReadBitmap(adapted);
+        Assert.That(ReadBitmap(original), Is.EqualTo(before));
+        Assert.That(after.Where((_, index) => index % 4 == 3), Is.EqualTo(Enumerable.Range(0, 256).Select(value => (byte)value)), "Preserve alpha 0..255, rather than accidentally make transparent or antialiased glyph pixels opaque.");
+    }
+
+    private static byte[] ReadBitmap(Bitmap bitmap)
+    {
+        using WriteableBitmap copy = new(bitmap.PixelSize, bitmap.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        using ILockedFramebuffer buffer = copy.Lock(); bitmap.CopyPixels(buffer, AlphaFormat.Unpremul);
+        byte[] padded = new byte[buffer.RowBytes * buffer.Size.Height], packed = new byte[buffer.Size.Width * buffer.Size.Height * 4];
+        Marshal.Copy(buffer.Address, padded, 0, padded.Length);
+        for (int y = 0; y < buffer.Size.Height; y++) { Array.Copy(padded, y * buffer.RowBytes, packed, y * buffer.Size.Width * 4, buffer.Size.Width * 4); }
+        return packed;
+    }
+    private static void Hover(Control control)
+    {
+        TopLevel root = TopLevel.GetTopLevel(control)!; Point point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), root)!.Value;
+        root.MouseMove(point); Pump(root);
+    }
+    private static void AssertWhitespacePixels(WriteableBitmap frame, TopLevel root, MenuItem item, ThemeVariant theme, int opaque)
+    {
+        Image icon = (Image)item.Icon!; Assert.That(icon.Bounds.Size, Is.EqualTo(new Size(16, 16)));
+        Point origin = icon.TranslatePoint(default, root)!.Value; Assert.That(origin.X, Is.EqualTo(Math.Round(origin.X))); Assert.That(origin.Y, Is.EqualTo(Math.Round(origin.Y)));
+        Border row = item.GetVisualDescendants().OfType<Border>().Single(control => control.Name == "PART_LayoutRoot");
+        Color background = ((ISolidColorBrush)row.Background!).Color, foreground = theme == ThemeVariant.Dark ? Color.Parse("#f0f0f0") : Colors.Black;
+        using ILockedFramebuffer buffer = frame.Lock(); byte[] pixels = new byte[buffer.RowBytes * buffer.Size.Height]; Marshal.Copy(buffer.Address, pixels, 0, pixels.Length);
+        bool bgra = buffer.Format == PixelFormat.Bgra8888; int ink = 0, clear = 0;
+        for (int y = (int)origin.Y; y < (int)origin.Y + 16; y++)
+        {
+            for (int x = (int)origin.X; x < (int)origin.X + 16; x++)
+            {
+                int offset = y * buffer.RowBytes + x * 4;
+                Color pixel = Color.FromArgb(pixels[offset + 3], pixels[offset + (bgra ? 2 : 0)], pixels[offset + 1], pixels[offset + (bgra ? 0 : 2)]);
+                if (pixel == foreground) { ink++; } else if (pixel == background) { clear++; }
+            }
+        }
+        Assert.That(ink, Is.EqualTo(opaque), "Every opaque source glyph pixel must reach the real selected/unselected menu in its exact original theme color.");
+        Assert.That(clear, Is.EqualTo(256 - opaque), "Transparent glyph pixels must preserve the actual menu background.");
+    }
+
     private static void AssertCheck(WriteableBitmap frame, TopLevel root, MenuItem item, ThemeVariant theme)
     {
         IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(theme == ThemeVariant.Dark);

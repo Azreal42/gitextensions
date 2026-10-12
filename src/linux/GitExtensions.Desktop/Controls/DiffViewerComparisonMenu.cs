@@ -23,7 +23,9 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     private readonly List<(MenuItem Item, Command Command)> _items = [];
     private readonly List<(Button Button, Command Command)> _buttons = [];
     private readonly Dictionary<string, Bitmap> _bitmaps = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Bitmap> _darkMonochromeBitmaps = new(StringComparer.Ordinal);
     private readonly List<Image> _images = [];
+    private readonly List<(Image Image, EventHandler Handler)> _themeHandlers = [];
     private DiffViewerPreferences _preferences;
     private bool _supportsContext = true, _supportsWhitespace = true, _supportsEolWhitespace = true, _busy, _hostBusy, _disposed;
 
@@ -171,7 +173,27 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     {
         if (!_bitmaps.TryGetValue(name, out Bitmap? bitmap))
         { using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + name)); _bitmaps[name] = bitmap = new(stream); }
-        Image image = new() { Source = bitmap, Width = 16, Height = 16, Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center, UseLayoutRounding = true };
+        Bitmap original = bitmap;
+        Image image = new() { Source = original, Width = 16, Height = 16, Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center, UseLayoutRounding = true };
+        if (name is "WhitespaceIgnoreEol.png" or "WhitespaceIgnore.png" or "WhitespaceIgnoreAll.png")
+        {
+            void UpdateSource()
+            {
+                if (_disposed) { return; }
+                if (image.ActualThemeVariant == ThemeVariant.Dark)
+                {
+                    if (!_darkMonochromeBitmaps.TryGetValue(name, out Bitmap? dark))
+                    {
+                        Color windowText = Color.Parse(ClassicStyles.OriginalColors(dark: true)["WindowText"]);
+                        _darkMonochromeBitmaps[name] = dark = DiffViewerMonochromeBitmap.CreateDark(original, windowText);
+                    }
+                    image.Source = dark;
+                }
+                else { image.Source = original; }
+            }
+            EventHandler handler = (_, _) => UpdateSource();
+            image.ActualThemeVariantChanged += handler; _themeHandlers.Add((image, handler)); UpdateSource();
+        }
         _images.Add(image); return image;
     }
     private static ResourceDictionary MenuResources(bool dark)
@@ -206,8 +228,10 @@ public sealed class DiffViewerComparisonMenu : IDisposable
         foreach (MenuItem item in _items.Select(entry => entry.Item)) { item.IsEnabled = false; item.IsSubMenuOpen = false; }
         foreach (Button button in _buttons.Select(entry => entry.Button)) { button.IsEnabled = false; }
         foreach (Image image in _images) { image.Source = null; }
+        foreach ((Image image, EventHandler handler) in _themeHandlers) { image.ActualThemeVariantChanged -= handler; }
+        foreach (Bitmap bitmap in _darkMonochromeBitmaps.Values) { bitmap.Dispose(); }
         foreach (Bitmap bitmap in _bitmaps.Values) { bitmap.Dispose(); }
-        _items.Clear(); _buttons.Clear(); _images.Clear(); _bitmaps.Clear();
+        _items.Clear(); _buttons.Clear(); _images.Clear(); _themeHandlers.Clear(); _darkMonochromeBitmaps.Clear(); _bitmaps.Clear();
     }
     private enum Command { Eol, Change, All, Increase, Decrease, Whole }
 }
