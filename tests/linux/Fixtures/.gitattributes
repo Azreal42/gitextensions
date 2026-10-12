@@ -1,0 +1,2 @@
+# Preserve the exact terminal output, including meaningful padding and separators.
+*.txt -text whitespace=-blank-at-eol,-blank-at-eof

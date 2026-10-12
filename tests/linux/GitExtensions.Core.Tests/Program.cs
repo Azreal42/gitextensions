@@ -124,6 +124,10 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("difftastic strips number colors and aligns growing column prefixes", DifftasticScenarios.ColumnsAndColorsAsync),
     ("difftastic one-sided and zero-context Unicode lines retain correct gutters", DifftasticScenarios.OneSidedAndUnicodeAsync),
     ("difftastic unexpected output and malformed bounds remain deterministic", DifftasticScenarios.UnexpectedOutputAndBoundsAsync),
+    ("official difftastic compact width200 retains both gutters and actual colors", DifftasticScenarios.RealCompactAsync),
+    ("official difftastic color-never preserves exact emitted text without guessing gutters", DifftasticScenarios.RealNoColor177Async),
+    ("official difftastic unilateral Unicode and numeric content survives compact columns", DifftasticScenarios.RealUnicodeUnilateralAsync),
+    ("official difftastic multiple compact files align at one content ruler", DifftasticScenarios.RealMultipleFilesAsync),
 ];
 
 int failures = 0;

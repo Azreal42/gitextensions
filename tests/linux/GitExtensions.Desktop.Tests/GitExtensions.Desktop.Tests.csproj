@@ -5,5 +5,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit3TestAdapter" />
+    <EmbeddedResource Include="../Fixtures/difftastic-0.71.0-compact.ansi.txt" LogicalName="Difftastic071Compact" />
+    <EmbeddedResource Include="../Fixtures/difftastic-0.71.0-plain-ambiguity.txt" LogicalName="Difftastic071Plain" />
   </ItemGroup>
 </Project>

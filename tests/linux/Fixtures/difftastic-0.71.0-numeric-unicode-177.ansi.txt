@@ -1,0 +1,10 @@
+[1m[33m/tmp/gitextensions-difftastic-probe-70sUu0qe/numeric-new.txt[39m[0m[2m --- Text[0m
+[2m1 [0m1000 unchanged sentinel    [2m1 [0m1000 unchanged sentinel
+[31;1m2 [0m[31;1m2000 deleted λ 🦊 漢字[0m     [2m. [0m
+[2m3 [0m3000 shared record         [2m2 [0m3000 shared record
+[2m4 [0m4000 left stable           [2m3 [0m4000 left stable
+[31;1m5 [0m[31m5000 [0m[31;1mold[0m[31m value [0m[31;1m123[0m         [32;1m4 [0m[32m5000 [0m[32;1mnew[0m[32m value [0m[32;1m456[0m
+[31;1m6 [0m[31;1m7000[0m[31m [0m[31;1mdeleted[0m[31m only marker[0m   [32;1m5 [0m[32;1m6000[0m[32m [0m[32;1madded[0m[32m only marker[0m
+[2m  [0m                           [32;1m6 [0m[32;1m8000 fresh addition A[0m
+[2m  [0m                           [32;1m7 [0m[32;1m9000 fresh addition B[0m
+

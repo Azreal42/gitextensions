@@ -1,0 +1,18 @@
+[1m[33mliteral dir/Probe λ:[1]*?.cs[39m[0m[2m --- C#[0m
+[2m 1 [0m[1mpublic[0m [1mstatic[0m [1mclass[0m [1mProbe[0m                            [2m 1 [0m[1mpublic[0m [1mstatic[0m [1mclass[0m [1mProbe[0m
+[2m 2 [0m{                                                    [2m 2 [0m{
+[31;1m 3 [0m    [1mpublic[0m [1mstatic[0m [1mint[0m Value [1m=>[0m [31m42[0m;                   [32;1m 3 [0m    [1mpublic[0m [1mstatic[0m [1mint[0m Value [1m=>[0m [32m43[0m;
+[2m 4 [0m                                                     [2m 4 [0m
+[2m 5 [0m    [1mpublic[0m [1mstatic[0m [1mint[0m Calculate([1mint[0m value)           [2m 5 [0m    [1mpublic[0m [1mstatic[0m [1mint[0m Calculate([1mint[0m value)
+[2m 6 [0m    {                                                [2m 6 [0m    {
+[2m 7 [0m        [1mif[0m (value [1m>[0m 0)                               [2m 7 [0m        [1mif[0m (value [1m>[0m 0)
+[2m 8 [0m        {                                            [2m 8 [0m        {
+[31;1m 9 [0m            [1mreturn[0m value [31;1m+[0m [31m1[0m;                        [32;1m 9 [0m            [1mreturn[0m value [32;1m*[0m [32m3[0m;
+[2m10 [0m        }                                            [2m10 [0m        }
+[2m11 [0m                                                     [2m11 [0m
+[2m12 [0m        [1mreturn[0m 0;                                    [2m12 [0m        [1mreturn[0m 0;
+[2m13 [0m    }                                                [2m13 [0m    }
+[2m14 [0m                                                     [2m14 [0m
+[31;1m15 [0m    [1mpublic[0m [1mstatic[0m [1mstring[0m Message [1m=>[0m [31m"Bonjour λ"[0m;     [32;1m15 [0m    [1mpublic[0m [1mstatic[0m [1mstring[0m Message [1m=>[0m [32m"Bonjour λ[0m [32;1;4m🦊[0m[32m"[0m;
+[2m16 [0m}                                                    [2m16 [0m}
+

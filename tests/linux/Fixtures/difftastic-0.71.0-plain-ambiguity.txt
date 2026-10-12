@@ -1,0 +1,5 @@
+/tmp/gitextensions-difftastic-plain-ambiguity/after.txt --- Text
+1 left                       1 code
+2 left                       2 code
+3 
+

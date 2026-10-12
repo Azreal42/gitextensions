@@ -179,6 +179,61 @@ public class DiffPresentationTests
     }
 
     [AvaloniaTest]
+    public void RealCompactDifftasticOutputRetainsBothGuttersOriginalColorsAndNumericCode()
+    {
+        using Stream stream = typeof(DiffPresentationTests).Assembly.GetManifestResourceStream("Difftastic071Compact")!;
+        using StreamReader reader = new(stream);
+        string display = reader.ReadToEnd();
+        using Fixture fixture = new();
+        fixture.Window.Width = 1200;
+        fixture.Window.Height = 520;
+        fixture.View.ShowDocument(new(Patch, display, GitDiffAppearance.Difftastic, false) { DifftasticWidth = 200, UseGitColoring = true });
+        foreach (bool dark in new[] { false, true })
+        {
+            fixture.Window.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            fixture.Window.UpdateLayout();
+            Assert.That(fixture.View.EffectiveMode, Is.EqualTo(DiffViewMode.Difftastic));
+            Assert.That(fixture.View.RightColumnStart, Is.InRange(40, 60), "The real tool shrinks these columns despite DFT_WIDTH=200.");
+            for (int line = 1; line <= 16; line++)
+            {
+                Assert.That(fixture.View.GetColumnNumbers(line + 1), Is.EqualTo(new int?[] { line, line }), $"Actual old/new numbers on row {line}.");
+            }
+            Assert.That(fixture.View.Text, Does.Contain("Value => 42;").And.Contain("Value => 43;")
+                .And.Contain("Bonjour λ 🦊").And.Not.Contain(" 1 public"), "Removing printed numbers must preserve numbers and Unicode in the source code.");
+            Assert.That(fixture.View.CanonicalText, Is.EqualTo(Patch));
+            Assert.That(fixture.View.CanStagePatch, Is.False);
+            Assert.That(fixture.View.AnsiSpans.All(span => span.Offset >= 0 && span.Offset + span.Length <= fixture.View.Text.Length), Is.True);
+            using WriteableBitmap frame = fixture.Window.CaptureRenderedFrame()!;
+            GitDiffColorPalette palette = DiffViewerColors.ForTheme(dark);
+            Assert.That(Count(frame, palette.Backgrounds[1]), Is.GreaterThan(0), "Original removed-line color must be painted.");
+            Assert.That(Count(frame, palette.Backgrounds[2]), Is.GreaterThan(0), "Original added-line color must be painted.");
+            string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, "difftastic-real-compact-" + (dark ? "dark" : "light") + ".png");
+            frame.Save(path); TestContext.AddTestAttachment(path);
+        }
+    }
+
+    [AvaloniaTest]
+    public void UncoloredDifftasticKeepsTheExactToolOutputAndItsSourceNumbersReadOnly()
+    {
+        using Stream stream = typeof(DiffPresentationTests).Assembly.GetManifestResourceStream("Difftastic071Plain")!;
+        using StreamReader reader = new(stream);
+        string display = reader.ReadToEnd();
+        using Fixture fixture = new();
+        fixture.View.ShowDocument(new(Patch, display, GitDiffAppearance.Difftastic, false) { DifftasticWidth = 177, UseGitColoring = true });
+        foreach (bool dark in new[] { false, true })
+        {
+            fixture.Window.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+            fixture.Window.UpdateLayout();
+            Assert.That(fixture.View.Text, Is.EqualTo(display), "The real one-column tool output can mimic a second gutter; all source numbers and whitespace must survive.");
+            Assert.That(fixture.View.GetColumnNumbers(2), Is.EqualTo(new int?[] { null, null }));
+            Assert.That(fixture.View.RightColumnStart, Is.Zero);
+            Assert.That(fixture.View.CanonicalText, Is.EqualTo(Patch));
+            Assert.That(fixture.View.CanStagePatch, Is.False);
+            Assert.That(fixture.View.AnsiSpans, Is.Empty);
+        }
+    }
+
+    [AvaloniaTest]
     public void GitWordDiffUsesOriginalColorHeuristicForExclusiveAndMixedLineNumbers()
     {
         using Fixture fixture = new();
