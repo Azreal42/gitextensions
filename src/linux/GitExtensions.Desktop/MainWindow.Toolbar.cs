@@ -56,10 +56,29 @@ public sealed partial class MainWindow
             () => OpenRepositoryAsync(_repositoryPath.Text ?? "")));
         _recent.Width = 24; _recent.Height = 24; _recent.MinWidth = 0; _recent.Padding = default;
         _recent.Name = "RecentRepositoriesDropdown"; _recent.PlaceholderText = ""; _recent.SelectionBoxItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<object>((_, _) => new TextBlock());
+        _recent.Classes.Add("browse-toolbar-dropdown");
+        _recent.Styles.Add(new Style(selector => selector.OfType<ComboBox>().Class("browse-toolbar-dropdown").Template().OfType<PathIcon>().Name("DropDownGlyph"))
+        {
+            Setters =
+            {
+                new Setter(PathIcon.DataProperty, ToolbarDropdownGeometry),
+                new Setter(WidthProperty, 6d), new Setter(HeightProperty, 3d),
+                new Setter(MarginProperty, new Thickness(0)),
+                // Fluent's ComboBox content grid places its glyph one pixel
+                // below the centered 24-pixel toolbar buttons.
+                new Setter(RenderTransformProperty, new TranslateTransform(0, -1)),
+                new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Center),
+                new Setter(VerticalAlignmentProperty, VerticalAlignment.Center)
+            }
+        });
         ToolTip.SetTip(_recent, T("Recent repositories"));
         _recentToolbarMenu = new MenuItem { Header = T("Recent repositories") };
         _recent.TemplateApplied += (_, args) =>
-        { if (args.NameScope.Find<Avalonia.Controls.Primitives.Popup>("PART_Popup") is { } popup) { popup.MinWidth = RecentRepositoriesPopupWidth; } };
+        {
+            if (args.NameScope.Find<Avalonia.Controls.Primitives.Popup>("PART_Popup") is { } popup) { popup.MinWidth = RecentRepositoriesPopupWidth; }
+            if (args.NameScope.Find<PathIcon>("DropDownGlyph") is { } arrow)
+            { arrow.Bind(PathIcon.ForegroundProperty, new Binding(nameof(TemplatedControl.Foreground)) { Source = _recent }); }
+        };
         toolbar.Add(_recent, _recentToolbarMenu);
         _currentBranchButton = ToolbarButton("BrowseCurrentBranch", "Checkout branch…", "BranchLocal.png", CheckoutAsync, text: true);
         _currentBranchButton.Width = 132;
@@ -165,6 +184,17 @@ public sealed partial class MainWindow
         if (!text) { button.Width = 24; }
         return button;
     }
+    private static readonly Geometry ToolbarDropdownGeometry = Geometry.Parse("M 0,0 L 6,0 L 3,3 Z");
+    private static PathIcon ToolbarDropdownArrow(TemplatedControl owner, string name)
+    {
+        PathIcon arrow = new()
+        {
+            Name = name, Data = ToolbarDropdownGeometry, Width = 6, Height = 3,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+        };
+        arrow.Bind(PathIcon.ForegroundProperty, new Binding(nameof(TemplatedControl.Foreground)) { Source = owner });
+        return arrow;
+    }
     private static Grid ToolbarField(string label, TextBox input, Control? trailing = null)
     {
         Grid field = new() { ColumnDefinitions = new ColumnDefinitions(trailing is null ? "Auto,Auto" : "Auto,Auto,Auto"), Height = 24 };
@@ -216,7 +246,7 @@ public sealed partial class MainWindow
             string branch = status.Branch ?? T("detached");
             _currentBranchButton.Content = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Children =
             { OriginalIconImage("BranchLocal.png"), new TextBlock { Text = branch, TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0) }, new TextBlock { Text = "▾", VerticalAlignment = VerticalAlignment.Center } } };
+                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0) }, ToolbarDropdownArrow(_currentBranchButton, "BrowseCurrentBranchDropdownArrow") } };
             Grid.SetColumn(((Grid)_currentBranchButton.Content).Children[1], 1); Grid.SetColumn(((Grid)_currentBranchButton.Content).Children[2], 2);
             ToolTip.SetTip(_currentBranchButton, branch + " — " + T("Checkout branch"));
         }

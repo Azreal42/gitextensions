@@ -26,8 +26,9 @@ public sealed partial class MainWindow
         _pullButton = ToolbarButton("BrowsePull", "Pull", "PullMerge.png", DefaultPullAsync);
         _pullDropdown = Button("Pull/Fetch…", () => Task.CompletedTask);
         _pullDropdown.Name = "BrowsePullDropdown";
-        _pullDropdown.Content = "▾"; _pullDropdown.Width = 10; _pullDropdown.Height = _pullDropdown.MinHeight = 24;
-        _pullDropdown.MinWidth = 0; _pullDropdown.Padding = default; _pullDropdown.FontSize = 10;
+        _pullDropdown.Content = ToolbarDropdownArrow(_pullDropdown, "BrowsePullDropdownArrow");
+        _pullDropdown.Width = 10; _pullDropdown.Height = _pullDropdown.MinHeight = 24;
+        _pullDropdown.MinWidth = 0; _pullDropdown.Padding = default;
         _pullDropdown.BorderThickness = default; _pullDropdown.Background = Brushes.Transparent;
         ToolTip.SetTip(_pullDropdown, T("Pull/Fetch…"));
         _pullFlyout.ItemsSource = CreatePullMenu("PullMenu");

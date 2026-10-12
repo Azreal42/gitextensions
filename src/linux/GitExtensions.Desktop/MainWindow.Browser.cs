@@ -186,8 +186,9 @@ public sealed partial class MainWindow
         Button dropdown = new()
         {
             Name = "CommitInfoPositionMenu", Width = 10, Height = 24, MinWidth = 0, MinHeight = 24, Padding = new Thickness(0),
-            Content = new TextBlock { Text = "▾", FontSize = 10 }, Flyout = new MenuFlyout { ItemsSource = _commitInfoPositionItems }
+            Flyout = new MenuFlyout { ItemsSource = _commitInfoPositionItems }
         };
+        dropdown.Content = ToolbarDropdownArrow(dropdown, "CommitInfoPositionDropdownArrow");
         ConfigureBrowserFlyout((MenuFlyout)dropdown.Flyout!, dropdown);
         ToolTip.SetTip(dropdown, T("Commit info position"));
         Grid splitButton = new() { Name = "CommitInfoPositionControl", ColumnDefinitions = new ColumnDefinitions("22,10"), Height = 24 };
