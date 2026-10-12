@@ -11,8 +11,21 @@ namespace GitExtensions.Desktop.Controls;
 public sealed class CommitGraph : Control
 {
     public const double RowHeight = 24;
-    private const double LaneWidth = 16;
-    private const double LeftInset = 12;
+    public static readonly StyledProperty<double> LineHeightProperty = AvaloniaProperty.Register<CommitGraph, double>(nameof(LineHeight), RowHeight,
+        validate: value => double.IsFinite(value) && value > 0);
+    public static readonly StyledProperty<double> LaneWidthProperty = AvaloniaProperty.Register<CommitGraph, double>(nameof(LaneWidth), 16,
+        validate: value => double.IsFinite(value) && value > 0);
+    public static readonly StyledProperty<bool> ShowReferenceLabelsProperty = AvaloniaProperty.Register<CommitGraph, bool>(nameof(ShowReferenceLabels), true);
+    public static readonly StyledProperty<bool> SelectionFocusedProperty = AvaloniaProperty.Register<CommitGraph, bool>(nameof(SelectionFocused), true);
+    public static readonly StyledProperty<string?> AuthoredEmailProperty = AvaloniaProperty.Register<CommitGraph, string?>(nameof(AuthoredEmail));
+    public static readonly StyledProperty<bool> DrawAlternateBackgroundProperty = AvaloniaProperty.Register<CommitGraph, bool>(nameof(DrawAlternateBackground));
+    private double LeftInset => ShowReferenceLabels ? 12 : 2;
+    public double LineHeight { get => GetValue(LineHeightProperty); set => SetValue(LineHeightProperty, value); }
+    public double LaneWidth { get => GetValue(LaneWidthProperty); set => SetValue(LaneWidthProperty, value); }
+    public bool ShowReferenceLabels { get => GetValue(ShowReferenceLabelsProperty); set => SetValue(ShowReferenceLabelsProperty, value); }
+    public bool SelectionFocused { get => GetValue(SelectionFocusedProperty); set => SetValue(SelectionFocusedProperty, value); }
+    public string? AuthoredEmail { get => GetValue(AuthoredEmailProperty); set => SetValue(AuthoredEmailProperty, value); }
+    public bool DrawAlternateBackground { get => GetValue(DrawAlternateBackgroundProperty); set => SetValue(DrawAlternateBackgroundProperty, value); }
     // Matches GraphBranch1..7 in GitUI/Themes/invariant.css and dark.css; slot 8 is intentionally unused upstream.
     private static readonly IBrush[] LightPalette =
     [
@@ -31,6 +44,8 @@ public sealed class CommitGraph : Control
     private Dictionary<string, GitReference[]> _refsByHash = new(StringComparer.Ordinal);
     private double _verticalOffset;
     private string? _currentHead;
+    private IReadOnlyCollection<string> _selectedHashes = [];
+    private HashSet<string> _selectedHashSet = new(StringComparer.Ordinal);
 
     public CommitGraph()
     {
@@ -71,25 +86,73 @@ public sealed class CommitGraph : Control
         set { _currentHead = value; InvalidateVisual(); }
     }
 
+    public IReadOnlyCollection<string> SelectedHashes
+    {
+        get => _selectedHashes;
+        set
+        {
+            _selectedHashes = value?.ToArray() ?? [];
+            _selectedHashSet = new(_selectedHashes, StringComparer.Ordinal);
+            InvalidateVisual();
+        }
+    }
+
     public double VerticalOffset
     {
         get => _verticalOffset;
-        set { _verticalOffset = Math.Max(0, value); InvalidateVisual(); }
+        set { _verticalOffset = Math.Max(0, value); if (!ShowReferenceLabels) { InvalidateMeasure(); } InvalidateVisual(); }
     }
 
     // A non-topological input may be reordered by the upstream layout algorithm.
     public IReadOnlyList<GitCommit> OrderedCommits => _layout.Nodes.Select(node => node.Commit).ToArray();
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == LineHeightProperty || change.Property == LaneWidthProperty || change.Property == ShowReferenceLabelsProperty)
+        { InvalidateMeasure(); InvalidateVisual(); }
+        if (change.Property == SelectionFocusedProperty || change.Property == AuthoredEmailProperty || change.Property == DrawAlternateBackgroundProperty)
+        { InvalidateVisual(); }
+    }
+
     protected override Size MeasureOverride(Size availableSize)
-        => new(Math.Max(72, LeftInset * 2 + _layout.LaneCount * LaneWidth) + (_references.Count > 0 ? 110 : 0), _layout.Nodes.Count * RowHeight);
+        => new(ShowReferenceLabels
+            ? Math.Max(72, LeftInset * 2 + _layout.LaneCount * LaneWidth) + (_references.Count > 0 ? 110 : 0)
+            : LeftInset * 2 + VisibleLaneCount(availableSize.Height) * LaneWidth,
+            _layout.Nodes.Count * LineHeight);
+
+    private int VisibleLaneCount(double height)
+    {
+        int first = Math.Min(_layout.Nodes.Count, (int)(_verticalOffset / LineHeight));
+        int last = double.IsFinite(height) ? Math.Min(_layout.Nodes.Count - 1, first + (int)Math.Ceiling(height / LineHeight)) : _layout.Nodes.Count - 1;
+        int maximum = 0;
+        for (int row = first; row <= last; row++) { maximum = Math.Max(maximum, _layout.Nodes[row].Lane); }
+        foreach (GraphStroke stroke in _layout.Strokes)
+        {
+            if (stroke.Row >= first && stroke.Row <= last) { maximum = Math.Max(maximum, Math.Max(stroke.CenterLane, stroke.AdjacentLane)); }
+        }
+        return maximum + 1;
+    }
 
     public override void Render(DrawingContext context)
     {
         base.Render(context);
         bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
         IBrush[] palette = dark ? DarkPalette : LightPalette;
-        int firstRow = Math.Max(0, (int)(_verticalOffset / RowHeight));
-        int lastRow = Math.Min(_layout.Nodes.Count - 1, (int)((_verticalOffset + Bounds.Height) / RowHeight));
+        int firstRow = Math.Max(0, (int)(_verticalOffset / LineHeight));
+        int lastRow = Math.Min(_layout.Nodes.Count - 1, (int)((_verticalOffset + Bounds.Height) / LineHeight));
+
+        // Legacy graph hosts remain transparent unless they opt into revision-grid row state.
+        if (DrawAlternateBackground || AuthoredEmail is not null || _selectedHashSet.Count > 0)
+        {
+            for (int row = firstRow; row <= lastRow; row++)
+            {
+                GitCommit commit = _layout.Nodes[row].Commit;
+                IBrush background = RevisionHistoryRow.BackgroundFor(commit, _selectedHashSet.Contains(commit.Hash), SelectionFocused,
+                    AuthoredEmail, row, DrawAlternateBackground, dark);
+                context.FillRectangle(background, new Rect(0, row * LineHeight - _verticalOffset, Bounds.Width, LineHeight));
+            }
+        }
 
         foreach (GraphStroke stroke in _layout.Strokes)
         {
@@ -98,8 +161,8 @@ public sealed class CommitGraph : Control
                 continue;
             }
 
-            double centerY = (stroke.Row + 0.5) * RowHeight - _verticalOffset;
-            double boundaryY = centerY + (stroke.UpperHalf ? -1 : 1) * RowHeight / 2;
+            double centerY = (stroke.Row + 0.5) * LineHeight - _verticalOffset;
+            double boundaryY = centerY + (stroke.UpperHalf ? -1 : 1) * LineHeight / 2;
             double centerX = X(stroke.CenterLane);
             double boundaryX = (centerX + X(stroke.AdjacentLane)) / 2;
             StreamGeometry geometry = new();
@@ -121,7 +184,7 @@ public sealed class CommitGraph : Control
         for (int row = firstRow; row <= lastRow; row++)
         {
             GraphNode node = _layout.Nodes[row];
-            Point center = new(X(node.Lane), (row + 0.5) * RowHeight - _verticalOffset);
+            Point center = new(X(node.Lane), (row + 0.5) * LineHeight - _verticalOffset);
             IBrush brush = palette[node.Color];
             _refsByHash.TryGetValue(node.Commit.Hash, out GitReference[]? refs);
             bool isHead = node.Commit.Hash == _currentHead || refs?.Any(reference => reference.IsCurrent) is true;
@@ -130,6 +193,7 @@ public sealed class CommitGraph : Control
             if (refs is { Length: > 0 })
             {
                 context.DrawRectangle(brush, outline, new Rect(center.X - 5, center.Y - 5, 10, 10), 1, 1);
+                if (!ShowReferenceLabels) { continue; }
                 double x = LeftInset * 2 + _layout.LaneCount * LaneWidth;
                 foreach (GitReference reference in refs.OrderByDescending(reference => reference.IsCurrent).ThenBy(reference => reference.Name, StringComparer.Ordinal))
                 {
@@ -158,9 +222,9 @@ public sealed class CommitGraph : Control
         }
     }
 
-    private static double X(int lane) => LeftInset + (lane + 0.5) * LaneWidth;
+    private double X(int lane) => LeftInset + (lane + 0.5) * LaneWidth;
 
-    private static Color ReferenceColor(GitReference reference, bool dark)
+    internal static Color ReferenceColor(GitReference reference, bool dark)
         => Color.Parse(reference.IsBranch ? dark ? "#7FE28A" : "#008000"
             : reference.IsRemote ? dark ? "#fd9797" : "#8b0009"
             : reference.IsTag ? dark ? "#40BAF7" : "#00008b"
@@ -168,7 +232,7 @@ public sealed class CommitGraph : Control
 
     private void ShowCommitTooltip(object? sender, PointerEventArgs args)
     {
-        int row = (int)((args.GetPosition(this).Y + _verticalOffset) / RowHeight);
+        int row = (int)((args.GetPosition(this).Y + _verticalOffset) / LineHeight);
         if (row < 0 || row >= _layout.Nodes.Count)
         {
             ToolTip.SetTip(this, null);

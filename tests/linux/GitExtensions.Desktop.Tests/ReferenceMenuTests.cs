@@ -195,7 +195,7 @@ public class ReferenceMenuTests
         MainWindow main = fixture.Window;
         await main.OpenRepositoryAsync(fixture.Repository);
         await SelectNavigationReferenceAsync(main, "refs/heads/manual-filter");
-        TextBox expression = main.GetVisualDescendants().OfType<TextBox>().Single(text => text.Watermark == "Revision (default: all refs)");
+        TextBox expression = main.GetVisualDescendants().OfType<TextBox>().Single(text => text.Name == "BranchHistoryFilter");
         expression.Text = "manual-filter";
         DeleteBranchDialog delete = await OpenDirectAsync<DeleteBranchDialog>(main, "Delete branch…");
         Assert.That(delete.ReadOptions().Names, Is.EqualTo(new[] { "manual-filter" }));
@@ -274,7 +274,7 @@ public class ReferenceMenuTests
     }
 
     private static IEnumerable<TreeViewItem> NavigationNodes(MainWindow main)
-        => Field<TreeView>(main, "RepositoryNavigation").Items.OfType<TreeViewItem>().SelectMany(group => group.Items.OfType<TreeViewItem>());
+        => BrowseTestHelpers.NavigationNodes(Field<TreeView>(main, "RepositoryNavigation"));
 
     private static IEnumerable<GitReference> NavigationReferences(MainWindow main)
         => NavigationNodes(main).Select(node => node.Tag).OfType<GitReference>();
@@ -289,7 +289,7 @@ public class ReferenceMenuTests
 
     private static async Task<HistoryFilterDialog> OpenHistoryFilterAsync(MainWindow main)
     {
-        Click(main.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Filter"));
+        Click(main.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "BrowseAdvancedFilter"));
         await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any());
         return main.OwnedWindows.OfType<HistoryFilterDialog>().Single();
     }

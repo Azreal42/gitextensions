@@ -253,6 +253,11 @@
         "resolved": "0.21.3",
         "contentHash": "hDwB8WsQoyALQKqIbwzS68UKdlnafDm4T/DkO/JrA/YIneP/rKv96SxYPVXeh3FP4i/SXfShrYftKLtciJAIlw=="
       },
+      "ZString": {
+        "type": "Transitive",
+        "resolved": "2.6.0",
+        "contentHash": "XE8a+11nZg0LRaf+RGABEWaHIf8yGd5w8v/Ra1iWxMBmAVzwuKbW7G21mS0U7w7sh1lYcgckInWGgnz4qyET8A=="
+      },
       "GitExtensions": {
         "type": "Project",
         "dependencies": {
@@ -262,7 +267,8 @@
           "Avalonia.Fonts.Inter": "[11.3.22, )",
           "Avalonia.Themes.Fluent": "[11.3.22, )",
           "GitExtensions.Core": "[8.0.0-linux.1, )",
-          "GitExtensions.Plugins": "[8.0.0-linux.1, )"
+          "GitExtensions.Plugins": "[8.0.0-linux.1, )",
+          "SmartFormat": "[3.6.0, )"
         }
       },
       "gitextensions.core": {
@@ -323,6 +329,15 @@
         "contentHash": "tCui436MQuxeIXj/eA/Mq9neAgNTud0Jk22HDWSo05KT+vaH5oJa53xI8PxEi3uRSsWK2l9yoQciLKrzzIrqCw==",
         "dependencies": {
           "Avalonia": "11.3.22"
+        }
+      },
+      "SmartFormat": {
+        "type": "CentralTransitive",
+        "requested": "[3.6.0, )",
+        "resolved": "3.6.0",
+        "contentHash": "jPT7ztH+Lw26PcW9hIeIhfdePZNrxFuksidBVUnR3Bn1rUJiesjF/idBBHanZW4swgD37nThjr0LZmFmarLqxA==",
+        "dependencies": {
+          "ZString": "2.6.0"
         }
       }
     }

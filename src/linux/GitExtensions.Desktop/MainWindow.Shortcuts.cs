@@ -63,7 +63,7 @@ public sealed partial class MainWindow
                 case Key.D4: FocusDetail("FileTreeTab"); break;
                 case Key.D5: FocusDetail("GpgTab"); break;
                 case Key.D6: FocusDetail("ConsoleTab"); break;
-                case Key.E: _historyRevision.Focus(); _historyRevision.SelectAll(); break;
+                case Key.E: FocusBranchFilter(); break;
                 case Key.Tab: CycleDetails(1); break;
                 case Key.P: SelectRelativeCommit(parent: true); break;
                 case Key.N: SelectRelativeCommit(parent: false); break;

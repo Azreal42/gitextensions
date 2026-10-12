@@ -15,6 +15,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="SmartFormat" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/difftastic.ico" Link="Assets/Icons/difftastic.ico" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Backgrounds/DashboardBackground*.png" Link="Assets/Backgrounds/%(Filename)%(Extension)" />

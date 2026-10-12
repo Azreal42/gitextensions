@@ -91,3 +91,9 @@
 | Fixture Browse ne trouve pas le nouveau fichier du commit | Réouverture du même dépôt conserve intentionnellement le commit sélectionné | Sélectionner le vrai nouveau commit avant File tree ; rouge initial conservé, bouton natif Blame et ligne180 vérifiés. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
+
+| Navigation perdue après renommage | Clé d’arbre gardant l’ancien nom malgré le nouveau GitReference | Reprendre la clé du vrai nom sélectionné ; scénario de renommage et filtre conservé vert. |
+| Annulation absente pendant une lecture Git | Création du token après désactivation des commandes | Créer le token avant mise à jour de la barre ; annulation réelle du process et dépôt précédent préservés. |
+| Clic Working/index lit l’ancien fichier | Événements de sélection/checkbox déclenchant une lecture intermédiaire | Mettre à jour la sélection atomiquement avant l’unique lecture ; vrais diffs et index/worktree inchangés vérifiés. |
+| Tests Browse attendent ancien menu/titre/densité ou un commit hors écran | Assertions de l’ancienne présentation et fixture sélectionnant un ancien commit | Suivre Start, titre dossier/branche et lignes 20 px ; sélectionner le vrai HEAD visible pour la référence. Rouges initiaux conservés. |
+| Nom de branche traduit comme une commande | IconLabel appliquant T aux captions de données | Labels Git/dossiers littéraux, catégories et commandes traduites ; régression française Refresh/Author couverte. |

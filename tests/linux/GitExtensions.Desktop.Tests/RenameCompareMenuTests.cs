@@ -59,7 +59,7 @@ public class RenameCompareMenuTests
             Assert.That((navigation.SelectedItem as TreeViewItem)?.Tag, Is.TypeOf<GitReference>());
             Assert.That(((GitReference)((TreeViewItem)navigation.SelectedItem!).Tag!).Name, Is.EqualTo("refs/heads/new_topic"));
             Assert.That(NavigationNodes(main), Does.Contain(navigation.SelectedItem), "The selection must belong to the visible, refreshed navigation tree.");
-            TextBox expression = main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Watermark == "Revision (default: all refs)");
+            TextBox expression = main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Name == "BranchHistoryFilter");
             Assert.That(expression.Text, Is.EqualTo("refs/heads/new_topic"));
             Assert.That((Field<ListBox>(main, "RevisionHistory").SelectedItem as GitCommit)?.Hash, Is.EqualTo(selectedHash));
             ClickLabel(workflow, "Rename…");
@@ -274,9 +274,9 @@ public class RenameCompareMenuTests
     { Assert.That(action.IsEnabled, Is.True, action.Header?.ToString()); action.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); }
     private static T Field<T>(Window owner, string name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static IEnumerable<TreeViewItem> NavigationNodes(MainWindow main)
-        => Field<TreeView>(main, "RepositoryNavigation").Items.OfType<TreeViewItem>().SelectMany(group => group.Items.OfType<TreeViewItem>());
+        => BrowseTestHelpers.NavigationNodes(Field<TreeView>(main, "RepositoryNavigation"));
     private static void ClickNamed(Window owner, string name) => Click(Field<Button>(owner, name));
-    private static void ClickLabel(Window owner, string label) => Click(owner.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == label));
+    private static void ClickLabel(Window owner, string label) => Click(owner.GetVisualDescendants().OfType<Button>().Single(button => (button.Content as string == label || label == "Filter" && button.Name == "BrowseAdvancedFilter" || label == "Cancel operation" && button.Name == "BrowseCancelOperation")));
     private static void Click(Button button)
     { Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True, button.Name ?? button.Content?.ToString()); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
     private static void Press(Window owner, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None)

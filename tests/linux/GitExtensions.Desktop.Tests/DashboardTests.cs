@@ -50,7 +50,7 @@ public class DashboardTests
         Assert.That(dashboard.History.Favorites.Single().Category, Is.EqualTo("Travail [été] \"literal\""));
         RepositoryHistoryState saved = new RepositoryHistoryStore().Load();
         Assert.That(saved.Favorites, Is.EqualTo(dashboard.History.Favorites));
-        MenuItem favoritesMenu = Group(main, "File").Items.OfType<MenuItem>().Single(item => item.Header as string == "Favorite repositories");
+        MenuItem favoritesMenu = Group(main, "Start").Items.OfType<MenuItem>().Single(item => item.Header as string == "Favorite repositories");
         MenuItem category = favoritesMenu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Travail [été] \"literal\"");
         category.Items.OfType<MenuItem>().Single().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Helpers.Until(() => !main.IsBusy && !dashboard.IsVisible);
@@ -74,7 +74,7 @@ public class DashboardTests
         MainWindow main = fixture.Window;
         await main.OpenRepositoryAsync(descendant);
         await main.OpenRepositoryAsync(bare);
-        ClickMenu(main, "File", "Close");
+        ClickMenu(main, "Start", "Close");
         DashboardControl dashboard = await DashboardAsync(main);
         dashboard.SetFavorite(invalid, true);
         await dashboard.MetadataLoading;
@@ -107,7 +107,7 @@ public class DashboardTests
     {
         using Fixture fixture = await Fixture.CreateAsync("original\n", "original\n");
         MainWindow main = fixture.Window;
-        ClickMenu(main, "File", "Close"); DashboardControl dashboard = await DashboardAsync(main);
+        ClickMenu(main, "Start", "Close"); DashboardControl dashboard = await DashboardAsync(main);
         dashboard.SetFavorite(fixture.Repository, true);
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
@@ -194,7 +194,7 @@ public class DashboardTests
         string before = File.ReadAllText(new RepositoryHistoryStore().FilePath);
         async Task<RecentRepositoriesSettingsDialog> OpenSettings()
         {
-            ClickMenu(main, "Dashboard", "Recent repositories settings");
+            ClickMenu(main, "Start", "Recent repositories settings");
             await Helpers.Until(() => main.OwnedWindows.OfType<RecentRepositoriesSettingsDialog>().Any());
             return main.OwnedWindows.OfType<RecentRepositoriesSettingsDialog>().Single();
         }
@@ -212,18 +212,19 @@ public class DashboardTests
         RepositoryHistoryState saved = new RepositoryHistoryStore().Load();
         Assert.That(saved.RecentReposComboMinWidth, Is.EqualTo(160));
         Assert.That(saved.ShorteningStrategy, Is.EqualTo(RepositoryPathShorteningStrategy.MostSignDir));
-        ComboBox recent = main.GetVisualDescendants().OfType<ComboBox>().Single(control => control.PlaceholderText == "Recent repositories");
-        Assert.That(recent.Width, Is.EqualTo(160));
+        ComboBox recent = main.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "RecentRepositoriesDropdown");
+        Assert.That(recent.Width, Is.EqualTo(24), "The compact original toolbar shows the repository drop-down arrow.");
+        Assert.That(recent.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.Popup>().Single().MinWidth, Is.EqualTo(160), "The configured width still applies to the opened repository list.");
         RepositoryHistoryRow item = recent.Items.OfType<RepositoryHistoryRow>().Single();
         Assert.That(item.Caption, Is.EqualTo("repository"));
         Assert.That(item.Path, Is.EqualTo(fixture.Repository));
-        MenuItem recentMenu = Group(main, "File").Items.OfType<MenuItem>().Single(menu => menu.Header as string == "Recent repositories");
+        MenuItem recentMenu = Group(main, "Start").Items.OfType<MenuItem>().Single(menu => menu.Header as string == "Recent repositories");
         Assert.That(recentMenu.Items.OfType<MenuItem>().Single().Header, Is.EqualTo("repository"));
-        ClickMenu(main, "File", "Close"); DashboardControl dashboard = await DashboardAsync(main);
+        ClickMenu(main, "Start", "Close"); DashboardControl dashboard = await DashboardAsync(main);
         Assert.That(((DashboardRepository)Tile(dashboard, fixture.Repository, false).Tag!).Caption, Is.EqualTo("repository"));
         ClickContext(Tile(dashboard, fixture.Repository, false), "Open repository");
         await Helpers.Until(() => !main.IsBusy && !dashboard.IsVisible);
-        Assert.That(main.Title, Is.EqualTo("Git Extensions — " + fixture.Repository));
+        Assert.That(main.Title, Is.EqualTo(Path.GetFileName(fixture.Repository) + " (main) — Git Extensions"));
     }
 
     private static async Task<DashboardControl> DashboardAsync(MainWindow main)

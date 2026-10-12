@@ -221,17 +221,17 @@ public class MainWindowSelectionTests
     { await File.WriteAllTextAsync(Path.Combine(repository.Path, "file.txt"), content); await repository.StageAllAsync(); await repository.CommitAsync(message); }
     private static T Field<T>(Window owner, string name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static TextBox RepositoryPath(MainWindow main) => main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Watermark == "Repository directory");
-    private static TextBox RevisionFilter(MainWindow main) => main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Watermark == "Revision (default: all refs)");
+    private static TextBox RevisionFilter(MainWindow main) => main.GetVisualDescendants().OfType<TextBox>().Single(box => box.Name == "BranchHistoryFilter");
     private static string[] HistoryHashes(MainWindow main) => Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
     private static string[] SelectedHashes(MainWindow main) => Field<ListBox>(main, "RevisionHistory").SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
-    private static IEnumerable<TreeViewItem> NavigationNodes(MainWindow main) => Field<TreeView>(main, "RepositoryNavigation").Items.OfType<TreeViewItem>().SelectMany(group => group.Items.OfType<TreeViewItem>());
+    private static IEnumerable<TreeViewItem> NavigationNodes(MainWindow main) => BrowseTestHelpers.NavigationNodes(Field<TreeView>(main, "RepositoryNavigation"));
     private static string[] NavigationReferences(MainWindow main) => NavigationNodes(main).Select(node => node.Tag).OfType<GitReference>().Select(reference => reference.Name + ":" + reference.Hash).ToArray();
     private static MenuItem CompareAction(MainWindow main, string label) => Field<ListBox>(main, "RevisionHistory").ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Header as string == "Compare").Items.OfType<MenuItem>().Single(item => item.Header as string == label);
     private static string ComparisonDiff(CompareRevisionsDialog dialog) => Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text;
     private static void Invoke(MenuItem item) { Assert.That(item.IsEnabled, Is.True, item.Header?.ToString()); item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); }
     private static void ClickLabel(Window owner, string label)
     {
-        Button button = owner.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == label);
+        Button button = owner.GetVisualDescendants().OfType<Button>().Single(button => (button.Content as string == label || label == "Filter" && button.Name == "BrowseAdvancedFilter" || label == "Cancel operation" && button.Name == "BrowseCancelOperation"));
         Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True, label); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     }
     private static async Task ClickBranchAsync(MainWindow main, string name)

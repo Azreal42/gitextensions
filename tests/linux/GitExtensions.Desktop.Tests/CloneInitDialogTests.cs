@@ -20,7 +20,7 @@ public class CloneInitDialogTests
     public async Task BrowserFileMenuOpensClassicCreateAndCloneWindows()
     {
         using Fixture fixture = await Fixture.CreateAsync("base\n", "base\n");
-        MenuItem file = fixture.Window.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Header as string == "File");
+        MenuItem file = fixture.Window.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Header as string == "Start");
         file.Items.OfType<MenuItem>().Single(item => item.Header as string == "Create new repository…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => fixture.Window.OwnedWindows.OfType<InitDialog>().Any());
         InitDialog init = fixture.Window.OwnedWindows.OfType<InitDialog>().Single();

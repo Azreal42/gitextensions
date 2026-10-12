@@ -53,6 +53,15 @@
           "Avalonia": "11.3.22"
         }
       },
+      "SmartFormat": {
+        "type": "Direct",
+        "requested": "[3.6.0, )",
+        "resolved": "3.6.0",
+        "contentHash": "jPT7ztH+Lw26PcW9hIeIhfdePZNrxFuksidBVUnR3Bn1rUJiesjF/idBBHanZW4swgD37nThjr0LZmFmarLqxA==",
+        "dependencies": {
+          "ZString": "2.6.0"
+        }
+      },
       "Avalonia.Angle.Windows.Natives": {
         "type": "Transitive",
         "resolved": "2.1.25547.20250602",
@@ -188,6 +197,11 @@
         "type": "Transitive",
         "resolved": "0.21.3",
         "contentHash": "hDwB8WsQoyALQKqIbwzS68UKdlnafDm4T/DkO/JrA/YIneP/rKv96SxYPVXeh3FP4i/SXfShrYftKLtciJAIlw=="
+      },
+      "ZString": {
+        "type": "Transitive",
+        "resolved": "2.6.0",
+        "contentHash": "XE8a+11nZg0LRaf+RGABEWaHIf8yGd5w8v/Ra1iWxMBmAVzwuKbW7G21mS0U7w7sh1lYcgckInWGgnz4qyET8A=="
       },
       "gitextensions.core": {
         "type": "Project"

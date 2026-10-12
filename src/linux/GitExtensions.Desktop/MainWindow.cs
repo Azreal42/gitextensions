@@ -78,15 +78,15 @@ public sealed partial class MainWindow : Window
         {
             Setters =
             {
-                new Setter(HeightProperty, CommitGraph.RowHeight),
-                new Setter(MinHeightProperty, CommitGraph.RowHeight),
-                new Setter(PaddingProperty, new Thickness(4, 1)),
+                new Setter(HeightProperty, BrowseRowHeight),
+                new Setter(MinHeightProperty, BrowseRowHeight),
+                new Setter(PaddingProperty, new Thickness(0)),
                 new Setter(MarginProperty, new Thickness(0))
             }
         });
         _commits.AddHandler(ScrollViewer.ScrollChangedEvent, (_, e) =>
         {
-            if (e.Source is ScrollViewer viewer) { _historyGraph.VerticalOffset = viewer.Offset.Y; }
+            if (e.Source is ScrollViewer viewer) { _historyGraph.VerticalOffset = viewer.Offset.Y; UpdateHistoryPresentation(); }
         });
         _recent.SelectionChanged += async (_, _) =>
         {
@@ -111,6 +111,7 @@ public sealed partial class MainWindow : Window
         _submodules.ItemTemplate = TextTemplate<GitSubmodule>(module => $"{module.Path}  {module.Url}  {(module.IsInitialized ? module.Head : "not initialized")}");
         _commits.SelectionChanged += async (_, _) =>
         {
+            if (!_refreshing) { UpdateHistoryPresentation(); }
             if (!_refreshing && _commits.SelectedItem is GitCommit commit)
             {
                 await RunAsync("Commit diff", async repository =>
@@ -379,7 +380,7 @@ public sealed partial class MainWindow : Window
                 await _backgroundFetch.UnregisterAsync();
                 Token.ThrowIfCancellationRequested();
                 _repository = repository;
-                if (changedRepository) { _comparisonBase = null; }
+                if (changedRepository) { _comparisonBase = null; _navigationSelectionKey = null; _authoredEmail = null; }
                 _navigation.SelectedItem = null;
                 _navigationRevisionFilter = null;
                 _repositoryPath.Text = repository.Path;
@@ -393,6 +394,8 @@ public sealed partial class MainWindow : Window
             _historyRevision.Text = revision;
             _repositorySummary = $"{(repository.IsBare ? T("Bare repository") + "  ·  " : "")}{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
             _state.Text = _repositorySummary;
+            UpdateBrowserToolbar(status);
+            UpdateVirtualRevisionRows(status);
             SetWorkingFiles(status.Changes, selectedPath, preserveSelection: !changedRepository);
             _references.ItemsSource = references;
             _references.SelectedItem = references.FirstOrDefault(reference => reference.Name == selectedReferenceName);
@@ -401,6 +404,7 @@ public sealed partial class MainWindow : Window
             _stashes.ItemsSource = stashes;
             _worktrees.ItemsSource = worktrees;
             _submodules.ItemsSource = submodules;
+            _configuredUserEmail = configuration.LastOrDefault(entry => entry.Key == "user.email").Value;
             _configuration.ItemsSource = configuration.Select(entry => $"{entry.Key} = {entry.Value}").ToList();
             _tree.ItemsSource = tree;
             UpdateBrowserNavigation(references, stashes, submodules, worktrees);
@@ -444,7 +448,7 @@ public sealed partial class MainWindow : Window
             }
             else { _changesContent?.ClearImage(); _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
         }
-        finally { _refreshing = false; }
+        finally { _refreshing = false; UpdateHistoryPresentation(); }
     }
 
     private async Task RunAsync(string label, Func<GitRepository, Task> action, bool refresh = true, bool requireRepository = true)
@@ -459,8 +463,8 @@ public sealed partial class MainWindow : Window
             : null;
         _busy = true;
         LastException = null;
-        SetActionsEnabled(false);
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        SetActionsEnabled(false);
         bool success = false;
         try
         {
@@ -494,17 +498,20 @@ public sealed partial class MainWindow : Window
     {
         foreach (Button button in _actionButtons) { button.IsEnabled = enabled && !(_repository?.IsBare == true && button.Tag is true); }
         foreach (MenuItem menu in _actionMenus) { menu.IsEnabled = enabled && !(_repository?.IsBare == true && menu.Tag is true); }
+        if (_navigationPanel is not null) { _navigationPanel.IsEnabled = enabled; }
         _repositoryPath.IsEnabled = enabled;
         _recent.IsEnabled = enabled;
         _recentMenu.IsEnabled = _favoritesMenu.IsEnabled = enabled;
         if (_dashboard is not null) { _dashboard.IsEnabled = enabled; }
         if (_compareToBaseMenu is not null) { _compareToBaseMenu.IsEnabled = enabled && _comparisonBase is not null; }
-        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _filePath, _tabs, _revisionFiles];
+        Control[] selectionControls = [_commits, _changes, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _navigation, _hunks, _stagedDiff, _historyRevision, _quickHistoryFilter, _filePath, _tabs, _revisionFiles];
         if (_revisionFilesView is not null) { _revisionFilesView.IsEnabled = enabled; }
         if (_changesFilesView is not null) { _changesFilesView.IsEnabled = enabled; }
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
         UpdatePartialStageActions();
+        if (_cancelToolbarButton is not null) { _cancelToolbarButton.IsVisible = !enabled && _operation is not null; _cancelToolbarButton.IsEnabled = _operation is not null; }
+        _browserToolbar?.Place();
     }
 
     private static bool RequiresWorktree(string label) => label.StartsWith("Stage ", StringComparison.Ordinal) || label.StartsWith("Unstage ", StringComparison.Ordinal)

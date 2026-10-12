@@ -205,12 +205,12 @@ public class CloneHistoryTests
             Assert.That(new RepositoryHistoryStore().Load().Recent.First().Path, Is.EqualTo(expected), "Success visits the clone before the Open answer.");
             question.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "No").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await Until(() => !question.IsVisible && !main.IsBusy);
-            Assert.That(main.Title, Is.EqualTo("Git Extensions — " + fixture.Repository.Path));
+            Assert.That(main.Title, Is.EqualTo(Path.GetFileName(fixture.Repository.Path) + " (main) — Git Extensions"));
             Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
             MenuItem recent = FileAction(main, "Recent repositories");
             MenuItem remembered = recent.Items.OfType<MenuItem>().Single(item => ToolTip.GetTip(item) as string == expected);
             remembered.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            await Until(() => !main.IsBusy && main.Title == "Git Extensions — " + expected);
+            await Until(() => !main.IsBusy && main.Title == Path.GetFileName(expected) + " (main) — Git Extensions");
             Assert.That((await clone.CreatedRepository!.GetStatusAsync()).Changes, Is.Empty);
         }
         finally { foreach (Window child in main.OwnedWindows.ToArray()) child.Close(); main.Close(); }
@@ -375,7 +375,7 @@ public class CloneHistoryTests
     private static void Click(Window owner, string name)
     { Button button = Field<Button>(owner, name); Assert.That(button.IsEnabled, Is.True); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
     private static MenuItem FileAction(MainWindow main, string action)
-        => main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(menu => menu.Header as string == "File").Items.OfType<MenuItem>().Single(item => item.Header as string == action);
+        => main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(menu => menu.Header as string == "Start").Items.OfType<MenuItem>().Single(item => item.Header as string == action);
     private static Dictionary<string, byte[]> HistoryFiles(CloneSourcesStore sources, RepositoryHistoryStore local)
         => new[] { sources.FilePath, local.FilePath, Path.Combine(Path.GetDirectoryName(sources.FilePath)!, "clone-preferences.json") }.ToDictionary(file => file, File.ReadAllBytes);
     private static void AssertHistoryFilesUnchanged(Dictionary<string, byte[]> files)

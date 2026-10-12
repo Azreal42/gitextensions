@@ -336,7 +336,7 @@ public class CheckoutSubmoduleTests
         {
             await main.OpenRepositoryAsync(fixture.Repository.Path);
             TreeView navigation = Field<TreeView>(main, "RepositoryNavigation");
-            navigation.SelectedItem = navigation.Items.OfType<TreeViewItem>().SelectMany(group => group.Items.OfType<TreeViewItem>())
+            navigation.SelectedItem = BrowseTestHelpers.NavigationNodes(navigation)
                 .Single(node => node.Tag is GitReference reference && reference.Name == "refs/heads/target");
             await Until(() => !main.IsBusy);
             MenuItem commands = main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(menu => menu.Header as string == "Commands");

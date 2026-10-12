@@ -234,7 +234,7 @@ public class BranchNameNormalizationTests
                     create.Close(); await MainClosedAsync(main, create);
                 }
                 TreeView navigation = Field<TreeView>(main, "RepositoryNavigation");
-                navigation.SelectedItem = navigation.Items.OfType<TreeViewItem>().SelectMany(group => group.Items.OfType<TreeViewItem>())
+                navigation.SelectedItem = BrowseTestHelpers.NavigationNodes(navigation)
                     .Single(node => node.Tag is GitReference reference && reference.Name == "refs/remotes/origin/main");
                 await Until(() => !main.IsBusy);
                 CheckoutBranchDialog checkout = await OpenCommandAsync<CheckoutBranchDialog>(main, "Checkout branch…");

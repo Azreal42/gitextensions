@@ -38,10 +38,11 @@ public class MainWindowWorkflowTests
             window.Show();
             await window.OpenRepositoryAsync(repository);
             window.UpdateLayout();
-            Assert.That(window.Title, Does.Contain(repository));
+            Assert.That(window.GetVisualDescendants().OfType<TextBox>().Single(text => text.Name == "RepositoryPath").Text, Is.EqualTo(repository));
+            Assert.That(window.Title, Is.EqualTo(Path.GetFileName(repository) + " (main) — Git Extensions"));
             ListBox history = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitCommit>().Any() is true);
             Assert.That(history.ItemsSource!.OfType<GitCommit>().Single().Subject, Is.EqualTo("Initial commit"));
-            Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single().Bounds.Height, Is.EqualTo(24), "History rows must retain the original compact density.");
+            Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single().Bounds.Height, Is.EqualTo(20), "Browse history follows the Windows photo density; other list hosts retain their own heights.");
             history.SelectedIndex = 0;
             // A fresh profile now uses the original Commit tab below the graph.
             TabControl tabs = window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");

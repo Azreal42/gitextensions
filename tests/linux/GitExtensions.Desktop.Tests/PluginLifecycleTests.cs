@@ -72,7 +72,8 @@ public class PluginLifecycleTests
         await ApplyAsync(dialog);
         await ClosePluginAsync(fixture.Window, dialog);
         await fixture.Window.OpenRepositoryAsync(secondPath);
-        Assert.That(fixture.Window.Title, Does.EndWith(secondPath));
+        Assert.That(fixture.Window.GetVisualDescendants().OfType<TextBox>().Single(text => text.Name == "RepositoryPath").Text, Is.EqualTo(secondPath));
+        Assert.That(fixture.Window.Title, Is.EqualTo(Path.GetFileName(secondPath) + " (main) — Git Extensions"));
         await UntilAsync(async () => await LocalConfigAsync(fixture.Git, secondPath, "test.background") == "marker");
         Assert.That(await LocalConfigAsync(fixture.Git, fixture.Repository, "test.background"), Is.Empty,
             "The timer for the previous repository continued after the repository changed.");

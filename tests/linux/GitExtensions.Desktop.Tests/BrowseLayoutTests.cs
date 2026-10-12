@@ -97,7 +97,7 @@ public class BrowseLayoutTests
         using Fixture fixture = await Fixture.CreateAsync("initial\n", "uncommitted work\n", createMerge: true);
         MainWindow main = fixture.Window;
         TreeView navigation = Field<TreeView>(main, "RepositoryNavigation");
-        TreeViewItem branch = navigation.Items.OfType<TreeViewItem>().SelectMany(group => group.Items.OfType<TreeViewItem>()).Single(item => item.Tag is GitReference reference && reference.Name == "refs/heads/main");
+        TreeViewItem branch = BrowseTestHelpers.NavigationNodes(navigation).Single(item => item.Tag is GitReference reference && reference.Name == "refs/heads/main");
         main.UpdateLayout();
         Point branchPoint = branch.TranslatePoint(new Point(48, 10), main)!.Value;
         main.MouseMove(branchPoint); main.MouseDown(branchPoint, MouseButton.Left); main.MouseUp(branchPoint, MouseButton.Left);
@@ -268,7 +268,7 @@ public class BrowseLayoutTests
         {
             Assert.That((Details(main).SelectedItem as TabItem)?.Name, Is.EqualTo("CommitInfoTab"));
             Assert.That(history.Bottom, Is.LessThanOrEqualTo(information.Y));
-            Assert.That(information.Width, Is.GreaterThan(history.Width));
+            Assert.That(information.Width, Is.GreaterThanOrEqualTo(history.Width - 16), "Information must fill the lower panel, allowing its original content padding.");
         }
         else
         {

@@ -36,11 +36,11 @@ public class MainWindowClassicTests
         GitCommit selected = (GitCommit)history.SelectedItem!;
         TextBox information = window.GetVisualDescendants().OfType<TextBox>().Single(text => text.IsEffectivelyVisible && text.Text?.Contains(selected.Hash, StringComparison.Ordinal) is true && text.Text.Contains("Author:", StringComparison.Ordinal));
 
-        Assert.That(menu.Items.OfType<MenuItem>().Select(item => item.Header), Is.EqualTo(new[] { "File", "Dashboard", "Repository", "Commands", "Git hosts", "Plugins", "Tools", "Help" }));
-        Assert.That(navigation.Items.OfType<TreeViewItem>().Select(item => item.Header), Is.EqualTo(new[] { "Branches", "Remotes", "Tags", "Stashes", "Submodules", "Worktrees" }));
+        Assert.That(menu.Items.OfType<MenuItem>().Select(item => item.Header), Is.EqualTo(new[] { "Start", "Repository", "Navigate", "View", "Commands", "Git hosts", "Plugins", "Tools", "Help" }));
+        Assert.That(navigation.Items.OfType<TreeViewItem>().Select(item => ((StackPanel)item.Header!).Children.OfType<TextBlock>().Single().Text), Is.EqualTo(new[] { "Branches", "Remotes", "Tags", "Submodules", "Stashes", "Worktrees" }));
         Assert.That(graph.Commits.Any(commit => commit.Parents.Count == 2), Is.True, "The real repository must render a merge graph.");
-        Assert.That(graph.Bounds.Width, Is.EqualTo(180));
-        Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Select(item => item.Bounds.Height), Is.All.EqualTo(24));
+        Assert.That(graph.Bounds.Width, Is.InRange(16, 52), "The graph must reserve its visible lanes; reference labels belong in the message column.");
+        Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Select(item => item.Bounds.Height), Is.All.EqualTo(20));
         Rect menuBounds = InWindow(window, menu);
         Rect navigationBounds = InWindow(window, navigation);
         Rect historyBounds = InWindow(window, history);
@@ -67,10 +67,11 @@ public class MainWindowClassicTests
         frame!.Save(screenshot);
         TestContext.AddTestAttachment(screenshot, "Classic Linux browser with real merge history and native diff");
 
-        Border header = window.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "RevisionHeader");
+        Border toolbar = window.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "RepositoryToolbar");
+        Assert.That(window.GetVisualDescendants().Any(control => control is Control { Name: "RevisionHeader" }), Is.False, "The original revision grid hides its column headers.");
         window.RequestedThemeVariant = ThemeVariant.Dark;
         window.UpdateLayout();
-        Assert.That(((ISolidColorBrush)header.Background!).Color, Is.EqualTo(Color.Parse("#373737")), "The history header must follow the dark palette to keep its labels readable.");
+        Assert.That(((ISolidColorBrush)toolbar.Background!).Color, Is.EqualTo(Color.Parse("#202020")), "The compact toolbar follows the original dark palette.");
         using (Avalonia.Media.Imaging.WriteableBitmap? darkFrame = window.CaptureRenderedFrame())
         {
             Assert.That(darkFrame, Is.Not.Null);
@@ -80,7 +81,7 @@ public class MainWindowClassicTests
         }
         window.RequestedThemeVariant = ThemeVariant.Light;
         window.UpdateLayout();
-        Assert.That(((ISolidColorBrush)header.Background!).Color, Is.EqualTo(Color.Parse("#F0F0F0")));
+        Assert.That(((ISolidColorBrush)toolbar.Background!).Color, Is.EqualTo(Color.Parse("#F0F0F0")));
     }
 
     [AvaloniaTest]
@@ -90,7 +91,7 @@ public class MainWindowClassicTests
         string subdirectory = Path.Combine(fixture.Repository, "nested");
         Directory.CreateDirectory(subdirectory);
         await fixture.Window.OpenRepositoryAsync(subdirectory);
-        Assert.That(fixture.Window.Title, Is.EqualTo("Git Extensions — " + fixture.Repository));
+        Assert.That(fixture.Window.Title, Is.EqualTo("repository (main) — Git Extensions"));
         Assert.That(new RepositoryHistoryStore().Load().Recent.First().Path, Is.EqualTo(fixture.Repository));
         SelectChanges(fixture.Window);
         TreeView changes = Changes(fixture.Window);
@@ -104,7 +105,7 @@ public class MainWindowClassicTests
         GitResult clone = await fixture.Git.RunAsync(fixture.Repository, ["clone", "--bare", fixture.Repository, barePath]);
         Assert.That(clone.Success, Is.True, clone.StandardError);
         await fixture.Window.OpenRepositoryAsync(barePath);
-        Assert.That(fixture.Window.Title, Is.EqualTo("Git Extensions — " + barePath));
+        Assert.That(fixture.Window.Title, Is.EqualTo("bare.git (main) — Git Extensions"));
         Assert.That(History(fixture.Window).ItemsSource!.OfType<GitCommit>().Count(), Is.EqualTo(4));
         Assert.That((Details(fixture.Window).SelectedItem as TabItem)?.Name, Is.EqualTo("DiffTab"));
         Assert.That(Details(fixture.Window).Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab").IsEnabled, Is.False);

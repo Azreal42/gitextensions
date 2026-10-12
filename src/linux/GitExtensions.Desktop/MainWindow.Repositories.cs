@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -30,11 +31,14 @@ public sealed partial class MainWindow
         UpdateRepositoryMenus();
     }
 
+    private double RecentRepositoriesPopupWidth => _repositoryHistory.RecentReposComboMinWidth > 0 ? _repositoryHistory.RecentReposComboMinWidth : 300;
+
     private void UpdateRecentSelector()
     {
         RepositoryHistorySelection selection = RepositoryHistoryPresentation.Select(_repositoryHistory, MeasureRepositoryCaption);
         _recent.ItemsSource = selection.Top.Concat(selection.Recent).DistinctBy(row => row.Path, StringComparer.Ordinal).ToArray();
-        _recent.Width = _repositoryHistory.RecentReposComboMinWidth > 0 ? _repositoryHistory.RecentReposComboMinWidth : 200;
+        _recent.Width = _browserToolbar is not null ? 24 : _repositoryHistory.RecentReposComboMinWidth > 0 ? _repositoryHistory.RecentReposComboMinWidth : 200;
+        if (_recent.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.Popup>().FirstOrDefault() is { } popup) { popup.MinWidth = RecentRepositoriesPopupWidth; }
     }
 
     private void UpdateRepositoryMenus()
@@ -43,6 +47,8 @@ public sealed partial class MainWindow
         _favoritesMenu.Header = T("Favorite repositories");
         RepositoryHistorySelection selection = RepositoryHistoryPresentation.Select(_repositoryHistory, MeasureRepositoryCaption);
         _recentMenu.ItemsSource = selection.Top.Concat(selection.Recent).DistinctBy(row => row.Path, StringComparer.Ordinal).Select(row => RepositoryMenuItem(row.Path, row.Caption)).ToArray();
+        if (_recentToolbarMenu is not null)
+        { _recentToolbarMenu.ItemsSource = selection.Top.Concat(selection.Recent).DistinctBy(row => row.Path, StringComparer.Ordinal).Select(row => RepositoryMenuItem(row.Path, row.Caption)).ToArray(); }
         List<MenuItem> favorites = [];
         favorites.Add(RepositoryAction(T("Add to favorites"), () =>
         {
