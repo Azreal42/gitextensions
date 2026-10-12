@@ -10,7 +10,12 @@ public sealed partial class MainWindow
     // Defaults from HotkeySettingsManager/FormBrowse and RevisionGridControl.
     private async void HandleShortcuts(object? sender, KeyEventArgs e)
     {
-        if (_busy) { return; }
+        if (_busy || e.Handled) { return; }
+        // Window tunnel handlers run before the focused viewer. Preserve the
+        // original child-first command scope when its gesture is available.
+        DiffView? focusedDiff = _commitContent?.TextView.IsKeyboardFocusWithin == true ? _commitContent.TextView
+            : _changesDiffView?.IsKeyboardFocusWithin == true ? _changesDiffView : null;
+        if (focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
         Func<Task>? action = (e.Key, e.KeyModifiers) switch
         {
             (Key.F5, KeyModifiers.None) => RefreshAsync,
