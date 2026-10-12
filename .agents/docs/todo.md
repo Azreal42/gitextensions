@@ -55,9 +55,16 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - [ ] CI distante, installation APT sur OS vierge et validation arm64/Wayland seul.
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
 
+## Travail local en cours
+
+- Push rapide : raccourci et Maj-clic, formulaire après échec/refus ; 17 tests Push passent, audit natif/paquet à renouveler. ADR 0038.
+- Pull avancé : tags/unshallow et autostash historique ; mise à jour des sous-modules réutilisant le workflow Checkout.
+- Cherry-pick : options persistantes, parent de merge, choix de révision et dialogue par commit sélectionné.
+- Sous-modules : retrait guidé de l'enregistrement/index, avec conservation des fichiers et du dépôt interne comme Windows.
+
 ## Prochains écarts concrets
 
-- Push : bouton rapide distinct du dialogue, scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
+- Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
 - Pull avancé : tags/unshallow/autostash/sous-modules et sortie Git continue.
 - Historique/blame : navigateur des fichiers du commit, filtres de grille, difftools, dossiers/sous-modules et audit natif étendu.
 - Clone : autocomplétion, aide et sortie/progression Git ; scripts checkout.

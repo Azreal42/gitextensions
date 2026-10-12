@@ -35,7 +35,7 @@ public sealed partial class MainWindow
             (Key.Down, KeyModifiers.Control | KeyModifiers.Shift) => QuickFetchAsync,
             (Key.P, KeyModifiers.Control | KeyModifiers.Shift) => () => ExecutePullActionAsync(GitExtensions.Extensibility.Git.GitPullAction.Merge),
             (Key.F8, KeyModifiers.None) => DefaultPullAsync,
-            (Key.Up, KeyModifiers.Control | KeyModifiers.Shift) => PushAsync,
+            (Key.Up, KeyModifiers.Control | KeyModifiers.Shift) => QuickPushAsync,
             (Key.Up, KeyModifiers.Control | KeyModifiers.Alt) => QuickStashAsync,
             (Key.Down, KeyModifiers.Control | KeyModifiers.Alt) => QuickStashPopAsync,
             (Key.Up, KeyModifiers.Control | KeyModifiers.Shift | KeyModifiers.Alt) when _supportsStashStaged == true => QuickStashStagedAsync,

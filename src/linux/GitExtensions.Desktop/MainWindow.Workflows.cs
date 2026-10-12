@@ -292,7 +292,10 @@ public sealed partial class MainWindow
         if (await Dialogs.ConfirmAsync(this, "Remove remote", $"Remove {remote.Name} and its tracking refs?")) { await RunAsync("Remove remote", r => r.RemoveRemoteAsync(remote.Name, Token)); }
     }
 
-    private async Task PushAsync()
+    private Task PushAsync() => ShowPushAsync(quick: false);
+    private Task QuickPushAsync() => ShowPushAsync(quick: true);
+
+    private async Task ShowPushAsync(bool quick)
     {
         if (_repository is null || _busy) { return; }
         PushDialog dialog = new(_repository) { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
@@ -301,9 +304,13 @@ public sealed partial class MainWindow
             await RunAsync("Push", async _ =>
             {
                 CancellationToken commandToken = Token;
-                dialog.Opened += async (_, _) => await dialog.InitializeAsync(commandToken);
                 using CancellationTokenRegistration registration = commandToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
-                await dialog.ShowDialog(WorkflowOwner);
+                if (quick) { await dialog.PushAndShowWhenFailedAsync(WorkflowOwner, commandToken); }
+                else
+                {
+                    dialog.Opened += async (_, _) => await dialog.InitializeAsync(commandToken);
+                    await dialog.ShowDialog(WorkflowOwner);
+                }
                 commandToken.ThrowIfCancellationRequested();
             }, refresh: false);
         }

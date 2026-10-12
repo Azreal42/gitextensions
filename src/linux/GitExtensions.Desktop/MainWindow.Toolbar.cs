@@ -83,7 +83,24 @@ public sealed partial class MainWindow
         _currentBranchButton = BuildCurrentBranchButton();
         toolbar.Add(_currentBranchButton, _branchOverflow!);
         toolbar.Add(BuildPullButton(), new MenuItem { Name = "PullOverflow", Header = T("Pull/Fetch…"), Icon = OriginalIconImage("Pull.png"), ItemsSource = CreatePullMenu("PullOverflow") });
-        Command("BrowsePush", "Push", "Push.png", PushAsync);
+        bool quickPush = false;
+        async Task PushFromToolbarAsync()
+        {
+            bool quick = quickPush; quickPush = false;
+            await ShowPushAsync(quick);
+        }
+        Button pushButton = ToolbarButton("BrowsePush", "Push", "Push.png", PushFromToolbarAsync);
+        MenuItem pushOverflow = MenuAction("Push", PushFromToolbarAsync, "Push.png");
+        foreach (Control control in new Control[] { pushButton, pushOverflow })
+        {
+            control.AddHandler(PointerPressedEvent, (_, args) => quickPush = args.KeyModifiers.HasFlag(KeyModifiers.Shift),
+                Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            control.AddHandler(KeyDownEvent, (_, args) =>
+            {
+                if (args.Key is Key.Enter or Key.Space) { quickPush = args.KeyModifiers.HasFlag(KeyModifiers.Shift); }
+            }, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        }
+        toolbar.Add(pushButton, pushOverflow);
         _commitToolbarButton = ToolbarButton("BrowseCommit", "Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes"), text: true);
         toolbar.Add(_commitToolbarButton, MenuAction("Commit…", () => ShowWorkflowAsync("Changes"), "RepoStateClean.png"));
         toolbar.Add(BuildStashButton(), new MenuItem { Name = "StashOverflow", Header = T("Stash"), Icon = OriginalIconImage("stash.png"), ItemsSource = CreateStashMenu("StashOverflow") });

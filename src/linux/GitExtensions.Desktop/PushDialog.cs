@@ -137,6 +137,16 @@ public sealed class PushDialog : RepositoryDialog
     private GitPushMode Mode => _tabs.SelectedIndex == 1 ? _tag.Text == AllRefs ? GitPushMode.AllTags : GitPushMode.Tag : _tabs.SelectedIndex == 2 ? GitPushMode.Multiple : _source.Text == AllRefs ? GitPushMode.AllBranches : GitPushMode.Branch;
 
     public override Task InitializeAsync() => InitializeAsync(default);
+
+    internal async Task PushAndShowWhenFailedAsync(Window owner, CancellationToken cancellationToken = default)
+    {
+        await InitializeAsync(cancellationToken);
+        if (IsReady) { await ExecuteAsync(owner, cancellationToken); }
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!Succeeded) { await ShowDialog(owner); }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
     internal Task InitializeAsync(CancellationToken cancellationToken)
     {
         return RunAsync("Push", async token =>

@@ -20,6 +20,101 @@ namespace GitExtensions.Desktop.Tests;
 public class PushDialogTests
 {
     [AvaloniaTest]
+    public async Task QuickPushShortcutAndShiftPointerPushTheCheckoutWithoutOpeningTheConfigurationWindow()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        MainWindow main = new() { Width = 1280, Height = 752 }; main.Show();
+        try
+        {
+            await main.OpenRepositoryAsync(f.Client);
+            ListBox history = Field<ListBox>(main, "RevisionHistory");
+            history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Initial);
+            await Until(() => !main.IsBusy);
+            foreach (bool pointer in new[] { false, true })
+            {
+                await f.CommitAsync(pointer ? "pointer.txt" : "shortcut.txt", "latest\n", "Quick push checkout");
+                string head = await f.Head();
+                if (pointer)
+                {
+                    Control button = Field<Button>(main, "BrowsePush"); Pump(main);
+                    Point center = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), main)!.Value;
+                    main.MouseMove(center); main.MouseDown(center, MouseButton.Left, RawInputModifiers.Shift);
+                    main.MouseUp(center, MouseButton.Left, RawInputModifiers.Shift);
+                }
+                else { main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); }
+                await Until(() => !main.IsBusy);
+                Assert.That(main.OwnedWindows.OfType<PushDialog>(), Is.Empty);
+                Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(head));
+                Assert.That(await f.Head(), Is.EqualTo(head));
+                Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.Initial));
+                Assert.That(await f.GitText("status", "--porcelain"), Is.Empty);
+                Assert.That(main.LastException, Is.Null);
+            }
+            PointerClick(Field<Button>(main, "BrowsePush"));
+            await Until(() => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady));
+            PushDialog normal = main.OwnedWindows.OfType<PushDialog>().Single();
+            Assert.That(normal.Attempted, Is.False, "A later plain click must remain the normal Push action.");
+            normal.Close(); await Until(() => !main.IsBusy);
+        }
+        finally { main.Close(); Pump(main); }
+    }
+
+    [AvaloniaTest]
+    public async Task QuickPushRetainsTheOriginalFormAfterHookRejectionAndCanRetryWithoutOfferingForce()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("Private executable hook requires Linux."); return; }
+        await using Fixture f = await Fixture.CreateAsync();
+        await f.CommitAsync("latest.txt", "latest\n", "Local change"); string head = await f.Head();
+        string hooks = Path.Combine(f.Root, "quick-hooks"); Directory.CreateDirectory(hooks);
+        string hook = Path.Combine(hooks, "pre-push");
+        await File.WriteAllTextAsync(hook, "#!/bin/sh\nprintf 'private quick-push rejection\\n' >&2\nexit 1\n");
+        File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        await f.Git("config", "core.hooksPath", hooks);
+        MainWindow main = new() { Width = 1280, Height = 752 }; main.Show();
+        try
+        {
+            await main.OpenRepositoryAsync(f.Client); main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift);
+            await Until(() => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
+            PushDialog fallback = main.OwnedWindows.OfType<PushDialog>().Single();
+            Assert.That(fallback.Attempted, Is.True); Assert.That(fallback.LastError, Does.Contain("private quick-push rejection"));
+            Assert.That(fallback.OwnedWindows, Is.Empty);
+            Assert.That(Field<AutoCompleteBox>(fallback, "PushBranch").Text, Is.EqualTo("main"));
+            Assert.That(Field<AutoCompleteBox>(fallback, "PushRemoteBranch").Text, Is.EqualTo("main"));
+            Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(f.Initial));
+            Assert.That(await f.Head(), Is.EqualTo(head));
+            File.Delete(hook); PointerClick(Field<Button>(fallback, "ExecutePush"));
+            await Until(() => !fallback.IsVisible && !main.IsBusy);
+            Assert.That(fallback.Succeeded, Is.True, fallback.LastError);
+            Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(head));
+        }
+        finally { main.Close(); Pump(main); }
+    }
+
+    [AvaloniaTest]
+    public async Task QuickPushConfirmationDeclineShowsTheOriginalOptionsWithoutChangingRefsOrTracking()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); await f.Git("checkout", "-b", "unpublished");
+        string before = await f.GitText("config", "--local", "--list");
+        MainWindow main = new() { Width = 1280, Height = 752 }; main.Show();
+        try
+        {
+            await main.OpenRepositoryAsync(f.Client); main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift);
+            await Until(() => main.OwnedWindows.Any(window => window.Name == "PushNewBranchConfirmation"));
+            Window confirmation = main.OwnedWindows.Single(window => window.Name == "PushNewBranchConfirmation");
+            PointerClick(Field<Button>(confirmation, "PushChoice0"));
+            await Until(() => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
+            PushDialog fallback = main.OwnedWindows.OfType<PushDialog>().Single();
+            Assert.That(fallback.Attempted, Is.False); Assert.That(fallback.Cancelled, Is.True);
+            Assert.That(Field<AutoCompleteBox>(fallback, "PushBranch").Text, Is.EqualTo("unpublished"));
+            Assert.That(await f.RemoteRef("zeta", "unpublished"), Is.Null);
+            Assert.That(await f.GitText("config", "--local", "--list"), Is.EqualTo(before));
+            fallback.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None); await Until(() => !main.IsBusy);
+            Assert.That(await f.GitText("status", "--porcelain"), Is.Empty);
+        }
+        finally { main.Close(); Pump(main); }
+    }
+
+    [AvaloniaTest]
     public async Task BranchDialogUsesTheActualCheckoutAndItsConfiguredRemoteRatherThanTheSelectedGraphCommit()
     {
         await using Fixture f = await Fixture.CreateAsync();
