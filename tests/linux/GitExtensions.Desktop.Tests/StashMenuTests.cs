@@ -228,6 +228,106 @@ public class StashMenuTests
         int pid = int.Parse(await File.ReadAllTextAsync(marker), CultureInfo.InvariantCulture); Assert.That(Directory.Exists("/proc/" + pid), Is.False);
     }
 
+    [AvaloniaTest]
+    public async Task FileContextMenuUsesOriginalCommandsAndOnlyAppearsForSavedStashFiles()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); await f.SaveAsync("saved\n"); await f.ShowAsync();
+        StashDialog dialog = await Open(f, true); TreeView tree = Find<TreeView>(dialog, "StashFiles");
+        ContextMenu menu = tree.ContextMenu!; string before = await f.SnapshotAsync();
+        foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+        {
+            dialog.RequestedThemeVariant = theme; Pump(dialog); menu.Open(tree); Pump(dialog);
+            MenuItem reset = menu.Items.OfType<MenuItem>().Single(item => item.Name == "StashResetFiles");
+            MenuItem pick = menu.Items.OfType<MenuItem>().Single(item => item.Name == "StashCherryPickChanges");
+            Assert.That(pick.IsEnabled && reset.IsEnabled, Is.True);
+            Assert.That(pick.Icon, Is.TypeOf<Image>()); Assert.That(reset.Icon, Is.TypeOf<Image>());
+            Assert.That(reset.Items.OfType<MenuItem>().Select(item => item.Name), Is.EqualTo(new[] { "StashResetToSelected", "StashResetToParent" }));
+            MenuItem parent = reset.Items.OfType<MenuItem>().Last(); Assert.That(parent.InputGesture, Is.EqualTo(new KeyGesture(Key.R)));
+            Assert.That(parent.FontWeight, Is.EqualTo(Avalonia.Media.FontWeight.Bold));
+            Capture(TopLevel.GetTopLevel(pick)!, "stash-file-menu-" + theme + ".png"); menu.Close();
+        }
+        Assert.That(await f.SnapshotAsync(), Is.EqualTo(before));
+        Find<ComboBox>(dialog, "StashSelection").SelectedIndex = 0; await Idle(dialog); menu.Open(tree); Pump(dialog);
+        Assert.That(menu.Items.OfType<MenuItem>().All(item => !item.IsVisible), Is.True); menu.Close();
+    }
+
+    [AvaloniaTest]
+    public async Task CherryPickUsesOnlyTheDisplayedFileAndStagesItWithoutDroppingTheStash()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); const string path = "file[1]* λ.txt", adjacent = "file1 λ.txt";
+        await f.WriteAsync(path, "base\n"); await f.WriteAsync(adjacent, "adjacent base\n");
+        await f.Repository.StageAllAsync(); await f.Repository.CommitAsync("Literal files");
+        await f.WriteAsync(path, "saved literal\n"); await f.WriteAsync(adjacent, "saved adjacent\n");
+        await f.Repository.StashAsync(new GitStashSaveOptions("both")); GitStash stash = (await f.Repository.GetStashesAsync()).Single();
+        await f.ShowAsync(); StashDialog dialog = await Open(f, true);
+        FileStatusListView files = Find<FileStatusListView>(dialog, "StashFilesView"); files.SelectTags(files.Entries.Select(entry => entry.Tag)); await Idle(dialog);
+        string displayed = files.SelectedEntries.First().Path;
+        ContextMenu menu = Find<TreeView>(dialog, "StashFiles").ContextMenu!; menu.Open(files.Tree); Pump(dialog);
+        Click(menu.Items.OfType<MenuItem>().Single(item => item.Name == "StashCherryPickChanges")); await Idle(dialog);
+        Assert.That(dialog.LastError, Is.Null);
+        Assert.That(await f.ReadAsync(displayed), Is.EqualTo(displayed == path ? "saved literal\n" : "saved adjacent\n"));
+        string other = displayed == path ? adjacent : path;
+        Assert.That(await f.ReadAsync(other), Is.EqualTo(other == path ? "base\n" : "adjacent base\n"));
+        GitStatus status = await f.Repository.GetStatusAsync(); Assert.That(status.Changes.Single().Path, Is.EqualTo(displayed)); Assert.That(status.Changes.Single().IsStaged, Is.True);
+        Assert.That((await f.Repository.GetStashesAsync()).Single().Hash, Is.EqualTo(stash.Hash));
+    }
+
+    [AvaloniaTest]
+    public async Task ResetConfirmationDefaultsToCancelThenRestoresOnlySelectedSnapshotFiles()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); await f.SaveAsync("saved\n"); GitStash stash = (await f.Repository.GetStashesAsync()).Single();
+        await f.WriteAsync("seed.txt", "local staged\n"); await f.Repository.StageAsync(["seed.txt"]); await f.WriteAsync("seed.txt", "local unstaged\n");
+        await f.WriteAsync("unrelated.txt", "unrelated\n"); await f.ShowAsync(); StashDialog dialog = await Open(f, true);
+        string before = await f.SnapshotAsync();
+        OpenReset(dialog, parent: false); ResetChangesDialog confirmation = await ResetPrompt(dialog);
+        Assert.That(Find<Button>(confirmation, "CancelResetChanges").IsDefault, Is.True);
+        Assert.That(Find<CheckBox>(confirmation, "ResetDeleteNewFiles").IsEnabled, Is.False);
+        Assert.That(Find<TextBox>(confirmation, "ResetChangesMessage").Text, Does.Contain(stash.Hash));
+        Capture(confirmation, "stash-reset-confirmation.png"); confirmation.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        dialog.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None); await Idle(dialog);
+        Assert.That(dialog.OwnedWindows, Is.Empty); Assert.That(await f.SnapshotAsync(), Is.EqualTo(before)); Assert.That(await f.ReadAsync("seed.txt"), Is.EqualTo("local unstaged\n"));
+        OpenReset(dialog, parent: false); confirmation = await ResetPrompt(dialog); Click(Find<Button>(confirmation, "ConfirmResetChanges")); await Idle(dialog);
+        Assert.That(dialog.LastError, Is.Null); Assert.That(await f.ReadAsync("seed.txt"), Is.EqualTo("saved\n"));
+        Assert.That((await f.Repository.RunAsync(["show", ":seed.txt"])).StandardOutput, Is.EqualTo("saved\n"));
+        Assert.That(await f.ReadAsync("unrelated.txt"), Is.EqualTo("unrelated\n")); Assert.That((await f.Repository.GetStashesAsync()).Single().Hash, Is.EqualTo(stash.Hash));
+    }
+
+    [AvaloniaTest]
+    public async Task ResetToParentOfANewFileRequiresDeletionAndPreservesTheSavedStash()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); await f.WriteAsync("new.txt", "saved new\n"); await f.Repository.StageAsync(["new.txt"]);
+        await f.Repository.StashAsync(new GitStashSaveOptions("new file")); GitStash stash = (await f.Repository.GetStashesAsync()).Single();
+        await f.WriteAsync("new.txt", "local new\n"); await f.ShowAsync(); StashDialog dialog = await Open(f, true);
+        FileStatusListView files = Find<FileStatusListView>(dialog, "StashFilesView"); files.SelectTags(files.Entries.Where(entry => entry.Path == "new.txt").Select(entry => entry.Tag)); await Idle(dialog);
+        OpenReset(dialog, parent: true); ResetChangesDialog confirmation = await ResetPrompt(dialog);
+        CheckBox delete = Find<CheckBox>(confirmation, "ResetDeleteNewFiles"); Assert.That(delete.IsChecked, Is.True); Assert.That(delete.IsEnabled, Is.False);
+        Click(Find<Button>(confirmation, "ConfirmResetChanges")); await Idle(dialog);
+        Assert.That(dialog.LastError, Is.Null); Assert.That(File.Exists(f.File("new.txt")), Is.False); Assert.That((await f.Repository.GetStatusAsync()).Changes, Is.Empty);
+        Assert.That((await f.Repository.GetStashesAsync()).Single().Hash, Is.EqualTo(stash.Hash));
+    }
+
+    [AvaloniaTest]
+    public async Task FileResetShortcutCannotMutateAStashThatDisappearedWhileConfirmationWasOpen()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); await f.SaveAsync("saved\n"); GitStash stash = (await f.Repository.GetStashesAsync()).Single();
+        await f.ShowAsync(); StashDialog dialog = await Open(f, true); TreeView tree = Find<TreeView>(dialog, "StashFiles");
+        TreeViewItem selected = tree.SelectedItems!.OfType<TreeViewItem>().Single(); Assert.That(selected.Focus(), Is.True); Pump(dialog);
+        Press(dialog, PhysicalKey.R, RawInputModifiers.None);
+        ResetChangesDialog confirmation = await ResetPrompt(dialog); await f.Repository.DropStashAsync(stash);
+        string before = await f.SnapshotAsync(); Click(Find<Button>(confirmation, "ConfirmResetChanges")); await Idle(dialog);
+        Assert.That(dialog.LastError, Is.Not.Null); Assert.That(await f.SnapshotAsync(), Is.EqualTo(before)); Assert.That(await f.ReadAsync("seed.txt"), Is.EqualTo("seed\n"));
+        Assert.That((await f.Repository.GetStashesAsync()), Is.Empty);
+    }
+
+    private static void OpenReset(StashDialog dialog, bool parent)
+    {
+        TreeView tree = Find<TreeView>(dialog, "StashFiles"); ContextMenu menu = tree.ContextMenu!; menu.Open(tree); Pump(dialog);
+        MenuItem reset = menu.Items.OfType<MenuItem>().Single(item => item.Name == "StashResetFiles"); reset.IsSubMenuOpen = true; Pump(dialog);
+        Click(reset.Items.OfType<MenuItem>().Single(item => item.Name == (parent ? "StashResetToParent" : "StashResetToSelected")));
+    }
+    private static async Task<ResetChangesDialog> ResetPrompt(StashDialog dialog)
+    { await Until(() => dialog.OwnedWindows.OfType<ResetChangesDialog>().Any()); ResetChangesDialog confirmation = dialog.OwnedWindows.OfType<ResetChangesDialog>().Single(); Pump(confirmation); return confirmation; }
+
     private static MenuItem Item(MenuFlyout menu, string suffix) => menu.Items.OfType<MenuItem>().Single(item => item.Name == "StashMenu" + suffix);
     private static T Find<T>(Window root, string name) where T : Control => root.GetVisualDescendants().OfType<T>().Single(item => item.Name == name);
     private static void Pump(TopLevel root) { root.UpdateLayout(); Dispatcher.UIThread.RunJobs(); root.UpdateLayout(); }

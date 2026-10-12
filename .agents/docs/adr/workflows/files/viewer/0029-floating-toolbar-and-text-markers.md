@@ -1,6 +1,6 @@
 # ADR 0029 · Gestes et rendu du lecteur original
 
-Statut : accepté ; validation locale réussie ; paquet natif suivant à valider.
+Statut : accepté ; correctifs inclus dans les paquets livrés, preuves natives à leurs lots d'origine (voir [TODO](../../../../todo.md)).
 
 Besoin : conserver les repères du lecteur Git Extensions, jusque dans les petits gestes de lecture.
 

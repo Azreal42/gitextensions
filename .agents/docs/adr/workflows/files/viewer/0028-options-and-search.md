@@ -1,6 +1,6 @@
 # ADR 0028 · Options et recherche du visualiseur
 
-Statut : accepté ; validation du prochain paquet en cours.
+Statut : accepté ; options restantes dans [TODO](../../../../todo.md).
 
 Besoin : retrouver les choix et gestes historiques sans ajouter de rangées de commandes aux lecteurs portés.
 

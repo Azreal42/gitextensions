@@ -1,118 +1,87 @@
 # Failure
 
-| Observation | Cause | Sortie / statut |
-| --- | --- | --- |
-| `dotnet --info` via `/snap/bin/dotnet` échoue dans le sandbox ; aucun SDK réel installé | Lanceur Snap / confinement | SDK officiel 10.0.401 installé dans `.dotnet`, utiliser ce binaire. Résolu. |
-| `global.json` : version `10.0` invalide | Version SDK incomplète | `10.0.100` + `latestFeature`. Résolu. |
-| Solution originale cible `net10.0-windows` et WinForms | Architecture Windows, pas un défaut de packaging | UI et frontières OS à porter ; chantier ouvert. |
-| Téléchargement via `curl` impossible | Outil absent | Utiliser `wget` ; SDK installé. Résolu. |
-| Actions UI cliquables pendant un refresh, clic suivant perdu | Verrou busy sans état visuel | Désactiver actions pendant l'opération ; attendre idle dans tests. Corrigé, testé. |
-| Stash de nom contenant newline laissé en place malgré exit 0 | Option globale `--literal-pathspecs` incompatible avec `stash push -u` | Limiter cette option aux commandes à pathspec ; test réel. Résolu. |
-| Version Debian contient le chemin HOME | Expansion Bash de `~` dans substitution | Citer le caractère ; paquet vérifié/reproductible. Résolu. |
-| Chemins Linux à octets non UTF8 | API .NET basée sur string UTF8 | Unicode valide couvert ; roundtrip d'octets invalides restant. Ouvert. |
-| Installation APT locale non exécutée | sudo nécessite authentification, pas de conteneur installé | DPKG installé/lancé dans une racine isolée avec dépendances host ; APT sur OS vierge reste un gate CI. Ouvert. |
-| Reparenting du filtre historique plante après reprise du layout original | Contrôle encore attaché au panel précédent | Détacher avant insertion ; parcours UI validé. Résolu. |
-| Ouverture bare s’arrête après chargement de l’historique | `stash list` exige un worktree même en lecture | Lire le reflog de refs/stash ; test UI d’ouverture complète. Résolu. |
-| Tableau plugin plante après suppression | Template Avalonia reçoit un élément null pendant le renouvellement | Garde null ; aperçu/annulation/suppression réelle validés. Résolu. |
-| Badges du graphe gardent les couleurs claires | Rendu non invalidé au changement de thème | Invalidation et test de pixels clair/sombre. Résolu. |
-| Indexer/désindexer tout touche des fichiers masqués par le filtre Commit | Action globale au lieu des éléments visibles | Chemins visibles uniquement, scénario avec index partiel et noms littéraux. Corrigé, testé. |
-| Indexer un renommage modifié échoue : ancien pathspec absent | Ancien et nouveau noms transmis à git add après git mv | Indexer le nom courant ; désindexer les deux noms. Corrigé, test UI réel. |
-| Sélections X11 restent orange malgré les palettes reprises | Accent OS encore consommé par les templates Fluent | Ressources des templates et texte sélectionné repris ; tests pixels/contraste et captures X11 claire/sombre. Résolu. |
-| Annulation d’un outil externe rend la main avant la fin du processus | WaitForExit annulé ne collecte pas le processus tué | Tuer l’arbre puis attendre la sortie réelle ; test de PID. Résolu. |
-| Impact conserve un fond clair en thème sombre | Recherche de ressource sans variante effective | Résoudre avec ActualThemeVariant ; pixels clairs/sombres testés. Résolu. |
-| Petite image de hauteur impaire rendue floue | Centrage interne sur un demi-pixel | Dimensionner avant centrage et arrondir le layout ; taille/position mesurées sur les pixels. Résolu. |
-| Tests de cancellation échouent pendant la lecture de procfs | Le descendant disparaît entre File.Exists et ReadLines | Relecture après IOException, état absent/zombie exigé et délai borné ; 54 scénarios passent. Résolu. |
-| Skip am avance mais la ligne suivante est marquée appliquée | Un second conflit produit exit non nul après avancement | Relire état am et repérer les indices ; série à deux conflits testée. Résolu. |
-| Tests Avalonia bloqués malgré opération annulée et fenêtre prête à fermer | Assert.ThrowsAsync attend synchroniquement une continuation capturée sur le dispatcher UI | Attendre normalement dans le test async, avec délai borné ; tests History/Blame et HTTP concernés. Résolu. |
-| Le clonage réinitialise le sous-dossier saisi | TextChanged différé arrive après l’édition utilisateur | Observer TextProperty immédiatement ; clone réel vers le dossier choisi testé. Résolu. |
-| Nom de clone encodé et avertissement moins lisible que l’original | URL non décodée, deux-points local traité comme SCP et couleur fixe | Distinguer URL/SCP/local, reprendre adaptation de contraste originale et templates XLF complets ; scénario rendu clair/sombre/français. Résolu. |
-| Supprimer une référence sélectionnée dans la navigation bloque le refresh | Le filtre de révision automatique vise la ref disparue | Marquer les filtres de navigation et revenir à All quand la ref disparaît ; auteur/message/FirstParent conservés, saisie manuelle inchangée. Après Rename, reconstruire aussi SelectedItem et garder l’expansion des groupes. Scénarios réels verts. |
-| Valeurs des champs numériques compacts invisibles malgré leur contenu correct | MinWidth interne Fluent incompatible avec les 61 px du dialogue original | Template numérique local compact ; valeurs, flèches et options réellement rendues en clair/sombre. Résolu. |
-| Annuler l’ouverture laisse un backend différent des listes affichées | Dépôt remplacé avant la fin des lectures | Charger les métadonnées avant le changement ; vrai processus log annulé, dépôt/filtre/BASE/récents conservés et backend confirmé par F5. Résolu. |
-| Filtrer une multisélection ajoute un commit non choisi | Fallback au premier résultat avant restauration du secondaire | Choisir d’abord un commit sélectionné survivant ; scénario filtre et comparaison parent/commit réel. Résolu. |
-| Fermer le propriétaire pendant une mise à jour laisse le checkout ouvert | Avalonia interroge d'abord l'enfant busy, qui bloque la fermeture de son ancêtre | Propager la fermeture ancêtre, annuler/attendre Git puis fermer le checkout et son propriétaire ; PID et fenêtres testés. Résolu. |
-| La deuxième confirmation AutoCompile est construite hors du thread UI | Le service poursuit sur worker après la première solution | Marshaler chaque confirmation sur le dispatcher UI ; deux solutions réelles après checkout/update testées. Résolu. |
-| Message ISO-8859-1 déclaré mais octets UTF-8 écrits | Runner texte toujours UTF-8 malgré i18n.commitEncoding | Codec strict partagé, stdin binaire et brouillon atomique ; octets Git/template/draft, affichage et caractères incompatibles testés. Résolu. |
-| Sujet du reflog mal affiché malgré --encoding=UTF-8 | Git ne recode pas %gs ; préfixe UTF-8 et sujet historique peuvent être mélangés | Lire les champs binaires et retrouver la première ligne avec le codec du commit ; action Unicode, Latin1 et changement ultérieur de config testés. Notes personnalisées ambiguës encore ouvertes. |
-| Fermer une ancienne fenêtre écrase le nouveau MERGE_MSG | Message Git créé après ouverture, baseline éditeur incomplet | Conserver le texte affiché après template/initialisation ; merge externe, fermeture/réouverture et dépôt retiré testés. Résolu. |
-| Icônes de la barre Commit absentes malgré Icon non null | Template Fluent ignore Icon pour les éléments de menu supérieurs | Dessiner les PNG originaux dans le header ; captures rendues claire/sombre vérifiées. Résolu. |
-| Capture dite française garde les menus anglais | Culture modifiée dans une factory async, sans propagation à l'appelant | Fixer la culture dans le test avant construction ; vérifier le popup effectivement rendu. Résolu. |
-| Confirmation de commit vide échoue puis tests suivants signalent fonts:SystemFonts | TemplateBinding C# enregistré à LocalValue ; exception d'ouverture masquée par le teardown Avalonia | Lier à BindingPriority.Template ; reproductions et workflows Commit passent sans modifier l'isolation ni les assertions. Résolu. |
-| Chevrons et radios Clone tronqués malgré champs de 24 px | Marges et dimensions minimales internes Fluent plus grandes que le contrôle | Ressources de hauteur compactes et glyphe ComboBox centré ; limites mesurées et captures réellement rendues claire/sombre. Résolu. |
-| Validation console annonce succès sans exécuter les scénarios | dotnet test ne lance pas les projets console IsTestProject=false | Exécuter Core et Plugins avec dotnet run --no-build --no-restore ; compter les scénarios dans leurs logs. Résolu. |
-| Selection Filter change le périmètre de Stage all et masque des fichiers | Recherche littérale confondue avec la sélection regex du contrôle original | Combo éditable/MRU de session, regex sélectionnant les feuilles Unstaged affichées ; listes et portée de Stage all restent indépendantes de ce filtre de sélection. Scénarios Git réels et captures vérifiés. Résolu. |
-| Alt est ignoré dans les premières vérifications de dialogue | Aucun enfant ne détient le focus après Show headless ; le handler natif exige un descendant focalisé | Poser le focus initial original après initialisation, sans reprendre le focus déjà acquis ; tester ensuite les déplacements avec de vrais événements Alt. Résolu. |
-| Série à trois sélections inéligible et bornes à quatre perdues | Tri par graphe au lieu de l’ordre choisi ; les bornes calculées par l’original n’étaient pas transmises | Garder primaire/ordre et bases explicites ; comparer à Git brut et vérifier F5. Résolu. |
-| Refresh revient du range-diff à un fichier ordinaire | Groupe actif effacé avant reconstruction | Préserver le groupe et l’ordre des sélections ; scénarios à deux, trois et quatre révisions. Résolu. |
-| Un fichier ressemblant à un patch peut être interprété comme un diff | Aperçu brut envoyé à l’autodétection/parsing des patches | Mode texte explicite et contrat d’indexabilité ; Git/UI vérifient que l’autre fichier reste intact. Résolu. |
-| Regex invalide signalée mais champ éditable sans couleur de validation | Fond interne Fluent indépendant du ComboBox | Reprendre le fond du vrai éditeur et libérer le binding neutre ; pixels clairs/sombres vérifiés. Résolu. |
-| Icônes encore affichées après libération de leur bitmap | Sources d’images gardées par les templates | Détacher les sources avant libération et annuler les callbacks du contrôle ; cycle de rendu/fermeture testé. Résolu. |
-| Menu Settings présent dans les données mais invisible à l’ouverture | MenuItems parentés par un holder logique invisible | Un seul MenuFlyout visible ; vrai Settings/Toolbar, clics et captures testés. Résolu. |
-| Refresh des groupes de diff échoue après création de l’arbre | Nom du contrôle réassigné après application des styles Avalonia | Fixer le nom lors de la construction, dans le composant partagé ; supprimer la seconde affectation de l’hôte. Les 31 parcours Main concernés passent. Résolu. |
-| Nouveaux boutons de tri FileStatusList orange en X11 clair malgré les captures headless bleues | États checked du ToggleButton Fluent alimentés par l’accent OS | Forcer localement les brosses originales pour chemin/extension/statut ; régression sur palette orange reproduite avant correction, puis 19 scénarios verts. Paquet 09c : 299 UI et captures X11 Merge/A-B claires/sombres vérifiées, bleu historique et zéro accent orange sur les boutons. Résolu ; candidat ebc conservé comme preuve. |
-| Ancre intra-ligne calculée mais invisible dans les pixels | Trait fractionnaire peint avant les fonds des fragments identiques | Peindre les ancres après les fonds et sur un pixel entier ; rouge initial conservé puis assertion du pixel coloré verte. Résolu. |
-| Coche active du menu diff sombre noire sur gris Fluent | Texte du template et coche liés à des ressources distinctes | Fournir localement la paire MenuHighlight/HighlightText originale ; vraie coche et contraste clairs/sombres vérifiés, sans changer la palette globale. Résolu. |
-| Commit au clavier paraît terminé après son refresh préalable | État busy limité à chaque commande, laissant un intervalle entre vérification et mutation | Garder l’action de commit active jusqu’à son retour ; refus des gestes concurrents et tests de commit/confirmations vérifiés. Échec isolé reproduit avant correction. Résolu. |
-| Ctrl+T ouvre Create tag alors que le diff de Browse a le focus | Handler tunnel de la fenêtre exécuté avant celui du viewer | Donner priorité au viewer focalisé lorsque son action est disponible ; sinon conserver le raccourci global. Reproduit dans le paquet bfe clair/sombre et dans Main headless ; deux régressions Main et 17 parcours ciblés verts, puis 323 tests UI verts. Résolu ; candidat bfe conservé comme preuve. |
-| Vrai Difftastic 0.71.0 : colonne droite et numéros incomplets sur un petit fichier | Formatter historique supposant une demi-largeur fixe alors que DFT resserre les colonnes | Détecter les vrais préfixes ANSI et aligner les sections à un seul repère ; 105 scénarios Core, 98 assertions avec le binaire officiel et pixels UI clairs/sombres verts. Probe rouge et candidat 800e conservés. Résolu ; paquet b768 accepté après captures X11 réelles claires/sombres. |
-| Détection plain des colonnes retire un chiffre légitime du code | Sortie sans ANSI du vrai DFT : lignes nouvelles avec deux nombres alignés indistinguables d’une grille | Cas vide→texte reproduit avec le vrai DFT ; texte émis intégral sans ANSI, sans marges inventées. Fixtures Git/Core/UI vérifient les chiffres et espaces en lecture seule. Résolu. |
-| Ctrl+Entrée n’exécute pas le commit depuis le vrai éditeur de message | Chargement staged à l’entrée du champ perdant le focus ; TextBox consomme Entrée avant le handler bubble | Rouges isolés et sélection staged vide reproduits ; sélectionner puis charger explicitement et restaurer le focus libre. Ctrl+Entrée/S précèdent l’éditeur, les autres gestes gardent leur priorité historique. Deux vrais commits headless et absence de newline vérifiés ; 36 ciblés et 327 tests du clone final verts. Ctrl+Entrée natif clair/sombre confirmé par les corps Git exacts. Résolu. |
-| Nouvelle théorie headless impossible à découvrir | AvaloniaTheory dépend du constructeur NUnit TheoryAttribute absent dans la version utilisée | Deux entrées AvaloniaTest et un parcours partagé gardent les vrais gestes et assertions ; échec de découverte conservé. Résolu. |
-| Capture Commit introuvable ou focus X11 refusé avant le geste | Titre Main enrichi du chemin ; titre Commit créé avant mapping de la fenêtre | Matcher le préfixe du titre puis attendre IsViewable ; deux essais du harness conservés, troisième vert en clair/sombre. Résolu. |
-| Indexer une sélection incluant LF touche l’ajout suivant | Parser original avec borne finale inclusive, éditeur à borne exclusive | Adapter la longueur avant le parser partagé ; LF/CRLF, caret, fin de document et hunks testés avec les octets exacts de l’index. Résolu. |
-| Encodage CP1252 appliqué aux chemins UTF-8 d’un range-diff | État du hunk imbriqué gardé pour les sections Metadata/fichier | Séparer les sections ; neuf probes du Git 2.53 local vérifient octets et en-têtes. Git peut tronquer un en-tête contenant newline avant stdout ; ne pas reconstruire les octets absents. |
-| Après un chargement échoué, le staging peut réutiliser l’ancien fichier | Aperçu conservé sans invalidation de son applicabilité ; cache brut lié seulement au changement de texte | Invalider dès le début du chargement et sur transition explicite, même à texte identique ; cinq régressions UI vérifient refus et reprise. Résolu. |
-| Texte noir sur la sélection du popup d’encodage ; dialogue GoTo clair sous fenêtre sombre | Présentateur Fluent indépendant du foreground de l’item ; variante du propriétaire non transmise au dialogue | Styles locaux sur le présentateur peint et variante du propriétaire ; contraste et pixels clairs/sombres vérifiés. Résolu. |
-| Ctrl+E perd le focus du viewer de Changes après relecture | Désactivation temporaire des tabs pendant Git | Restaurer le viewer qui détenait le focus pour les lectures de diff ; deux parcours Main/Commit exécutés, sélection et viewport conservés. Résolu. |
-| Fichier UTF-8 valide affiché en hex après limite de 2 Mo | Le buffer coupe un caractère final et le décodeur strict traite ce préfixe comme un EOF complet | Decoder sans flush seulement pour preview tronqué ; UTF-8/16/32, erreurs intérieures/EOF et changement de codec sur cache brut vérifiés. Résolu. |
-| Copier ne fournit aucun contenu quand l’app est le premier client X11 | Avalonia 11.3.22 met en cache des atoms inexistants ; créer ces noms après le démarrage est trop tard | Initialiser les sept atoms du protocole avant la plateforme, conserver la connexion ; classe de production : 4/4 copies natives, paquet ca86 : 8/8 copies sans seed/manager sur serveur neuf. Résolu ; candidat ba925 et preuve rouge conservés. |
-| Plan natif vert mais shell termine avec parser exit 2 | Modification du launcher pendant sa lecture par les sessions déjà ouvertes | Conserver les exits et figer/copier le launcher avant lancement ; exécution one-shot et fermeture vérifiées séparément. Le candidat ba925 reste retenu pour son défaut de presse-papiers. |
-| Contrôle tardif de la base DPKG différent du hash de validation | Journal hôte : suppression de noyaux après les tests, hors de leur intervalle | Comparer avant/après la validation isolée et conserver les horodatages ; observation postérieure enregistrée séparément, aucun changement hôte effectué par ce contrôle. |
-| Find ferme son popup mais ne rend pas le focus au lecteur | Avalonia retire Owner lors de Hide() | Capturer le propriétaire avant masquage puis activer/focaliser le lecteur ; vrais gestes Escape/Cancel dans le composant, Compare et Commit vérifiés. Résolu. |
-| Alt+Gauche/Droite efface la sélection après déplacement du curseur | AvaloniaEdit valide la sélection au dispatcher et interdit un caret extérieur par défaut | Utiliser son scope officiel dans le lecteur strictement readonly ; sélection, curseur et marqueurs vérifiés après plusieurs cycles dispatcher. Résolu. |
-| Recherche dans une sélection omet son dernier résultat | Borne inclusive du TextMarker original passée à une recherche exclusive ; décalage arrière appliqué aussi à la région initiale | Adapter la sélection native en intervalle semi-ouvert ; tests du dernier caractère, HighlightAll, arrière initial et boucles. Résolu. |
-| Raccourcis des menus français tronqués à droite | ContextMenu et MenuFlyout Fluent limités à 456 px, indépendamment de la traduction | Retirer ce plafond uniquement sur les menus du viewer ; clic droit réel, colonnes disjointes, dernier glyphe et captures claires/sombres vérifiés. Résolu. |
+Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
-| Glyphes des espaces noirs en thème sombre | AdaptLightness original omis sur les trois PNG monochromes | Reprendre WindowText sombre en conservant chaque alpha et l’original clair ; sept scénarios ciblés et transitions de thème ; 24 masques/pixels natifs clairs/sombres vérifiés dans le paquet accepté `4cb119d5e`. Candidat `c3b557eef` conservé. Résolu. |
+## Limites ouvertes
 
-| Premier clic du menu de débordement ouvre un présentateur vide | Avalonia crée le présentateur avant Opening ; remplacement tardif de ItemsSource | Garder la collection notifiable dès construction et peupler avant le clic. Rouge initial conservé ; vrais clics et popup court/large clairs/sombres vérifiés localement. Paquet suivant à valider. |
-| Invisibles omis sur une ligne de plus de 3000 caractères | AvaloniaEdit ignore ses générateurs au-delà de ce seuil, absent du lecteur original | Dessin limité aux caractères visibles et EOL ancré avec étendue complète ; pixels, défilement, copies et positions vérifiés localement sur 2999/3000/3001 et 100000 caractères. Paquet suivant à valider. |
-| Échap du diff ne rejoint pas Commit sans sélection | InputHandler AvaloniaEdit consomme le geste de SearchPanel même fermé | Relayer sur TextArea : sélection effacée, puis fermeture existante. Find et popups gardent leur priorité ; trois régressions hôtes exécutées ; brouillon/Git intacts. Paquet suivant à valider. |
+| Observation | Cause / suite |
+| --- | --- |
+| Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
+| Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
+| APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
+| Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
 
-| Blancs sélectionnés gardent la couleur de marqueur plutôt que celle de sélection | Les glyphes AvaloniaEdit courts dessinent une TextLine préparée ; le coloriseur de sélection ne la recolore pas | Adapter seulement les runs de blancs sélectionnés et le dessin viewport long ; EOL garde sa couleur. Pixels court/long clairs/sombres vérifiés, avec comparaison de l’anticrénelage ; captures rouges conservées. Paquet suivant à valider. |
+## Git et état des workflows — résolus
 
-| Survol Settings gris dans le débordement malgré la palette originale | Éléments de navigation/réglages héritant des ressources Fluent | Ressources locales MenuHighlight/HighlightText du présentateur ; pixels de survol clairs/sombres vérifiés. Résolu localement. |
-| Choix d’encodage inaccessible après un reload échoué | Barre flottante conditionnée à un document autorisé plutôt qu’à la fin de l’activité de l’hôte | Garder le codec au survol pour réessayer ; staging/comparaison restent bloqués. Régression Git et absence de mutation vérifiées. Résolu localement. |
-| Pixels sélectionnés absents ou rejetés dans les captures de tests | Frame différée puis seuil exigeant des pixels opaques pour un glyphe diagonal anticrénelé | Tick avant capture, vraie sélection exigée et comparaison au mélange foreground/background ; ancienne couleur exclue. Calibrations rouges conservées. |
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Stash non suivi laissé malgré exit 0 | `--literal-pathspecs` global casse le nettoyage de `stash push -u` ; réserver les pathspecs littéraux aux arguments concernés. |
+| Bare bloque à `stash list` | Lire le reflog de `refs/stash`, sans exiger un worktree. |
+| Stage all touche des fichiers masqués | Agir sur les feuilles du filtre d'affichage ; Selection Filter ne change que la sélection. Une liste vide ne devient pas mutation globale. |
+| Indexer un renommage vise l'ancien nom absent | Indexer le nom courant ; désindexer les deux noms. |
+| Skip am avance au conflit suivant mais affiche « appliqué » | Relire l'état am après exit non nul ; le code retour seul ne dit pas où la série s'est arrêtée. |
+| Annulation rend la main avant la fin du process | Tuer l'arbre puis attendre sa sortie réelle ; tolérer la disparition d'un descendant pendant la lecture procfs. |
+| Ouverture annulée remplace seulement le backend | Charger les métadonnées avant le changement atomique de dépôt ; créer le token avant de désactiver la barre. |
+| Référence supprimée/renommée bloque navigation ou refresh | Scope automatique disparu → All ; conserver les critères manuels, reconstruire clé/SelectedItem/expansion après Rename. |
+| Filtrer une multisélection ajoute un commit | Choisir d'abord un sélectionné survivant, avant tout fallback. |
+| Bornes de range-diff perdues, F5 change de groupe | Conserver primaire, ordre choisi, bases explicites et groupe actif ; l'ordre du graphe ne remplace pas celui de sélection. |
+| Clic Working/index lit un ancien fichier | Mettre à jour sélection/checkbox atomiquement avant l'unique lecture. |
+| Ancienne fenêtre écrase un nouveau MERGE_MSG | Baseline du texte réellement affiché après initialisation/template ; ne pas écraser un message Git créé depuis. |
+| Commit redevient disponible entre contrôle et mutation | Garder l'action busy jusqu'au retour complet, avec état visuel et refus des gestes concurrents. |
+| Propriétaire fermé mais checkout busy reste ouvert | Propager la fermeture ancêtre, annuler/attendre Git avant fermeture des fenêtres. |
+| Deuxième confirmation AutoCompile hors thread UI | Marshaler chaque confirmation, y compris après continuation sur worker. |
+| Clone réécrit le sous-dossier saisi | Observer TextProperty immédiatement, avant le TextChanged différé. |
+| Message déclaré Latin1 mais écrit UTF-8 | Codec strict partagé, stdin binaire et draft atomique ; valider avant toute mutation. |
+| CP1252 du hunk appliqué aux chemins range-diff UTF-8 | Séparer sections contenu/metadata/fichier. Git peut tronquer un en-tête contenant newline ; ne pas reconstruire des octets absents. |
+| Merge ignore `pull.ff=only` | `--no-rebase` prime aussi sur la config ff-only ; réappliquer `--ff-only`. Rebase garde la priorité de l'oracle Git natif. |
+| Précontrôles Pull divergent de FormPull | Token Main dès l'initialisation ; [ All ] force Fetch, confirmation rebase garde No sans commande de repli. |
 
-| Attribution legacy corrompue puis navigation hors des lignes affichées | Porcelain blame entièrement décodé en UTF-8 malgré le codec du fichier | Décoder séparément métadonnées et contenu ; source Latin1/CP1252 réelle, métadonnées Unicode, bare/rename, erreurs et annulation vérifiés. Résolu localement. |
-| Reload de texte identique laisse le lecteur indisponible | TextBox ne produit aucun changement quand les octets décodés sont identiques | Compléter explicitement une lecture source réussie sans changer sélection/scroll ; recherche et prochaine identité testées. Résolu localement. |
-| Autre fichier conserve un ancien commit après suivi de copie/renommage | Identité de la requête historique absente du choix de révision conservé | Conserver ce choix seulement pour le même fichier demandé ; nouvelle requête choisit sa première entrée. Résolu localement. |
-| Fixture Browse ne trouve pas le nouveau fichier du commit | Réouverture du même dépôt conserve intentionnellement le commit sélectionné | Sélectionner le vrai nouveau commit avant File tree ; rouge initial conservé, bouton natif Blame et ligne180 vérifiés. |
+## Lecteurs et UI — résolus
 
-Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Texte source interprété comme patch | Mode texte explicite ; indexabilité séparée du contenu affiché. |
+| Staging réutilise l'ancien aperçu après échec | Invalider au début du chargement et sur transition explicite, même si le texte est identique. Codec reste accessible pour réessayer. |
+| Sélection LF touche l'ajout suivant, recherche omet le dernier caractère | Adapter les bornes inclusives historiques aux intervalles semi-ouverts natifs. |
+| UTF-8 tronqué à la limite devient hex | Décoder sans flush seulement pour un preview tronqué ; erreurs intérieures et EOF complet restent stricts. |
+| Blame legacy corrompu | Décoder le contenu selon le codec du fichier, les métadonnées séparément en UTF-8. |
+| Reload identique laisse le lecteur bloqué | Compléter explicitement la lecture réussie ; TextChanged ne sera pas émis. |
+| Ancien commit/viewport conservé sur mauvais fichier | Identité de requête explicite ; restaurer l'offset après recalcul du layout, remapper seulement la même identité. |
+| Find/lecture perd le focus ; Alt+flèches perd la sélection | Capturer Owner avant Hide, restaurer le viewer après lecture ; scope readonly officiel d'AvaloniaEdit pour caret hors sélection. |
+| Ctrl+T ouvre Create tag, Ctrl+Entrée devient newline | Priorité aux gestes disponibles du viewer et à la validation de Commit avant l'éditeur ; sélection staged chargée explicitement sans voler le focus libre. |
+| F8 inactif depuis le popup Pull | Racines popup hors route clavier Main : relais tunnel dans menu et sous-menu. |
+| Échap du diff ne rejoint pas Commit | Relais sur TextArea : Find/popup, sélection, puis fermeture existante et brouillon conservé. |
+| Difftastic compacte ses colonnes ou supprime un chiffre légitime | Lire les préfixes ANSI réellement émis ; sans preuve de colonnes, conserver intégralement la sortie. |
+| Invisibles absents après 3000 caractères | AvaloniaEdit saute ses générateurs ; dessin des caractères visibles et EOL avec étendue complète. |
+| Blancs sélectionnés gardent la couleur de marqueur | Recolorer les runs courts et dessin viewport long sélectionnés ; EOL garde sa couleur. |
+| Glyphes noirs en sombre, contraste popup erroné, couleurs périmées | Adaptation monochrome conservant alpha ; ressources locales du vrai présentateur et variante du propriétaire ; invalidation au changement de thème. |
+| Accent Ubuntu orange malgré styles headless bleus | Templates Fluent ont leurs propres états checked/hover/pressed. Ressources locales et contrôle natif clair/sombre pour listes, catégories et radios Pull. |
+| Ancre intra-ligne invisible, petite image floue | Peindre les ancres après les fonds sur pixel entier ; dimensionner/arrondir avant centrage. |
+| Icônes absentes ou bitmap encore référencé après Dispose | Headers explicites pour menus supérieurs ; détacher sources et callbacks avant libération. |
+| Champs numériques/chevrons compacts tronqués | MinWidth/marges internes Fluent ; templates locaux adaptés aux dimensions historiques. |
+| Reparenting/renouvellement/refresh plante | Détacher avant insertion, garde null des templates, nom fixé avant application des styles ; ne pas réassigner le Name d'un contrôle stylé. |
+| Combo regex invalide reste visuellement neutre | Le fond du vrai éditeur est distinct du ComboBox ; reprendre ce fond et libérer le binding neutre. |
+| Menu Settings invisible, premier débordement vide | Pas de holder logique invisible ; collection notifiable établie avant construction du présentateur, peuplée avant clic. |
+| Menus français tronqués ; données Git traduites | Lever le plafond Fluent uniquement sur menus du viewer ; traduire commandes/catégories, garder branches/dossiers littéraux. |
+| URL de clone mal affichée | Distinguer URL/SCP/local, décoder le nom visuel et conserver valeurs littérales ; contraste et templates XLF complets. |
+| Ctrl+E perd Branches sous souris immobile | Garde du survol synthétique au mapping clavier ; premier vrai mouvement relayé une fois, nettoyage sur clic/navigation/fermeture. |
+| Dropdown Pull centré sous la flèche | Ancrage explicite sur le bord gauche du segment principal ; mesurer le présentateur réel. |
+| Premier Copier X11 vide | Avalonia met en cache les atoms absents : initialiser les sept noms avant GUI/askpass, garder la connexion ; aucun owner/contenu fabriqué. |
 
-| Navigation perdue après renommage | Clé d’arbre gardant l’ancien nom malgré le nouveau GitReference | Reprendre la clé du vrai nom sélectionné ; scénario de renommage et filtre conservé vert. |
-| Annulation absente pendant une lecture Git | Création du token après désactivation des commandes | Créer le token avant mise à jour de la barre ; annulation réelle du process et dépôt précédent préservés. |
-| Clic Working/index lit l’ancien fichier | Événements de sélection/checkbox déclenchant une lecture intermédiaire | Mettre à jour la sélection atomiquement avant l’unique lecture ; vrais diffs et index/worktree inchangés vérifiés. |
-| Tests Browse attendent ancien menu/titre/densité ou un commit hors écran | Assertions de l’ancienne présentation et fixture sélectionnant un ancien commit | Suivre Start, titre dossier/branche et lignes 20 px ; sélectionner le vrai HEAD visible pour la référence. Rouges initiaux conservés. |
-| Nom de branche traduit comme une commande | IconLabel appliquant T aux captions de données | Labels Git/dossiers littéraux, catégories et commandes traduites ; régression française Refresh/Author couverte. |
-| Ligne sélectionnée hors viewport après reload entier | Offset restauré avant recalcul de l’étendue, donc plafonné à la hauteur de l’ancien patch | Mettre à jour le layout avant restauration ; rouge reproductible du clone 472 conservé, 28 scénarios lecture/Browse verts localement. |
+## Build et validation — repères
 
-| Boutons de catégories Browse orange en natif clair | Ressources Checked du template ToggleButton Fluent reprenant l’accent système | Ressources locales par thème pour tous les états ; régression forçant l’orange et états réels des six boutons. Cadres `1bd1e69ff` conservés ; `a8e591f17` vérifie les six boutons bleus et zéro accent orange en natif clair/sombre. Résolu pour Browse. |
+| Piège | Cause / sortie |
+| --- | --- |
+| SDK Snap inutilisable dans le sandbox | Utiliser le SDK officiel local `.dotnet` et une version complète dans global.json. |
+| Version Debian contient HOME | Expansion Bash de `~` ; citer le caractère et vérifier le paquet reproductible. |
+| `dotnet test` annonce succès sans scénarios Core/Plugins | Projets console IsTestProject=false : `dotnet run --no-build --no-restore` et compteurs des logs. Apphost et DOTNET_ROOT local requis pour helpers enfants. |
+| Tests Avalonia bloquent ou teardown masque l'exception | Attente async normale sur dispatcher, BindingPriority.Template pour TemplateBinding ; ne pas modifier l'isolation pour masquer le défaut. |
+| AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
+| Culture/Alt/HEAD du test ne correspondent pas à l'écran | Fixer culture avant construction, poser focus initial, sélectionner le vrai commit attendu ; réouverture conserve volontairement la sélection. |
+| Pixels sélectionnés absents ou rejetés | Attendre une frame, exiger la vraie sélection, comparer le mélange anticrénelé plutôt qu'un pixel opaque. |
+| Geste XTest envoyé avant mapping, focus logique sans focus X11 | Attendre IsViewable, matcher le préfixe du titre ; calibration du vrai modal sans WM explicitée. Ni preuve de premier clic ni preuve Wayland. |
+| WM_DELETE_WINDOW absent sans WM | Parcours Échap après focus explicite du modal privé ; garder l'essai du harnais séparé des preuves acceptées. |
+| Plan natif vert puis launcher exit 2 | Figer/copier le launcher avant lancement, vérifier séparément exécution et fermeture. |
+| Hash DPKG hôte différent après validation | Comparer avant/après dans l'intervalle du test ; changement hôte ultérieur consigné séparément. |
 
-| Ctrl+E perd le champ Branches si Filter apparaît sous la souris | PointerEnteredItem sélectionne le menu puis Focus() reprend le champ, avant ouverture différée du sous-menu | Garde locale de survol synthétique à position écran inchangée ; premier vrai mouvement relaye une fois, clic/navigation/close nettoient. Rouge natif `a1bd3e663` conservé ; huit tests Browse verts, puis `a8e591f17` passe la saisie directe/copie/Enter à la même position immobile dans les deux thèmes. Réouverture, premier petit mouvement, clic et Escape natifs vérifiés. Résolu. |
-
-| Merge explicite ignore pull.ff=only avec le Git installé | --no-rebase possède lui aussi une priorité sur le ff-only configuré | Reproduit par le nouveau scénario Core ; Merge réapplique --ff-only quand configuré, comme le plain pull original. Rebase reste comparé à l’oracle git pull --rebase et conserve sa priorité native. 147/147 verts. Résolu localement. |
-| Suite Core lancée par dotnet DLL échoue dans les helpers enfants | Environment.ProcessPath désigne dotnet plutôt que l’apphost du test ; DOTNET_ROOT manque aussi pour les exécutables enfants | Utiliser le dotnet run --no-build du pipeline avec DOTNET_ROOT local. Logs rouges conservés ; 147/147 exécutés ensuite. Défaut de lancement, sans changement des helpers. |
-
-| F8 ne déclenche rien depuis le sous-menu de défaut Pull | Les popup roots n’appartiennent pas à la route clavier de MainWindow | Relais tunnel des raccourcis sur les éléments du menu et son sous-menu ; test au clavier depuis le popup puis vérification des tracking refs. Rouge focused-05 conservé ; focused-06 passe 16/16. Résolu localement. |
-| Précontrôles du Pull rapide divergent de FormPull | Initialisation hors token Main, [ All ] laissant Merge sélectionné, confirmation Rebase sans No par défaut | Token lié dès l’initialisation, [ All ] force Fetch et désactive Merge/Rebase, No par défaut revient au dialogue sans commande Git ; trois scénarios UI ajoutés, annulation via le vrai bouton Browse. 16/16 verts. |
-
-| Dropdown Pull centré sous la flèche, au lieu du bord gauche du bouton original | Placement Bottom implicite de MenuFlyout | Candidat 71abb9a61 retenu malgré 655 tests verts : capture native puis mesure UI x342 au lieu de x488. Placement BottomEdgeAlignedLeft et décalage du segment principal ; assertion des coordonnées réelles ajoutée au scénario de menu. Nouveau paquet natif requis. |
-
-| Radio Pull sélectionné orange en natif Light | Template RadioButton Fluent reprend la palette d’accent de la plateforme, malgré Foreground classique | Candidat 887790e91 retenu après six groupes fonctionnels verts ; ROI native 190 pixels #ed5b00. Ressources locales des trois modes par thème/état, test du vrai CheckOuterEllipse sous accent orange et saisie utilisateur des champs. Suite ciblée 17/17. Nouveau paquet requis. |
-| Clic Fetch all natif envoyé avant mapping du popup | Deux événements XTest successifs sans attente d’affichage Avalonia | Plans 01 rouges conservés, menu encore ouvert avec entrée seulement survolée ; nouveaux plans avec cadre du popup mappé puis clic passent sur les mêmes fixtures, sans reset ni focus artificiel. Défaut de calibration, sans changement produit. |
-| Copie PullRemote en Xvfb privé sans WM puis enum de plan invalide | Focus X11 resté sur Main malgré focus logique du champ ; copy_semantics descriptif au lieu de literal | Ctrl+Down ouvre bien Pull ; calibration explicite du vrai dialogue mappé, copies zeta exactes et Cancel ensuite verts. Traces rouges conservées ; limite du focus sans WM explicitée, pas de claim natif de premier clic. |
-
-| Clôture des deux écarts visuels Pull | Candidats 71abb centré et 887 orange, preuves retenues | 94f44d78f accepté et livré après 656 tests et six groupes natifs par thème. Ancrage x488 conforme au segment principal ; radio bleu recompte root Light194/Dark192, zéro orange. Aucun défaut de pilotage natif à ce SHA ; anciennes calibrations et preuves gardent leurs sources. Résolu pour le menu Pull/Fetch. |
+Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; leurs audits natifs restent attribués aux lots d'origine. Les anciennes mentions « paquet suivant à valider » ne remplacent pas les limites actuelles du TODO.

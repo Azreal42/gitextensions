@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Styling;
 using Avalonia.VisualTree;
 using GitExtensions.Extensibility.Git;
 
@@ -11,6 +10,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class PullDialog : RepositoryDialog
 {
     private readonly GitPullAction _initialAction;
+    private readonly string? _initialRemote, _initialBranch;
     private readonly PullPreferencesStore _store = new();
     private readonly AutoCompleteBox _remote = new() { Name = "PullRemote", Height = 24, MinimumPrefixLength = 0 };
     private readonly AutoCompleteBox _branch = new() { Name = "PullBranch", Height = 24, MinimumPrefixLength = 0 };
@@ -32,30 +32,15 @@ public sealed class PullDialog : RepositoryDialog
     internal bool Cancelled { get; private set; }
     internal bool Attempted { get; private set; }
 
-    public PullDialog(GitRepository repository, GitPullAction action = GitPullAction.Merge) : base(repository, "Pull")
+    public PullDialog(GitRepository repository, GitPullAction action = GitPullAction.Merge, string? remote = null, string? branch = null) : base(repository, "Pull")
     {
         if (!PullPreferencesStore.IsToolbarAction(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         _initialAction = action;
+        _initialRemote = remote; _initialBranch = branch;
         Width = 600; MinWidth = 520; SizeToContent = SizeToContent.Height;
         _merge.Content = T("Merge"); _rebase.Content = T("Rebase"); _fetch.Content = T("Do not merge, only fetch");
         _prune.Content = T("Prune remote branches");
         ReferenceDialogControls.Compact(_merge, _rebase, _fetch, _prune);
-        foreach (RadioButton mode in new[] { _merge, _rebase, _fetch })
-        {
-            foreach (ThemeVariant variant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
-            {
-                IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(variant == ThemeVariant.Dark);
-                ResourceDictionary resources = new();
-                foreach (string state in new[] { "", "PointerOver", "Pressed" })
-                {
-                    resources["RadioButtonOuterEllipseCheckedFill" + state] = Brush.Parse(colors["Highlight"]);
-                    resources["RadioButtonOuterEllipseCheckedStroke" + state] = Brush.Parse(colors["Highlight"]);
-                    resources["RadioButtonCheckGlyphFill" + state] = Brush.Parse(colors["HighlightText"]);
-                    resources["RadioButtonCheckGlyphStroke" + state] = Brush.Parse(colors["HighlightText"]);
-                }
-                mode.Resources.ThemeDictionaries[variant] = resources;
-            }
-        }
         _execute = Action("ExecutePull", "Pull", async () => { await ExecuteAsync(this); if (Succeeded) { Close(); } });
         _execute.IsDefault = true;
         Button close = new() { Name = "ClosePull", Content = T("Cancel"), IsCancel = true };
@@ -104,8 +89,8 @@ public sealed class PullDialog : RepositoryDialog
                 _configuredRemote = configuration.LastOrDefault(entry => entry.Key == "branch." + _status.Branch + ".remote").Value;
                 string? remote = remotes.FirstOrDefault(item => string.Equals(item.Name, _configuredRemote, StringComparison.OrdinalIgnoreCase))?.Name ?? remotes.FirstOrDefault()?.Name;
                 _remote.ItemsSource = new[] { AllRemotes }.Concat(remotes.Select(item => item.Name)).ToArray();
-                _remote.Text = _initialAction is GitPullAction.FetchAll or GitPullAction.FetchPruneAll ? AllRemotes : remote ?? AllRemotes;
-                _branch.Text = "";
+                _remote.Text = _initialAction is GitPullAction.FetchAll or GitPullAction.FetchPruneAll ? AllRemotes : _initialRemote ?? remote ?? AllRemotes;
+                _branch.Text = _initialBranch ?? "";
                 _merge.IsChecked = _initialAction is GitPullAction.None or GitPullAction.Merge;
                 _rebase.IsChecked = _initialAction == GitPullAction.Rebase;
                 _fetch.IsChecked = _initialAction is GitPullAction.Fetch or GitPullAction.FetchAll or GitPullAction.FetchPruneAll;

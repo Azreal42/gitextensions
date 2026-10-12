@@ -1,6 +1,6 @@
 # ADR 0010 · Création et clonage
 
-Statut : accepté ; sept scénarios UI/Git et rendu clair/sombre/français validés.
+Statut : accepté.
 
 Besoin : retrouver les choix du clonage original et créer un dépôt central partagé sans reconstruire les commandes Git à la main.
 

@@ -334,6 +334,8 @@ public sealed class FileStatusListView : UserControl, IDisposable
         header.Children.Add(Icon(icon)); TextBlock text = new() { Text = label, Margin = new Thickness(4, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         Grid.SetColumn(text, 1); header.Children.Add(text); ToolTip.SetTip(header, label); return header;
     }
+    internal Image CreateIcon(string name) => Icon(name);
+
     private Image Icon(string name)
     {
         if (!_bitmaps.TryGetValue(name, out Bitmap? bitmap))

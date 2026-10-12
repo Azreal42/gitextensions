@@ -1,6 +1,6 @@
 # ADR 0030 · Attribution et position de lecture
 
-Statut : accepté ; validation locale, paquet suivant à valider.
+Statut : accepté ; code inclus dans les paquets livrés, audit natif étendu de Blame encore ouvert (voir [TODO](../../../../todo.md)).
 
 Besoin : ouvrir l’attribution à la ligne que le développeur lit déjà, quel que soit le codec de son fichier.
 

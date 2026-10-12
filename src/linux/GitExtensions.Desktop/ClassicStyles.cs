@@ -333,6 +333,13 @@ internal static class ClassicStyles
         {
             resources[resource] = resources["Classic" + classic + "Brush"];
         }
+        foreach (string state in new[] { "", "PointerOver", "Pressed" })
+        {
+            resources["RadioButtonOuterEllipseCheckedFill" + state] = resources["ClassicHighlightBrush"];
+            resources["RadioButtonOuterEllipseCheckedStroke" + state] = resources["ClassicHighlightBrush"];
+            resources["RadioButtonCheckGlyphFill" + state] = resources["ClassicHighlightTextBrush"];
+            resources["RadioButtonCheckGlyphStroke" + state] = resources["ClassicHighlightTextBrush"];
+        }
         return resources;
     }
 

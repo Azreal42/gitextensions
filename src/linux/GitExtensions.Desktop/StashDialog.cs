@@ -29,7 +29,12 @@ public sealed class StashDialog : RepositoryDialog
     private readonly FileContentView _content;
     private readonly StashPreferencesStore _store = new();
     private readonly Button _saveAll, _saveSelected, _drop, _apply, _resolve;
+    private readonly MenuItem _pickChanges = new() { Name = "StashCherryPickChanges" };
+    private readonly MenuItem _resetFiles = new() { Name = "StashResetFiles" };
+    private readonly MenuItem _resetToStash = new() { Name = "StashResetToSelected" };
+    private readonly MenuItem _resetToParent = new() { Name = "StashResetToParent", InputGesture = new(Key.R) };
     private GitStatus? _status;
+    private string? _stashParent;
     private bool _updating;
     private bool _initialized;
 
@@ -58,6 +63,7 @@ public sealed class StashDialog : RepositoryDialog
         Tip(_apply, "Apply", "Apply the selected stash on top of the current working directory state");
         _resolve = Action("ResolveStashConflict", "Solve conflicts…", ResolveAsync); _resolve.Height = _resolve.MinHeight = 25;
         _fileList = new(_files); _content = new(_diffSource); _content.Name = "StashDiff";
+        ConfigureFileMenu();
         _content.TextView.ComparisonOptionsChanged += (_, _) => ReloadDiff();
         _content.TextView.DisplayOptionsChanged += (_, _) => ReloadDiff();
         _content.TextView.FileEncodingChanged += (_, _) => ReloadDiff();
@@ -105,6 +111,8 @@ public sealed class StashDialog : RepositoryDialog
                 if (args.Source is TextBox text && text.SelectionStart != text.SelectionEnd) { text.SelectionEnd = text.SelectionStart; args.Handled = true; return; }
             }
             if (IsBusy) { return; }
+            if (args.Key == Key.R && args.KeyModifiers == KeyModifiers.None && _files.IsKeyboardFocusWithin && Selected is not null)
+            { args.Handled = true; await ResetSelectedFilesAsync(true); return; }
             if (_content.TextView.HandleReadingShortcut(args)) { return; }
             if (args.Key == Key.F5 && args.KeyModifiers == KeyModifiers.None) { args.Handled = true; await InitializeAsync(); }
             else if (args.KeyModifiers == KeyModifiers.Control && args.Key is Key.N or Key.P)
@@ -162,6 +170,7 @@ public sealed class StashDialog : RepositoryDialog
             List<FileStatusListGroup> groups = [];
             if (IsWorktree)
             {
+                _stashParent = null;
                 _status = await Repository.GetStatusAsync(token); _message.Text = "";
                 foreach (bool staged in new[] { true, false })
                 {
@@ -175,6 +184,7 @@ public sealed class StashDialog : RepositoryDialog
             else if (Selected is GitStash stash)
             {
                 GitStashChanges changes = await Repository.GetStashChangesAsync(stash, token); _message.Text = changes.Message.TrimEnd('\n');
+                _stashParent = changes.Tracked.BaseRevision;
                 void Add(GitRevisionChanges revision, string key)
                     => groups.Add(new(key, key, new TextBlock { Text = T(key) }, revision.Files.Select(file => new FileStatusListEntry(
                         new FileChoice(file.Path, Revisions: revision, File: file), file.Path, file.OriginalPath, file.Status, file.SimilarityPercent)).ToArray()));
@@ -221,6 +231,72 @@ public sealed class StashDialog : RepositoryDialog
     }
 
     private Task ApplyAsync() => Selected is GitStash stash ? MutateAsync("Apply stash", token => Repository.ApplyStashAsync(stash, cancellationToken: token)) : Task.CompletedTask;
+
+    private GitRevisionFile[] SelectedStashFiles => _fileList.SelectedTags.OfType<FileChoice>()
+        .Where(choice => choice.File is not null).Select(choice => choice.File!).Distinct().ToArray();
+
+    private void ConfigureFileMenu()
+    {
+        AccessText Caption(string key, string source) => new() { Text = Translations.TranslateAccessKeys("FileStatusList", key, "Text", source) };
+        _pickChanges.Header = Caption("tsmiCherryPickChanges", "Cherr&y pick changes");
+        _pickChanges.Icon = _fileList.CreateIcon("CherryPick.png");
+        _resetFiles.Header = Caption("tsmiResetFileTo", "&Reset file(s) to");
+        _resetFiles.Icon = _fileList.CreateIcon("ResetWorkingDirChanges.png");
+        _resetFiles.ItemsSource = new[] { _resetToStash, _resetToParent };
+        _resetToParent.FontWeight = Avalonia.Media.FontWeight.Bold;
+        _pickChanges.Click += async (_, _) => await PickDisplayedChangesAsync();
+        _resetToStash.Click += async (_, _) => await ResetSelectedFilesAsync(false);
+        _resetToParent.Click += async (_, _) => await ResetSelectedFilesAsync(true);
+        ContextMenu menu = new() { ItemsSource = new[] { _resetFiles, _pickChanges } };
+        DiffViewerPopupLayout.Configure(menu);
+        menu.Opening += (_, _) => RefreshFileMenu();
+        foreach (MenuItem item in new[] { _pickChanges, _resetFiles, _resetToStash, _resetToParent })
+        {
+            item.AddHandler(KeyDownEvent, async (_, e) =>
+            {
+                if (e.Handled || IsBusy || e.Key != Key.R || e.KeyModifiers != KeyModifiers.None) { return; }
+                e.Handled = true; menu.Close(); await ResetSelectedFilesAsync(true);
+            }, RoutingStrategies.Tunnel);
+        }
+        _files.ContextMenu = menu;
+    }
+
+    private void RefreshFileMenu()
+    {
+        bool available = !IsBusy && !Repository.IsBare && Selected is not null && SelectedStashFiles.Length > 0;
+        _resetFiles.IsVisible = _pickChanges.IsVisible = Selected is not null;
+        _resetFiles.IsEnabled = _resetToStash.IsEnabled = _resetToParent.IsEnabled = available;
+        // Windows applies the displayed file's entire patch, not all files in a
+        // multi-selection. Binary/image and source-only previews cannot patch.
+        _pickChanges.IsEnabled = available && _content.TextView.CanStagePatch && !_content.IsImage;
+        _resetToStash.Header = T("Second: B ") + (Selected?.Hash[..8] ?? "");
+        _resetToParent.Header = T("First: A ") + (_stashParent?[..8] ?? "");
+    }
+
+    private async Task PickDisplayedChangesAsync()
+    {
+        _files.ContextMenu?.Close();
+        if (IsBusy || Repository.IsBare || Selected is not GitStash stash || !_content.TextView.CanStagePatch || _content.IsImage) { return; }
+        GitRevisionFile? file = _fileList.SelectedTags.OfType<FileChoice>().FirstOrDefault()?.File;
+        if (file is not null) { await MutateAsync("Cherry pick changes", token => Repository.ApplyStashChangesAsync(stash, [file], token)); }
+    }
+
+    private async Task ResetSelectedFilesAsync(bool parent)
+    {
+        _files.ContextMenu?.Close();
+        if (IsBusy || Repository.IsBare || Selected is not GitStash stash) { return; }
+        GitRevisionFile[] files = SelectedStashFiles;
+        if (files.Length == 0) { return; }
+        bool hasExisting = files.Any(file => file.Status != 'A');
+        bool hasNew = files.Any(file => file.Status is not ('M' or 'T') && new[] { file.Path, file.OriginalPath }
+            .Where(path => path is not null).Any(path => File.Exists(Path.Combine(Repository.Path, path!)) || Directory.Exists(Path.Combine(Repository.Path, path!))));
+        string description = parent ? T("First: A ") + _stashParent : T("Second: B ") + stash.Hash;
+        ResetChangesDialog confirmation = new(hasExisting, hasNew, string.Format(T("Are you sure you want to reset all selected files to {0}?"), description));
+        ResetChangesDialog.Decision decision = await confirmation.ShowDialog<ResetChangesDialog.Decision>(this);
+        if (decision == ResetChangesDialog.Decision.Cancel) { return; }
+        await MutateAsync("Reset changes", token => Repository.RestoreStashFilesAsync(stash, files, parent,
+            decision == ResetChangesDialog.Decision.ResetAndDelete, token));
+    }
 
     private async Task DropAsync()
     {
@@ -271,6 +347,7 @@ public sealed class StashDialog : RepositoryDialog
         _drop.IsEnabled = _apply.IsEnabled = !IsBusy && Selected is not null && !Repository.IsBare;
         _resolve.IsVisible = _status?.Changes.Any(change => change.IsConflict) == true;
         _resolve.IsEnabled = !IsBusy && _resolve.IsVisible;
+        RefreshFileMenu();
     }
 }
 
