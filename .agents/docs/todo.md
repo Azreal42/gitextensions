@@ -54,12 +54,13 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 ## Travail local en cours
 
 - Actions de fichiers Stash : cherry-pick du fichier affiché et reset de sélection stash/premier parent avec confirmation originale ; API/Git et UI ciblées vérifiées, paquet à renouveler. ADR 0035.
-- Palette radio commune aux dialogues ; ressources historiques pour coché/survol/pression, vérification native du nouveau paquet à faire.
-- Push natif branches/tags/multiple et reprise après rejet ; validation en cours.
-- Grep avec codec et navigation des résultats ; API binaire et raccord à porter.
+- Palette radio commune aux dialogues ; ressources historiques pour coché/survol/pression, audit natif du prochain paquet à terminer.
+- Push natif branches/tags/multiple et reprise après rejet ; API Git et UI ciblées vérifiées, présentation finale et paquet en validation. ADR 0036.
+- Grep avec codec, colonnes et navigation dans les fichiers du commit ; API binaire vérifiée, raccord UI et paquet en validation. ADR 0037.
 
 ## Prochains écarts concrets
 
+- Push : bouton rapide distinct du dialogue, scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
 - Pull avancé : tags/unshallow/autostash/sous-modules et sortie Git continue.
 - Historique/blame : navigateur des fichiers du commit, filtres de grille, difftools, dossiers/sous-modules et audit natif étendu.
 - Clone : autocomplétion, aide et sortie/progression Git ; scripts checkout.

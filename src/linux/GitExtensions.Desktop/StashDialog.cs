@@ -278,7 +278,7 @@ public sealed class StashDialog : RepositoryDialog
         _files.ContextMenu?.Close();
         if (IsBusy || Repository.IsBare || Selected is not GitStash stash || !_content.TextView.CanStagePatch || _content.IsImage) { return; }
         GitRevisionFile? file = _fileList.SelectedTags.OfType<FileChoice>().FirstOrDefault()?.File;
-        if (file is not null) { await MutateAsync("Cherry pick changes", token => Repository.ApplyStashChangesAsync(stash, [file], token)); }
+        if (file is not null) { await MutateAsync("Cherry pick changes", token => Repository.ApplyStashChangesAsync(stash, [file], token), preserveStashView: true); }
     }
 
     private async Task ResetSelectedFilesAsync(bool parent)
@@ -291,11 +291,12 @@ public sealed class StashDialog : RepositoryDialog
         bool hasNew = files.Any(file => file.Status is not ('M' or 'T') && new[] { file.Path, file.OriginalPath }
             .Where(path => path is not null).Any(path => File.Exists(Path.Combine(Repository.Path, path!)) || Directory.Exists(Path.Combine(Repository.Path, path!))));
         string description = parent ? T("First: A ") + _stashParent : T("Second: B ") + stash.Hash;
-        ResetChangesDialog confirmation = new(hasExisting, hasNew, string.Format(T("Are you sure you want to reset all selected files to {0}?"), description));
+        ResetChangesDialog confirmation = new(hasExisting, hasNew, string.Format(T("Are you sure you want to reset all selected files to {0}?"), description))
+        { RequestedThemeVariant = ActualThemeVariant };
         ResetChangesDialog.Decision decision = await confirmation.ShowDialog<ResetChangesDialog.Decision>(this);
         if (decision == ResetChangesDialog.Decision.Cancel) { return; }
         await MutateAsync("Reset changes", token => Repository.RestoreStashFilesAsync(stash, files, parent,
-            decision == ResetChangesDialog.Decision.ResetAndDelete, token));
+            decision == ResetChangesDialog.Decision.ResetAndDelete, token), preserveStashView: true);
     }
 
     private async Task DropAsync()
@@ -313,8 +314,9 @@ public sealed class StashDialog : RepositoryDialog
         await MutateAsync("Drop stash", token => Repository.DropStashAsync(stash, token), index);
     }
 
-    private async Task MutateAsync(string label, Func<CancellationToken, Task<GitResult>> action, int? index = null)
+    private async Task MutateAsync(string label, Func<CancellationToken, Task<GitResult>> action, int? index = null, bool preserveStashView = false)
     {
+        string? selectedHash = preserveStashView ? Selected?.Hash : null;
         await RunAsync(label, async token =>
         {
             string? output = null;
@@ -322,7 +324,14 @@ public sealed class StashDialog : RepositoryDialog
             finally
             {
                 // Git can modify index/worktree even when apply/pop fails with conflicts.
-                if (!token.IsCancellationRequested) { await RefreshAsync(token, selectIndex: index); }
+                if (!token.IsCancellationRequested)
+                {
+                    // FormStash keeps the immutable stash and its file selection
+                    // after a context action. Only the worktree state has changed.
+                    if (selectedHash is not null && Selected?.Hash == selectedHash)
+                    { _status = await Repository.GetStatusAsync(token); }
+                    else { await RefreshAsync(token, selectIndex: index); }
+                }
             }
             if (output is not null) { Status.Text = output.Trim(); }
         });

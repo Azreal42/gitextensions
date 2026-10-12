@@ -353,13 +353,7 @@ internal static class DiffDisplayScenarios
         Check(File.ReadAllBytes(f.File(".git/config")).SequenceEqual(config), "Reading display options never writes repository config.");
         Check(File.ReadAllBytes(f.File(".git/index")).SequenceEqual(index), "Reading presentation never modifies index bytes.");
     }
-    private static bool Running(int pid)
-    {
-        string file = "/proc/" + pid + "/stat";
-        if (!File.Exists(file)) { return false; }
-        try { string stat = File.ReadAllText(file); return stat[(stat.LastIndexOf(')') + 2)] != 'Z'; }
-        catch (IOException) when (!File.Exists(file)) { return false; }
-    }
+    private static bool Running(int pid) => LinuxProcessState.IsRunning(pid);
     private static async Task ExpectAsync<T>(Func<Task> action) where T : Exception
     {
         try { await action(); } catch (T) { return; }

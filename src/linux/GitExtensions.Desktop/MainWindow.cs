@@ -114,11 +114,12 @@ public sealed partial class MainWindow : Window
             if (!_refreshing) { UpdateHistoryPresentation(); }
             if (!_refreshing && _commits.SelectedItem is GitCommit commit)
             {
+                CancelFileGrepForCommit(commit.Hash);
                 await RunAsync("Commit diff", async repository =>
                 {
                     await LoadCommitFilesAsync(repository, commit.Hash);
                     UpdateCommitInfo(commit);
-                    _tree.ItemsSource = (await repository.GetTreeAsync(commit.Hash, cancellationToken: Token)).Select(entry => entry.Path).ToArray();
+                    SetFileTreePaths(repository, commit.Hash, (await repository.GetTreeAsync(commit.Hash, cancellationToken: Token)).Select(entry => entry.Path).ToArray());
                     _fileContent?.ClearImage();
                     _fileView.Text = null;
                     _gpgInfo.Text = null;
@@ -135,10 +136,10 @@ public sealed partial class MainWindow : Window
         };
         _tree.SelectionChanged += async (_, _) =>
         {
-            if (!_refreshing && _tree.SelectedItem is string path)
+            if (!_refreshing && !_settingGrepTree && _tree.SelectedItem is string path)
             {
                 _filePath.Text = path;
-                await ShowFileAsync(path);
+                await ShowSelectedTreeFileAsync(path);
             }
         };
         _repositoryPath.KeyDown += async (_, e) =>
@@ -226,7 +227,7 @@ public sealed partial class MainWindow : Window
             new TabItem { Header = "Stashes", Content = Panel(_stashes, Row(Button("Create…", StashAsync), Button("Apply", () => ApplyStashAsync(false)), Button("Pop", () => ApplyStashAsync(true)), Button("Delete…", DropStashAsync), Button("Show diff", ShowStashAsync))) },
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", () => RunAsync("Prune worktrees", r => r.PruneWorktreesAsync(cancellationToken: Token))))) },
             new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Initialize / update", UpdateSubmodulesAndBuildAsync), Button("Sync URLs", () => RunAsync("Sync submodules", r => r.SyncSubmodulesAsync(cancellationToken: Token))), Button("Open", OpenSubmoduleAsync))) },
-            new TabItem { Header = "Files", Content = Split(Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), Button("Search…", SearchAsync))), BuildFileContent()) },
+            new TabItem { Header = "Files", Content = Split(BuildFilesPanel(), BuildGrepFileContent()) },
             new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync), Button(_translations.Translate("DiffViewerSettingsPage", "$this", "Text", "Diff viewer") + "…", DiffViewerSettingsAsync))) },
             new TabItem { Header = "Repository", Content = BuildRepositoryTools() }
         ];
@@ -408,7 +409,7 @@ public sealed partial class MainWindow : Window
             _submodules.ItemsSource = submodules;
             _configuredUserEmail = configuration.LastOrDefault(entry => entry.Key == "user.email").Value;
             _configuration.ItemsSource = configuration.Select(entry => $"{entry.Key} = {entry.Value}").ToList();
-            _tree.ItemsSource = tree;
+            SetFileTreePaths(repository, treeRevision, tree);
             UpdateBrowserNavigation(references, stashes, submodules, worktrees);
             _historyHasMore = history.Count > _historyWindow && _historyWindow < 100000;
             _history = visibleHistory;

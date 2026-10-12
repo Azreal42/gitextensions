@@ -125,6 +125,9 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. BlameEncodingScenarios.All,
     .. PullFetchScenarios.All,
     .. StashScenarios.All,
+    .. PushScenarios.All,
+    .. GrepScenarios.All,
+    ("Linux cancellation treats zombie and dead procfs tasks as terminated", LinuxProcessState.VerifyStatesAsync),
     ("difftastic formatter retains original sample gutters and right column", DifftasticScenarios.OriginalFixtureAsync),
     ("difftastic strips number colors and aligns growing column prefixes", DifftasticScenarios.ColumnsAndColorsAsync),
     ("difftastic one-sided and zero-context Unicode lines retain correct gutters", DifftasticScenarios.OneSidedAndUnicodeAsync),
@@ -1536,20 +1539,7 @@ static async Task CancellationAsync()
 
 static async Task VerifyProcessTerminatedAsync(int pid, string message)
 {
-    string status = $"/proc/{pid}/status";
-    bool Terminated()
-    {
-        try
-        {
-            return !File.Exists(status) || File.ReadLines(status).Any(line => line.StartsWith("State:", StringComparison.Ordinal) && line.Contains('Z'));
-        }
-        catch (IOException) when (!File.Exists(status))
-        {
-            // Procfs disappears during termination. Recheck after a failed read
-            // so an unrelated I/O error while the process exists is not ignored.
-            return true;
-        }
-    }
+    bool Terminated() => !LinuxProcessState.IsRunning(pid);
     Stopwatch deadline = Stopwatch.StartNew();
     while (!Terminated() && deadline.Elapsed < TimeSpan.FromSeconds(2)) { await Task.Delay(20); }
     Assert(Terminated(), message);

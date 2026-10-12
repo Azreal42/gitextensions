@@ -186,12 +186,7 @@ internal static class BlameEncodingScenarios
         Check(File.ReadAllBytes(fixture.File(Adjacent)).AsSpan().SequenceEqual(snapshot.Adjacent), "A literal path must not match its adjacent glob-shaped filename.");
     }
 
-    private static bool Running(int pid)
-    {
-        string path = "/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat";
-        if (!File.Exists(path)) { return false; }
-        try { return File.ReadAllText(path).Split(')')[1].TrimStart()[0] != 'Z'; } catch (IOException) { return false; }
-    }
+    private static bool Running(int pid) => LinuxProcessState.IsRunning(pid);
     private static string Quote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
     private static void Check(bool value, string message) { if (!value) { throw new InvalidOperationException(message); } }
     private static async Task ExpectAsync<T>(Func<Task> operation) where T : Exception

@@ -294,11 +294,24 @@ public sealed partial class MainWindow
 
     private async Task PushAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Push", ("Remote (blank for upstream)", (_remotes.SelectedItem as GitRemote)?.Name ?? ""), ("Branch or refspec (blank for default)", ""), ("Set upstream: yes or no", "no"), ("Force with lease: yes or no", "no"));
-        if (values is null) { return; }
-        if (values[2] is not ("yes" or "no") || values[3] is not ("yes" or "no")) { throw new ArgumentException("Choose yes or no for push options."); }
-        if ((values[3] == "yes" || values[1].StartsWith(':')) && !await Dialogs.ConfirmAsync(this, "Update remote history", "This push may replace remote history or delete a remote ref. Continue?")) { return; }
-        await RunAsync("Push", r => r.PushAsync(Optional(values[0]), Optional(values[1]), values[2] == "yes", values[3] == "yes", Token));
+        if (_repository is null || _busy) { return; }
+        PushDialog dialog = new(_repository) { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
+        try
+        {
+            await RunAsync("Push", async _ =>
+            {
+                CancellationToken commandToken = Token;
+                dialog.Opened += async (_, _) => await dialog.InitializeAsync(commandToken);
+                using CancellationTokenRegistration registration = commandToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
+                await dialog.ShowDialog(WorkflowOwner);
+                commandToken.ThrowIfCancellationRequested();
+            }, refresh: false);
+        }
+        finally
+        {
+            dialog.Close();
+            if (dialog.HasRepositoryChanges && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
+        }
     }
 
     private Task BrowseRemoteAsync()
@@ -389,17 +402,7 @@ public sealed partial class MainWindow
         await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);
 
-    private async Task SearchAsync()
-    {
-        string[]? values = await Dialogs.PromptAsync(this, "Search repository", ("Pattern", ""));
-        if (values is null) { return; }
-        await RunAsync("Search", async r =>
-        {
-            _fileContent?.ClearImage();
-            if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.PlainText; }
-            _fileView.Text = string.Join('\n', (await r.SearchAsync(values[0], revision: CurrentRevision, cancellationToken: Token)).Select(match => $"{match.Path}:{match.LineNumber}: {match.Text}"));
-        }, refresh: false);
-    }
+    private Task SearchAsync() => ShowFileGrepDialogAsync();
 
     private async Task SetConfigurationAsync(GitConfigScope scope)
     {

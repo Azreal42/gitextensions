@@ -262,13 +262,29 @@ public class StashMenuTests
         await f.ShowAsync(); StashDialog dialog = await Open(f, true);
         FileStatusListView files = Find<FileStatusListView>(dialog, "StashFilesView"); files.SelectTags(files.Entries.Select(entry => entry.Tag)); await Idle(dialog);
         string displayed = files.SelectedEntries.First().Path;
+        string[] selectedPaths = files.SelectedEntries.Select(entry => entry.Path).ToArray();
+        object? selectedStash = Find<ComboBox>(dialog, "StashSelection").SelectedItem;
         ContextMenu menu = Find<TreeView>(dialog, "StashFiles").ContextMenu!; menu.Open(files.Tree); Pump(dialog);
         Click(menu.Items.OfType<MenuItem>().Single(item => item.Name == "StashCherryPickChanges")); await Idle(dialog);
         Assert.That(dialog.LastError, Is.Null);
+        Assert.That(Find<ComboBox>(dialog, "StashSelection").SelectedItem, Is.SameAs(selectedStash));
+        Assert.That(files.SelectedEntries.Select(entry => entry.Path), Is.EqualTo(selectedPaths));
         Assert.That(await f.ReadAsync(displayed), Is.EqualTo(displayed == path ? "saved literal\n" : "saved adjacent\n"));
         string other = displayed == path ? adjacent : path;
         Assert.That(await f.ReadAsync(other), Is.EqualTo(other == path ? "base\n" : "adjacent base\n"));
         GitStatus status = await f.Repository.GetStatusAsync(); Assert.That(status.Changes.Single().Path, Is.EqualTo(displayed)); Assert.That(status.Changes.Single().IsStaged, Is.True);
+        Assert.That((await f.Repository.GetStashesAsync()).Single().Hash, Is.EqualTo(stash.Hash));
+        TreeViewItem selectedFile = files.Tree.SelectedItems!.OfType<TreeViewItem>().First();
+        string parentHash = await f.Repository.ResolveRevisionAsync(stash.Hash + "^");
+        Assert.That(selectedFile.Focus(), Is.True); Pump(dialog); Press(dialog, PhysicalKey.R, RawInputModifiers.None);
+        ResetChangesDialog confirmation = await ResetPrompt(dialog);
+        Assert.That(Find<TextBox>(confirmation, "ResetChangesMessage").Text, Does.Contain(parentHash));
+        Click(Find<Button>(confirmation, "ConfirmResetChanges")); await Idle(dialog);
+        Assert.That(Find<ComboBox>(dialog, "StashSelection").SelectedItem, Is.SameAs(selectedStash));
+        Assert.That(files.SelectedEntries.Select(entry => entry.Path), Is.EqualTo(selectedPaths));
+        Assert.That(await f.ReadAsync(path), Is.EqualTo("base\n"));
+        Assert.That(await f.ReadAsync(adjacent), Is.EqualTo("adjacent base\n"));
+        Assert.That((await f.Repository.GetStatusAsync()).Changes, Is.Empty);
         Assert.That((await f.Repository.GetStashesAsync()).Single().Hash, Is.EqualTo(stash.Hash));
     }
 

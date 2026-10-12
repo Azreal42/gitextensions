@@ -294,12 +294,7 @@ internal static class MergeRangeDiffScenarios
         catch { fixture.Dispose(); throw; }
     }
 
-    private static bool ProcessRunning(int pid)
-    {
-        string path = "/proc/" + pid + "/stat";
-        if (!File.Exists(path)) { return false; }
-        try { return File.ReadAllText(path).Split(')')[1].TrimStart()[0] != 'Z'; } catch (IOException) { return false; }
-    }
+    private static bool ProcessRunning(int pid) => LinuxProcessState.IsRunning(pid);
     private static async Task ExpectGitFailureAsync(Func<Task> action)
     {
         try { await action(); } catch (GitCommandException) { return; }

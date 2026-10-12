@@ -410,13 +410,7 @@ internal static class PullFetchScenarios
     private static Task<string> RefAsync(GitRepository repository, string reference) => repository.ResolveRevisionAsync(reference);
     private static async Task<bool> HasRefAsync(GitRepository repository, string reference)
         => (await repository.GetReferencesAsync()).Any(item => item.Name == reference);
-    private static bool Running(int pid)
-    {
-        string path = "/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat";
-        if (!File.Exists(path)) { return false; }
-        try { return File.ReadAllText(path).Split(')')[1].TrimStart()[0] != 'Z'; }
-        catch (IOException) when (!File.Exists(path)) { return false; }
-    }
+    private static bool Running(int pid) => LinuxProcessState.IsRunning(pid);
     private static string Quote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
     private static void Check(bool condition, string message) { if (!condition) { throw new InvalidOperationException(message); } }
     private static async Task<T> ExpectAsync<T>(Func<Task> operation) where T : Exception
