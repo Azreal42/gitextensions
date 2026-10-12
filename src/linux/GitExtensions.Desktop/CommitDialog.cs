@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
@@ -174,7 +175,14 @@ public sealed class CommitDialog : Window
             if (!_busy && _selectStaged.IsChecked && _stagedView.FilteredEntries.Count > 0)
             {
                 if (!_stagedView.SelectedTags.OfType<GitChange>().Any()) { _stagedView.SelectTags([_stagedView.FilteredEntries[0].Tag]); }
-                if (!_viewStaged) { await SelectFileAsync(_stagedView, true); }
+                if (!_viewStaged)
+                {
+                    await SelectFileAsync(_stagedView, true);
+                    // Loading the selected diff temporarily disables the editor.
+                    // Keep the message as the user's keyboard destination.
+                    if (IsVisible && !_lifetime.IsCancellationRequested && !_busy && !_commitRequested
+                        && FocusManager?.GetFocusedElement() is null) { _message.Focus(); }
+                }
             }
         };
         _amend.IsCheckedChanged += async (_, _) =>
@@ -196,7 +204,7 @@ public sealed class CommitDialog : Window
         _target.SelectionChanged += (_, _) => UpdateAvailability();
         _author.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateAvailability(); } };
         _diff.Editor.TextArea.SelectionChanged += (_, _) => UpdateAvailability();
-        KeyDown += HandleShortcut;
+        AddHandler(KeyDownEvent, HandleShortcut, RoutingStrategies.Tunnel);
         Opened += async (_, _) => { await InitializeAsync(); _unstaged.Focus(); };
         Activated += async (_, _) =>
         {
@@ -844,8 +852,12 @@ public sealed class CommitDialog : Window
                     if (_selectionFilterToolbar.IsVisible) { _filter.Focus(); }
                     else { _unstaged.Focus(); }
                     break;
-                case Key.S: await StageAsync(true); break;
-                case Key.Enter: if (_commit.IsEnabled) { await CommitAsync(false); } break;
+                case Key.S: args.Handled = true; await StageAsync(true); break;
+                case Key.Enter:
+                    if (!_commit.IsEnabled) { return; }
+                    args.Handled = true;
+                    await CommitAsync(false);
+                    break;
                 default: return;
             }
             args.Handled = true;

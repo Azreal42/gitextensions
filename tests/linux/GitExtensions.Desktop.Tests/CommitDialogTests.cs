@@ -313,7 +313,10 @@ public class CommitDialogTests
         Assert.That(FileStatusTestHelpers.Changes(Find<TreeView>(dialog, "Staged")).Single().Path, Is.EqualTo(literalPath));
         Assert.That(File.Exists(Path.Combine(fixture.Repository.Path, "should-not-exist")), Is.False);
         Find<TextBox>(dialog, "Message").Text = "Commit with keyboard";
-        Find<TextBox>(dialog, "Message").Focus();
+        Assert.That(Find<Button>(dialog, "Commit").IsEnabled, Is.True, "A valid message and staged file must enable commit.");
+        Assert.That(Find<TextBox>(dialog, "Message").Focus(), Is.True);
+        await Idle(dialog);
+        Assert.That(Find<TextBox>(dialog, "Message").IsKeyboardFocusWithin, Is.True);
         Press(dialog, PhysicalKey.Enter, RawInputModifiers.Control);
         await Idle(dialog);
         Assert.That((await fixture.Run("log", "-1", "--format=%s")).StandardOutput.Trim(), Is.EqualTo("Commit with keyboard"));
