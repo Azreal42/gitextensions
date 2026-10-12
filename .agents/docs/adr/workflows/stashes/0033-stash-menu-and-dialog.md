@@ -1,6 +1,6 @@
 # ADR 0033 · Menu et fenêtre Stash
 
-Statut : implémenté, validation locale exécutée ; paquet et audit natif en préparation.
+Statut : accepté et livré pour le menu et les fenêtres de base, source 36aae198f467312e5846919b8c4069967d804b04.
 
 La capture Windows et FormBrowse/FormStash définissent le bouton scindé et la fenêtre. Le segment principal ouvre Manage stashes ; le dropdown est ancré sur son bord gauche et reprend Stash, Stash pop, séparateur, Manage stashes, Create a stash. Stash staged est visible avec Git >= 2.35, comme le source Windows actuel. Le triangle 6×3 est partagé avec les autres indicateurs. Le débordement du toolbar conserve ces actions.
 
@@ -15,3 +15,11 @@ Apply conserve le stash ; Apply/Pop passent sans --index, comme Windows. Drop co
 F5 rafraîchit ; Ctrl+N/Ctrl+P parcourent les stashes dans l’ordre original. Échap ferme le dropdown, désélectionne le texte du viewer/champ, puis ferme la fenêtre ; fermer pendant une commande annule Git et ses descendants. Les anciennes APIs StashAsync/ApplyStashAsync restent compatibles pour les autres appelants ; les entrées Browse utilisent les nouvelles options/identités typées.
 
 Validation locale : huit nouveaux scénarios Core Git réels, 155/155 scénarios Core ; treize parcours UI/Git, 13/13 sans ignoré. Menu/pointeur/clavier, les deux modes, messages saisis, chemins littéraux et renommages, fichiers non suivis, index, aperçus, Apply/Pop/Drop, No/Yes et préférence, français/clair/sombre, bare, état vide, résolution réelle et cancellation du processus. Six projets Release sans diagnostic. Les essais de calibration restent dans artifacts/linux/stash-development-tests ; ils ne sont pas les preuves du paquet final. Le reste de la migration et les fonctions contextuelles avancées des listes restent ouverts.
+
+Acceptation du paquet : clone frais exact, six projets Release verrouillés sans diagnostic, Core 155/155, Plugins 35/35, Desktop 487/487, soit 677 tests sans échec/ignoré. Probe officiel 98 assertions sur la Core publiée exacte (SHA256 1a4f2a403f364ca251b9dd860450f0167861bcd935dc9126f59414584591e71c). Paquet 34 190 448 octets, SHA256 a257f0814532173b506f4bf2090aed6538b921df681365261d902e877b046522, version 8.0.0-linux.1+36aae198f467312e5846919b8c4069967d804b04. Installation/lancement dans un root isolé, APT simulé, repaquetage du même payload byte-identique, 72 XLF et notices vérifiés ; base DPKG hôte inchangée.
+
+Deux parcours XTest sur le wrapper extrait du paquet, clair/sombre : menu et les deux modes, création avec message/fichiers non suivis, aperçu, Apply conservant le stash, Stash rapide, Ctrl+Alt+Down depuis le popup, puis Drop No/Yes. 22 cadres bruts, 12 inspectés directement, deux traces et deux lanceurs exit0 ; 14 assertions de phases Git. HEAD, autres refs, config et octets des fichiers contrôlés ; l’index retrouve les octets de base après Apply/Pop sans --index, et les fichiers retrouvent exactement les changements préparés. Les blobs des stashes créés et leur troisième parent non suivi sont vérifiés indépendamment. Le stash plus ancien reste intact.
+
+L’essai de harnais demandant WM_DELETE_WINDOW est conservé séparément : sans WM, les atomes de ce protocole ne sont pas annoncés. Le parcours accepté utilise Échap après focus explicite du modal privé ; pas de contournement du code produit, d’atomes présemés, de gestionnaire de presse-papiers ou de claim de premier clic/Wayland. Les calibrations ne sont pas réattribuées aux traces acceptées. Les preuves natives étendues Pull et alignement conservent leurs sources antérieures.
+
+Preuve : artifacts/linux/snapshots/36aae198f/proofs/root-acceptance.json (ACCEPTED_AND_DELIVERED), acceptation scellée de 434 fichiers. Ancien paquet a4cf38dbf préservé dans previous-delivery ; livraison locale atomique. Aucun push ni installation APT sur l’hôte.
