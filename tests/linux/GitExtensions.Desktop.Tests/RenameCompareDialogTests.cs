@@ -287,19 +287,25 @@ public class RenameCompareDialogTests
         try
         {
             await dialog.InitializeAsync();
-            Field<NumericUpDown>(dialog, "ComparisonContextLines").Value = 0; await Idle(dialog);
+            for (int i = 0; i < 3; i++) { Click(dialog, "ComparisonDecreaseContext"); await Idle(dialog); }
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Not.Contain("context 40"));
-            Field<CheckBox>(dialog, "ComparisonEntireFile").IsChecked = true; await Idle(dialog);
-            Assert.That(Field<NumericUpDown>(dialog, "ComparisonContextLines").IsEnabled, Is.False);
+            Click(dialog, "ComparisonEntireFile"); await Idle(dialog);
+            Assert.That(Field<Button>(dialog, "ComparisonIncreaseContext").IsEnabled, Is.False);
+            Assert.That(Field<Button>(dialog, "ComparisonDecreaseContext").IsEnabled, Is.False);
+            Assert.That(dialog.ReadDiffOptions().ContextLines, Is.Zero, "Whole-file mode preserves the selected context count.");
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("context 40"));
-            Field<ComboBox>(dialog, "ComparisonWhitespace").SelectedIndex = 1; await Idle(dialog);
+            ChooseDiffMenu(dialog, "ComparisonWhitespace_Eol"); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("a  b"));
-            Field<ComboBox>(dialog, "ComparisonWhitespace").SelectedIndex = 2; await Idle(dialog);
+            ChooseDiffMenu(dialog, "ComparisonWhitespace_Change"); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Is.Empty);
             Assert.That(dialog.ReadDiffOptions().IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.Change));
+            Assert.That(DiffMenu(dialog, "ComparisonWhitespace_Eol").IsChecked, Is.True);
+            Assert.That(DiffMenu(dialog, "ComparisonWhitespace_Change").IsChecked, Is.True);
+            Assert.That(DiffMenu(dialog, "ComparisonWhitespace_AllSpace").IsChecked, Is.False);
             dialog.RequestedThemeVariant = ThemeVariant.Dark;
             Capture(dialog, "classic-compare-revisions-dark.png");
-            Assert.That(Field<ComboBox>(dialog, "ComparisonWhitespace").Bounds.Height, Is.EqualTo(24));
+            Assert.That(Field<Button>(dialog, "ComparisonEntireFile").Bounds.Height, Is.EqualTo(24));
+            Assert.That(Field<Button>(dialog, "ComparisonEntireFile").Content, Is.TypeOf<Image>());
         }
         finally { dialog.Close(); }
         await File.WriteAllBytesAsync(Path.Combine(fixture.Repository, "binary.dat"), new byte[] { 1, 0, 2 });
@@ -361,9 +367,13 @@ public class RenameCompareDialogTests
             Field<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison!.Files.Single(file => file.Path == "file.txt"); await Idle(dialog);
             DiffView view = Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView;
             view.Editor.Focus(); Press(dialog, PhysicalKey.F, RawInputModifiers.Control);
-            Assert.That(Field<TextBox>(dialog, "ComparisonFind").IsFocused, Is.True);
-            Field<TextBox>(dialog, "ComparisonFind").Text = "change";
-            Press(dialog, PhysicalKey.F3); Assert.That(view.Text.Substring(view.SelectionStart, view.SelectionLength), Is.EqualTo("change"));
+            Window find = dialog.OwnedWindows.Single(window => window.Name == "DiffViewerFindDialog");
+            Assert.That(Field<TextBox>(find, "DiffViewerFindQuery").IsFocused, Is.True);
+            Field<TextBox>(find, "DiffViewerFindQuery").Text = "change";
+            Press(find, PhysicalKey.F3); Assert.That(view.Text.Substring(view.SelectionStart, view.SelectionLength), Is.EqualTo("change"));
+            Click(find, "DiffViewerFindCancel");
+            Assert.That(find.IsVisible, Is.False);
+            Assert.That(view.Editor.TextArea.IsKeyboardFocusWithin, Is.True);
             int firstFound = view.SelectionStart; Press(dialog, PhysicalKey.F3); Assert.That(view.SelectionStart, Is.GreaterThan(firstFound));
             Press(dialog, PhysicalKey.F3, RawInputModifiers.Shift); Assert.That(view.SelectionStart, Is.EqualTo(firstFound));
             view.Select(0, 0); Press(dialog, PhysicalKey.ArrowDown, RawInputModifiers.Alt);
@@ -376,7 +386,7 @@ public class RenameCompareDialogTests
             Assert.That(dialog.SelectedFile!.Path, Is.EqualTo("file.txt"));
             Assert.That(view.CaretOffset, Is.EqualTo(lastHunk));
             Press(dialog, PhysicalKey.E, RawInputModifiers.Control); await Idle(dialog);
-            Assert.That(Field<CheckBox>(dialog, "ComparisonEntireFile").IsChecked, Is.True);
+            Assert.That(dialog.ReadDiffOptions().ShowEntireFile, Is.True);
         }
         finally { dialog.Close(); }
     }
@@ -496,6 +506,14 @@ public class RenameCompareDialogTests
 
     private static T Field<T>(Window owner, string name) where T : Control
         => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
+    private static MenuItem DiffMenu(Window owner, string name)
+        => Field<FileHistoryContentView>(owner, "ComparisonDiff").TextView.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == name);
+    private static void ChooseDiffMenu(Window owner, string name)
+    {
+        MenuItem item = DiffMenu(owner, name);
+        Assert.That(item.IsEnabled && item.IsVisible, Is.True, name + " must be available.");
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+    }
     private static void Click(Window owner, string name)
     {
         Button button = Field<Button>(owner, name);

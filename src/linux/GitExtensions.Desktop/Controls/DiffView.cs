@@ -59,6 +59,9 @@ public sealed class DiffView : UserControl, IDisposable
     private DiffViewerPreferences _preferences;
     public DiffViewerAppearanceMenu AppearanceMenu { get; }
     public DiffViewerReadingMenu ReadingMenu { get; }
+    public DiffViewerSearch Search { get; }
+    public DiffViewerComparisonMenu ComparisonMenu { get; }
+    public event EventHandler? ComparisonOptionsChanged;
     public event EventHandler? DisplayOptionsChanged;
     public event EventHandler? FileEncodingChanged;
 
@@ -67,6 +70,8 @@ public sealed class DiffView : UserControl, IDisposable
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
         AppearanceMenu = new(preferencesStore);
+        ComparisonMenu = new(preferencesStore);
+        ComparisonMenu.OptionsChanged += ComparisonChanged;
         _preferences = AppearanceMenu.Preferences;
         AppearanceMenu.Changed += PreferencesChanged;
         AppearanceMenu.Attach(this);
@@ -96,6 +101,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.TextArea.TextView.LineTransformers.Add(new DiffForeground(this));
         _editor.TextArea.SelectionChanged += SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged += SynchronizeSelection;
+        Search = new(this);
         ReadingMenu = new(this);
         ContextMenu = new ContextMenu { ItemsSource = CreateContextMenuItems() };
         _source.PropertyChanged += SourceChanged;
@@ -124,7 +130,7 @@ public sealed class DiffView : UserControl, IDisposable
         {
             string? normalized = value is null ? null : GitFileEncodingCodec.GetEncoding(value).WebName;
             if (_fileEncodingName == normalized) { return; }
-            if (_document is not null) { _documentReady = false; }
+            if (_document is not null) { _documentReady = false; Search.Suspend(); UpdateAppearanceContext(); }
             _fileEncodingName = normalized; ReadingMenu.Refresh();
             FileEncodingChanged?.Invoke(this, EventArgs.Empty);
             if (_document is not null) { DisplayOptionsChanged?.Invoke(this, EventArgs.Empty); }
@@ -139,8 +145,10 @@ public sealed class DiffView : UserControl, IDisposable
         {
             if (value == _documentIdentity) { return; }
             _documentReady = false;
+            Search.Suspend();
             _documentIdentity = value; _readingVersion++;
             _editor.Select(0, 0); SetScrollOffset(default);
+            UpdateAppearanceContext();
             ReadingMenu.Refresh();
         }
     }
@@ -184,7 +192,9 @@ public sealed class DiffView : UserControl, IDisposable
     public void BeginDocumentLoad()
     {
         _documentReady = false;
+        Search.Suspend();
         DocumentLoading?.Invoke(this, EventArgs.Empty);
+        UpdateAppearanceContext();
         ReadingMenu.Refresh();
     }
 
@@ -205,9 +215,9 @@ public sealed class DiffView : UserControl, IDisposable
     public void Select(int start, int length) { _readingVersion++; _editor.Select(start, length); }
     public bool GoToNextChange() => NavigateChange(forward: true);
     public bool GoToPreviousChange() => NavigateChange(forward: false);
-    public bool HandleReadingShortcut(KeyEventArgs args) => ReadingMenu.HandleKeyDown(args);
-    public IReadOnlyList<object> CreateContextMenuItems()
-        => [.. ReadingMenu.CreateContextMenuItems(), new Separator(), .. AppearanceMenu.CreateContextMenuItems()];
+    public bool HandleReadingShortcut(KeyEventArgs args) => ComparisonMenu.HandleKeyDown(args) || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args);
+    public IReadOnlyList<object> CreateContextMenuItems(string? comparisonPrefix = null)
+        => [.. ComparisonMenu.CreateContextMenuItems(comparisonPrefix), new Separator(), .. ReadingMenu.CreateContextMenuItems(), new Separator(), .. AppearanceMenu.CreateContextMenuItems()];
 
     public bool GoToFileLine(int line, bool oldVersion = false)
     {
@@ -229,6 +239,8 @@ public sealed class DiffView : UserControl, IDisposable
     }
 
     internal TextEditor Editor => _editor;
+    internal bool IsDocumentReady => _documentReady;
+    internal bool IsUpdatingText => _updatingText;
     internal (int? Old, int? New) GetLineNumbers(int lineNumber)
     {
         DiffLine line = _lines[lineNumber - 1];
@@ -250,6 +262,10 @@ public sealed class DiffView : UserControl, IDisposable
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == ContextMenuProperty && ContextMenu is { } menu)
+        {
+            DiffViewerPopupLayout.Configure(menu);
+        }
         if (change.Property == ModeProperty)
         {
             if (Mode == DiffViewMode.PlainText) { _document = null; UpdateText(); }
@@ -309,6 +325,7 @@ public sealed class DiffView : UserControl, IDisposable
         }
         finally { _updatingText = false; }
         SynchronizeSelection(this, EventArgs.Empty);
+        Search.DocumentUpdated(colored.Text != position.Text);
         ReadingMenu.Refresh();
     }
 
@@ -608,8 +625,11 @@ public sealed class DiffView : UserControl, IDisposable
     private void ThemeChanged(object? sender, EventArgs args)
     {
         ApplyPalette();
+        Search.ThemeChanged();
         UpdateText();
     }
+
+    private void ComparisonChanged(object? sender, EventArgs args) => ComparisonOptionsChanged?.Invoke(this, EventArgs.Empty);
 
     private void PreferencesChanged(object? sender, EventArgs args)
     {
@@ -626,6 +646,9 @@ public sealed class DiffView : UserControl, IDisposable
         AppearanceMenu.SetContext(Mode != DiffViewMode.PlainText
             && EffectiveMode is not (DiffViewMode.Combined or DiffViewMode.RangeDiff)
             && (_isPatch || _document?.EffectiveAppearance == GitDiffAppearance.Difftastic), _difftasticAvailable);
+        bool comparisons = Mode != DiffViewMode.PlainText && (_isPatch || _document is not null);
+        ComparisonMenu.SetContext(comparisons, comparisons && EffectiveMode != DiffViewMode.Difftastic,
+            supportsEolWhitespace: comparisons, isBusy: !_documentReady);
         ReadingMenu?.Refresh();
     }
 
@@ -670,6 +693,9 @@ public sealed class DiffView : UserControl, IDisposable
         ActualThemeVariantChanged -= ThemeChanged;
         AppearanceMenu.Changed -= PreferencesChanged;
         AppearanceMenu.Dispose();
+        ComparisonMenu.OptionsChanged -= ComparisonChanged;
+        ComparisonMenu.Dispose();
+        Search.Dispose();
         ReadingMenu.Dispose();
         _editor.TextArea.SelectionChanged -= SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged -= SynchronizeSelection;
@@ -703,6 +729,12 @@ public sealed class DiffView : UserControl, IDisposable
                 {
                     ChangeLinePart(start, end, element => element.TextRunProperties.SetForegroundBrush(DiffViewerColors.Brush(color)));
                 }
+            }
+            foreach (DiffViewerSearchMarker marker in owner.Search.Markers(line.Offset, line.EndOffset))
+            {
+                if (marker.Kind == DiffViewerSearchMarkerKind.Region) { continue; }
+                int start = Math.Max(line.Offset, marker.Offset), end = Math.Min(line.EndOffset, marker.Offset + marker.Length);
+                if (start < end) { ChangeLinePart(start, end, element => element.TextRunProperties.SetForegroundBrush(DiffViewerColors.Brush(owner.Search.Foreground(marker.Kind)))); }
             }
         }
     }
@@ -740,6 +772,13 @@ public sealed class DiffView : UserControl, IDisposable
                     foreach (Rect rectangle in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
                     { drawingContext.DrawRectangle(DiffViewerColors.Brush(color), null, rectangle); }
                 }
+            }
+            foreach (DiffViewerSearchMarker marker in owner.Search.Markers(textView.VisualLines.Count == 0 ? 0 : textView.VisualLines.First().StartOffset,
+                textView.VisualLines.Count == 0 ? 0 : textView.VisualLines.Last().LastDocumentLine.EndOffset))
+            {
+                TextSegment segment = new() { StartOffset = marker.Offset, Length = marker.Length };
+                foreach (Rect rectangle in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
+                { drawingContext.DrawRectangle(DiffViewerColors.Brush(owner.Search.Background(marker.Kind)), null, rectangle); }
             }
             if (owner.RightColumnStart > 0)
             {

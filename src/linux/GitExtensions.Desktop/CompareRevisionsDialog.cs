@@ -19,12 +19,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
     private readonly ComparisonRevisionSelector _base;
     private readonly ComparisonRevisionSelector _compare;
     private readonly CheckBox _mergeBase = new() { Name = "CompareToMergeBase" };
-    private readonly ComboBox _whitespace = ReferenceDialogControls.Choice("ComparisonWhitespace");
-    private readonly NumericUpDown _context = new() { Name = "ComparisonContextLines", Minimum = 0, Maximum = 100000, Value = 3, Width = 100, Height = 24, MinHeight = 24, Padding = new Thickness(2), FormatString = "0" };
-    private readonly CheckBox _entire = new() { Name = "ComparisonEntireFile" };
-    private readonly CheckBox _asText = new() { Name = "ComparisonTreatAsText" };
     private readonly TextBox _filter = ReferenceDialogControls.Text("ComparisonFileFilter");
-    private readonly TextBox _find = ReferenceDialogControls.Text("ComparisonFind");
     private readonly TextBlock _fileCaption = new() { Name = "ComparisonSelectedPath", TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly ListBox _files = new() { Name = "ComparisonFiles" };
     private readonly TabControl _tabs = new() { Name = "ComparisonTabs" };
@@ -64,18 +59,11 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         revisions.Children.Add(_base); swap.Margin = new Thickness(6, 14, 6, 0); Grid.SetColumn(swap, 1); revisions.Children.Add(swap); Grid.SetColumn(_compare, 2); revisions.Children.Add(_compare);
         DockPanel.SetDock(revisions, Dock.Top); Root.Children.Add(revisions);
         _mergeBase.Content = T("Compare to merge base");
-        _entire.Content = T("Show entire file"); _asText.Content = T("Treat all files as text");
-        ReferenceDialogControls.Compact(_mergeBase, _entire, _asText);
-        _whitespace.Width = 190;
-        _whitespace.ItemsSource = new[] { T("Do not ignore whitespace"), T("Ignore whitespace at EOL"), T("Ignore whitespace changes"), T("Ignore all whitespace") };
-        _whitespace.SelectedIndex = 0;
+        ReferenceDialogControls.Compact(_mergeBase);
         _directoryTool = Action("ComparisonDirectoryTool", "Open diff using directory diff tool", () => OpenToolAsync(true));
         Button load = Action("CompareRevisions", "Compare", InitializeAsync); load.IsDefault = true;
         StackPanel compareOptions = new() { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new Thickness(9, 0, 9, 4), Children = { _mergeBase, _directoryTool, load } };
         DockPanel.SetDock(compareOptions, Dock.Top); Root.Children.Add(compareOptions);
-        StackPanel diffOptions = new() { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new Thickness(9, 0, 9, 4), Children =
-        { _whitespace, new TextBlock { Text = T("Context lines"), VerticalAlignment = VerticalAlignment.Center }, _context, _entire, _asText } };
-        DockPanel.SetDock(diffOptions, Dock.Top); Root.Children.Add(diffOptions);
         _fileTool = Action("ComparisonFileTool", "Open with diff tool", () => OpenToolAsync(false));
         _saveBase = Action("ComparisonSaveBase", "Save BASE as…", () => SaveAsAsync(true));
         _saveCompare = Action("ComparisonSaveCompare", "Save Compare as…", () => SaveAsAsync(false));
@@ -94,33 +82,36 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
             new TabItem { Name = "ComparisonCompareTab", Header = T("Compare"), Content = _compareView }
         };
         _tabs.SelectedIndex = 0;
-        _find.Width = 180; _find.Watermark = T("Find");
         DockPanel viewer = new();
-        StackPanel search = new() { Orientation = Orientation.Horizontal, Spacing = 4, Margin = new Thickness(4, 2), Children =
-        { IconAction("ComparisonPreviousChange", "ArrowUp.png", "Previous change (Alt+Up)", () => MoveChangeAsync(false)),
-          IconAction("ComparisonNextChange", "ArrowDown.png", "Next change (Alt+Down)", () => MoveChangeAsync(true)), _find,
-          Action("ComparisonFindPrevious", "Previous", () => { Find(false); return Task.CompletedTask; }), Action("ComparisonFindNext", "Next", () => { Find(true); return Task.CompletedTask; }) } };
-        DockPanel.SetDock(search, Dock.Top); viewer.Children.Add(search);
+        _diff.Toolbar.Children.Insert(0, IconAction("ComparisonPreviousChange", "ArrowUp.png", "Previous change (Alt+Up)", () => MoveChangeAsync(false)));
+        _diff.Toolbar.Children.Insert(1, IconAction("ComparisonNextChange", "ArrowDown.png", "Next change (Alt+Down)", () => MoveChangeAsync(true)));
+        _diff.Toolbar.Children.Insert(2, _diff.TextView.ComparisonMenu.CreateIncreaseContextButton("ComparisonIncreaseContext"));
+        _diff.Toolbar.Children.Insert(3, _diff.TextView.ComparisonMenu.CreateDecreaseContextButton("ComparisonDecreaseContext"));
+        _diff.Toolbar.Children.Insert(4, _diff.TextView.ComparisonMenu.CreateWholeFileButton("ComparisonEntireFile"));
+        MenuItem asText = new() { Name = "ComparisonTreatAsText", Header = T("Treat all files as text"), ToggleType = MenuItemToggleType.CheckBox };
+        asText.Click += (_, _) => _diff.TextView.ComparisonMenu.SetOptions(ReadDiffOptions() with { TreatAllFilesAsText = asText.IsChecked });
+        _diff.TextView.ContextMenu = new ContextMenu { ItemsSource = new object[] { asText }.Concat(_diff.TextView.CreateContextMenuItems("Comparison")).ToArray() };
+        _diff.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
+        {
+            asText.IsChecked = ReadDiffOptions().TreatAllFilesAsText;
+            if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(LoadSelectionAsync); }
+        };
+        _diff.TextView.Search.OpenDiffToolRequested = () => OpenToolAsync(false);
         _fileCaption.Margin = new Thickness(5, 2); DockPanel.SetDock(_fileCaption, Dock.Top); viewer.Children.Add(_fileCaption); viewer.Children.Add(_tabs);
         Grid body = new() { ColumnDefinitions = new ColumnDefinitions("300,4,*"), Margin = new Thickness(6, 0, 6, 4) };
         body.Children.Add(ClassicChrome.Border(files, new Thickness(1)));
         GridSplitter splitter = new() { Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch }; Grid.SetColumn(splitter, 1); body.Children.Add(splitter);
         Grid.SetColumn(viewer, 2); body.Children.Add(viewer); Root.Children.Add(body);
-        Track(_base, _compare, _mergeBase, _whitespace, _context, _entire, _asText, _filter, _find, _files, _tabs);
+        Track(_base, _compare, _mergeBase, _filter, _files, _tabs);
         _base.Edited += (_, _) => InputsEdited(); _compare.Edited += (_, _) => InputsEdited();
         _base.BranchButton.Click += async (_, _) => await ChooseBranchAsync(_base);
         _compare.BranchButton.Click += async (_, _) => await ChooseBranchAsync(_compare);
         _base.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_base);
         _compare.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_compare);
         _mergeBase.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await InitializeAsync(); } };
-        _whitespace.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
-        _context.ValueChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
-        _entire.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
-        _asText.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _files.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _filter.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty && !_loading) { ApplyFileFilter(); } };
-        _find.KeyDown += (_, args) => { if (args.Key == Key.Enter) { args.Handled = true; Find(args.KeyModifiers != KeyModifiers.Shift); } };
         AddHandler(KeyDownEvent, async (_, args) => await HandleKeyAsync(args), RoutingStrategies.Tunnel);
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
         {
@@ -189,7 +180,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         else if (_tabs.SelectedIndex == 1) { _baseView.ShowFile(file.OriginalPath ?? file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Base, file.OriginalPath ?? file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
         else { _compareView.ShowFile(file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Compare, file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
     }
-    public GitComparisonDiffOptions ReadDiffOptions() => new((IgnoreWhitespaceKind)Math.Max(0, _whitespace.SelectedIndex), (int)(_context.Value ?? 3), _entire.IsChecked == true, _asText.IsChecked == true);
+    public GitComparisonDiffOptions ReadDiffOptions() => _diff.TextView.ComparisonMenu.Options;
 
     private void InputsEdited()
     {
@@ -243,17 +234,6 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
     }
 
     private FileHistoryContentView ActiveView => _tabs.SelectedIndex == 1 ? _baseView : _tabs.SelectedIndex == 2 ? _compareView : _diff;
-    private void Find(bool forward)
-    {
-        DiffView view = ActiveView.TextView;
-        string query = _find.Text ?? "";
-        if (query.Length == 0 || ActiveView.IsImage) { return; }
-        int start = forward ? Math.Min(view.Text.Length, view.SelectionStart + view.SelectionLength) : Math.Max(0, view.SelectionStart - 1);
-        int found = forward ? view.Text.IndexOf(query, start, StringComparison.OrdinalIgnoreCase) : view.Text.LastIndexOf(query, start, StringComparison.OrdinalIgnoreCase);
-        if (found < 0) { found = forward ? view.Text.IndexOf(query, StringComparison.OrdinalIgnoreCase) : view.Text.LastIndexOf(query, StringComparison.OrdinalIgnoreCase); }
-        if (found < 0) { Status.Text = T("Text not found"); return; }
-        view.Select(found, query.Length); view.Editor.ScrollToLine(view.Editor.Document.GetLineByOffset(found).LineNumber);
-    }
     private async Task MoveChangeAsync(bool forward)
     {
         if (_tabs.SelectedIndex != 0 || _comparison is null || SelectedFile is null) { return; }
@@ -278,12 +258,9 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
     private async Task HandleKeyAsync(KeyEventArgs args)
     {
         if (args.Handled || IsBusy) { return; }
-        if (ActiveView.TextView.HandleReadingShortcut(args) || ActiveView.TextView.AppearanceMenu.HandleKeyDown(args)) { return; }
-        if (args.Key == Key.F && args.KeyModifiers == KeyModifiers.Control) { _find.Focus(); _find.SelectAll(); args.Handled = true; }
-        else if (args.Key == Key.F3) { Find(args.KeyModifiers != KeyModifiers.Shift); args.Handled = true; }
-        else if (args.Key is Key.Up or Key.Down && args.KeyModifiers == KeyModifiers.Alt) { await MoveChangeAsync(args.Key == Key.Down); args.Handled = true; }
-        else if (args.Key == Key.E && args.KeyModifiers == KeyModifiers.Control) { _entire.IsChecked = _entire.IsChecked != true; args.Handled = true; }
-        else if (args.Key == Key.W && args.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift)) { _whitespace.SelectedIndex = _whitespace.SelectedIndex == 3 ? 0 : 3; args.Handled = true; }
+        if (ActiveView.TextView.HandleReadingShortcut(args)
+            || ActiveView.TextView.AppearanceMenu.HandleKeyDown(args)) { return; }
+        if (args.Key is Key.Up or Key.Down && args.KeyModifiers == KeyModifiers.Alt) { await MoveChangeAsync(args.Key == Key.Down); args.Handled = true; }
     }
     protected override void UpdateActions()
     {
@@ -292,7 +269,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _fileTool.IsEnabled = !IsBusy && !_bare && SelectedFile is not null && _comparison is not null && !(_comparison.UntrackedPaths.Contains(SelectedFile.Path, StringComparer.Ordinal));
         _saveBase.IsEnabled = !IsBusy && _comparison is not null && SelectedFile is { Status: not 'A' };
         _saveCompare.IsEnabled = !IsBusy && _comparison is not null && SelectedFile is { IsDeleted: false };
-        _context.IsEnabled = !IsBusy && _entire.IsChecked != true;
+        _diff.TextView.ComparisonMenu.SetHostBusy(IsBusy);
     }
     private Control FileRow(GitRevisionFile? file)
     {

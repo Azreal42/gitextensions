@@ -225,7 +225,7 @@ public sealed partial class MainWindow : Window
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", () => RunAsync("Prune worktrees", r => r.PruneWorktreesAsync(cancellationToken: Token))))) },
             new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Initialize / update", UpdateSubmodulesAndBuildAsync), Button("Sync URLs", () => RunAsync("Sync submodules", r => r.SyncSubmodulesAsync(cancellationToken: Token))), Button("Open", OpenSubmoduleAsync))) },
             new TabItem { Header = "Files", Content = Split(Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), Button("Search…", SearchAsync))), BuildFileContent()) },
-            new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync))) },
+            new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync), Button(_translations.Translate("DiffViewerSettingsPage", "$this", "Text", "Diff viewer") + "…", DiffViewerSettingsAsync))) },
             new TabItem { Header = "Repository", Content = BuildRepositoryTools() }
         ];
     }
@@ -239,16 +239,22 @@ public sealed partial class MainWindow : Window
     private Control BuildChangesDiff()
     {
         _changesDiffView = new DiffView(_changesDiff) { Name = "WorktreeDiff" };
+        _workingViewerOptions = _changesDiffView.ComparisonMenu.Options;
+        _changesDiffView.ComparisonMenu.OptionsChanged += async (_, _) =>
+        {
+            _workingViewerOptions = _changesDiffView.ComparisonMenu.Options;
+            await LoadSelectedDiffAsync();
+        };
         _changesDiffView.DisplayOptionsChanged += RequestDiffAppearanceReload;
         _hunks.ItemTemplate = TextTemplate<GitPatchHunk>(hunk => hunk.Header);
         _stagedDiff.IsCheckedChanged += async (_, _) => await LoadSelectedDiffAsync();
         _changesContent = new FileContentView(_changesDiff, _changesDiffView);
-        _workingWholeFile = new MenuItem { Name = "WorktreeDiffEntireFileMenu", Header = T("Show entire file"), ToggleType = MenuItemToggleType.CheckBox,
-            InputGesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.E, Avalonia.Input.KeyModifiers.Control), Icon = OriginalIconImage("ShowEntireFile.png") };
-        _workingWholeFile.Click += async (_, _) => await ToggleWorkingWholeFileAsync();
-        _changesDiffView.ContextMenu = new ContextMenu { ItemsSource = new object[] { _workingWholeFile }.Concat(_changesDiffView.CreateContextMenuItems()).ToArray() };
+        object[] menus = _changesDiffView.CreateContextMenuItems("WorktreeDiff").ToArray();
+        _changesDiffView.ContextMenu = new ContextMenu { ItemsSource = menus };
         DockPanel panel = Panel(_changesContent, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync),
-            RevisionDiffIconButton("WorktreeDiffEntireFile", "Show entire file", "ShowEntireFile.png", ToggleWorkingWholeFileAsync), _changesDiffView.ReadingMenu.CreateEncodingSelector()),
+            _changesDiffView.ComparisonMenu.CreateIncreaseContextButton("WorktreeDiffIncreaseContext"),
+            _changesDiffView.ComparisonMenu.CreateDecreaseContextButton("WorktreeDiffDecreaseContext"),
+            _changesDiffView.ComparisonMenu.CreateWholeFileButton("WorktreeDiffEntireFile"), _changesDiffView.ReadingMenu.CreateEncodingSelector()),
             Row(_stageLinesButton = Button("Stage selected lines", () => ApplyLinesAsync(false)), _unstageLinesButton = Button("Unstage selected lines", () => ApplyLinesAsync(true))),
             Row(_stageHunksButton = Button("Stage selected hunks", () => ApplyHunksAsync(false)), _unstageHunksButton = Button("Unstage selected hunks", () => ApplyHunksAsync(true))), _hunks);
         return panel;

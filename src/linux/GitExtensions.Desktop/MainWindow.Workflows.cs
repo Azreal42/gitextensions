@@ -419,6 +419,19 @@ public sealed partial class MainWindow
         if (values is not null) { await RunAsync("Configuration", r => r.SetConfigAsync(values[0], values[1], scope, Token)); }
     }
 
+    private async Task DiffViewerSettingsAsync()
+        => await NativeDiffViewerSettingsDialog.ShowAsync(WorkflowOwner);
+
+    private Task SaveCurrentViewSettingsAsync()
+    {
+        if (!new DiffViewerPreferencesStore().SaveCurrentViewSettingsAsDefault())
+        {
+            string message = T("Unable to save settings.");
+            AppendOutput(message); _state.Text = message;
+        }
+        return Task.CompletedTask;
+    }
+
     private async Task UnsetConfigurationAsync()
     {
         string[]? values = await Dialogs.PromptAsync(this, "Unset local setting", ("Key", (_configuration.SelectedItem as string)?.Split(" = ")[0] ?? ""));

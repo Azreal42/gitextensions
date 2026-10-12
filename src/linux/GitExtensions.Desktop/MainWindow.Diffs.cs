@@ -19,9 +19,7 @@ public sealed partial class MainWindow
     private RevisionDiffPreferences _revisionDiffPreferences = new();
     private IReadOnlyList<GitRevisionDiffGroup> _revisionDiffGroups = [];
     private GitComparisonDiffOptions _revisionViewerOptions = new();
-    private MenuItem? _revisionWholeFile;
     private MenuItem? _revisionTreatAsText;
-    private MenuItem[] _revisionWhitespaceOptions = [];
     private FileContentView? _commitContent;
     private FileContentView? _changesContent;
     private FileContentView? _fileContent;
@@ -29,22 +27,20 @@ public sealed partial class MainWindow
     private bool _pendingDiffAppearance;
     private Button? _stageLinesButton, _unstageLinesButton, _stageHunksButton, _unstageHunksButton;
     private GitComparisonDiffOptions _workingViewerOptions = new();
-    private MenuItem? _workingWholeFile;
-
-    private async Task ToggleWorkingWholeFileAsync()
-    {
-        if (_busy || SelectedWorkingChange is not { IsUntracked: false }) { return; }
-        _workingViewerOptions = _workingViewerOptions with { ShowEntireFile = !_workingViewerOptions.ShowEntireFile };
-        if (_workingWholeFile is not null) { _workingWholeFile.IsChecked = _workingViewerOptions.ShowEntireFile; }
-        await LoadSelectedDiffAsync();
-    }
 
     private void UpdatePartialStageActions()
     {
         bool available = !_busy && _repository is { IsBare: false } && _changesDiffView?.CanStagePatch == true
             && _selectedPatch?.Hunks.Count is > 0;
         bool staged = _stagedDiff.IsChecked == true;
-        if (_workingWholeFile is not null) { _workingWholeFile.IsEnabled = !_busy && SelectedWorkingChange is { IsUntracked: false }; }
+        if (_changesDiffView is not null)
+        {
+            _changesDiffView.ComparisonMenu.SetHostBusy(_busy);
+        }
+        if (_commitContent is not null)
+        {
+            _commitContent.TextView.ComparisonMenu.SetHostBusy(_busy);
+        }
         if (_stageLinesButton is not null) { _stageLinesButton.IsEnabled = available && !staged; }
         if (_unstageLinesButton is not null) { _unstageLinesButton.IsEnabled = available && staged; }
         if (_stageHunksButton is not null) { _stageHunksButton.IsEnabled = available && !staged; }
@@ -77,6 +73,9 @@ public sealed partial class MainWindow
     {
         _revisionDiffPreferences = _revisionDiffPreferencesStore.Load();
         _commitContent = new FileContentView(_diff, new DiffView(_diff) { Name = "CommitDiff" });
+        _revisionViewerOptions = _commitContent.TextView.ComparisonMenu.Options;
+        _commitContent.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
+            await ChangeRevisionViewerOptionsAsync(_commitContent.TextView.ComparisonMenu.Options);
         _commitContent.TextView.DisplayOptionsChanged += RequestDiffAppearanceReload;
         _revisionFiles.Styles.Add(new Style(selector => selector.OfType<TreeViewItem>())
         {
@@ -153,29 +152,15 @@ public sealed partial class MainWindow
         StackPanel toolbar = new() { Name = "RevisionViewerToolbar", Orientation = Orientation.Horizontal, Height = 24 };
         toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffNextChange", "Next change", "ArrowDown.png", () => { _commitContent?.TextView.GoToNextChange(); return Task.CompletedTask; }));
         toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffPreviousChange", "Previous change", "ArrowUp.png", () => { _commitContent?.TextView.GoToPreviousChange(); return Task.CompletedTask; }));
-        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffIncreaseContext", "Increase the number of lines of context", "NumberOfLinesIncrease.png",
-            () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ContextLines = Math.Min(100000, _revisionViewerOptions.ContextLines + 1), ShowEntireFile = false })));
-        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffDecreaseContext", "Decrease the number of lines of context", "NumberOfLinesDecrease.png",
-            () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ContextLines = Math.Max(0, _revisionViewerOptions.ContextLines - 1), ShowEntireFile = false })));
-        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffEntireFile", "Show entire file", "ShowEntireFile.png",
-            () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = !_revisionViewerOptions.ShowEntireFile })));
+        DiffViewerComparisonMenu options = _commitContent!.TextView.ComparisonMenu;
+        toolbar.Children.Add(options.CreateIncreaseContextButton("RevisionDiffIncreaseContext"));
+        toolbar.Children.Add(options.CreateDecreaseContextButton("RevisionDiffDecreaseContext"));
+        toolbar.Children.Add(options.CreateWholeFileButton("RevisionDiffEntireFile"));
         toolbar.Children.Add(_commitContent!.TextView.ReadingMenu.CreateEncodingSelector());
-        _revisionWholeFile = new MenuItem { Name = "RevisionDiffEntireFileMenu", Header = T("Show entire file"), ToggleType = MenuItemToggleType.CheckBox,
-            InputGesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.E, Avalonia.Input.KeyModifiers.Control), Icon = OriginalIconImage("ShowEntireFile.png") };
-        _revisionWholeFile.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = _revisionWholeFile.IsChecked });
+        object[] viewerMenus = _commitContent.TextView.CreateContextMenuItems("RevisionDiff").ToArray();
         _revisionTreatAsText = new MenuItem { Name = "RevisionDiffTreatAsText", Header = T("Treat all files as text"), ToggleType = MenuItemToggleType.CheckBox };
-        _revisionTreatAsText.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { TreatAllFilesAsText = _revisionTreatAsText.IsChecked });
-        string[] whitespaceLabels = ["Do not ignore whitespace", "Ignore whitespace changes at end of line", "Ignore changes in amount of whitespace", "Ignore all whitespace changes"];
-        IgnoreWhitespaceKind[] values = [IgnoreWhitespaceKind.None, IgnoreWhitespaceKind.Eol, IgnoreWhitespaceKind.Change, IgnoreWhitespaceKind.AllSpace];
-        _revisionWhitespaceOptions = values.Select((value, index) =>
-        {
-            MenuItem item = new() { Name = "RevisionDiffWhitespace_" + value, Header = T(whitespaceLabels[index]), ToggleType = MenuItemToggleType.Radio,
-                GroupName = "RevisionDiffWhitespace", IsChecked = value == _revisionViewerOptions.IgnoreWhitespace };
-            item.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { IgnoreWhitespace = value });
-            return item;
-        }).ToArray();
-        _commitContent!.TextView.ContextMenu = new ContextMenu { ItemsSource = new object[] { _revisionWholeFile, _revisionTreatAsText }
-            .Concat(_revisionWhitespaceOptions).Concat(_commitContent.TextView.CreateContextMenuItems()).ToArray() };
+        _revisionTreatAsText.Click += (_, _) => options.SetOptions(options.Options with { TreatAllFilesAsText = _revisionTreatAsText.IsChecked });
+        _commitContent.TextView.ContextMenu = new ContextMenu { ItemsSource = new object[] { _revisionTreatAsText }.Concat(viewerMenus).ToArray() };
         return ClassicChrome.Border(toolbar, new Thickness(0, 0, 0, 1));
     }
 
@@ -183,9 +168,7 @@ public sealed partial class MainWindow
     {
         if (_busy) { return; }
         _revisionViewerOptions = options;
-        if (_revisionWholeFile is not null) { _revisionWholeFile.IsChecked = options.ShowEntireFile; }
         if (_revisionTreatAsText is not null) { _revisionTreatAsText.IsChecked = options.TreatAllFilesAsText; }
-        foreach (MenuItem item in _revisionWhitespaceOptions) { item.IsChecked = item.Name == "RevisionDiffWhitespace_" + options.IgnoreWhitespace; }
         if (_revisionFiles.SelectedItem is TreeViewItem selected)
         {
             await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, selected), refresh: false);

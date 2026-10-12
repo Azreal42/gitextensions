@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
@@ -9,6 +10,7 @@ using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
+using GitCommands.Settings;
 using NUnit.Framework;
 
 namespace GitExtensions.Desktop.Tests;
@@ -119,7 +121,7 @@ public class ViewerHostReadingTests
         await Until(() => !dialog.IsBusy && view.Text.Contains(" line 001\n", StringComparison.Ordinal));
         Assert.Multiple(() =>
         {
-            Assert.That(Find<CheckBox>(dialog, "ComparisonEntireFile").IsChecked, Is.True);
+            Assert.That(dialog.ReadDiffOptions().ShowEntireFile, Is.True);
             Assert.That(view.CurrentFileLine, Is.EqualTo(180));
             Assert.That(Selected(view), Is.EqualTo(HighChange));
             Assert.That(view.DocumentIdentity, Is.EqualTo(identity));
@@ -240,6 +242,107 @@ public class ViewerHostReadingTests
         Assert.That(view.CanStagePatch, Is.False);
         Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
         Assert.That((await fixture.Repository.GetStatusAsync()).Changes.Single(change => change.Path == path).IsUntracked, Is.True);
+    }
+
+    [AvaloniaTest]
+    public async Task BrowseCommitAndCompareKeepLocalOptionsAndGridSavesTheLatestSharedSession()
+    {
+        string initial = HighLines(), changed = initial.Replace("line 180\n", HighChange + "\n", StringComparison.Ordinal);
+        await using Fixture fixture = await Fixture.CreateAsync(initial, changed);
+        MainWindow main = await fixture.MainAsync();
+        DiffView browse = await SelectRevisionFile(main, LiteralPath);
+        CommitDialog commit = fixture.Track(new CommitDialog(fixture.Repository));
+        commit.Show(); await commit.InitializeAsync();
+        FileStatusTestHelpers.Select(Find<TreeView>(commit, "Unstaged"), LiteralPath);
+        DiffView worktree = Find<DiffView>(commit, "SelectedDiff");
+        await Until(() => !commit.IsBusy && worktree.Text.Contains(HighChange, StringComparison.Ordinal));
+        byte[] index = await fixture.IndexAsync(LiteralPath);
+        Assert.That(browse.ComparisonMenu.SelectWhitespace(IgnoreWhitespaceKind.Change), Is.True);
+        await Until(() => !main.IsBusy);
+        Assert.That(worktree.ComparisonMenu.Options.IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.None), "Already-open readers retain their comparison options.");
+        Assert.That(browse.ComparisonMenu.ToggleWholeFile(), Is.True); await Until(() => !main.IsBusy);
+        Assert.That(worktree.ComparisonMenu.Options.ShowEntireFile, Is.False);
+        Assert.That(worktree.ComparisonMenu.IncreaseContext(), Is.True); await Until(() => !commit.IsBusy);
+        Assert.That(worktree.ComparisonMenu.Options.ContextLines, Is.EqualTo(4));
+        Assert.That(browse.ComparisonMenu.Options.ContextLines, Is.EqualTo(3));
+
+        CompareRevisionsDialog compare = fixture.Track(new CompareRevisionsDialog(fixture.Repository,
+            new GitCompareRevision("HEAD"), new GitCompareRevision("", GitCompareRevisionKind.WorkingTree)));
+        compare.Show(); await compare.InitializeAsync();
+        Find<ListBox>(compare, "ComparisonFiles").SelectedItem = compare.Comparison!.Files.Single(file => file.Path == LiteralPath);
+        DiffView next = Find<FileHistoryContentView>(compare, "ComparisonDiff").TextView;
+        await Until(() => !compare.IsBusy && next.Text.Contains(HighChange, StringComparison.Ordinal));
+        Assert.That(next.ComparisonMenu.Options, Is.EqualTo(new GitComparisonDiffOptions(IgnoreWhitespaceKind.Change)), "Remember whitespace is enabled by default; whole-file and context are reset for a new reader.");
+        Assert.That(next.ComparisonMenu.SelectWhitespace(IgnoreWhitespaceKind.Eol), Is.True); await Until(() => !compare.IsBusy);
+        MenuItem save = Find<ListBox>(main, "RevisionHistory").ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "SaveCurrentViewSettingsAsDefault");
+        save.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        DiffViewerPreferencesStore store = new();
+        using JsonDocument defaults = JsonDocument.Parse(await File.ReadAllTextAsync(store.FilePath));
+        Assert.That(defaults.RootElement.GetProperty("IgnoreWhitespace").GetInt32(), Is.EqualTo((int)IgnoreWhitespaceKind.Eol), "The old Browse reader saves the latest shared session, not its old local Change choice.");
+        Assert.That(browse.ComparisonMenu.Options.IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.Change));
+        Assert.That(worktree.ComparisonMenu.Options.IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.None));
+        Assert.That(await fixture.IndexAsync(LiteralPath), Is.EqualTo(index));
+        await fixture.AssertNeighborAndWorktreeAsync();
+        Assert.That(main.LastException ?? compare.LastException, Is.Null);
+        Assert.That(commit.LastError, Is.Null);
+    }
+
+    [AvaloniaTest]
+    public async Task CommitFocusedFindOpensTheOriginalModelessDialogBeforeTheSelectionFilter()
+    {
+        string initial = HighLines(), changed = initial.Replace("line 180\n", HighChange + "\n", StringComparison.Ordinal);
+        await using Fixture fixture = await Fixture.CreateAsync(initial, changed);
+        CommitDialog commit = fixture.Track(new CommitDialog(fixture.Repository));
+        commit.Show(); await commit.InitializeAsync();
+        FileStatusTestHelpers.Select(Find<TreeView>(commit, "Unstaged"), LiteralPath);
+        DiffView view = Find<DiffView>(commit, "SelectedDiff");
+        await Until(() => !commit.IsBusy && view.Text.Contains(HighChange, StringComparison.Ordinal));
+        byte[] index = await fixture.IndexAsync(LiteralPath);
+        SelectToken(view, HighChange); view.Editor.TextArea.Focus();
+        Press(commit, PhysicalKey.F, RawInputModifiers.Control);
+        await Until(() => commit.OwnedWindows.Any(window => window.Name == "DiffViewerFindDialog"));
+        Window find = commit.OwnedWindows.Single(window => window.Name == "DiffViewerFindDialog");
+        Assert.That(find.Owner, Is.SameAs(commit));
+        Assert.That(Find<TextBox>(find, "DiffViewerFindQuery").Text, Is.EqualTo(HighChange));
+        Assert.That(Find<TextBox>(find, "DiffViewerFindQuery").IsFocused, Is.True);
+        Assert.That(Find<ComboBox>(commit, "SelectionFilter").IsKeyboardFocusWithin, Is.False);
+        Click(find, "DiffViewerFindNext");
+        Assert.That(Selected(view), Is.EqualTo(HighChange));
+        Click(find, "DiffViewerFindCancel");
+        Assert.That(view.Editor.TextArea.IsKeyboardFocusWithin, Is.True);
+        Press(commit, PhysicalKey.F, RawInputModifiers.Control);
+        Assert.That(commit.OwnedWindows.Single(window => window.Name == "DiffViewerFindDialog"), Is.SameAs(find), "Each reader reuses its modeless Find dialog.");
+        Click(find, "DiffViewerFindCancel");
+        Assert.That(await fixture.IndexAsync(LiteralPath), Is.EqualTo(index));
+        await fixture.AssertNeighborAndWorktreeAsync();
+        Assert.That(commit.LastError, Is.Null);
+    }
+
+    [AvaloniaTest]
+    public async Task FileHistoryOptionsReloadTheRealDiffAndFindKeepsItsReadingIdentity()
+    {
+        string initial = HighLines(), changed = initial.Replace("line 180\n", HighChange + "\n", StringComparison.Ordinal);
+        await using Fixture fixture = await Fixture.CreateAsync(initial, changed, commitChanges: true);
+        FileHistoryDialog history = fixture.Track(new FileHistoryDialog(fixture.Repository, LiteralPath));
+        history.Show(); await history.InitializeAsync();
+        Find<TabControl>(history, "FileHistoryTabs").SelectedIndex = 1;
+        DiffView view = Find<FileHistoryContentView>(history, "FileHistoryDiff").TextView;
+        await Until(() => !history.IsBusy && view.Text.Contains(HighChange, StringComparison.Ordinal));
+        string identity = view.DocumentIdentity!;
+        SelectToken(view, HighChange);
+        Click(history, "FileHistoryDiffEntireFile");
+        await Until(() => !history.IsBusy && view.Text.Contains(" line 001\n", StringComparison.Ordinal));
+        Assert.That(view.DocumentIdentity, Is.EqualTo(identity));
+        Assert.That(Selected(view), Is.EqualTo(HighChange));
+        Assert.That(view.ComparisonMenu.Options.ContextLines, Is.EqualTo(3));
+        Assert.That(Find<Button>(history, "FileHistoryDiffIncreaseContext").IsEnabled, Is.False);
+        view.Editor.TextArea.Focus(); Press(history, PhysicalKey.F, RawInputModifiers.Control);
+        await Until(() => history.OwnedWindows.Any(window => window.Name == "DiffViewerFindDialog"));
+        Window find = history.OwnedWindows.Single(window => window.Name == "DiffViewerFindDialog");
+        Assert.That(Find<TextBox>(find, "DiffViewerFindQuery").Text, Is.EqualTo(HighChange));
+        Click(find, "DiffViewerFindCancel");
+        Assert.That(history.LastException, Is.Null);
+        Assert.That((await fixture.Repository.GetStatusAsync()).Changes, Is.Empty);
     }
 
     private static string HighLines() => string.Concat(Enumerable.Range(1, 240).Select(number => $"line {number:000}\n"));

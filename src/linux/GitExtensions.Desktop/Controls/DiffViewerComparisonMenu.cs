@@ -1,0 +1,213 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using Avalonia.Styling;
+using Avalonia.Threading;
+using GitCommands.Settings;
+using GitExtensions.Linux;
+using GitExtensions.Linux.Desktop;
+using GitExtensions.Linux.Desktop.Localization;
+
+namespace GitExtensions.Desktop.Controls;
+
+/// <summary>Original FileViewer comparison choices: local reader options and shared defaults for future readers.</summary>
+public sealed class DiffViewerComparisonMenu : IDisposable
+{
+    private readonly DiffViewerPreferencesStore _store;
+    private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
+    private readonly List<(MenuItem Item, Command Command)> _items = [];
+    private readonly List<(Button Button, Command Command)> _buttons = [];
+    private readonly Dictionary<string, Bitmap> _bitmaps = new(StringComparer.Ordinal);
+    private readonly List<Image> _images = [];
+    private DiffViewerPreferences _preferences;
+    private bool _supportsContext = true, _supportsWhitespace = true, _supportsEolWhitespace = true, _busy, _hostBusy, _disposed;
+
+    public DiffViewerComparisonMenu(DiffViewerPreferencesStore? store = null)
+    {
+        _store = store ?? new();
+        Options = _store.BeginComparisonViewerSession();
+        _preferences = _store.Load();
+        _store.Changed += StoreChanged;
+    }
+
+    public GitComparisonDiffOptions Options { get; private set; }
+    public bool RememberWhitespace => _preferences.RememberWhitespace;
+    public bool RememberContextLines => _preferences.RememberContextLines;
+    public bool RememberWholeFile => _preferences.RememberWholeFile;
+    public event EventHandler? OptionsChanged;
+
+    public void SetContext(bool supportsContext, bool supportsWhitespace, bool supportsEolWhitespace = true, bool isBusy = false)
+    {
+        _supportsContext = supportsContext; _supportsWhitespace = supportsWhitespace;
+        _supportsEolWhitespace = supportsEolWhitespace; _busy = isBusy; Refresh();
+    }
+    public void SetHostBusy(bool value) { _hostBusy = value; Refresh(); }
+
+    public bool SetOptions(GitComparisonDiffOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options); ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!Enum.IsDefined(options.IgnoreWhitespace) || options.ContextLines is < 0 or > 100000) { throw new ArgumentOutOfRangeException(nameof(options)); }
+        if (IsBlocked || options == Options) { return false; }
+        if (options.ContextLines != Options.ContextLines && (!_supportsContext || Options.ShowEntireFile || options.ShowEntireFile)) { return false; }
+        if (options.ShowEntireFile != Options.ShowEntireFile && !_supportsContext) { return false; }
+        if (options.IgnoreWhitespace != Options.IgnoreWhitespace && !WhitespaceAvailable(options.IgnoreWhitespace)) { return false; }
+        bool changesSharedOptions = Options.IgnoreWhitespace != options.IgnoreWhitespace || Options.ContextLines != options.ContextLines || Options.ShowEntireFile != options.ShowEntireFile;
+        if (changesSharedOptions && !_store.SaveComparisonOptions(Options, options)) { Refresh(); return false; }
+        Options = options; Refresh(); OptionsChanged?.Invoke(this, EventArgs.Empty); return true;
+    }
+
+    public bool ToggleWholeFile() => !_disposed && !IsBlocked && _supportsContext && SetOptions(Options with { ShowEntireFile = !Options.ShowEntireFile });
+    public bool IncreaseContext() => CanChangeContext && SetOptions(Options with { ContextLines = Math.Min(100000, Options.ContextLines + 1) });
+    public bool DecreaseContext() => CanChangeContext && SetOptions(Options with { ContextLines = Math.Max(0, Options.ContextLines - 1) });
+    public bool SelectWhitespace(IgnoreWhitespaceKind value)
+    {
+        if (!Enum.IsDefined(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }
+        if (_disposed || IsBlocked || !WhitespaceAvailable(value)) { return false; }
+        return SetOptions(Options with { IgnoreWhitespace = Options.IgnoreWhitespace == value ? IgnoreWhitespaceKind.None : value });
+    }
+    public bool SetRememberWhitespace(bool value) => !_disposed && !IsBlocked && _store.SaveComparisonRememberFlags(whitespace: value);
+    public bool SetRememberContextLines(bool value) => !_disposed && !IsBlocked && _store.SaveComparisonRememberFlags(contextLines: value);
+    public bool SetRememberWholeFile(bool value) => !_disposed && !IsBlocked && _store.SaveComparisonRememberFlags(wholeFile: value);
+    public bool SaveCurrentViewSettingsAsDefault() => !_disposed && !IsBlocked && _store.SaveCurrentViewSettingsAsDefault();
+
+    public bool HandleKeyDown(KeyEventArgs args)
+    {
+        if (_disposed || IsBlocked || args.Handled) { return false; }
+        if (args.KeyModifiers == KeyModifiers.Control && args.Key == Key.E && _supportsContext)
+        { args.Handled = true; ToggleWholeFile(); return true; }
+        if (args.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && args.Key == Key.W && _supportsWhitespace)
+        { args.Handled = true; SelectWhitespace(IgnoreWhitespaceKind.AllSpace); return true; }
+        bool increase = args.Key is Key.OemPlus or Key.Add;
+        if (args.KeyModifiers == KeyModifiers.Control && (increase || args.Key is Key.OemMinus or Key.Subtract) && CanChangeContext)
+        { args.Handled = true; if (increase) { IncreaseContext(); } else { DecreaseContext(); } return true; }
+        return false;
+    }
+
+    public IReadOnlyList<object> CreateContextMenuItems(string? prefix = null)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this); string names = prefix ?? "DiffViewer";
+        MenuItem eol = Item(names + "Whitespace_Eol", "FileViewer", "ignoreWhitespaceAtEolToolStripMenuItem", "Ignore whitespace changes at end of &line", Command.Eol, "WhitespaceIgnoreEol.png");
+        MenuItem change = Item(names + "Whitespace_Change", "FileViewer", "ignoreWhitespaceChangesToolStripMenuItem", "Ignore changes in &amount of whitespace", Command.Change, "WhitespaceIgnore.png");
+        MenuItem all = Item(names + "Whitespace_AllSpace", "FileViewer", "ignoreAllWhitespaceChangesToolStripMenuItem", "Ignore a&ll whitespace changes", Command.All, "WhitespaceIgnoreAll.png");
+        MenuItem increase = Item(names + "IncreaseContextMenu", "FileViewer", "increaseNumberOfLinesToolStripMenuItem", "&Increase the number of lines of context", Command.Increase, "NumberOfLinesIncrease.png");
+        MenuItem decrease = Item(names + "DecreaseContextMenu", "FileViewer", "decreaseNumberOfLinesToolStripMenuItem", "&Decrease the number of lines of context", Command.Decrease, "NumberOfLinesDecrease.png");
+        MenuItem whole = Item(names + "EntireFileMenu", "FileViewer", "showEntireFileToolStripMenuItem", "Show &entire file", Command.Whole, "ShowEntireFile.png");
+        increase.InputGesture = new(Key.OemPlus, KeyModifiers.Control); decrease.InputGesture = new(Key.OemMinus, KeyModifiers.Control);
+        whole.InputGesture = new(Key.E, KeyModifiers.Control); all.InputGesture = new(Key.W, KeyModifiers.Control | KeyModifiers.Shift);
+        Refresh();
+        return [increase, decrease, whole, new Separator(), eol, change, all];
+    }
+
+    public Button CreateIncreaseContextButton(string? name = null) => Button(name ?? "DiffViewerIncreaseContext", Command.Increase, "NumberOfLinesIncrease.png", "increaseNumberOfLines", "Increase the number of lines of context");
+    public Button CreateDecreaseContextButton(string? name = null) => Button(name ?? "DiffViewerDecreaseContext", Command.Decrease, "NumberOfLinesDecrease.png", "decreaseNumberOfLines", "Decrease the number of lines of context");
+    public Button CreateWholeFileButton(string? name = null) => Button(name ?? "DiffViewerEntireFile", Command.Whole, "ShowEntireFile.png", "showEntireFileButton", "Show entire file");
+
+    public void Refresh()
+    {
+        if (_disposed) { return; }
+        foreach ((MenuItem item, Command command) in _items)
+        {
+            item.IsVisible = Visible(command); item.IsEnabled = Enabled(command);
+            item.IsChecked = command switch
+            {
+                Command.Eol => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Eol,
+                Command.Change => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Change,
+                Command.All => Options.IgnoreWhitespace == IgnoreWhitespaceKind.AllSpace,
+                Command.Whole => Options.ShowEntireFile,
+                _ => false
+            };
+        }
+        foreach ((Button button, Command command) in _buttons)
+        {
+            button.IsVisible = Visible(command); button.IsEnabled = Enabled(command);
+            if (button is ToggleButton toggle) { toggle.IsChecked = Options.ShowEntireFile; }
+        }
+    }
+
+    private bool IsBlocked => _busy || _hostBusy;
+    private bool CanChangeContext => !_disposed && !IsBlocked && _supportsContext && !Options.ShowEntireFile;
+    private bool WhitespaceAvailable(IgnoreWhitespaceKind kind) => kind is IgnoreWhitespaceKind.None or IgnoreWhitespaceKind.Eol ? _supportsEolWhitespace : _supportsWhitespace;
+    private bool Visible(Command command) => command switch
+    {
+        Command.Eol => _supportsEolWhitespace, Command.Change or Command.All => _supportsWhitespace,
+        Command.Increase or Command.Decrease or Command.Whole => _supportsContext, _ => true
+    };
+    private bool Enabled(Command command) => !_disposed && !IsBlocked && (command is Command.Increase or Command.Decrease ? CanChangeContext : Visible(command));
+    private void Execute(Command command)
+    {
+        switch (command)
+        {
+            case Command.Eol: SelectWhitespace(IgnoreWhitespaceKind.Eol); break;
+            case Command.Change: SelectWhitespace(IgnoreWhitespaceKind.Change); break;
+            case Command.All: SelectWhitespace(IgnoreWhitespaceKind.AllSpace); break;
+            case Command.Increase: IncreaseContext(); break; case Command.Decrease: DecreaseContext(); break;
+            case Command.Whole: ToggleWholeFile(); break;
+        }
+    }
+    private MenuItem Item(string name, string category, string original, string source, Command command, string? icon = null)
+    {
+        MenuItem item = new() { Name = name, Header = new AccessText { Text = _translations.TranslateAccessKeys(category, original, "Text", source) },
+            Height = 24, MinHeight = 24, Padding = new Thickness(7, 2) };
+        if (command is not (Command.Increase or Command.Decrease)) { item.ToggleType = MenuItemToggleType.CheckBox; }
+        item.Resources = new ResourceDictionary { ThemeDictionaries = { [ThemeVariant.Light] = MenuResources(false), [ThemeVariant.Dark] = MenuResources(true) } };
+        if (icon is not null) { item.Icon = Icon(icon); }
+        item.Click += (_, _) => { Execute(command); Refresh(); }; _items.Add((item, command)); return item;
+    }
+    private Button Button(string name, Command command, string icon, string original, string tooltip)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Button button = command == Command.Whole ? new ToggleButton() : new Button();
+        button.Name = name; button.Width = button.Height = button.MinHeight = 24; button.MinWidth = 0; button.Padding = default; button.Content = Icon(icon);
+        button.Resources = new ResourceDictionary { ThemeDictionaries = { [ThemeVariant.Light] = ButtonResources(false), [ThemeVariant.Dark] = ButtonResources(true) } };
+        ToolTip.SetTip(button, _translations.Translate("FileViewer", original, "ToolTipText", tooltip));
+        button.Click += (_, _) => { Execute(command); Refresh(); }; _buttons.Add((button, command)); Refresh(); return button;
+    }
+    private Image Icon(string name)
+    {
+        if (!_bitmaps.TryGetValue(name, out Bitmap? bitmap))
+        { using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + name)); _bitmaps[name] = bitmap = new(stream); }
+        Image image = new() { Source = bitmap, Width = 16, Height = 16, Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center, UseLayoutRounding = true };
+        _images.Add(image); return image;
+    }
+    private static ResourceDictionary MenuResources(bool dark)
+    {
+        IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(dark); ResourceDictionary resources = new();
+        foreach ((string resource, string color) in new Dictionary<string, string>
+        {
+            ["MenuFlyoutPresenterBackground"] = "Menu", ["MenuFlyoutPresenterBorderBrush"] = "ActiveBorder",
+            ["MenuFlyoutItemBackgroundPointerOver"] = "MenuHighlight", ["MenuFlyoutItemBackgroundPressed"] = "MenuHighlight",
+            ["MenuFlyoutItemForegroundPointerOver"] = "HighlightText", ["MenuFlyoutItemForegroundPressed"] = "HighlightText",
+            ["MenuFlyoutItemKeyboardAcceleratorTextForeground"] = "MenuText", ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver"] = "HighlightText",
+            ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed"] = "HighlightText"
+        }) { resources[resource] = Brush.Parse(colors[color]); }
+        return resources;
+    }
+    private static ResourceDictionary ButtonResources(bool dark)
+    {
+        IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(dark); ResourceDictionary resources = new();
+        foreach (string state in new[] { "Checked", "CheckedPointerOver", "CheckedPressed" })
+        { resources["ToggleButtonBackground" + state] = Brush.Parse(colors["Highlight"]); resources["ToggleButtonBorderBrush" + state] = Brush.Parse(colors["Highlight"]); }
+        return resources;
+    }
+    private void StoreChanged(object? sender, EventArgs args)
+    {
+        if (_disposed) { return; }
+        if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => StoreChanged(sender, args)); return; }
+        _preferences = _store.Load(); Refresh();
+    }
+    public void Dispose()
+    {
+        if (_disposed) { return; } _disposed = true; _store.Changed -= StoreChanged;
+        foreach (MenuItem item in _items.Select(entry => entry.Item)) { item.IsEnabled = false; item.IsSubMenuOpen = false; }
+        foreach (Button button in _buttons.Select(entry => entry.Button)) { button.IsEnabled = false; }
+        foreach (Image image in _images) { image.Source = null; }
+        foreach (Bitmap bitmap in _bitmaps.Values) { bitmap.Dispose(); }
+        _items.Clear(); _buttons.Clear(); _images.Clear(); _bitmaps.Clear();
+    }
+    private enum Command { Eol, Change, All, Increase, Decrease, Whole }
+}

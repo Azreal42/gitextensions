@@ -145,7 +145,8 @@ public class ViewerWholeFileHostTests
     private static void AssertOriginalChrome(Window owner, MenuItem menu, Button button)
     {
         owner.UpdateLayout();
-        Assert.That(menu.Header, Is.EqualTo("Show entire file"));
+        Assert.That(menu.Header, Is.InstanceOf<Avalonia.Controls.Primitives.AccessText>());
+        Assert.That(((Avalonia.Controls.Primitives.AccessText)menu.Header!).Text, Is.EqualTo("Show _entire file"));
         Assert.That(menu.ToggleType, Is.EqualTo(MenuItemToggleType.CheckBox));
         Assert.That(menu.InputGesture?.Key, Is.EqualTo(Key.E));
         Assert.That(menu.InputGesture?.KeyModifiers, Is.EqualTo(KeyModifiers.Control));

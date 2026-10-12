@@ -68,7 +68,7 @@ public class DiffViewerPreferencesTests
         {
             DiffViewerPreferences loaded = new DiffViewerPreferencesStore(probeDirectory).Load();
             Assert.That(loaded.UseGitColoring || loaded.ReverseGitColoring, Is.False);
-            Assert.That(loaded.Appearance, Is.EqualTo(loaded.RememberAppearance ? DiffViewerAppearance.GitWordDiff : DiffViewerAppearance.Patch));
+            Assert.That(loaded.Appearance, Is.EqualTo(DiffViewerAppearance.Patch), "Remember affects the running instance; saving a default is a separate original command.");
             return;
         }
 

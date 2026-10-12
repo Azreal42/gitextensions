@@ -23,7 +23,7 @@ namespace GitExtensions.Desktop.Tests;
 public class DiffViewerAppearanceMenuTests
 {
     [AvaloniaTest]
-    public void PointerChoicesAndSharedOptionsUpdateExistingMenusAndANewViewerResetsOnlyUnrememberedAppearance()
+    public async Task PointerChoicesAndSharedOptionsUpdateExistingMenusAndANewViewerResetsOnlyUnrememberedAppearance()
     {
         using DiffViewerPreferencesTests.TemporaryDirectory directory = new();
         DiffViewerPreferencesStore store = new(directory.Path);
@@ -53,7 +53,13 @@ public class DiffViewerAppearanceMenuTests
             { Assert.That(reopened.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.Patch)); }
             Assert.That(first.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.Patch), "The original runtime preference is global, so resetting a newly opened viewer also synchronizes existing menus.");
             Assert.That(first.Preferences.ReverseGitColoring, Is.False);
-            Open(flyout, open); ClickRendered(Item(flyout, "RememberAppearance"));
+            flyout.Hide();
+            Assert.That(flyout.ItemsSource!.OfType<MenuItem>().Any(item => item.Name == "DiffViewerRememberAppearance"), Is.False);
+            NativeDiffViewerSettingsDialog settings = new(store);
+            Task<bool> accepted = settings.ShowDialog<bool>(window); settings.UpdateLayout(); Dispatcher.UIThread.RunJobs(); settings.UpdateLayout();
+            ClickRendered(settings.GetVisualDescendants().OfType<CheckBox>().Single(control => control.Name == "chkRememberDiffAppearancePreference"));
+            ClickRendered(settings.GetVisualDescendants().OfType<Button>().Single(control => control.Name == "DiffViewerSettingsAccept"));
+            Assert.That(await accepted, Is.True);
             Open(flyout, open); ClickRendered(Item(flyout, "GitWordDiff"));
             using (DiffViewerAppearanceMenu remembered = new(new DiffViewerPreferencesStore(directory.Path)))
             { Assert.That(remembered.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.GitWordDiff)); }
@@ -165,28 +171,41 @@ public class DiffViewerAppearanceMenuTests
             TextBox source = new() { Text = mode == DiffViewMode.Combined ? "diff --cc file\n@@@ -1 -1 +1 @@@\n++new\n" : "1: aaaaaaa ! 1: bbbbbbb Subject\n" };
             using DiffView viewer = new(source, new DiffViewerPreferencesStore(directory.Path)) { Mode = mode };
             ContextMenu menu = viewer.ContextMenu!;
-            Window window = new() { Width = 800, Height = 300, Content = viewer };
+            // Headless popups use an overlay in the same client area. Reserve
+            // room for the complete native menu, rather than click below it.
+            Window window = new() { Width = 800, Height = 650, Content = viewer };
             try
             {
-                window.Show(); window.UpdateLayout(); menu.Open(viewer); Dispatcher.UIThread.RunJobs();
+                window.Show(); OpenMenu();
                 Assert.That(viewer.EffectiveMode, Is.EqualTo(mode));
                 Assert.That(Item("Appearance").IsVisible, Is.False, "These view modes cannot offer ordinary patch appearances.");
                 Assert.That(Item("UseGitColoring").IsEffectivelyVisible && Item("ReverseGitColoring").IsEffectivelyVisible, Is.True);
                 Assert.That(Item("UseGitColoring").IsChecked, Is.True);
+                MenuItem coloring = Item("UseGitColoring"); TopLevel root = (TopLevel)coloring.GetVisualRoot()!;
+                Point checkedPoint = coloring.TranslatePoint(new Point(coloring.Bounds.Width / 2, coloring.Bounds.Height / 2), root)!.Value;
+                Assert.That(new Rect(default, root.ClientSize).Contains(checkedPoint), Is.True, "The original color option must be reachable inside the actual headless popup surface.");
+                root.MouseMove(checkedPoint); root.UpdateLayout(); Dispatcher.UIThread.RunJobs(); root.UpdateLayout();
+                using (WriteableBitmap frame = Capture(root, "diff-viewer-colors-" + mode + ".png"))
+                { AssertActiveCheck(frame, root, coloring, window.ActualThemeVariant); }
                 ClickRendered(Item("UseGitColoring"));
                 Assert.That(viewer.DisplayOptions.UseGitColoring, Is.False);
-                menu.Open(viewer); Dispatcher.UIThread.RunJobs();
+                OpenMenu();
                 Assert.That(Item("ReverseGitColoring").IsEnabled, Is.False);
                 ClickRendered(Item("UseGitColoring"));
-                menu.Open(viewer); Dispatcher.UIThread.RunJobs(); ClickRendered(Item("ReverseGitColoring"));
+                OpenMenu(); ClickRendered(Item("ReverseGitColoring"));
                 Assert.That(viewer.DisplayOptions.UseGitColoring, Is.True);
                 Assert.That(viewer.DisplayOptions.ReverseGitColoring, Is.False);
                 Assert.That(source.Text, Does.Contain(mode == DiffViewMode.Combined ? "@@@" : "aaaaaaa"));
                 // Restore the global inversion preference for the next real viewer.
-                menu.Open(viewer); Dispatcher.UIThread.RunJobs(); ClickRendered(Item("ReverseGitColoring"));
+                OpenMenu(); ClickRendered(Item("ReverseGitColoring"));
             }
             finally { menu.Close(); window.Close(); Dispatcher.UIThread.RunJobs(); }
             MenuItem Item(string suffix) => menu.ItemsSource!.OfType<MenuItem>().Single(item => item.Name == "DiffViewer" + suffix);
+            void OpenMenu()
+            {
+                window.MouseMove(new Point(8, 8)); menu.Open(viewer);
+                window.UpdateLayout(); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            }
         }
     }
 
@@ -235,8 +254,10 @@ public class DiffViewerAppearanceMenuTests
     { flyout.ShowAt(target); TopLevel.GetTopLevel(target)!.UpdateLayout(); Dispatcher.UIThread.RunJobs(); }
     private static void ClickRendered(Control control)
     {
-        TopLevel root = (TopLevel)control.GetVisualRoot()!; root.UpdateLayout();
+        TopLevel root = (TopLevel)control.GetVisualRoot()!; root.UpdateLayout(); Dispatcher.UIThread.RunJobs(); root.UpdateLayout();
+        Assert.That(control.IsEffectivelyVisible && control.IsEffectivelyEnabled, Is.True);
         Point point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), root)!.Value;
+        Assert.That(new Rect(default, root.ClientSize).Contains(point), Is.True, "A real pointer click must land inside the rendered root, not on an off-screen menu item.");
         root.MouseMove(point); root.MouseDown(point, MouseButton.Left); root.MouseUp(point, MouseButton.Left); Dispatcher.UIThread.RunJobs();
     }
     private static void Press(Window window, PhysicalKey key)

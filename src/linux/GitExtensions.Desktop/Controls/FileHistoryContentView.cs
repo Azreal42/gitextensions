@@ -29,6 +29,7 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
     public string CurrentFileEncodingName { get; private set; } = "utf-8";
     public string? FileEncodingName => TextView.FileEncodingName;
     public ComboBox EncodingSelector { get; }
+    public StackPanel Toolbar { get; }
     public event EventHandler? EncodingChanged;
     public FileHistoryContentView()
     {
@@ -36,9 +37,9 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
         EncodingSelector = TextView.ReadingMenu.CreateEncodingSelector();
         EncodingSelector.Name = "FileHistoryEncoding";
         TextView.FileEncodingChanged += FileEncodingChanged;
-        StackPanel bar = new() { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new(2, 0), Children = { EncodingSelector, _encodingStatus } };
-        DockPanel.SetDock(bar, Dock.Top);
-        Content = new DockPanel { Children = { bar, _content } };
+        Toolbar = new() { Orientation = Orientation.Horizontal, Spacing = 0, Margin = new(2, 0), Children = { EncodingSelector, _encodingStatus } };
+        DockPanel.SetDock(Toolbar, Dock.Top);
+        Content = new DockPanel { Children = { Toolbar, _content } };
         ActualThemeVariantChanged += (_, _) => ApplySyntax();
     }
     public void ShowFile(string path, byte[] bytes, string? defaultEncodingName = null)

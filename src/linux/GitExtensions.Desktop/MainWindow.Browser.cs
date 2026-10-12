@@ -74,7 +74,13 @@ public sealed partial class MainWindow
         });
         _commits.ContextMenu = new ContextMenu
         {
-            ItemsSource = new[] { MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync), MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), BuildComparisonMenu() }
+            ItemsSource = new object[]
+            {
+                MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync),
+                MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), BuildComparisonMenu(),
+                new Separator(), new MenuItem { Header = T("Settings persistence"), IsEnabled = false },
+                SaveViewSettingsMenu()
+            }
         };
         _navigation.SelectionChanged += async (_, _) =>
         {
@@ -344,6 +350,12 @@ public sealed partial class MainWindow
     };
 
     private MenuItem MenuGroup(string header, params MenuItem[] items) => new() { Header = T(header), ItemsSource = items };
+    private MenuItem SaveViewSettingsMenu()
+    {
+        MenuItem item = MenuAction("Save current view settings as default", SaveCurrentViewSettingsAsync);
+        item.Name = "SaveCurrentViewSettingsAsDefault";
+        return item;
+    }
     private MenuItem PluginMenuItem(INativePlugin plugin)
     {
         MenuItem item = MenuAction(plugin.Descriptor.Name, () => ShowPluginAsync(plugin));

@@ -158,6 +158,12 @@ public class RevisionDiffGroupTests
         Assert.That(Visible(main).Text, Does.Contain(" line 14\n").And.Contain(" line 16\n"));
         Click(main, "RevisionDiffEntireFile"); await Idle(main);
         Assert.That(Visible(main).Text, Does.Contain(" line 1\n").And.Contain(" line 30\n"));
+        Assert.That(main.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "RevisionDiffIncreaseContext").IsEnabled, Is.False);
+        Assert.That(main.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "RevisionDiffDecreaseContext").IsEnabled, Is.False);
+        Assert.That(Visible(main).ComparisonMenu.Options.ContextLines, Is.EqualTo(1));
+        Click(main, "RevisionDiffEntireFile"); await Idle(main);
+        Assert.That(Visible(main).Text, Does.Contain(" line 14\n").And.Contain(" line 16\n").And.Not.Contain(" line 30\n"));
+        Assert.That(Visible(main).ComparisonMenu.Options.ContextLines, Is.EqualTo(1));
         Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
     }
 

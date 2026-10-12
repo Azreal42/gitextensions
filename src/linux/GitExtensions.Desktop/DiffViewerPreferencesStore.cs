@@ -1,12 +1,21 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using GitCommands.Settings;
 
 namespace GitExtensions.Linux.Desktop;
 
 public enum DiffViewerAppearance { Patch, GitWordDiff, Difftastic }
 
 public sealed record DiffViewerPreferences(bool UseGitColoring = true, bool ReverseGitColoring = true,
-    DiffViewerAppearance Appearance = DiffViewerAppearance.Patch, bool RememberAppearance = false);
+    DiffViewerAppearance Appearance = DiffViewerAppearance.Patch, bool RememberAppearance = false)
+{
+    public IgnoreWhitespaceKind IgnoreWhitespace { get; init; } = IgnoreWhitespaceKind.None;
+    public bool RememberWhitespace { get; init; } = true;
+    public int ContextLines { get; init; } = 3;
+    public bool RememberContextLines { get; init; }
+    public bool ShowEntireFile { get; init; }
+    public bool RememberWholeFile { get; init; }
+}
 
 /// <summary>Original diff appearance defaults, with one shared runtime appearance per configuration path.</summary>
 public sealed class DiffViewerPreferencesStore
@@ -29,10 +38,30 @@ public sealed class DiffViewerPreferencesStore
             (DiffViewerPreferences persisted, bool valid) = Read();
             if (_state.Current is null || _state.Persisted != persisted || !valid)
             {
-                _state.Current = persisted.RememberAppearance ? persisted : persisted with { Appearance = DiffViewerAppearance.Patch };
+                // RuntimeSetting.Reload starts from the saved baseline even when
+                // Remember is false. Remember controls later viewer construction,
+                // not whether a previously saved default is allowed to load.
+                _state.Current = persisted with { ContextLines = persisted.RememberContextLines ? persisted.ContextLines : 3 };
                 _state.Persisted = persisted;
             }
             return _state.Current;
+        }
+    }
+
+    /// <summary>Snapshot the original comparison defaults for one new reader. Existing readers keep their own options.</summary>
+    public GitComparisonDiffOptions BeginComparisonViewerSession()
+    {
+        lock (_state)
+        {
+            DiffViewerPreferences current = Load(), persisted = _state.Persisted!;
+            DiffViewerPreferences snapshot = current with
+            {
+                IgnoreWhitespace = current.RememberWhitespace ? current.IgnoreWhitespace : persisted.IgnoreWhitespace,
+                ShowEntireFile = current.RememberWholeFile ? current.ShowEntireFile : persisted.ShowEntireFile,
+                ContextLines = current.RememberContextLines ? persisted.ContextLines : 3
+            };
+            _state.Current = snapshot;
+            return new(snapshot.IgnoreWhitespace, snapshot.ContextLines, snapshot.ShowEntireFile);
         }
     }
 
@@ -53,18 +82,77 @@ public sealed class DiffViewerPreferencesStore
     public bool Save(DiffViewerPreferences value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (!Enum.IsDefined(value.Appearance)) { throw new ArgumentOutOfRangeException(nameof(value)); }
+        Validate(value);
+        // Existing appearance controllers hold a snapshot record. Treat their
+        // saves as a patch of the original four fields, preserving newer reader
+        // session values and remember flags written by another controller.
+        return Write(current => current with
+        {
+            UseGitColoring = value.UseGitColoring, ReverseGitColoring = value.ReverseGitColoring,
+            Appearance = value.Appearance, RememberAppearance = value.RememberAppearance
+        });
+    }
+
+    internal bool SaveComparisonRememberFlags(bool? whitespace = null, bool? contextLines = null, bool? wholeFile = null)
+        => Write(current => current with
+        {
+            RememberWhitespace = whitespace ?? current.RememberWhitespace,
+            RememberContextLines = contextLines ?? current.RememberContextLines,
+            RememberWholeFile = wholeFile ?? current.RememberWholeFile
+        });
+
+    /// <summary>Apply the original settings page atomically without replacing current reader values or saved defaults.</summary>
+    public bool SaveSettings(DiffViewerPreferences settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        return Write(current => current with
+        {
+            UseGitColoring = settings.UseGitColoring, ReverseGitColoring = settings.ReverseGitColoring,
+            RememberAppearance = settings.RememberAppearance, RememberWhitespace = settings.RememberWhitespace,
+            RememberContextLines = settings.RememberContextLines, RememberWholeFile = settings.RememberWholeFile
+        });
+    }
+
+    /// <summary>Context differs from RuntimeSetting: its setter persists only while RememberContextLines is enabled.</summary>
+    public bool SaveContextLines(int value)
+    {
+        if (value is < 0 or > 100000) { throw new ArgumentOutOfRangeException(nameof(value)); }
+        return Write(current => current with { ContextLines = value }, saveContext: true);
+    }
+
+    internal bool SaveComparisonOptions(GitComparisonDiffOptions previous, GitComparisonDiffOptions next)
+        => Write(current => current with
+        {
+            IgnoreWhitespace = previous.IgnoreWhitespace != next.IgnoreWhitespace ? next.IgnoreWhitespace : current.IgnoreWhitespace,
+            ContextLines = previous.ContextLines != next.ContextLines ? next.ContextLines : current.ContextLines,
+            ShowEntireFile = previous.ShowEntireFile != next.ShowEntireFile ? next.ShowEntireFile : current.ShowEntireFile
+        }, saveContext: previous.ContextLines != next.ContextLines);
+
+    /// <summary>Save the latest shared runtime values, as the original revision-grid command does.</summary>
+    public bool SaveCurrentViewSettingsAsDefault() => Write(current => current, saveRuntimeDefaults: true);
+
+    private bool Write(Func<DiffViewerPreferences, DiffViewerPreferences> update, bool saveContext = false, bool saveRuntimeDefaults = false)
+    {
         string temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         bool changed;
         try
         {
             lock (_state)
             {
-                DiffViewerPreferences persisted = value.RememberAppearance ? value : value with { Appearance = DiffViewerAppearance.Patch };
+                DiffViewerPreferences current = Load(), value = update(current);
+                Validate(value);
+                DiffViewerPreferences baseline = _state.Persisted!;
+                DiffViewerPreferences persisted = value with
+                {
+                    Appearance = saveRuntimeDefaults ? value.Appearance : baseline.Appearance,
+                    IgnoreWhitespace = saveRuntimeDefaults ? value.IgnoreWhitespace : baseline.IgnoreWhitespace,
+                    ShowEntireFile = saveRuntimeDefaults ? value.ShowEntireFile : baseline.ShowEntireFile,
+                    ContextLines = saveContext && value.RememberContextLines ? value.ContextLines : baseline.ContextLines
+                };
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
                 File.WriteAllText(temporary, JsonSerializer.Serialize(persisted));
                 File.Move(temporary, FilePath, overwrite: true);
-                changed = _state.Current != value;
+                changed = current != value;
                 _state.Current = value; _state.Persisted = persisted;
             }
         }
@@ -81,9 +169,21 @@ public sealed class DiffViewerPreferencesStore
             if (!File.Exists(FilePath)) { return (new(), true); }
             DiffViewerPreferences? value = JsonSerializer.Deserialize<DiffViewerPreferences>(File.ReadAllText(FilePath));
             if (value is null) { return (new(), false); }
-            return Enum.IsDefined(value.Appearance) ? (value, true) : (value with { Appearance = DiffViewerAppearance.Patch }, false);
+            DiffViewerPreferences normalized = value with
+            {
+                Appearance = Enum.IsDefined(value.Appearance) ? value.Appearance : DiffViewerAppearance.Patch,
+                IgnoreWhitespace = Enum.IsDefined(value.IgnoreWhitespace) ? value.IgnoreWhitespace : IgnoreWhitespaceKind.None,
+                ContextLines = value.ContextLines is >= 0 and <= 100000 ? value.ContextLines : 3
+            };
+            return (normalized, normalized == value);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException) { return (new(), false); }
+    }
+
+    private static void Validate(DiffViewerPreferences value)
+    {
+        if (!Enum.IsDefined(value.Appearance) || !Enum.IsDefined(value.IgnoreWhitespace) || value.ContextLines is < 0 or > 100000)
+        { throw new ArgumentOutOfRangeException(nameof(value)); }
     }
 
     private sealed class SharedState

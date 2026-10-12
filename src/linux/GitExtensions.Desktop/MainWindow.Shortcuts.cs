@@ -18,20 +18,6 @@ public sealed partial class MainWindow
             : _fileContent?.TextView.IsKeyboardFocusWithin == true ? _fileContent.TextView : null;
         if (focusedDiff?.HandleReadingShortcut(e) == true) { return; }
         if (focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
-        if (focusedDiff == _changesDiffView && focusedDiff is not null && SelectedWorkingChange is { IsUntracked: false }
-            && e.Key == Key.E && e.KeyModifiers == KeyModifiers.Control)
-        {
-            e.Handled = true;
-            await ToggleWorkingWholeFileAsync();
-            return;
-        }
-        if (focusedDiff == _commitContent?.TextView && focusedDiff is not null
-            && e.Key == Key.E && e.KeyModifiers == KeyModifiers.Control)
-        {
-            e.Handled = true;
-            await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = !_revisionViewerOptions.ShowEntireFile });
-            return;
-        }
         Func<Task>? action = (e.Key, e.KeyModifiers) switch
         {
             (Key.F5, KeyModifiers.None) => RefreshAsync,

@@ -26,6 +26,14 @@ public sealed class BlameDialog : RepositoryDialog
 
     public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1, IGourceAvatarProvider? avatarProvider = null) : base(repository, "Blame")
     {
+        _changes.TextView.ContextMenu = new ContextMenu { ItemsSource = _changes.TextView.CreateContextMenuItems("BlameDiff") };
+        _changes.Toolbar.Children.Insert(0, _changes.TextView.ComparisonMenu.CreateIncreaseContextButton("BlameDiffIncreaseContext"));
+        _changes.Toolbar.Children.Insert(1, _changes.TextView.ComparisonMenu.CreateDecreaseContextButton("BlameDiffDecreaseContext"));
+        _changes.Toolbar.Children.Insert(2, _changes.TextView.ComparisonMenu.CreateWholeFileButton("BlameDiffEntireFile"));
+        _changes.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
+        {
+            if (_tabs.SelectedIndex == 1) { await RequestDiffReloadAsync(() => ShowChangesAsync()); }
+        };
         _view = new(avatarProvider) { Name = "BlameView" };
         _view.CommitInformationProvider = (line, token) => ReadCommitInformationAsync(repository, line, token);
         _view.InteractionError += error => Status.Text = error;
@@ -141,7 +149,7 @@ public sealed class BlameDialog : RepositoryDialog
         await _changes.TextView.ConfigureRepositoryAsync(Repository, token);
         _changes.TextView.DocumentIdentity = string.Join('\0', Repository.Path, file.Path, revisions.Revision, revisions.BaseRevision, "diff");
         _changes.ShowDiff(await Repository.GetRevisionFileDiffDocumentAsync(revisions, file,
-            displayOptions: _changes.TextView.DisplayOptions, cancellationToken: token));
+            options: _changes.TextView.ComparisonMenu.Options, displayOptions: _changes.TextView.DisplayOptions, cancellationToken: token));
         _tabs.SelectedIndex = 1;
     });
 

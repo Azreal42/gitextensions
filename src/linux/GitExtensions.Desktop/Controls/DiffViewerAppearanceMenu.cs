@@ -45,7 +45,7 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
     public IReadOnlyList<object> CreateContextMenuItems()
     {
         MenuItem parent = CreateAppearanceItem(out MenuSet set);
-        return [parent, new Separator(), set.Coloring, set.Reverse, set.Remember];
+        return [parent, new Separator(), set.Coloring, set.Reverse];
     }
 
     private MenuItem CreateAppearanceItem(out MenuSet set)
@@ -63,6 +63,7 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         MenuSet set = CreateItems(null);
         MenuFlyout flyout = new() { ItemsSource = set.Items };
+        DiffViewerPopupLayout.Configure(flyout);
         flyout.Opening += (_, _) => Synchronize();
         _flyouts.Add(flyout); UpdateMenus(); return flyout;
     }
@@ -99,15 +100,12 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
         difftastic.Click += (_, _) => SelectAppearance(DiffViewerAppearance.Difftastic);
         MenuItem coloring = Item("UseGitColoring", "DiffViewerSettingsPage", "chkUseGitColoring", "Git coloring");
         MenuItem reverse = Item("ReverseGitColoring", "DiffViewerSettingsPage", "chkUseGEThemeGitColoring", "Reverse background color");
-        MenuItem remember = Item("RememberAppearance", "DiffViewerSettingsPage", "chkRememberDiffAppearancePreference", "Remember the 'Diff appearance' preference");
-        coloring.ToggleType = reverse.ToggleType = remember.ToggleType = MenuItemToggleType.CheckBox;
+        coloring.ToggleType = reverse.ToggleType = MenuItemToggleType.CheckBox;
         coloring.Click += (_, _) => Save(Preferences with { UseGitColoring = !Preferences.UseGitColoring });
         reverse.Click += (_, _) => { if (Preferences.UseGitColoring) { Save(Preferences with { ReverseGitColoring = !Preferences.ReverseGitColoring }); } };
-        remember.Click += (_, _) => Save(Preferences with { RememberAppearance = !Preferences.RememberAppearance });
         ToolTip.SetTip(coloring, _translations.Translate("DiffViewerSettingsPage", "chkUseGitColoring", "ToolTipText", "Use Git coloring engine to show moved code etc.\n"));
         ToolTip.SetTip(reverse, _translations.Translate("DiffViewerSettingsPage", "chkUseGEThemeGitColoring", "ToolTipText", "Color the background at changes (invert colors)."));
-        ToolTip.SetTip(remember, _translations.Translate("DiffViewerSettingsPage", "chkRememberDiffAppearancePreference", "ToolTipText", "Diff appearance: patch (default), Git word-diff or Difftastic."));
-        MenuSet set = new(parent, patch, word, difftastic, coloring, reverse, remember, [patch, word, difftastic, new Separator(), coloring, reverse, remember]);
+        MenuSet set = new(parent, patch, word, difftastic, coloring, reverse, [patch, word, difftastic, new Separator(), coloring, reverse]);
         _menus.Add(set); return set;
     }
 
@@ -187,7 +185,6 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
             set.Difftastic.IsChecked = Preferences.Appearance == DiffViewerAppearance.Difftastic;
             set.Coloring.IsChecked = Preferences.UseGitColoring;
             set.Reverse.IsChecked = Preferences.ReverseGitColoring; set.Reverse.IsEnabled = Preferences.UseGitColoring;
-            set.Remember.IsChecked = Preferences.RememberAppearance;
         }
     }
     public void Dispose()
@@ -200,5 +197,5 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
         foreach (Bitmap bitmap in _bitmaps.Values) { bitmap.Dispose(); }
         _menus.Clear(); _flyouts.Clear(); _images.Clear(); _bitmaps.Clear();
     }
-    private sealed record MenuSet(MenuItem? Parent, MenuItem Patch, MenuItem Word, MenuItem Difftastic, MenuItem Coloring, MenuItem Reverse, MenuItem Remember, object[] Items);
+    private sealed record MenuSet(MenuItem? Parent, MenuItem Patch, MenuItem Word, MenuItem Difftastic, MenuItem Coloring, MenuItem Reverse, object[] Items);
 }

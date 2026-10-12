@@ -6,6 +6,8 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using Avalonia.Controls.Templates;
@@ -25,6 +27,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly List<(MenuItem Item, GitDiffCopyOperation? Copy)> _items = [];
     private readonly List<ComboBox> _encodingSelectors = [];
+    private readonly List<(Image Image, Bitmap Bitmap)> _icons = [];
     private bool _updatingEncoding;
     private Window? _goToDialog;
     private bool _disposed;
@@ -41,11 +44,19 @@ public sealed class DiffViewerReadingMenu : IDisposable
         MenuItem patch = CopyItem("CopyPatch", "copyPatchToolStripMenuItem", "Copy &patch", GitDiffCopyOperation.Patch);
         MenuItem current = CopyItem("CopyNewVersion", "copyNewVersionToolStripMenuItem", "Copy &new version", GitDiffCopyOperation.NewVersion);
         MenuItem previous = CopyItem("CopyOldVersion", "copyOldVersionToolStripMenuItem", "Copy &old version", GitDiffCopyOperation.OldVersion);
+        MenuItem find = Item("Find", "findToolStripMenuItem", "&Find...");
+        find.InputGesture = new(Key.F, KeyModifiers.Control);
+        using (Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/Preview.png")))
+        {
+            Bitmap bitmap = new(stream); Image icon = new() { Source = bitmap, Width = 16, Height = 16 };
+            find.Icon = icon; _icons.Add((icon, bitmap));
+        }
+        find.Click += (_, _) => _view.Search.ShowFind();
         MenuItem goTo = Item("GoToLine", "goToLineToolStripMenuItem", "&Go to line");
         goTo.InputGesture = new(Key.G, KeyModifiers.Control);
         goTo.Click += (_, _) => Start(ShowGoToLineAsync);
-        _items.Add((copy, null)); _items.Add((goTo, null)); Refresh();
-        return [copy, patch, current, previous, new Separator(), goTo];
+        _items.Add((copy, null)); _items.Add((find, null)); _items.Add((goTo, null)); Refresh();
+        return [copy, patch, current, previous, new Separator(), find, goTo];
     }
 
     public ComboBox CreateEncodingSelector()
@@ -214,7 +225,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
         foreach ((MenuItem item, GitDiffCopyOperation? copy) in _items)
         {
             if (copy is not null) { item.IsVisible = _view.CanCopyPatch; item.IsEnabled = _view.Text.Length > 0; }
-            else { item.IsEnabled = item.Name == "DiffViewerCopy" ? _view.SelectionLength > 0 : _view.MaxFileLine > 0; }
+            else { item.IsEnabled = item.Name switch { "DiffViewerCopy" => _view.SelectionLength > 0, "DiffViewerFind" => _view.Search.IsAvailable, _ => _view.MaxFileLine > 0 }; }
         }
         _updatingEncoding = true;
         try
@@ -275,6 +286,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
     {
         if (_disposed) { return; } _disposed = true;
         _goToDialog?.Close(null); _goToDialog = null; _items.Clear(); _encodingSelectors.Clear();
+        foreach ((Image icon, Bitmap bitmap) in _icons) { icon.Source = null; bitmap.Dispose(); } _icons.Clear();
     }
 
 }
