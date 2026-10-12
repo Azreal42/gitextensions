@@ -40,6 +40,7 @@ La case cochée exige une preuve dans le code/tests ou un résultat exécuté. M
 - [ ] Status index/worktree, staging fichiers et hunks/lignes, diff texte/image/binaire/combined/range-diff, commit/amend/fixup/squash/templates/signature.
 - [ ] Branches/tags/checkout/compare/reset/merge/conflits/cherry-pick/revert/rebase interactif/continue/abort.
 - [ ] Fetch/prune/pull/push/force-with-lease, remotes et configuration SSH/proxy.
+- [ ] Menu Pull/Fetch original (écart constaté sur le paquet `a8e591f17`) : bouton scindé et menu de la capture ; Open pull dialog avec Ctrl+Down, Pull - merge, Pull - rebase, Fetch du remote courant, Fetch all et Fetch and prune all distincts ; sous-menu Set default Pull button action, action mémorisée et icône du bouton synchronisée. Le bouton actuel ouvre seulement le dialogue ff-only/rebase et Fetch exécute all+prune. Valider sur dépôts isolés les historiques divergents merge/rebase, la portée des fetchs et le pruning, puis le menu/clavier et la préférence après redémarrage.
 - [ ] Historique fichier/blame/grep/arbre/export archive et patches.
 - [ ] Stashes, sous-modules, worktrees, sparse checkout, reflog, bisect, notes, fsck/cleanup.
 - [ ] Préférences globales/locales/distribuées, raccourcis/thèmes/outils externes/scripts/hooks/liens/avatars.
