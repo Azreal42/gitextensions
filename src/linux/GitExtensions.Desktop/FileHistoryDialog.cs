@@ -137,15 +137,21 @@ public sealed class FileHistoryDialog : RepositoryDialog
         if (entry.IsDeleted && _tabs.SelectedIndex >= 2) { _tabs.SelectedIndex = 1; }
         if (_tabs.SelectedIndex == 1)
         {
+            _diff.TextView.BeginDocumentLoad();
             GitCommit? other = _revisions.SelectedItems?.OfType<GitCommit>().LastOrDefault(selected => selected.Hash != commit.Hash);
             GitRevisionChanges revisions = await Repository.GetRevisionChangesAsync(commit.Hash, other?.Hash, token);
             GitRevisionFile file = revisions.Files.FirstOrDefault(file => file.Path == entry.Path || file.OriginalPath == entry.Path)
                 ?? new(entry.Path, entry.Status, entry.PreviousPath);
             await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
+            _diff.TextView.DocumentIdentity = string.Join('\0', Repository.Path, entry.Path, commit.Hash, revisions.BaseRevision, "diff");
             _diff.ShowDiff(await Repository.GetRevisionFileDiffDocumentAsync(revisions, file,
                 displayOptions: _diff.TextView.DisplayOptions, cancellationToken: token));
         }
-        else if (_tabs.SelectedIndex == 2) { _view.ShowFile(entry.Path, await Repository.GetFileBytesAsync(entry.Path, commit.Hash, token)); }
+        else if (_tabs.SelectedIndex == 2)
+        {
+            _view.TextView.DocumentIdentity = string.Join('\0', Repository.Path, entry.Path, commit.Hash, "blob");
+            _view.ShowFile(entry.Path, await Repository.GetFileBytesAsync(entry.Path, commit.Hash, token), await Repository.GetFileEncodingNameAsync(token));
+        }
         else if (_tabs.SelectedIndex == 3) { _blame.SetBlame(await Repository.GetFileBlameAsync(entry.Path, commit.Hash, _blame.Preferences.GitOptions, token)); }
     }
 

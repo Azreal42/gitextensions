@@ -22,6 +22,8 @@
     <Compile Include="../../app/GitCommands/Git/GitBranchNameNormaliser.cs" Link="Shared/GitBranchNameNormaliser.cs" />
     <Compile Include="../../app/GitCommands/Git/GitBranchNameOptions.cs" Link="Shared/GitBranchNameOptions.cs" />
     <Compile Include="../../app/GitCommands/Settings/IgnoreWhitespaceKind.cs" Link="Shared/IgnoreWhitespaceKind.cs" />
+    <Compile Include="../../app/GitCommands/Settings/AutoCRLFType.cs" Link="Shared/AutoCRLFType.cs" />
+    <Compile Include="../../app/GitCommands/Utils/AutoCrlfHelper.cs" Link="Shared/AutoCrlfHelper.cs" />
     <Compile Include="../../app/GitCommands/Settings/AppSettings.CommitInfoPosition.cs" Link="Shared/CommitInfoPosition.cs" />
   </ItemGroup>
 </Project>

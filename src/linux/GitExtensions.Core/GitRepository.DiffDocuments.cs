@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using GitCommands.Settings;
 
 namespace GitExtensions.Linux;
@@ -41,8 +42,24 @@ public sealed partial class GitRepository
 
     private async Task<string> ExecuteDiffReadAsync(GitDiffReadCommand command, CancellationToken token,
         IReadOnlyDictionary<string, string?>? environment = null)
-        => command.Arguments.Count == 0 ? "" : (await ExecuteAsync(command.Arguments, token,
-            allowedExitCodes: command.AllowedExitCodes, environment: environment).ConfigureAwait(false)).StandardOutput;
+    {
+        byte[] bytes = await ExecuteDiffReadBytesAsync(command, token, environment).ConfigureAwait(false);
+        string encodingName = await GetFileEncodingNameAsync(token).ConfigureAwait(false);
+        GitDecodedPatch decoded = GitFileEncodingCodec.DecodePatch(bytes, encodingName);
+        if (!decoded.IsLossless) { throw new DecoderFallbackException("The patch cannot be decoded losslessly with the repository file encoding; use the byte-preserving diff document API."); }
+        return decoded.Text;
+    }
+
+    private async Task<byte[]> ExecuteDiffReadBytesAsync(GitDiffReadCommand command, CancellationToken token,
+        IReadOnlyDictionary<string, string?>? environment = null)
+    {
+        if (command.Arguments.Count == 0) { return []; }
+        string[] pathOptions = command.Arguments.FirstOrDefault() is "diff" or "show" ? ["--literal-pathspecs"] : [];
+        GitBinaryResult binary = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. pathOptions, .. command.Arguments], token, environment: environment).ConfigureAwait(false);
+        if (!binary.Success && !(command.AllowedExitCodes?.Contains(binary.ExitCode) ?? false))
+        { throw new GitCommandException(command.Arguments, new(binary.ExitCode, Encoding.UTF8.GetString(binary.StandardOutput), binary.StandardError)); }
+        return binary.StandardOutput;
+    }
 
     private async Task<GitDiffDocument> ReadDiffDocumentAsync(GitDiffReadCommand command, GitComparisonDiffOptions diffOptions,
         GitDiffDisplayOptions? displayOptions, bool readOnly, CancellationToken token, bool forceGitColoring = false)
@@ -50,8 +67,16 @@ public sealed partial class GitRepository
         displayOptions ??= new();
         if (!Enum.IsDefined(displayOptions.Appearance)) { throw new ArgumentOutOfRangeException(nameof(displayOptions)); }
         token.ThrowIfCancellationRequested();
-        string patch = await ExecuteDiffReadAsync(command, token).ConfigureAwait(false);
-        if (command.Arguments.Count == 0) { return new(patch, patch, GitDiffAppearance.Patch, !readOnly) { UseGitColoring = forceGitColoring || displayOptions.UseGitColoring }; }
+        string encodingName = displayOptions.FileEncodingName is null ? await GetFileEncodingNameAsync(token).ConfigureAwait(false)
+            : GitFileEncodingCodec.GetEncoding(displayOptions.FileEncodingName).WebName;
+        byte[] patchBytes = await ExecuteDiffReadBytesAsync(command, token).ConfigureAwait(false);
+        GitDecodedPatch decoded = GitFileEncodingCodec.DecodePatch(patchBytes, encodingName);
+        string patch = decoded.Text;
+        bool canStage = !readOnly && decoded.IsLossless && !GitPatch.Parse(patch).Any(file => file.IsBinary);
+        GitDiffDocument Document(string display, GitDiffAppearance effectiveAppearance, bool equivalent, bool color, int width = 0)
+            => new(patch, display, effectiveAppearance, equivalent)
+            { FileEncodingName = encodingName, PatchBytes = patchBytes, IsLosslessPatch = decoded.IsLossless, UseGitColoring = color, DifftasticWidth = width };
+        if (command.Arguments.Count == 0) { return Document(patch, GitDiffAppearance.Patch, canStage, forceGitColoring || displayOptions.UseGitColoring); }
         GitDiffAppearance appearance = readOnly ? GitDiffAppearance.Patch : displayOptions.Appearance;
         if (appearance == GitDiffAppearance.Difftastic && await IsDifftasticAvailableAsync(token).ConfigureAwait(false))
         {
@@ -61,8 +86,9 @@ public sealed partial class GitRepository
                 IReadOnlyDictionary<string, string?> environment = GetDifftasticEnvironment(diffOptions, displayOptions);
                 int width = int.TryParse(environment["DFT_WIDTH"], NumberStyles.Integer, CultureInfo.InvariantCulture, out int configuredWidth) && configuredWidth > 0
                     ? configuredWidth : GetDifftasticWidth(displayOptions);
-                string display = await ExecuteDiffReadAsync(external, token, environment).ConfigureAwait(false);
-                return new(patch, display, GitDiffAppearance.Difftastic, false) { DifftasticWidth = width, UseGitColoring = true };
+                // Difftastic emits its own UTF-8 presentation, independent of the raw Git patch's file codec.
+                string display = new UTF8Encoding(false, true).GetString(await ExecuteDiffReadBytesAsync(external, token, environment).ConfigureAwait(false));
+                return Document(display, GitDiffAppearance.Difftastic, false, true, width);
             }
             catch (GitCommandException exception) when (IsMissingDifftasticExecutable(exception.Result.StandardError))
             {
@@ -71,7 +97,7 @@ public sealed partial class GitRepository
         }
         if (appearance == GitDiffAppearance.Difftastic) { appearance = GitDiffAppearance.Patch; }
         bool color = forceGitColoring || displayOptions.UseGitColoring || appearance == GitDiffAppearance.GitWordDiff;
-        if (!color) { return new(patch, patch, appearance, !readOnly && appearance == GitDiffAppearance.Patch); }
+        if (!color) { return Document(patch, appearance, canStage && appearance == GitDiffAppearance.Patch, false); }
         List<string> arguments = [.. command.Arguments];
         int terminator = arguments.IndexOf("--");
         if (terminator < 0) { terminator = arguments.Count; }
@@ -81,8 +107,8 @@ public sealed partial class GitRepository
         if (appearance == GitDiffAppearance.GitWordDiff) { arguments.Insert(terminator, "--word-diff=color"); }
         string gitCommand = arguments[GetDiffCommandIndex(arguments)];
         IReadOnlyList<string> configuration = await GetDiffDisplayConfigurationAsync(gitCommand, displayOptions.ReverseGitColoring, token).ConfigureAwait(false);
-        string colored = await ExecuteDiffReadAsync(new([.. configuration, .. arguments], command.AllowedExitCodes), token).ConfigureAwait(false);
-        return new(patch, colored, appearance, !readOnly && appearance == GitDiffAppearance.Patch && GitAnsiColorParser.StripAnsi(colored) == patch) { UseGitColoring = true };
+        GitDecodedPatch colored = GitFileEncodingCodec.DecodePatch(await ExecuteDiffReadBytesAsync(new([.. configuration, .. arguments], command.AllowedExitCodes), token).ConfigureAwait(false), encodingName, appearance == GitDiffAppearance.GitWordDiff);
+        return Document(colored.Text, appearance, canStage && colored.IsLossless && appearance == GitDiffAppearance.Patch && GitAnsiColorParser.StripAnsi(colored.Text) == patch, true);
     }
 
     private async Task<IReadOnlyList<string>> GetDiffDisplayConfigurationAsync(string command, bool reverse, CancellationToken token)

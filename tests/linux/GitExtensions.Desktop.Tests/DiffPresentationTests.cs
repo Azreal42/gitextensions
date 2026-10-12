@@ -25,7 +25,7 @@ public class DiffPresentationTests
     {
         using Fixture fixture = new();
         string patch = Patch.Replace("\n", "\r\n", StringComparison.Ordinal);
-        fixture.View.ShowDocument(new(patch, Colored(patch), GitDiffAppearance.Patch, true));
+        fixture.View.ShowDocument(new(patch, Colored(patch), GitDiffAppearance.Patch, true) { IsLosslessPatch = true });
         int start = patch.IndexOf("+same", StringComparison.Ordinal), length = "+same new value λ🙂\r\n".Length;
         fixture.View.Select(start, length);
         Assert.That(fixture.View.CanStagePatch, Is.True);
@@ -91,7 +91,7 @@ public class DiffPresentationTests
     {
         using Fixture fixture = new();
         string patch = Header + "-old\n+new\n";
-        fixture.View.ShowDocument(new(patch, patch, GitDiffAppearance.Patch, true) { UseGitColoring = true });
+        fixture.View.ShowDocument(new(patch, patch, GitDiffAppearance.Patch, true) { UseGitColoring = true, IsLosslessPatch = true });
         fixture.Window.UpdateLayout();
         using WriteableBitmap frame = fixture.Window.CaptureRenderedFrame()!;
         Assert.That(fixture.View.AnsiSpans, Is.Empty);
@@ -105,7 +105,7 @@ public class DiffPresentationTests
     public void PlainFilePreservesLiteralEscapeSequencesAndClearsDiffColors()
     {
         using Fixture fixture = new();
-        fixture.View.ShowDocument(new(Patch, Colored(Patch), GitDiffAppearance.Patch, true));
+        fixture.View.ShowDocument(new(Patch, Colored(Patch), GitDiffAppearance.Patch, true) { IsLosslessPatch = true });
         fixture.View.Mode = DiffViewMode.PlainText;
         fixture.Source.Text = "literal \u001b[31mred\u001b[0m in a file\n";
         Assert.That(fixture.View.Text, Is.EqualTo(fixture.Source.Text));

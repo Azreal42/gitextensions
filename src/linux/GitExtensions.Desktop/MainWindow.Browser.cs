@@ -223,8 +223,10 @@ public sealed partial class MainWindow
     };
 
     private static Image CommitInfoLayoutImage(CommitInfoPosition position)
+        => OriginalIconImage(CommitInfoLayoutDescription(position).Icon);
+
+    private static Image OriginalIconImage(string icon)
     {
-        string icon = CommitInfoLayoutDescription(position).Icon;
         using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + icon));
         return new Image { Source = new Bitmap(stream), Width = 16, Height = 16, Tag = icon };
     }

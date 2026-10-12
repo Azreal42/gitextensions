@@ -120,19 +120,7 @@ public sealed partial class GitRepository
     public Task<GitResult> ApplyPatchAsync(string patch, bool staged = true, bool reverse = false, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(patch);
-        List<string> arguments = ["apply", "--whitespace=nowarn"];
-        if (staged)
-        {
-            arguments.Add("--cached");
-        }
-
-        if (reverse)
-        {
-            arguments.Add("--reverse");
-        }
-
-        arguments.Add("-");
-        return MutateAsync(arguments, cancellationToken, patch);
+        return ApplyFileEncodedPatchAsync(patch, staged, reverse, cancellationToken);
     }
 
     public Task<GitResult> StageAsync(IEnumerable<string> paths, CancellationToken cancellationToken = default)

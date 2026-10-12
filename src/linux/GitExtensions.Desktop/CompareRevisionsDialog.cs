@@ -177,13 +177,17 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         if (_tabs.SelectedIndex == 1 && !tabs[1].IsEnabled || _tabs.SelectedIndex == 2 && !tabs[2].IsEnabled) { _tabs.SelectedIndex = 0; }
         _fileCaption.Text = file is null ? T("No differences") : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
         if (file is null || _comparison is null) { _diff.ShowDiff(T("No differences")); _baseView.ShowDiff(""); _compareView.ShowDiff(""); return; }
+        _diff.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.Path, file.OriginalPath, _comparison.Base, _comparison.Compare, "diff");
+        _baseView.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.OriginalPath ?? file.Path, _comparison.Base, "blob");
+        _compareView.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.Path, _comparison.Compare, "blob");
         if (_tabs.SelectedIndex == 0)
         {
+            _diff.TextView.BeginDocumentLoad();
             await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
             _diff.ShowDiff(await Repository.GetComparisonFileDiffDocumentAsync(_comparison, file, ReadDiffOptions(), _diff.TextView.DisplayOptions, token));
         }
-        else if (_tabs.SelectedIndex == 1) { _baseView.ShowFile(file.OriginalPath ?? file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Base, file.OriginalPath ?? file.Path, token)); }
-        else { _compareView.ShowFile(file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Compare, file.Path, token)); }
+        else if (_tabs.SelectedIndex == 1) { _baseView.ShowFile(file.OriginalPath ?? file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Base, file.OriginalPath ?? file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
+        else { _compareView.ShowFile(file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Compare, file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
     }
     public GitComparisonDiffOptions ReadDiffOptions() => new((IgnoreWhitespaceKind)Math.Max(0, _whitespace.SelectedIndex), (int)(_context.Value ?? 3), _entire.IsChecked == true, _asText.IsChecked == true);
 
@@ -274,18 +278,12 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
     private async Task HandleKeyAsync(KeyEventArgs args)
     {
         if (args.Handled || IsBusy) { return; }
+        if (ActiveView.TextView.HandleReadingShortcut(args) || ActiveView.TextView.AppearanceMenu.HandleKeyDown(args)) { return; }
         if (args.Key == Key.F && args.KeyModifiers == KeyModifiers.Control) { _find.Focus(); _find.SelectAll(); args.Handled = true; }
         else if (args.Key == Key.F3) { Find(args.KeyModifiers != KeyModifiers.Shift); args.Handled = true; }
         else if (args.Key is Key.Up or Key.Down && args.KeyModifiers == KeyModifiers.Alt) { await MoveChangeAsync(args.Key == Key.Down); args.Handled = true; }
         else if (args.Key == Key.E && args.KeyModifiers == KeyModifiers.Control) { _entire.IsChecked = _entire.IsChecked != true; args.Handled = true; }
         else if (args.Key == Key.W && args.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift)) { _whitespace.SelectedIndex = _whitespace.SelectedIndex == 3 ? 0 : 3; args.Handled = true; }
-        else if (args.Key == Key.G && args.KeyModifiers == KeyModifiers.Control)
-        {
-            string[]? value = await Dialogs.PromptAsync(this, T("Go to line"), (T("Line"), "1"));
-            if (value is not null && int.TryParse(value[0], out int number) && number > 0)
-            { DiffView view = ActiveView.TextView; number = Math.Min(number, view.Editor.Document.LineCount); view.Select(view.Editor.Document.GetLineByNumber(number).Offset, 0); view.Editor.ScrollToLine(number); }
-            args.Handled = true;
-        }
     }
     protected override void UpdateActions()
     {

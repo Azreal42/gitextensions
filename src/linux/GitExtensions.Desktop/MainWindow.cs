@@ -224,7 +224,7 @@ public sealed partial class MainWindow : Window
             new TabItem { Header = "Stashes", Content = Panel(_stashes, Row(Button("Create…", StashAsync), Button("Apply", () => ApplyStashAsync(false)), Button("Pop", () => ApplyStashAsync(true)), Button("Delete…", DropStashAsync), Button("Show diff", ShowStashAsync))) },
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", () => RunAsync("Prune worktrees", r => r.PruneWorktreesAsync(cancellationToken: Token))))) },
             new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Initialize / update", UpdateSubmodulesAndBuildAsync), Button("Sync URLs", () => RunAsync("Sync submodules", r => r.SyncSubmodulesAsync(cancellationToken: Token))), Button("Open", OpenSubmoduleAsync))) },
-            new TabItem { Header = "Files", Content = Split(Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), Button("Search…", SearchAsync))), _fileContent = new FileContentView(_fileView)) },
+            new TabItem { Header = "Files", Content = Split(Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), Button("Search…", SearchAsync))), BuildFileContent()) },
             new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync))) },
             new TabItem { Header = "Repository", Content = BuildRepositoryTools() }
         ];
@@ -243,9 +243,14 @@ public sealed partial class MainWindow : Window
         _hunks.ItemTemplate = TextTemplate<GitPatchHunk>(hunk => hunk.Header);
         _stagedDiff.IsCheckedChanged += async (_, _) => await LoadSelectedDiffAsync();
         _changesContent = new FileContentView(_changesDiff, _changesDiffView);
-        DockPanel panel = Panel(_changesContent, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync)),
-            Row(Button("Stage selected lines", () => ApplyLinesAsync(false)), Button("Unstage selected lines", () => ApplyLinesAsync(true))),
-            Row(Button("Stage selected hunks", () => ApplyHunksAsync(false)), Button("Unstage selected hunks", () => ApplyHunksAsync(true))), _hunks);
+        _workingWholeFile = new MenuItem { Name = "WorktreeDiffEntireFileMenu", Header = T("Show entire file"), ToggleType = MenuItemToggleType.CheckBox,
+            InputGesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.E, Avalonia.Input.KeyModifiers.Control), Icon = OriginalIconImage("ShowEntireFile.png") };
+        _workingWholeFile.Click += async (_, _) => await ToggleWorkingWholeFileAsync();
+        _changesDiffView.ContextMenu = new ContextMenu { ItemsSource = new object[] { _workingWholeFile }.Concat(_changesDiffView.CreateContextMenuItems()).ToArray() };
+        DockPanel panel = Panel(_changesContent, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync),
+            RevisionDiffIconButton("WorktreeDiffEntireFile", "Show entire file", "ShowEntireFile.png", ToggleWorkingWholeFileAsync), _changesDiffView.ReadingMenu.CreateEncodingSelector()),
+            Row(_stageLinesButton = Button("Stage selected lines", () => ApplyLinesAsync(false)), _unstageLinesButton = Button("Unstage selected lines", () => ApplyLinesAsync(true))),
+            Row(_stageHunksButton = Button("Stage selected hunks", () => ApplyHunksAsync(false)), _unstageHunksButton = Button("Unstage selected hunks", () => ApplyHunksAsync(true))), _hunks);
         return panel;
     }
 
@@ -442,6 +447,12 @@ public sealed partial class MainWindow : Window
     {
         if (_busy) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
+        // Disabling the tabs during an asynchronous diff read releases keyboard
+        // focus. Keep the viewer's command scope for consecutive reading gestures.
+        DiffView? readingView = label == "File diff"
+            ? new[] { _commitContent?.TextView, _changesDiffView, _fileContent?.TextView }
+                .FirstOrDefault(view => view?.IsKeyboardFocusWithin == true)
+            : null;
         _busy = true;
         LastException = null;
         SetActionsEnabled(false);
@@ -470,6 +481,8 @@ public sealed partial class MainWindow : Window
             SetActionsEnabled(true);
             if (success) { _state.Text = _repositorySummary; }
             if (_pendingDiffAppearance && !_lifetime.IsCancellationRequested) { await ReloadDiffAppearancesAsync(); }
+            if (IsVisible && readingView is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true })
+            { readingView.Editor.TextArea.Focus(); }
         }
     }
 
@@ -487,6 +500,7 @@ public sealed partial class MainWindow : Window
         if (_changesFilesView is not null) { _changesFilesView.IsEnabled = enabled; }
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
+        UpdatePartialStageActions();
     }
 
     private static bool RequiresWorktree(string label) => label.StartsWith("Stage ", StringComparison.Ordinal) || label.StartsWith("Unstage ", StringComparison.Ordinal)

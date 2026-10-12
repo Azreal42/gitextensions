@@ -84,7 +84,7 @@ public sealed partial class MainWindow
     {
         if (SelectedWorkingChange is null || _changesDiffView?.CanStagePatch != true || _selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging hunks" : "Show unstaged changes before staging hunks"; return; }
-        string patch = _selectedPatch.SelectHunks(_hunks.SelectedItems.Cast<GitPatchHunk>().Select(h => h.Index));
+        byte[] patch = GitEncodedPatch.SelectHunks(_changesDiffView.Document!, _hunks.SelectedItems.Cast<GitPatchHunk>().Select(h => h.Index));
         await RunAsync(reverse ? "Unstage hunks" : "Stage hunks", r => r.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: Token));
         await LoadSelectedDiffAsync();
     }
@@ -93,17 +93,11 @@ public sealed partial class MainWindow
     {
         if (_changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging lines" : "Show unstaged changes before staging lines"; return; }
-        string? patch = GitPatch.SelectLines(_changesDiffView.CanonicalText, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
+        byte[]? patch = GitEncodedPatch.SelectLines(_changesDiffView.Document!, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
             staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
         if (patch is null) { _state.Text = "The selected text contains no changed lines"; return; }
         await RunAsync(reverse ? "Unstage lines" : "Stage lines", repository => repository.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: Token));
         await LoadSelectedDiffAsync();
-    }
-
-    private static string DisplayBytes(byte[] bytes, bool truncated = false)
-    {
-        if (bytes.Take(8192).Contains((byte)0)) { return $"Binary file ({bytes.Length:N0} bytes{(truncated ? "+" : "")})\n{Convert.ToHexString(bytes.AsSpan(0, Math.Min(256, bytes.Length)))}"; }
-        return System.Text.Encoding.UTF8.GetString(bytes) + (truncated ? "\n[Preview limited to 2 MB]" : "");
     }
 
     private async Task CommitAsync()
@@ -378,12 +372,17 @@ public sealed partial class MainWindow
     private Task ShowFileAsync(string path) => RunAsync("File contents", async r =>
     {
         _fileContent?.ClearImage();
+        _fileContent?.TextView.BeginDocumentLoad();
+        if (_fileContent is not null)
+        {
+            _fileContent.TextView.DocumentIdentity = string.Join('\0', r.Path, path, CurrentRevision, "blob");
+            await _fileContent.TextView.ConfigureRepositoryAsync(r, Token);
+        }
         if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.PlainText; }
         GitTreeEntry? entry = (await r.GetTreeAsync(CurrentRevision, path, Token)).FirstOrDefault(item => item.Path == path);
         if (entry?.IsSubmodule == true) { _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}"; return; }
         byte[] bytes = await r.GetFileBytesAsync(path, CurrentRevision, Token);
-        if (FileContentView.IsImagePath(path) && _fileContent is not null) { _fileContent.ShowImageOrHex(path, bytes); }
-        else { _fileView.Text = DisplayBytes(bytes); }
+        _fileContent?.ShowFile(path, bytes, await r.GetFileEncodingNameAsync(Token));
     }, refresh: false);
 
     private Task BlameAsync() => RunAsync("Blame", async r =>

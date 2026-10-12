@@ -137,7 +137,9 @@ public sealed class BlameDialog : RepositoryDialog
         if (selected.Line.Hash.All(character => character == '0')) { throw new InvalidOperationException(T("This line has not been committed yet.")); }
         GitRevisionChanges revisions = await Repository.GetRevisionChangesAsync(selected.Line.Hash, cancellationToken: token);
         GitRevisionFile file = revisions.Files.FirstOrDefault(file => file.Path == selected.OriginalPath) ?? new(selected.OriginalPath, 'M');
+        _changes.TextView.BeginDocumentLoad();
         await _changes.TextView.ConfigureRepositoryAsync(Repository, token);
+        _changes.TextView.DocumentIdentity = string.Join('\0', Repository.Path, file.Path, revisions.Revision, revisions.BaseRevision, "diff");
         _changes.ShowDiff(await Repository.GetRevisionFileDiffDocumentAsync(revisions, file,
             displayOptions: _changes.TextView.DisplayOptions, cancellationToken: token));
         _tabs.SelectedIndex = 1;

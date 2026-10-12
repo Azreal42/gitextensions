@@ -34,6 +34,9 @@ public sealed class CommitDialog : Window
     private readonly TextBox _source = new();
     private readonly DiffView _diff;
     private readonly FileContentView _content;
+    private GitComparisonDiffOptions _viewerOptions = new();
+    private readonly MenuItem _wholeFile = new() { Name = "CommitDiffEntireFileMenu", ToggleType = MenuItemToggleType.CheckBox,
+        InputGesture = new KeyGesture(Key.E, KeyModifiers.Control) };
     private readonly TextBox _message = new() { Name = "Message", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private readonly CheckBox _amend = new() { Name = "Amend", Height = 24, MinHeight = 24 };
     private readonly CheckBox _resetAuthor = new() { Name = "ResetAuthor", IsVisible = false, Height = 24, MinHeight = 24 };
@@ -106,6 +109,11 @@ public sealed class CommitDialog : Window
             if (!_busy) { await ReloadDiffAppearanceAsync(); }
         };
         _content = new FileContentView(_source, _diff);
+        _wholeFile.Header = T("Show entire file");
+        using (Stream iconStream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/ShowEntireFile.png")))
+        { _wholeFile.Icon = new Image { Source = new Bitmap(iconStream), Width = 16, Height = 16 }; }
+        _wholeFile.Click += async (_, _) => await ToggleWholeFileAsync();
+        _diff.ContextMenu = new ContextMenu { ItemsSource = new object[] { _wholeFile }.Concat(_diff.CreateContextMenuItems()).ToArray() };
         FileStatusListPreferencesStore fileListPreferences = new(Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!);
         _unstagedView = new FileStatusListView(_unstaged, FileHeader, fileListPreferences) { Name = "UnstagedFileStatusList" };
         _stagedView = new FileStatusListView(_staged, FileHeader, fileListPreferences) { Name = "StagedFileStatusList" };
@@ -214,7 +222,7 @@ public sealed class CommitDialog : Window
         KeyDown += HandleShortcut;
         AddHandler(KeyDownEvent, (sender, args) =>
         {
-            if (args.KeyModifiers == KeyModifiers.Control && args.Key is Key.Enter or Key.S) { HandleShortcut(sender, args); }
+            if (args.KeyModifiers == KeyModifiers.Control && (args.Key is Key.Enter or Key.S || args.Key == Key.E && _diff.IsKeyboardFocusWithin)) { HandleShortcut(sender, args); }
         }, RoutingStrategies.Tunnel);
         Opened += async (_, _) => { await InitializeAsync(); _unstaged.Focus(); };
         Activated += async (_, _) =>
@@ -290,7 +298,9 @@ public sealed class CommitDialog : Window
         main.Children.Add(Splitter(1, false));
 
         Grid right = new() { RowDefinitions = new RowDefinitions("68*,5,32*") };
-        right.Children.Add(Pane(_content, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines)));
+        Button entireFile = Action("CommitDiffEntireFile", "", "Show entire file", "ShowEntireFile.png", ToggleWholeFileAsync, false);
+        entireFile.Width = entireFile.Height = 24; entireFile.MinWidth = 0; entireFile.Padding = default;
+        right.Children.Add(Pane(_content, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines, entireFile, _diff.ReadingMenu.CreateEncodingSelector())));
         right.Children.Add(Splitter(1, true));
         Grid editor = new() { ColumnDefinitions = new ColumnDefinitions("175,5,*") };
         Button cancel = new() { Name = "Cancel", Content = C("Cancel", "Cancel"), IsCancel = true, Height = 26 };
@@ -505,8 +515,12 @@ public sealed class CommitDialog : Window
     private async Task LoadDiffAsync()
     {
         _content.ClearImage();
+        _diff.BeginDocumentLoad();
+        _patch = null;
         GitChange? change = _status?.Changes.FirstOrDefault(change => change.Path == _path);
         if (change is null) { _diff.Mode = DiffViewMode.Auto; _source.Text = T("Select a file to view its changes."); _patch = null; return; }
+        _diff.DocumentIdentity = string.Join('\0', _repository.Path, change.Path, change.OriginalPath, _status?.Head, _viewStaged ? "index" : "worktree");
+        await _diff.ConfigureRepositoryAsync(_repository, OperationToken);
         _diff.Mode = change.IsUntracked ? DiffViewMode.PlainText : DiffViewMode.Auto;
         if (await _content.ShowChangedImageAsync(_repository, change, _viewStaged, OperationToken)) { _patch = null; return; }
         if (change.IsUntracked)
@@ -514,13 +528,12 @@ public sealed class CommitDialog : Window
             await using FileStream stream = File.OpenRead(Path.Combine(_repository.Path, change.Path));
             byte[] bytes = new byte[(int)Math.Min(2_000_000, stream.Length)];
             await stream.ReadExactlyAsync(bytes, OperationToken);
-            _source.Text = bytes.Take(8192).Contains((byte)0) ? T("Binary file") + $" ({stream.Length:N0} bytes)" : System.Text.Encoding.UTF8.GetString(bytes) + (stream.Length > bytes.Length ? "\n[Preview limited to 2 MB]" : "");
+            _content.ShowFile(change.Path, bytes, await _repository.GetFileEncodingNameAsync(OperationToken), stream.Length > bytes.Length);
         }
         else
         {
-            await _diff.ConfigureRepositoryAsync(_repository, OperationToken);
             _diff.ShowDocument(await _repository.GetDiffDocumentAsync(change.Path, _viewStaged,
-                displayOptions: _diff.DisplayOptions, originalPath: change.OriginalPath, cancellationToken: OperationToken));
+                options: _viewerOptions, displayOptions: _diff.DisplayOptions, originalPath: change.OriginalPath, cancellationToken: OperationToken));
         }
         _patch = _diff.CanStagePatch ? GitPatch.Parse(_source.Text ?? "").FirstOrDefault() : null;
     }
@@ -561,15 +574,23 @@ public sealed class CommitDialog : Window
         });
     }
 
+    private async Task ToggleWholeFileAsync()
+    {
+        if (_busy || _commitRequested || _status?.Changes.FirstOrDefault(change => change.Path == _path) is not { IsUntracked: false }) { return; }
+        _viewerOptions = _viewerOptions with { ShowEntireFile = !_viewerOptions.ShowEntireFile };
+        _wholeFile.IsChecked = _viewerOptions.ShowEntireFile;
+        await RunAsync(T("Diff"), LoadDiffAsync);
+    }
+
     private Task ApplyPatchAsync(bool reverse, bool lines) => MutateAsync(reverse ? T("Unstage") : T("Stage"), async () =>
     {
         if (!_diff.CanStagePatch || _patch is null || _viewStaged != reverse) { throw new InvalidOperationException(T("Select a changed file in the correct list first.")); }
-        string? patch;
+        byte[]? patch;
         if (lines)
         {
             if (_diff.SelectionLength == 0) { throw new InvalidOperationException(T("Select changed lines in the diff first.")); }
             GitChange change = _status!.Changes.Single(change => change.Path == _path);
-            patch = GitPatch.SelectLines(_diff.CanonicalText, _diff.SelectionStart, _diff.SelectionLength, staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
+            patch = GitEncodedPatch.SelectLines(_diff.Document!, _diff.SelectionStart, _diff.SelectionLength, staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
         }
         else
         {
@@ -583,7 +604,7 @@ public sealed class CommitDialog : Window
                 offset += hunk.Text.Length;
             }
             if (indices.Count == 0) { throw new InvalidOperationException(T("Place the cursor in a diff hunk first.")); }
-            patch = _patch.SelectHunks(indices);
+            patch = GitEncodedPatch.SelectHunks(_diff.Document!, indices);
         }
         if (patch is null) { throw new InvalidOperationException(T("The selected text contains no changed lines.")); }
         return await _repository.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: OperationToken);
@@ -812,6 +833,10 @@ public sealed class CommitDialog : Window
     private void UpdateAvailability()
     {
         foreach (Control control in _interactive) { control.IsEnabled = !_busy && !_commitRequested; }
+        _wholeFile.IsEnabled = !_busy && !_commitRequested
+            && _status?.Changes.FirstOrDefault(change => change.Path == _path) is { IsUntracked: false };
+        Button? entireFile = _interactive.OfType<Button>().FirstOrDefault(button => button.Name == "CommitDiffEntireFile");
+        if (entireFile is not null) { entireFile.IsEnabled = _wholeFile.IsEnabled; }
         if (_busy || _commitRequested) { return; }
         _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
         _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();
@@ -857,6 +882,7 @@ public sealed class CommitDialog : Window
                 case Key.D2: _diff.Editor.TextArea.Focus(); break;
                 case Key.D3: _staged.Focus(); break;
                 case Key.D4: _message.Focus(); break;
+                case Key.E when _diff.IsKeyboardFocusWithin: args.Handled = true; await ToggleWholeFileAsync(); break;
                 case Key.F:
                     if (_selectionFilterToolbar is null) { return; }
                     _selectionFilterToolbar.IsVisible = !_selectionFilterToolbar.IsVisible;

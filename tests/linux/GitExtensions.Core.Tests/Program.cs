@@ -120,6 +120,8 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("intraline bounds, five-line context blocks and moved exclusions", DiffColorScenarios.InlineBoundsAndBlocksAsync),
     ("original gaps patch retains content-only markers and empty-line anchors", DiffColorScenarios.OriginalGapFixtureAsync),
     .. DiffDisplayScenarios.All,
+    .. FileEncodingScenarios.All,
+    .. FilePreviewScenarios.All,
     ("difftastic formatter retains original sample gutters and right column", DifftasticScenarios.OriginalFixtureAsync),
     ("difftastic strips number colors and aligns growing column prefixes", DifftasticScenarios.ColumnsAndColorsAsync),
     ("difftastic one-sided and zero-context Unicode lines retain correct gutters", DifftasticScenarios.OneSidedAndUnicodeAsync),
@@ -128,6 +130,14 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("official difftastic color-never preserves exact emitted text without guessing gutters", DifftasticScenarios.RealNoColor177Async),
     ("official difftastic unilateral Unicode and numeric content survives compact columns", DifftasticScenarios.RealUnicodeUnilateralAsync),
     ("official difftastic multiple compact files align at one content ruler", DifftasticScenarios.RealMultipleFilesAsync),
+    ("copy patch preserves exact selected or complete UTF16 display text", DiffClipboardScenarios.PatchVerbatimAsync),
+    ("whole patch version copies preserve original header and prefix semantics", DiffClipboardScenarios.WholeVersionsAsync),
+    ("selected hunk version copies retain only displayed old or new fragments", DiffClipboardScenarios.HunkSelectionAsync),
+    ("mid-line version selections protect literal signs and original header spacing", DiffClipboardScenarios.MidLineSelectionAsync),
+    ("version copies preserve triple-prefix and no-newline-marker rules", DiffClipboardScenarios.TriplesAndMarkerAsync),
+    ("clipboard versions reuse original autocrlf conversion and CRLF semantics", DiffClipboardScenarios.LineEndingsAsync),
+    ("plain clipboard text and invalid UTF16 selections remain explicit", DiffClipboardScenarios.PlainAndValidationAsync),
+    ("real partial Git patch version copies never reconstruct omitted file content", DiffClipboardScenarios.RealPartialPatchAsync),
 ];
 
 int failures = 0;

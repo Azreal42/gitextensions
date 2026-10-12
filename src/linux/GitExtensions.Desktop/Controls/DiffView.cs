@@ -7,12 +7,15 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.Controls.Primitives;
+using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.Document;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
+using GitCommands.Settings;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -35,6 +38,8 @@ public sealed class DiffView : UserControl, IDisposable
     private int _numberColumns = 1;
     private readonly List<int> _changeOffsets = [];
     private GitDiffDocument? _document;
+    private bool _documentReady = true;
+    internal event EventHandler? DocumentLoading;
     private GitDifftasticText? _difftastic;
     private GitDiffColorPalette _colorPalette = null!;
     private IReadOnlyList<GitDiffColorSpan> _ansiSpans = [];
@@ -43,11 +48,19 @@ public sealed class DiffView : UserControl, IDisposable
     private bool _equivalentDisplay = true;
     private bool _difftasticAvailable;
     private bool _disposed;
+    private string? _loadedIdentity;
+    private string? _documentIdentity;
+    private string? _configuredRepositoryPath;
+    private string? _fileEncodingName;
+    private readonly Dictionary<int, string?> _readingSections = [];
+    private long _readingVersion;
     private bool UsesGitColoring => _document?.UseGitColoring == true || _ansiSpans.Count > 0
         || _document?.EffectiveAppearance is GitDiffAppearance.GitWordDiff or GitDiffAppearance.Difftastic;
     private DiffViewerPreferences _preferences;
     public DiffViewerAppearanceMenu AppearanceMenu { get; }
+    public DiffViewerReadingMenu ReadingMenu { get; }
     public event EventHandler? DisplayOptionsChanged;
+    public event EventHandler? FileEncodingChanged;
 
     public DiffView(TextBox source, DiffViewerPreferencesStore? preferencesStore = null)
     {
@@ -57,7 +70,6 @@ public sealed class DiffView : UserControl, IDisposable
         _preferences = AppearanceMenu.Preferences;
         AppearanceMenu.Changed += PreferencesChanged;
         AppearanceMenu.Attach(this);
-        ContextMenu = new ContextMenu { ItemsSource = AppearanceMenu.CreateContextMenuItems() };
         ClipToBounds = true;
         Styles.Add(new StyleInclude(new Uri("avares://GitExtensions/"))
         {
@@ -84,6 +96,8 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.TextArea.TextView.LineTransformers.Add(new DiffForeground(this));
         _editor.TextArea.SelectionChanged += SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged += SynchronizeSelection;
+        ReadingMenu = new(this);
+        ContextMenu = new ContextMenu { ItemsSource = CreateContextMenuItems() };
         _source.PropertyChanged += SourceChanged;
         AddHandler(KeyDownEvent, (_, args) =>
         {
@@ -91,6 +105,8 @@ public sealed class DiffView : UserControl, IDisposable
             if (args.Key == Key.Down) { GoToNextChange(); } else { GoToPreviousChange(); }
             args.Handled = true;
         }, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, (_, args) => HandleReadingShortcut(args), RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, ZoomWithWheel, RoutingStrategies.Tunnel);
         ActualThemeVariantChanged += ThemeChanged;
         Content = _editor;
         ApplyPalette();
@@ -99,37 +115,118 @@ public sealed class DiffView : UserControl, IDisposable
 
     public string Text => _editor.Text;
     public string CanonicalText => _source.Text ?? "";
+    public GitDiffDocument? Document => _document;
+    public string DefaultFileEncodingName { get; private set; } = "utf-8";
+    public string? FileEncodingName
+    {
+        get => _fileEncodingName;
+        set
+        {
+            string? normalized = value is null ? null : GitFileEncodingCodec.GetEncoding(value).WebName;
+            if (_fileEncodingName == normalized) { return; }
+            if (_document is not null) { _documentReady = false; }
+            _fileEncodingName = normalized; ReadingMenu.Refresh();
+            FileEncodingChanged?.Invoke(this, EventArgs.Empty);
+            if (_document is not null) { DisplayOptionsChanged?.Invoke(this, EventArgs.Empty); }
+        }
+    }
+    /// <summary>Set before displaying content. Include repository, path, revisions and staging side;
+    /// omit presentation options such as context lines or coloring.</summary>
+    public string? DocumentIdentity
+    {
+        get => _documentIdentity;
+        set
+        {
+            if (value == _documentIdentity) { return; }
+            _documentReady = false;
+            _documentIdentity = value; _readingVersion++;
+            _editor.Select(0, 0); SetScrollOffset(default);
+            ReadingMenu.Refresh();
+        }
+    }
+    public AutoCRLFType? CopyAutoCrlf { get; set; }
+    public bool CanCopyPatch => _documentReady && _isPatch && EffectiveMode is DiffViewMode.Unified or DiffViewMode.Combined
+        && (_document?.EffectiveAppearance ?? GitDiffAppearance.Patch) == GitDiffAppearance.Patch;
+    public int MaxFileLine => HasFileNumbers ? _lines.SelectMany((_, index) => GetColumnNumbers(index + 1))
+        .Where(number => number > 0).Select(number => number!.Value).DefaultIfEmpty(0).Max() : _editor.Document.LineCount;
+    public int CurrentFileLine
+    {
+        get
+        {
+            ReadingAnchor anchor = CaptureAnchor(CaretOffset, nearest: true);
+            return anchor.New ?? anchor.Old ?? anchor.Row;
+        }
+    }
     public DiffViewMode Mode { get => GetValue(ModeProperty); set => SetValue(ModeProperty, value); }
     public DiffViewMode EffectiveMode { get; private set; } = DiffViewMode.Unified;
-    public bool CanStagePatch => EffectiveMode == DiffViewMode.Unified && _isPatch && _equivalentDisplay
-        && (_document is null || _document.CanStageEquivalent && _document.EffectiveAppearance == GitDiffAppearance.Patch);
+    public bool CanStagePatch => _documentReady && EffectiveMode == DiffViewMode.Unified && _isPatch && _equivalentDisplay
+        && (_document is null || _document.CanStageEquivalent && _document.IsLosslessPatch && _document.EffectiveAppearance == GitDiffAppearance.Patch);
     public GitDiffDisplayOptions DisplayOptions => new(_preferences.UseGitColoring, _preferences.ReverseGitColoring,
-        (GitDiffAppearance)_preferences.Appearance, ViewerWidth: (int)Math.Max(0, Bounds.Width));
+        (GitDiffAppearance)_preferences.Appearance, ViewerWidth: (int)Math.Max(0, Bounds.Width)) { FileEncodingName = FileEncodingName };
     internal IReadOnlyList<GitDiffColorSpan> AnsiSpans => _ansiSpans;
     internal IReadOnlyList<GitDiffColorSpan> InlineSpans => _inlineSpans;
     internal int RightColumnStart => _difftastic?.RightColumnStart ?? 0;
 
     public async Task ConfigureRepositoryAsync(GitRepository repository, CancellationToken token = default)
     {
+        string previousDefault = DefaultFileEncodingName;
+        string? previousOverride = _fileEncodingName;
         _difftasticAvailable = await repository.IsDifftasticAvailableAsync(token);
+        DefaultFileEncodingName = await repository.GetFileEncodingNameAsync(token);
+        if (_configuredRepositoryPath != repository.Path) { _fileEncodingName = null; _configuredRepositoryPath = repository.Path; }
+        string? autoCrlf = (await repository.GetConfigAsync("^core\\.autocrlf$", cancellationToken: token)).LastOrDefault().Value;
+        CopyAutoCrlf = Enum.TryParse(autoCrlf, ignoreCase: true, out AutoCRLFType value) ? value : null;
+        ReadingMenu.Refresh();
+        if (previousDefault != DefaultFileEncodingName || previousOverride != _fileEncodingName) { FileEncodingChanged?.Invoke(this, EventArgs.Empty); }
         UpdateAppearanceContext();
+    }
+
+    public void BeginDocumentLoad()
+    {
+        _documentReady = false;
+        DocumentLoading?.Invoke(this, EventArgs.Empty);
+        ReadingMenu.Refresh();
     }
 
     public void ShowDocument(GitDiffDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
+        DocumentLoading?.Invoke(this, EventArgs.Empty);
+        _documentReady = true;
         _document = document;
         _settingDocument = true;
         try { _source.Text = document.Patch; }
         finally { _settingDocument = false; }
         UpdateText();
     }
-    public int SelectionStart { get => _editor.SelectionStart; set => _editor.SelectionStart = value; }
-    public int SelectionLength { get => _editor.SelectionLength; set => _editor.SelectionLength = value; }
-    public int CaretOffset { get => _editor.CaretOffset; set => _editor.Select(value, 0); }
-    public void Select(int start, int length) => _editor.Select(start, length);
+    public int SelectionStart { get => _editor.SelectionStart; set { _readingVersion++; _editor.SelectionStart = value; } }
+    public int SelectionLength { get => _editor.SelectionLength; set { _readingVersion++; _editor.SelectionLength = value; } }
+    public int CaretOffset { get => _editor.CaretOffset; set => Select(value, 0); }
+    public void Select(int start, int length) { _readingVersion++; _editor.Select(start, length); }
     public bool GoToNextChange() => NavigateChange(forward: true);
     public bool GoToPreviousChange() => NavigateChange(forward: false);
+    public bool HandleReadingShortcut(KeyEventArgs args) => ReadingMenu.HandleKeyDown(args);
+    public IReadOnlyList<object> CreateContextMenuItems()
+        => [.. ReadingMenu.CreateContextMenuItems(), new Separator(), .. AppearanceMenu.CreateContextMenuItems()];
+
+    public bool GoToFileLine(int line, bool oldVersion = false)
+    {
+        if (line < 1 || line > MaxFileLine) { return false; }
+        int row;
+        if (!HasFileNumbers) { row = line; }
+        else
+        {
+            row = FindNumberedRow(line, oldVersion, section: null);
+            // FileViewerInternal.GetCaretOffset falls back to document offset 0
+            // when the requested right-hand line is absent (including deleted files).
+            if (row == 0) { row = 1; }
+        }
+        DocumentLine documentLine = _editor.Document.GetLineByNumber(row);
+        Select(documentLine.Offset, 0);
+        _editor.ScrollToLine(row);
+        _editor.TextArea.Focus();
+        return true;
+    }
 
     internal TextEditor Editor => _editor;
     internal (int? Old, int? New) GetLineNumbers(int lineNumber)
@@ -177,11 +274,12 @@ public sealed class DiffView : UserControl, IDisposable
 
     private void SourceChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
-        if (args.Property == TextBox.TextProperty && !_settingDocument) { _document = null; UpdateText(); }
+        if (args.Property == TextBox.TextProperty && !_settingDocument) { _document = null; _documentReady = true; UpdateText(); }
     }
 
     private void UpdateText()
     {
+        ReadingPosition position = CaptureReadingPosition();
         string canonical = CanonicalText;
         bool parseAnsi = Mode != DiffViewMode.PlainText && _document is not null
             && (_document.UseGitColoring || _document.Display != _document.Patch || _document.EffectiveAppearance != GitDiffAppearance.Patch);
@@ -199,27 +297,162 @@ public sealed class DiffView : UserControl, IDisposable
             ParseLines();
             BuildInlineSpans();
             UpdateAppearanceContext();
-            _editor.Select(0, 0);
-            _editor.ScrollToHome();
+            bool sameIdentity = DocumentIdentity is not null && DocumentIdentity == position.Identity;
+            bool sameText = colored.Text == position.Text;
+            bool preserve = sameIdentity || DocumentIdentity is null && position.Identity is null && sameText;
+            _loadedIdentity = DocumentIdentity;
+            if (preserve) { RestoreReadingPosition(position, sameText); }
+            else { _readingVersion++; _editor.Select(0, 0); SetScrollOffset(default); }
             _numbers.InvalidateMeasure();
             _numbers.InvalidateVisual();
             _editor.TextArea.TextView.Redraw();
         }
         finally { _updatingText = false; }
         SynchronizeSelection(this, EventArgs.Empty);
+        ReadingMenu.Refresh();
     }
+
+    private bool HasFileNumbers => _isPatch || _difftastic is not null && _lines.Any(line => line.Old is > 0 || line.New is > 0);
+
+    private ReadingAnchor CaptureAnchor(int offset, bool nearest = false)
+    {
+        DocumentLine documentLine = _editor.Document.GetLineByOffset(Math.Clamp(offset, 0, _editor.Document.TextLength));
+        int index = documentLine.LineNumber - 1, column = offset - documentLine.Offset;
+        if (!HasFileNumbers || index >= _lines.Count) { return new(index + 1, column, null, null, null); }
+        int candidate = index;
+        if (nearest && _lines[candidate].Old is null && _lines[candidate].New is null)
+        {
+            candidate = Enumerable.Range(index, _lines.Count - index).FirstOrDefault(row => _lines[row].Old is > 0 || _lines[row].New is > 0, -1);
+            if (candidate < 0) { candidate = Enumerable.Range(0, index).LastOrDefault(row => _lines[row].Old is > 0 || _lines[row].New is > 0, index); }
+        }
+        DiffLine parsed = _lines[candidate];
+        return new(candidate + 1, candidate == index ? column : 0, parsed.Old, parsed.New, SectionAt(candidate));
+    }
+
+    private string? SectionAt(int index)
+    {
+        if (_readingSections.TryGetValue(index, out string? cached)) { return cached; }
+        string? section = null;
+        int row = Math.Min(index, _lines.Count - 1);
+        for (; row >= 0; row--)
+        {
+            if (_readingSections.TryGetValue(row, out section)) { break; }
+            DocumentLine line = _editor.Document.GetLineByNumber(row + 1);
+            string text = _editor.Document.GetText(line);
+            if (text.StartsWith("diff --", StringComparison.Ordinal)) { section = text; break; }
+            if (EffectiveMode == DiffViewMode.Difftastic && _lines[row].Kind == DiffLineKind.Header)
+            { section = text.Split(" ---", 2, StringSplitOptions.None)[0]; break; }
+        }
+        for (int current = Math.Max(0, row); current <= index; current++) { _readingSections[current] = section; }
+        return section;
+    }
+
+    private int FindNumberedRow(int number, bool old, string? section)
+    {
+        int next = 0, nextNumber = int.MaxValue;
+        for (int row = 0; row < _lines.Count; row++)
+        {
+            if (section is not null && SectionAt(row) != section) { continue; }
+            int? current = old ? _lines[row].Old : _lines[row].New;
+            if (current == number) { return row + 1; }
+            if (current >= number && current < nextNumber) { next = row + 1; nextNumber = current.Value; }
+        }
+        return next;
+    }
+
+    private int ResolveAnchor(ReadingAnchor anchor)
+    {
+        int row = 0;
+        if (HasFileNumbers && anchor.Old is int old) { row = FindNumberedRow(old, old: true, anchor.Section); }
+        if (row == 0 && HasFileNumbers && anchor.New is int current) { row = FindNumberedRow(current, old: false, anchor.Section); }
+        // Patch and Difftastic identify their one file differently (Git prefixes
+        // versus a tool's path header). Never cross sections in a multi-file view.
+        if (row == 0 && HasFileNumbers && Enumerable.Range(0, _lines.Count).Select(SectionAt).Where(section => section is not null).Distinct(StringComparer.Ordinal).Take(2).Count() <= 1)
+        {
+            if (anchor.Old is int oldLine) { row = FindNumberedRow(oldLine, old: true, section: null); }
+            if (row == 0 && anchor.New is int newLine) { row = FindNumberedRow(newLine, old: false, section: null); }
+        }
+        DocumentLine line = _editor.Document.GetLineByNumber(row > 0 ? row : Math.Clamp(anchor.Row, 1, _editor.Document.LineCount));
+        return line.Offset + Math.Min(anchor.Column, line.Length);
+    }
+
+    private ReadingPosition CaptureReadingPosition()
+    {
+        TextView textView = _editor.TextArea.TextView;
+        double vertical = textView.VerticalOffset;
+        DocumentLine first = textView.GetDocumentLineByVisualTop(vertical);
+        double top = textView.GetVisualTopByDocumentLine(first.LineNumber);
+        double remainder = (vertical - top) / Math.Max(1, textView.DefaultLineHeight);
+        ReadingAnchor scroll = CaptureAnchor(first.Offset);
+        if (HasFileNumbers && scroll.Old is null && scroll.New is null)
+        {
+            ReadingAnchor nearest = CaptureAnchor(first.Offset, nearest: true);
+            scroll = scroll with { Old = nearest.Old, New = nearest.New, Section = nearest.Section };
+        }
+        return new(Text, _loadedIdentity, SelectionStart, SelectionLength, CaretOffset,
+            CaptureAnchor(SelectionStart), CaptureAnchor(SelectionStart + SelectionLength), CaptureAnchor(CaretOffset, nearest: true),
+            scroll, remainder, textView.HorizontalOffset);
+    }
+
+    private void RestoreReadingPosition(ReadingPosition position, bool exact)
+    {
+        int start = exact ? Math.Min(position.Start, Text.Length) : ResolveAnchor(position.StartAnchor);
+        int end = exact ? Math.Min(position.Start + position.Length, Text.Length) : ResolveAnchor(position.EndAnchor);
+        int caret = exact ? Math.Min(position.Caret, Text.Length) : ResolveAnchor(position.CaretAnchor);
+        if (position.Length > 0) { _editor.Select(Math.Min(start, end), Math.Abs(end - start)); _editor.CaretOffset = caret; }
+        else { _editor.Select(caret, 0); }
+        long version = ++_readingVersion;
+        void RestoreScroll()
+        {
+            int row = exact ? Math.Clamp(position.ScrollAnchor.Row, 1, _editor.Document.LineCount)
+                : _editor.Document.GetLineByOffset(ResolveAnchor(position.ScrollAnchor)).LineNumber;
+            double vertical = _editor.TextArea.TextView.GetVisualTopByDocumentLine(row) + position.ScrollRemainder * _editor.TextArea.TextView.DefaultLineHeight;
+            SetScrollOffset(new(position.HorizontalOffset, vertical));
+        }
+        RestoreScroll();
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_disposed || version != _readingVersion || TopLevel.GetTopLevel(this) is not Window { IsVisible: true }) { return; }
+            RestoreScroll();
+        }, DispatcherPriority.Loaded);
+    }
+
+    private void SetScrollOffset(Vector offset) => ((IScrollable)_editor.TextArea.TextView).Offset = offset;
+
+    private void ZoomWithWheel(object? sender, PointerWheelEventArgs args)
+    {
+        if (args.Handled || _disposed) { return; }
+        _readingVersion++;
+        if (args.KeyModifiers != KeyModifiers.Control || args.Delta.Y == 0) { return; }
+        ReadingPosition position = CaptureReadingPosition();
+        _editor.FontSize = Math.Max(6, _editor.FontSize + (args.Delta.Y > 0 ? 1 : -1));
+        _numbers.InvalidateMeasure(); _numbers.InvalidateVisual(); _editor.TextArea.TextView.Redraw();
+        _updatingText = true;
+        try { RestoreReadingPosition(position, exact: true); }
+        finally { _updatingText = false; }
+        SynchronizeSelection(this, EventArgs.Empty);
+        args.Handled = true;
+    }
+
+    private sealed record ReadingAnchor(int Row, int Column, int? Old, int? New, string? Section);
+    private sealed record ReadingPosition(string Text, string? Identity, int Start, int Length, int Caret,
+        ReadingAnchor StartAnchor, ReadingAnchor EndAnchor, ReadingAnchor CaretAnchor, ReadingAnchor ScrollAnchor,
+        double ScrollRemainder, double HorizontalOffset);
 
     private void SynchronizeSelection(object? sender, EventArgs args)
     {
         if (_updatingText) { return; }
+        if (!ReferenceEquals(sender, this)) { _readingVersion++; }
         _source.CaretIndex = _equivalentDisplay ? CaretOffset : 0;
         _source.SelectionStart = _equivalentDisplay ? SelectionStart : 0;
         _source.SelectionEnd = _equivalentDisplay ? SelectionStart + SelectionLength : 0;
         _numbers.InvalidateVisual();
+        ReadingMenu?.Refresh();
     }
 
     private void ParseLines()
     {
+        _readingSections.Clear();
         _lines.Clear();
         _changeOffsets.Clear();
         _isPatch = false;
@@ -374,10 +607,8 @@ public sealed class DiffView : UserControl, IDisposable
 
     private void ThemeChanged(object? sender, EventArgs args)
     {
-        int start = SelectionStart, length = SelectionLength;
         ApplyPalette();
         UpdateText();
-        _editor.Select(Math.Min(start, Text.Length), Math.Min(length, Text.Length - Math.Min(start, Text.Length)));
     }
 
     private void PreferencesChanged(object? sender, EventArgs args)
@@ -390,9 +621,13 @@ public sealed class DiffView : UserControl, IDisposable
             || previous.Appearance != _preferences.Appearance) { DisplayOptionsChanged?.Invoke(this, EventArgs.Empty); }
     }
 
-    private void UpdateAppearanceContext() => AppearanceMenu.SetContext(Mode != DiffViewMode.PlainText
-        && EffectiveMode is not (DiffViewMode.Combined or DiffViewMode.RangeDiff)
-        && (_isPatch || _document?.EffectiveAppearance == GitDiffAppearance.Difftastic), _difftasticAvailable);
+    private void UpdateAppearanceContext()
+    {
+        AppearanceMenu.SetContext(Mode != DiffViewMode.PlainText
+            && EffectiveMode is not (DiffViewMode.Combined or DiffViewMode.RangeDiff)
+            && (_isPatch || _document?.EffectiveAppearance == GitDiffAppearance.Difftastic), _difftasticAvailable);
+        ReadingMenu?.Refresh();
+    }
 
     private IEnumerable<GitDiffColorSpan> SpansForLine(DocumentLine line)
         => _ansiSpans.Where(span => span.Offset < line.EndOffset && span.Offset + span.Length > line.Offset);
@@ -435,6 +670,7 @@ public sealed class DiffView : UserControl, IDisposable
         ActualThemeVariantChanged -= ThemeChanged;
         AppearanceMenu.Changed -= PreferencesChanged;
         AppearanceMenu.Dispose();
+        ReadingMenu.Dispose();
         _editor.TextArea.SelectionChanged -= SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged -= SynchronizeSelection;
     }

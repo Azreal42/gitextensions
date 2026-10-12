@@ -1,13 +1,14 @@
 using System.Globalization;
-using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Avalonia.Controls;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using GitExtensions.Linux;
+using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -15,25 +16,71 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
 {
     private readonly TextBox _source = new();
     private readonly FileContentView _content;
+    private readonly TextBlock _encodingStatus = new() { VerticalAlignment = VerticalAlignment.Center };
+    private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
+    private byte[]? _fileBytes;
+    private string _defaultEncodingName = "utf-8";
+    private string _lastViewerDefaultEncodingName = "utf-8";
     private string? _syntaxPath;
     public DiffView TextView => _content.TextView;
     public bool IsImage => _content.IsImage;
+    public bool IsBinary { get; private set; }
+    public bool HasBom { get; private set; }
+    public string CurrentFileEncodingName { get; private set; } = "utf-8";
+    public string? FileEncodingName => TextView.FileEncodingName;
+    public ComboBox EncodingSelector { get; }
+    public event EventHandler? EncodingChanged;
     public FileHistoryContentView()
     {
         _content = new(_source);
-        Content = _content;
+        EncodingSelector = TextView.ReadingMenu.CreateEncodingSelector();
+        EncodingSelector.Name = "FileHistoryEncoding";
+        TextView.FileEncodingChanged += FileEncodingChanged;
+        StackPanel bar = new() { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new(2, 0), Children = { EncodingSelector, _encodingStatus } };
+        DockPanel.SetDock(bar, Dock.Top);
+        Content = new DockPanel { Children = { bar, _content } };
         ActualThemeVariantChanged += (_, _) => ApplySyntax();
     }
-    public void ShowFile(string path, byte[] bytes)
+    public void ShowFile(string path, byte[] bytes, string? defaultEncodingName = null)
     {
         _syntaxPath = path;
+        _fileBytes = bytes.ToArray();
+        _defaultEncodingName = GitFileEncodingCodec.GetEncoding(defaultEncodingName ?? TextView.DefaultFileEncodingName).WebName;
+        _lastViewerDefaultEncodingName = TextView.DefaultFileEncodingName;
         TextView.Mode = DiffViewMode.PlainText;
-        if (!_content.TryShowImage(path, bytes)) { _source.Text = DecodeBytes(bytes); }
+        if (!_content.TryShowImage(path, bytes)) { DecodeRememberedFile(); }
+        else { IsBinary = false; HasBom = false; _encodingStatus.Text = ""; }
+        EncodingSelector.IsEnabled = !IsImage;
         ApplySyntax();
+    }
+    public void SetFileEncoding(string? name)
+        => TextView.FileEncodingName = string.IsNullOrWhiteSpace(name) ? null : GitFileEncodingCodec.GetEncoding(name).WebName;
+    private void FileEncodingChanged(object? sender, EventArgs args)
+    {
+        if (_lastViewerDefaultEncodingName != TextView.DefaultFileEncodingName)
+        {
+            _defaultEncodingName = TextView.DefaultFileEncodingName;
+            _lastViewerDefaultEncodingName = TextView.DefaultFileEncodingName;
+        }
+        if (_fileBytes is not null && !IsImage) { DecodeRememberedFile(); ApplySyntax(); }
+        EncodingChanged?.Invoke(this, EventArgs.Empty);
+    }
+    private void DecodeRememberedFile()
+    {
+        GitDecodedFile decoded = GitFileEncodingCodec.DecodeFile(_fileBytes!, TextView.FileEncodingName ?? _defaultEncodingName);
+        _source.Text = decoded.Text;
+        CurrentFileEncodingName = decoded.EncodingName;
+        IsBinary = decoded.IsBinary;
+        HasBom = decoded.HasBom;
+        _encodingStatus.Text = decoded.IsBinary ? _translations.Translate("Binary file") : decoded.EncodingName + (decoded.HasBom ? " (BOM)" : "");
     }
     public void ShowDiff(string text)
     {
         _syntaxPath = null;
+        _fileBytes = null;
+        IsBinary = false; HasBom = false;
+        EncodingSelector.IsEnabled = true;
+        _encodingStatus.Text = "";
         TextView.Mode = DiffViewMode.Auto;
         _content.ClearImage();
         _source.Text = text;
@@ -42,27 +89,22 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
     public void ShowDiff(GitDiffDocument document)
     {
         _syntaxPath = null;
+        _fileBytes = null;
+        IsBinary = false; HasBom = false;
+        CurrentFileEncodingName = document.FileEncodingName;
+        EncodingSelector.IsEnabled = true;
+        _encodingStatus.Text = document.FileEncodingName;
         TextView.Mode = DiffViewMode.Auto;
         _content.ClearImage();
         TextView.ShowDocument(document);
         ApplySyntax();
     }
     private void ApplySyntax()
-        => TextView.Editor.SyntaxHighlighting = _syntaxPath is null || IsImage ? null
+        => TextView.Editor.SyntaxHighlighting = _syntaxPath is null || IsImage || IsBinary ? null
             : FileHistorySyntax.Load(_syntaxPath, ActualThemeVariant == ThemeVariant.Dark);
-    public void Dispose() => _content.Dispose();
+    public void Dispose() { TextView.FileEncodingChanged -= FileEncodingChanged; _content.Dispose(); }
 
-    internal static string DecodeBytes(byte[] bytes)
-    {
-        if (bytes.AsSpan().StartsWith(new byte[] { 0xff, 0xfe, 0, 0 })) { return Encoding.UTF32.GetString(bytes, 4, bytes.Length - 4); }
-        if (bytes.AsSpan().StartsWith(new byte[] { 0, 0, 0xfe, 0xff })) { return new UTF32Encoding(true, false).GetString(bytes, 4, bytes.Length - 4); }
-        if (bytes.AsSpan().StartsWith(new byte[] { 0xff, 0xfe })) { return Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2); }
-        if (bytes.AsSpan().StartsWith(new byte[] { 0xfe, 0xff })) { return Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2); }
-        int skip = bytes.AsSpan().StartsWith(new byte[] { 0xef, 0xbb, 0xbf }) ? 3 : 0;
-        try { if (!bytes.Contains((byte)0)) { return new UTF8Encoding(false, true).GetString(bytes, skip, bytes.Length - skip); } }
-        catch (DecoderFallbackException) { }
-        return "Binary file\n" + Convert.ToHexString(bytes.AsSpan(0, Math.Min(4096, bytes.Length)));
-    }
+    internal static string DecodeBytes(byte[] bytes) => GitFileEncodingCodec.DecodeFile(bytes).Text;
 }
 
 internal static class FileHistorySyntax

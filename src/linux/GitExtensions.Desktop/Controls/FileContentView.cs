@@ -15,6 +15,12 @@ public sealed class FileContentView : UserControl, IDisposable
         HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, UseLayoutRounding = true };
     private Bitmap? _bitmap;
     private bool _settingImage;
+    private bool _settingFile;
+    private byte[]? _fileBytes;
+    private string? _filePath;
+    private string? _defaultEncodingName;
+    private string _viewerDefaultEncodingName = "utf-8";
+    private bool _truncated;
     public DiffView TextView { get; }
     public bool IsImage => _bitmap is not null;
     internal Bitmap? Bitmap => _bitmap;
@@ -25,12 +31,50 @@ public sealed class FileContentView : UserControl, IDisposable
         TextView = textView ?? new DiffView(source);
         Content = TextView;
         _source.PropertyChanged += SourceChanged;
+        TextView.FileEncodingChanged += FileEncodingChanged;
+        TextView.DocumentLoading += DocumentLoading;
         SizeChanged += (_, _) => SizeImage();
     }
 
     private void SourceChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
-        if (args.Property == TextBox.TextProperty && !_settingImage) { ClearImage(); }
+        if (args.Property == TextBox.TextProperty && !_settingImage)
+        {
+            if (!_settingFile) { _fileBytes = null; _filePath = null; }
+            ClearImage();
+        }
+    }
+
+    public void ShowFile(string path, byte[] bytes, string? defaultEncodingName = null, bool truncated = false)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        _filePath = path; _fileBytes = bytes.ToArray();
+        _viewerDefaultEncodingName = TextView.DefaultFileEncodingName;
+        _defaultEncodingName = defaultEncodingName ?? _viewerDefaultEncodingName; _truncated = truncated;
+        RenderFile();
+    }
+
+    private void FileEncodingChanged(object? sender, EventArgs args)
+    {
+        if (_viewerDefaultEncodingName != TextView.DefaultFileEncodingName)
+        { _viewerDefaultEncodingName = TextView.DefaultFileEncodingName; _defaultEncodingName = _viewerDefaultEncodingName; }
+        if (_fileBytes is not null) { RenderFile(); }
+    }
+
+    private void DocumentLoading(object? sender, EventArgs args) { _fileBytes = null; _filePath = null; }
+
+    private void RenderFile()
+    {
+        if (_fileBytes is null || _filePath is null) { return; }
+        _settingFile = true;
+        try
+        {
+            TextView.Mode = DiffViewMode.PlainText;
+            if (TryShowImage(_filePath, _fileBytes)) { return; }
+            GitDecodedFile decoded = GitFileEncodingCodec.DecodeFile(_fileBytes, TextView.FileEncodingName ?? _defaultEncodingName, _truncated);
+            _source.Text = decoded.Text + (_truncated ? "\n[Preview limited to 2 MB]" : "");
+        }
+        finally { _settingFile = false; }
     }
 
     public static bool IsImagePath(string path)
@@ -39,6 +83,7 @@ public sealed class FileContentView : UserControl, IDisposable
 
     public bool TryShowImage(string path, byte[] bytes)
     {
+        if (!_settingFile) { _fileBytes = null; _filePath = null; }
         ClearImage();
         if (!IsImagePath(path)) { return false; }
         try
@@ -109,6 +154,8 @@ public sealed class FileContentView : UserControl, IDisposable
     public void Dispose()
     {
         _source.PropertyChanged -= SourceChanged;
+        TextView.FileEncodingChanged -= FileEncodingChanged;
+        TextView.DocumentLoading -= DocumentLoading;
         ClearImage();
         TextView.Dispose();
     }

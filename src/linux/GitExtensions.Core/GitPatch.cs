@@ -28,7 +28,7 @@ public static partial class GitPatch
         bool reverse = false, bool isNewFile = false, bool isRenamed = false)
     {
         ValidateSelection(diff, selectionPosition, selectionLength);
-        byte[]? patch = GitCommands.Patches.PatchManager.GetSelectedLinesAsPatch(diff, selectionPosition, selectionLength,
+        byte[]? patch = GitCommands.Patches.PatchManager.GetSelectedLinesAsPatch(diff, selectionPosition, GitPatchSelection.InclusiveLength(selectionLength),
             staged, Encoding.UTF8, reverse, isNewFile, isRenamed);
         return patch is null ? null : Encoding.UTF8.GetString(patch);
     }
@@ -36,7 +36,7 @@ public static partial class GitPatch
     public static string? SelectResetLines(string diff, int selectionPosition, int selectionLength)
     {
         ValidateSelection(diff, selectionPosition, selectionLength);
-        byte[]? patch = GitCommands.Patches.PatchManager.GetResetWorkTreeLinesAsPatch(diff, selectionPosition, selectionLength, Encoding.UTF8);
+        byte[]? patch = GitCommands.Patches.PatchManager.GetResetWorkTreeLinesAsPatch(diff, selectionPosition, GitPatchSelection.InclusiveLength(selectionLength), Encoding.UTF8);
         return patch is null ? null : Encoding.UTF8.GetString(patch);
     }
 

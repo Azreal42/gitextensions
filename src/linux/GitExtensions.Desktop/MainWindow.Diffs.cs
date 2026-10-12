@@ -27,10 +27,40 @@ public sealed partial class MainWindow
     private FileContentView? _fileContent;
     private bool _loadingCommitFiles;
     private bool _pendingDiffAppearance;
+    private Button? _stageLinesButton, _unstageLinesButton, _stageHunksButton, _unstageHunksButton;
+    private GitComparisonDiffOptions _workingViewerOptions = new();
+    private MenuItem? _workingWholeFile;
+
+    private async Task ToggleWorkingWholeFileAsync()
+    {
+        if (_busy || SelectedWorkingChange is not { IsUntracked: false }) { return; }
+        _workingViewerOptions = _workingViewerOptions with { ShowEntireFile = !_workingViewerOptions.ShowEntireFile };
+        if (_workingWholeFile is not null) { _workingWholeFile.IsChecked = _workingViewerOptions.ShowEntireFile; }
+        await LoadSelectedDiffAsync();
+    }
+
+    private void UpdatePartialStageActions()
+    {
+        bool available = !_busy && _repository is { IsBare: false } && _changesDiffView?.CanStagePatch == true
+            && _selectedPatch?.Hunks.Count is > 0;
+        bool staged = _stagedDiff.IsChecked == true;
+        if (_workingWholeFile is not null) { _workingWholeFile.IsEnabled = !_busy && SelectedWorkingChange is { IsUntracked: false }; }
+        if (_stageLinesButton is not null) { _stageLinesButton.IsEnabled = available && !staged; }
+        if (_unstageLinesButton is not null) { _unstageLinesButton.IsEnabled = available && staged; }
+        if (_stageHunksButton is not null) { _stageHunksButton.IsEnabled = available && !staged; }
+        if (_unstageHunksButton is not null) { _unstageHunksButton.IsEnabled = available && staged; }
+    }
+
+    private Control BuildFileContent()
+    {
+        _fileContent = new FileContentView(_fileView);
+        return Panel(_fileContent, Row(_fileContent.TextView.ReadingMenu.CreateEncodingSelector()));
+    }
 
     private void RequestDiffAppearanceReload(object? sender, EventArgs args)
     {
         _pendingDiffAppearance = true;
+        UpdatePartialStageActions();
         if (!_busy) { Dispatcher.UIThread.Post(async () => await ReloadDiffAppearancesAsync()); }
     }
 
@@ -129,7 +159,9 @@ public sealed partial class MainWindow
             () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ContextLines = Math.Max(0, _revisionViewerOptions.ContextLines - 1), ShowEntireFile = false })));
         toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffEntireFile", "Show entire file", "ShowEntireFile.png",
             () => ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = !_revisionViewerOptions.ShowEntireFile })));
-        _revisionWholeFile = new MenuItem { Name = "RevisionDiffEntireFileMenu", Header = T("Show entire file"), ToggleType = MenuItemToggleType.CheckBox };
+        toolbar.Children.Add(_commitContent!.TextView.ReadingMenu.CreateEncodingSelector());
+        _revisionWholeFile = new MenuItem { Name = "RevisionDiffEntireFileMenu", Header = T("Show entire file"), ToggleType = MenuItemToggleType.CheckBox,
+            InputGesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.E, Avalonia.Input.KeyModifiers.Control), Icon = OriginalIconImage("ShowEntireFile.png") };
         _revisionWholeFile.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { ShowEntireFile = _revisionWholeFile.IsChecked });
         _revisionTreatAsText = new MenuItem { Name = "RevisionDiffTreatAsText", Header = T("Treat all files as text"), ToggleType = MenuItemToggleType.CheckBox };
         _revisionTreatAsText.Click += async (_, _) => await ChangeRevisionViewerOptionsAsync(_revisionViewerOptions with { TreatAllFilesAsText = _revisionTreatAsText.IsChecked });
@@ -143,7 +175,7 @@ public sealed partial class MainWindow
             return item;
         }).ToArray();
         _commitContent!.TextView.ContextMenu = new ContextMenu { ItemsSource = new object[] { _revisionWholeFile, _revisionTreatAsText }
-            .Concat(_revisionWhitespaceOptions).Concat(_commitContent.TextView.AppearanceMenu.CreateContextMenuItems()).ToArray() };
+            .Concat(_revisionWhitespaceOptions).Concat(_commitContent.TextView.CreateContextMenuItems()).ToArray() };
         return ClassicChrome.Border(toolbar, new Thickness(0, 0, 0, 1));
     }
 
@@ -280,10 +312,13 @@ public sealed partial class MainWindow
     private async Task ShowRevisionDiffItemAsync(GitRepository repository, TreeViewItem item)
     {
         if (_commitContent is null) { return; }
+        _commitContent.TextView.BeginDocumentLoad();
         _commitContent.ClearImage();
         await _commitContent.TextView.ConfigureRepositoryAsync(repository, Token);
         if (item.Tag is GitRevisionDiffGroup group)
         {
+            _commitContent.TextView.DocumentIdentity = string.Join("\0", repository.Path, "group", group.Kind, group.Revision, group.BaseRevision,
+                group.RangeDiff?.First, group.RangeDiff?.Second);
             if (group.Kind == GitRevisionDiffGroupKind.RangeDiff && group.RangeDiff is not null)
             {
                 _commitContent.TextView.Mode = DiffViewMode.RangeDiff;
@@ -303,6 +338,8 @@ public sealed partial class MainWindow
             return;
         }
         if (item.Tag is not RevisionDiffFileSelection selection) { _commitContent.TextView.Mode = DiffViewMode.Auto; _diff.Text = T("Select a file to inspect its diff."); return; }
+        _commitContent.TextView.DocumentIdentity = string.Join("\0", repository.Path, selection.File.Path, selection.Group.Kind,
+            selection.Group.Revision, selection.Group.BaseRevision, selection.File.OriginalPath);
         if (selection.Group.Kind == GitRevisionDiffGroupKind.Combined && selection.Group.CombinedDiff is not null)
         {
             _commitContent.TextView.Mode = DiffViewMode.Combined;
@@ -333,6 +370,13 @@ public sealed partial class MainWindow
     private async Task LoadChangedFileContentAsync(GitRepository repository, GitChange change, bool staged)
     {
         _changesContent?.ClearImage();
+        _changesContent?.TextView.BeginDocumentLoad();
+        _selectedPatch = null; _hunks.ItemsSource = null;
+        if (_changesContent is not null)
+        {
+            _changesContent.TextView.DocumentIdentity = string.Join('\0', repository.Path, change.Path, change.OriginalPath, _historyGraph.CurrentHead, staged ? "index" : "worktree");
+            await _changesContent.TextView.ConfigureRepositoryAsync(repository, Token);
+        }
         if (_changesContent is not null) { _changesContent.TextView.Mode = change.IsUntracked ? DiffViewMode.PlainText : DiffViewMode.Auto; }
         if (_changesContent is not null && await _changesContent.ShowChangedImageAsync(repository, change, staged, Token)) { return; }
         if (change.IsUntracked)
@@ -340,13 +384,12 @@ public sealed partial class MainWindow
             await using FileStream stream = File.OpenRead(Path.Combine(repository.Path, change.Path));
             byte[] bytes = new byte[(int)Math.Min(stream.Length, 2_000_000)];
             await stream.ReadExactlyAsync(bytes, Token);
-            _changesDiff.Text = DisplayBytes(bytes, stream.Length > bytes.Length);
+            if (_changesContent is not null) { _changesContent.ShowFile(change.Path, bytes, await repository.GetFileEncodingNameAsync(Token), stream.Length > bytes.Length); }
         }
         else if (_changesContent is not null)
         {
-            await _changesContent.TextView.ConfigureRepositoryAsync(repository, Token);
             _changesContent.TextView.ShowDocument(await repository.GetDiffDocumentAsync(change.Path, staged,
-                displayOptions: _changesContent.TextView.DisplayOptions, originalPath: change.OriginalPath, cancellationToken: Token));
+                options: _workingViewerOptions, displayOptions: _changesContent.TextView.DisplayOptions, originalPath: change.OriginalPath, cancellationToken: Token));
         }
     }
 }
