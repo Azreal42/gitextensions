@@ -75,7 +75,7 @@ if [[ -z "$publish_dir" ]]; then
     fi
     publish_dir="$work_dir/publish"
     "$DOTNET" publish "$project" --configuration Release --runtime "$runtime" \
-        --self-contained true --output "$publish_dir" --nologo \
+        --self-contained true --output "$publish_dir" --nologo -m:1 \
         -p:Version="$version" -p:ContinuousIntegrationBuild=true \
         -p:PublishSingleFile=false -p:PublishTrimmed=false
 else

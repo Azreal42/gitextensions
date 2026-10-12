@@ -6,7 +6,8 @@ using GitCommands.Git;
 namespace GitExtensions.Linux.Desktop;
 
 internal sealed record ReferencePreferences(LocalChangesAction CheckoutChanges = LocalChangesAction.DontChange,
-    CheckoutNewBranchMode RemoteCheckoutMode = CheckoutNewBranchMode.Create, bool IncludeUntracked = true, bool ReapplyStash = false);
+    CheckoutNewBranchMode RemoteCheckoutMode = CheckoutNewBranchMode.Create, bool IncludeUntracked = true, bool ReapplyStash = false,
+    bool UseDefaultCheckoutChanges = false, bool AlwaysShowCheckoutDialog = false);
 
 internal sealed class ReferencePreferencesStore
 {

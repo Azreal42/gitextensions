@@ -39,6 +39,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly Func<CancellationToken, Task>? _afterSubmoduleUpdateAsync;
     private readonly SubmoduleCheckoutPreferencesStore _submodulePreferences = new();
     private Window? _owner;
+    private Window? _defaultOwner;
     private bool _closeOwnerWhenIdle;
     private IReadOnlyList<GitReference> _references = [];
     private bool _dirty;
@@ -129,7 +130,9 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private AccessText AccessCaption(string item, string source)
         => new() { Text = Translations.TranslateAccessKeys("FormCheckoutBranch", item, "Text", source) };
 
-    public override async Task InitializeAsync()
+    public override Task InitializeAsync() => InitializeAsync(CancellationToken.None);
+
+    internal async Task InitializeAsync(CancellationToken cancellationToken)
     {
         await RunAsync("Checkout branch", async token =>
         {
@@ -140,10 +143,10 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
             _originalStash = (await Repository.GetStashesAsync(token)).FirstOrDefault()?.Hash;
             PopulateBranches();
             _branches.SelectedItem = _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault(branch => branch.Name == _initial?.Name || _initial is null && branch.IsCurrent)
-                ?? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault();
+                ?? (_initial is null ? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault() : null);
             _current.Text = T("Current branch:") + " " + status.Branch + (_dirty ? "    " + status.Changes.Count + " " + T("Local changes") : "");
             Status.Text = _bare ? T("This operation requires a working tree.") : T("Select branch");
-        });
+        }, cancellationToken: cancellationToken);
         if (IsVisible && !IsKeyboardFocusWithin)
         {
             (_remote.IsChecked == true ? _remote : _detached.IsChecked == true ? _detached : _local).Focus();
@@ -173,11 +176,33 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         _newName.CaretIndex = Math.Min(caret, _newName.Text.Length);
     }
 
-    private async Task CheckoutAsync()
+    internal bool CanExecuteDefault
+    {
+        get
+        {
+            ReferencePreferences preferences = _preferences.Load();
+            return LastError is null && !_bare && !preferences.AlwaysShowCheckoutDialog && _initial?.IsBranch == true
+                && (_branches.SelectedItem as GitReference)?.Name == _initial.Name
+                && (!_dirty || preferences.UseDefaultCheckoutChanges);
+        }
+    }
+
+    internal async Task ExecuteDefaultAsync(Window owner, CancellationToken token)
+    {
+        _defaultOwner = owner;
+        try { await CheckoutAsync(token); }
+        finally { _defaultOwner = null; }
+    }
+
+    private Task CheckoutAsync() => CheckoutAsync(CancellationToken.None);
+
+    private async Task CheckoutAsync(CancellationToken cancellationToken)
     {
         _checkout.Focus();
         NormalizeName();
         GitCheckoutOptions options = ReadOptions();
+        if (_defaultOwner is not null && !_dirty) { options = options with { Changes = LocalChangesAction.DontChange }; }
+        Window operationOwner = _defaultOwner ?? this;
         if (options.Changes == LocalChangesAction.Reset && _dirty && !await Dialogs.ConfirmAsync(this, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
         if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(this, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }
         await RunAsync("Checkout", async token =>
@@ -202,17 +227,17 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                 bool? update = _submodulePreferences.Load().Decision;
                 if (update is null)
                 {
-                    SubmoduleCheckoutDecision? decision = await CheckoutSubmodulePrompt.ShowAsync(this, token);
+                    SubmoduleCheckoutDecision? decision = await CheckoutSubmodulePrompt.ShowAsync(operationOwner, token);
                     update = decision?.Update;
                     if (decision is { Remember: true }) { _submodulePreferences.Remember(decision.Update); }
                 }
-                if (update == true && await SubmoduleUpdateDialog.ShowAsync(this, Repository, token) && _afterSubmoduleUpdateAsync is not null)
+                if (update == true && await SubmoduleUpdateDialog.ShowAsync(operationOwner, Repository, token) && _afterSubmoduleUpdateAsync is not null)
                 {
                     await _afterSubmoduleUpdateAsync(token);
                 }
             }
             Close();
-        });
+        }, cancellationToken: cancellationToken);
     }
 
     protected override void UpdateActions()

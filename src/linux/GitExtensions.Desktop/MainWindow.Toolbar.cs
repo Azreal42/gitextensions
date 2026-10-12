@@ -80,9 +80,8 @@ public sealed partial class MainWindow
             { arrow.Bind(PathIcon.ForegroundProperty, new Binding(nameof(TemplatedControl.Foreground)) { Source = _recent }); }
         };
         toolbar.Add(_recent, _recentToolbarMenu);
-        _currentBranchButton = ToolbarButton("BrowseCurrentBranch", "Checkout branch…", "BranchLocal.png", CheckoutAsync, text: true);
-        _currentBranchButton.Width = 132;
-        toolbar.Add(_currentBranchButton, MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"));
+        _currentBranchButton = BuildCurrentBranchButton();
+        toolbar.Add(_currentBranchButton, _branchOverflow!);
         toolbar.Add(BuildPullButton(), new MenuItem { Name = "PullOverflow", Header = T("Pull/Fetch…"), Icon = OriginalIconImage("Pull.png"), ItemsSource = CreatePullMenu("PullOverflow") });
         Command("BrowsePush", "Push", "Push.png", PushAsync);
         _commitToolbarButton = ToolbarButton("BrowseCommit", "Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes"), text: true);
@@ -249,6 +248,7 @@ public sealed partial class MainWindow
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0) }, ToolbarDropdownArrow(_currentBranchButton, "BrowseCurrentBranchDropdownArrow") } };
             Grid.SetColumn(((Grid)_currentBranchButton.Content).Children[1], 1); Grid.SetColumn(((Grid)_currentBranchButton.Content).Children[2], 2);
             ToolTip.SetTip(_currentBranchButton, branch + " — " + T("Checkout branch"));
+            if (_branchOverflow is not null) { _branchOverflow.Header = branch; }
         }
         if (_commitToolbarButton is not null)
         {

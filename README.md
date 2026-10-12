@@ -1,14 +1,15 @@
 ![Git Extensions logo](https://cdn.rawgit.com/gitextensions/gitextensions/master/setup/assets/Logo/git-extensions-logo.svg)
 
-# Git Extensions
+# Git Extensions — Linux fork
 
-Git Extensions is a standalone Windows UI tool for managing git repositories.
-It also integrates with Windows Explorer and Microsoft Visual Studio.
+This is a fork of [Git Extensions](https://github.com/gitextensions/gitextensions)
+bringing its familiar Windows interface and Git workflows to Linux using
+**Avalonia and .NET 10**. **macOS support is planned for later**.
 
-## Linux port (in progress)
+## Linux alpha
 
-The native Linux desktop uses Avalonia and .NET 10. The portable build is separate
-from the Windows solution while the existing workflows are migrated. Feature parity,
+The Linux port is an alpha; migration is still in progress. The portable build is
+separate from the original Windows solution. Feature parity,
 plugins and platform integration remain tracked in [.agents/docs/todo.md](.agents/docs/todo.md).
 
 Build and test with the .NET 10 SDK and Git 2.38 or newer:
@@ -20,13 +21,15 @@ dotnet run --project tests/linux/GitExtensions.Plugins.Tests
 dotnet test tests/linux/GitExtensions.Desktop.Tests
 dotnet run --project src/linux/GitExtensions.Desktop -- /path/to/repository
 eng/linux/build-deb.sh
-eng/linux/verify-deb.sh artifacts/linux/deb/gitextensions_*_amd64.deb
+eng/linux/verify-deb.sh artifacts/linux/deb/gitextensions_7.2.1~linux-alpha_amd64.deb
 ```
 
 Install the generated package on Debian 12+ or Ubuntu 24.04+ with
-`sudo apt install ./artifacts/linux/deb/gitextensions_*_amd64.deb`, then run
+`sudo apt install ./artifacts/linux/deb/gitextensions_7.2.1~linux-alpha_amd64.deb`, then run
 `gitextensions /path/to/repository` or launch it from the desktop menu. The package
-includes .NET; users only need its declared system dependencies. GUI verification
+includes .NET; users only need its declared system dependencies. Versions follow
+the original release with a `-linux-alpha` suffix (currently
+`7.2.1-linux-alpha`, packaged as `7.2.1~linux-alpha` for Debian). GUI verification
 uses X11/XWayland or Xvfb. Build outputs live in `artifacts/linux/`.
 
 Architecture intentions and decisions: [.agents/docs](.agents/docs/README.md).
@@ -35,7 +38,7 @@ Architecture intentions and decisions: [.agents/docs](.agents/docs/README.md).
 
 [git-extensions-documentation.readthedocs.org](https://git-extensions-documentation.readthedocs.org/)
 
-## Current Status
+## Original Windows project
 
 <a href="#backers" alt="sponsors on Open Collective"><img src="https://opencollective.com/gitextensions/backers/badge.svg" /></a> <a href="#sponsors" alt="Sponsors on Open Collective"><img src="https://opencollective.com/gitextensions/sponsors/badge.svg" /></a>
 
@@ -80,7 +83,7 @@ Architecture intentions and decisions: [.agents/docs](.agents/docs/README.md).
   </tr>
 </table>
 
-## Downloads
+## Original Windows downloads
 
 <a href="https://github.com/gitextensions/gitextensions/releases" rel="nofollow" style="vertical-align: -webkit-baseline-middle;"><img src="https://img.shields.io/github/downloads/gitextensions/gitextensions/total.svg?label=GitHub%20downloads%20(total)&cacheSeconds=86400"></a> <a href="https://chocolatey.org/packages/gitextensions" rel="nofollow" style="vertical-align: -webkit-baseline-middle;"><img src="https://img.shields.io/chocolatey/dt/gitextensions.svg?label=Chocolatey%20downloads%20(total)&cacheSeconds=86400"></a>
 

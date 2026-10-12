@@ -209,7 +209,7 @@
       "gitextensions.plugins": {
         "type": "Project",
         "dependencies": {
-          "GitExtensions.Core": "[8.0.0-linux.1, )"
+          "GitExtensions.Core": "[7.2.1-linux-alpha, )"
         }
       }
     }

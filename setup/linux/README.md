@@ -4,8 +4,8 @@ Build without root using the .NET 10 SDK, Git, Python 3 and `dpkg-deb`:
 
 ```sh
 eng/linux/build-deb.sh
-eng/linux/verify-deb.sh artifacts/linux/deb/gitextensions_*_amd64.deb
-sudo apt install ./artifacts/linux/deb/gitextensions_*_amd64.deb
+eng/linux/verify-deb.sh artifacts/linux/deb/gitextensions_7.2.1~linux-alpha_amd64.deb
+sudo apt install ./artifacts/linux/deb/gitextensions_7.2.1~linux-alpha_amd64.deb
 gitextensions /path/to/repository
 ```
 
@@ -16,6 +16,10 @@ and epoch produce identical packages. `DEB_MAINTAINER` sets the release contact.
 The published dependency metadata and notices are copied from the NuGet cache.
 `verify-installed-deb.sh` verifies installation and launch in an isolated dpkg
 root using `fakeroot` and the host's dependency status.
+
+The current alpha is `7.2.1-linux-alpha`, following the original Git Extensions
+release number. Debian encodes the prerelease as `7.2.1~linux-alpha` so it sorts
+before `7.2.1`. Linux is the current target; macOS support is planned later.
 
 Targets: Debian 12+ and Ubuntu 24.04+, amd64 or arm64, with Git 2.38+. The package includes .NET;
 APT installs Git and native dependencies. The GUI needs X11 or XWayland. Install

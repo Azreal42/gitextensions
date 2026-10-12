@@ -192,6 +192,7 @@ public sealed partial class MainWindow : Window
         Closed += async (_, _) =>
         {
             _lifetime.Cancel(); _operation?.Cancel();
+            CancelBranchMenuRead();
             _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose(); _dashboard?.Dispose();
             _revisionFilesView?.Dispose(); _changesFilesView?.Dispose();
             await _backgroundFetch.DisposeAsync();
@@ -514,6 +515,7 @@ public sealed partial class MainWindow : Window
         if (_cancelToolbarButton is not null) { _cancelToolbarButton.IsVisible = !enabled && _operation is not null; _cancelToolbarButton.IsEnabled = _operation is not null; }
         RefreshPullMenu();
         RefreshStashMenu();
+        RefreshBranchMenu();
         _browserToolbar?.Place();
     }
 

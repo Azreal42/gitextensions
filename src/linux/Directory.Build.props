@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Deterministic>true</Deterministic>
-    <Version>8.0.0-linux.1</Version>
+    <Version>7.2.1-linux-alpha</Version>
     <Authors>Git Extensions Team</Authors>
     <Company>Git Extensions</Company>
     <Product>Git Extensions</Product>
