@@ -10,4 +10,4 @@ Pour les séries, conserver le primaire et l’ordre de sélection, même si le 
 
 Le range-diff et le combined sont des lectures ; ne pas les indexer comme patches ordinaires. Les aperçus de fichiers restent du texte, même lorsqu’ils contiennent une syntaxe de patch. Chemins littéraux et octets de contenu ne changent pas.
 
-Repères : `MainWindow.Diffs`, `MainWindow.RangeDiff`, `DiffView`, `GitRepository.MergeDiffs`, `GitRepository.RangeDiffs`. Classification A/B des fichiers, ANSI configurable et différences intra-ligne restent ouverts.
+Repères : `MainWindow.Diffs`, `MainWindow.RangeDiff`, `DiffView`, `GitRepository.MergeDiffs`, `GitRepository.RangeDiffs`. Classification A/B, couleurs ANSI et différences intra-ligne : voir ADR 0024/0025 ; autres options globales du lecteur encore ouvertes.
