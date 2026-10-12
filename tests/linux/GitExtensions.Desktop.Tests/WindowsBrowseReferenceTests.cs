@@ -1,5 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
@@ -7,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.Themes.Fluent;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
@@ -19,6 +22,58 @@ namespace GitExtensions.Desktop.Tests;
 [NonParallelizable]
 public class WindowsBrowseReferenceTests
 {
+    [AvaloniaTest]
+    public async Task NavigationCategoryButtonsKeepTheirRenderedBluePaletteWithAnOrangePlatformAccent()
+    {
+        FluentTheme fluent = Application.Current!.Styles.OfType<FluentTheme>().Single();
+        fluent.Palettes.TryGetValue(ThemeVariant.Light, out ColorPaletteResources? previousLight);
+        fluent.Palettes.TryGetValue(ThemeVariant.Dark, out ColorPaletteResources? previousDark);
+        Color orange = Color.Parse("#e95420");
+        fluent.Palettes[ThemeVariant.Light] = new ColorPaletteResources { Accent = orange };
+        fluent.Palettes[ThemeVariant.Dark] = new ColorPaletteResources { Accent = orange };
+        try
+        {
+            using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\n", createMerge: true);
+            MainWindow main = fixture.Window;
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark, ThemeVariant.Light })
+            {
+                main.RequestedThemeVariant = theme; await Layout(main);
+                Assert.That(((IResourceNode)fluent).TryGetResource("SystemAccentColor", theme, out object? accent), Is.True);
+                Assert.That(accent, Is.EqualTo(orange));
+                Color fill = Color.Parse(theme == ThemeVariant.Dark ? "#2864b4" : "#c2e0ff");
+                Color border = Color.Parse(theme == ThemeVariant.Dark ? "#2864b4" : "#0078d7");
+                foreach (string category in new[] { "Branches", "Remotes", "Tags", "Submodules", "Stashes", "Worktrees" })
+                {
+                    ToggleButton toggle = Field<ToggleButton>(main, "NavigationShow" + category);
+                    toggle.IsChecked = true; await Layout(main);
+                    ContentPresenter presenter = toggle.GetVisualDescendants().OfType<ContentPresenter>().Single(item => item.Name == "PART_ContentPresenter");
+                    AssertChecked();
+                    Point point = toggle.TranslatePoint(new Point(12, 12), main)!.Value;
+                    main.MouseMove(point); await Layout(main); AssertChecked();
+                    main.MouseDown(point, MouseButton.Left); await Layout(main); AssertChecked();
+                    Point outside = new(main.Width - 4, main.Height - 4);
+                    main.MouseMove(outside); main.MouseUp(outside, MouseButton.Left); await Layout(main);
+                    toggle.IsChecked = false; await Layout(main);
+                    Assert.That(((ISolidColorBrush)presenter.Background!).Color, Is.EqualTo(Color.Parse(theme == ThemeVariant.Dark ? "#202020" : "#f0f0f0")));
+                    Assert.That(toggle.Bounds.Size, Is.EqualTo(new Size(24, 24)));
+                    Assert.That(presenter.CornerRadius, Is.EqualTo(new CornerRadius(0)));
+                    toggle.IsChecked = true; await Layout(main);
+
+                    void AssertChecked()
+                    {
+                        Assert.That(((ISolidColorBrush)presenter.Background!).Color, Is.EqualTo(fill), "The actual checked/hover/pressed template must ignore Ubuntu's accent.");
+                        Assert.That(((ISolidColorBrush)presenter.BorderBrush!).Color, Is.EqualTo(border));
+                    }
+                }
+            }
+        }
+        finally
+        {
+            if (previousLight is null) { fluent.Palettes.Remove(ThemeVariant.Light); } else { fluent.Palettes[ThemeVariant.Light] = previousLight; }
+            if (previousDark is null) { fluent.Palettes.Remove(ThemeVariant.Dark); } else { fluent.Palettes[ThemeVariant.Dark] = previousDark; }
+        }
+    }
+
     [AvaloniaTest]
     public async Task PhotoSizedBrowseKeepsOneToolbarInlineReferencesAndTheOriginalPaneProportions()
     {

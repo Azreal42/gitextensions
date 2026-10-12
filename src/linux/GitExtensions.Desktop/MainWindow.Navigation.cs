@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
 
@@ -37,7 +38,9 @@ public sealed partial class MainWindow
         {
             Avalonia.Controls.Primitives.ToggleButton toggle = new()
             { Name = "NavigationShow" + name, Content = OriginalIconImage(icon), IsChecked = true, Width = 24, Height = 24,
-                MinWidth = 0, MinHeight = 24, Padding = default };
+                MinWidth = 0, MinHeight = 24, Padding = default, CornerRadius = default,
+                Resources = new ResourceDictionary { ThemeDictionaries =
+                { [ThemeVariant.Light] = NavigationToolbarResources(false), [ThemeVariant.Dark] = NavigationToolbarResources(true) } } };
             ToolTip.SetTip(toggle, T("Show " + name.ToLowerInvariant()));
             toggle.IsCheckedChanged += (_, _) => { _navigationGroups[name] = toggle.IsChecked == true; RebuildNavigation(); };
             toolbar.Children.Add(toggle);
@@ -56,6 +59,26 @@ public sealed partial class MainWindow
         { Setters = { new Setter(MinHeightProperty, BrowseRowHeight), new Setter(PaddingProperty, new Thickness(0)) } });
         panel.Children.Add(_navigation);
         return panel;
+    }
+
+    private static ResourceDictionary NavigationToolbarResources(bool dark)
+    {
+        IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(dark);
+        ResourceDictionary resources = new();
+        // The photo's professional ToolStrip uses a pale blue checked surface.
+        // Set the template resources too: Fluent otherwise uses the platform accent.
+        IBrush checkedFill = Brush.Parse(dark ? colors["Highlight"] : "#c2e0ff");
+        foreach (string state in new[] { "", "PointerOver", "Pressed", "Disabled", "Checked", "CheckedPointerOver", "CheckedPressed", "CheckedDisabled" })
+        {
+            bool disabled = state.EndsWith("Disabled", StringComparison.Ordinal);
+            bool selected = state.StartsWith("Checked", StringComparison.Ordinal) && !disabled;
+            string neutral = state.Contains("Pressed", StringComparison.Ordinal) ? "ControlDark"
+                : state.Contains("PointerOver", StringComparison.Ordinal) ? "ControlLight" : "Control";
+            resources["ToggleButtonBackground" + state] = selected ? checkedFill : Brush.Parse(colors[neutral]);
+            resources["ToggleButtonBorderBrush" + state] = selected ? Brush.Parse(colors["Highlight"]) : Brushes.Transparent;
+            resources["ToggleButtonForeground" + state] = Brush.Parse(colors[disabled ? "GrayText" : "ControlText"]);
+        }
+        return resources;
     }
 
     private IEnumerable<TreeViewItem> NavigationItems()

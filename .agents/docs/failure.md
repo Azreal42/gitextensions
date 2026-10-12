@@ -98,3 +98,5 @@ Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de
 | Tests Browse attendent ancien menu/titre/densité ou un commit hors écran | Assertions de l’ancienne présentation et fixture sélectionnant un ancien commit | Suivre Start, titre dossier/branche et lignes 20 px ; sélectionner le vrai HEAD visible pour la référence. Rouges initiaux conservés. |
 | Nom de branche traduit comme une commande | IconLabel appliquant T aux captions de données | Labels Git/dossiers littéraux, catégories et commandes traduites ; régression française Refresh/Author couverte. |
 | Ligne sélectionnée hors viewport après reload entier | Offset restauré avant recalcul de l’étendue, donc plafonné à la hauteur de l’ancien patch | Mettre à jour le layout avant restauration ; rouge reproductible du clone 472 conservé, 28 scénarios lecture/Browse verts localement. |
+
+| Boutons de catégories Browse orange en natif clair | Ressources Checked du template ToggleButton Fluent reprenant l’accent système | Ressources locales par thème pour tous les états ; régression forçant l’orange et états réels des six boutons. Cadres `1bd1e69ff` conservés, successeur natif à valider. |
