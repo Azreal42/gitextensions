@@ -1,12 +1,14 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using Avalonia.Threading;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
@@ -354,7 +356,16 @@ public class ViewerHostReadingTests
     private static void SelectToken(DiffView view, string token)
     { int offset = view.Text.IndexOf(token, StringComparison.Ordinal); Assert.That(offset, Is.GreaterThanOrEqualTo(0)); view.Select(offset, token.Length); }
     private static T Find<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
-    private static ComboBox FindVisibleEncoding(Window window) => window.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "DiffViewerEncoding" && control.IsEffectivelyVisible);
+    private static ComboBox FindVisibleEncoding(Window window)
+    {
+        ComboBox selector = window.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "DiffViewerEncoding"
+            && control.GetVisualAncestors().OfType<DiffView>().Single().IsEffectivelyVisible);
+        DiffView view = selector.GetVisualAncestors().OfType<DiffView>().Single();
+        window.MouseMove(view.Editor.TranslatePoint(new Point(80, 80), window)!.Value);
+        Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+        Assert.That(selector.IsEffectivelyVisible, Is.True);
+        return selector;
+    }
     private static ListBox HunkList(Window window) => window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitPatchHunk>().Any() == true);
     private static CheckBox FindStagedOption(Window window) => window.GetVisualDescendants().OfType<CheckBox>().Single(option => option.Content as string == "Show staged changes");
     private static void ChooseEncoding(ComboBox selector, string name)
@@ -387,7 +398,17 @@ public class ViewerHostReadingTests
         return view;
     }
     private static void Click(Window window, string name)
-    { Button button = Find<Button>(window, name); Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True, name); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+    {
+        Button button = Find<Button>(window, name);
+        if (button.GetVisualAncestors().OfType<DiffViewerToolbar>().FirstOrDefault() is { } toolbar)
+        {
+            DiffView view = toolbar.GetVisualAncestors().OfType<DiffView>().Single();
+            window.MouseMove(view.Editor.TranslatePoint(new Point(80, 80), window)!.Value);
+            Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+            Assert.That(toolbar.IsEffectivelyVisible, Is.True, "The original toolbar floats over the reader on MouseMove.");
+        }
+        Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True, name); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    }
     private static void ClickContent(Window window, string content)
     {
         Button button = window.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == content);

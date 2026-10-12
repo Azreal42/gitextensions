@@ -57,10 +57,17 @@ public sealed class DiffView : UserControl, IDisposable
     private bool UsesGitColoring => _document?.UseGitColoring == true || _ansiSpans.Count > 0
         || _document?.EffectiveAppearance is GitDiffAppearance.GitWordDiff or GitDiffAppearance.Difftastic;
     private DiffViewerPreferences _preferences;
+    private readonly DiffViewerPreferencesStore _preferencesStore;
+    private DiffViewerRenderingOptions _renderingOptions;
+    private string? _syntaxPath;
+    private readonly DiffViewerNonprintingRenderer _nonprinting;
     public DiffViewerAppearanceMenu AppearanceMenu { get; }
     public DiffViewerReadingMenu ReadingMenu { get; }
     public DiffViewerSearch Search { get; }
     public DiffViewerComparisonMenu ComparisonMenu { get; }
+    public DiffViewerRenderingMenu RenderingMenu { get; }
+    public DiffViewerToolbar Toolbar { get; }
+    internal DiffViewerPreferencesStore PreferencesStore => _preferencesStore;
     public event EventHandler? ComparisonOptionsChanged;
     public event EventHandler? DisplayOptionsChanged;
     public event EventHandler? FileEncodingChanged;
@@ -69,8 +76,12 @@ public sealed class DiffView : UserControl, IDisposable
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
-        AppearanceMenu = new(preferencesStore);
-        ComparisonMenu = new(preferencesStore);
+        _preferencesStore = preferencesStore ?? new();
+        AppearanceMenu = new(_preferencesStore);
+        ComparisonMenu = new(_preferencesStore);
+        RenderingMenu = new(_preferencesStore);
+        _renderingOptions = RenderingMenu.Options;
+        RenderingMenu.OptionsChanged += RenderingChanged;
         ComparisonMenu.OptionsChanged += ComparisonChanged;
         _preferences = AppearanceMenu.Preferences;
         AppearanceMenu.Changed += PreferencesChanged;
@@ -101,6 +112,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.TextArea.TextView.LineTransformers.Add(new DiffForeground(this));
         _editor.TextArea.SelectionChanged += SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged += SynchronizeSelection;
+        _nonprinting = new(_editor);
         Search = new(this);
         ReadingMenu = new(this);
         ContextMenu = new ContextMenu { ItemsSource = CreateContextMenuItems() };
@@ -114,12 +126,19 @@ public sealed class DiffView : UserControl, IDisposable
         AddHandler(KeyDownEvent, (_, args) => HandleReadingShortcut(args), RoutingStrategies.Tunnel);
         AddHandler(PointerWheelChangedEvent, ZoomWithWheel, RoutingStrategies.Tunnel);
         ActualThemeVariantChanged += ThemeChanged;
-        Content = _editor;
+        Toolbar = new(this, _editor);
+        Canvas overlay = new() { Children = { Toolbar } };
+        Content = new Grid { Children = { _editor, overlay } };
         ApplyPalette();
         UpdateText();
     }
 
     public string Text => _editor.Text;
+    public string? SyntaxPath
+    {
+        get => _syntaxPath;
+        set { if (_syntaxPath == value) { return; } _syntaxPath = value; ApplyRendering(); }
+    }
     public string CanonicalText => _source.Text ?? "";
     public GitDiffDocument? Document => _document;
     public string DefaultFileEncodingName { get; private set; } = "utf-8";
@@ -170,7 +189,8 @@ public sealed class DiffView : UserControl, IDisposable
     public bool CanStagePatch => _documentReady && EffectiveMode == DiffViewMode.Unified && _isPatch && _equivalentDisplay
         && (_document is null || _document.CanStageEquivalent && _document.IsLosslessPatch && _document.EffectiveAppearance == GitDiffAppearance.Patch);
     public GitDiffDisplayOptions DisplayOptions => new(_preferences.UseGitColoring, _preferences.ReverseGitColoring,
-        (GitDiffAppearance)_preferences.Appearance, ViewerWidth: (int)Math.Max(0, Bounds.Width)) { FileEncodingName = FileEncodingName };
+        (GitDiffAppearance)_preferences.Appearance, SyntaxHighlighting: RenderingMenu.Options.ShowSyntaxHighlightingInDiff,
+        ViewerWidth: (int)Math.Max(0, Bounds.Width)) { FileEncodingName = FileEncodingName };
     internal IReadOnlyList<GitDiffColorSpan> AnsiSpans => _ansiSpans;
     internal IReadOnlyList<GitDiffColorSpan> InlineSpans => _inlineSpans;
     internal int RightColumnStart => _difftastic?.RightColumnStart ?? 0;
@@ -215,9 +235,16 @@ public sealed class DiffView : UserControl, IDisposable
     public void Select(int start, int length) { _readingVersion++; _editor.Select(start, length); }
     public bool GoToNextChange() => NavigateChange(forward: true);
     public bool GoToPreviousChange() => NavigateChange(forward: false);
-    public bool HandleReadingShortcut(KeyEventArgs args) => ComparisonMenu.HandleKeyDown(args) || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args);
+    public bool HandleReadingShortcut(KeyEventArgs args) => ComparisonMenu.HandleKeyDown(args)
+        || _editor.TextArea.IsKeyboardFocusWithin && RenderingMenu.HandleKeyDown(args) || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args);
     public IReadOnlyList<object> CreateContextMenuItems(string? comparisonPrefix = null)
-        => [.. ComparisonMenu.CreateContextMenuItems(comparisonPrefix), new Separator(), .. ReadingMenu.CreateContextMenuItems(), new Separator(), .. AppearanceMenu.CreateContextMenuItems()];
+    {
+        IReadOnlyList<object> reading = ReadingMenu.CreateContextMenuItems();
+        IReadOnlyList<object> comparison = ComparisonMenu.CreateContextMenuItems(comparisonPrefix);
+        // Keep FileViewer.Designer's order: copies, comparison/rendering, appearance, then Find/Go to.
+        return [.. reading.Take(4), new Separator(), .. comparison.Take(3), .. RenderingMenu.CreateContextMenuItems(comparisonPrefix),
+            .. comparison.Skip(4), .. AppearanceMenu.CreateContextMenuItems(), new Separator(), .. reading.Skip(5)];
+    }
 
     public bool GoToFileLine(int line, bool oldVersion = false)
     {
@@ -272,6 +299,7 @@ public sealed class DiffView : UserControl, IDisposable
             ParseLines();
             BuildInlineSpans();
             UpdateAppearanceContext();
+            ApplyRendering();
             _numbers.InvalidateMeasure();
             _numbers.InvalidateVisual();
             _editor.TextArea.TextView.Redraw();
@@ -313,6 +341,7 @@ public sealed class DiffView : UserControl, IDisposable
             ParseLines();
             BuildInlineSpans();
             UpdateAppearanceContext();
+            ApplyRendering();
             bool sameIdentity = DocumentIdentity is not null && DocumentIdentity == position.Identity;
             bool sameText = colored.Text == position.Text;
             bool preserve = sameIdentity || DocumentIdentity is null && position.Identity is null && sameText;
@@ -620,6 +649,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.TextArea.CaretBrush = _palette.Foreground;
         _numbers.InvalidateVisual();
         _editor.TextArea.TextView.Redraw();
+        ApplyRendering();
     }
 
     private void ThemeChanged(object? sender, EventArgs args)
@@ -630,6 +660,26 @@ public sealed class DiffView : UserControl, IDisposable
     }
 
     private void ComparisonChanged(object? sender, EventArgs args) => ComparisonOptionsChanged?.Invoke(this, EventArgs.Empty);
+
+    private void RenderingChanged(object? sender, EventArgs args)
+    {
+        DiffViewerRenderingOptions previous = _renderingOptions;
+        _renderingOptions = RenderingMenu.Options;
+        ApplyRendering();
+        if (previous.ShowSyntaxHighlightingInDiff != _renderingOptions.ShowSyntaxHighlightingInDiff
+            && _document?.EffectiveAppearance == GitDiffAppearance.Difftastic)
+        { DisplayOptionsChanged?.Invoke(this, EventArgs.Empty); }
+    }
+
+    private void ApplyRendering()
+    {
+        if (_editor is null || _nonprinting is null || _disposed) { return; }
+        _editor.SyntaxHighlighting = _syntaxPath is null || Mode != DiffViewMode.PlainText && !_renderingOptions.ShowSyntaxHighlightingInDiff
+            ? null : FileHistorySyntax.Load(_syntaxPath, ActualThemeVariant == ThemeVariant.Dark);
+        DiffViewerNonprintingPalette markers = DiffViewerNonprintingRenderer.CreateOriginalPalette(ActualThemeVariant == ThemeVariant.Dark);
+        _nonprinting.Apply(_renderingOptions.ShowNonPrintingChars, markers.SpaceTab, markers.EndOfLine);
+        _editor.TextArea.TextView.Redraw();
+    }
 
     private void PreferencesChanged(object? sender, EventArgs args)
     {
@@ -649,6 +699,8 @@ public sealed class DiffView : UserControl, IDisposable
         bool comparisons = Mode != DiffViewMode.PlainText && (_isPatch || _document is not null);
         ComparisonMenu.SetContext(comparisons, comparisons && EffectiveMode != DiffViewMode.Difftastic,
             supportsEolWhitespace: comparisons, isBusy: !_documentReady);
+        RenderingMenu.SetContext(true, comparisons, isBusy: !_documentReady);
+        Toolbar?.Refresh(comparisons);
         ReadingMenu?.Refresh();
     }
 
@@ -695,6 +747,10 @@ public sealed class DiffView : UserControl, IDisposable
         AppearanceMenu.Dispose();
         ComparisonMenu.OptionsChanged -= ComparisonChanged;
         ComparisonMenu.Dispose();
+        RenderingMenu.OptionsChanged -= RenderingChanged;
+        RenderingMenu.Dispose();
+        Toolbar.Dispose();
+        _nonprinting.Dispose();
         Search.Dispose();
         ReadingMenu.Dispose();
         _editor.TextArea.SelectionChanged -= SynchronizeSelection;

@@ -36,9 +36,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
     public FileHistoryDialog(GitRepository repository, string path, string revision = "HEAD") : base(repository, "File History")
     {
         _diff.TextView.ContextMenu = new ContextMenu { ItemsSource = _diff.TextView.CreateContextMenuItems("FileHistoryDiff") };
-        _diff.Toolbar.Children.Insert(0, _diff.TextView.ComparisonMenu.CreateIncreaseContextButton("FileHistoryDiffIncreaseContext"));
-        _diff.Toolbar.Children.Insert(1, _diff.TextView.ComparisonMenu.CreateDecreaseContextButton("FileHistoryDiffDecreaseContext"));
-        _diff.Toolbar.Children.Insert(2, _diff.TextView.ComparisonMenu.CreateWholeFileButton("FileHistoryDiffEntireFile"));
+        _diff.Toolbar.SetNames("FileHistoryDiff");
         _diff.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
         {
             if (_tabs.SelectedIndex == 1) { await RequestDiffReloadAsync(LoadSelectionAsync); }
@@ -153,7 +151,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
             await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
             _diff.TextView.DocumentIdentity = string.Join('\0', Repository.Path, entry.Path, commit.Hash, revisions.BaseRevision, "diff");
             _diff.ShowDiff(await Repository.GetRevisionFileDiffDocumentAsync(revisions, file,
-                options: _diff.TextView.ComparisonMenu.Options, displayOptions: _diff.TextView.DisplayOptions, cancellationToken: token));
+                options: _diff.TextView.ComparisonMenu.Options, displayOptions: _diff.TextView.DisplayOptions, cancellationToken: token), file.Path);
         }
         else if (_tabs.SelectedIndex == 2)
         {

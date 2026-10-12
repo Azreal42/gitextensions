@@ -228,7 +228,7 @@ public class ViewerHostLoadFailureTests
     private static T Find<T>(Window window, string name) where T : Control
         => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static ComboBox VisibleEncoding(Window window)
-        => window.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "DiffViewerEncoding" && control.IsEffectivelyVisible);
+        => DiffViewerInputTestHelpers.VisibleEncoding(window);
     private static Button MainStageButton(Window window, string text)
         => window.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == text);
     private static void AssertMainStageButtons(Window window, bool enabled)

@@ -73,6 +73,7 @@ public sealed class FileContentView : UserControl, IDisposable
             if (TryShowImage(_filePath, _fileBytes)) { return; }
             GitDecodedFile decoded = GitFileEncodingCodec.DecodeFile(_fileBytes, TextView.FileEncodingName ?? _defaultEncodingName, _truncated);
             _source.Text = decoded.Text + (_truncated ? "\n[Preview limited to 2 MB]" : "");
+            TextView.SyntaxPath = decoded.IsBinary ? null : _filePath;
         }
         finally { _settingFile = false; }
     }
@@ -97,6 +98,7 @@ public sealed class FileContentView : UserControl, IDisposable
         try { _source.Text = ""; }
         finally { _settingImage = false; }
         _image.Source = _bitmap;
+        TextView.SyntaxPath = null;
         SizeImage();
         Content = _image;
         return true;

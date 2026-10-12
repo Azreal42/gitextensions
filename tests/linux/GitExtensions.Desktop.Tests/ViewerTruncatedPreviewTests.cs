@@ -65,7 +65,7 @@ public class ViewerTruncatedPreviewTests
 
             const string later = "Later disk bytes must not replace the loaded preview.\n";
             await File.WriteAllTextAsync(path, later);
-            ComboBox encoding = main.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "DiffViewerEncoding" && control.IsEffectivelyVisible);
+            ComboBox encoding = DiffViewerInputTestHelpers.VisibleEncoding(main);
             ChooseEncoding(encoding, "iso-8859-1");
             await Until(() => view.Text == prefix + "Ã" + suffix);
             Assert.That(view.FileEncodingName, Is.EqualTo("iso-8859-1"));

@@ -36,10 +36,12 @@ public sealed partial class MainWindow
         if (_changesDiffView is not null)
         {
             _changesDiffView.ComparisonMenu.SetHostBusy(_busy);
+            _changesDiffView.RenderingMenu.SetHostBusy(_busy);
         }
         if (_commitContent is not null)
         {
             _commitContent.TextView.ComparisonMenu.SetHostBusy(_busy);
+            _commitContent.TextView.RenderingMenu.SetHostBusy(_busy);
         }
         if (_stageLinesButton is not null) { _stageLinesButton.IsEnabled = available && !staged; }
         if (_unstageLinesButton is not null) { _unstageLinesButton.IsEnabled = available && staged; }
@@ -122,9 +124,7 @@ public sealed partial class MainWindow
         Grid.SetColumn(splitter, 1);
         split.Children.Add(splitter);
         DockPanel viewer = new();
-        Control viewerToolbar = BuildRevisionViewerToolbar();
-        DockPanel.SetDock(viewerToolbar, Dock.Top);
-        viewer.Children.Add(viewerToolbar);
+        ConfigureRevisionViewer();
         viewer.Children.Add(_commitContent);
         Grid.SetColumn(viewer, 2);
         split.Children.Add(viewer);
@@ -147,21 +147,14 @@ public sealed partial class MainWindow
         return button;
     }
 
-    private Control BuildRevisionViewerToolbar()
+    private void ConfigureRevisionViewer()
     {
-        StackPanel toolbar = new() { Name = "RevisionViewerToolbar", Orientation = Orientation.Horizontal, Height = 24 };
-        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffNextChange", "Next change", "ArrowDown.png", () => { _commitContent?.TextView.GoToNextChange(); return Task.CompletedTask; }));
-        toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffPreviousChange", "Previous change", "ArrowUp.png", () => { _commitContent?.TextView.GoToPreviousChange(); return Task.CompletedTask; }));
+        _commitContent!.TextView.Toolbar.SetNames("RevisionDiff", "RevisionViewerToolbar");
         DiffViewerComparisonMenu options = _commitContent!.TextView.ComparisonMenu;
-        toolbar.Children.Add(options.CreateIncreaseContextButton("RevisionDiffIncreaseContext"));
-        toolbar.Children.Add(options.CreateDecreaseContextButton("RevisionDiffDecreaseContext"));
-        toolbar.Children.Add(options.CreateWholeFileButton("RevisionDiffEntireFile"));
-        toolbar.Children.Add(_commitContent!.TextView.ReadingMenu.CreateEncodingSelector());
         object[] viewerMenus = _commitContent.TextView.CreateContextMenuItems("RevisionDiff").ToArray();
         _revisionTreatAsText = new MenuItem { Name = "RevisionDiffTreatAsText", Header = T("Treat all files as text"), ToggleType = MenuItemToggleType.CheckBox };
         _revisionTreatAsText.Click += (_, _) => options.SetOptions(options.Options with { TreatAllFilesAsText = _revisionTreatAsText.IsChecked });
         _commitContent.TextView.ContextMenu = new ContextMenu { ItemsSource = new object[] { _revisionTreatAsText }.Concat(viewerMenus).ToArray() };
-        return ClassicChrome.Border(toolbar, new Thickness(0, 0, 0, 1));
     }
 
     private async Task ChangeRevisionViewerOptionsAsync(GitComparisonDiffOptions options)
@@ -300,6 +293,7 @@ public sealed partial class MainWindow
         await _commitContent.TextView.ConfigureRepositoryAsync(repository, Token);
         if (item.Tag is GitRevisionDiffGroup group)
         {
+            _commitContent.TextView.SyntaxPath = null;
             _commitContent.TextView.DocumentIdentity = string.Join("\0", repository.Path, "group", group.Kind, group.Revision, group.BaseRevision,
                 group.RangeDiff?.First, group.RangeDiff?.Second);
             if (group.Kind == GitRevisionDiffGroupKind.RangeDiff && group.RangeDiff is not null)
@@ -323,6 +317,7 @@ public sealed partial class MainWindow
         if (item.Tag is not RevisionDiffFileSelection selection) { _commitContent.TextView.Mode = DiffViewMode.Auto; _diff.Text = T("Select a file to inspect its diff."); return; }
         _commitContent.TextView.DocumentIdentity = string.Join("\0", repository.Path, selection.File.Path, selection.Group.Kind,
             selection.Group.Revision, selection.Group.BaseRevision, selection.File.OriginalPath);
+        _commitContent.TextView.SyntaxPath = selection.File.Path;
         if (selection.Group.Kind == GitRevisionDiffGroupKind.Combined && selection.Group.CombinedDiff is not null)
         {
             _commitContent.TextView.Mode = DiffViewMode.Combined;
@@ -371,6 +366,7 @@ public sealed partial class MainWindow
         }
         else if (_changesContent is not null)
         {
+            _changesContent.TextView.SyntaxPath = change.Path;
             _changesContent.TextView.ShowDocument(await repository.GetDiffDocumentAsync(change.Path, staged,
                 options: _workingViewerOptions, displayOptions: _changesContent.TextView.DisplayOptions, originalPath: change.OriginalPath, cancellationToken: Token));
         }

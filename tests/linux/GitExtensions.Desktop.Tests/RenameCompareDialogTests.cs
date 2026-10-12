@@ -517,6 +517,7 @@ public class RenameCompareDialogTests
     private static void Click(Window owner, string name)
     {
         Button button = Field<Button>(owner, name);
+        DiffViewerInputTestHelpers.RevealToolbar(owner, button);
         Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True, name + " must be available.");
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     }

@@ -16,8 +16,6 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
 {
     private readonly TextBox _source = new();
     private readonly FileContentView _content;
-    private readonly TextBlock _encodingStatus = new() { VerticalAlignment = VerticalAlignment.Center };
-    private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private byte[]? _fileBytes;
     private string _defaultEncodingName = "utf-8";
     private string _lastViewerDefaultEncodingName = "utf-8";
@@ -29,18 +27,15 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
     public string CurrentFileEncodingName { get; private set; } = "utf-8";
     public string? FileEncodingName => TextView.FileEncodingName;
     public ComboBox EncodingSelector { get; }
-    public StackPanel Toolbar { get; }
+    public DiffViewerToolbar Toolbar => TextView.Toolbar;
     public event EventHandler? EncodingChanged;
     public FileHistoryContentView()
     {
         _content = new(_source);
-        EncodingSelector = TextView.ReadingMenu.CreateEncodingSelector();
+        EncodingSelector = Toolbar.EncodingSelector;
         EncodingSelector.Name = "FileHistoryEncoding";
         TextView.FileEncodingChanged += FileEncodingChanged;
-        Toolbar = new() { Orientation = Orientation.Horizontal, Spacing = 0, Margin = new(2, 0), Children = { EncodingSelector, _encodingStatus } };
-        DockPanel.SetDock(Toolbar, Dock.Top);
-        Content = new DockPanel { Children = { Toolbar, _content } };
-        ActualThemeVariantChanged += (_, _) => ApplySyntax();
+        Content = _content;
     }
     public void ShowFile(string path, byte[] bytes, string? defaultEncodingName = null)
     {
@@ -50,7 +45,7 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
         _lastViewerDefaultEncodingName = TextView.DefaultFileEncodingName;
         TextView.Mode = DiffViewMode.PlainText;
         if (!_content.TryShowImage(path, bytes)) { DecodeRememberedFile(); }
-        else { IsBinary = false; HasBom = false; _encodingStatus.Text = ""; }
+        else { IsBinary = false; HasBom = false; }
         EncodingSelector.IsEnabled = !IsImage;
         ApplySyntax();
     }
@@ -73,36 +68,33 @@ public sealed class FileHistoryContentView : UserControl, IDisposable
         CurrentFileEncodingName = decoded.EncodingName;
         IsBinary = decoded.IsBinary;
         HasBom = decoded.HasBom;
-        _encodingStatus.Text = decoded.IsBinary ? _translations.Translate("Binary file") : decoded.EncodingName + (decoded.HasBom ? " (BOM)" : "");
+        ToolTip.SetTip(EncodingSelector, decoded.EncodingName + (decoded.HasBom ? " (BOM)" : ""));
     }
-    public void ShowDiff(string text)
+    public void ShowDiff(string text, string? path = null)
     {
-        _syntaxPath = null;
+        _syntaxPath = path;
         _fileBytes = null;
         IsBinary = false; HasBom = false;
         EncodingSelector.IsEnabled = true;
-        _encodingStatus.Text = "";
         TextView.Mode = DiffViewMode.Auto;
         _content.ClearImage();
         _source.Text = text;
         ApplySyntax();
     }
-    public void ShowDiff(GitDiffDocument document)
+    public void ShowDiff(GitDiffDocument document, string? path = null)
     {
-        _syntaxPath = null;
+        _syntaxPath = path;
         _fileBytes = null;
         IsBinary = false; HasBom = false;
         CurrentFileEncodingName = document.FileEncodingName;
         EncodingSelector.IsEnabled = true;
-        _encodingStatus.Text = document.FileEncodingName;
         TextView.Mode = DiffViewMode.Auto;
         _content.ClearImage();
         TextView.ShowDocument(document);
         ApplySyntax();
     }
     private void ApplySyntax()
-        => TextView.Editor.SyntaxHighlighting = _syntaxPath is null || IsImage || IsBinary ? null
-            : FileHistorySyntax.Load(_syntaxPath, ActualThemeVariant == ThemeVariant.Dark);
+        => TextView.SyntaxPath = IsImage || IsBinary ? null : _syntaxPath;
     public void Dispose() { TextView.FileEncodingChanged -= FileEncodingChanged; _content.Dispose(); }
 
     internal static string DecodeBytes(byte[] bytes) => GitFileEncodingCodec.DecodeFile(bytes).Text;

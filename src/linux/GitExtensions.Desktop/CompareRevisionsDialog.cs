@@ -83,11 +83,9 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         };
         _tabs.SelectedIndex = 0;
         DockPanel viewer = new();
-        _diff.Toolbar.Children.Insert(0, IconAction("ComparisonPreviousChange", "ArrowUp.png", "Previous change (Alt+Up)", () => MoveChangeAsync(false)));
-        _diff.Toolbar.Children.Insert(1, IconAction("ComparisonNextChange", "ArrowDown.png", "Next change (Alt+Down)", () => MoveChangeAsync(true)));
-        _diff.Toolbar.Children.Insert(2, _diff.TextView.ComparisonMenu.CreateIncreaseContextButton("ComparisonIncreaseContext"));
-        _diff.Toolbar.Children.Insert(3, _diff.TextView.ComparisonMenu.CreateDecreaseContextButton("ComparisonDecreaseContext"));
-        _diff.Toolbar.Children.Insert(4, _diff.TextView.ComparisonMenu.CreateWholeFileButton("ComparisonEntireFile"));
+        _diff.Toolbar.SetNames("Comparison");
+        _diff.Toolbar.NextChangeRequested = () => MoveChangeAsync(true);
+        _diff.Toolbar.PreviousChangeRequested = () => MoveChangeAsync(false);
         MenuItem asText = new() { Name = "ComparisonTreatAsText", Header = T("Treat all files as text"), ToggleType = MenuItemToggleType.CheckBox };
         asText.Click += (_, _) => _diff.TextView.ComparisonMenu.SetOptions(ReadDiffOptions() with { TreatAllFilesAsText = asText.IsChecked });
         _diff.TextView.ContextMenu = new ContextMenu { ItemsSource = new object[] { asText }.Concat(_diff.TextView.CreateContextMenuItems("Comparison")).ToArray() };
@@ -175,7 +173,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         {
             _diff.TextView.BeginDocumentLoad();
             await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
-            _diff.ShowDiff(await Repository.GetComparisonFileDiffDocumentAsync(_comparison, file, ReadDiffOptions(), _diff.TextView.DisplayOptions, token));
+            _diff.ShowDiff(await Repository.GetComparisonFileDiffDocumentAsync(_comparison, file, ReadDiffOptions(), _diff.TextView.DisplayOptions, token), file.Path);
         }
         else if (_tabs.SelectedIndex == 1) { _baseView.ShowFile(file.OriginalPath ?? file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Base, file.OriginalPath ?? file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
         else { _compareView.ShowFile(file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Compare, file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
@@ -270,6 +268,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _saveBase.IsEnabled = !IsBusy && _comparison is not null && SelectedFile is { Status: not 'A' };
         _saveCompare.IsEnabled = !IsBusy && _comparison is not null && SelectedFile is { IsDeleted: false };
         _diff.TextView.ComparisonMenu.SetHostBusy(IsBusy);
+        _diff.TextView.RenderingMenu.SetHostBusy(IsBusy);
     }
     private Control FileRow(GitRevisionFile? file)
     {

@@ -6,6 +6,8 @@ namespace GitExtensions.Linux.Desktop;
 
 public enum DiffViewerAppearance { Patch, GitWordDiff, Difftastic }
 
+public sealed record DiffViewerRenderingOptions(bool ShowNonPrintingChars = false, bool ShowSyntaxHighlightingInDiff = true);
+
 public sealed record DiffViewerPreferences(bool UseGitColoring = true, bool ReverseGitColoring = true,
     DiffViewerAppearance Appearance = DiffViewerAppearance.Patch, bool RememberAppearance = false)
 {
@@ -15,6 +17,10 @@ public sealed record DiffViewerPreferences(bool UseGitColoring = true, bool Reve
     public bool RememberContextLines { get; init; }
     public bool ShowEntireFile { get; init; }
     public bool RememberWholeFile { get; init; }
+    public bool ShowNonPrintingChars { get; init; }
+    public bool RememberNonPrintingChars { get; init; }
+    public bool ShowSyntaxHighlightingInDiff { get; init; } = true;
+    public bool RememberSyntaxHighlightingInDiff { get; init; } = true;
 }
 
 /// <summary>Original diff appearance defaults, with one shared runtime appearance per configuration path.</summary>
@@ -79,6 +85,22 @@ public sealed class DiffViewerPreferencesStore
         return value;
     }
 
+    /// <summary>Reload unremembered RuntimeSettings for a new reader, without replacing options in already open readers.</summary>
+    public DiffViewerRenderingOptions BeginRenderingViewerSession()
+    {
+        lock (_state)
+        {
+            DiffViewerPreferences current = Load(), persisted = _state.Persisted!;
+            DiffViewerPreferences snapshot = current with
+            {
+                ShowNonPrintingChars = current.RememberNonPrintingChars ? current.ShowNonPrintingChars : persisted.ShowNonPrintingChars,
+                ShowSyntaxHighlightingInDiff = current.RememberSyntaxHighlightingInDiff ? current.ShowSyntaxHighlightingInDiff : persisted.ShowSyntaxHighlightingInDiff
+            };
+            _state.Current = snapshot;
+            return new(snapshot.ShowNonPrintingChars, snapshot.ShowSyntaxHighlightingInDiff);
+        }
+    }
+
     public bool Save(DiffViewerPreferences value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -109,7 +131,9 @@ public sealed class DiffViewerPreferencesStore
         {
             UseGitColoring = settings.UseGitColoring, ReverseGitColoring = settings.ReverseGitColoring,
             RememberAppearance = settings.RememberAppearance, RememberWhitespace = settings.RememberWhitespace,
-            RememberContextLines = settings.RememberContextLines, RememberWholeFile = settings.RememberWholeFile
+            RememberContextLines = settings.RememberContextLines, RememberWholeFile = settings.RememberWholeFile,
+            RememberNonPrintingChars = settings.RememberNonPrintingChars,
+            RememberSyntaxHighlightingInDiff = settings.RememberSyntaxHighlightingInDiff
         });
     }
 
@@ -127,6 +151,13 @@ public sealed class DiffViewerPreferencesStore
             ContextLines = previous.ContextLines != next.ContextLines ? next.ContextLines : current.ContextLines,
             ShowEntireFile = previous.ShowEntireFile != next.ShowEntireFile ? next.ShowEntireFile : current.ShowEntireFile
         }, saveContext: previous.ContextLines != next.ContextLines);
+
+    internal bool SaveRenderingOptions(DiffViewerRenderingOptions previous, DiffViewerRenderingOptions next)
+        => Write(current => current with
+        {
+            ShowNonPrintingChars = previous.ShowNonPrintingChars != next.ShowNonPrintingChars ? next.ShowNonPrintingChars : current.ShowNonPrintingChars,
+            ShowSyntaxHighlightingInDiff = previous.ShowSyntaxHighlightingInDiff != next.ShowSyntaxHighlightingInDiff ? next.ShowSyntaxHighlightingInDiff : current.ShowSyntaxHighlightingInDiff
+        });
 
     /// <summary>Save the latest shared runtime values, as the original revision-grid command does.</summary>
     public bool SaveCurrentViewSettingsAsDefault() => Write(current => current, saveRuntimeDefaults: true);
@@ -147,6 +178,8 @@ public sealed class DiffViewerPreferencesStore
                     Appearance = saveRuntimeDefaults ? value.Appearance : baseline.Appearance,
                     IgnoreWhitespace = saveRuntimeDefaults ? value.IgnoreWhitespace : baseline.IgnoreWhitespace,
                     ShowEntireFile = saveRuntimeDefaults ? value.ShowEntireFile : baseline.ShowEntireFile,
+                    ShowNonPrintingChars = saveRuntimeDefaults ? value.ShowNonPrintingChars : baseline.ShowNonPrintingChars,
+                    ShowSyntaxHighlightingInDiff = saveRuntimeDefaults ? value.ShowSyntaxHighlightingInDiff : baseline.ShowSyntaxHighlightingInDiff,
                     ContextLines = saveContext && value.RememberContextLines ? value.ContextLines : baseline.ContextLines
                 };
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);

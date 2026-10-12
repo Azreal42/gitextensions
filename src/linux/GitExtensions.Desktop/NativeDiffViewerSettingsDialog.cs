@@ -14,7 +14,7 @@ public sealed class NativeDiffViewerSettingsDialog : Window
     private const string Category = "DiffViewerSettingsPage";
     private readonly DiffViewerPreferencesStore _store;
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
-    private readonly CheckBox _whitespace, _wholeFile, _appearance, _context, _gitColoring, _reverse;
+    private readonly CheckBox _whitespace, _nonPrinting, _wholeFile, _appearance, _context, _syntax, _gitColoring, _reverse;
     private readonly TextBlock _error = new() { Name = "DiffViewerSettingsError", TextWrapping = Avalonia.Media.TextWrapping.Wrap, IsVisible = false };
 
     public NativeDiffViewerSettingsDialog(DiffViewerPreferencesStore? store = null)
@@ -24,9 +24,11 @@ public sealed class NativeDiffViewerSettingsDialog : Window
         Width = 640; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _whitespace = Choice("chkRememberIgnoreWhiteSpacePreference", "Remember the 'Ignore whitespaces' preference", state.RememberWhitespace);
+        _nonPrinting = Choice("chkRememberShowNonPrintingCharsPreference", "Remember the 'Show nonprinting characters' preference", state.RememberNonPrintingChars);
         _wholeFile = Choice("chkRememberShowEntireFilePreference", "Remember the 'Show entire file' preference", state.RememberWholeFile);
         _appearance = Choice("chkRememberDiffAppearancePreference", "Remember the 'Diff appearance' preference", state.RememberAppearance);
         _context = Choice("chkRememberNumberOfContextLines", "Remember the 'Number of context lines' preference", state.RememberContextLines);
+        _syntax = Choice("chkRememberShowSyntaxHighlightingInDiff", "Remember the 'Show syntax highlighting' preference", state.RememberSyntaxHighlightingInDiff);
         _gitColoring = Choice("chkUseGitColoring", "Git coloring", state.UseGitColoring);
         _reverse = Choice("chkUseGEThemeGitColoring", "Reverse background color", state.ReverseGitColoring);
         _reverse.IsEnabled = state.UseGitColoring;
@@ -42,7 +44,7 @@ public sealed class NativeDiffViewerSettingsDialog : Window
         const string defaultTip = "Saves all current view settings as the default for future sessions.\nNote: The checkboxes 'Remember the \"xyz\" preference' only affect the running instance\nas long as the default has not been saved. These preference values are held in memory\nand must be explicitly saved to become persistent defaults.";
         ToolTip.SetTip(saveDefault, _translations.Translate(Category, "btnSaveCurrentViewSettingsAsDefault", "toolTip", defaultTip));
         saveDefault.Click += (_, _) => ReportSave(_store.SaveCurrentViewSettingsAsDefault());
-        StackPanel general = new() { Spacing = 2, Children = { saveDefault, _whitespace, _wholeFile, _appearance, _context } };
+        StackPanel general = new() { Spacing = 2, Children = { saveDefault, _whitespace, _nonPrinting, _wholeFile, _appearance, _context, _syntax } };
         StackPanel colors = new() { Spacing = 2, Children = { _gitColoring, _reverse } };
         Button ok = Footer("DiffViewerSettingsAccept", "OK"), cancel = Footer("DiffViewerSettingsCancel", "Cancel");
         ok.IsDefault = true; cancel.IsCancel = true;
@@ -72,6 +74,7 @@ public sealed class NativeDiffViewerSettingsDialog : Window
     {
         RememberWhitespace = _whitespace.IsChecked == true, RememberWholeFile = _wholeFile.IsChecked == true,
         RememberAppearance = _appearance.IsChecked == true, RememberContextLines = _context.IsChecked == true,
+        RememberNonPrintingChars = _nonPrinting.IsChecked == true, RememberSyntaxHighlightingInDiff = _syntax.IsChecked == true,
         UseGitColoring = _gitColoring.IsChecked == true, ReverseGitColoring = _reverse.IsChecked == true
     }));
 

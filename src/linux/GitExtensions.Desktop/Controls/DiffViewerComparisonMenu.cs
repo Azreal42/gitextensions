@@ -108,6 +108,9 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     public Button CreateIncreaseContextButton(string? name = null) => Button(name ?? "DiffViewerIncreaseContext", Command.Increase, "NumberOfLinesIncrease.png", "increaseNumberOfLines", "Increase the number of lines of context");
     public Button CreateDecreaseContextButton(string? name = null) => Button(name ?? "DiffViewerDecreaseContext", Command.Decrease, "NumberOfLinesDecrease.png", "decreaseNumberOfLines", "Decrease the number of lines of context");
     public Button CreateWholeFileButton(string? name = null) => Button(name ?? "DiffViewerEntireFile", Command.Whole, "ShowEntireFile.png", "showEntireFileButton", "Show entire file");
+    public Button CreateEolWhitespaceButton(string? name = null) => Button(name ?? "DiffViewerWhitespace_Eol", Command.Eol, "WhitespaceIgnoreEol.png", "ignoreWhitespaceAtEol", "Ignore whitespace changes at end of line");
+    public Button CreateWhitespaceChangesButton(string? name = null) => Button(name ?? "DiffViewerWhitespace_Change", Command.Change, "WhitespaceIgnore.png", "ignoreWhiteSpaces", "Ignore changes in amount of whitespace");
+    public Button CreateAllWhitespaceButton(string? name = null) => Button(name ?? "DiffViewerWhitespace_AllSpace", Command.All, "WhitespaceIgnoreAll.png", "ignoreAllWhitespaces", "Ignore all whitespace changes");
 
     public void Refresh()
     {
@@ -127,7 +130,17 @@ public sealed class DiffViewerComparisonMenu : IDisposable
         foreach ((Button button, Command command) in _buttons)
         {
             button.IsVisible = Visible(command); button.IsEnabled = Enabled(command);
-            if (button is ToggleButton toggle) { toggle.IsChecked = Options.ShowEntireFile; }
+            if (button is ToggleButton toggle)
+            {
+                toggle.IsChecked = command switch
+                {
+                    Command.Whole => Options.ShowEntireFile,
+                    Command.Eol => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Eol,
+                    Command.Change => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Change,
+                    Command.All => Options.IgnoreWhitespace == IgnoreWhitespaceKind.AllSpace,
+                    _ => false
+                };
+            }
         }
     }
 
@@ -163,7 +176,7 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     private Button Button(string name, Command command, string icon, string original, string tooltip)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        Button button = command == Command.Whole ? new ToggleButton() : new Button();
+        Button button = command is Command.Whole or Command.Eol or Command.Change or Command.All ? new ToggleButton() : new Button();
         button.Name = name; button.Width = button.Height = button.MinHeight = 24; button.MinWidth = 0; button.Padding = default; button.Content = Icon(icon);
         button.Resources = new ResourceDictionary { ThemeDictionaries = { [ThemeVariant.Light] = ButtonResources(false), [ThemeVariant.Dark] = ButtonResources(true) } };
         ToolTip.SetTip(button, _translations.Translate("FileViewer", original, "ToolTipText", tooltip));

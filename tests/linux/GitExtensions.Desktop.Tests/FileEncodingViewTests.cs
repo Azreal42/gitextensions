@@ -45,6 +45,7 @@ public class FileEncodingViewTests
             foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
             {
                 window.RequestedThemeVariant = theme; window.UpdateLayout();
+                DiffViewerInputTestHelpers.RevealToolbar(window, view.EncodingSelector);
                 Assert.That(view.EncodingSelector.Bounds.Height, Is.EqualTo(24));
                 Assert.That(view.EncodingSelector.Bounds.Width, Is.EqualTo(140));
                 Assert.That(Name(view.EncodingSelector.SelectedItem!), Is.EqualTo("windows-1252"));

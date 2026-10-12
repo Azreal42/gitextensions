@@ -75,4 +75,14 @@
 
 | Glyphes des espaces noirs en thème sombre | AdaptLightness original omis sur les trois PNG monochromes | Reprendre WindowText sombre en conservant chaque alpha et l’original clair ; sept scénarios ciblés et transitions de thème ; 24 masques/pixels natifs clairs/sombres vérifiés dans le paquet accepté `4cb119d5e`. Candidat `c3b557eef` conservé. Résolu. |
 
+| Premier clic du menu de débordement ouvre un présentateur vide | Avalonia crée le présentateur avant Opening ; remplacement tardif de ItemsSource | Garder la collection notifiable dès construction et peupler avant le clic. Rouge initial conservé ; vrais clics et popup court/large clairs/sombres vérifiés localement. Paquet suivant à valider. |
+| Invisibles omis sur une ligne de plus de 3000 caractères | AvaloniaEdit ignore ses générateurs au-delà de ce seuil, absent du lecteur original | Dessin limité aux caractères visibles et EOL ancré avec étendue complète ; pixels, défilement, copies et positions vérifiés localement sur 2999/3000/3001 et 100000 caractères. Paquet suivant à valider. |
+| Échap du diff ne rejoint pas Commit sans sélection | InputHandler AvaloniaEdit consomme le geste de SearchPanel même fermé | Relayer sur TextArea : sélection effacée, puis fermeture existante. Find et popups gardent leur priorité ; trois régressions hôtes exécutées ; brouillon/Git intacts. Paquet suivant à valider. |
+
+| Blancs sélectionnés gardent la couleur de marqueur plutôt que celle de sélection | Les glyphes AvaloniaEdit courts dessinent une TextLine préparée ; le coloriseur de sélection ne la recolore pas | Adapter seulement les runs de blancs sélectionnés et le dessin viewport long ; EOL garde sa couleur. Pixels court/long clairs/sombres vérifiés, avec comparaison de l’anticrénelage ; captures rouges conservées. Paquet suivant à valider. |
+
+| Survol Settings gris dans le débordement malgré la palette originale | Éléments de navigation/réglages héritant des ressources Fluent | Ressources locales MenuHighlight/HighlightText du présentateur ; pixels de survol clairs/sombres vérifiés. Résolu localement. |
+| Choix d’encodage inaccessible après un reload échoué | Barre flottante conditionnée à un document autorisé plutôt qu’à la fin de l’activité de l’hôte | Garder le codec au survol pour réessayer ; staging/comparaison restent bloqués. Régression Git et absence de mutation vérifiées. Résolu localement. |
+| Pixels sélectionnés absents ou rejetés dans les captures de tests | Frame différée puis seuil exigeant des pixels opaques pour un glyphe diagonal anticrénelé | Tick avant capture, vraie sélection exigée et comparaison au mélange foreground/background ; ancienne couleur exclue. Calibrations rouges conservées. |
+
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.

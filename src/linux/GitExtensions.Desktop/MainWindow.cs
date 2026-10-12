@@ -239,6 +239,7 @@ public sealed partial class MainWindow : Window
     private Control BuildChangesDiff()
     {
         _changesDiffView = new DiffView(_changesDiff) { Name = "WorktreeDiff" };
+        _changesDiffView.Toolbar.SetNames("WorktreeDiff");
         _workingViewerOptions = _changesDiffView.ComparisonMenu.Options;
         _changesDiffView.ComparisonMenu.OptionsChanged += async (_, _) =>
         {
@@ -251,10 +252,7 @@ public sealed partial class MainWindow : Window
         _changesContent = new FileContentView(_changesDiff, _changesDiffView);
         object[] menus = _changesDiffView.CreateContextMenuItems("WorktreeDiff").ToArray();
         _changesDiffView.ContextMenu = new ContextMenu { ItemsSource = menus };
-        DockPanel panel = Panel(_changesContent, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync),
-            _changesDiffView.ComparisonMenu.CreateIncreaseContextButton("WorktreeDiffIncreaseContext"),
-            _changesDiffView.ComparisonMenu.CreateDecreaseContextButton("WorktreeDiffDecreaseContext"),
-            _changesDiffView.ComparisonMenu.CreateWholeFileButton("WorktreeDiffEntireFile"), _changesDiffView.ReadingMenu.CreateEncodingSelector()),
+        DockPanel panel = Panel(_changesContent, Row(_stagedDiff, Button("Refresh diff", LoadSelectedDiffAsync)),
             Row(_stageLinesButton = Button("Stage selected lines", () => ApplyLinesAsync(false)), _unstageLinesButton = Button("Unstage selected lines", () => ApplyLinesAsync(true))),
             Row(_stageHunksButton = Button("Stage selected hunks", () => ApplyHunksAsync(false)), _unstageHunksButton = Button("Unstage selected hunks", () => ApplyHunksAsync(true))), _hunks);
         return panel;

@@ -101,6 +101,7 @@ public sealed class CommitDialog : Window
         MinHeight = 600;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _diff = new DiffView(_source, new DiffViewerPreferencesStore(Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!)) { Name = "SelectedDiff" };
+        _diff.Toolbar.SetNames("CommitDiff");
         _viewerOptions = _diff.ComparisonMenu.Options;
         _diff.ComparisonMenu.OptionsChanged += async (_, _) =>
         {
@@ -220,6 +221,9 @@ public sealed class CommitDialog : Window
         _target.SelectionChanged += (_, _) => UpdateAvailability();
         _author.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateAvailability(); } };
         _diff.Editor.TextArea.SelectionChanged += (_, _) => UpdateAvailability();
+        // FileViewerInternal relays Escape before its editor consumes it: a
+        // selection is cleared first, then an empty selection cancels Commit.
+        _diff.Editor.TextArea.AddHandler(KeyDownEvent, RelayDiffEscape, RoutingStrategies.Tunnel);
         KeyDown += HandleShortcut;
         AddHandler(KeyDownEvent, (sender, args) =>
         {
@@ -299,10 +303,7 @@ public sealed class CommitDialog : Window
         main.Children.Add(Splitter(1, false));
 
         Grid right = new() { RowDefinitions = new RowDefinitions("68*,5,32*") };
-        right.Children.Add(Pane(_content, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines,
-            _diff.ComparisonMenu.CreateIncreaseContextButton("CommitDiffIncreaseContext"),
-            _diff.ComparisonMenu.CreateDecreaseContextButton("CommitDiffDecreaseContext"),
-            _diff.ComparisonMenu.CreateWholeFileButton("CommitDiffEntireFile"), _diff.ReadingMenu.CreateEncodingSelector())));
+        right.Children.Add(Pane(_content, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines)));
         right.Children.Add(Splitter(1, true));
         Grid editor = new() { ColumnDefinitions = new ColumnDefinitions("175,5,*") };
         Button cancel = new() { Name = "Cancel", Content = C("Cancel", "Cancel"), IsCancel = true, Height = 26 };
@@ -534,6 +535,7 @@ public sealed class CommitDialog : Window
         }
         else
         {
+            _diff.SyntaxPath = change.Path;
             _diff.ShowDocument(await _repository.GetDiffDocumentAsync(change.Path, _viewStaged,
                 options: _viewerOptions, displayOptions: _diff.DisplayOptions, originalPath: change.OriginalPath, cancellationToken: OperationToken));
         }
@@ -828,6 +830,7 @@ public sealed class CommitDialog : Window
     {
         foreach (Control control in _interactive) { control.IsEnabled = !_busy && !_commitRequested; }
         _diff.ComparisonMenu.SetHostBusy(_busy || _commitRequested);
+        _diff.RenderingMenu.SetHostBusy(_busy || _commitRequested);
         if (_busy || _commitRequested) { return; }
         _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
         _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();
@@ -861,6 +864,16 @@ public sealed class CommitDialog : Window
         int column = caret - text[..caret].LastIndexOf('\n');
         _state.Text = $"{_committer}    ·    {_status?.Branch ?? ""}    ·    {C("commitStagedCountLabel", "Staged")}: {_status?.Changes.Count(change => change.IsStaged && !change.IsConflict) ?? 0}    ·    {C("commitCursorLineLabel", "Ln")} {line}    {C("commitCursorColumnLabel", "Col")} {column}";
     }
+    private void RelayDiffEscape(object? sender, KeyEventArgs args)
+    {
+        if (args.Handled || args.Key != Key.Escape || args.KeyModifiers != KeyModifiers.None
+            || !ReferenceEquals(args.Source, _diff.Editor.TextArea) || !_diff.Editor.TextArea.IsFocused
+            || _diff.ContextMenu?.IsOpen == true) { return; }
+        args.Handled = true;
+        if (!_diff.Editor.TextArea.Selection.IsEmpty) { _diff.Editor.TextArea.ClearSelection(); }
+        else { Close(); }
+    }
+
     private async void HandleShortcut(object? sender, KeyEventArgs args)
     {
         if (args.Handled) { return; }

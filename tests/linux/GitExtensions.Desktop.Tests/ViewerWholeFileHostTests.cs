@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
@@ -8,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.VisualTree;
+using Avalonia.Threading;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
@@ -144,6 +146,7 @@ public class ViewerWholeFileHostTests
 
     private static void AssertOriginalChrome(Window owner, MenuItem menu, Button button)
     {
+        RevealToolbar(button);
         owner.UpdateLayout();
         Assert.That(menu.Header, Is.InstanceOf<Avalonia.Controls.Primitives.AccessText>());
         Assert.That(((Avalonia.Controls.Primitives.AccessText)menu.Header!).Text, Is.EqualTo("Show _entire file"));
@@ -216,7 +219,16 @@ public class ViewerWholeFileHostTests
     private static void Press(Window owner, PhysicalKey key)
     { owner.KeyPressQwerty(key, RawInputModifiers.Control); owner.KeyReleaseQwerty(key, RawInputModifiers.Control); }
     private static void Click(Button button)
-    { Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+    { RevealToolbar(button); Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
+    private static void RevealToolbar(Button button)
+    {
+        if (button.GetVisualAncestors().OfType<DiffViewerToolbar>().FirstOrDefault() is not { } toolbar) { return; }
+        DiffView view = toolbar.GetVisualAncestors().OfType<DiffView>().Single();
+        Window owner = (Window)TopLevel.GetTopLevel(view)!;
+        owner.MouseMove(view.Editor.TranslatePoint(new Point(80, 80), owner)!.Value);
+        Dispatcher.UIThread.RunJobs(); owner.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+        Assert.That(toolbar.IsEffectivelyVisible, Is.True, "Original viewer commands become visible by moving over its text.");
+    }
     private static async Task Until(Func<bool> predicate)
     { using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(20)); while (!predicate()) { await Task.Delay(20, timeout.Token); } }
 

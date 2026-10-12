@@ -28,6 +28,7 @@ public class NativeDiffViewerSettingsDialogTests
     {
         using DiffViewerPreferencesTests.TemporaryDirectory directory = new(); DiffViewerPreferencesStore store = new(directory.Path);
         using DiffViewerComparisonMenu first = new(store), second = new(store);
+        using DiffViewerRenderingMenu rendering = new(store), otherRendering = new(store);
         using DiffViewerAppearanceMenu appearance = new(store); appearance.SetContext(true, true);
         Window owner = Owner(); owner.Show();
         try
@@ -35,12 +36,18 @@ public class NativeDiffViewerSettingsDialogTests
             NativeDiffViewerSettingsDialog cancel = new(store); Task<bool> canceled = cancel.ShowDialog<bool>(owner); Pump(cancel);
             Assert.That(Choice(cancel, "chkRememberIgnoreWhiteSpacePreference").IsChecked, Is.True);
             Assert.That(Choice(cancel, "chkRememberNumberOfContextLines").IsChecked, Is.False);
+            Assert.That(Choice(cancel, "chkRememberShowNonPrintingCharsPreference").IsChecked, Is.False);
+            Assert.That(Choice(cancel, "chkRememberShowSyntaxHighlightingInDiff").IsChecked, Is.True);
             Click(Choice(cancel, "chkRememberShowEntireFilePreference"));
+            Click(Choice(cancel, "chkRememberShowNonPrintingCharsPreference"));
+            Click(Choice(cancel, "chkRememberShowSyntaxHighlightingInDiff"));
             cancel.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None); owner.KeyReleaseQwerty(PhysicalKey.Escape, RawInputModifiers.None);
             Assert.That(await canceled, Is.False); Assert.That(store.Load().RememberWholeFile, Is.False); Assert.That(File.Exists(store.FilePath), Is.False);
+            Assert.That(store.Load().RememberNonPrintingChars, Is.False); Assert.That(store.Load().RememberSyntaxHighlightingInDiff, Is.True);
 
             NativeDiffViewerSettingsDialog dialog = new(store); Task<bool> accepted = dialog.ShowDialog<bool>(owner); Pump(dialog);
             foreach (string name in new[] { "chkRememberShowEntireFilePreference", "chkRememberDiffAppearancePreference", "chkRememberNumberOfContextLines" }) { Click(Choice(dialog, name)); }
+            Click(Choice(dialog, "chkRememberShowNonPrintingCharsPreference")); Click(Choice(dialog, "chkRememberShowSyntaxHighlightingInDiff"));
             Click(Choice(dialog, "chkRememberIgnoreWhiteSpacePreference"));
             Click(Choice(dialog, "chkUseGitColoring"));
             Assert.That(Choice(dialog, "chkUseGEThemeGitColoring").IsEnabled, Is.False);
@@ -50,12 +57,17 @@ public class NativeDiffViewerSettingsDialogTests
             Assert.That(first.SelectWhitespace(IgnoreWhitespaceKind.AllSpace), Is.True);
             Assert.That(first.ToggleWholeFile(), Is.True);
             Assert.That(store.Save(store.Load() with { Appearance = DiffViewerAppearance.GitWordDiff }), Is.True);
+            Assert.That(rendering.ToggleNonPrinting(), Is.True); Assert.That(rendering.ToggleSyntaxHighlighting(), Is.True);
             int changes = 0; store.Changed += (_, _) => changes++;
             Click(dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "DiffViewerSettingsAccept"));
             Assert.That(await accepted, Is.True); Assert.That(changes, Is.EqualTo(1), "The settings page publishes one atomic change.");
             DiffViewerPreferences saved = store.Load();
             Assert.That(saved.UseGitColoring, Is.False); Assert.That(saved.ReverseGitColoring, Is.True);
             Assert.That(saved.RememberWhitespace, Is.False); Assert.That(saved.RememberWholeFile && saved.RememberContextLines && saved.RememberAppearance, Is.True);
+            Assert.That(saved.RememberNonPrintingChars && !saved.RememberSyntaxHighlightingInDiff, Is.True);
+            Assert.That(saved.ShowNonPrintingChars && !saved.ShowSyntaxHighlightingInDiff, Is.True);
+            Assert.That(otherRendering.Options, Is.EqualTo(new DiffViewerRenderingOptions()), "Settings flags cannot repaint a reader already open.");
+            Assert.That(otherRendering.RememberNonPrintingChars && !otherRendering.RememberSyntaxHighlightingInDiff, Is.True);
             Assert.That(saved.IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.AllSpace)); Assert.That(saved.ShowEntireFile, Is.True); Assert.That(saved.Appearance, Is.EqualTo(DiffViewerAppearance.GitWordDiff));
             Assert.That(second.Options.IgnoreWhitespace, Is.EqualTo(IgnoreWhitespaceKind.None)); Assert.That(second.Options.ShowEntireFile, Is.False, "Open readers retain their local options.");
             Assert.That(second.RememberWhitespace, Is.False); Assert.That(second.RememberWholeFile, Is.True); Assert.That(appearance.Preferences.UseGitColoring, Is.False);
@@ -63,6 +75,8 @@ public class NativeDiffViewerSettingsDialogTests
             Assert.That(json.RootElement.GetProperty("Appearance").GetInt32(), Is.Zero);
             Assert.That(json.RootElement.GetProperty("IgnoreWhitespace").GetInt32(), Is.Zero);
             Assert.That(json.RootElement.GetProperty("ShowEntireFile").GetBoolean(), Is.False, "Remember flags do not automatically save runtime values as defaults.");
+            Assert.That(json.RootElement.GetProperty("ShowNonPrintingChars").GetBoolean(), Is.False);
+            Assert.That(json.RootElement.GetProperty("ShowSyntaxHighlightingInDiff").GetBoolean(), Is.True);
             Assert.That(Directory.GetFiles(Path.GetDirectoryName(store.FilePath)!, "*.tmp"), Is.Empty);
         }
         finally { foreach (Window child in owner.OwnedWindows.ToArray()) { child.Close(); } owner.Close(); Dispatcher.UIThread.RunJobs(); }
@@ -78,6 +92,8 @@ public class NativeDiffViewerSettingsDialogTests
             NativeDiffViewerSettingsDialog dialog = new(store); Task<bool> closed = dialog.ShowDialog<bool>(owner); Pump(dialog);
             using DiffViewerComparisonMenu newer = new(store);
             Assert.That(newer.SelectWhitespace(IgnoreWhitespaceKind.Change), Is.True); Assert.That(newer.ToggleWholeFile(), Is.True);
+            using DiffViewerRenderingMenu rendering = new(store);
+            Assert.That(rendering.ToggleNonPrinting(), Is.True); Assert.That(rendering.ToggleSyntaxHighlighting(), Is.True);
             Assert.That(store.Save(store.Load() with { Appearance = DiffViewerAppearance.Difftastic }), Is.True);
             Click(dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "btnSaveCurrentViewSettingsAsDefault"));
             Assert.That(dialog.IsVisible, Is.True); Assert.That(store.Load().RememberAppearance, Is.False);
@@ -85,6 +101,8 @@ public class NativeDiffViewerSettingsDialogTests
             Assert.That(json.RootElement.GetProperty("Appearance").GetInt32(), Is.EqualTo((int)DiffViewerAppearance.Difftastic));
             Assert.That(json.RootElement.GetProperty("IgnoreWhitespace").GetInt32(), Is.EqualTo((int)IgnoreWhitespaceKind.Change));
             Assert.That(json.RootElement.GetProperty("ShowEntireFile").GetBoolean(), Is.True);
+            Assert.That(json.RootElement.GetProperty("ShowNonPrintingChars").GetBoolean(), Is.True);
+            Assert.That(json.RootElement.GetProperty("ShowSyntaxHighlightingInDiff").GetBoolean(), Is.False);
             using DiffViewerAppearanceMenu nextAppearance = new(store); using DiffViewerComparisonMenu nextComparison = new(store);
             Assert.That(nextAppearance.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.Difftastic));
             Assert.That(nextComparison.Options.ShowEntireFile, Is.True, "Saved defaults load even with Remember=false.");
@@ -104,11 +122,13 @@ public class NativeDiffViewerSettingsDialogTests
         {
             NativeDiffViewerSettingsDialog dialog = new(store); Task<bool> closed = dialog.ShowDialog<bool>(owner); Pump(dialog);
             Click(Choice(dialog, "chkRememberShowEntireFilePreference")); Click(Choice(dialog, "chkUseGitColoring"));
+            Click(Choice(dialog, "chkRememberShowNonPrintingCharsPreference")); Click(Choice(dialog, "chkRememberShowSyntaxHighlightingInDiff"));
             int changed = 0; store.Changed += (_, _) => changed++;
             Click(dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "DiffViewerSettingsAccept"));
             Assert.That(closed.IsCompleted, Is.False); Assert.That(dialog.IsVisible, Is.True);
             Assert.That(dialog.GetVisualDescendants().OfType<TextBlock>().Single(label => label.Name == "DiffViewerSettingsError").IsVisible, Is.True);
             Assert.That(Choice(dialog, "chkRememberShowEntireFilePreference").IsChecked, Is.True); Assert.That(changed, Is.Zero);
+            Assert.That(Choice(dialog, "chkRememberShowNonPrintingCharsPreference").IsChecked, Is.True); Assert.That(Choice(dialog, "chkRememberShowSyntaxHighlightingInDiff").IsChecked, Is.False);
             Assert.That(store.Load(), Is.EqualTo(new DiffViewerPreferences()));
             Assert.That(Directory.GetFiles(Path.GetDirectoryName(store.FilePath)!, "*.tmp"), Is.Empty);
             Click(dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "DiffViewerSettingsCancel")); Assert.That(await closed, Is.False);
@@ -133,16 +153,21 @@ public class NativeDiffViewerSettingsDialogTests
                     TextBlock general = dialog.GetVisualDescendants().OfType<TextBlock>().Single(label => label.Name == "gbGeneralLabel"), colors = dialog.GetVisualDescendants().OfType<TextBlock>().Single(label => label.Name == "gbDiffColoringLabel");
                     Assert.That(general.Text, Is.EqualTo("Général")); Assert.That(colors.Text, Is.EqualTo("Coloration des différences"));
                     CheckBox whitespace = Choice(dialog, "chkRememberIgnoreWhiteSpacePreference"), whole = Choice(dialog, "chkRememberShowEntireFilePreference"), appearance = Choice(dialog, "chkRememberDiffAppearancePreference"), context = Choice(dialog, "chkRememberNumberOfContextLines");
+                    CheckBox nonPrinting = Choice(dialog, "chkRememberShowNonPrintingCharsPreference"), syntax = Choice(dialog, "chkRememberShowSyntaxHighlightingInDiff");
                     Assert.That(((AccessText)whitespace.Content!).Text, Is.EqualTo("Mémoriser la préférence 'Ignorer les espaces'"));
                     Assert.That(((AccessText)whole.Content!).Text, Is.EqualTo("Mémoriser la préférence 'Afficher le fichier en entier'"));
                     Assert.That(((AccessText)appearance.Content!).Text, Is.EqualTo("Mémoriser la préférence 'Apparence des différences'"));
                     Assert.That(((AccessText)context.Content!).Text, Is.EqualTo("Mémoriser la préférence 'Nombre de lignes de contexte'"));
+                    Assert.That(((AccessText)nonPrinting.Content!).Text, Is.EqualTo("Mémoriser la préférence 'Afficher les caractères non imprimables'"));
+                    Assert.That(((AccessText)syntax.Content!).Text, Is.EqualTo("Enregistrer la préférence 'Afficher la syntaxe'"));
                     Assert.That(((AccessText)Choice(dialog, "chkUseGitColoring").Content!).Text, Is.EqualTo("Coloration git"));
                     Assert.That(((AccessText)Choice(dialog, "chkUseGEThemeGitColoring").Content!).Text, Is.EqualTo("Inverser la couleur d'arrière-plan"));
-                    Assert.That(whitespace.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(whole.TranslatePoint(default, dialog)!.Value.Y));
+                    Assert.That(whitespace.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(nonPrinting.TranslatePoint(default, dialog)!.Value.Y));
+                    Assert.That(nonPrinting.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(whole.TranslatePoint(default, dialog)!.Value.Y));
                     Assert.That(whole.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(appearance.TranslatePoint(default, dialog)!.Value.Y));
                     Assert.That(appearance.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(context.TranslatePoint(default, dialog)!.Value.Y));
-                    Assert.That(context.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(colors.TranslatePoint(default, dialog)!.Value.Y));
+                    Assert.That(context.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(syntax.TranslatePoint(default, dialog)!.Value.Y));
+                    Assert.That(syntax.TranslatePoint(default, dialog)!.Value.Y, Is.LessThan(colors.TranslatePoint(default, dialog)!.Value.Y));
                     foreach (CheckBox check in dialog.GetVisualDescendants().OfType<CheckBox>())
                     {
                         Assert.That(check.Bounds.Height, Is.EqualTo(24)); Assert.That(((AccessText)check.Content!).Bounds.Bottom, Is.LessThanOrEqualTo(check.Bounds.Height));
@@ -155,6 +180,8 @@ public class NativeDiffViewerSettingsDialogTests
                     AvaloniaHeadlessPlatform.ForceRenderTimerTick();
                     using WriteableBitmap frame = dialog.CaptureRenderedFrame() ?? throw new AssertionException("No native settings frame.");
                     AssertTextPixels(frame, dialog, (AccessText)whitespace.Content!, foreground, background);
+                    AssertTextPixels(frame, dialog, (AccessText)nonPrinting.Content!, foreground, background);
+                    AssertTextPixels(frame, dialog, (AccessText)syntax.Content!, foreground, background);
                     string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, "diff-viewer-settings-fr-" + theme + ".png"); frame.Save(path); TestContext.AddTestAttachment(path);
                     Click(dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "DiffViewerSettingsCancel")); Assert.That(await closed, Is.False);
                 }
