@@ -59,13 +59,17 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 
 - Push rapide : raccourci et Maj-clic, formulaire après échec/refus ; 17 tests Push passent, audit natif/paquet à renouveler. ADR 0038.
 - Pull avancé : tags/unshallow et autostash historique ; mise à jour des sous-modules réutilisant le workflow Checkout.
-- Cherry-pick : options persistantes, parent de merge, choix de révision et dialogue par commit sélectionné.
+- Cherry-pick : options persistantes, parent de merge, choix de révision et dialogue par commit sélectionné ; fermeture du parent contrôlée.
 - Sous-modules : retrait guidé de l'enregistrement/index, avec conservation des fichiers et du dépôt interne comme Windows.
+
+Pull avancé, Cherry-pick et retrait de sous-modules : 33 tests UI ciblés passent. Le contrôle Core du futur snapshot couvrira aussi la dernière protection des permissions temporaires. Aucun de ces ajouts ne remplace encore le dernier paquet livré.
 
 ## Prochains écarts concrets
 
+- Barre Browse : le filtre « Branches: » doit rester une combo éditable avec suggestions de refs ; le menu de checkout de la branche courante est un contrôle distinct. Repère historique : FilterToolBar.tscboBranchFilter.
+
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
-- Pull avancé : tags/unshallow/autostash/sous-modules et sortie Git continue.
+- Pull : sortie Git continue, scripts Before/After, source URL et destination locale Fetch.
 - Historique/blame : navigateur des fichiers du commit, filtres de grille, difftools, dossiers/sous-modules et audit natif étendu.
 - Clone : autocomplétion, aide et sortie/progression Git ; scripts checkout.
 - Commit : superprojet/branche inline, templates avancés, validation personnalisée et scripts ; dialogues/raccourcis historiques restants.

@@ -424,6 +424,10 @@ public sealed partial class GitRepository
                 continue;
             }
 
+            // The Windows list follows git submodule status, which is driven
+            // by indexed gitlinks. Remove retains the last worktree .gitmodules.
+            if (!expected.ContainsKey(modulePath)) { continue; }
+
             string fullPath = System.IO.Path.Combine(Path, ValidatePath(modulePath));
             bool initialized = File.Exists(System.IO.Path.Combine(fullPath, ".git")) || Directory.Exists(System.IO.Path.Combine(fullPath, ".git"));
             string? head = null;
@@ -451,7 +455,7 @@ public sealed partial class GitRepository
         => MutateAsync(noFastForward ? ["merge", "--no-edit", "--no-ff", "--", ValidateValue(revision)] : ["merge", "--no-edit", "--", ValidateValue(revision)], cancellationToken);
 
     public Task<GitResult> CherryPickAsync(string revision, CancellationToken cancellationToken = default)
-        => MutateAsync(["cherry-pick", "--", ValidateValue(revision)], cancellationToken);
+        => CherryPickCommittedAsync(revision, cancellationToken);
 
     public Task<GitResult> RebaseAsync(string revision, CancellationToken cancellationToken = default)
         => MutateAsync(["rebase", "--", ValidateValue(revision)], cancellationToken);

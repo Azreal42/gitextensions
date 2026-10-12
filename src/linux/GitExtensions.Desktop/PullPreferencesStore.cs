@@ -5,7 +5,8 @@ using GitExtensions.Extensibility.Git;
 namespace GitExtensions.Linux.Desktop;
 
 internal sealed record PullPreferences(GitPullAction DefaultAction = GitPullAction.Merge,
-    GitPullAction DialogAction = GitPullAction.Merge, bool DontConfirmFetchAndPruneAll = false);
+    GitPullAction DialogAction = GitPullAction.Merge, bool DontConfirmFetchAndPruneAll = false,
+    bool AutoStash = false, bool? AutoPopStashAfterPull = null, bool IncludeUntrackedFilesInAutoStash = false);
 
 internal sealed class PullPreferencesStore
 {

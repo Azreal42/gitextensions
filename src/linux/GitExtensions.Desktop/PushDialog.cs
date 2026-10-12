@@ -22,6 +22,7 @@ public sealed class PushDialog : RepositoryDialog
     private const string AllRefs = "[ All ]";
     private readonly PushPreferencesStore _store = new();
     private readonly CloneSourcesStore _destinationHistory = new();
+    private readonly Func<Window, CancellationToken, Task>? _afterSubmoduleUpdateAsync;
     private PushPreferences _preferences;
     private readonly RadioButton _toRemote = new() { Name = "PushToRemote", GroupName = "PushDestinationMode", IsChecked = true };
     private readonly RadioButton _toUrl = new() { Name = "PushToUrl", GroupName = "PushDestinationMode" };
@@ -51,8 +52,9 @@ public sealed class PushDialog : RepositoryDialog
     public bool Attempted { get; private set; }
     public bool Cancelled { get; private set; }
 
-    public PushDialog(GitRepository repository) : base(repository, "Push")
+    public PushDialog(GitRepository repository, Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Push")
     {
+        _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferences = _store.Load();
         _url.ItemsSource = _destinationHistory.Load();
         Width = 760; MinWidth = 620; SizeToContent = SizeToContent.Height;
@@ -421,7 +423,9 @@ public sealed class PushDialog : RepositoryDialog
                     && (await Repository.RunAsync(["rev-list", "--merges", remoteBranch + "..HEAD", "--"], token)).StandardOutput.Length > 0)
                 { throw new InvalidOperationException(T("Can not perform automatical pull, when the pull action is set to Rebase and one of the commits that are about to be rebased is a merge commit.")); }
             }
-            PullDialog pull = new(Repository, action.Value, request.Destination, request.DestinationRef) { RequestedThemeVariant = owner.ActualThemeVariant };
+            PullDialog? pull = null;
+            pull = new(Repository, action.Value, request.Destination, request.DestinationRef,
+                cancellation => _afterSubmoduleUpdateAsync?.Invoke(pull!, cancellation) ?? Task.CompletedTask) { RequestedThemeVariant = owner.ActualThemeVariant };
             bool once = false;
             pull.Opened += async (_, _) => { if (once) { return; } once = true; await pull.InitializeAsync(token); if (pull.IsReady) { await pull.ExecuteAsync(pull, cancellationToken: token); if (pull.Succeeded) { pull.Close(); } } };
             using CancellationTokenRegistration registration = token.Register(() => Dispatcher.UIThread.Post(pull.Close));
@@ -437,7 +441,9 @@ public sealed class PushDialog : RepositoryDialog
         if (IsBusy || _bare) { return; }
         await RunAsync("Pull", async token =>
         {
-            PullDialog pull = new(Repository, GitPullAction.Merge, RemoteName, _destination.Text) { RequestedThemeVariant = ActualThemeVariant };
+            PullDialog? pull = null;
+            pull = new(Repository, GitPullAction.Merge, RemoteName, _destination.Text,
+                cancellation => _afterSubmoduleUpdateAsync?.Invoke(pull!, cancellation) ?? Task.CompletedTask) { RequestedThemeVariant = ActualThemeVariant };
             pull.Opened += async (_, _) => await pull.InitializeAsync(token);
             using CancellationTokenRegistration registration = token.Register(() => Dispatcher.UIThread.Post(pull.Close));
             await pull.ShowDialog(this);

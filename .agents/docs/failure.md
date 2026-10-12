@@ -39,11 +39,16 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | CP1252 du hunk appliqué aux chemins range-diff UTF-8 | Séparer sections contenu/metadata/fichier. Git peut tronquer un en-tête contenant newline ; ne pas reconstruire des octets absents. |
 | Merge ignore `pull.ff=only` | `--no-rebase` prime aussi sur la config ff-only ; réappliquer `--ff-only`. Rebase garde la priorité de l'oracle Git natif. |
 | Précontrôles Pull divergent de FormPull | Token Main dès l'initialisation ; [ All ] force Fetch, confirmation rebase garde No sans commande de repli. |
+| Sous-module retiré revient après refresh | La dernière .gitmodules reste volontairement sur disque ; la liste suit les gitlinks de l'index, comme git submodule status. |
+| Retrait incohérent avec .gitmodules modifiée | rm --cached refuse parfois avant Save+Stage ; Windows ignorait ce résultat. Préparer le futur contenu sur copies si des sections restent, garder les protections du gitlink et publier les fichiers sous verrous Git. |
 
 ## Lecteurs et UI — résolus
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Fetch→Rebase conserve parfois All tags | Les événements radio Avalonia arrivent avant le décochage du précédent ; appliquer le mode depuis la case qui vient d’être cochée. |
+| Entrée sur une case du cherry-pick ne lance pas Pick | Garder le bouton par défaut historique depuis les cases et la liste des parents ; le focus initial appartient à la case ou au parent. |
+| Fermer le parent pendant un prompt accepte malgré tout le cherry-pick | Les enfants se ferment avant IsVisible=false du parent ; mémoriser la fermeture acceptée avant les callbacks et ne pas enregistrer les options. |
 | Texte source interprété comme patch | Mode texte explicite ; indexabilité séparée du contenu affiché. |
 | Staging réutilise l'ancien aperçu après échec | Invalider au début du chargement et sur transition explicite, même si le texte est identique. Codec reste accessible pour réessayer. |
 | Sélection LF touche l'ajout suivant, recherche omet le dernier caractère | Adapter les bornes inclusives historiques aux intervalles semi-ouverts natifs. |

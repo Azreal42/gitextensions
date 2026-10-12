@@ -138,7 +138,11 @@ public sealed partial class MainWindow
         { _state.Text = T("This operation requires a working tree."); return; }
         _pullFlyout.Hide(); _browserToolbar?.OverflowFlyout.Hide();
         _pullPreferences = _pullPreferencesStore.Load();
-        PullDialog dialog = new(_repository, action == GitPullAction.None ? _pullPreferences.DialogAction : action);
+        GitRepository repository = _repository;
+        PullDialog? dialog = null;
+        dialog = new(repository, action == GitPullAction.None ? _pullPreferences.DialogAction : action,
+            afterSubmoduleUpdateAsync: token => AfterSubmoduleUpdateAsync(repository, dialog!.IsVisible ? dialog : WorkflowOwner, token))
+            { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
         try
         {
             await RunAsync("Pull/Fetch", async _ =>

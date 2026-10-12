@@ -243,8 +243,22 @@ public sealed partial class MainWindow
 
     private async Task CherryPickAsync()
     {
-        GitCommit commit = SelectedCommit();
-        if (await Dialogs.ConfirmAsync(this, "Cherry-pick", $"Apply commit {commit.Subject} to the current branch?")) { await RunAsync("Cherry-pick", r => r.CherryPickAsync(commit.Hash, Token)); }
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        string[] revisions = SelectedComparisonCommits().Reverse().Select(commit => commit.Hash).ToArray();
+        if (revisions.Length == 0) { _state.Text = T("Select a commit in History first."); return; }
+        GitRepository repository = _repository;
+        try
+        {
+            await RunAsync("Cherry-pick", async _ =>
+                await CherryPickSequence.ShowAsync(WorkflowOwner, repository, revisions, Token,
+                    (owner, token) => AfterSubmoduleUpdateAsync(repository, owner, token)), refresh: false);
+        }
+        finally
+        {
+            // A cancelled sequence can have applied earlier commits, or leave
+            // a conflict that Git needs the user to resolve.
+            if (_repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
+        }
     }
 
     private async Task RevertAsync()
@@ -298,7 +312,9 @@ public sealed partial class MainWindow
     private async Task ShowPushAsync(bool quick)
     {
         if (_repository is null || _busy) { return; }
-        PushDialog dialog = new(_repository) { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
+        GitRepository repository = _repository;
+        PushDialog dialog = new(repository, (owner, token) => AfterSubmoduleUpdateAsync(repository, owner, token))
+            { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
         try
         {
             await RunAsync("Push", async _ =>
@@ -533,9 +549,25 @@ public sealed partial class MainWindow
 
     private async Task ShowRepositoryDialogAsync(RepositoryDialog dialog)
     {
+        Window owner = WorkflowOwner;
+        dialog.RequestedThemeVariant ??= owner.ActualThemeVariant;
         dialog.Opened += async (_, _) => await dialog.InitializeAsync();
-        await RunAsync(dialog.Title ?? "Open dialog", async _ => await dialog.ShowDialog(WorkflowOwner), refresh: false);
-        if (dialog.HasRepositoryChanges) { await RefreshAsync(); }
+        try
+        {
+            await RunAsync(dialog.Title ?? "Open dialog", async _ =>
+            {
+                CancellationToken commandToken = Token;
+                using CancellationTokenRegistration registration = commandToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
+                commandToken.ThrowIfCancellationRequested();
+                await dialog.ShowDialog(owner);
+                commandToken.ThrowIfCancellationRequested();
+            }, refresh: false);
+        }
+        finally
+        {
+            dialog.Close();
+            if (dialog.HasRepositoryChanges && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
+        }
     }
 
     private async Task GarbageCollectAsync()

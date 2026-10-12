@@ -56,7 +56,7 @@ public sealed class SubmoduleUpdateDialog : RepositoryDialog
     internal static async Task<bool> ShowAsync(Window owner, GitRepository repository, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        SubmoduleUpdateDialog dialog = new(repository);
+        SubmoduleUpdateDialog dialog = new(repository) { RequestedThemeVariant = owner.ActualThemeVariant };
         dialog.Opened += (_, _) => dialog._update = dialog.InitializeAsync();
         void OwnerClosed(object? sender, EventArgs args) => dialog.Close();
         owner.Closed += OwnerClosed;

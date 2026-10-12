@@ -384,7 +384,7 @@ public sealed partial class MainWindow
         {
             if (_repository is null || _busy) { return; }
             if (_repository.IsBare) { _state.Text = T("Open a worktree to commit changes in a bare repository."); return; }
-            CommitDialog commit = new(_repository);
+            CommitDialog commit = new(_repository) { RequestedThemeVariant = ActualThemeVariant };
             await RunAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
             await commit.ShowDialog(this);
             if (commit.HasRepositoryChanges) { await RefreshAsync(); }
@@ -392,7 +392,7 @@ public sealed partial class MainWindow
         }
         Control content = _workflowViews[name];
         if (content.Parent is not null) { return; }
-        Window dialog = new() { Title = T(name) + " — Git Extensions", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        Window dialog = new() { Title = T(name) + " — Git Extensions", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
         dialog.Closed += (_, _) => dialog.Content = null;
         await dialog.ShowDialog(this);
     }
