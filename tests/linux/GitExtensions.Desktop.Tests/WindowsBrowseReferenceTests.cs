@@ -23,6 +23,46 @@ namespace GitExtensions.Desktop.Tests;
 public class WindowsBrowseReferenceTests
 {
     [AvaloniaTest]
+    public async Task KeyboardOverflowFieldSurvivesMappingHoverUntilThePointerActuallyMoves()
+    {
+        using Fixture fixture = await Fixture.CreateAsync("initial\n", "initial\n", createMerge: true);
+        MainWindow main = fixture.Window; main.Width = 860; main.Height = 752;
+        CompactBrowserToolbar toolbar = Field<CompactBrowserToolbar>(main, "RepositoryToolbar");
+        foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+        {
+            main.RequestedThemeVariant = theme; await Layout(main);
+            Field<ListBox>(main, "RevisionHistory").Focus();
+            main.MouseMove(new Point(650, 107));
+            main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+            TextBox branch = toolbar.OverflowFlyout.ItemsSource!.Cast<Control>().SelectMany(item => item.GetVisualDescendants().OfType<TextBox>()).Single(text => text.Name == "BranchHistoryFilterOverflow");
+            MenuItem filter = toolbar.OverflowFlyout.ItemsSource!.Cast<MenuItem>().Single(item => item.Header as string == "Filter:");
+            // This is the framework signal emitted when a popup maps beneath the
+            // stationary mouse. It must not select Filter or start its 400 ms timer.
+            filter.RaiseEvent(new RoutedEventArgs(MenuItem.PointerEnteredItemEvent) { Source = filter });
+            await Task.Delay(450); await Layout(main);
+            Assert.That(branch.IsFocused, Is.True);
+            Assert.That(filter.IsSubMenuOpen, Is.False);
+            main.KeyTextInput("feature");
+            Assert.That(branch.Text, Is.EqualTo("feature"));
+            Assert.That(Field<TextBox>(main, "BranchHistoryFilter").Text, Is.EqualTo("feature"));
+            main.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+            await Until(() => !main.IsBusy && !toolbar.OverflowFlyout.IsOpen);
+            Assert.That(Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Subject), Is.EqualTo(new[] { "Feature branch change", "Initial commit" }));
+
+            Field<ListBox>(main, "RevisionHistory").Focus();
+            main.MouseMove(new Point(650, 107));
+            main.KeyPressQwerty(PhysicalKey.E, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+            filter.RaiseEvent(new RoutedEventArgs(MenuItem.PointerEnteredItemEvent) { Source = filter });
+            main.MouseMove(new Point(651, 107));
+            await Task.Delay(450); await Layout(main);
+            Assert.That(filter.IsSubMenuOpen, Is.True, "The first actual mouse move must restore normal menu hover, including its submenu.");
+            toolbar.OverflowFlyout.Hide(); await Layout(main);
+        }
+        Assert.That(main.LastException, Is.Null);
+        Assert.That((await new GitRepository(fixture.Repository).GetStatusAsync()).Changes, Is.Empty);
+    }
+
+    [AvaloniaTest]
     public async Task NavigationCategoryButtonsKeepTheirRenderedBluePaletteWithAnOrangePlatformAccent()
     {
         FluentTheme fluent = Application.Current!.Styles.OfType<FluentTheme>().Single();

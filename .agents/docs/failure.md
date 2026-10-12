@@ -100,3 +100,5 @@ Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de
 | Ligne sélectionnée hors viewport après reload entier | Offset restauré avant recalcul de l’étendue, donc plafonné à la hauteur de l’ancien patch | Mettre à jour le layout avant restauration ; rouge reproductible du clone 472 conservé, 28 scénarios lecture/Browse verts localement. |
 
 | Boutons de catégories Browse orange en natif clair | Ressources Checked du template ToggleButton Fluent reprenant l’accent système | Ressources locales par thème pour tous les états ; régression forçant l’orange et états réels des six boutons. Cadres `1bd1e69ff` conservés, successeur natif à valider. |
+
+| Ctrl+E perd le champ Branches si Filter apparaît sous la souris | PointerEnteredItem sélectionne le menu puis Focus() reprend le champ, avant ouverture différée du sous-menu | Garde locale de survol synthétique à position écran inchangée ; premier vrai mouvement relaye une fois, clic/navigation/close nettoient. Rouge natif `a1bd3e663` conservé ; huit tests Browse verts, successeur natif à valider. |

@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -18,6 +20,12 @@ internal sealed class CompactBrowserToolbar : Border
     private readonly ObservableCollection<Control> _popupItems = [];
     private readonly MenuFlyout _flyout = new();
     private bool _placing;
+    private TopLevel? _pointerOwner;
+    private MenuFlyoutPresenter? _pointerPresenter;
+    private PixelPoint? _lastPointerScreen, _revealPointerScreen;
+    private bool _keyboardReveal;
+    private MenuItem? _pendingHoverItem;
+    private RoutedEvent? _pendingHoverEvent;
     internal Button Overflow { get; }
     internal IReadOnlyList<Control> InlineItems => _entries.Where(entry => entry.Host.IsVisible).Select(entry => entry.Control).ToArray();
     internal MenuFlyout OverflowFlyout => _flyout;
@@ -34,10 +42,23 @@ internal sealed class CompactBrowserToolbar : Border
             MinWidth = 0, MinHeight = 24, Padding = default, IsVisible = false, Flyout = _flyout
         };
         _row.Children.Add(Overflow); Child = _row;
-        SizeChanged += (_, _) => Place();
-        _flyout.Opened += (_, _) => ApplyPalette();
+        SizeChanged += (_, _) => { EndKeyboardReveal(); Place(); };
+        _flyout.Opened += (_, _) => { ApplyPalette(); ObservePresenter(); };
+        _flyout.Closed += (_, _) => { EndKeyboardReveal(); ObservePresenter(null); };
         ActualThemeVariantChanged += (_, _) => ApplyPalette();
-        DetachedFromVisualTree += (_, _) => _flyout.Hide();
+        AttachedToVisualTree += (_, _) =>
+        {
+            _pointerOwner = TopLevel.GetTopLevel(this);
+            _pointerOwner?.AddHandler(PointerMovedEvent, ObservePointer, RoutingStrategies.Tunnel, handledEventsToo: true);
+            _pointerOwner?.AddHandler(PointerPressedEvent, HandlePointerPress, RoutingStrategies.Tunnel, handledEventsToo: true);
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            EndKeyboardReveal(); _flyout.Hide(); ObservePresenter(null);
+            _pointerOwner?.RemoveHandler(PointerMovedEvent, ObservePointer);
+            _pointerOwner?.RemoveHandler(PointerPressedEvent, HandlePointerPress);
+            _pointerOwner = null; _lastPointerScreen = null;
+        };
         ApplyPalette();
     }
 
@@ -45,6 +66,13 @@ internal sealed class CompactBrowserToolbar : Border
     {
         Border host = new() { Child = control, Height = 24 };
         _entries.Add(new(control, host, popup));
+        if (popup is MenuItem menu)
+        {
+            menu.AddHandler(MenuItem.PointerEnteredItemEvent, SuspendHover);
+            menu.AddHandler(MenuItem.PointerExitedItemEvent, SuspendHover);
+            menu.PointerEntered += ObservePointer;
+            menu.PointerExited += ObservePointer;
+        }
         _row.Children.Insert(_row.Children.Count - 1, host);
         control.PropertyChanged += (_, change) =>
         {
@@ -56,9 +84,60 @@ internal sealed class CompactBrowserToolbar : Border
     {
         Entry? entry = _entries.FirstOrDefault(entry => ReferenceEquals(entry.Control, control) || control.GetVisualAncestors().Contains(entry.Control));
         if (entry is null || entry.Host.IsVisible) { return control; }
+        if (_flyout.IsOpen) { _flyout.Hide(); }
+        // Mapping beneath a stationary mouse must not let the menu's synthetic
+        // hover select another item and steal the keyboard field's focus.
+        _keyboardReveal = true; _revealPointerScreen = _lastPointerScreen;
         _flyout.ShowAt(Overflow);
         entry.Popup.UpdateLayout();
         return entry.Popup.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() ?? control;
+    }
+
+    private void SuspendHover(object? sender, RoutedEventArgs args)
+    {
+        if (!_keyboardReveal || args.Source is not MenuItem item) { return; }
+        _pendingHoverItem = item; _pendingHoverEvent = args.RoutedEvent;
+        args.Handled = true;
+    }
+
+    private void ObservePointer(object? sender, PointerEventArgs args)
+    {
+        if (sender is not Visual visual || TopLevel.GetTopLevel(visual) is null) { return; }
+        PixelPoint point = visual.PointToScreen(args.GetPosition(visual));
+        _lastPointerScreen = point;
+        if (!_keyboardReveal) { return; }
+        _revealPointerScreen ??= point;
+        if (point == _revealPointerScreen) { return; }
+        MenuItem? item = _pendingHoverItem; RoutedEvent? hover = _pendingHoverEvent;
+        EndKeyboardReveal();
+        // PointerOverPreProcessor may precede PointerMoved, including with overlay
+        // popups. Relay the suppressed event once so the first real move works.
+        if (item is not null && hover is not null) { item.RaiseEvent(new RoutedEventArgs(hover) { Source = item }); }
+    }
+
+    private void HandlePointerPress(object? sender, PointerPressedEventArgs args)
+    { EndKeyboardReveal(); ObservePointer(sender, args); }
+
+    private void MenuKeyDown(object? sender, KeyEventArgs args)
+    { if (args.Key is Key.Up or Key.Down or Key.Tab or Key.Escape) { EndKeyboardReveal(); } }
+
+    private void EndKeyboardReveal()
+    { _keyboardReveal = false; _revealPointerScreen = null; _pendingHoverItem = null; _pendingHoverEvent = null; }
+
+    private void ObservePresenter()
+    {
+        ObservePresenter(_flyout.Items.OfType<Control>().SelectMany(item => item.GetVisualAncestors().OfType<MenuFlyoutPresenter>()).FirstOrDefault());
+    }
+    private void ObservePresenter(MenuFlyoutPresenter? presenter)
+    {
+        if (ReferenceEquals(_pointerPresenter, presenter)) { return; }
+        _pointerPresenter?.RemoveHandler(PointerMovedEvent, ObservePointer);
+        _pointerPresenter?.RemoveHandler(PointerPressedEvent, HandlePointerPress);
+        _pointerPresenter?.RemoveHandler(KeyDownEvent, MenuKeyDown);
+        _pointerPresenter = presenter;
+        presenter?.AddHandler(PointerMovedEvent, ObservePointer, RoutingStrategies.Tunnel, handledEventsToo: true);
+        presenter?.AddHandler(PointerPressedEvent, HandlePointerPress, RoutingStrategies.Tunnel, handledEventsToo: true);
+        presenter?.AddHandler(KeyDownEvent, MenuKeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
     }
 
     internal void Place()
