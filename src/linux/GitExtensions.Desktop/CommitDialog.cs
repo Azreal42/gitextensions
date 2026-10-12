@@ -211,7 +211,11 @@ public sealed class CommitDialog : Window
         _target.SelectionChanged += (_, _) => UpdateAvailability();
         _author.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateAvailability(); } };
         _diff.Editor.TextArea.SelectionChanged += (_, _) => UpdateAvailability();
-        AddHandler(KeyDownEvent, HandleShortcut, RoutingStrategies.Tunnel);
+        KeyDown += HandleShortcut;
+        AddHandler(KeyDownEvent, (sender, args) =>
+        {
+            if (args.KeyModifiers == KeyModifiers.Control && args.Key is Key.Enter or Key.S) { HandleShortcut(sender, args); }
+        }, RoutingStrategies.Tunnel);
         Opened += async (_, _) => { await InitializeAsync(); _unstaged.Focus(); };
         Activated += async (_, _) =>
         {
