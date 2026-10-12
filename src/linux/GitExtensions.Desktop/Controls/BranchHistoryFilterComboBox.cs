@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -30,7 +32,23 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
         Width = 100; Height = 23; MinHeight = 23; MaxHeight = 23;
         Padding = new Thickness(2, 0); MaxDropDownHeight = 300;
         Styles.Add(new Style(selector => selector.OfType<ComboBoxItem>())
-        { Setters = { new Setter(MinHeightProperty, 20d), new Setter(PaddingProperty, new Thickness(4, 1)) } });
+        { Setters = { new Setter(MinHeightProperty, 20d), new Setter(PaddingProperty, new Thickness(4, 1)),
+            new Setter(ForegroundProperty, new DynamicResourceExtension("ClassicTextBrush")) } });
+        Styles.Add(new Style(selector => selector.OfType<ComboBoxItem>().Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"))
+        { Setters = { new Setter(ContentPresenter.BackgroundProperty, new DynamicResourceExtension("ClassicEditorBrush")),
+            new Setter(ContentPresenter.ForegroundProperty, new DynamicResourceExtension("ClassicTextBrush")) } });
+        // Fluent's ComboBoxItemBackgroundSelected/PointerOver/Pressed resources
+        // are independent of the older SystemControlHighlightList* brushes.
+        // Override the surface which actually paints the popup row, including
+        // its inherited text color when hosted by the toolbar's PopupRoot.
+        foreach (string state in new[] { ":selected", ":pointerover", ":pressed" })
+        {
+            Styles.Add(new Style(selector => selector.OfType<ComboBoxItem>().Class(state))
+            { Setters = { new Setter(ForegroundProperty, new DynamicResourceExtension("ClassicHighlightTextBrush")) } });
+            Styles.Add(new Style(selector => selector.OfType<ComboBoxItem>().Class(state).Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"))
+            { Setters = { new Setter(ContentPresenter.BackgroundProperty, new DynamicResourceExtension("ClassicHighlightBrush")),
+                new Setter(ContentPresenter.ForegroundProperty, new DynamicResourceExtension("ClassicHighlightTextBrush")) } });
+        }
         DropDownOpened += (_, _) => RefreshSuggestions();
         SelectionChanged += (_, _) =>
         {
@@ -249,6 +267,8 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
         IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(ActualThemeVariant == ThemeVariant.Dark);
         foreach ((string key, string color) in new Dictionary<string, string>
         {
+            ["ClassicEditorBrush"] = "EditorBackground", ["ClassicTextBrush"] = "WindowText",
+            ["ClassicHighlightBrush"] = "Highlight", ["ClassicHighlightTextBrush"] = ActualThemeVariant == ThemeVariant.Dark ? "WindowText" : "HighlightText",
             ["ComboBoxDropDownBackground"] = "EditorBackground", ["ComboBoxDropDownBorderBrush"] = "ActiveBorder",
             ["SystemControlHighlightListLowBrush"] = "Highlight", ["SystemControlHighlightListMediumBrush"] = "Highlight",
             ["SystemControlHighlightListAccentLowBrush"] = "Highlight", ["SystemControlHighlightListAccentMediumBrush"] = "Highlight",

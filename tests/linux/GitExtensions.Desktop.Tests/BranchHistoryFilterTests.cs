@@ -1,15 +1,19 @@
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.Themes.Fluent;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
@@ -109,11 +113,13 @@ public class BranchHistoryFilterTests
     [AvaloniaTest]
     public async Task RealPointerSuggestionAndKeyboardChoiceOnlyApplyOnEnterWithCompactLightDarkPopups()
     {
+        using OrangePlatformAccent accent = new();
         using Fixture f = await Fixture.CreateAsync("initial\n", "initial\n", createMerge: true);
         MainWindow main = f.Window; string before = await State(f);
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
             main.RequestedThemeVariant = theme; await Layout(main);
+            accent.AssertActive(theme);
             await Scope(main, "All");
             ComboBox combo = Branch(main); combo.Text = ""; TextBox editor = Editor(combo);
             string[] all = Hashes(main);
@@ -124,7 +130,7 @@ public class BranchHistoryFilterTests
             ComboBoxItem feature = popup.Child!.GetVisualDescendants().OfType<ComboBoxItem>().Single(item => item.Content as string == "feature");
             Capture(main, "branch-filter-inline-" + theme); Capture((TopLevel)feature.GetVisualRoot()!, "branch-filter-popup-" + theme);
             Assert.That(((TopLevel)feature.GetVisualRoot()!).Bounds.Width, Is.GreaterThanOrEqualTo(300));
-            Click(feature); await Layout(main);
+            await ClickRowWithHistoricalPalette(feature, main, theme, "inline");
             Assert.That(combo.Text, Is.EqualTo("feature")); Assert.That(Hashes(main), Is.EqualTo(all));
             Editor(combo).Focus(); Press(main, PhysicalKey.Enter); await Idle(main);
             Assert.That(Subjects(main), Is.EqualTo(new[] { "Feature branch change", "Initial commit" }));
@@ -134,12 +140,29 @@ public class BranchHistoryFilterTests
             Press(main, PhysicalKey.ArrowDown); await Layout(main);
             Assert.That(combo.SelectedItem, Is.Not.Null);
             string chosen = (string)combo.SelectedItem!;
+            ComboBoxItem selected = (ComboBoxItem)combo.ContainerFromIndex(combo.SelectedIndex)!;
+            await AssertSelectedRowWithHistoricalPalette(combo, selected, theme, "inline");
             Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature" })).Select(commit => commit.Hash)));
             Press(main, PhysicalKey.Escape); await Layout(main); Assert.That(combo.IsDropDownOpen, Is.False);
             Assert.That(Hashes(main).Length, Is.EqualTo(2));
             Editor(combo).Focus(); Press(main, PhysicalKey.Enter); await Idle(main);
             Assert.That(combo.Text, Is.EqualTo(chosen));
             Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)));
+            // Exercise the same item theme when the editable combo itself is
+            // hosted by the toolbar's PopupRoot, where the native regression occurred.
+            main.Width = 860; await Layout(main);
+            Field<ListBox>(main, "RevisionHistory").Focus();
+            Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+            Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+            CompactBrowserToolbar toolbar = Field<CompactBrowserToolbar>(main, "RepositoryToolbar");
+            ComboBox overflow = OverflowControls(toolbar).OfType<ComboBox>().Single(control => control.Name == "BranchHistoryFilterOverflow");
+            overflow.Text = ""; Editor(overflow).Focus(); Press(main, PhysicalKey.ArrowDown); await Layout(main);
+            if (overflow.SelectedIndex < 0) { Press(main, PhysicalKey.ArrowDown); await Layout(main); }
+            selected = (ComboBoxItem)overflow.ContainerFromIndex(overflow.SelectedIndex)!;
+            await AssertSelectedRowWithHistoricalPalette(overflow, selected, theme, "overflow");
+            await ClickRowWithHistoricalPalette(selected, main, theme, "overflow");
+            Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)), "Palette/pointer selection must still only edit the draft.");
+            toolbar.OverflowFlyout.Hide(); main.Width = 1440; await Layout(main);
         }
         Assert.That(await State(f), Is.EqualTo(before));
     }
@@ -409,6 +432,70 @@ public class BranchHistoryFilterTests
     }
 
     private static ComboBox Branch(MainWindow main) => Field<ComboBox>(main, "BranchHistoryFilter");
+    private static async Task AssertSelectedRowWithHistoricalPalette(ComboBox combo, ComboBoxItem item, ThemeVariant theme, string scope)
+    {
+        Assert.That(item.IsSelected, Is.True);
+        Assert.That(Editor(combo).IsFocused, Is.True, "Keyboard navigation of an editable combo keeps focus in its real editor.");
+        TopLevel root = (TopLevel)item.GetVisualRoot()!;
+        root.MouseMove(new Point(root.Bounds.Width - 2, root.Bounds.Height - 2)); await Layout(root);
+        Assert.That(item.IsPointerOver, Is.False, "The selected color must be verified without a hover tint.");
+        AssertRowPalette(item, theme);
+        Assert.That(Editor(combo).IsFocused, Is.True, "Moving away from the selected popup row must keep the editor available for typing/Enter.");
+        AssertRowPalette(item, theme); Capture(root, "branch-filter-selected-focus-orange-" + scope + "-" + theme);
+    }
+
+    private static async Task ClickRowWithHistoricalPalette(ComboBoxItem item, MainWindow main, ThemeVariant theme, string scope)
+    {
+        TopLevel root = (TopLevel)item.GetVisualRoot()!;
+        Point point = item.TranslatePoint(new Point(12, item.Bounds.Height / 2), root)!.Value;
+        root.MouseMove(point); await Layout(root); Assert.That(item.IsPointerOver, Is.True);
+        AssertRowPalette(item, theme); Capture(root, "branch-filter-hover-orange-" + scope + "-" + theme);
+        root.MouseDown(point, MouseButton.Left); await Layout(root); AssertRowPalette(item, theme);
+        if (root.IsVisible) { Capture(root, "branch-filter-pointer-down-orange-" + scope + "-" + theme); }
+        root.MouseUp(point, MouseButton.Left); await Layout(main);
+    }
+
+    private static void AssertRowPalette(ComboBoxItem item, ThemeVariant theme)
+    {
+        ContentPresenter presenter = item.GetVisualDescendants().OfType<ContentPresenter>().Single(control => control.Name == "PART_ContentPresenter");
+        TextBlock label = presenter.GetVisualDescendants().OfType<TextBlock>().Single();
+        IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(theme == ThemeVariant.Dark);
+        Color background = Color.Parse(colors["Highlight"]), foreground = Color.Parse(colors[theme == ThemeVariant.Dark ? "WindowText" : "HighlightText"]);
+        Assert.That(((ISolidColorBrush)presenter.Background!).Color, Is.EqualTo(background));
+        Assert.That(((ISolidColorBrush)presenter.Foreground!).Color, Is.EqualTo(foreground));
+        Assert.That(((ISolidColorBrush)label.Foreground!).Color, Is.EqualTo(foreground));
+        TopLevel? root = item.GetVisualRoot() as TopLevel;
+        if (root?.IsVisible != true) { return; }
+        using var frame = root.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+        using var pixels = frame!.Lock();
+        Point sample = presenter.TranslatePoint(new Point(presenter.Bounds.Width - 12, presenter.Bounds.Height / 2), root)!.Value;
+        byte[] pixel = new byte[4]; Marshal.Copy(pixels.Address + (int)sample.Y * pixels.RowBytes + (int)sample.X * 4, pixel, 0, 4);
+        bool bgra = pixels.Format == PixelFormat.Bgra8888;
+        Assert.That(Color.FromArgb(pixel[3], pixel[bgra ? 2 : 0], pixel[1], pixel[bgra ? 0 : 2]), Is.EqualTo(background), "The actual popup pixel must use the opaque historical highlight, including inside overflow.");
+    }
+
+    private sealed class OrangePlatformAccent : IDisposable
+    {
+        private readonly FluentTheme _theme = Application.Current!.Styles.OfType<FluentTheme>().Single();
+        private readonly ColorPaletteResources? _light, _dark;
+        private readonly Color _orange = Color.Parse("#e95420");
+        internal OrangePlatformAccent()
+        {
+            _theme.Palettes.TryGetValue(ThemeVariant.Light, out _light); _theme.Palettes.TryGetValue(ThemeVariant.Dark, out _dark);
+            _theme.Palettes[ThemeVariant.Light] = new ColorPaletteResources { Accent = _orange };
+            _theme.Palettes[ThemeVariant.Dark] = new ColorPaletteResources { Accent = _orange };
+        }
+        internal void AssertActive(ThemeVariant variant)
+        {
+            Assert.That(((IResourceNode)_theme).TryGetResource("SystemAccentColor", variant, out object? accent), Is.True);
+            Assert.That(accent, Is.EqualTo(_orange));
+        }
+        public void Dispose()
+        {
+            if (_light is null) { _theme.Palettes.Remove(ThemeVariant.Light); } else { _theme.Palettes[ThemeVariant.Light] = _light; }
+            if (_dark is null) { _theme.Palettes.Remove(ThemeVariant.Dark); } else { _theme.Palettes[ThemeVariant.Dark] = _dark; }
+        }
+    }
     private static TextBox Editor(ComboBox combo) => combo.GetVisualDescendants().OfType<TextBox>().Single();
     private static T Field<T>(TopLevel owner, string name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static string[] Hashes(MainWindow main) => Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();

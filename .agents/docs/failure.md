@@ -6,6 +6,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Observation | Cause / suite |
 | --- | --- |
+| Suggestion Branches orange dans le débordement | Candidat `d5ad2dc17` : suite 844/844 et packaging verts, audit natif Light expose un état ComboBoxItem Fluent reprenant l’accent Ubuntu. Livraison refusée ; palette du présentateur corrigée et test rendu sous accent orange passé en clair/sombre, inline/débordement (UI 09). Audit natif du nouveau paquet attendu. Preuve `artifacts/linux/snapshots/d5ad2dc17/proofs/root-candidate-rejection.json`. |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
