@@ -1,6 +1,6 @@
 # ADR 0036 · Push natif
 
-Statut : implémenté et testé localement ; paquet final à contrôler.
+Statut : sous-périmètre livré et vérifié ; état du paquet et limites dans le [TODO](../../../todo.md).
 
 Besoin : retrouver FormPush et ses choix explicites de branches, tags et mappings multiples. La branche proposée vient du checkout actuel ; la sélection du graphe ne devient pas une source de push implicite.
 

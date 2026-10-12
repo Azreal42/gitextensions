@@ -1,6 +1,6 @@
 # ADR 0035 · Actions sur les fichiers d’un stash
 
-Statut : implémenté et testé localement ; vérification du paquet courant encore à renouveler.
+Statut : sous-périmètre livré et vérifié ; état du paquet et limites dans le [TODO](../../../todo.md).
 
 Besoin : reprendre les commandes du FileStatusList de FormStash sans confondre application du stash entier et patch du fichier affiché.
 

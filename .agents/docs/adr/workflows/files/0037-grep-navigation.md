@@ -1,6 +1,6 @@
 # ADR 0037 · Recherche dans les fichiers du commit
 
-Statut : implémenté et testé localement ; paquet final à contrôler.
+Statut : sous-périmètre livré et vérifié ; état du paquet et limites dans le [TODO](../../../todo.md).
 
 Besoin : retrouver le petit formulaire FindInCommitFilesGitGrep et son filtre dans la liste de fichiers, puis naviguer vers la ligne du résultat dans le lecteur existant.
 

@@ -29,11 +29,15 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 - [x] Browse selon la Photo 1 Windows : barre unique/débordement, lignes compactes, refs inline, graphe, catégories/recherche et sélection ; quatre flèches alignées, palette et Ctrl+E sous souris immobile.
 - [x] Menu Pull/Fetch : six actions, défaut exclusif sans Git, préférences distinctes, raccourcis depuis les popups, confirmations, portée/prune et conflits. ADR 0032.
 - [x] Menu et fenêtre Stash : Create/Manage, all/selected/staged, Keep index/untracked, Apply/Pop/Drop, raccourcis et conflits. ADR 0033.
+- [x] Fichiers Stash : cherry-pick du fichier affiché, reset vers stash/premier parent, confirmation et conservation de la sélection/focus après lecture ; raccourci R natif. ADR 0035.
+- [x] Push natif : branches/tags/mappings multiples, remote/URL, tracking, récursion, force/lease et reprise après rejet. ADR 0036.
+- [x] Grep du commit : codec, filtre de fichiers, navigation ligne/colonne, MRU et aperçus binaires sans coordonnées inventées. ADR 0037.
+- [x] Palette radio historique commune : coché, survol et pression vérifiés dans les thèmes clair/sombre.
 - [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
 
-Dernier paquet local vérifié et livré : source `3caec265e`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/3caec265e/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 688 tests (155 Core, 35 Plugins, 498 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé, repaquetage identique et menu/checkout natifs clair/sombre. Ce nouveau paquet n'a pas remplacé l'ancienne version déjà installée sur l'hôte ; aucun push de ce lot.
+Dernier paquet local vérifié et livré : source `f4ba18594`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/f4ba18594/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 743 tests (182 Core, 35 Plugins, 526 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé et repaquetage identique. Push, Grep, actions de fichiers Stash et palette radio ont été vérifiés nativement en clair/sombre sur le contenu exact du paquet. Ce nouveau paquet n'a pas remplacé l'ancienne version déjà installée sur l'hôte ; aucun push de ce lot.
 
-Les preuves des paquets précédents restent dans [les snapshots](../../artifacts/linux/snapshots/). Chaque audit natif garde son SHA et son périmètre : les contrôles récents du sélecteur de branche ne valent pas nouvel audit étendu de Pull, Stash, Blame ou du reader.
+Les preuves des paquets précédents restent dans [les snapshots](../../artifacts/linux/snapshots/). Chaque audit natif garde son SHA et son périmètre : les contrôles courants ne valent pas nouvel audit étendu du sélecteur de branche, de Pull, de Blame ou du reader.
 
 ## Familles encore ouvertes
 
@@ -50,13 +54,6 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - [ ] Intégration Linux : XDG, terminal/outils PATH, askpass/ssh-agent, actions gestionnaire de fichiers.
 - [ ] CI distante, installation APT sur OS vierge et validation arm64/Wayland seul.
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
-
-## Travail local en cours
-
-- Actions de fichiers Stash : cherry-pick du fichier affiché et reset de sélection stash/premier parent avec confirmation originale ; API/Git et UI ciblées vérifiées, paquet à renouveler. ADR 0035.
-- Palette radio commune aux dialogues ; ressources historiques pour coché/survol/pression, audit natif du prochain paquet à terminer.
-- Push natif branches/tags/multiple et reprise après rejet ; API Git et UI ciblées vérifiées, présentation finale et paquet en validation. ADR 0036.
-- Grep avec codec, colonnes et navigation dans les fichiers du commit ; API binaire vérifiée, raccord UI et paquet en validation. ADR 0037.
 
 ## Prochains écarts concrets
 
