@@ -92,7 +92,10 @@ public sealed class StashDialog : RepositoryDialog
         split.Children.Add(ClassicChrome.Border(left, new Thickness(0, 0, 1, 0)));
         GridSplitter divider = new() { ResizeDirection = GridResizeDirection.Columns, HorizontalAlignment = HorizontalAlignment.Stretch }; Grid.SetColumn(divider, 1); split.Children.Add(divider);
         Grid.SetColumn(_content, 2); split.Children.Add(_content); Root.Children.Add(split);
-        Track(_selector, _files, _message, _keepIndex, _untracked);
+        // Keep the immutable file list enabled while reading its diff. Disabling
+        // it inside PointerPressed removes the clicked item's keyboard focus.
+        // IsBusy still guards every command; changed selections queue a reload.
+        Track(_selector, _message, _keepIndex, _untracked);
         _selector.SelectionChanged += async (_, _) => { if (!_updating) { await LoadSelectionAsync(); } };
         _files.SelectionChanged += (_, _) => { if (!_updating && !_fileList.IsUpdating) { ReloadDiff(); } UpdateActions(); };
         _fileList.DisplayChanged += (_, _) => { if (!_updating) { ReloadDiff(); } UpdateActions(); };

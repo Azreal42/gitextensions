@@ -18,6 +18,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Stash non suivi laissé malgré exit 0 | `--literal-pathspecs` global casse le nettoyage de `stash push -u` ; réserver les pathspecs littéraux aux arguments concernés. |
 | Bare bloque à `stash list` | Lire le reflog de `refs/stash`, sans exiger un worktree. |
 | Action de fichier Stash revient aux changements courants | Le refresh générique perd la sélection ; comme FormStash, conserver le snapshot et ses fichiers après Cherry pick/Reset, puis relire le status pour les conflits. |
+| R ne répond plus après un clic de fichier Stash | Le chargement du diff désactivait le TreeView pendant PointerPressed et effaçait son focus. Garder la liste immuable active ; IsBusy protège les commandes et la sélection suivante queue une relecture. |
 | Stage all touche des fichiers masqués | Agir sur les feuilles du filtre d'affichage ; Selection Filter ne change que la sélection. Une liste vide ne devient pas mutation globale. |
 | Indexer un renommage vise l'ancien nom absent | Indexer le nom courant ; désindexer les deux noms. |
 | Skip am avance au conflit suivant mais affiche « appliqué » | Relire l'état am après exit non nul ; le code retour seul ne dit pas où la série s'est arrêtée. |

@@ -323,6 +323,25 @@ public class StashMenuTests
     }
 
     [AvaloniaTest]
+    public async Task ClickingAStashFileKeepsKeyboardFocusThroughDiffLoadingAndAllowsResetWithoutRefocusing()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        await f.WriteAsync("other.txt", "other base\n"); await f.Repository.StageAllAsync(); await f.Repository.CommitAsync("Two files");
+        await f.WriteAsync("seed.txt", "seed saved\n"); await f.WriteAsync("other.txt", "other saved\n");
+        await f.Repository.StashAsync(new GitStashSaveOptions("Two saved files"));
+        await f.ShowAsync(); StashDialog dialog = await Open(f, true);
+        FileStatusListView files = Find<FileStatusListView>(dialog, "StashFilesView");
+        FileStatusListEntry target = files.Entries.Single(entry => entry.Path != files.SelectedEntries.First().Path);
+        TreeViewItem item = files.FindItemByTag(target.Tag)!; Click(item); await Idle(dialog);
+        Assert.That(files.SelectedEntries.Single().Path, Is.EqualTo(target.Path));
+        Assert.That(files.Tree.IsKeyboardFocusWithin, Is.True, "Loading a clicked file must retain the list's keyboard focus.");
+        string before = await f.SnapshotAsync(); Press(dialog, PhysicalKey.R, RawInputModifiers.None);
+        ResetChangesDialog confirmation = await ResetPrompt(dialog);
+        Click(Find<Button>(confirmation, "CancelResetChanges")); await Idle(dialog);
+        Assert.That(await f.SnapshotAsync(), Is.EqualTo(before));
+    }
+
+    [AvaloniaTest]
     public async Task FileResetShortcutCannotMutateAStashThatDisappearedWhileConfirmationWasOpen()
     {
         await using Fixture f = await Fixture.CreateAsync(); await f.SaveAsync("saved\n"); GitStash stash = (await f.Repository.GetStashesAsync()).Single();
