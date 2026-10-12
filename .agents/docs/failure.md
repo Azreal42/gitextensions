@@ -73,6 +73,6 @@
 | Recherche dans une sélection omet son dernier résultat | Borne inclusive du TextMarker original passée à une recherche exclusive ; décalage arrière appliqué aussi à la région initiale | Adapter la sélection native en intervalle semi-ouvert ; tests du dernier caractère, HighlightAll, arrière initial et boucles. Résolu. |
 | Raccourcis des menus français tronqués à droite | ContextMenu et MenuFlyout Fluent limités à 456 px, indépendamment de la traduction | Retirer ce plafond uniquement sur les menus du viewer ; clic droit réel, colonnes disjointes, dernier glyphe et captures claires/sombres vérifiés. Résolu. |
 
-| Glyphes des espaces noirs en thème sombre | AdaptLightness original omis sur les trois PNG monochromes | Reprendre WindowText sombre en conservant chaque alpha et l’original clair ; sept scénarios ciblés, pixels sélectionnés/non sélectionnés et transitions de thème vérifiés. Validation du paquet en cours. |
+| Glyphes des espaces noirs en thème sombre | AdaptLightness original omis sur les trois PNG monochromes | Reprendre WindowText sombre en conservant chaque alpha et l’original clair ; sept scénarios ciblés et transitions de thème ; 24 masques/pixels natifs clairs/sombres vérifiés dans le paquet accepté `4cb119d5e`. Candidat `c3b557eef` conservé. Résolu. |
 
 Ne conserver ici que les erreurs qui changent la suite du travail ou évitent de refaire une impasse.
