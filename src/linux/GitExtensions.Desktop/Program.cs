@@ -13,7 +13,11 @@ internal static class Program
     public static int Main(string[] args)
     {
         if (GitRebaseEditor.TryHandle(args, out int helperCode)) { return helperCode; }
-        if (args.FirstOrDefault() == "--askpass") { return AskpassApplication.Run(args[1..]); }
+        if (args.FirstOrDefault() == "--askpass")
+        {
+            using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
+            return AskpassApplication.Run(args[1..]);
+        }
         if (args.Contains("--version", StringComparer.Ordinal))
         {
             Console.WriteLine($"Git Extensions {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
@@ -36,6 +40,7 @@ internal static class Program
 
         try
         {
+            using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
             GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, "gitextensions-askpass");
             GitRunner.AskpassUiCulture = CultureInfo.CurrentUICulture.Name;
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
