@@ -39,6 +39,8 @@ public class BranchMenuTests
                 Assert.That(menu.IsOpen, Is.True); Assert.That(main.OwnedWindows, Is.Empty);
                 Assert.That(Branches(menu.Items).Select(branch => branch.ShortName), Is.EqualTo(new[] { "main", "topic_with_underscore" }));
                 MenuItem checkout = menu.Items.OfType<MenuItem>().First();
+                MenuFlyoutPresenter presenter = checkout.GetVisualAncestors().OfType<MenuFlyoutPresenter>().First();
+                Assert.That(presenter.PointToScreen(default).X, Is.EqualTo(button.PointToScreen(default).X).Within(2));
                 Assert.That(checkout.InputGesture, Is.EqualTo(new KeyGesture(Key.OemPeriod, KeyModifiers.Control)));
                 Assert.That(checkout.Icon, Is.TypeOf<Image>());
                 Assert.That(menu.Items.OfType<Separator>().Count(), Is.EqualTo(1));

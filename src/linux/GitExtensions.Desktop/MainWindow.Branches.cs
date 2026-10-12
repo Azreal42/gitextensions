@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -9,7 +10,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private readonly MenuFlyout _branchFlyout = new();
+    private readonly MenuFlyout _branchFlyout = new() { Placement = PlacementMode.BottomEdgeAlignedLeft };
     private readonly ObservableCollection<Control> _branchItems = [];
     private readonly ObservableCollection<Control> _branchOverflowItems = [];
     private MenuItem? _branchOverflow;
