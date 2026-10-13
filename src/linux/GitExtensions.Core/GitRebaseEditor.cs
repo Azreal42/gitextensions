@@ -6,10 +6,10 @@ public enum GitRebaseAction { Pick, Reword, Edit, Squash, Fixup, Drop }
 public sealed record GitRebaseStep(GitRebaseAction Action, string Hash, string Subject, string? Message = null);
 public sealed record GitRebasePlan(string Upstream, string Head, IReadOnlyList<GitRebaseStep> Steps);
 
-internal sealed record RebaseEditorState(string EditorExecutable, string DonePath, IReadOnlyDictionary<string, string> Messages);
+internal sealed record RebaseEditorState(string EditorExecutable, string DonePath, IReadOnlyDictionary<string, string> Messages, string EncodingName = "utf-8");
 
 /// <summary>The desktop app calls this before opening its GUI when invoked by Git as its fixed editor.</summary>
-public static class GitRebaseEditor
+public static partial class GitRebaseEditor
 {
     internal const string DirectoryVariable = "GITEXTENSIONS_REBASE_DIRECTORY";
 
@@ -57,7 +57,7 @@ public static class GitRebaseEditor
                         throw new InvalidOperationException("Missing unique edited message for reword.");
                     }
 
-                    File.WriteAllText(args[1], matching[0].Value);
+                    File.WriteAllBytes(args[1], GetStrictEncoding(state.EncodingName).GetBytes(matching[0].Value));
                 }
                 else
                 {
@@ -76,7 +76,7 @@ public static class GitRebaseEditor
                             KeyValuePair<string, string>[] matching = state.Messages.Where(message => message.Key.StartsWith(combined[1], StringComparison.Ordinal)).ToArray();
                             if (matching.Length == 1)
                             {
-                                File.WriteAllText(args[1], matching[0].Value);
+                                File.WriteAllBytes(args[1], GetStrictEncoding(state.EncodingName).GetBytes(matching[0].Value));
                                 break;
                             }
                         }

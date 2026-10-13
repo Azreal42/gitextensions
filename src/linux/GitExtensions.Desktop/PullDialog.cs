@@ -14,6 +14,7 @@ public sealed class PullDialog : RepositoryDialog
     private readonly GitPullAction _initialAction;
     private readonly string? _initialRemote, _initialBranch;
     private readonly Func<CancellationToken, Task>? _afterSubmoduleUpdateAsync;
+    private readonly Func<Window, GitRepository, bool, CancellationToken, Task>? _resolveConflictsAsync;
     private readonly PullPreferencesStore _store = new();
     private readonly SubmoduleCheckoutPreferencesStore _submodulePreferences = new();
     private readonly AutoCompleteBox _remote = new() { Name = "PullRemote", Height = 24, MinimumPrefixLength = 0 };
@@ -37,18 +38,21 @@ public sealed class PullDialog : RepositoryDialog
     private string? _configuredRemote, _operationName;
     private IReadOnlyList<GitReference> _references = [];
     private bool _initializing, _updatingFlags;
+    private GitStash? _pendingAutoStash;
     internal bool IsReady { get; private set; }
     internal bool Succeeded { get; private set; }
     internal bool Cancelled { get; private set; }
     internal bool Attempted { get; private set; }
 
     public PullDialog(GitRepository repository, GitPullAction action = GitPullAction.Merge, string? remote = null, string? branch = null,
-        Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Pull")
+        Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
+        Func<Window, GitRepository, bool, CancellationToken, Task>? resolveConflictsAsync = null) : base(repository, "Pull")
     {
         if (!PullPreferencesStore.IsToolbarAction(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         _initialAction = action;
         _initialRemote = remote; _initialBranch = branch;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
+        _resolveConflictsAsync = resolveConflictsAsync;
         Width = 740; MinWidth = 620; SizeToContent = SizeToContent.Height;
         _merge.Content = Label("Merge", "&Merge remote branch into current branch");
         _rebase.Content = Label("Rebase", "R&ebase current branch on top of remote branch, creates linear history (use with caution)");
@@ -230,14 +234,20 @@ public sealed class PullDialog : RepositoryDialog
                 else
                 {
                     GitPullExecutionResult execution = await Repository.PullWithOptionsAsync(mode == GitPullAction.Rebase ? GitPullMode.Rebase : GitPullMode.Merge, remote, branch, pullOptions, token);
+                    _pendingAutoStash = execution.AutoStash;
                     result = execution.Result;
                     _output.Text = (execution.StashResult?.StandardOutput ?? "") + (execution.StashResult?.StandardError ?? "") + result.StandardOutput + result.StandardError;
-                    if (!result.Success) { throw new GitCommandException(execution.Arguments, result); }
                     await RefreshOperationAsync(token);
+                    if (!result.Success && mode == GitPullAction.Rebase && _operationName == "rebase")
+                    {
+                        RebaseDialog recovery = await OpenRebaseRecoveryAsync(owner, null, token);
+                        await RefreshOperationAsync(token);
+                        if (!recovery.Succeeded) { Cancelled = recovery.Aborted; return; }
+                    }
+                    else if (!result.Success) { throw new GitCommandException(execution.Arguments, result); }
                     if (_operationName is null)
                     {
-                        await UpdateSubmodulesAfterPullAsync(owner, token);
-                        if (execution.AutoStash is not null) { await OfferAutoStashPopAsync(owner, execution.AutoStash, token); }
+                        await FinishPullAsync(owner, token);
                     }
                 }
                 Succeeded = true; Status.Text = T("Done");
@@ -418,6 +428,17 @@ public sealed class PullDialog : RepositoryDialog
 
     private async Task ResolveAsync()
     {
+        if (_operationName == "rebase")
+        {
+            await RunAsync("Rebase", async token =>
+            {
+                RebaseDialog recovery = await OpenRebaseRecoveryAsync(this, null, token);
+                await RefreshOperationAsync(token);
+                if (recovery.Succeeded) { await FinishPullAsync(this, token); Succeeded = true; }
+                else { Cancelled = recovery.Aborted; }
+            });
+            return;
+        }
         if (_conflicts.SelectedItem is not string path) { return; }
         PatchConflictDialog dialog = new(Repository, path);
         dialog.Opened += async (_, _) => await dialog.InitializeAsync();
@@ -429,12 +450,44 @@ public sealed class PullDialog : RepositoryDialog
     private Task ManageAsync(GitOperationAction action) => RunAsync("Pull", async token =>
     {
         if (_operationName is null) { return; }
+        if (_operationName == "rebase")
+        {
+            RebaseDialog recovery = await OpenRebaseRecoveryAsync(this, action, token);
+            await RefreshOperationAsync(token);
+            if (recovery.Succeeded) { await FinishPullAsync(this, token); Succeeded = true; }
+            else { Cancelled = recovery.Aborted; }
+            return;
+        }
         Attempted = true; MarkRepositoryChanged();
         GitResult result = await Repository.ManageOperationAsync(_operationName, action, token);
         _output.Text = result.StandardOutput + result.StandardError;
         await RefreshOperationAsync(token);
         Status.Text = T("Done");
     });
+
+    private async Task<RebaseDialog> OpenRebaseRecoveryAsync(Window owner, GitOperationAction? action, CancellationToken token)
+    {
+        RebaseDialog dialog = new(Repository, resolveConflictsAsync: _resolveConflictsAsync, cancellationToken: token)
+        { RequestedThemeVariant = owner.ActualThemeVariant };
+        dialog.Opened += async (_, _) =>
+        {
+            await dialog.InitializeAsync();
+            if (action is GitOperationAction requested && dialog.LastError is null && !token.IsCancellationRequested)
+            { await dialog.ManageRebaseAsync(requested); }
+        };
+        try { await ShowOwnedAsync<object?>(owner, dialog, token); return dialog; }
+        finally { if (dialog.HasRepositoryChanges) { Attempted = true; MarkRepositoryChanged(); } }
+    }
+
+    private async Task FinishPullAsync(Window owner, CancellationToken token)
+    {
+        await UpdateSubmodulesAfterPullAsync(owner, token);
+        if (_pendingAutoStash is not null)
+        {
+            await OfferAutoStashPopAsync(owner, _pendingAutoStash, token);
+            _pendingAutoStash = null;
+        }
+    }
 
     protected override void UpdateActions()
     {

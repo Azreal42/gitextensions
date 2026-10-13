@@ -23,6 +23,66 @@ namespace GitExtensions.Desktop.Tests;
 public class PullAdvancedDialogTests
 {
     [AvaloniaTest]
+    public async Task AbortingAConflictedPullRebaseRestoresTheLocalBranchAndKeepsItsHistoricalAutoStash()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        await File.WriteAllTextAsync(f.Root.PathInRepository("saved-tracked.txt"), "tracked baseline\n");
+        await Fixture.Commit(f.Repository, "file.txt", "local conflict\n", "Local conflict");
+        string local = await f.Repository.ResolveRevisionAsync("HEAD");
+        await Fixture.Commit(f.Writer, "file.txt", "remote conflict\n", "Remote conflict");
+        await f.Writer.PushAsync("origin", "main");
+        await File.WriteAllTextAsync(f.Root.PathInRepository("saved-tracked.txt"), "saved tracked work\n");
+        await File.WriteAllTextAsync(f.Root.PathInRepository("saved-untracked.txt"), "saved work\n");
+        new PullPreferencesStore().Save(new(AutoStash: true, IncludeUntrackedFilesInAutoStash: true));
+        PullDialog pull = await f.OpenAsync(GitPullAction.Rebase);
+        Task execution = pull.ExecuteAsync(pull);
+        await Until(() => pull.OwnedWindows.OfType<RebaseDialog>().Any(dialog => dialog.State?.HasConflicts == true && !dialog.IsBusy));
+        RebaseDialog recovery = pull.OwnedWindows.OfType<RebaseDialog>().Single();
+        Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1));
+        Assert.That(pull.Succeeded, Is.False);
+        Pointer(recovery, "AbortRebase"); await execution.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.That(recovery.Aborted, Is.True, recovery.LastError); Assert.That(recovery.Succeeded, Is.False);
+        Assert.That(pull.Succeeded, Is.False); Assert.That(pull.Cancelled, Is.True);
+        Assert.That(await f.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(local));
+        Assert.That((await f.Repository.GetStatusAsync()).Branch, Is.EqualTo("main"));
+        Assert.That((await f.Repository.GetRebaseStateAsync()).IsActive, Is.False);
+        Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1));
+        Assert.That(pull.OwnedWindows.Any(window => window.Name == "ConfirmPopPullAutoStash"), Is.False);
+        pull.Close();
+    }
+
+    [AvaloniaTest]
+    public async Task ClosingThenSkippingAConflictedPullRebaseOffersItsSavedStashOnlyAfterTheSharedRecoveryCompletes()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        await File.WriteAllTextAsync(f.Root.PathInRepository("saved-tracked.txt"), "tracked baseline\n");
+        await Fixture.Commit(f.Repository, "file.txt", "local conflict\n", "Local conflict");
+        await Fixture.Commit(f.Writer, "file.txt", "remote conflict\n", "Remote conflict");
+        string remote = await f.Writer.ResolveRevisionAsync("HEAD"); await f.Writer.PushAsync("origin", "main");
+        await File.WriteAllTextAsync(f.Root.PathInRepository("saved-tracked.txt"), "saved tracked work\n");
+        await File.WriteAllTextAsync(f.Root.PathInRepository("saved-untracked.txt"), "saved work\n");
+        new PullPreferencesStore().Save(new(AutoStash: true, IncludeUntrackedFilesInAutoStash: true));
+        PullDialog pull = await f.OpenAsync(GitPullAction.Rebase);
+        Task execution = pull.ExecuteAsync(pull);
+        await Until(() => pull.OwnedWindows.OfType<RebaseDialog>().Any(dialog => dialog.State?.HasConflicts == true && !dialog.IsBusy));
+        RebaseDialog first = pull.OwnedWindows.OfType<RebaseDialog>().Single(); first.Close(); await execution.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.That(pull.Succeeded || pull.Cancelled, Is.False);
+        Assert.That((await f.Repository.GetRebaseStateAsync()).HasConflicts, Is.True, "Closing the dialog must preserve the Git rebase.");
+        Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1));
+        Pointer(pull, "ResolvePullConflict");
+        await Until(() => pull.OwnedWindows.OfType<RebaseDialog>().Any(dialog => dialog.State?.HasConflicts == true && !dialog.IsBusy));
+        RebaseDialog recovery = pull.OwnedWindows.OfType<RebaseDialog>().Single();
+        Pointer(recovery, "SkipRebase");
+        Window pop = await Owned(pull, "ConfirmPopPullAutoStash");
+        Assert.That(recovery.Succeeded, Is.True, recovery.LastError);
+        Assert.That((await f.Repository.GetRebaseStateAsync()).IsActive, Is.False);
+        Assert.That(await f.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(remote));
+        Pointer(pop, "KeepPullAutoStash"); await Until(() => !pull.IsBusy);
+        Assert.That(pull.Succeeded, Is.True, pull.LastError);
+        Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1)); pull.Close();
+    }
+
+    [AvaloniaTest]
     public async Task OriginalTagAndPruneCouplingsWorkWithThePointerAndNoTagsWorksWithItsAccessKey()
     {
         await using Fixture f = await Fixture.CreateAsync(); CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
@@ -317,7 +377,7 @@ public class PullAdvancedDialogTests
         }
         private static async Task Configure(GitRepository repository, ReferenceFixture root)
         { await repository.SetConfigAsync("user.name", "Pull Tester"); await repository.SetConfigAsync("user.email", "pull@example.invalid"); await repository.SetConfigAsync("commit.gpgsign", "false"); await repository.SetConfigAsync("core.hooksPath", root.Output("no-hooks")); }
-        private static async Task Commit(GitRepository repository, string file, string contents, string subject)
+        internal static async Task Commit(GitRepository repository, string file, string contents, string subject)
         { string path = Path.Combine(repository.Path, file); Directory.CreateDirectory(Path.GetDirectoryName(path)!); await File.WriteAllTextAsync(path, contents); await repository.StageAllAsync(); await repository.CommitAsync(subject); }
         public async ValueTask DisposeAsync()
         {

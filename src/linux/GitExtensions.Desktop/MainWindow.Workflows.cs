@@ -226,31 +226,21 @@ public sealed partial class MainWindow
             ResolveWorkflowConflictsAsync, (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)));
     }
 
-    private async Task RebaseAsync()
-    {
-        GitReference reference = SelectedReference();
-        if (!await Dialogs.ConfirmAsync(this, "Rebase", $"Replay the current branch onto {reference.ShortName}? Commit IDs will change.")) { return; }
-        await RunAsync("Rebase", r => r.RebaseAsync(reference.Hash, Token));
-    }
-
-    private async Task InteractiveRebaseAsync()
-    {
-        if (_repository is null || _busy) { return; }
-        string[]? values = await Dialogs.PromptAsync(this, "Interactive rebase", ("Upstream revision", (_references.SelectedItem as GitReference)?.ShortName ?? "HEAD~1"));
-        if (values is null) { return; }
-        GitRebasePlan? plan = null;
-        await RunAsync("Prepare rebase", async repository => plan = await repository.GetRebasePlanAsync(values[0], Token), refresh: false);
-        if (plan is null) { return; }
-        GitRebasePlan? selected = await RebasePlanDialog.ShowAsync(this, plan);
-        if (selected is null) { return; }
-        string executable = Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "GitExtensions.exe" : "GitExtensions");
-        await RunAsync("Interactive rebase", repository => repository.InteractiveRebaseAsync(selected, executable, Token));
-    }
-
     private async Task ManageOperationAsync(GitOperationAction action)
     {
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        GitRepository repository = _repository;
+        bool pendingRebase = (await repository.GetRebaseStateAsync(_lifetime.Token)).IsActive;
+        if (_repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
+        if (pendingRebase)
+        {
+            await ShowRebaseDialogAsync(recoveryAction: action);
+            return;
+        }
         string[]? values = await Dialogs.PromptAsync(this, action.ToString(), ("Operation: merge, rebase, cherry-pick or revert", "rebase"));
-        if (values is not null) { await RunAsync(action.ToString(), r => r.ManageOperationAsync(values[0], action, Token)); }
+        if (values is null || _repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
+        if (values[0] == "rebase") { await ShowRebaseDialogAsync(recoveryAction: action); }
+        else { await RunAsync(action.ToString(), r => r.ManageOperationAsync(values[0], action, Token)); }
     }
 
     private async Task CherryPickAsync()

@@ -69,7 +69,9 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 ## Prochains écarts concrets
 
 - Cherry-pick : audit natif après crash et des autres modes/séries ; destinations imprévues refusées avant rollback, restauration IO interrompue conservée en état Restoring.
-- Merge/Rebase/Reset/Revert : Rebase standard reste un prompt ; compléter la fenêtre et ses options, scripts, sortie continue, réglages distribués et resolver avancé (diffs/renommages/sous-modules).
+- Lot Rebase implémenté, non livré : fenêtre Windows, sélection History/plage, options natives, todo Git complet et reprise commune avec Pull. [Validation locale](../../artifacts/linux/rebase-root-checks-20261013-01/local-source-verification.json) : 956 tests (287 Core, 35 Plugins, 634 Desktop), zéro échec/ignoré, six projets Release sans diagnostic. ADR 0047 ; le paquet livré reste `d144dcf69`.
+- Rebase restant : audit natif du nouveau payload (menus, éditeur et palettes des combos), nouveau `.deb`, reprise après changement de codec invalide ou fin de session hors application ; sortie Git continue et réglages distribués.
+- Merge/Reset/Revert : scripts historiques, sortie continue, réglages distribués et resolver avancé (diffs/renommages/sous-modules).
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
 - Pull : sortie Git continue, scripts Before/After, source URL et destination locale Fetch.
 - Historique/blame : navigateur des fichiers du commit, filtres de grille, difftools, dossiers/sous-modules et audit natif étendu.

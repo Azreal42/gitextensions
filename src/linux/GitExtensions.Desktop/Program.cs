@@ -12,6 +12,11 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (GitRebaseEditor.IsNativeEditorInvocation(args))
+        {
+            using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
+            return NativeRebaseEditorApplication.Run(args);
+        }
         if (GitRebaseEditor.TryHandle(args, out int helperCode)) { return helperCode; }
         if (args.FirstOrDefault() == "--askpass")
         {

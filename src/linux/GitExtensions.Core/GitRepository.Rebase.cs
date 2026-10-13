@@ -28,6 +28,8 @@ public sealed partial class GitRepository
         string? directory = null;
         try
         {
+            await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+            Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);
             if (await ResolveRevisionAsync("HEAD", cancellationToken).ConfigureAwait(false) != plan.Head)
             {
                 throw new InvalidOperationException("HEAD changed since this rebase plan was prepared. Reload the plan.");
@@ -82,16 +84,21 @@ public sealed partial class GitRepository
                 throw new InvalidOperationException("A rebase is already in progress.");
             }
 
+            // Validate every editor byte before creating state or letting Git rewrite commits.
+            byte[] todoBytes = encoding.GetBytes(todo.ToString());
+            foreach (string message in messages.Values) { _ = encoding.GetBytes(message); }
+            if (Directory.Exists(await GetGitPathAsync(GitRebaseEditor.NativeStateDirectoryName, cancellationToken).ConfigureAwait(false)))
+            { throw new InvalidOperationException("A native rebase session must be completed first."); }
             Directory.CreateDirectory(directory);
             if (!OperatingSystem.IsWindows())
             {
                 File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             }
 
-            RebaseEditorState state = new(editorExecutable, await GetGitPathAsync("rebase-merge/done", cancellationToken).ConfigureAwait(false), messages);
-            await File.WriteAllTextAsync(System.IO.Path.Combine(directory, "todo"), todo.ToString(), cancellationToken).ConfigureAwait(false);
+            RebaseEditorState state = new(editorExecutable, await GetGitPathAsync("rebase-merge/done", cancellationToken).ConfigureAwait(false), messages, encoding.WebName);
+            await File.WriteAllBytesAsync(System.IO.Path.Combine(directory, "todo"), todoBytes, cancellationToken).ConfigureAwait(false);
             await File.WriteAllTextAsync(System.IO.Path.Combine(directory, "state.json"), JsonSerializer.Serialize(state), cancellationToken).ConfigureAwait(false);
-            return await ExecuteAsync(["rebase", "--interactive", "--keep-empty", "--", upstream], cancellationToken,
+            return await ExecuteAsync(["-c", "i18n.logOutputEncoding=" + encoding.WebName, "rebase", "--interactive", "--keep-empty", "--", upstream], cancellationToken,
                 environment: GitRebaseEditor.EnvironmentFor(directory, state)).ConfigureAwait(false);
         }
         finally
@@ -112,28 +119,24 @@ public sealed partial class GitRepository
 
     private async Task<GitResult> ManageRebaseOperationAsync(GitOperationAction action, CancellationToken cancellationToken)
     {
+        string legacy = await GetGitPathAsync("gitextensions-rebase", cancellationToken).ConfigureAwait(false);
+        if (!Directory.Exists(legacy))
+        { return await RunNativeRebaseOperationAsync(action, null, cancellationToken).ConfigureAwait(false); }
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        string? directory = null;
         try
         {
-            directory = await GetGitPathAsync("gitextensions-rebase", cancellationToken).ConfigureAwait(false);
-            IReadOnlyDictionary<string, string?>? environment = Directory.Exists(directory)
-                ? GitRebaseEditor.EnvironmentFor(directory, GitRebaseEditor.ReadState(directory)) : null;
-            return await ExecuteAsync(["rebase", "--" + action.ToString().ToLowerInvariant()], cancellationToken, environment: environment).ConfigureAwait(false);
+            await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+            Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);
+            RebaseEditorState state = GitRebaseEditor.ReadState(legacy);
+            if (action != GitOperationAction.Abort && state.EncodingName != encoding.WebName)
+            { throw new InvalidOperationException("The commit encoding changed during this rebase. Restore its original encoding before continuing."); }
+            return await ExecuteAsync(["-c", "i18n.logOutputEncoding=" + state.EncodingName, "rebase", "--" + action.ToString().ToLowerInvariant()],
+                cancellationToken, environment: GitRebaseEditor.EnvironmentFor(legacy, state)).ConfigureAwait(false);
         }
         finally
         {
-            try
-            {
-                if (directory is not null)
-                {
-                    await CleanupRebaseStateAsync(directory).ConfigureAwait(false);
-                }
-            }
-            finally
-            {
-                _mutationLock.Release();
-            }
+            try { await CleanupRebaseStateAsync(legacy).ConfigureAwait(false); }
+            finally { _mutationLock.Release(); }
         }
     }
 

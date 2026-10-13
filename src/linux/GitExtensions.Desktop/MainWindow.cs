@@ -111,6 +111,7 @@ public sealed partial class MainWindow : Window
         _submodules.ItemTemplate = TextTemplate<GitSubmodule>(module => $"{module.Path}  {module.Url}  {(module.IsInitialized ? module.Head : "not initialized")}");
         _commits.SelectionChanged += async (_, _) =>
         {
+            RefreshRebaseMenu();
             if (!_refreshing) { UpdateHistoryPresentation(); }
             if (!_refreshing && _commits.SelectedItem is GitCommit commit)
             {
@@ -218,7 +219,7 @@ public sealed partial class MainWindow : Window
         [
             new TabItem { Header = "History", Content = Split(history, _diff) },
             new TabItem { Header = "Changes", Content = Split(changes, BuildChangesDiff()) },
-            new TabItem { Header = "Branches & tags", Content = Panel(_references, Row(Button("Create branch…", CreateBranchAsync), Button("Checkout", CheckoutAsync), Button("Delete…", DeleteReferenceAsync), Button("Rename…", RenameBranchAsync), Button("Create tag…", CreateTagAsync)), Row(Button("Merge", MergeAsync), Button("Rebase onto", RebaseAsync), Button("Continue…", () => ManageOperationAsync(GitOperationAction.Continue)), Button("Abort…", () => ManageOperationAsync(GitOperationAction.Abort)), Button("Skip…", () => ManageOperationAsync(GitOperationAction.Skip)))) },
+            new TabItem { Header = "Branches & tags", Content = Panel(_references, Row(Button("Create branch…", CreateBranchAsync), Button("Checkout", CheckoutAsync), Button("Delete…", DeleteReferenceAsync), Button("Rename…", RenameBranchAsync), Button("Create tag…", CreateTagAsync)), Row(Button("Merge", MergeAsync), Button("Rebase onto", RebaseOntoReferenceAsync), Button("Continue…", () => ManageOperationAsync(GitOperationAction.Continue)), Button("Abort…", () => ManageOperationAsync(GitOperationAction.Abort)), Button("Skip…", () => ManageOperationAsync(GitOperationAction.Skip)))) },
             new TabItem { Header = "Remotes", Content = Panel(_remotes, Row(Button("Add…", AddRemoteAsync), Button("Edit URL…", EditRemoteAsync), Button("Remove…", RemoveRemoteAsync), Button("Fetch all", () => RunAsync("Fetch all", async r => { GitResult result = await r.FetchAllAsync(Token); AppendOutput(result.StandardOutput + result.StandardError); })), Button("Pull…", PullAsync), Button("Push…", PushAsync), Button("Browse host", BrowseRemoteAsync))) },
             new TabItem { Header = "Stashes", Content = Panel(_stashes, Row(Button("Create…", StashAsync), Button("Apply", () => ApplyStashAsync(false)), Button("Pop", () => ApplyStashAsync(true)), Button("Delete…", DropStashAsync), Button("Show diff", ShowStashAsync))) },
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", () => RunAsync("Prune worktrees", r => r.PruneWorktreesAsync(cancellationToken: Token))))) },
@@ -530,6 +531,7 @@ public sealed partial class MainWindow : Window
         RefreshStashMenu();
         RefreshBranchMenu();
         RefreshSubmoduleRemovalButton();
+        RefreshRebaseMenu();
         _browserToolbar?.Place();
     }
 

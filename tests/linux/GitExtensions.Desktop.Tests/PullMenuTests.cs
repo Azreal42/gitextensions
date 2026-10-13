@@ -214,9 +214,18 @@ public class PullMenuTests
             string local = await f.CommitAsync(f.Client, "seed.txt", "local edit\n", "Local conflict");
             await f.AdvanceAsync("zeta", "seed.txt", "remote edit\n");
             MainWindow main = await f.ShowAsync(); ExecuteMenu(main, action);
+            if (action == GitPullAction.Rebase)
+            {
+                await Until(() => main.OwnedWindows.OfType<RebaseDialog>().Any(rebase => rebase.State?.HasConflicts == true && !rebase.IsBusy));
+                RebaseDialog rebase = main.OwnedWindows.OfType<RebaseDialog>().Single();
+                Assert.That(rebase.Succeeded || rebase.Aborted, Is.False);
+                rebase.Close();
+                Assert.That((await f.Repository.GetRebaseStateAsync()).HasConflicts, Is.True, "Closing recovery leaves the native rebase for the Pull window to manage.");
+            }
             await Until(() => main.OwnedWindows.OfType<PullDialog>().Any());
             PullDialog dialog = main.OwnedWindows.OfType<PullDialog>().Single(); await Until(() => !dialog.IsBusy);
-            Assert.That(dialog.Succeeded, Is.False); Assert.That(dialog.LastError, Is.Not.Null);
+            Assert.That(dialog.Succeeded, Is.False);
+            if (action == GitPullAction.Merge) { Assert.That(dialog.LastError, Is.Not.Null); }
             Assert.That(Field<TextBox>(dialog, "PullOutput").Text, Does.Contain("CONFLICT"));
             Assert.That((await f.Repository.GetStatusAsync()).Changes.Any(change => change.IsConflict), Is.True);
             Assert.That(Field<Button>(dialog, "ContinuePullOperation").IsEnabled, Is.False);

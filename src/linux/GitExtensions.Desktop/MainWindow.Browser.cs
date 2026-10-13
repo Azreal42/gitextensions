@@ -79,7 +79,7 @@ public sealed partial class MainWindow
         {
             ItemsSource = new object[]
             {
-                MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync),
+                MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync), BuildRebaseMenu(),
                 MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), MenuAction("Reset another branch…", ResetAnotherBranchAsync), BuildComparisonMenu(),
                 new Separator(), new MenuItem { Header = T("Settings persistence"), IsEnabled = false },
                 SaveViewSettingsMenu()

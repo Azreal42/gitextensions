@@ -141,7 +141,8 @@ public sealed partial class MainWindow
         GitRepository repository = _repository;
         PullDialog? dialog = null;
         dialog = new(repository, action == GitPullAction.None ? _pullPreferences.DialogAction : action,
-            afterSubmoduleUpdateAsync: token => AfterSubmoduleUpdateAsync(repository, dialog!.IsVisible ? dialog : WorkflowOwner, token))
+            afterSubmoduleUpdateAsync: token => AfterSubmoduleUpdateAsync(repository, dialog!.IsVisible ? dialog : WorkflowOwner, token),
+            resolveConflictsAsync: ResolveWorkflowConflictsAsync)
             { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
         try
         {
@@ -154,7 +155,11 @@ public sealed partial class MainWindow
                 { await dialog.ExecuteAsync(WorkflowOwner, action == GitPullAction.FetchPruneAll, commandToken); }
                 commandToken.ThrowIfCancellationRequested();
                 if (action == GitPullAction.None || !dialog.Succeeded && !dialog.Cancelled)
-                { await dialog.ShowDialog(WorkflowOwner); }
+                {
+                    using CancellationTokenRegistration close = commandToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
+                    await dialog.ShowDialog(WorkflowOwner);
+                    commandToken.ThrowIfCancellationRequested();
+                }
             }, refresh: false);
         }
         finally
