@@ -12,7 +12,8 @@ The Linux port is an alpha; migration is still in progress. The portable build i
 separate from the original Windows solution. Feature parity,
 plugins and platform integration remain tracked in [.agents/docs/todo.md](.agents/docs/todo.md).
 
-Build and test with the .NET 10 SDK and Git 2.38 or newer:
+Build and test on Linux with the .NET 10 SDK, Git 2.38 or newer and a C compiler
+with libc headers (`gcc`, `libc6-dev` and `binutils` on Debian/Ubuntu):
 
 ```sh
 dotnet build GitExtensions.Linux.slnx

@@ -5,7 +5,7 @@ namespace GitExtensions.Linux;
 public sealed partial class GitRepository
 {
     public Task<GitResult> StartBisectAsync(string? badRevision = null, IEnumerable<string>? goodRevisions = null, IEnumerable<string>? paths = null,
-        bool noCheckout = false, bool firstParent = false, CancellationToken cancellationToken = default)
+        bool noCheckout = false, bool firstParent = false, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
     {
         string[] good = goodRevisions?.ToArray() ?? [];
         if (badRevision is null && good.Length > 0)
@@ -43,11 +43,11 @@ public sealed partial class GitRepository
             }
 
             if (selected.Length > 0) { arguments.AddRange(["--", .. selected]); }
-            return await ExecuteAsync(arguments, token).ConfigureAwait(false);
+            return await ExecuteBisectProcessAsync(arguments, token, outputReceived).ConfigureAwait(false);
         }, cancellationToken);
     }
 
-    public Task<GitResult> MarkBisectAsync(GitBisectOption verdict, string? revision = null, CancellationToken cancellationToken = default)
+    public Task<GitResult> MarkBisectAsync(GitBisectOption verdict, string? revision = null, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
     {
         if (!Enum.IsDefined(verdict))
         {
@@ -68,11 +68,11 @@ public sealed partial class GitRepository
             }
 
             // Exit 2 is Git's terminal, inconclusive result when only skipped candidates remain.
-            return await ExecuteAsync(arguments, token, allowedExitCodes: [2]).ConfigureAwait(false);
+            return await ExecuteBisectProcessAsync(arguments, token, outputReceived, allowedExitCodes: [2]).ConfigureAwait(false);
         }, cancellationToken);
     }
 
-    public Task<GitResult> ResetBisectAsync(string? revision = null, CancellationToken cancellationToken = default)
+    public Task<GitResult> ResetBisectAsync(string? revision = null, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
         => WithMutationAsync(async token =>
         {
             List<string> arguments = ["bisect", "reset"];
@@ -82,7 +82,7 @@ public sealed partial class GitRepository
                 arguments.Add(ValidateValue(revision));
             }
 
-            return await ExecuteAsync(arguments, token).ConfigureAwait(false);
+            return await ExecuteBisectProcessAsync(arguments, token, outputReceived).ConfigureAwait(false);
         }, cancellationToken);
 
     public Task<GitBisectState> GetBisectStateAsync(CancellationToken cancellationToken = default)

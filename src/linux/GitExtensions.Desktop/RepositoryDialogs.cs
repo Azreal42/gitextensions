@@ -242,30 +242,30 @@ public sealed class BisectDialog : RepositoryDialog
         _sequenceRunning = true; UpdateActions();
         try
         {
+            bool startCancelled = false;
             await RunAsync("Start bisect", async token =>
             {
-                token.ThrowIfCancellationRequested();
-                MarkRepositoryChanged();
-                await CaptureResultAsync(() => Repository.StartBisectAsync(cancellationToken: token));
-                await ReadStateAsync(token);
+                GitProcessDialogResult outcome = await RunPhaseAsync("git bisect start", true,
+                    (ct, output) => Repository.StartBisectAsync(cancellationToken: ct, outputReceived: output), token);
+                startCancelled = outcome.WasCancelled;
+                await ReadStateAsync(token); ThrowPhaseFailure(outcome, token);
             }, cancellationToken: _lifetime.Token);
-            await ShowNativeErrorAsync();
-            if (_closing || !IsVisible || _selectedRevisions.Count < 2) { return; }
+            if (_closing || !IsVisible || startCancelled || _selectedRevisions.Count < 2) { return; }
             if (!await ConfirmRangeAsync()) { return; }
             if (_closing || !IsVisible) { return; }
             await RunAsync("Bisect", async token =>
             {
-                token.ThrowIfCancellationRequested();
-                MarkRepositoryChanged();
-                await CaptureResultAsync(() => Repository.MarkBisectAsync(GitBisectOption.Good, _selectedRevisions[0], token));
+                GitProcessDialogResult good = await RunPhaseAsync("git bisect good " + _selectedRevisions[0], true,
+                    (ct, output) => Repository.MarkBisectAsync(GitBisectOption.Good, _selectedRevisions[0], ct, output), token);
+                await ReadStateAsync(token); ThrowPhaseFailure(good, token);
+                if (!good.Success) { return; }
                 token.ThrowIfCancellationRequested();
                 if (_closing || !IsVisible) { return; }
-                await CaptureResultAsync(() => Repository.MarkBisectAsync(GitBisectOption.Bad, _selectedRevisions[^1], token));
-                await ReadStateAsync(token);
+                GitProcessDialogResult bad = await RunPhaseAsync("git bisect bad " + _selectedRevisions[^1], true,
+                    (ct, output) => Repository.MarkBisectAsync(GitBisectOption.Bad, _selectedRevisions[^1], ct, output), token);
+                await ReadStateAsync(token); ThrowPhaseFailure(bad, token);
             }, cancellationToken: _lifetime.Token);
             // The original closes after accepting the range, even when Good fails (and Bad is never run), or Bad fails.
-            await ShowNativeErrorAsync();
-            await ShowNativeOutcomeAsync();
             if (!_closing && IsVisible) { Close(); }
         }
         finally { _sequenceRunning = false; UpdateActions(); }
@@ -308,13 +308,12 @@ public sealed class BisectDialog : RepositoryDialog
         {
             await RunAsync(verdict is null ? "Stop bisect" : "Bisect", async token =>
             {
-                token.ThrowIfCancellationRequested(); MarkRepositoryChanged();
-                if (verdict is null) { await CaptureResultAsync(() => Repository.ResetBisectAsync(cancellationToken: token)); }
-                else { await CaptureResultAsync(() => Repository.MarkBisectAsync(verdict.Value, cancellationToken: token)); }
-                await ReadStateAsync(token);
+                string description = "git bisect " + (verdict?.ToString().ToLowerInvariant() ?? "reset");
+                GitProcessDialogResult outcome = await RunPhaseAsync(description, false,
+                    (ct, output) => verdict is null ? Repository.ResetBisectAsync(cancellationToken: ct, outputReceived: output)
+                        : Repository.MarkBisectAsync(verdict.Value, cancellationToken: ct, outputReceived: output), token);
+                await ReadStateAsync(token); ThrowPhaseFailure(outcome, token);
             }, cancellationToken: _lifetime.Token);
-            await ShowNativeErrorAsync();
-            await ShowNativeOutcomeAsync();
             if (!_closing && IsVisible) { Close(); }
         }
         finally { _sequenceRunning = false; UpdateActions(); }
@@ -344,29 +343,22 @@ public sealed class BisectDialog : RepositoryDialog
         _state = await Repository.GetBisectStateAsync(token);
     }
 
-    private async Task CaptureResultAsync(Func<Task<GitResult>> command)
+    private async Task<GitProcessDialogResult> RunPhaseAsync(string description, bool useDialogSettings,
+        Func<CancellationToken, Action<GitProcessOutput>, Task<GitResult>> command, CancellationToken token)
     {
-        try { _commandResults.Add(await command()); }
-        catch (GitCommandException error) { _commandResults.Add(error.Result); throw; }
-    }
-
-    private async Task ShowNativeOutcomeAsync()
-    {
-        if (_closing || !IsVisible || LastError is not null || _state is null
-            || (_state.FirstBadRevision is null && !_state.IsInconclusive) || LastResult is not GitResult result) { return; }
-        CancellationToken token = _lifetime.Token; token.ThrowIfCancellationRequested();
-        Window output = new() { Name = "BisectNativeOutput", Title = Title, Width = 650, MaxHeight = 540, SizeToContent = SizeToContent.Height,
-            CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
-        Button accept = new() { Name = "AcceptBisectOutput", Content = T("OK"), IsDefault = true, IsCancel = true, MinWidth = 75, Height = 25 };
-        accept.Click += (_, _) => output.Close();
-        output.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
+        token.ThrowIfCancellationRequested();
+        GitProcessDialogResult outcome = await GitProcessDialog.ShowAsync(this, Repository.Path, description, useDialogSettings, (ct, output) =>
         {
-            new ScrollViewer { MaxHeight = 430, Content = new SelectableTextBlock { Name = "BisectResultMessage", Text = result.StandardOutput + result.StandardError, TextWrapping = TextWrapping.Wrap } },
-            ExportDialogControls.Buttons(accept)
-        } };
-        using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (output.IsVisible) { output.Close(); } }));
-        try { await output.ShowDialog(this); token.ThrowIfCancellationRequested(); }
-        finally { output.Close(); }
+            ct.ThrowIfCancellationRequested(); MarkRepositoryChanged(); return command(ct, output);
+        }, token);
+        if (outcome.Result is GitResult result) { _commandResults.Add(result); }
+        return outcome;
+    }
+    private static void ThrowPhaseFailure(GitProcessDialogResult outcome, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (outcome.WasCancelled) { throw new OperationCanceledException(token); }
+        if (outcome.Error is Exception error) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw(); }
     }
 
     protected override void UpdateActions()

@@ -4,6 +4,37 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <!-- Override GitProcessCompiler with an executable path for cross-RID builds. Never silently use a host binary. -->
+    <GitProcessHelperRuntime Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</GitProcessHelperRuntime>
+    <GitProcessHelperRuntime Condition="'$(GitProcessHelperRuntime)' == ''">$(NETCoreSdkRuntimeIdentifier)</GitProcessHelperRuntime>
+    <_GitProcessCrossCompile Condition="'$(GitProcessHelperRuntime)' != '$(NETCoreSdkRuntimeIdentifier)'">true</_GitProcessCrossCompile>
+    <GitProcessCompiler Condition="'$(GitProcessCompiler)' == '' and '$(_GitProcessCrossCompile)' != 'true'">cc</GitProcessCompiler>
+    <_GitProcessArch Condition="'$(GitProcessHelperRuntime)' == 'linux-x64'">GE_ARCH_X64</_GitProcessArch>
+    <_GitProcessArch Condition="'$(GitProcessHelperRuntime)' == 'linux-arm64'">GE_ARCH_ARM64</_GitProcessArch>
+    <_GitProcessHelperDirectory>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'native', '$(Configuration)', '$(GitProcessHelperRuntime)'))</_GitProcessHelperDirectory>
+    <GitProcessHelperDirectory>$([System.IO.Path]::GetFullPath('$(_GitProcessHelperDirectory)'))</GitProcessHelperDirectory>
+    <GitProcessHelperPath>$(GitProcessHelperDirectory)/gitextensions-exec</GitProcessHelperPath>
+  </PropertyGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <Content Include="$(GitProcessHelperPath)" Link="gitextensions-exec" TargetPath="gitextensions-exec"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- Also build before content is requested transitively or when publishing skips the managed build. -->
+  <Target Name="BuildGitProcessHelper" BeforeTargets="PrepareForBuild;AssignTargetPaths"
+          Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'$(_GitProcessArch)' == ''" Text="The private Git process launcher supports linux-x64 and linux-arm64 only; unsupported RID $(GitProcessHelperRuntime)." />
+    <Error Condition="'$(GitProcessCompiler)' == ''" Text="A cross-RID Git process launcher requires an explicit target compiler: -p:GitProcessCompiler=/absolute/path/to/compiler." />
+    <MakeDir Directories="$(GitProcessHelperDirectory)" />
+    <PropertyGroup>
+      <_GitProcessCompileCommand>&quot;$(GitProcessCompiler)&quot; -std=c11 -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,relro,-z,now -D$(_GitProcessArch) &quot;$(MSBuildProjectDirectory)/Native/gitextensions-exec.c&quot; -o &quot;$(GitProcessHelperPath)&quot;</_GitProcessCompileCommand>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(GitProcessHelperDirectory)/compiler-command.txt" Lines="$(_GitProcessCompileCommand)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <Exec Command="$(_GitProcessCompileCommand)" />
+    <ItemGroup>
+      <FileWrites Include="$(GitProcessHelperPath);$(GitProcessHelperDirectory)/compiler-command.txt" />
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <!-- Keep the upstream pure identity and hosting parsers as the source of truth. -->
     <Compile Include="../../app/GitExtensions.Extensibility/Git/ObjectId.cs" Link="Shared/ObjectId.cs" />

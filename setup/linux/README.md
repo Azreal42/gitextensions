@@ -1,6 +1,7 @@
 # Linux package
 
-Build without root using the .NET 10 SDK, Git, Python 3 and `dpkg-deb`:
+Build without root using the .NET 10 SDK, Git, Python 3, `dpkg-deb` and a C compiler
+with libc headers (`gcc`, `libc6-dev` and `binutils` on Debian/Ubuntu):
 
 ```sh
 eng/linux/build-deb.sh
@@ -14,6 +15,10 @@ to a specific SDK executable if needed. `SOURCE_DATE_EPOCH` controls timestamps;
 by default it comes from the current Git commit. An identical published payload
 and epoch produce identical packages. `DEB_MAINTAINER` sets the release contact.
 The published dependency metadata and notices are copied from the NuGet cache.
+The private Git process launcher is compiled for the selected Linux RID. Cross-RID
+builds require an explicit target C compiler through `GitProcessCompiler` (an
+MSBuild property or environment variable); a host compiler cannot supply the other
+architecture. Native arm64 execution remains a separate validation.
 `verify-installed-deb.sh` verifies installation and launch in an isolated dpkg
 root using `fakeroot` and the host's dependency status.
 

@@ -136,6 +136,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. ReflogScenarios.All,
     .. ObjectRecoveryScenarios.All,
     .. CleanScenarios.All,
+    .. GitProcessStreamingScenarios.All,
     .. PullFetchScenarios.All,
     .. PullAdvancedScenarios.All,
     .. BranchFilterScenarios.All,

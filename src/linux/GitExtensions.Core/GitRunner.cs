@@ -45,10 +45,11 @@ public sealed class GitRunner(string executable = "git")
         CancellationToken cancellationToken = default,
         string? standardInput = null,
         IReadOnlyDictionary<string, string?>? environment = null,
-        Func<GitBinaryResult, GitOutputDecoding>? outputDecoder = null)
+        Func<GitBinaryResult, GitOutputDecoding>? outputDecoder = null,
+        Action<GitProcessOutput>? outputReceived = null)
     {
         GitBinaryResult result = await RunBinaryAsync(workingDirectory, arguments, cancellationToken,
-            standardInput is null ? null : Encoding.UTF8.GetBytes(standardInput), environment).ConfigureAwait(false);
+            standardInput is null ? null : Encoding.UTF8.GetBytes(standardInput), environment, outputReceived).ConfigureAwait(false);
         GitOutputDecoding decoded = outputDecoder is null ? GitOutputDecoding.Utf8(result) : outputDecoder(result);
         return new GitResult(result.ExitCode, decoded.StandardOutput, decoded.StandardError)
         { StandardOutputBytes = result.StandardOutput, StandardErrorBytes = result.StandardErrorBytes, Warnings = decoded.Warnings };
@@ -59,8 +60,9 @@ public sealed class GitRunner(string executable = "git")
         IReadOnlyList<string> arguments,
         CancellationToken cancellationToken = default,
         byte[]? standardInput = null,
-        IReadOnlyDictionary<string, string?>? environment = null)
-        => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true).ConfigureAwait(false);
+        IReadOnlyDictionary<string, string?>? environment = null,
+        Action<GitProcessOutput>? outputReceived = null)
+        => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true, outputReceived).ConfigureAwait(false);
 
     private async Task<GitBinaryResult> RunBinaryCoreAsync(
         string workingDirectory,
@@ -68,7 +70,8 @@ public sealed class GitRunner(string executable = "git")
         CancellationToken cancellationToken,
         byte[]? standardInput,
         IReadOnlyDictionary<string, string?>? environment,
-        bool applyAskpass)
+        bool applyAskpass,
+        Action<GitProcessOutput>? outputReceived = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ProcessStartInfo startInfo = new(executable)
@@ -113,40 +116,54 @@ public sealed class GitRunner(string executable = "git")
             await ApplyAskpassAsync(startInfo, arguments, cancellationToken).ConfigureAwait(false);
         }
 
+        GitProcessLaunch? launch = null;
+        Exception? failure = null;
+        try
+        {
+            if (OperatingSystem.IsLinux()) { launch = GitProcessLaunch.Configure(startInfo); }
+            cancellationToken.ThrowIfCancellationRequested();
+            return await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch).ConfigureAwait(false);
+        }
+        catch (Exception exception) { failure = exception; throw; }
+        finally
+        {
+            if (OperatingSystem.IsLinux() && launch is not null)
+            {
+                try { launch.Dispose(); }
+                catch (Exception cleanupFailure) when (failure is not null) { failure.Data["GitProcessLaunchCleanupFailure"] = cleanupFailure; }
+            }
+        }
+    }
+
+    private static async Task<GitBinaryResult> RunProcessAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken,
+        byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch)
+    {
         using Process process = new() { StartInfo = startInfo };
         process.Start();
         using MemoryStream buffer = new();
         using MemoryStream errorBuffer = new();
-        Task output = process.StandardOutput.BaseStream.CopyToAsync(buffer);
-        Task error = process.StandardError.BaseStream.CopyToAsync(errorBuffer);
+        Task output = CopyOutputAsync(process.StandardOutput.BaseStream, buffer, GitProcessOutputStream.StandardOutput, outputReceived);
+        Task error = CopyOutputAsync(process.StandardError.BaseStream, errorBuffer, GitProcessOutputStream.StandardError, outputReceived);
+        Task control = OperatingSystem.IsLinux() ? launch!.ObserveExecAsync(process.Id) : Task.CompletedTask;
+        Task<IOException?> input = Task.FromResult<IOException?>(null);
+        TaskCompletionSource cancellation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using CancellationTokenRegistration registration = cancellationToken.Register(() => cancellation.TrySetResult());
         try
         {
-            IOException? inputError = null;
-            if (standardInput is not null)
+            input = WriteInputAsync(process, standardInput, cancellationToken);
+            Task exited = process.WaitForExitAsync(CancellationToken.None);
+            // Monitor all four directions from the outset. Git can produce stdout while a large stdin is still blocked.
+            List<Task> pending = [exited, input, output, error, control];
+            while (pending.Count > 0)
             {
-                try
-                {
-                    await process.StandardInput.BaseStream.WriteAsync(standardInput, cancellationToken).ConfigureAwait(false);
-                }
-                catch (IOException exception)
-                {
-                    // Git can reject input and close its pipe before we finish writing.
-                    // Retain its actual exit code and stderr instead of replacing the failure with Broken pipe.
-                    inputError = exception;
-                }
+                Task completed = await Task.WhenAny(pending.Append(cancellation.Task)).ConfigureAwait(false);
+                // Keep this signal until every pipe reaches EOF, including after an already exited parent.
+                if (completed == cancellation.Task) { cancellationToken.ThrowIfCancellationRequested(); }
+                await completed.ConfigureAwait(false); pending.Remove(completed);
+                if (OperatingSystem.IsLinux() && completed == exited) { launch!.ParentExited(); }
             }
-
-            try
-            {
-                process.StandardInput.Close();
-            }
-            catch (IOException exception)
-            {
-                inputError ??= exception;
-            }
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            await output.ConfigureAwait(false);
-            await error.ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            IOException? inputError = await input.ConfigureAwait(false);
             if (process.ExitCode == 0 && inputError is not null)
             {
                 throw inputError;
@@ -157,23 +174,56 @@ public sealed class GitRunner(string executable = "git")
             return new GitBinaryResult(process.ExitCode, buffer.ToArray(), GitOutputText.Utf8(errorBytes, "stderr", warnings))
             { StandardErrorBytes = errorBytes, Warnings = warnings };
         }
-        catch
+        catch (Exception failure)
         {
-            try
+            if (OperatingSystem.IsLinux())
             {
-                if (!process.HasExited)
+                if (GitProcessGroup.Stop(process) is Exception stopFailure)
                 {
-                    process.Kill(entireProcessTree: true);
+                    failure.Data["GitProcessStopFailure"] = stopFailure;
+                    // Surface the initial exception even if permissions prevent stopping an inherited writer.
+                    try { process.StandardInput.Dispose(); process.StandardOutput.Dispose(); process.StandardError.Dispose(); }
+                    catch (Exception closeFailure) { failure.Data["GitProcessPipeCloseFailure"] = closeFailure; }
                 }
             }
-            catch (InvalidOperationException)
+            else
             {
-                // The process can exit between HasExited and Kill.
+                try { if (!process.HasExited) { process.Kill(entireProcessTree: true); } }
+                catch (InvalidOperationException) { /* The process exited between HasExited and Kill. */ }
             }
-
-            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-            await Task.WhenAll(output, error).ConfigureAwait(false);
+            try { await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception waitFailure) { failure.Data["GitProcessWaitFailure"] = waitFailure; }
+            if (OperatingSystem.IsLinux()) { launch!.ParentExited(); }
+            try { await Task.WhenAll(input, output, error, control).ConfigureAwait(false); }
+            catch { /* Preserve the original failure after the child and its pipes have stopped. */ }
             throw;
+        }
+    }
+
+    private static async Task<IOException?> WriteInputAsync(Process process, byte[]? standardInput, CancellationToken token)
+    {
+        IOException? error = null;
+        try { if (standardInput is not null) { await process.StandardInput.BaseStream.WriteAsync(standardInput, token).ConfigureAwait(false); } }
+        catch (IOException exception) { error = exception; }
+        finally
+        {
+            try { process.StandardInput.Close(); }
+            catch (IOException exception) { error ??= exception; }
+        }
+        // Git can reject input and close its pipe; preserve its real failure rather than substitute Broken pipe.
+        return error;
+    }
+
+    private static async Task CopyOutputAsync(Stream source, Stream destination, GitProcessOutputStream stream, Action<GitProcessOutput>? observer)
+    {
+        if (observer is null) { await source.CopyToAsync(destination).ConfigureAwait(false); return; }
+        byte[] buffer = new byte[4096];
+        while (true)
+        {
+            int count = await source.ReadAsync(buffer).ConfigureAwait(false);
+            if (count == 0) { return; }
+            await destination.WriteAsync(buffer.AsMemory(0, count)).ConfigureAwait(false);
+            observer(new GitProcessOutput(stream, buffer.AsMemory(0, count).ToArray()));
         }
     }
 

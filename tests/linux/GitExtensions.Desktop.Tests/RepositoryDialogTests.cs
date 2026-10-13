@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using GitExtensions.Linux;
@@ -119,18 +121,23 @@ public class RepositoryDialogTests
                 string content = await File.ReadAllTextAsync(Path.Combine(fixture.Repository, "file.txt"));
                 int number = int.Parse(content.AsSpan(6).Trim(), System.Globalization.CultureInfo.InvariantCulture);
                 Click(dialog, number >= 2 ? "Bad" : "Good");
-                await Idle(dialog);
                 DateTime resultDeadline = DateTime.UtcNow.AddSeconds(10);
-                while (dialog.IsVisible && !dialog.OwnedWindows.Any(window => window.Name == "BisectNativeOutput") && dialog.LastError is null && DateTime.UtcNow < resultDeadline)
+                while (!dialog.OwnedWindows.OfType<GitProcessDialog>().Any(window => !window.IsRunning) && DateTime.UtcNow < resultDeadline)
                 { await Task.Delay(10); }
-                Window? output = dialog.OwnedWindows.SingleOrDefault(window => window.Name == "BisectNativeOutput");
-                if (output is not null)
+                GitProcessDialog output = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+                Assert.That(output.IsRunning, Is.False); Assert.That(output.Outcome?.Success, Is.True, output.Error?.ToString());
+                GitResult native = output.Result!;
+                Assert.That(output.GetVisualDescendants().OfType<TextBox>().Single(text => text.Name == "ProcessOutput").Text,
+                    Is.EqualTo(output.CommandDescription + "\n" + native.StandardOutput + native.StandardError + "Done"));
+                if ((await repository.GetBisectStateAsync()).FirstBadRevision is not null)
                 {
-                    Assert.That(output.GetVisualDescendants().OfType<SelectableTextBlock>().Single(text => text.Name == "BisectResultMessage").Text,
-                        Is.EqualTo(dialog.LastResult!.StandardOutput + dialog.LastResult.StandardError));
-                    Assert.That(dialog.LastResult.StandardOutput + dialog.LastResult.StandardError, Does.Contain(culprit));
-                    output.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "AcceptBisectOutput").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Assert.That(native.StandardOutput + native.StandardError, Does.Contain(culprit));
                 }
+                output.UpdateLayout(); Button ok = output.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "Ok");
+                Point center = ok.TranslatePoint(new Point(ok.Bounds.Width / 2, ok.Bounds.Height / 2), output)!.Value;
+                Assert.That((output.InputHitTest(center) as Visual)?.GetSelfAndVisualAncestors().Contains(ok), Is.True);
+                output.MouseMove(center); output.MouseDown(center, MouseButton.Left); output.MouseUp(center, MouseButton.Left);
+                await Idle(dialog);
                 Assert.That(dialog.LastError, Is.Null);
                 DateTime closeDeadline = DateTime.UtcNow.AddSeconds(10);
                 while (dialog.IsVisible && DateTime.UtcNow < closeDeadline) { await Task.Delay(10); }
@@ -143,6 +150,14 @@ public class RepositoryDialogTests
             Assert.That(dialog.GetVisualDescendants().OfType<TextBox>(), Is.Empty, "The source window has no extra revision field or log viewer.");
             Capture(dialog, "classic-bisect.png");
             Click(dialog, "Stop");
+            DateTime resetDeadline = DateTime.UtcNow.AddSeconds(10);
+            while (!dialog.OwnedWindows.OfType<GitProcessDialog>().Any(window => !window.IsRunning) && DateTime.UtcNow < resetDeadline) { await Task.Delay(10); }
+            GitProcessDialog resetOutput = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+            Assert.That(resetOutput.Outcome?.Success, Is.True, resetOutput.Error?.ToString());
+            resetOutput.UpdateLayout(); Button resetOk = resetOutput.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "Ok");
+            Point resetCenter = resetOk.TranslatePoint(new Point(resetOk.Bounds.Width / 2, resetOk.Bounds.Height / 2), resetOutput)!.Value;
+            Assert.That((resetOutput.InputHitTest(resetCenter) as Visual)?.GetSelfAndVisualAncestors().Contains(resetOk), Is.True);
+            resetOutput.MouseMove(resetCenter); resetOutput.MouseDown(resetCenter, MouseButton.Left); resetOutput.MouseUp(resetCenter, MouseButton.Left);
             await Idle(dialog);
             Assert.That(dialog.LastError, Is.Null);
             DateTime stopDeadline = DateTime.UtcNow.AddSeconds(10);

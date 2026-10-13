@@ -33,7 +33,7 @@ jobs:
       - name: Install Linux verification tools
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y dpkg-dev desktop-file-utils appstream xvfb xauth libx11-6 libice6 libsm6 libfontconfig1
+          sudo apt-get install --no-install-recommends -y gcc libc6-dev binutils dpkg-dev desktop-file-utils appstream xvfb xauth libx11-6 libice6 libsm6 libfontconfig1
 
       - name: Build Linux solution
         run: dotnet build GitExtensions.Linux.slnx --configuration Release

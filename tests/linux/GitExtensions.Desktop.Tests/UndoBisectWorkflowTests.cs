@@ -209,6 +209,7 @@ public sealed class UndoBisectWorkflowTests
         foreach (string[] selected in new[] { Array.Empty<string>(), new[] { f.Hashes[1] } })
         {
             BisectDialog dialog = await f.Show(new BisectDialog(f.Repository, selected)); Pointer(Field<Button>(dialog, "Start"));
+            await AcknowledgePhase(dialog);
             await Until(() => !dialog.IsBusy && Field<Button>(dialog, "Stop").IsEnabled);
             Assert.That(dialog.IsVisible, Is.True); Assert.That(dialog.OwnedWindows, Is.Empty);
             GitBisectState state = await f.Repository.GetBisectStateAsync(); Assert.That(state.IsActive, Is.True);
@@ -252,7 +253,7 @@ public sealed class UndoBisectWorkflowTests
         Task action = Invoke(main, "BisectAsync"); await Until(() => main.OwnedWindows.OfType<BisectDialog>().Any());
         BisectDialog dialog = main.OwnedWindows.OfType<BisectDialog>().Single(); await Until(() => !dialog.IsBusy && Field<Button>(dialog, "Start").IsEnabled);
         Assert.That(dialog.SelectedRevisionHashes, Is.EqualTo(chosen)); Pointer(Field<Button>(dialog, "Start")); Window range = await Owned(dialog, "BisectRangeConfirmation");
-        Pointer(Field<Button>(range, "ConfirmBisectRange")); await action.WaitAsync(TimeSpan.FromSeconds(20)); await Idle(main);
+        Pointer(Field<Button>(range, "ConfirmBisectRange")); await Closed(dialog); await action.WaitAsync(TimeSpan.FromSeconds(20)); await Idle(main);
         GitBisectState state = await f.Repository.GetBisectStateAsync(); Assert.That(state.GoodRevisions, Is.EqualTo(new[] { chosen[0] })); Assert.That(state.BadRevision, Is.EqualTo(chosen[^1]));
     }
 
@@ -277,14 +278,14 @@ public sealed class UndoBisectWorkflowTests
         {
             await using Fixture f = await Fixture.Create(); string[] bounds = goodFails ? ["missing-good", f.Hashes[^1]] : [f.Hashes[0], "missing-bad"];
             BisectDialog dialog = await f.Show(new BisectDialog(f.Repository, bounds)); Pointer(Field<Button>(dialog, "Start")); Window range = await Owned(dialog, "BisectRangeConfirmation");
-            Pointer(Field<Button>(range, "ConfirmBisectRange")); Window error = await Owned(dialog, "BisectNativeError");
-            Assert.That(dialog.LastException, Is.TypeOf<GitCommandException>()); GitCommandException failure = (GitCommandException)dialog.LastException!;
-            Assert.That(Field<TextBlock>(error, "BisectErrorMessage").Text, Is.EqualTo(failure.Result.StandardOutput + failure.Result.StandardError));
+            Pointer(Field<Button>(range, "ConfirmBisectRange")); GitProcessDialog error = (GitProcessDialog)await Owned(dialog, "BisectNativeError");
+            Assert.That(((GitProcessDialog)error).Error, Is.TypeOf<GitCommandException>()); GitCommandException failure = (GitCommandException)((GitProcessDialog)error).Error!;
+            Assert.That(Field<TextBox>(error, "ProcessOutput").Text, Is.EqualTo(error.CommandDescription + "\n" + failure.Result.StandardOutput + failure.Result.StandardError + "Done"));
             Assert.That(failure.Result.StandardError, Is.Not.Empty); Assert.That(failure.Arguments, Does.Contain((goodFails ? "missing-good" : "missing-bad") + "^{commit}"));
             GitBisectState state = await f.Repository.GetBisectStateAsync(); Assert.That(state.IsActive, Is.True); Assert.That(state.BadRevision, Is.Null);
             Assert.That(state.GoodRevisions, Is.EqualTo(goodFails ? Array.Empty<string>() : new[] { f.Hashes[0] }));
             Assert.That(dialog.HasRepositoryChanges, Is.True); Capture(error, "bisect-native-error-" + (goodFails ? "good" : "bad") + ".png");
-            Pointer(Field<Button>(error, "AcceptBisectError")); await Closed(dialog);
+            Pointer(Field<Button>(error, "Ok")); await Closed(dialog); Assert.That(dialog.LastException, Is.SameAs(failure));
             Assert.That((await f.Repository.GetBisectStateAsync()).BadRevision, Is.Null); Assert.That(await f.Head(), Is.EqualTo(f.Hashes[^1]));
         }
     }
@@ -305,10 +306,10 @@ public sealed class UndoBisectWorkflowTests
         // Both commits exist. This intentionally reversed range is refused by Git, after any ref writes Git actually performs.
         BisectDialog dialog = await f.Show(new BisectDialog(f.Repository, [f.Hashes[^1], f.Hashes[0]]));
         Pointer(Field<Button>(dialog, "Start")); Window question = await Owned(dialog, "BisectRangeConfirmation");
-        Pointer(Field<Button>(question, "ConfirmBisectRange")); Window error = await Owned(dialog, "BisectNativeError");
-        Assert.That(dialog.LastException, Is.TypeOf<GitCommandException>()); GitCommandException failure = (GitCommandException)dialog.LastException!;
+        Pointer(Field<Button>(question, "ConfirmBisectRange")); GitProcessDialog error = (GitProcessDialog)await Owned(dialog, "BisectNativeError");
+        Assert.That(((GitProcessDialog)error).Error, Is.TypeOf<GitCommandException>()); GitCommandException failure = (GitCommandException)((GitProcessDialog)error).Error!;
         Assert.That(failure.Arguments.Take(2), Is.EqualTo(new[] { "bisect", "bad" }));
-        Assert.That(Field<TextBlock>(error, "BisectErrorMessage").Text, Is.EqualTo(failure.Result.StandardOutput + failure.Result.StandardError));
+        Assert.That(Field<TextBox>(error, "ProcessOutput").Text, Is.EqualTo(error.CommandDescription + "\n" + failure.Result.StandardOutput + failure.Result.StandardError + "Done"));
         await f.GitAt(oracle, "bisect", "start"); await f.GitAt(oracle, "bisect", "good", f.Hashes[^1]);
         GitResult expectedFailure = await new GitRunner().RunAsync(oracle, ["bisect", "bad", f.Hashes[0]]);
         Assert.That(expectedFailure.Success, Is.False); Assert.That(failure.Result.ExitCode, Is.EqualTo(expectedFailure.ExitCode));
@@ -318,7 +319,7 @@ public sealed class UndoBisectWorkflowTests
         Assert.That((await f.GitAt(oracle, "show-ref")).StandardOutput, Is.EqualTo((await f.Git("show-ref")).StandardOutput));
         Assert.That((await f.GitAt(oracle, "ls-files", "--stage", "-z")).StandardOutput, Is.EqualTo((await f.Git("ls-files", "--stage", "-z")).StandardOutput));
         Assert.That(File.ReadAllBytes(Path.Combine(oracle, "tracked.txt")), Is.EqualTo(File.ReadAllBytes(f.File("tracked.txt"))));
-        Assert.That(dialog.HasRepositoryChanges, Is.True); Pointer(Field<Button>(error, "AcceptBisectError")); await Closed(dialog);
+        Assert.That(dialog.HasRepositoryChanges, Is.True); Pointer(Field<Button>(error, "Ok")); await Closed(dialog); Assert.That(dialog.LastException, Is.SameAs(failure));
         Assert.That((await f.Repository.GetBisectStateAsync()).Log, Is.EqualTo(expected.Log));
     }
 
@@ -384,17 +385,18 @@ public sealed class UndoBisectWorkflowTests
                 dialog = await f.Show(new BisectDialog(f.Repository, [f.Hashes[0], f.Hashes[1]]) { RequestedThemeVariant = theme });
                 Pointer(Field<Button>(dialog, "Start")); Window question = await Owned(dialog, "BisectRangeConfirmation"); Pointer(Field<Button>(question, "ConfirmBisectRange"));
             }
-            Window output = await Owned(dialog, "BisectNativeOutput"); GitResult result = dialog.LastResult!;
-            Assert.That(Field<SelectableTextBlock>(output, "BisectResultMessage").Text, Is.EqualTo(result.StandardOutput + result.StandardError));
+            GitProcessDialog output = (GitProcessDialog)await Owned(dialog, "BisectNativeOutput"); GitResult result = output.Result!;
+            Assert.That(Field<TextBox>(output, "ProcessOutput").Text, Is.EqualTo(output.CommandDescription + "\n" + result.StandardOutput + result.StandardError + "Done"));
             Assert.That(result.StandardOutput + result.StandardError, Is.Not.Empty); Assert.That(output.ActualThemeVariant, Is.EqualTo(theme));
             Assert.That(dialog.IsVisible, Is.True); Assert.That(dialog.HasRepositoryChanges, Is.True);
             GitBisectState state = await f.Repository.GetBisectStateAsync();
             if (skip) { Assert.That(state.IsInconclusive, Is.True); Assert.That(result.ExitCode, Is.EqualTo(2)); }
-            else { Assert.That(state.FirstBadRevision, Is.EqualTo(f.Hashes[1])); Assert.That(result.StandardOutput + result.StandardError, Does.Contain(f.Hashes[1])); Assert.That(dialog.CommandResults.Count, Is.EqualTo(3)); }
+            else { Assert.That(state.FirstBadRevision, Is.EqualTo(f.Hashes[1])); Assert.That(result.StandardOutput + result.StandardError, Does.Contain(f.Hashes[1])); }
             Capture(output, "bisect-native-" + (skip ? "inconclusive" : "culprit") + "-" + theme + ".png"); string material = f.Materials();
-            if (skip) { Field<Button>(output, "AcceptBisectOutput").Focus(); Press(output, PhysicalKey.Escape, releaseOn: dialog); }
-            else { Pointer(Field<Button>(output, "AcceptBisectOutput")); }
-            await Closed(dialog); Assert.That(f.Materials(), Is.EqualTo(material), "Acknowledging the result cannot undo or fabricate Git's terminal state.");
+            if (skip) { Field<Button>(output, "Ok").Focus(); Press(output, PhysicalKey.Escape, releaseOn: dialog); }
+            else { Pointer(Field<Button>(output, "Ok")); }
+            await Closed(dialog); Assert.That(dialog.LastResult, Is.SameAs(result)); if (!skip) { Assert.That(dialog.CommandResults.Count, Is.EqualTo(3)); }
+            Assert.That(f.Materials(), Is.EqualTo(material), "Acknowledging the result cannot undo or fabricate Git's terminal state.");
         }
     }
 
@@ -427,9 +429,40 @@ public sealed class UndoBisectWorkflowTests
         await Until(() => !question.IsVisible);
     }
     private static async Task<Window> Owned(Window owner, string name)
-    { await Until(() => owner.OwnedWindows.Any(window => window.Name == name && window.IsVisible)); Window window = owner.OwnedWindows.Single(window => window.Name == name); Pump(window); return window; }
+    {
+        Stopwatch timer = Stopwatch.StartNew();
+        while (timer.Elapsed < TimeSpan.FromSeconds(15))
+        {
+            Dispatcher.UIThread.RunJobs();
+            Window? target = owner.OwnedWindows.FirstOrDefault(window => window.Name == name && window.IsVisible);
+            if (target is not null) { Pump(target); return target; }
+            GitProcessDialog? phase = owner.OwnedWindows.OfType<GitProcessDialog>().FirstOrDefault(window => window.IsVisible && !window.IsRunning);
+            if (phase is not null)
+            {
+                bool error = phase.Error is not null || phase.Result?.Success == false;
+                bool resultPhase = phase.CommandDescription.StartsWith("git bisect bad", StringComparison.Ordinal) || phase.CommandDescription == "git bisect skip";
+                if ((name == "BisectNativeError" && error) || (name == "BisectNativeOutput" && resultPhase)) { Pump(phase); return phase; }
+                Assert.That(phase.Outcome?.Success, Is.True, phase.Error?.ToString()); Pointer(Field<Button>(phase, "Ok"));
+            }
+            await Task.Delay(10);
+        }
+        throw new AssertionException("Expected owned " + name + " was not opened.");
+    }
     private static async Task Idle(MainWindow main) { await Task.Delay(20); await Until(() => !main.IsBusy); }
-    private static Task Closed(RepositoryDialog dialog) => Until(() => !dialog.IsVisible && !dialog.IsBusy);
+    private static async Task Closed(RepositoryDialog dialog)
+    {
+        Stopwatch timer = Stopwatch.StartNew();
+        while ((dialog.IsVisible || dialog.IsBusy) && timer.Elapsed < TimeSpan.FromSeconds(15))
+        {
+            Dispatcher.UIThread.RunJobs();
+            GitProcessDialog? phase = dialog.OwnedWindows.OfType<GitProcessDialog>().FirstOrDefault(window => window.IsVisible && !window.IsRunning);
+            if (phase is not null) { Pointer(Field<Button>(phase, "Ok")); }
+            await Task.Delay(10);
+        }
+        Assert.That(!dialog.IsVisible && !dialog.IsBusy, Is.True, "Bisect did not close after its actual process phases.");
+    }
+    private static async Task AcknowledgePhase(Window owner)
+    { await Until(() => owner.OwnedWindows.OfType<GitProcessDialog>().Any(window => window.IsVisible && !window.IsRunning)); GitProcessDialog phase = owner.OwnedWindows.OfType<GitProcessDialog>().Single(); Assert.That(phase.Outcome?.Success, Is.True, phase.Error?.ToString()); Pointer(Field<Button>(phase, "Ok")); await Until(() => !phase.IsVisible); }
     private static async Task Until(Func<bool> condition)
     { Stopwatch timer = Stopwatch.StartNew(); while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(15)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); } Assert.That(condition(), Is.True, "Undo/Bisect UI did not settle within 15 seconds."); }
     private static void Capture(TopLevel window, string name)
