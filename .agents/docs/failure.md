@@ -134,7 +134,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | WM_DELETE_WINDOW absent dans Xvfb sans WM | Avalonia met en cache les atoms absents ; le harnais pose les trois noms standard avant GUI et garde la connexion jusqu’à la fin du driver. Aucun comportement du WM hôte revendiqué. |
 | Clic natif sur un menu refusé malgré le bon PID | Un popup Avalonia possède sa propre fenêtre X11 ; cibler son ID issu de la dernière capture, pas celui du parent. Garder l’essai refusé hors acceptation et reprendre un cas complet. |
 | Contrôle du runtime inclut les rendus des tests | Les PNG et traces de fermeture produits dans le working directory de test sont des sorties ; conserver leurs témoins séparément et vérifier les vrais fichiers construits avec leur ensemble de chemins exact. |
-| Capture Git intermédiaire oubliée dans un audit natif | Les états finaux ne remplacent pas le témoin avant redémarrage ; conserver l’essai non accepté et reprendre un cas complet. |
+| Capture Git intermédiaire oubliée ou tardive dans un audit natif | Les états finaux ne remplacent pas le témoin avant redémarrage ; Cleanup S01 : chemin relatif refusé, capture après lancement suivant. Conserver l’essai non accepté et reprendre un cas complet. |
+| Script de preuve écrit son JSON puis termine en erreur | Un défaut de résumé ne vaut pas sortie0 : garder l’exit réel et relire séparément les observations ; aucune acceptation native transférée. |
 | Plan natif vert puis launcher exit 2 | Figer/copier le launcher avant lancement, vérifier séparément exécution et fermeture. |
 | Harnais ne trouve pas un titre contenant des guillemets | Lire le vrai titre via XFetchName et vérifier le PID par XRes ; ne pas découper la sortie de xwininfo sur le premier guillemet. |
 | Coordinateur disparu malgré app/keeper exit 0 | Conserver l’exit extérieur et le rapport manquant ; ne pas inventer coordinator0. Session/groupe isolés et nouveau cas avant acceptation. |

@@ -1,6 +1,6 @@
 # 0051 — Undo et Bisect depuis Browse
 
-Statut : code vérifié localement ; parité FormProcess, candidat Debian et audit natif ouverts.
+Statut : code et candidat Debian `05ee73cff` vérifiés ; nouveau lot FormProcess non validé, audit natif ouvert.
 
 ## Intention
 
@@ -12,6 +12,6 @@ Undo conserve la confirmation Warning/Yes et sa suppression mémorisable, y comp
 
 Bisect démarre sans bornes avant de proposer la plage : première sélection good, dernière bad, sans tri chronologique. Refuser la proposition conserve la session démarrée. Accepter exécute Good puis Bad, seulement si Good réussit ; classement courant et Stop referment la fenêtre historique.
 
-Conserver les effets Git partiels après erreur/annulation ; ne pas simuler de rollback. Les erreurs et conclusions natives restent lisibles dans des dialogues owned avant fermeture. La progression de chaque phase et la préférence historique CloseProcessDialog restent à porter ; ces sorties terminales ne suffisent pas à clore la parité.
+Conserver les effets Git partiels après erreur/annulation ; ne pas simuler de rollback. Les erreurs et conclusions natives restent lisibles dans des dialogues owned avant fermeture. La progression de chaque phase et la préférence historique CloseProcessDialog font l’objet d’un nouveau lot implémenté, non validé ; les sorties terminales du candidat `05ee73cff` ne suffisent pas à clore la parité.
 
 Repères : `MainWindow.Browser/Workflows`, `UndoLastCommitConfirmationDialog`, `BrowseCommandPreferencesStore`, `BisectDialog`, `GitRepository.Advanced/Bisect`. Référence : `FormBrowse`, `FormBisect`, `MessageBoxes.ConfirmSuppressible`, `FormProcess`. Preuves et validations restantes dans [TODO](../../../todo.md).

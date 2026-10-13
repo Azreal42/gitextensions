@@ -1,6 +1,6 @@
 # 0050 — Nettoyer le répertoire de travail
 
-Statut : code vérifié localement ; audit natif et paquet requis avant livraison.
+Statut : code et candidat Debian `f56313f26` vérifiés ; premier pilote CLI natif vérifié, audit complet requis avant livraison.
 
 ## Intention
 
