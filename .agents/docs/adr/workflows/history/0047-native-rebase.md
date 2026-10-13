@@ -1,6 +1,6 @@
 # ADR 0047 · Rebase et reprise commune avec Pull
 
-Statut : implémenté, correctifs et candidat `.deb` vérifiés ; audit natif requis avant livraison. État et preuves dans le [TODO](../../../todo.md).
+Statut : implémenté, candidat `.deb` vérifié et reprise du journal acceptée en natif sombre ; audit complet requis avant livraison. État et preuves dans le [TODO](../../../todo.md).
 
 Besoin : retrouver les choix et actions du Rebase Windows, depuis la sélection History ou après un Pull interrompu. Deux commits sélectionnés définissent la borne exclue et la destination ; Browse prépare les options, le menu contextuel peut démarrer après confirmation.
 
