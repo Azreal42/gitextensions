@@ -37,9 +37,10 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 - [x] Pull avancé : tags/prune/unshallow, autostash historique et proposition de réapplication ; workflow de sous-modules partagé avec Checkout. ADR 0039.
 - [x] Cherry-pick : options mémorisées, parent de merge, choix de révision et dialogue par sélection ; récupération des cibles renommées couvertes. ADR 0040.
 - [x] Retrait de sous-module : confirmation, index/configuration préparés sous verrous ; fichiers et dépôt interne conservés. ADR 0041.
+- [x] Combo éditable « Branches: » : suggestions Local/Remote/Tag, brouillon conservé, Entrée, expressions, avertissements et Ctrl+E/débordement ; dix parcours natifs clair/sombre sur le paquet livré. ADR 0042.
 - [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
 
-Dernier paquet local vérifié et livré : source `0cf3b7026`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/0cf3b7026/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 819 tests (221 Core, 35 Plugins, 563 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé et repaquetage identique. Push rapide, options Pull, Cherry-pick et retrait de sous-module ont été vérifiés nativement en clair/sombre sur le contenu exact du paquet. Ce paquet n'a pas remplacé l'ancienne version déjà installée sur l'hôte ; aucun push de ce lot.
+Dernier paquet local vérifié et livré : source `a7bdda7d6`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/a7bdda7d6/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 844 tests (235 Core, 35 Plugins, 574 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé et repaquetage identique. Dix parcours natifs de la combo Branches passent en clair/sombre sur le payload exact. Les audits Push rapide, options Pull, Cherry-pick et retrait de sous-module restent attribués au paquet `0cf3b7026`. Ce paquet n’a pas remplacé l’ancienne version installée sur l’hôte ; aucun push de ce lot.
 
 Les preuves des paquets précédents restent dans [les snapshots](../../artifacts/linux/snapshots/). Chaque audit natif garde son SHA et son périmètre : les contrôles courants ne valent pas nouvel audit étendu du sélecteur de branche, de tous les workflows Pull, de Blame ou du reader.
 
@@ -60,8 +61,6 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
 
 ## Prochains écarts concrets
-
-- Combo éditable « Branches: » implémentée : suggestions/types, brouillon vs filtre accepté, expressions et avertissements. Palette, espaces, binding de l’éditeur et focus au clic corrigés ; 37 tests ciblés et replays natifs de développement clair/sombre passent (UI 22–24). Reconstruction et audit natif final du nouveau paquet attendus. [ADR 0042](adr/workflows/history/0042-branch-filter-combo.md). Le menu de checkout reste distinct.
 
 - Cherry-pick : reprise après fermeture du dialogue et déplacements de dossier hors couverture de récupération ; le refus conserve le dépôt interrompu.
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
