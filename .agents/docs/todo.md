@@ -61,7 +61,7 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 
 ## Prochains écarts concrets
 
-- Combo éditable « Branches: » implémentée : suggestions/types, brouillon vs filtre accepté, expressions et avertissements. Palette historique et clavier multirefs corrigés ; contrôles rendus/clavier UI 09/10 passés en clair/sombre inline/débordement. Reconstruction et audit natif final du nouveau paquet attendus. [ADR 0042](adr/workflows/history/0042-branch-filter-combo.md). Le menu de checkout reste distinct.
+- Combo éditable « Branches: » implémentée : suggestions/types, brouillon vs filtre accepté, expressions et avertissements. Palette, espaces, binding de l’éditeur et focus au clic corrigés ; 37 tests ciblés et replays natifs de développement clair/sombre passent (UI 22–24). Reconstruction et audit natif final du nouveau paquet attendus. [ADR 0042](adr/workflows/history/0042-branch-filter-combo.md). Le menu de checkout reste distinct.
 
 - Cherry-pick : reprise après fermeture du dialogue et déplacements de dossier hors couverture de récupération ; le refus conserve le dépôt interrompu.
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.

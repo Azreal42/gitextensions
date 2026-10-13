@@ -1,6 +1,6 @@
 # ADR 0042 · Combo du filtre Branches
 
-Statut : implémenté ; 235 scénarios Core et 37 tests Desktop ciblés passent. Suite complète, audit natif et paquet de ce lot encore attendus.
+Statut : implémenté ; 235 scénarios Core et 37 tests Desktop ciblés passent. Replays natifs de développement clair/sombre passés ; suite complète, audit natif du payload et paquet de ce lot encore attendus.
 
 Référence : Windows master afc5123953fef0d128a9dd2ee3b3a682a234ac6e, `FilterToolBar` et `RevisionGrid.FilterInfo`. Ce filtre ne remplace pas le menu de checkout de la branche courante.
 

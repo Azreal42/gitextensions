@@ -8,6 +8,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
@@ -132,7 +133,9 @@ public class BranchHistoryFilterTests
             Assert.That(((TopLevel)feature.GetVisualRoot()!).Bounds.Width, Is.GreaterThanOrEqualTo(300));
             await ClickRowWithHistoricalPalette(feature, main, theme, "inline");
             Assert.That(combo.Text, Is.EqualTo("feature")); Assert.That(Hashes(main), Is.EqualTo(all));
-            Editor(combo).Focus(); Press(main, PhysicalKey.Enter); await Idle(main);
+            Assert.That(editor.Text, Is.EqualTo("feature"), "Pointer choice must update the real editor through its template binding before Enter.");
+            Assert.That(editor.IsFocused, Is.True, "Pointer choice must return focus to the real editor without a corrective Focus call.");
+            Press(main, PhysicalKey.Enter); await Idle(main);
             Assert.That(Subjects(main), Is.EqualTo(new[] { "Feature branch change", "Initial commit" }));
             Assert.That(Editor(combo).IsFocused, Is.True, "An accepted inline expression must remain editable for consecutive keyboard actions.");
             combo.Text = ""; Editor(combo).Focus(); Press(main, PhysicalKey.ArrowDown); await Layout(main);
@@ -161,6 +164,8 @@ public class BranchHistoryFilterTests
             selected = (ComboBoxItem)overflow.ContainerFromIndex(overflow.SelectedIndex)!;
             await AssertSelectedRowWithHistoricalPalette(overflow, selected, theme, "overflow");
             await ClickRowWithHistoricalPalette(selected, main, theme, "overflow");
+            Assert.That(Editor(overflow).Text, Is.EqualTo(overflow.Text));
+            Assert.That(Editor(overflow).IsFocused, Is.True, "An overflow pointer choice must leave its real editor ready for Enter.");
             Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)), "Palette/pointer selection must still only edit the draft.");
             toolbar.OverflowFlyout.Hide(); main.Width = 1440; await Layout(main);
         }
@@ -203,29 +208,69 @@ public class BranchHistoryFilterTests
     public async Task OverflowHasTheSameEditableComboAndControlEAlternatesQuickThenBranchEditors()
     {
         using Fixture f = await Fixture.CreateAsync("initial\n", "initial\n", createMerge: true);
-        MainWindow main = f.Window; await Accept(main, "feature"); string[] before = Hashes(main);
-        Branch(main).Text = "main"; main.Width = 860; await Layout(main);
-        CompactBrowserToolbar toolbar = Field<CompactBrowserToolbar>(main, "RepositoryToolbar");
-        Field<ListBox>(main, "RevisionHistory").Focus(); Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
-        TextBox quick = OverflowControls(toolbar).OfType<TextBox>().Single(control => control.Name == "RevisionQuickFilterOverflow");
-        Assert.That(quick.IsFocused, Is.True, "The original first Ctrl+E focuses the revision quick filter.");
-        Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
-        ComboBox branch = OverflowControls(toolbar).OfType<ComboBox>().Single(control => control.Name == "BranchHistoryFilterOverflow");
-        Assert.That(branch.IsEditable && Editor(branch).IsFocused, Is.True);
-        Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
-        Assert.That(quick.IsFocused, Is.True, "Ctrl+E must also return from the branch popup's input route to the quick filter.");
-        Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
-        Assert.That(Editor(branch).IsFocused, Is.True);
-        Assert.That(branch.Bounds.Size, Is.EqualTo(new Size(100, 23)));
-        Assert.That(branch.Text, Is.EqualTo("main"));
-        Editor(branch).SelectAll(); main.KeyTextInput("FeAt"); await Layout(main);
-        Assert.That(branch.Items.OfType<string>(), Is.EqualTo(new[] { "feature" })); Assert.That(Branch(main).Text, Is.EqualTo("FeAt"));
-        Assert.That(Hashes(main), Is.EqualTo(before)); Press(main, PhysicalKey.Escape); await Layout(main);
-        Capture((TopLevel)branch.GetVisualRoot()!, "branch-filter-overflow");
-        Editor(branch).SelectAll(); main.KeyTextInput("feature"); await Layout(main);
-        Press(main, PhysicalKey.Enter); await Idle(main);
-        Assert.That(toolbar.OverflowFlyout.IsOpen, Is.False); Assert.That(Hashes(main), Is.EqualTo(before));
-        main.Width = 1440; await Layout(main); Assert.That(Branch(main).Text, Is.EqualTo("feature"));
+        MainWindow main = f.Window; string state = await State(f);
+        IClipboard clipboard = main.Clipboard!; string? previousClipboard = await ClipboardExtensions.TryGetTextAsync(clipboard);
+        try
+        {
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                main.RequestedThemeVariant = theme; main.Width = 1440; await Layout(main);
+                await Accept(main, "feature"); string[] before = Hashes(main);
+                Branch(main).Text = "main"; main.Width = 860; await Layout(main);
+                CompactBrowserToolbar toolbar = Field<CompactBrowserToolbar>(main, "RepositoryToolbar");
+                Field<ListBox>(main, "RevisionHistory").Focus(); Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                TextBox quick = OverflowControls(toolbar).OfType<TextBox>().Single(control => control.Name == "RevisionQuickFilterOverflow");
+                Assert.That(quick.IsFocused, Is.True, "The original first Ctrl+E focuses the revision quick filter.");
+                Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                ComboBox branch = OverflowControls(toolbar).OfType<ComboBox>().Single(control => control.Name == "BranchHistoryFilterOverflow");
+                Assert.That(branch.IsEditable && Editor(branch).IsFocused, Is.True);
+                Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                Assert.That(quick.IsFocused, Is.True, "Ctrl+E must also return from the branch popup's input route to the quick filter.");
+                Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                Assert.That(Editor(branch).IsFocused, Is.True);
+                Assert.That(branch.Bounds.Size, Is.EqualTo(new Size(100, 23)));
+                Assert.That(branch.Text, Is.EqualTo("main"));
+                Editor(branch).SelectAll(); main.KeyTextInput("FeAt"); await Layout(main);
+                Assert.That(branch.Items.OfType<string>(), Is.EqualTo(new[] { "feature" })); Assert.That(Branch(main).Text, Is.EqualTo("FeAt"));
+                Assert.That(Hashes(main), Is.EqualTo(before)); Press(main, PhysicalKey.Escape); await Layout(main);
+                Capture((TopLevel)branch.GetVisualRoot()!, "branch-filter-overflow");
+                // Start the native regression route afresh, after preserving the existing
+                // quick/branch alternation and Contains-suggestion assertions above.
+                toolbar.OverflowFlyout.Hide(); await Layout(main);
+                Branch(main).Text = "feature"; Field<ListBox>(main, "RevisionHistory").Focus();
+                Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                Assert.That(Editor(branch).IsFocused, Is.True);
+                Press(main, PhysicalKey.A, RawInputModifiers.Control);
+                await TypeBranchExpression(main, branch, "main");
+                Press(main, PhysicalKey.Escape); await Layout(main);
+                Assert.That(branch.IsDropDownOpen, Is.False);
+                Press(main, PhysicalKey.A, RawInputModifiers.Control); Press(main, PhysicalKey.C, RawInputModifiers.Control);
+                Assert.That(await ClipboardExtensions.TryGetTextAsync(clipboard), Is.EqualTo("main"), "The actual overflow editor must copy the unaccepted draft.");
+                using EditorPointerTrace trace = new(main, branch, "overflow-editor-click-" + theme);
+                trace.Record("Before editor click");
+                Click(Editor(branch)); await Layout(main); trace.Record("After editor click");
+                Capture((TopLevel)branch.GetVisualRoot()!, "branch-filter-overflow-editor-click-" + theme);
+                trace.Save();
+                Assert.That(trace.MenuClicks, Is.Zero, "Releasing the embedded editor must not activate its enclosing overflow menu command.");
+                Assert.That(Editor(branch).Text, Is.EqualTo("main"));
+                Assert.That(Editor(branch).IsFocused, Is.True, "Clicking the real overflow editor must retain its focus while suggestions open; no refocusing is permitted before Enter.");
+                TopLevel editorRoot = (TopLevel)branch.GetVisualRoot()!;
+                Point editorPoint = Editor(branch).TranslatePoint(new Point(Editor(branch).Bounds.Width / 2, Editor(branch).Bounds.Height / 2), editorRoot)!.Value;
+                editorRoot.MouseMove(new Point(-10, editorPoint.Y)); await Layout(editorRoot);
+                editorRoot.MouseMove(editorPoint); await Layout(editorRoot);
+                trace.Record("After pointer re-entered mapped editor"); trace.Save();
+                Assert.That(Editor(branch).IsFocused, Is.True, "A real pointer re-entry after mapping suggestions must not let the menu's hover selection steal editor focus.");
+                Assert.That(Hashes(main), Is.EqualTo(before), "Clicking the draft must not apply it.");
+                Press(main, PhysicalKey.Enter); await Idle(main);
+                trace.Record("After Enter"); trace.Save();
+                Assert.That(toolbar.OverflowFlyout.IsOpen, Is.False);
+                Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "main" })).Select(commit => commit.Hash)));
+                main.Width = 1440; await Layout(main); Assert.That(Branch(main).Text, Is.EqualTo("main"));
+            }
+            Assert.That(await State(f), Is.EqualTo(state));
+        }
+        finally { await ClipboardExtensions.SetTextAsync(clipboard, previousClipboard ?? ""); }
     }
 
     [AvaloniaTest]
@@ -452,6 +497,60 @@ public class BranchHistoryFilterTests
     }
 
     private static ComboBox Branch(MainWindow main) => Field<ComboBox>(main, "BranchHistoryFilter");
+    private sealed class EditorPointerTrace : IDisposable
+    {
+        private readonly MainWindow _main;
+        private readonly ComboBox _combo;
+        private readonly string _name;
+        private readonly Control[] _controls;
+        private readonly List<string> _events = [];
+        internal int MenuClicks { get; private set; }
+        internal EditorPointerTrace(MainWindow main, ComboBox combo, string name)
+        {
+            _main = main; _combo = combo; _name = name;
+            _controls = new Control[] { main, combo, Editor(combo), (Control)combo.GetVisualRoot()! }
+                .Concat(combo.GetVisualAncestors().OfType<MenuItem>()).Distinct().ToArray();
+            foreach (Control control in _controls)
+            {
+                control.AddHandler(Control.PointerPressedEvent, Observe, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+                control.AddHandler(Control.PointerReleasedEvent, Observe, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+                control.AddHandler(InputElement.GotFocusEvent, Observe, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+                control.AddHandler(InputElement.LostFocusEvent, Observe, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+                control.AddHandler(InputElement.KeyDownEvent, Observe, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+                if (control is MenuItem item) { item.Click += MenuClick; }
+            }
+        }
+        private void Observe(object? sender, RoutedEventArgs args)
+            => Record((sender as Control)?.GetType().Name + ":" + (sender as Control)?.Name + ":" + args.RoutedEvent?.Name
+                + ":" + args.Route + ":handled=" + args.Handled + ":source=" + (args.Source as Control)?.GetType().Name);
+        private void MenuClick(object? sender, RoutedEventArgs args) { MenuClicks++; Observe(sender, args); }
+        internal void Record(string label) => _events.Add(label + " | " + JsonSerializer.Serialize(new
+        {
+            ComboText = _combo.Text, EditorText = Editor(_combo).Text, EditorFocus = Editor(_combo).IsFocused,
+            EditorSelectionStart = Editor(_combo).SelectionStart, EditorSelectionEnd = Editor(_combo).SelectionEnd,
+            Focus = _main.FocusManager?.GetFocusedElement() is Control focus ? focus.GetType().Name + ":" + focus.Name : null,
+            _combo.IsDropDownOpen, _combo.SelectedItem,
+            MenuSelected = _controls.OfType<MenuItem>().Select(item => new { item.IsSelected, item.IsFocused }).ToArray()
+        }));
+        internal void Save()
+        {
+            string directory = Environment.GetEnvironmentVariable("GITEXTENSIONS_SCREENSHOTS") ?? Path.Combine(Path.GetTempPath(), "gitextensions-branch-filter-screenshots");
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, _name + "-" + Guid.NewGuid().ToString("N") + ".json");
+            File.WriteAllText(path, JsonSerializer.Serialize(_events, new JsonSerializerOptions { WriteIndented = true }));
+            TestContext.AddTestAttachment(path, "Real editor pointer/focus routes, with no corrective refocus.");
+        }
+        public void Dispose()
+        {
+            foreach (Control control in _controls)
+            {
+                control.RemoveHandler(Control.PointerPressedEvent, Observe); control.RemoveHandler(Control.PointerReleasedEvent, Observe);
+                control.RemoveHandler(InputElement.GotFocusEvent, Observe); control.RemoveHandler(InputElement.LostFocusEvent, Observe);
+                control.RemoveHandler(InputElement.KeyDownEvent, Observe);
+                if (control is MenuItem item) { item.Click -= MenuClick; }
+            }
+        }
+    }
     private static async Task TypeBranchExpression(MainWindow main, ComboBox combo, string expression)
     {
         string typed = ""; bool? spaceHandled = null;
@@ -476,6 +575,7 @@ public class BranchHistoryFilterTests
                 main.KeyTextInput(character.ToString()); main.KeyReleaseQwerty(key, modifiers);
                 typed += character; await Layout(main);
                 Assert.That(combo.Text, Is.EqualTo(typed), "Every real key/TextInput pair must preserve the exact expression prefix.");
+                Assert.That(Editor(combo).Text, Is.EqualTo(typed), "The real editor and combo draft must remain synchronized after every native TextInput.");
                 Assert.That(Editor(combo).IsFocused, Is.True);
                 Assert.That(Editor(combo).SelectionStart, Is.EqualTo(typed.Length));
                 Assert.That(Editor(combo).SelectionEnd, Is.EqualTo(typed.Length));

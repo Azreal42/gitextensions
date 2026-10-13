@@ -94,7 +94,7 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
         {
             _editor.MinHeight = 0; _editor.Height = double.NaN; _editor.Padding = new Thickness(2, 0);
             _editor.PointerReleased += EditorClicked;
-            _editor.Text = Text ?? "";
+            _editor.SetCurrentValue(TextBox.TextProperty, Text ?? "");
         }
         ConfigurePopup();
     }
@@ -160,7 +160,7 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
             Text = Items[index] as string;
             if (_editor is not null)
             {
-                _editor.Text = Text ?? ""; _editor.Focus();
+                _editor.SetCurrentValue(TextBox.TextProperty, Text ?? ""); _editor.Focus();
                 _editor.SelectionStart = _editor.SelectionEnd = Text?.Length ?? 0;
             }
         }
@@ -170,7 +170,11 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
 
     private void EditorClicked(object? sender, Avalonia.Input.PointerReleasedEventArgs args)
     {
-        if (args.InitialPressMouseButton == Avalonia.Input.MouseButton.Left && !IsDropDownOpen) { IsDropDownOpen = true; }
+        if (args.InitialPressMouseButton != Avalonia.Input.MouseButton.Left) { return; }
+        if (!IsDropDownOpen) { IsDropDownOpen = true; }
+        // TextBox has already placed its caret. An embedded editor's release
+        // must not activate the enclosing overflow MenuItem as a menu command.
+        args.Handled = true;
     }
 
     private void OutsidePointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs args)
@@ -205,7 +209,7 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
             SelectedIndex = -1; Text = text;
             if (_editor is not null)
             {
-                _editor.Text = text ?? "";
+                _editor.SetCurrentValue(TextBox.TextProperty, text ?? "");
                 _editor.SelectionStart = same ? Math.Min(start, text?.Length ?? 0) : text?.Length ?? 0;
                 _editor.SelectionEnd = same ? Math.Min(end, text?.Length ?? 0) : text?.Length ?? 0;
             }
@@ -255,7 +259,7 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
         {
             ItemsSource = items; SelectedIndex = -1; Text = text;
             if (_editor is not null)
-            { _editor.Text = text ?? ""; _editor.SelectionStart = start; _editor.SelectionEnd = end; }
+            { _editor.SetCurrentValue(TextBox.TextProperty, text ?? ""); _editor.SelectionStart = start; _editor.SelectionEnd = end; }
         }
         finally { _setting = false; }
     }

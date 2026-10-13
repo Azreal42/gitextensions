@@ -233,6 +233,13 @@ public sealed partial class MainWindow
         _branchFilterOverflow = new BranchHistoryFilterComboBox();
         ConfigureBranchFilter(_branchFilterOverflow, "BranchHistoryFilterOverflow");
         MenuItem field = new() { Header = ToolbarField(T("Branches:"), _branchFilterOverflow), StaysOpenOnClick = true };
+        field.AddHandler(MenuItem.PointerEnteredItemEvent, (_, args) =>
+        {
+            // Mapping the suggestions can re-enter the underlying menu on X11.
+            // Its hover selection must not take focus from the embedded editor
+            // while the pointer is still within that editable combo.
+            if (_branchFilterOverflow.IsPointerOver && _branchFilterOverflow.IsKeyboardFocusWithin) { args.Handled = true; }
+        });
         _actionMenus.Add(field); return field;
     }
 
