@@ -1,6 +1,6 @@
 # 0049 — Récupération des objets perdus
 
-Statut : code vérifié localement ; paquet et audit natif encore requis.
+Statut : code et candidat Debian `2d36958fd` vérifiés ; audit natif requis avant livraison.
 
 ## Intention
 
