@@ -309,7 +309,7 @@ public sealed partial class MainWindow
                 new MenuItem { Header = T("Commit info position"), ItemsSource = Enum.GetValues<CommitInfoPosition>().Select(position =>
                     MenuAction(CommitInfoLayoutDescription(position).Label, () => { ApplyCommitInfoLayout(position, persist: true); return Task.CompletedTask; }, CommitInfoLayoutDescription(position).Icon)).ToArray() },
                 MenuAction("Theme", ChangeThemeAsync), SaveViewSettingsMenu()),
-            MenuGroup("Commands", MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Fetch", QuickFetchAsync, "PullFetch.png"), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
+            MenuGroup("Commands", MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Fetch", QuickFetchAsync, "PullFetch.png"), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), BuildReflogMenu(), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
             MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Concat(LifecycleSettingsPlugins()).Select(PluginMenuItem).ToArray()),
             MenuGroup("Tools", MenuAction("Settings…", () => ShowWorkflowAsync("Configuration")), MenuAction("Terminal", OpenTerminalAsync), MenuAction("Theme", ChangeThemeAsync), MenuAction("Show left panel", ToggleNavigationAsync)),
@@ -318,6 +318,14 @@ public sealed partial class MainWindow
     };
 
     private MenuItem MenuGroup(string header, params MenuItem[] items) => new() { Header = T(header), ItemsSource = items };
+    private MenuItem BuildReflogMenu()
+    {
+        MenuItem item = MenuAction("Show reflog…", ReflogAsync, "Book.png");
+        item.Name = "BrowseShowReflog";
+        if (item.Icon is Image icon) { icon.Tag = "Book.png"; }
+        item.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "toolStripMenuItemReflog", "Text", "Show reflo&g...") };
+        return item;
+    }
     private MenuItem SaveViewSettingsMenu()
     {
         MenuItem item = MenuAction("Save current view settings as default", SaveCurrentViewSettingsAsync);

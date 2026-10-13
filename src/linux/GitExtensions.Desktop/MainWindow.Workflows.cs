@@ -504,7 +504,8 @@ public sealed partial class MainWindow
     {
         StackPanel tools = new() { Spacing = 10, Margin = new Thickness(16) };
         tools.Children.Add(new TextBlock { Text = "History and repository maintenance", FontSize = 20 });
-        tools.Children.Add(Row(Button("Reflog", () => ShowCommandAsync("Reflog", "reflog", "--date=iso")), Button("Verify objects", VerifyObjectsAsync), Button("Repository statistics", StatisticsAsync)));
+        Button reflog = Button("Reflog", ReflogAsync); reflog.Name = "RepositoryShowReflog";
+        tools.Children.Add(Row(reflog, Button("Verify objects", VerifyObjectsAsync), Button("Repository statistics", StatisticsAsync)));
         tools.Children.Add(Row(Button("Export archive…", ExportArchiveAsync), Button("Create patches…", FormatPatchAsync), Button("Apply patch…", ApplyPatchAsync), Button("Notes…", NotesAsync)));
         tools.Children.Add(Row(Button("Bisect…", BisectAsync), Button("Sparse checkout…", SparseCheckoutAsync), Button("Garbage collection…", GarbageCollectAsync)));
         tools.Children.Add(new TextBlock { Text = "Output", FontSize = 16 });
@@ -515,6 +516,13 @@ public sealed partial class MainWindow
     }
 
     private TextBox _repositoryOutput = ReadOnlyText();
+    private async Task ReflogAsync()
+    {
+        if (_repository is null || _busy) { return; }
+        GitRepository repository = _repository;
+        await ShowRepositoryDialogAsync(new ReflogDialog(repository, autoNormalize: _preferences.AutoNormaliseBranchName,
+            replacement: _preferences.AutoNormaliseSymbol, afterSubmoduleUpdate: (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)));
+    }
     private Task ShowCommandAsync(string label, params string[] arguments) => RunAsync(label, async r =>
     {
         GitResult result = await r.RunAsync(arguments, Token);

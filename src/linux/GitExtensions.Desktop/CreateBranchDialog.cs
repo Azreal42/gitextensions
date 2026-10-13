@@ -17,20 +17,26 @@ public sealed class CreateBranchDialog : RepositoryDialog
     private readonly Button _create;
     private readonly bool _autoNormalize;
     private readonly string _replacement;
+    private readonly bool _userAbleToChangeRevision, _couldBeOrphan;
+    private readonly string _initialRevision;
     private bool _unborn;
     private bool _bare;
     public string? CreatedBranch { get; private set; }
 
-    public CreateBranchDialog(GitRepository repository, string revision = "HEAD", string? name = null, bool autoNormalize = true, string replacement = "_") : base(repository, "Create branch")
+    public CreateBranchDialog(GitRepository repository, string revision = "HEAD", string? name = null, bool autoNormalize = true, string replacement = "_",
+        bool checkoutAfterCreation = true, bool userAbleToChangeRevision = true, bool couldBeOrphan = true) : base(repository, "Create branch")
     {
         _autoNormalize = autoNormalize;
         _replacement = replacement;
+        _initialRevision = revision; _userAbleToChangeRevision = userAbleToChangeRevision; _couldBeOrphan = couldBeOrphan;
         if (autoNormalize) { GitBranchNaming.Normalize("", replacement); }
         Width = 600;
         MinWidth = 540;
         SizeToContent = SizeToContent.Height;
         _name.Text = name;
         _revision.Text = revision;
+        _revision.IsReadOnly = !userAbleToChangeRevision;
+        _checkout.IsChecked = checkoutAfterCreation;
         _checkout.Content = T("Checkout after create");
         _orphan.Content = T("Create orphan");
         _clear.Content = T("Clear working directory and index");
@@ -52,7 +58,7 @@ public sealed class CreateBranchDialog : RepositoryDialog
         } };
         Root.Children.Add(body);
         Track(_name, _revision, _checkout, _orphan, _clear);
-        _orphan.IsCheckedChanged += (_, _) => { if (_orphan.IsChecked == true) { _checkout.IsChecked = true; } else { _clear.IsChecked = false; } UpdateActions(); };
+        _orphan.IsCheckedChanged += (_, _) => { if (_couldBeOrphan && _orphan.IsChecked == true) { _checkout.IsChecked = true; } else { _clear.IsChecked = false; } UpdateActions(); };
         _name.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { UpdateActions(); } };
         _name.LostFocus += (_, _) => NormalizeName();
         UpdateActions();
@@ -64,12 +70,13 @@ public sealed class CreateBranchDialog : RepositoryDialog
         _bare = (await Repository.GetInfoAsync(token)).IsBare;
         _unborn = (await Repository.GetStatusAsync(token)).IsUnborn;
         if (_bare) { _checkout.IsChecked = false; _orphan.IsChecked = false; }
-        else if (_unborn) { _orphan.IsChecked = true; }
-        _summary.Text = _unborn ? T("Creating orphan branch (repository has no commits)") : await ReferenceDialogControls.SummaryAsync(Repository, _revision.Text ?? "HEAD", token);
+        else if (_unborn && _couldBeOrphan) { _orphan.IsChecked = true; }
+        _summary.Text = _unborn && _couldBeOrphan ? T("Creating orphan branch (repository has no commits)") : await ReferenceDialogControls.SummaryAsync(Repository, ReadOptions().Revision, token);
         Status.Text = T("Enter branch name.");
     });
 
-    public GitCreateBranchOptions ReadOptions() => new((_name.Text ?? "").Trim(), _revision.Text ?? "HEAD", _checkout.IsChecked == true, _orphan.IsChecked == true, _clear.IsChecked == true);
+    public GitCreateBranchOptions ReadOptions() => new((_name.Text ?? "").Trim(), _userAbleToChangeRevision ? _revision.Text ?? "HEAD" : _initialRevision,
+        _checkout.IsChecked == true, _couldBeOrphan && _orphan.IsChecked == true, _couldBeOrphan && _clear.IsChecked == true);
 
     private void NormalizeName()
     {
@@ -80,6 +87,7 @@ public sealed class CreateBranchDialog : RepositoryDialog
 
     private async Task ChooseAsync()
     {
+        if (!_userAbleToChangeRevision || IsBusy) { return; }
         GitCommit? selected = await ExportRevisionPicker.ShowAsync(this, Repository);
         if (selected is null) { return; }
         _revision.Text = selected.Hash;
@@ -104,9 +112,9 @@ public sealed class CreateBranchDialog : RepositoryDialog
     protected override void UpdateActions()
     {
         _create.IsEnabled = !IsBusy && !string.IsNullOrWhiteSpace(_name.Text) && !(_bare && _unborn);
-        _revision.IsEnabled = _choose.IsEnabled = !IsBusy && !_unborn;
-        _orphan.IsEnabled = !IsBusy && !_bare && !_unborn;
-        _checkout.IsEnabled = !IsBusy && !_bare && _orphan.IsChecked != true;
-        _clear.IsEnabled = !IsBusy && !_bare && _orphan.IsChecked == true;
+        _revision.IsEnabled = _choose.IsEnabled = !IsBusy && !_unborn && _userAbleToChangeRevision;
+        _orphan.IsEnabled = !IsBusy && !_bare && !_unborn && _couldBeOrphan;
+        _checkout.IsEnabled = !IsBusy && !_bare && (!_couldBeOrphan || _orphan.IsChecked != true);
+        _clear.IsEnabled = !IsBusy && !_bare && _orphan.IsChecked == true && _couldBeOrphan;
     }
 }

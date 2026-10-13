@@ -5,10 +5,11 @@ namespace GitExtensions.Linux;
 
 public sealed partial class GitRepository
 {
-    private async Task<IReadOnlyList<GitReflogEntry>> ReadReflogEntriesAsync(int count, string reference, CancellationToken token)
+    private async Task<IReadOnlyList<GitReflogEntry>> ReadReflogEntriesAsync(int? count, string reference, CancellationToken token)
     {
-        string[] arguments = ["reflog", "show", "--encoding=UTF-8", "-z", "--format=%H%x00%gd%x00%gs%x00%cI%x00%e%x00%B",
-            "--max-count=" + count.ToString(CultureInfo.InvariantCulture), ValidateValue(reference), "--"];
+        List<string> arguments = ["reflog", "show", "--encoding=UTF-8", "-z", "--format=%H%x00%gd%x00%gs%x00%cI%x00%e%x00%B"];
+        if (count is int limit) { arguments.Add("--max-count=" + limit.ToString(CultureInfo.InvariantCulture)); }
+        arguments.AddRange([ValidateValue(reference), "--"]);
         GitBinaryResult result = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], token).ConfigureAwait(false);
         if (!result.Success) { throw new GitCommandException(arguments, new(result.ExitCode, Encoding.UTF8.GetString(result.StandardOutput), result.StandardError)); }
         List<ReadOnlyMemory<byte>> fields = [];

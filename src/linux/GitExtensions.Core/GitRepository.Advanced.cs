@@ -62,8 +62,12 @@ public sealed partial class GitRepository
     }
 
     public async Task<IReadOnlyList<GitReflogEntry>> GetReflogAsync(int count = 100, string reference = "HEAD", CancellationToken cancellationToken = default)
+        => await GetReflogAsync((int?)count, reference, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>Reads the selected reflog; a null count returns all native entries.</summary>
+    public async Task<IReadOnlyList<GitReflogEntry>> GetReflogAsync(int? count, string reference = "HEAD", CancellationToken cancellationToken = default)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        if (count is int limit) { ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit, nameof(count)); }
         if (reference == "HEAD" && !await HasHeadAsync(cancellationToken).ConfigureAwait(false))
         {
             return [];
