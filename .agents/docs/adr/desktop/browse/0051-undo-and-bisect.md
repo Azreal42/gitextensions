@@ -1,6 +1,6 @@
 # 0051 — Undo et Bisect depuis Browse
 
-Statut : code et candidat Debian `05ee73cff` vérifiés ; progression `e94c5d0cf` vérifiée localement, paquet et audit natif ouverts.
+Statut : code et candidats Debian `05ee73cff` / `e94c5d0cf` vérifiés ; audit natif Undo/Bisect ouvert.
 
 ## Intention
 
@@ -12,6 +12,6 @@ Undo conserve la confirmation Warning/Yes et sa suppression mémorisable, y comp
 
 Bisect démarre sans bornes avant de proposer la plage : première sélection good, dernière bad, sans tri chronologique. Refuser la proposition conserve la session démarrée. Accepter exécute Good puis Bad, seulement si Good réussit ; classement courant et Stop referment la fenêtre historique.
 
-Conserver les effets Git partiels après erreur/annulation ; ne pas simuler de rollback. Les erreurs et conclusions natives restent lisibles dans des dialogues owned avant fermeture. Chaque phase rend sa sortie pendant l’exécution. Start/Good/Bad de la plage respectent CloseProcessDialog ; classement courant et Stop gardent leur acquittement historique. Annuler attend la fin des processus possédés sans effacer les effets Git déjà produits. Le lot `e94c5d0cf` est vérifié localement ; la parité native reste ouverte. La reprise des verrous après interruption et les autres fonctions du FormProcess historique restent ouvertes.
+Conserver les effets Git partiels après erreur/annulation ; ne pas simuler de rollback. Les erreurs et conclusions natives restent lisibles dans des dialogues owned avant fermeture. Chaque phase rend sa sortie pendant l’exécution. Start/Good/Bad de la plage respectent CloseProcessDialog ; classement courant et Stop gardent leur acquittement historique. Annuler attend la fin des processus possédés sans effacer les effets Git déjà produits. Le code et le candidat Debian `e94c5d0cf` sont vérifiés ; la parité native reste ouverte. L’arrêt gracieux historique (signal d’interruption, attente de 500 ms puis arrêt forcé), la reprise des verrous après interruption et les autres fonctions du FormProcess restent ouverts. Un verrou étranger ou sans preuve de propriété doit être conservé.
 
 Repères : `MainWindow.Browser/Workflows`, `UndoLastCommitConfirmationDialog`, `BrowseCommandPreferencesStore`, `BisectDialog`, `GitProcessDialog`, `ProcessDialogPreferencesStore`, `GitRepository.Advanced/Bisect.Process`, `GitRunner`. Référence : `FormBrowse`, `FormBisect`, `MessageBoxes.ConfirmSuppressible`, `FormProcess`. Preuves et validations restantes dans [TODO](../../../todo.md).
