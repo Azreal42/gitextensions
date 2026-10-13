@@ -8,6 +8,13 @@ public sealed partial class MainWindow
         await ShowRepositoryDialogAsync(new MaintenanceDialog(_repository, initialView));
     }
 
-    private Task VerifyObjectsAsync() => ShowMaintenanceDialogAsync(MaintenanceView.Verify);
+    private async Task RecoverLostObjectsAsync()
+    {
+        if (_repository is null || _busy) { return; }
+        await ShowRepositoryDialogAsync(new RecoverLostObjectsDialog(_repository,
+            autoNormalize: _preferences.AutoNormaliseBranchName, replacement: _preferences.AutoNormaliseSymbol));
+    }
+
+    private Task VerifyObjectsAsync() => RecoverLostObjectsAsync();
     private Task StatisticsAsync() => ShowMaintenanceDialogAsync(MaintenanceView.Statistics);
 }

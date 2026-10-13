@@ -300,7 +300,7 @@ public sealed partial class MainWindow
         ItemsSource = new[]
         {
             MenuGroup("Start", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), _favoritesMenu, _recentMenu, MenuAction("Dashboard", CloseRepositoryAsync), MenuAction("Refresh dashboard", RefreshDashboardAsync), MenuAction("Recent repositories settings", RecentRepositorySettingsAsync), MenuAction("Close", CloseRepositoryAsync)),
-            MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
+            MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), BuildGitMaintenanceMenu(), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
             MenuGroup("Navigate", MenuAction("Parent revision", () => { SelectRelativeCommit(parent: true); return Task.CompletedTask; }),
                 MenuAction("Child revision", () => { SelectRelativeCommit(parent: false); return Task.CompletedTask; }),
                 MenuAction("All branches", () => SetHistoryScopeAsync(true)), MenuAction("Current branch", () => SetHistoryScopeAsync(false)),
@@ -318,6 +318,15 @@ public sealed partial class MainWindow
     };
 
     private MenuItem MenuGroup(string header, params MenuItem[] items) => new() { Header = T(header), ItemsSource = items };
+    private MenuItem BuildGitMaintenanceMenu()
+    {
+        MenuItem recover = MenuAction("Recover lost objects…", RecoverLostObjectsAsync, "RecoverLostObjects.png"); recover.Name = "BrowseRecoverLostObjects";
+        recover.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "recoverLostObjectsToolStripMenuItem", "Text", "&Recover lost objects...") };
+        if (recover.Icon is Image icon) { icon.Tag = "RecoverLostObjects.png"; }
+        using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/Maintenance.png"));
+        return new MenuItem { Name = "BrowseGitMaintenance", Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "gitMaintenanceToolStripMenuItem", "Text", "&Git maintenance") },
+            Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16, Tag = "Maintenance.png" }, ItemsSource = new[] { recover } };
+    }
     private MenuItem BuildReflogMenu()
     {
         MenuItem item = MenuAction("Show reflog…", ReflogAsync, "Book.png");

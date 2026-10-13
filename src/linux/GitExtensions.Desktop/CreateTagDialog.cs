@@ -56,9 +56,11 @@ public sealed class CreateTagDialog : RepositoryDialog
     public override Task InitializeAsync() => RunAsync("Create tag", async token =>
     {
         _hasCommits = !(await Repository.GetStatusAsync(token)).IsUnborn;
+        if (!_hasCommits && ReadOptions().Revision != "HEAD")
+        { await Repository.ResolveRevisionAsync(ReadOptions().Revision, token); _hasCommits = true; }
         _remote.ItemsSource = (await Repository.GetRemotesAsync(token)).Select(remote => remote.Name).ToArray();
         _remote.SelectedIndex = _remote.Items.Count > 0 ? 0 : -1;
-        _summary.Text = _hasCommits ? await ReferenceDialogControls.SummaryAsync(Repository, _revision.Text ?? "HEAD", token) : T("This repository has no commits.");
+        _summary.Text = _hasCommits ? await ReferenceDialogControls.SummaryAsync(Repository, ReadOptions().Revision, token) : T("This repository has no commits.");
         Status.Text = T("Tag name");
     });
 
@@ -75,9 +77,11 @@ public sealed class CreateTagDialog : RepositoryDialog
 
     private async Task CreateAsync()
     {
+        if (IsBusy || !IsVisible) { return; }
         GitCreateTagOptions options = ReadOptions();
         if (options.Force && (await Repository.GetReferencesAsync()).Any(reference => reference.Name == "refs/tags/" + options.Name)
             && !await Dialogs.ConfirmAsync(this, T("Replace tag"), T("Replace the existing local tag?") + "\n" + options.Name)) { return; }
+        if (!IsVisible) { return; }
         await RunAsync("Create tag", async token =>
         {
             _summary.Text = await ReferenceDialogControls.SummaryAsync(Repository, options.Revision, token);
