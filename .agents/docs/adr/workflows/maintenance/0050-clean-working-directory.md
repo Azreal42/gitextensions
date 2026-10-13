@@ -1,6 +1,6 @@
 # 0050 — Nettoyer le répertoire de travail
 
-Statut : code et candidat Debian `f56313f26` vérifiés ; premier pilote CLI natif vérifié, audit complet requis avant livraison.
+Statut : code et candidat Debian `f56313f26` vérifiés ; S01 CLI clair accepté (six variantes), 1/32 familles/thèmes ; audit complet requis avant livraison.
 
 ## Intention
 
@@ -16,6 +16,6 @@ Le parent puis `submodule foreach --recursive` conservent l'ordre et les erreurs
 
 Les sélecteurs contrôlent les chemins physiques du worktree et les métadonnées Git. Les tests avec objets StorageProvider ne valent pas audit du vrai sélecteur natif.
 
-La commande historique `cleanup` ouvre seulement ce dialogue : deuxième argument littéral, dépôt ou parent de fichier puis cwd, sans MRU, filtre implicite ni preview/nettoyage automatique. Un refus d’accès ne doit pas choisir un autre dépôt. La fermeture du dialogue termine cette session autonome ; audit natif encore requis.
+La commande historique `cleanup` ouvre seulement ce dialogue : deuxième argument littéral, dépôt ou parent de fichier puis cwd, sans MRU, filtre implicite ni preview/nettoyage automatique. Un refus d’accès ne doit pas choisir un autre dépôt. La fermeture du dialogue termine cette session autonome ; les autres variantes CLI, le thème sombre, les sélecteurs et les opérations restent à auditer en natif.
 
 Repères : `CleanupRepositoryDialog`, `DesktopStartupArguments/Dispatcher`, `MainWindow.Cleanup/Browser`, `GitRepository.Clean*`, `CleanMode` original partagé. Preuves et validations restantes dans [TODO](../../../todo.md).
