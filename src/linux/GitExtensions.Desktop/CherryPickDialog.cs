@@ -29,6 +29,7 @@ public sealed class CherryPickDialog : RepositoryDialog
     private readonly Button _pick, _choose, _resolve, _continue, _skip, _abortOperation;
     private GitCherryPickRevision? _revision;
     private GitCherryPickSession? _session;
+    private bool _recoveryInvalid;
     private bool _closingAccepted;
     private bool IsClosingOrClosed => _closingAccepted || !IsVisible;
     public string? Revision => _revision?.Commit.Hash;
@@ -109,10 +110,30 @@ public sealed class CherryPickDialog : RepositoryDialog
         await RunAsync("Cherry pick commit", async token =>
         {
             if ((await Repository.GetInfoAsync(token)).IsBare) { throw new InvalidOperationException(T("Cherry-pick requires a working tree.")); }
+            if (await AttachRecoveryAsync(token)) { return; }
             if (_initialRevision is not null) { await LoadRevisionAsync(_initialRevision, token); }
             Status.Text = T("Choose revision");
         }, cancellationToken: _token);
         FocusOriginalControl();
+    }
+
+    private async Task<bool> AttachRecoveryAsync(CancellationToken token)
+    {
+        GitCherryPickRecovery recovery = await Repository.GetCherryPickRecoveryAsync(token);
+        _recoveryInvalid = recovery.State == GitCherryPickRecoveryState.Invalid;
+        if (_recoveryInvalid)
+        {
+            _recovery.IsVisible = true; Status.Text = recovery.Error;
+            return true;
+        }
+        if (recovery.Session is not { } session) { return false; }
+        _session = session;
+        _automatic.IsChecked = session.Options.AutoCommit; _reference.IsChecked = session.Options.AddCommitReference;
+        _recovery.IsVisible = true; _conflicts.ItemsSource = recovery.ConflictedPaths; _conflicts.SelectedIndex = recovery.ConflictedPaths.Count == 0 ? -1 : 0;
+        await LoadRevisionAsync(session.Options.Revision, token);
+        if (session.Options.MainlineParent is int parent) { _parents.SelectedIndex = parent - 1; }
+        Status.Text = session.IsRestoring ? T("Restoration was interrupted. Finish Abort or Skip before starting another cherry-pick.") : T("Resolve conflicts, then continue or abort the operation.");
+        return true;
     }
 
     protected override void OnClosing(WindowClosingEventArgs args)
@@ -126,6 +147,8 @@ public sealed class CherryPickDialog : RepositoryDialog
     private void FocusOriginalControl()
     {
         if (!IsVisible || IsBusy) { return; }
+        if (_session is { Completed: false, Aborted: false })
+        { if (_conflicts.ItemCount != 0) { _conflicts.Focus(); } else { _continue.Focus(); } return; }
         if (_parentPanel.IsVisible) { _parents.Focus(); } else { _automatic.Focus(); }
     }
 
@@ -167,7 +190,10 @@ public sealed class CherryPickDialog : RepositoryDialog
         GitCherryPickOptions options = ReadOptions();
         await RunAsync("Cherry pick", async token =>
         {
-            GitCherryPickResult result = await Repository.CherryPickAsync(options, token); _session = result.Session;
+            GitCherryPickResult result;
+            try { result = await Repository.CherryPickAsync(options, token); }
+            catch { await AttachRecoveryAsync(CancellationToken.None); throw; }
+            _session = result.Session;
             MarkRepositoryChanged(); Applied = result.Success;
             _conflicts.ItemsSource = result.ConflictedPaths; _conflicts.SelectedIndex = result.ConflictedPaths.Count > 0 ? 0 : -1;
             _recovery.IsVisible = !result.Success;
@@ -248,10 +274,10 @@ public sealed class CherryPickDialog : RepositoryDialog
     protected override void UpdateActions()
     {
         bool pending = _session is { Completed: false, Aborted: false };
-        _pick.IsEnabled = !IsBusy && _revision is not null && !pending && !Applied && !Skipped;
-        _choose.IsEnabled = _automatic.IsEnabled = _reference.IsEnabled = _parents.IsEnabled = !IsBusy && !pending;
-        _resolve.IsEnabled = !IsBusy && pending && _conflicts.SelectedItem is not null;
-        _continue.IsEnabled = !IsBusy && pending && _conflicts.ItemCount == 0;
+        _pick.IsEnabled = !IsBusy && _revision is not null && !pending && !_recoveryInvalid && !Applied && !Skipped;
+        _choose.IsEnabled = _automatic.IsEnabled = _reference.IsEnabled = _parents.IsEnabled = !IsBusy && !pending && !_recoveryInvalid;
+        _resolve.IsEnabled = !IsBusy && pending && _session?.IsRestoring != true && _conflicts.SelectedItem is not null;
+        _continue.IsEnabled = !IsBusy && pending && _session?.IsRestoring != true && _conflicts.ItemCount == 0;
         _skip.IsEnabled = _abortOperation.IsEnabled = !IsBusy && pending;
     }
     private sealed record CherryPickParent(int Number, GitCommit Commit);
@@ -264,6 +290,17 @@ public static class CherryPickSequence
         Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null)
     {
         ArgumentNullException.ThrowIfNull(revisions);
+        GitCherryPickRecovery recovery = await repository.GetCherryPickRecoveryAsync(cancellationToken);
+        if (recovery.State != GitCherryPickRecoveryState.Absent)
+        {
+            // Closing the original sequence never persists its remaining selection.
+            // Reopen only the interrupted pick, even if the caller selected other commits.
+            CherryPickDialog pending = new(repository, cancellationToken: cancellationToken, afterSubmoduleUpdateAsync: afterSubmoduleUpdateAsync) { RequestedThemeVariant = owner.ActualThemeVariant };
+            await pending.InitializeAsync();
+            using CancellationTokenRegistration closePending = cancellationToken.Register(() => Dispatcher.UIThread.Post(() => pending.Close(false)));
+            await pending.ShowDialog<bool>(owner);
+            return pending.HasRepositoryChanges;
+        }
         string[] selected = revisions.ToArray();
         IReadOnlyList<GitCherryPickRevision> prepared = selected.Length == 0 ? [] : await repository.PrepareCherryPickSelectionAsync(selected, cancellationToken);
         IEnumerable<string?> commits = prepared.Count == 0 ? new string?[] { null } : prepared.Select(revision => (string?)revision.Commit.Hash);

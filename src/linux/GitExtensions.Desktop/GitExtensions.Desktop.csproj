@@ -17,6 +17,7 @@
     <PackageReference Include="Avalonia.AvaloniaEdit" />
     <PackageReference Include="SmartFormat" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../app/GitUI/Resources/Help/*.png" Link="Assets/Help/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/difftastic.ico" Link="Assets/Icons/difftastic.ico" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Backgrounds/DashboardBackground*.png" Link="Assets/Backgrounds/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../../setup/assets/Logo/GitExtensionsLogoWide.png" Link="Assets/GitExtensionsLogoWide.png" />

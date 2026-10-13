@@ -62,7 +62,9 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 
 ## Prochains écarts concrets
 
-- Cherry-pick : reprise après fermeture du dialogue et déplacements de dossier hors couverture de récupération ; le refus conserve le dépôt interrompu.
+- Lot local en validation, non livré : Merge et resolver index commun, cinq modes Reset/Reset autre branche, fenêtres Revert, Commit & Push partagé, reprise durable Cherry-pick. 270/270 Core et 35/35 Plugins passent ; dernier run Desktop 609/611 avant correction du fond Reset, puis 12/12 Reset/Revert ciblés. Refaire le run complet du candidat avant livraison. ADR 0043–0046. Le paquet courant reste a7bdda7d6.
+- Cherry-pick : journal par worktree et déplacements prévisibles couverts au Core ; reprendre les cas UI et le redémarrage natif avant livraison. Les destinations imprévues restent refusées avant rollback.
+- Merge/Rebase/Reset/Revert : Rebase standard reste un prompt ; compléter la fenêtre et ses options, scripts, sortie continue, réglages distribués et resolver avancé (diffs/renommages/sous-modules).
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
 - Pull : sortie Git continue, scripts Before/After, source URL et destination locale Fetch.
 - Historique/blame : navigateur des fichiers du commit, filtres de grille, difftools, dossiers/sous-modules et audit natif étendu.

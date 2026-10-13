@@ -19,6 +19,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class CommitDialog : Window
 {
     private readonly GitRepository _repository;
+    private readonly Func<Window, CancellationToken, Task>? _afterSubmoduleUpdateAsync;
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly CancellationTokenSource _lifetime = new();
     private readonly List<Control> _interactive = [];
@@ -87,11 +88,14 @@ public sealed class CommitDialog : Window
     private string? _loadedTemplate;
     private GitCommit? _headCommit;
     private bool _mergePending;
+    private bool _forcePushAfterSoftReset;
 
-    public CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore = null)
+    public CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore = null,
+        Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null)
     {
         ArgumentNullException.ThrowIfNull(repository);
         _repository = repository;
+        _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferencesStore = preferencesStore ?? new CommitPreferencesStore();
         _preferences = _preferencesStore.Load();
         Title = C("$this", "Commit");
@@ -259,6 +263,7 @@ public sealed class CommitDialog : Window
     }
 
     public bool HasCommitted { get; private set; }
+    public bool PushCompleted { get; private set; }
     public bool HasRepositoryChanges { get; private set; }
     public string? LastError { get; private set; }
     public event EventHandler? RepositoryChanged;
@@ -685,6 +690,7 @@ public sealed class CommitDialog : Window
                     ResetAuthor: _amend.IsChecked == true && _resetAuthor.IsChecked == true,
                     Author: EmptyToNull(_author.Text),
                     NoVerify: _noVerify.IsChecked);
+                bool forceWithLease = (_amend.IsChecked == true || _forcePushAfterSoftReset) && _preferences.CommitAndPushForcedWhenAmend;
                 GitResult result = await _repository.CommitAsync(options, OperationToken);
                 HasCommitted = true;
                 HasRepositoryChanges = true;
@@ -692,17 +698,46 @@ public sealed class CommitDialog : Window
                 _output.IsVisible = false;
                 _message.Text = "";
                 _amend.IsChecked = false;
+                _forcePushAfterSoftReset = false;
                 _noVerify.IsChecked = false;
                 _kind.SelectedIndex = 0;
                 _drafts?.Reset();
                 _draftReset = true;
                 await RefreshDataAsync();
                 RepositoryChanged?.Invoke(this, EventArgs.Empty);
-                if (push) { await _repository.PushAsync(cancellationToken: OperationToken); }
+                PushCompleted = !push;
+                if (push) { await PushCommittedChangesAsync(forceWithLease); }
                 if (_closeAfterCommit.IsChecked || (_closeWhenClean.IsChecked && _status!.Changes.Count == 0)) { _closeWhenIdle = true; }
             });
         }
         finally { _commitRequested = false; UpdateAvailability(); }
+    }
+
+    private async Task PushCommittedChangesAsync(bool forceWithLease)
+    {
+        CancellationToken token = OperationToken;
+        PushDialog dialog = new(_repository, _afterSubmoduleUpdateAsync) { RequestedThemeVariant = ActualThemeVariant };
+        using CancellationTokenRegistration registration = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
+        try
+        {
+            await dialog.PushAndShowWhenFailedAsync(this, token, forceWithLease);
+            token.ThrowIfCancellationRequested();
+            PushCompleted = dialog.Succeeded;
+            if (!PushCompleted && dialog.LastError is string error)
+            {
+                LastError = error; _output.Text = error; _output.IsVisible = true; _state.Text = T("Push") + ": " + error.Trim();
+            }
+            else if (!PushCompleted) { _state.Text = T("Operation cancelled"); }
+        }
+        finally
+        {
+            dialog.Close();
+            if (!_lifetime.IsCancellationRequested)
+            {
+                await RefreshDataAsync();
+                RepositoryChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
     }
 
     private Task LoadTemplateAsync() => RunAsync(T("Commit templates"), async () =>
@@ -768,6 +803,7 @@ public sealed class CommitDialog : Window
     {
         if (!await Dialogs.ConfirmAsync(this, C("ResetSoft", "Reset soft"), C("_amendResetSoft", "You are about to rewrite history by Soft Reset to the previous commit.\nOnly use Amend / Reset if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
         await MutateAsync(C("ResetSoft", "Reset soft"), () => _repository.ResetAsync("HEAD^", GitResetMode.Soft, OperationToken));
+        if (LastError is null) { _forcePushAfterSoftReset = true; UpdateAvailability(); }
     }
     private Task StashStagedAsync() => MutateAsync(C("StashStaged", "Stash staged changes"), () => _repository.RunAsync(["stash", "push", "--staged"], OperationToken));
     private async Task ResetChangesAsync(bool all)
@@ -839,7 +875,7 @@ public sealed class CommitDialog : Window
         _signingKey.IsVisible = _sign.SelectedIndex == 3;
         if (_signingKeyMenu is not null) { _signingKeyMenu.IsVisible = _sign.SelectedIndex == 3; }
         _message.IsEnabled = _kind.SelectedIndex != 1;
-        _amend.IsEnabled = _kind.SelectedIndex == 0 && _status is not null && !_status.IsUnborn;
+        _amend.IsEnabled = !_forcePushAfterSoftReset && _kind.SelectedIndex == 0 && _status is not null && !_status.IsUnborn;
         if (!_amend.IsEnabled && _amend.IsChecked == true) { _amend.IsChecked = false; }
         _resetAuthor.IsEnabled = _amend.IsChecked == true && string.IsNullOrWhiteSpace(_author.Text);
         if (!_resetAuthor.IsEnabled) { _resetAuthor.IsChecked = false; }

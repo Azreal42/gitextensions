@@ -140,9 +140,10 @@ public sealed class PushDialog : RepositoryDialog
 
     public override Task InitializeAsync() => InitializeAsync(default);
 
-    internal async Task PushAndShowWhenFailedAsync(Window owner, CancellationToken cancellationToken = default)
+    internal async Task PushAndShowWhenFailedAsync(Window owner, CancellationToken cancellationToken = default, bool forceWithLease = false)
     {
         await InitializeAsync(cancellationToken);
+        if (forceWithLease) { _lease.IsChecked = true; }
         if (IsReady) { await ExecuteAsync(owner, cancellationToken); }
         cancellationToken.ThrowIfCancellationRequested();
         if (!Succeeded) { await ShowDialog(owner); }

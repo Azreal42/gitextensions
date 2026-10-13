@@ -486,7 +486,7 @@ public sealed partial class GitRepository
     }
 
     public Task<GitResult> RevertAsync(string revision, CancellationToken cancellationToken = default)
-        => MutateAsync(["revert", "--no-edit", "--", ValidateValue(revision)], cancellationToken);
+        => RevertCommittedAsync(revision, cancellationToken);
 
     public async Task<IReadOnlyList<KeyValuePair<string, string>>> GetConfigAsync(string? pattern = null, GitConfigScope? scope = null, CancellationToken cancellationToken = default)
     {

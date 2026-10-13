@@ -22,6 +22,11 @@ if (args.FirstOrDefault() == "--fake-slow-askpass")
     return 1;
 }
 
+if (args.Length == 2 && args[0] == "--cherry-pick-recovery-abort")
+{
+    return await CherryPickRecoveryScenarios.RunRecoveryWorkerAsync(args[1]);
+}
+
 if (GitRebaseEditor.TryHandle(args, out int rebaseEditorExitCode))
 {
     return rebaseEditorExitCode;
@@ -129,6 +134,9 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. StashScenarios.All,
     .. SubmoduleRemovalScenarios.All,
     .. CherryPickScenarios.All,
+    .. MergeConflictScenarios.All,
+    .. ResetRevertScenarios.All,
+    .. CherryPickRecoveryScenarios.All,
     .. PushScenarios.All,
     .. GrepScenarios.All,
     ("Linux cancellation treats zombie and dead procfs tasks as terminated", LinuxProcessState.VerifyStatesAsync),

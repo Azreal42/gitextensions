@@ -124,17 +124,29 @@ public sealed partial class MainWindow
 
     private async Task ResolveConflictAsync()
     {
-        string[] paths = SelectedWorkingChanges.Where(c => c.IsConflict).Select(c => c.Path).ToArray() ?? [];
-        if (paths.Length == 0) { _state.Text = "Select conflicted files first"; return; }
-        string[]? values = await Dialogs.PromptAsync(this, "Resolve conflicts", ("Keep version: ours or theirs (leave blank to stage your manual edits)", ""));
-        if (values is null) { return; }
-        if (values[0] is not ("" or "ours" or "theirs")) { throw new ArgumentException("Choose ours, theirs, or leave blank."); }
-        if (values[0] != "" && !await Dialogs.ConfirmAsync(this, "Replace conflicted files", $"Replace {paths.Length} files with the {values[0]} version?")) { return; }
-        await RunAsync("Resolve conflicts", async r =>
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        await ShowRepositoryDialogAsync(new ResolveConflictsDialog(_repository));
+    }
+
+    private async Task ResolveWorkflowConflictsAsync(Window owner, GitRepository repository, bool offerCommit, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (!owner.IsVisible) { return; }
+        if ((await repository.GetConflictsAsync(token)).Count > 0)
         {
-            if (values[0] != "") { await ExecuteAsync(r, ["checkout", "--" + values[0], "--", .. paths]); }
-            await r.StageAsync(paths, Token);
-        });
+            Task<bool> confirmation = Dialogs.ConfirmAsync(owner, T("Resolve conflicts"), T("There are unresolved conflicts. Resolve them now?"));
+            using CancellationTokenRegistration cancelConfirmation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            { foreach (Window child in owner.OwnedWindows.ToArray()) { child.Close(); } }));
+            if (!await confirmation) { return; }
+            token.ThrowIfCancellationRequested();
+            if (!owner.IsVisible || !await ResolveConflictsDialog.ShowAsync(owner, repository, token)) { return; }
+        }
+        token.ThrowIfCancellationRequested();
+        if (!offerCommit || !owner.IsVisible || !(await repository.GetStatusAsync(token)).Changes.Any(change => change.IsStaged)) { return; }
+        CommitDialog commit = new(repository, afterSubmoduleUpdateAsync: (window, ct) => AfterSubmoduleUpdateAsync(repository, window, ct)) { RequestedThemeVariant = owner.ActualThemeVariant };
+        using CancellationTokenRegistration cancelCommit = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(commit.Close));
+        try { await commit.ShowDialog(owner); token.ThrowIfCancellationRequested(); }
+        finally { commit.Close(); }
     }
 
     private async Task CreateBranchAsync()
@@ -208,9 +220,10 @@ public sealed partial class MainWindow
 
     private async Task MergeAsync()
     {
-        GitReference reference = SelectedReference();
-        if (!await Dialogs.ConfirmAsync(this, "Merge", $"Merge {reference.ShortName} into the current branch?")) { return; }
-        await RunAsync("Merge", r => r.MergeAsync(reference.Hash, cancellationToken: Token));
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        GitRepository repository = _repository;
+        await ShowRepositoryDialogAsync(new MergeBranchDialog(repository, (_references.SelectedItem as GitReference)?.Name,
+            ResolveWorkflowConflictsAsync, (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)));
     }
 
     private async Task RebaseAsync()
@@ -262,18 +275,28 @@ public sealed partial class MainWindow
 
     private async Task RevertAsync()
     {
-        GitCommit commit = SelectedCommit();
-        if (await Dialogs.ConfirmAsync(this, "Revert commit", $"Create a commit that undoes {commit.Subject}?")) { await RunAsync("Revert", r => r.RevertAsync(commit.Hash, Token)); }
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        string[] revisions = SelectedComparisonCommits().Reverse().Select(commit => commit.Hash).ToArray();
+        if (revisions.Length == 0) { _state.Text = T("Select a commit in History first."); return; }
+        GitRepository repository = _repository;
+        try { await RunAsync("Revert", async _ => await RevertSequence.ShowAsync(WorkflowOwner, repository, revisions, Token, ResolveWorkflowConflictsAsync), refresh: false); }
+        finally { if (_repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); } }
     }
 
     private async Task ResetAsync()
     {
-        GitCommit commit = SelectedCommit();
-        string[]? values = await Dialogs.PromptAsync(this, "Reset branch", ("Mode: soft, mixed or hard", "mixed"));
-        if (values is null) { return; }
-        if (values[0] is not ("soft" or "mixed" or "hard")) { throw new ArgumentException("Reset mode must be soft, mixed or hard."); }
-        if (!await Dialogs.ConfirmAsync(this, "Reset branch", $"Move the current branch to {commit.Subject}?{(values[0] == "hard" ? " Staged and unstaged changes will be lost." : " The branch history will change.")}")) { return; }
-        await RunAsync("Reset", r => r.ResetAsync(commit.Hash, Enum.Parse<GitResetMode>(values[0], ignoreCase: true), Token));
+        if (_repository is null || _busy) { return; }
+        GitRepository repository = _repository;
+        await ShowRepositoryDialogAsync(new ResetCurrentBranchDialog(repository, SelectedCommit().Hash,
+            afterSubmoduleUpdate: (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)));
+    }
+
+    private async Task ResetAnotherBranchAsync()
+    {
+        if (_repository is null || _busy) { return; }
+        GitRepository repository = _repository;
+        await ShowRepositoryDialogAsync(new ResetAnotherBranchDialog(repository, SelectedCommit().Hash,
+            afterSubmoduleUpdate: (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)));
     }
 
     private async Task CompareAsync()

@@ -80,7 +80,7 @@ public sealed partial class MainWindow
             ItemsSource = new object[]
             {
                 MenuAction("Checkout revision", CheckoutCommitAsync), MenuAction("Cherry-pick", CherryPickAsync),
-                MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), BuildComparisonMenu(),
+                MenuAction("Revert commit", RevertAsync), MenuAction("Reset branch…", ResetAsync), MenuAction("Reset another branch…", ResetAnotherBranchAsync), BuildComparisonMenu(),
                 new Separator(), new MenuItem { Header = T("Settings persistence"), IsEnabled = false },
                 SaveViewSettingsMenu()
             }
@@ -383,7 +383,8 @@ public sealed partial class MainWindow
         {
             if (_repository is null || _busy) { return; }
             if (_repository.IsBare) { _state.Text = T("Open a worktree to commit changes in a bare repository."); return; }
-            CommitDialog commit = new(_repository) { RequestedThemeVariant = ActualThemeVariant };
+            GitRepository repository = _repository;
+            CommitDialog commit = new(repository, afterSubmoduleUpdateAsync: (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)) { RequestedThemeVariant = ActualThemeVariant };
             await RunAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
             await commit.ShowDialog(this);
             if (commit.HasRepositoryChanges) { await RefreshAsync(); }

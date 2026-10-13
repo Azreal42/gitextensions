@@ -83,6 +83,16 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Dropdown Pull centré sous la flèche | Ancrage explicite sur le bord gauche du segment principal ; mesurer le présentateur réel. |
 | Premier Copier X11 vide | Avalonia met en cache les atoms absents : initialiser les sept noms avant GUI/askpass, garder la connexion ; aucun owner/contenu fabriqué. |
 
+## Workflows — pièges validés
+
+| Piège | Cause / sortie |
+| --- | --- |
+| Merge -F - échoue malgré un message valide | Git merge lit le fichier nommé -, contrairement à commit. Utiliser un fichier privé encodé, nettoyé après Git. |
+| Mergetool relit un nom quoté ou un glob | Le helper Git consomme des lignes, pas du NUL ; comparer sa sortie au nom exact et propager GIT_LITERAL_PATHSPECS, refuser les noms incompatibles avant mutation. |
+| Blob staged encore présent après GC | resolve-undo (REUC) peut le retenir ; attester sa suppression native puis absence réelle avant de tester la restauration. |
+| Fixture de commit prétend CP1252 sur argv UTF-8 | Fournir les octets via stdin/fichier et contrôler le header/octet du commit source avant toute comparaison. |
+| Revert ne rejette pas le hook attendu | Reproduire les hooks réellement exécutés par Git : prepare-commit-msg peut échouer en 128, préserver le draft puis remonter stderr natif. |
+
 ## Build et validation — repères
 
 | Piège | Cause / sortie |
@@ -90,6 +100,9 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | SDK Snap inutilisable dans le sandbox | Utiliser le SDK officiel local `.dotnet` et une version complète dans global.json. |
 | Version Debian contient HOME | Expansion Bash de `~` ; citer le caractère et vérifier le paquet reproductible. |
 | `dotnet test` annonce succès sans scénarios Core/Plugins | Projets console IsTestProject=false : `dotnet run --no-build --no-restore` et compteurs des logs. Apphost et DOTNET_ROOT local requis pour helpers enfants. |
+| Assert.ThrowsAsync bloque le dispatcher Avalonia | Attendre réellement la tâche et capturer l’exception ; l’assertion NUnit synchrone ne laisse pas avancer le modal. |
+| Bouton visible mais clic central traverse au Panel | Un Background null local efface le style et son fond ; ClearValue rend aussi survol/pression au thème. Conserver un seul clic au centre dans le test. |
+| Compteur Click reste nul malgré fermeture | Button.ClickEvent route en Bubble ; écouter la route réelle, sans rejouer le geste. |
 | Tests Avalonia bloquent ou teardown masque l'exception | Attente async normale sur dispatcher, BindingPriority.Template pour TemplateBinding ; ne pas modifier l'isolation pour masquer le défaut. |
 | AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
 | Culture/Alt/HEAD du test ne correspondent pas à l'écran | Fixer culture avant construction, poser focus initial, sélectionner le vrai commit attendu ; réouverture conserve volontairement la sélection. |

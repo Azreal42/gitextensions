@@ -16,7 +16,7 @@ internal static class CherryPickScenarios
         ("cherry-pick no-commit conflict completes without creating a commit", NoCommitConflictAsync),
         ("cherry-pick abort and skip restore preexisting staged and unstaged data", RecoveryAsync),
         ("cherry-pick abort and skip restore renamed checkout and pre-staged rename targets", RenameRecoveryAsync),
-        ("cherry-pick recovery refuses uncovered directory relocation without any rollback", DirectoryCoverageAsync),
+        ("cherry-pick recovery restores the conservatively captured directory relocation", DirectoryCoverageAsync),
         ("cherry-pick recovery refuses external branch switches and child commits", ExternalHeadAsync),
         ("cherry-pick rejects symlink parent swaps and unexpected directories", PathSafetyAsync),
         ("cherry-pick respects concurrent locks and split-index recovery", IndexSafetyAsync),
@@ -162,12 +162,11 @@ internal static class CherryPickScenarios
             await f.Git("mv", "old-directory", "new-directory"); await f.Git("commit", "-m", "Move checkout directory");
             await f.Git("config", "merge.directoryRenames", "conflict");
             f.Write("prior.txt", "preexisting staged\n"); await f.Git("add", "prior.txt");
+            string before = await f.Snapshot();
             GitCherryPickResult pending = await f.Repository.CherryPickAsync(new GitCherryPickOptions(pick));
             Check(!pending.Success && pending.ConflictedPaths.Contains("new-directory/added.txt"), "Native location conflict must create the unexpected relocated target.");
-            string interrupted = await f.Snapshot();
-            InvalidOperationException error = await ExpectAsync<InvalidOperationException>(() => f.Repository.ResumeCherryPickAsync(pending.Session, action));
-            Check(error.Message.Contains("new-directory/added.txt", StringComparison.Ordinal) && error.Message.Contains("outside its recovery snapshot", StringComparison.Ordinal), "Recovery must explain the exact uncovered target.");
-            Check(!pending.Session.Aborted && !pending.Session.Completed && await f.Snapshot() == interrupted && !File.Exists(f.Metadata("index.lock")), "An uncovered directory relocation must fail before cleanup or rollback, preserving all refs/index/metadata/worktree bytes.");
+            GitCherryPickResult restored = await new GitRepository(f.Repository.Path).ResumeCherryPickAsync(pending.Session, action);
+            Check(restored.Success && pending.Session.Aborted && await f.Snapshot() == before && !File.Exists(f.Metadata("index.lock")), "Directory relocation recovery must restore exact refs/index/metadata/worktree bytes from its pre-mutation snapshot.");
         }
     }
     private static async Task PathSafetyAsync()

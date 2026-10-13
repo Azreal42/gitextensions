@@ -11,6 +11,7 @@ public sealed record CommitPreferences
     public bool SelectStagedOnMessageFocus { get; init; } = true;
     public bool ShowOnlyMyMessages { get; init; }
     public bool RememberAmendCommitState { get; init; } = true;
+    public bool CommitAndPushForcedWhenAmend { get; init; }
     public bool EnsureCommitMessageSecondLineEmpty { get; init; } = true;
     public int NumberOfPreviousMessages { get; init; } = 6;
     public string LastCommitMessage { get; init; } = "";

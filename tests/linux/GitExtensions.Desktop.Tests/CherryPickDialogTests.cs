@@ -17,7 +17,7 @@ using NUnit.Framework;
 namespace GitExtensions.Desktop.Tests;
 
 [NonParallelizable]
-public class CherryPickDialogTests
+public partial class CherryPickDialogTests
 {
     [AvaloniaTest]
     public async Task OriginalDefaultsApplyWithoutCommitAndRememberOptionsOnlyAfterAcceptance()
@@ -144,8 +144,10 @@ public class CherryPickDialogTests
         Pointer(cancel);
         await Until(() => !dialog.IsVisible, () => "Cancel pending dialogue: " + State());
         Assert.That((await f.Repository.GetStatusAsync()).Changes.Any(change => change.IsConflict), Is.True, "Original dialogue Abort cancels the dialogue, retaining native pending resolution."); Assert.That(await f.Head(), Is.EqualTo(head));
-        await f.Git("reset", "--hard", head); f.Write("prior.txt", "prior\n"); await f.Git("add", "prior.txt"); index = File.ReadAllBytes(f.Metadata("index"));
-        dialog = await f.ShowAsync(pick); Pointer(Field<Button>(dialog, "ExecuteCherryPick")); await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible);
+        dialog = await f.ShowAsync(null);
+        Assert.That(dialog.Revision, Is.EqualTo(pick), "A new repository/dialogue instance must rediscover the exact interrupted pick without reset or re-execution.");
+        Assert.That(Field<Button>(dialog, "ExecuteCherryPick").IsEnabled, Is.False);
+        Assert.That(Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible, Is.True);
         Button skip = Field<Button>(dialog, "SkipCherryPick");
         TestContext.WriteLine("Before skip layout: " + PointerTarget(skip).Description);
         await Until(() => { Pump(dialog); return PointerTarget(skip).Ready; }, () => "Skip pointer target: " + PointerTarget(skip).Description + "; " + State());
