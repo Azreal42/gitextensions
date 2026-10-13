@@ -22,6 +22,9 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Stage all touche des fichiers masqués | Agir sur les feuilles du filtre d'affichage ; Selection Filter ne change que la sélection. Une liste vide ne devient pas mutation globale. |
 | Indexer un renommage vise l'ancien nom absent | Indexer le nom courant ; désindexer les deux noms. |
 | Skip am avance au conflit suivant mais affiche « appliqué » | Relire l'état am après exit non nul ; le code retour seul ne dit pas où la série s'est arrêtée. |
+| Undo résout HEAD~1 avant le reset | Le SHA change le message reflog et masque le diagnostic natif sans parent ; conserver le littéral historique, soft/quiet et séparateur final. |
+| Bisect start ajoute un séparateur sans pathspec | Même vide, `--` modifie BISECT_LOG ; ne l’ajouter que pour de vrais filtres de chemins. |
+| Bisect reçoit deux fermetures successives | Le finally du workflow peut fermer un dialogue déjà fermé ; rendre Closing idempotent avant Cancel du token déjà disposé. |
 | Annulation rend la main avant la fin du process | Tuer l'arbre puis attendre sa sortie réelle ; tolérer la disparition d'un descendant pendant la lecture procfs. |
 | Test d’annulation signale un enfant déjà mort | Procfs peut passer de Z à X avant de disparaître ; les tests traitent Z/X/x comme terminés, sans modifier les exigences sur les tâches actives. Reproduction et correction sous `artifacts/linux/cancellation-diagnosis/`. |
 | Ouverture annulée remplace seulement le backend | Charger les métadonnées avant le changement atomique de dépôt ; créer le token avant de désactiver la barre. |

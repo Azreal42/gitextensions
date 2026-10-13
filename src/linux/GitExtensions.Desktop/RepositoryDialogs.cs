@@ -184,72 +184,196 @@ public sealed class NoteDialog : RepositoryDialog
 
 public sealed class BisectDialog : RepositoryDialog
 {
-    private readonly TextBox _revision = new() { Name = "BisectRevision", Watermark = "Revision (blank for current)" };
-    private readonly TextBox _log = new() { Name = "BisectLog", IsReadOnly = true, AcceptsReturn = true, FontFamily = new FontFamily("monospace"), MinHeight = 100 };
     private readonly Button _start;
     private readonly Button _good;
     private readonly Button _bad;
     private readonly Button _skip;
     private readonly Button _stop;
+    private readonly IReadOnlyList<string> _selectedRevisions;
+    private readonly List<GitResult> _commandResults = [];
+    private readonly CancellationTokenSource _lifetime = new();
     private GitBisectState? _state;
+    private bool _sequenceRunning, _closing;
 
-    public BisectDialog(GitRepository repository) : base(repository, "Bisect")
+    public BisectDialog(GitRepository repository, IEnumerable<string>? selectedRevisionHashes = null) : base(repository, "Bisect")
     {
-        Width = 330;
-        SizeToContent = SizeToContent.Height;
-        CanResize = false;
-        StackPanel actions = new() { Margin = new Thickness(12), Spacing = 4 };
-        _start = Action("Start", "Start bisect", StartAsync);
-        _bad = Action("Bad", "Mark current revision bad", () => MarkAsync(GitBisectOption.Bad));
-        _good = Action("Good", "Mark current revision good", () => MarkAsync(GitBisectOption.Good));
-        _skip = Action("Skip", "Skip current revision", () => MarkAsync(GitBisectOption.Skip));
-        _stop = Action("Stop", "Stop bisect", () => RunAsync("Stop bisect", async token => { await Repository.ResetBisectAsync(cancellationToken: token); await ReadStateAsync(token); }, changes: true));
-        foreach (Button button in new[] { _start, _bad, _good, _skip, _stop }) { button.Height = 25; actions.Children.Add(button); }
-        _revision.Margin = new Thickness(0, 8);
-        _revision.Watermark = T("Revision (blank for current)");
-        Track(_revision);
-        actions.Children.Add(_revision);
-        actions.Children.Add(new Expander { Header = T("Bisect log"), Content = _log, HorizontalAlignment = HorizontalAlignment.Stretch });
+        string[] selected = selectedRevisionHashes?.ToArray() ?? [];
+        foreach (string revision in selected) { ArgumentNullException.ThrowIfNull(revision); }
+        _selectedRevisions = Array.AsReadOnly(selected);
+        Name = "BisectDialog"; Title = Text("$this", "Bisect");
+        Width = MinWidth = 248; Height = 171; SizeToContent = SizeToContent.WidthAndHeight; CanResize = false;
+        // FormBisect has five buttons, without revision fields or a log panel. Native failures get a separate modal below.
+        if (Status.Parent is Control statusRow) { Root.Children.Remove(statusRow); }
+        StackPanel actions = new() { Name = "BisectActions", Margin = new Thickness(12, 12, 12, 14), Spacing = 4 };
+        _start = BisectAction("Start", "Start bisect", StartAsync);
+        _bad = BisectAction("Bad", "Mark current revision &bad", () => FinishAsync(GitBisectOption.Bad));
+        _good = BisectAction("Good", "Mark current revision &good", () => FinishAsync(GitBisectOption.Good));
+        _skip = BisectAction("btnSkip", "&Skip current revision", () => FinishAsync(GitBisectOption.Skip));
+        _stop = BisectAction("Stop", "Stop bisect", () => FinishAsync(null));
+        _skip.Margin = _stop.Margin = new Thickness(0, 2, 0, 0);
+        foreach (Button button in new[] { _start, _bad, _good, _skip, _stop }) { actions.Children.Add(button); }
         Root.Children.Add(actions);
+        Closing += (_, _) => { if (_closing) { return; } _closing = true; _lifetime.Cancel(); };
+        Closed += (_, _) => _lifetime.Dispose();
+        UpdateActions();
     }
 
-    public override Task InitializeAsync() => RunAsync("Bisect status", ReadStateAsync);
+    public IReadOnlyList<string> SelectedRevisionHashes => _selectedRevisions;
+    public IReadOnlyList<GitResult> CommandResults => _commandResults.AsReadOnly();
+    public GitResult? LastResult => _commandResults.LastOrDefault();
+    private string Text(string item, string source) => Translations.Translate("FormBisect", item, "Text", source);
+    private Button BisectAction(string name, string label, Func<Task> action)
+    {
+        Button button = Action(name, label, action);
+        button.Content = new Avalonia.Controls.Primitives.AccessText
+        { Text = Translations.TranslateAccessKeys("FormBisect", name, "Text", label), TextWrapping = TextWrapping.NoWrap };
+        button.MinWidth = 224; button.Height = 25; button.MinHeight = 0;
+        return button;
+    }
+    public override async Task InitializeAsync()
+    {
+        await RunAsync("Bisect status", ReadStateAsync, cancellationToken: _lifetime.Token);
+        await ShowNativeErrorAsync();
+    }
 
     private async Task StartAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, T("Start bisect"), (T("Bad revision (optional)"), ""), (T("Good revision (optional)"), ""));
-        if (values is null) { return; }
-        await RunAsync("Start bisect", async token =>
+        if (IsBusy || _sequenceRunning || _closing || !IsVisible) { return; }
+        _sequenceRunning = true; UpdateActions();
+        try
         {
-            await Repository.StartBisectAsync(string.IsNullOrWhiteSpace(values[0]) ? null : values[0],
-                string.IsNullOrWhiteSpace(values[1]) ? null : [values[1]], cancellationToken: token);
-            await ReadStateAsync(token);
-        }, changes: true);
+            await RunAsync("Start bisect", async token =>
+            {
+                token.ThrowIfCancellationRequested();
+                MarkRepositoryChanged();
+                await CaptureResultAsync(() => Repository.StartBisectAsync(cancellationToken: token));
+                await ReadStateAsync(token);
+            }, cancellationToken: _lifetime.Token);
+            await ShowNativeErrorAsync();
+            if (_closing || !IsVisible || _selectedRevisions.Count < 2) { return; }
+            if (!await ConfirmRangeAsync()) { return; }
+            if (_closing || !IsVisible) { return; }
+            await RunAsync("Bisect", async token =>
+            {
+                token.ThrowIfCancellationRequested();
+                MarkRepositoryChanged();
+                await CaptureResultAsync(() => Repository.MarkBisectAsync(GitBisectOption.Good, _selectedRevisions[0], token));
+                token.ThrowIfCancellationRequested();
+                if (_closing || !IsVisible) { return; }
+                await CaptureResultAsync(() => Repository.MarkBisectAsync(GitBisectOption.Bad, _selectedRevisions[^1], token));
+                await ReadStateAsync(token);
+            }, cancellationToken: _lifetime.Token);
+            // The original closes after accepting the range, even when Good fails (and Bad is never run), or Bad fails.
+            await ShowNativeErrorAsync();
+            await ShowNativeOutcomeAsync();
+            if (!_closing && IsVisible) { Close(); }
+        }
+        finally { _sequenceRunning = false; UpdateActions(); }
     }
 
-    private Task MarkAsync(GitBisectOption verdict) => RunAsync("Bisect", async token =>
+    private async Task<bool> ConfirmRangeAsync()
     {
-        await Repository.MarkBisectAsync(verdict, string.IsNullOrWhiteSpace(_revision.Text) ? null : _revision.Text, token);
-        _revision.Text = null;
-        await ReadStateAsync(token);
-    }, changes: true);
+        CancellationToken token = _lifetime.Token; token.ThrowIfCancellationRequested();
+        Window question = new() { Name = "BisectRangeConfirmation", Title = Title, Width = 470, SizeToContent = SizeToContent.Height,
+            CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
+        Button yes = new() { Name = "ConfirmBisectRange", Content = T("Yes"), IsDefault = true, MinWidth = 75, Height = 25 };
+        Button no = new() { Name = "CancelBisectRange", Content = T("No"), IsCancel = true, MinWidth = 75, Height = 25 };
+        yes.Click += (_, _) => question.Close(true); no.Click += (_, _) => question.Close(false);
+        // YesNoQuestion uses the native Question icon, rather than one of the unrelated toolbar help assets.
+        Panel icon = new() { Name = "BisectQuestionIcon", Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Top, Children =
+        {
+            new Avalonia.Controls.Shapes.Ellipse { Width = 32, Height = 32, Fill = Brushes.RoyalBlue },
+            new TextBlock { Text = "?", FontSize = 27, FontWeight = FontWeight.Bold, Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, -2, 0, 0) }
+        } };
+        Grid message = new() { ColumnDefinitions = new("Auto,*"), ColumnSpacing = 10 };
+        message.Children.Add(icon);
+        TextBlock rangeText = new() { Name = "BisectRangeQuestion", Text = Text("_bisectStart", "Mark selected revisions as start bisect range?"), TextWrapping = TextWrapping.Wrap };
+        Grid.SetColumn(rangeText, 1); message.Children.Add(rangeText);
+        question.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
+        {
+            message,
+            ExportDialogControls.Buttons(yes, no)
+        } };
+        using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (question.IsVisible) { question.Close(false); } }));
+        try { bool yesAnswer = await question.ShowDialog<bool>(this); token.ThrowIfCancellationRequested(); return yesAnswer; }
+        finally { question.Close(); }
+    }
+
+    private async Task FinishAsync(GitBisectOption? verdict)
+    {
+        if (IsBusy || _sequenceRunning || _closing || !IsVisible) { return; }
+        _sequenceRunning = true; UpdateActions();
+        try
+        {
+            await RunAsync(verdict is null ? "Stop bisect" : "Bisect", async token =>
+            {
+                token.ThrowIfCancellationRequested(); MarkRepositoryChanged();
+                if (verdict is null) { await CaptureResultAsync(() => Repository.ResetBisectAsync(cancellationToken: token)); }
+                else { await CaptureResultAsync(() => Repository.MarkBisectAsync(verdict.Value, cancellationToken: token)); }
+                await ReadStateAsync(token);
+            }, cancellationToken: _lifetime.Token);
+            await ShowNativeErrorAsync();
+            await ShowNativeOutcomeAsync();
+            if (!_closing && IsVisible) { Close(); }
+        }
+        finally { _sequenceRunning = false; UpdateActions(); }
+    }
+
+    private async Task ShowNativeErrorAsync()
+    {
+        if (LastError is null || _closing || !IsVisible) { return; }
+        string message = LastException is GitCommandException native ? native.Result.StandardOutput + native.Result.StandardError : LastError;
+        CancellationToken token = _lifetime.Token;
+        Window error = new() { Name = "BisectNativeError", Title = T("Error"), Width = 520, MaxHeight = 540, SizeToContent = SizeToContent.Height,
+            CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
+        Button accept = new() { Name = "AcceptBisectError", Content = T("OK"), IsDefault = true, IsCancel = true, MinWidth = 75, Height = 25 };
+        accept.Click += (_, _) => error.Close();
+        error.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
+        {
+            new ScrollViewer { MaxHeight = 430, Content = new TextBlock { Name = "BisectErrorMessage", Text = message, TextWrapping = TextWrapping.Wrap } },
+            ExportDialogControls.Buttons(accept)
+        } };
+        using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (error.IsVisible) { error.Close(); } }));
+        try { await error.ShowDialog(this); }
+        finally { error.Close(); }
+    }
 
     private async Task ReadStateAsync(CancellationToken token)
     {
         _state = await Repository.GetBisectStateAsync(token);
-        _log.Text = _state.Log;
-        Status.Text = _state.FirstBadRevision is not null ? T("First bad commit") + ": " + _state.FirstBadRevision
-            : _state.IsInconclusive ? T("Only skipped commits remain.")
-            : _state.IsActive ? T("Current revision") + ": " + _state.CurrentRevision
-            : T("No bisect is active.");
+    }
+
+    private async Task CaptureResultAsync(Func<Task<GitResult>> command)
+    {
+        try { _commandResults.Add(await command()); }
+        catch (GitCommandException error) { _commandResults.Add(error.Result); throw; }
+    }
+
+    private async Task ShowNativeOutcomeAsync()
+    {
+        if (_closing || !IsVisible || LastError is not null || _state is null
+            || (_state.FirstBadRevision is null && !_state.IsInconclusive) || LastResult is not GitResult result) { return; }
+        CancellationToken token = _lifetime.Token; token.ThrowIfCancellationRequested();
+        Window output = new() { Name = "BisectNativeOutput", Title = Title, Width = 650, MaxHeight = 540, SizeToContent = SizeToContent.Height,
+            CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
+        Button accept = new() { Name = "AcceptBisectOutput", Content = T("OK"), IsDefault = true, IsCancel = true, MinWidth = 75, Height = 25 };
+        accept.Click += (_, _) => output.Close();
+        output.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
+        {
+            new ScrollViewer { MaxHeight = 430, Content = new SelectableTextBlock { Name = "BisectResultMessage", Text = result.StandardOutput + result.StandardError, TextWrapping = TextWrapping.Wrap } },
+            ExportDialogControls.Buttons(accept)
+        } };
+        using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (output.IsVisible) { output.Close(); } }));
+        try { await output.ShowDialog(this); token.ThrowIfCancellationRequested(); }
+        finally { output.Close(); }
     }
 
     protected override void UpdateActions()
     {
-        _start.IsEnabled = _state?.IsActive != true;
-        _stop.IsEnabled = _state?.IsActive == true;
-        bool classifiable = _state?.IsActive == true && _state.FirstBadRevision is null && !_state.IsInconclusive;
-        _good.IsEnabled = _bad.IsEnabled = _skip.IsEnabled = _revision.IsEnabled = classifiable;
+        bool available = !IsBusy && !_sequenceRunning && !_closing;
+        _start.IsEnabled = available && _state?.IsActive != true;
+        _stop.IsEnabled = _good.IsEnabled = _bad.IsEnabled = _skip.IsEnabled = available && _state?.IsActive == true;
     }
 }
 

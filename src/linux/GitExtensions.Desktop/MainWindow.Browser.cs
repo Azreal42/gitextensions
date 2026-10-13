@@ -309,7 +309,7 @@ public sealed partial class MainWindow
                 new MenuItem { Header = T("Commit info position"), ItemsSource = Enum.GetValues<CommitInfoPosition>().Select(position =>
                     MenuAction(CommitInfoLayoutDescription(position).Label, () => { ApplyCommitInfoLayout(position, persist: true); return Task.CompletedTask; }, CommitInfoLayoutDescription(position).Icon)).ToArray() },
                 MenuAction("Theme", ChangeThemeAsync), SaveViewSettingsMenu()),
-            MenuGroup("Commands", MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Fetch", QuickFetchAsync, "PullFetch.png"), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), BuildReflogMenu(), BuildCleanupMenu(), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync)),
+            BuildCommandsMenu(),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
             MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Concat(LifecycleSettingsPlugins()).Select(PluginMenuItem).ToArray()),
             MenuGroup("Tools", MenuAction("Settings…", () => ShowWorkflowAsync("Configuration")), MenuAction("Terminal", OpenTerminalAsync), MenuAction("Theme", ChangeThemeAsync), MenuAction("Show left panel", ToggleNavigationAsync)),
@@ -318,6 +318,28 @@ public sealed partial class MainWindow
     };
 
     private MenuItem MenuGroup(string header, params MenuItem[] items) => new() { Header = T(header), ItemsSource = items };
+    private MenuItem BuildCommandsMenu()
+    {
+        MenuItem commit = MenuAction("Commit…", () => ShowWorkflowAsync("Changes"), "RepoStateClean.png"); commit.Name = "BrowseCommit"; commit.Tag = true;
+        commit.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "commitToolStripMenuItem", "Text", "&Commit...") };
+        if (commit.Icon is Image commitIcon) { commitIcon.Tag = "RepoStateClean.png"; }
+        MenuItem undo = MenuAction("Undo last commit…", UndoLastCommitAsync, "ResetFileTo.png"); undo.Name = "BrowseUndoLastCommit"; undo.Tag = true;
+        undo.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "undoLastCommitToolStripMenuItem", "Text", "&Undo last commit...") };
+        if (undo.Icon is Image undoIcon) { undoIcon.Tag = "ResetFileTo.png"; }
+        MenuItem bisect = MenuAction("Bisect…", BisectAsync, "Bisect.png"); bisect.Name = "BrowseBisect"; bisect.Tag = true;
+        bisect.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "bisectToolStripMenuItem", "Text", "B&isect...") };
+        if (bisect.Icon is Image bisectIcon) { bisectIcon.Tag = "Bisect.png"; }
+        MenuItem commands = MenuGroup("Commands", commit, undo, MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Fetch", QuickFetchAsync, "PullFetch.png"), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ShowWorkflowAsync("Remotes")), bisect, BuildReflogMenu(), BuildCleanupMenu(), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync));
+        commands.SubmenuOpened += (_, _) =>
+        {
+            bool available = !_busy && _repository is { IsBare: false };
+            commit.IsEnabled = available;
+            undo.IsEnabled = available;
+            // FormBrowse updates this exact guard when Commands opens; its Maintenance action can also pass multiple selections.
+            bisect.IsEnabled = available && (_commits.SelectedItems?.OfType<GitCommit>().Count() ?? 0) == 1;
+        };
+        return commands;
+    }
     private MenuItem BuildGitMaintenanceMenu()
     {
         MenuItem recover = MenuAction("Recover lost objects…", RecoverLostObjectsAsync, "RecoverLostObjects.png"); recover.Name = "BrowseRecoverLostObjects";

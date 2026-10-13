@@ -42,7 +42,7 @@ public sealed partial class GitRepository
                 arguments.Add(await ResolveRevisionAsync(revision, token).ConfigureAwait(false));
             }
 
-            arguments.AddRange(["--", .. selected]);
+            if (selected.Length > 0) { arguments.AddRange(["--", .. selected]); }
             return await ExecuteAsync(arguments, token).ConfigureAwait(false);
         }, cancellationToken);
     }

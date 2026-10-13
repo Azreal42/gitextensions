@@ -120,17 +120,37 @@ public class RepositoryDialogTests
                 int number = int.Parse(content.AsSpan(6).Trim(), System.Globalization.CultureInfo.InvariantCulture);
                 Click(dialog, number >= 2 ? "Bad" : "Good");
                 await Idle(dialog);
+                DateTime resultDeadline = DateTime.UtcNow.AddSeconds(10);
+                while (dialog.IsVisible && !dialog.OwnedWindows.Any(window => window.Name == "BisectNativeOutput") && dialog.LastError is null && DateTime.UtcNow < resultDeadline)
+                { await Task.Delay(10); }
+                Window? output = dialog.OwnedWindows.SingleOrDefault(window => window.Name == "BisectNativeOutput");
+                if (output is not null)
+                {
+                    Assert.That(output.GetVisualDescendants().OfType<SelectableTextBlock>().Single(text => text.Name == "BisectResultMessage").Text,
+                        Is.EqualTo(dialog.LastResult!.StandardOutput + dialog.LastResult.StandardError));
+                    Assert.That(dialog.LastResult.StandardOutput + dialog.LastResult.StandardError, Does.Contain(culprit));
+                    output.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "AcceptBisectOutput").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                }
                 Assert.That(dialog.LastError, Is.Null);
+                DateTime closeDeadline = DateTime.UtcNow.AddSeconds(10);
+                while (dialog.IsVisible && DateTime.UtcNow < closeDeadline) { await Task.Delay(10); }
+                Assert.That(dialog.IsVisible, Is.False, "Good/Bad classify the current checkout and close the original five-button window.");
+                dialog = new BisectDialog(repository); dialog.Show(); await dialog.InitializeAsync();
             }
             Assert.That((await repository.GetBisectStateAsync()).FirstBadRevision, Is.EqualTo(culprit));
-            Assert.That(Field<Button>(dialog, "Bad").IsEnabled, Is.False);
-            Assert.That(Field<TextBlock>(dialog, "OperationStatus").Text, Does.Contain(culprit));
+            Assert.That(Field<Button>(dialog, "Bad").IsEnabled, Is.True, "Windows enables classification while bisect remains active, including its terminal result.");
+            Assert.That(dialog.GetVisualDescendants().OfType<Button>().Count(), Is.EqualTo(5));
+            Assert.That(dialog.GetVisualDescendants().OfType<TextBox>(), Is.Empty, "The source window has no extra revision field or log viewer.");
             Capture(dialog, "classic-bisect.png");
             Click(dialog, "Stop");
             await Idle(dialog);
             Assert.That(dialog.LastError, Is.Null);
+            DateTime stopDeadline = DateTime.UtcNow.AddSeconds(10);
+            while (dialog.IsVisible && DateTime.UtcNow < stopDeadline) { await Task.Delay(10); }
+            Assert.That(dialog.IsVisible, Is.False, "Stop restores the original checkout and closes.");
             Assert.That((await repository.GetStatusAsync()).Branch, Is.EqualTo("main"));
             Assert.That(await repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(original));
+            dialog = new BisectDialog(repository); dialog.Show(); await dialog.InitializeAsync();
             Assert.That(Field<Button>(dialog, "Start").IsEnabled, Is.True);
         }
         finally { dialog.Close(); }

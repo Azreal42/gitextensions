@@ -76,6 +76,10 @@ public sealed partial class GitRepository
         return await ReadReflogEntriesAsync(count, reference, cancellationToken).ConfigureAwait(false);
     }
 
+    // FormBrowse invokes this literal revision; resolving it first changes Git's reflog and native missing-parent diagnostics.
+    public Task<GitResult> UndoLastCommitAsync(CancellationToken cancellationToken = default)
+        => MutateAsync(["reset", "--soft", "--quiet", "HEAD~1", "--"], cancellationToken);
+
     public async Task<GitResult> ResetAsync(string revision, GitResetMode mode = GitResetMode.Mixed, CancellationToken cancellationToken = default)
     {
         if (!Enum.IsDefined(mode))

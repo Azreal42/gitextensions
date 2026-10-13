@@ -555,8 +555,40 @@ public sealed partial class MainWindow
 
     private async Task BisectAsync()
     {
-        if (_repository is null || _busy) { return; }
-        await ShowRepositoryDialogAsync(new BisectDialog(_repository));
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        // GetSelectedRevisions() has no sort unless its caller requests one. Keep the selection collection's order.
+        string[] selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).ToArray();
+        await ShowRepositoryDialogAsync(new BisectDialog(_repository, selected));
+    }
+
+    private async Task UndoLastCommitAsync()
+    {
+        if (_repository is null || _busy || _repository.IsBare) { return; }
+        GitRepository repository = _repository; Window owner = WorkflowOwner;
+        bool resetStarted = false, resetCompleted = false;
+        try
+        {
+            await RunAsync(T("Undo last commit"), async current =>
+            {
+                if (current != repository || !await UndoLastCommitConfirmationDialog.ShowAsync(owner, new BrowseCommandPreferencesStore(), Token)) { return; }
+                Token.ThrowIfCancellationRequested();
+                if (!owner.IsVisible || _repository != repository) { return; }
+                resetStarted = true;
+                GitResult result = await repository.UndoLastCommitAsync(Token);
+                resetCompleted = true;
+                AppendOutput(result.StandardOutput + result.StandardError);
+            }, refresh: false);
+        }
+        finally
+        {
+            // Cancellation or a native failure can follow a real ref update; reread Git rather than simulate index/worktree effects.
+            if (resetStarted && _repository == repository && !_lifetime.IsCancellationRequested)
+            {
+                Exception? failure = LastException; string? failureStatus = _state.Text;
+                await RefreshAsync();
+                if (!resetCompleted) { LastException = failure; _state.Text = failureStatus; }
+            }
+        }
     }
 
     private async Task SparseCheckoutAsync()
