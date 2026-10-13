@@ -238,6 +238,10 @@ internal static class ClassicStyles
                     new Setter(TemplatedControl.ForegroundProperty, Resource("TooltipText")),
                     new Setter(TemplatedControl.BorderBrushProperty, Resource("Border"))
                 }
+            },
+            new Style(selector => selector.OfType<ToolTip>().Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"))
+            {
+                Setters = { new Setter(ContentPresenter.ForegroundProperty, Resource("TooltipText")) }
             }
         ];
         IReadOnlyDictionary<string, string> light = OriginalColors(dark: false);
@@ -299,6 +303,9 @@ internal static class ClassicStyles
         }
         Dictionary<string, string> templateBrushes = new(StringComparer.Ordinal)
         {
+            ["ToolTipBackground"] = "Tooltip",
+            ["ToolTipForeground"] = "TooltipText",
+            ["ToolTipBorderBrush"] = "Border",
             ["SystemControlHighlightListAccentLowBrush"] = "Highlight",
             ["SystemControlHighlightListAccentMediumBrush"] = "Highlight",
             ["SystemControlHighlightListAccentHighBrush"] = "Highlight",

@@ -34,7 +34,9 @@ public sealed record GitRebaseState(GitRebaseBackend Backend, string? OriginalHe
     string? TodoPath, string? TodoText)
 {
     public GitRebaseOptions? Options { get; init; }
+    public string? EncodingName { get; init; }
     public string? EncodingError { get; init; }
+    public string? InstructionError { get; init; }
     public string? TodoEncodingName { get; init; }
     public string? JournalError { get; init; }
     public IReadOnlyList<string> JournalPaths { get; init; } = [];
@@ -43,7 +45,7 @@ public sealed record GitRebaseState(GitRebaseBackend Backend, string? OriginalHe
     public bool HasConflicts => Conflicts.Count > 0;
     public IReadOnlyList<GitRebasePatch> TodoPatches => Steps;
     public bool HasRecoverableJournal => !IsActive && JournalError is not null && JournalPaths.Count != 0;
-    public bool CanSkip => IsActive && EncodingError is null && JournalError is null;
+    public bool CanSkip => IsActive && EncodingError is null && InstructionError is null && JournalError is null;
     public bool CanCommit => CanSkip;
     public bool CanContinue => CanSkip && !HasConflicts;
     public bool CanEditTodo => Backend == GitRebaseBackend.Merge && TodoPath is not null && CanSkip && !UsesLegacyPlan;

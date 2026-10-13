@@ -108,6 +108,11 @@ public sealed partial class GitRepository
         }
         RebaseJournalInspection journals = InspectRebaseJournals(lease.GitDirectory);
         if (journals.Error is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + journals.Error); }
+        GitRebaseState rebase = await GetRebaseStateAsync(token).ConfigureAwait(false);
+        if (rebase.JournalError is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + rebase.JournalError); }
+        if (rebase.InstructionError is not null)
+        { throw new InvalidOperationException("The rebase instruction text is unreadable. Abort remains available. " + rebase.InstructionError); }
+        if (rebase.EncodingError is not null) { throw new NotSupportedException(rebase.EncodingError); }
         string legacy = System.IO.Path.Combine(lease.GitDirectory, "gitextensions-rebase");
         if (Directory.Exists(legacy))
         {
@@ -116,9 +121,6 @@ public sealed partial class GitRepository
             _ = await ValidateLegacyRebaseCodecAsync(legacy, lease, token).ConfigureAwait(false);
             throw new NotSupportedException("A legacy rebase plan has frozen messages. Continue, skip or abort it using its saved plan; native todo editing is unavailable.");
         }
-        GitRebaseState rebase = await GetRebaseStateAsync(token).ConfigureAwait(false);
-        if (rebase.JournalError is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + rebase.JournalError); }
-        if (rebase.EncodingError is not null) { throw new NotSupportedException(rebase.EncodingError); }
         if (action is null && !rebase.CanEditTodo) { throw new InvalidOperationException("The apply backend has no editable todo."); }
         if (editorExecutable is not null) { GitRebaseEditor.ValidateExecutable(editorExecutable); }
         string directory = System.IO.Path.Combine(lease.GitDirectory, GitRebaseEditor.NativeStateDirectoryName);

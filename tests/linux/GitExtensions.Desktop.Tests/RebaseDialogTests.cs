@@ -357,14 +357,14 @@ internal sealed class RebaseUiFixture : IDisposable
             : [];
         return JsonSerializer.Serialize(new { head, refs, index, files, journal, config = Convert.ToBase64String(System.IO.File.ReadAllBytes(File(".git/config"))) });
     }
-    public static async Task<RebaseUiFixture> Create(bool conflict = false)
+    public static async Task<RebaseUiFixture> Create(bool conflict = false, string conflictPath = "base.txt")
     {
         RebaseUiFixture f = new(); await f.Git("init", "-b", "main"); await f.Git("config", "user.name", "Rebase UI"); await f.Git("config", "user.email", "rebase@example.invalid");
-        f.Write("base.txt", "base\n"); await f.Git("add", "."); await f.Git("commit", "-m", "Base"); f.Base = await f.Text("rev-parse", "HEAD");
-        await f.Git("checkout", "-b", "topic"); f.Write(conflict ? "base.txt" : "topic.txt", conflict ? "theirs\n" : "topic\n");
+        f.Write(conflictPath, "base\n"); await f.Git("add", "."); await f.Git("commit", "-m", "Base"); f.Base = await f.Text("rev-parse", "HEAD");
+        await f.Git("checkout", "-b", "topic"); f.Write(conflict ? conflictPath : "topic.txt", conflict ? "theirs\n" : "topic\n");
         await f.Git("add", "."); await f.Git("commit", "-m", "Topic"); f.Topic = await f.Text("rev-parse", "HEAD");
         f.Write("later.txt", "later\n"); await f.Git("add", "."); await f.Git("commit", "-m", "Later");
-        await f.Git("checkout", "main"); f.Write(conflict ? "base.txt" : "main.txt", conflict ? "ours\n" : "main\n"); await f.Git("add", "."); await f.Git("commit", "-m", "Main");
+        await f.Git("checkout", "main"); f.Write(conflict ? conflictPath : "main.txt", conflict ? "ours\n" : "main\n"); await f.Git("add", "."); await f.Git("commit", "-m", "Main");
         f.Main = await f.Text("rev-parse", "HEAD"); await f.Git("checkout", "topic"); f.Owner.Show(); return f;
     }
     public async Task StartConflict()

@@ -13,6 +13,7 @@ public abstract class RepositoryDialog : Window
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly CancellationTokenSource _lifetime = new();
     private readonly List<Control> _inputs = [];
+    private readonly Border _statusBorder;
     private CancellationTokenSource? _operation;
     private bool _closeWhenIdle;
     private Func<Task>? _pendingDiffReload;
@@ -26,9 +27,9 @@ public abstract class RepositoryDialog : Window
         Title = T(title);
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Content = Root;
-        Border status = ClassicChrome.Border(Status, new Thickness(0, 1, 0, 0), new Thickness(10, 5));
-        DockPanel.SetDock(status, Dock.Bottom);
-        Root.Children.Add(status);
+        _statusBorder = ClassicChrome.Border(Status, new Thickness(0, 1, 0, 0), new Thickness(10, 5));
+        DockPanel.SetDock(_statusBorder, Dock.Bottom);
+        Root.Children.Add(_statusBorder);
         Closing += (_, args) =>
         {
             if (IsBusy) { args.Cancel = true; _closeWhenIdle = true; _operation?.Cancel(); }
@@ -46,6 +47,18 @@ public abstract class RepositoryDialog : Window
     protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
+
+    /// <summary>Keep multiline command output accessible without displacing a dialog's recovery controls.</summary>
+    protected void ConstrainStatusHeight(string name, double maxHeight)
+    {
+        _statusBorder.Child = null;
+        _statusBorder.Child = new ScrollViewer
+        {
+            Name = name, Content = Status, MaxHeight = maxHeight,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
+        };
+    }
 
     protected async Task RequestDiffReloadAsync(Func<Task> reload)
     {

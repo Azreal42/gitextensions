@@ -54,14 +54,21 @@ public sealed partial class GitRepository
         }
         string? current = await Read("stopped-sha").ConfigureAwait(false)
             ?? EmptyToNull((await ExecuteAsync(["rev-parse", "--verify", "REBASE_HEAD"], cancellationToken, allowedExitCodes: [1, 128]).ConfigureAwait(false)).StandardOutput.Trim());
+        async Task<GitRebaseState> Minimal(string? instructionError = null)
+            => new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
+                await Read("head-name").ConfigureAwait(false), current, [],
+                await GetConflictsAsync(cancellationToken).ConfigureAwait(false), null, null)
+                {
+                    Options = legacySession is null ? session?.Options : null, EncodingName = encoding?.WebName,
+                    EncodingError = encodingError, InstructionError = instructionError, JournalError = journals.Error,
+                    JournalPaths = journals.Paths, UsesLegacyPlan = legacySession is not null,
+                    TodoEncodingName = backend == GitRebaseBackend.Merge && encoding is not null ? todoEncoding?.WebName : null
+                };
         if (encoding is null)
         {
             // Administrative identities and conflicts are codec-independent.
             // Preserve visibility/Abort without guessing how to decode a native todo.
-            return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
-                await Read("head-name").ConfigureAwait(false), current, [],
-                await GetConflictsAsync(cancellationToken).ConfigureAwait(false), null, null)
-                { EncodingError = encodingError, JournalError = journals.Error, JournalPaths = journals.Paths };
+            return await Minimal().ConfigureAwait(false);
         }
         List<GitRebasePatch> patches = [];
         Dictionary<string, GitCommit?> metadata = new(StringComparer.Ordinal);
@@ -87,8 +94,21 @@ public sealed partial class GitRepository
         if (backend == GitRebaseBackend.Merge)
         {
             todoPath = System.IO.Path.Combine(merge, "git-rebase-todo");
-            todoText = await Read("git-rebase-todo", todoEncoding, trim: false).ConfigureAwait(false) ?? "";
-            string done = await Read("done", todoEncoding, trim: false).ConfigureAwait(false) ?? "";
+            string instructionPath = todoPath;
+            string done;
+            try
+            {
+                todoText = await ReadRebaseInstructionsAsync(instructionPath, todoEncoding!, cancellationToken).ConfigureAwait(false) ?? "";
+                instructionPath = System.IO.Path.Combine(merge, "done");
+                done = await ReadRebaseInstructionsAsync(instructionPath, todoEncoding!, cancellationToken).ConfigureAwait(false) ?? "";
+            }
+            catch (Exception error) when (error is DecoderFallbackException or IOException or UnauthorizedAccessException)
+            {
+                // Do not expose a partial plan or try the commit codec on Git's instruction bytes.
+                // The real administrative identities/index still permit an independent Abort.
+                cancellationToken.ThrowIfCancellationRequested();
+                return await Minimal("The rebase instruction text cannot be read: " + instructionPath + ". " + error.Message).ConfigureAwait(false);
+            }
             foreach ((string text, bool applied) in new[] { (done, true), (todoText, false) })
             {
                 foreach (string raw in text.Split('\n'))
@@ -132,8 +152,29 @@ public sealed partial class GitRepository
         return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
             await Read("head-name").ConfigureAwait(false), current, patches,
             await GetConflictsAsync(cancellationToken).ConfigureAwait(false), todoPath, todoText)
-            { Options = legacySession is null ? session?.Options : null, UsesLegacyPlan = legacySession is not null, JournalPaths = journals.Paths,
+            { Options = legacySession is null ? session?.Options : null, EncodingName = encoding.WebName,
+                UsesLegacyPlan = legacySession is not null, JournalPaths = journals.Paths,
                 TodoEncodingName = backend == GitRebaseBackend.Merge ? todoEncoding?.WebName : null };
+    }
+
+    private static async Task<string?> ReadRebaseInstructionsAsync(string path, Encoding encoding, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        // Git can legitimately have no done/todo file yet. File.Exists would also hide
+        // access errors or a directory replacing the file, which are not an empty plan.
+        try
+        {
+            if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
+            { throw new IOException("A directory replaced the rebase instruction file."); }
+        }
+        catch (FileNotFoundException)
+        {
+            if (new FileInfo(path).LinkTarget is not null)
+            { throw new IOException("The existing rebase instruction link has no readable target."); }
+            token.ThrowIfCancellationRequested(); return null;
+        }
+        catch (DirectoryNotFoundException) { token.ThrowIfCancellationRequested(); return null; }
+        return encoding.GetString(await File.ReadAllBytesAsync(path, token).ConfigureAwait(false));
     }
 
     private static string? RebaseTodoCommitHash(string[] parts)

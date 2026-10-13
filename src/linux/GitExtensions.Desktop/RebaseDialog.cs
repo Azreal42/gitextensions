@@ -27,13 +27,14 @@ public sealed class RebaseDialog : RepositoryDialog
     private readonly CheckBox _interactive = Toggle("RebaseInteractive"), _merges = Toggle("RebasePreserveMerges"),
         _autosquash = Toggle("RebaseAutosquash"), _autostash = Toggle("RebaseAutoStash"), _ignoreDate = Toggle("RebaseIgnoreDate"),
         _authorDate = Toggle("RebaseCommitterDateIsAuthorDate"), _updateRefs = Toggle("RebaseUpdateRefs"), _range = Toggle("RebaseSpecificRange");
-    private readonly ListBox _patches = new() { Name = "RebasePatches", MinHeight = 100, SelectionMode = SelectionMode.Single, Focusable = true };
+    private readonly ListBox _patches = new() { Name = "RebasePatches", SelectionMode = SelectionMode.Single, Focusable = true };
     private readonly ListBox _conflicts = new() { Name = "RebaseConflictFiles", MaxHeight = 70, IsVisible = false };
     private readonly StackPanel _options = new() { Name = "RebaseOptions", Spacing = 3 };
     private readonly Button _execute, _continue, _skip, _abort, _resolve, _addFiles, _commit, _editTodo, _stash, _chooseFrom, _cancel, _preserveJournal;
     private readonly TextBlock _conflictNotice = new() { Name = "RebaseConflictNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _encodingNotice = new() { Name = "RebaseEncodingNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _journalNotice = new() { Name = "RebaseJournalNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _instructionNotice = new() { Name = "RebaseInstructionNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly ScrollViewer _journalDetails = new() { Name = "RebaseJournalDetails", IsVisible = false, MaxHeight = 74,
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private GitRebaseState? _state;
@@ -50,6 +51,7 @@ public sealed class RebaseDialog : RepositoryDialog
         CancellationToken cancellationToken = default) : base(repository, "Rebase")
     {
         Name = "RebaseDialog"; Title = Text("$this", "Rebase"); Width = 1050; Height = 500; MinWidth = 900; MinHeight = 460;
+        ConstrainStatusHeight("RebaseCommandOutput", 60);
         _initialOnto = initialOnto; _initialFrom = initialFrom; _initialTo = initialTo; _token = cancellationToken;
         _resolveConflictsAsync = resolveConflictsAsync; _interactive.IsChecked = interactiveInitial;
         _autostash.IsChecked = _preferences.Load().AutoStash;
@@ -85,28 +87,33 @@ public sealed class RebaseDialog : RepositoryDialog
         Label toLabel = new() { Content = Caption("lblRangeTo", "&To"), Target = _to, Margin = new Thickness(8, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(toLabel, 4); range.Children.Add(toLabel); Grid.SetColumn(_to, 5); range.Children.Add(_to);
         _options.Children.Add(flags); _options.Children.Add(range);
-        StackPanel top = new() { Spacing = 7, Children = { current,
+        StackPanel top = new() { Name = "RebaseTop", Spacing = 7, Children = { current,
             new TextBlock { Text = Text("lblRebase", "Rebase current branch on top of another branch") }, branch, _options, _currentCommit,
-            new TextBlock { Text = Text("lblCommitsToReapply", "Commits to re-apply:") } } };
-        DockPanel controls = new() { LastChildFill = true, Margin = new Thickness(8) };
-        DockPanel.SetDock(top, Dock.Top); controls.Children.Add(top);
+            new TextBlock { Name = "RebaseCommitsLabel", Text = Text("lblCommitsToReapply", "Commits to re-apply:") } } };
+        Grid controls = new() { Name = "RebaseControls", RowDefinitions = new("Auto,*,Auto"), Margin = new Thickness(8), ClipToBounds = true };
+        controls.Children.Add(top);
         _conflictNotice.Text = Text("btnSolveMergeconflicts", "There are unresolved merge conflicts\r\n").TrimEnd();
         _cancel = new() { Name = "CancelRebase", Content = T("Cancel"), IsCancel = true, MinWidth = 75, Height = 25 };
         _cancel.Click += (_, _) => Close();
-        _journalDetails.Content = new StackPanel { Spacing = 3, Children = { _encodingNotice, _journalNotice } };
-        StackPanel actions = new() { Spacing = 3, Margin = new Thickness(0, 4, 0, 0), Children =
+        _journalDetails.Content = new StackPanel { Spacing = 3, Children = { _encodingNotice, _journalNotice, _instructionNotice } };
+        ScrollViewer recovery = new() { Name = "RebaseRecoveryContext", MaxHeight = 74,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = new StackPanel { Spacing = 3, Children = { _journalDetails, _conflictNotice, _conflicts } } };
+        StackPanel actions = new() { Name = "RebaseActions", Spacing = 3, Margin = new Thickness(0, 4, 0, 0), Children =
         {
-            _journalDetails, _conflictNotice, _conflicts,
-            new WrapPanel { Orientation = Orientation.Horizontal, Children = { _preserveJournal, _addFiles, _commit, _editTodo, _skip } },
-            new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6,
+            recovery,
+            new WrapPanel { Name = "RebaseSecondaryActions", Orientation = Orientation.Horizontal, Children = { _preserveJournal, _addFiles, _commit, _editTodo, _skip } },
+            new StackPanel { Name = "RebasePrimaryActions", Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6,
                 Children = { _resolve, _continue, _abort, _execute, _cancel } }
         } };
         foreach (Button action in new[] { _addFiles, _commit, _editTodo, _skip }) { action.Margin = new Thickness(0, 0, 6, 0); }
-        DockPanel.SetDock(actions, Dock.Bottom); controls.Children.Add(actions);
-        controls.Children.Add(CreatePatchGrid());
+        Grid.SetRow(actions, 2); controls.Children.Add(actions);
+        Control patches = CreatePatchGrid(); Grid.SetRow(patches, 1); controls.Children.Add(patches);
         OriginalCommandHelp help = new("HelpCommandRebase", settingsId: "Rebase", hoverNotice: Text("PanelLeftImage", "Hover to see scenario when fast forward is possible.", "IsOnHoverShowImage2NoticeText"));
-        Grid body = new() { ColumnDefinitions = new("Auto,*") }; body.Children.Add(help); Grid.SetColumn(controls, 1); body.Children.Add(controls); Root.Children.Add(body);
-        help.ExpandedChanged += (_, _) => MinWidth = help.IsExpanded ? 900 : 620;
+        ScrollViewer helpViewport = new() { Name = "RebaseHelpViewport", Content = help, Width = help.IsExpanded ? 305 : double.NaN,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Grid body = new() { ColumnDefinitions = new("Auto,*"), ClipToBounds = true }; body.Children.Add(helpViewport); Grid.SetColumn(controls, 1); body.Children.Add(controls); Root.Children.Add(body);
+        help.ExpandedChanged += (_, _) => { MinWidth = help.IsExpanded ? 900 : 620; helpViewport.Width = help.IsExpanded ? 305 : double.NaN; };
         Track(_onto, _to, _from, _interactive, _merges, _autosquash, _autostash, _ignoreDate, _authorDate, _updateRefs, _range, _patches);
         foreach (CheckBox flag in new[] { _interactive, _ignoreDate, _authorDate, _range }) { flag.IsCheckedChanged += (_, _) => UpdateActions(); }
         _patches.DoubleTapped += async (_, args) => { args.Handled = true; await ShowPatchAsync(); };
@@ -126,7 +133,7 @@ public sealed class RebaseDialog : RepositoryDialog
 
     private Control CreatePatchGrid()
     {
-        DockPanel panel = new() { LastChildFill = true };
+        Grid panel = new() { RowDefinitions = new("Auto,*"), ClipToBounds = true };
         Grid header = PatchColumns(); header.Height = 24;
         string[] names = ["Action", "CommitHash", "subjectDataGridViewTextBoxColumn", "authorDataGridViewTextBoxColumn", "dateDataGridViewTextBoxColumn", "Status"];
         string[] labels = ["Action", "Commit hash", "Subject", "Author", "Date", "Status"];
@@ -146,8 +153,8 @@ public sealed class RebaseDialog : RepositoryDialog
             ToolTip.SetTip(row, patch?.Body.Length > 0 ? patch.Body : patch?.RawLine); return row;
         });
         Border headings = ClassicChrome.Border(header, new Thickness(0, 0, 0, 1));
-        DockPanel.SetDock(headings, Dock.Top); panel.Children.Add(headings); panel.Children.Add(_patches);
-        return ClassicChrome.Border(panel, new Thickness(1));
+        headings.Name = "RebasePatchHeader"; panel.Children.Add(headings); Grid.SetRow(_patches, 1); panel.Children.Add(_patches);
+        Border result = ClassicChrome.Border(panel, new Thickness(1)); result.Name = "RebasePatchGrid"; result.ClipToBounds = true; return result;
     }
     private static Grid PatchColumns() => new() { ColumnDefinitions = new("65,70,*,105,110,65") };
 
@@ -191,8 +198,12 @@ public sealed class RebaseDialog : RepositoryDialog
         _encodingNotice.Text = _state.EncodingError is not null
             ? T("The rebase text encoding is unavailable. Continue is unavailable; Abort is available.") : null;
         ToolTip.SetTip(_encodingNotice, _state.EncodingError);
+        _instructionNotice.IsVisible = _state.InstructionError is not null;
+        _instructionNotice.Text = _state.InstructionError is not null
+            ? T("The rebase instruction text cannot be read. Continue is unavailable; Abort is available.") : null;
+        ToolTip.SetTip(_instructionNotice, _state.InstructionError);
         _journalNotice.IsVisible = _state.JournalError is not null || Warnings.Count != 0;
-        _journalDetails.IsVisible = _encodingNotice.IsVisible || _journalNotice.IsVisible;
+        _journalDetails.IsVisible = _encodingNotice.IsVisible || _journalNotice.IsVisible || _instructionNotice.IsVisible;
         _journalNotice.Text = _state.JournalError is not null
             ? T(_state.IsActive
                 ? "The rebase journal cannot be read. Saved options are unavailable. Continue is unavailable; Abort is available."

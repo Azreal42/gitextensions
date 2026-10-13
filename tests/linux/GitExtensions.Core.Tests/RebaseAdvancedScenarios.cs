@@ -43,7 +43,12 @@ internal static partial class RebaseAdvancedScenarios
         ("legacy start Continue and Skip preserve mixed diagnostic bytes for both editor overloads", Guard(LegacyMixedRebaseOutputAsync)),
         ("Abort with invalid codec and journal preserves raw output and merges warnings without losing success", Guard(AbortOutputWithoutCodecAsync)),
         ("valid changed commit encoding is rejected before mutation and restored Continue retains saved object codec", Guard(ValidEncodingChangeRebaseOutputAsync)),
-        ("old native journal and external rebase todo codecs retain explicit recovery without guessing or byte migration", Guard(NativeTodoCodecCompatibilityAsync))
+        ("old native journal and external rebase todo codecs retain explicit recovery without guessing or byte migration", Guard(NativeTodoCodecCompatibilityAsync)),
+        ("native unreadable todo retains saved CP1252 options and UTF8 instructions with independent Abort", Guard(UnreadableNativeTodoAsync)),
+        ("native unreadable done invalidates a previously readable resolved recovery without changing bytes", Guard(UnreadableNativeDoneAsync)),
+        ("directories replacing native instruction files are explicit read errors and never empty plans", Guard(NativeInstructionDirectoriesAsync)),
+        ("native instruction access denial retains exact modes and bytes without hiding Abort", Guard(NativeInstructionPermissionsAsync)),
+        ("legacy recovery wrappers refuse unreadable native todo and done before mutation while Abort remains independent", Guard(LegacyUnreadableInstructionsAsync))
     ];
     private const string ModeVariable = "GITEXTENSIONS_REBASE_TEST_MODE";
     private const string CaptureVariable = "GITEXTENSIONS_REBASE_TEST_CAPTURE";

@@ -138,6 +138,9 @@ public sealed partial class GitRepository
         string directory = System.IO.Path.Combine(lease.GitDirectory, "gitextensions-rebase");
         try
         {
+            GitRebaseState rebase = await GetRebaseStateAsync(token).ConfigureAwait(false);
+            if (rebase.InstructionError is not null)
+            { throw new InvalidOperationException("The rebase instruction text is unreadable. Abort remains available. " + rebase.InstructionError); }
             RebaseEditorState state = await ValidateLegacyRebaseCodecAsync(directory, lease, token).ConfigureAwait(false);
             if (editorExecutable is not null && editorExecutable != state.EditorExecutable)
             {
