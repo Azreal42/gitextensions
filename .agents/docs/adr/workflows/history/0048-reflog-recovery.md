@@ -1,6 +1,6 @@
 # 0048 — Récupération depuis le Reflog
 
-Statut : validé localement ; audit natif et paquet suivants requis.
+Statut : code et candidat Debian `a41ef534e` vérifiés ; audit natif requis avant livraison.
 
 ## Intention
 
