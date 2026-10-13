@@ -53,6 +53,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Erreur Git absente avant le démarrage du suivi | Une sonde readonly peut échouer avant tout callback ; afficher son vrai GitResult final sans inventer de chunks. Correctif vérifié dans les 30 tests ciblés et les 1159 tests complets. |
+| Erreur de préférence masque les avertissements Git | Séparer les notices, effacer l’erreur après une sauvegarde réussie et borner les détails défilables ; test réel réussi dans les suites ciblée et complète. |
 | Libellé français du sélecteur Clean tronqué | Une traduction sur deux lignes était coupée par le bouton de 25 px ; mesurer le texte réel, garder NoWrap et adapter padding/largeur au caption. |
 | Saisie native multirefs perd ses espaces | ComboBox.OnKeyDown traite Space comme choix puis sélectionne tout. Bypass seulement quand le vrai éditeur est focused, sans injection de texte ; tests par key/TextInput et saisie native multirefs clair/sombre vérifiés sur `a7bdda7d6`. |
 | Choix de suggestion copie un éditeur vide | SetValue local masque le TemplateBinding Fluent ; SetCurrentValue garde l’éditeur synchronisé. L’assertion Combo.Text et un Focus correcteur masquaient le défaut. UI 22 et parcours natifs du payload `a7bdda7d6` vérifiés. |
@@ -117,6 +119,10 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Piège | Cause / sortie |
 | --- | --- |
+| Commentaire XML contenant deux tirets consécutifs | Le projet ne se charge pas ; éviter cette séquence même pour citer une option CLI. Essai arrêté conservé. |
+| Helper C : symbole privé en collision avec glibc | `group_member` est déjà déclaré ; préfixer les symboles internes. Premier build échoué conservé, build suivant réussi. |
+| Trace du build attend le serveur Roslyn après compilation | `strace -f` suit aussi VBCSCompiler ; désactiver UseSharedCompilation pour les nouveaux essais. Ancien serveur possédé arrêté via la commande SDK normale, sans relancer le build. |
+| Fixture stdin vide dans un shell asynchrone | Sauver le vrai fd 0 avant la liste en arrière-plan puis le transmettre au producteur ; `<&0` pouvait lire /dev/null. [Git direct a confirmé le défaut](../../artifacts/linux/bisect-process-root-checks-20261013-04/root-duplex-fixture-diagnosis.json) ; fixture corrigée vérifiée dans la suite Core complète. |
 | SDK Snap inutilisable dans le sandbox | Utiliser le SDK officiel local `.dotnet` et une version complète dans global.json. |
 | Version Debian contient HOME | Expansion Bash de `~` ; citer le caractère et vérifier le paquet reproductible. |
 | `dotnet test` annonce succès sans scénarios Core/Plugins | Projets console IsTestProject=false : `dotnet run --no-build --no-restore` et compteurs des logs. Apphost et DOTNET_ROOT local requis pour helpers enfants. |
@@ -141,6 +147,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Coordinateur disparu malgré app/keeper exit 0 | Conserver l’exit extérieur et le rapport manquant ; ne pas inventer coordinator0. Session/groupe isolés et nouveau cas avant acceptation. |
 | Manifeste du harnais contient son propre SHA vide | Écrire le manifeste après le gel des fichiers puis le hasher à l’extérieur ; conserver l’ancienne anomalie et vérifier chaque fichier réel. |
 | Hash DPKG hôte différent après validation | Comparer avant/après dans l'intervalle du test ; changement hôte ultérieur consigné séparément. |
+| Objet Git LF comparé au checkout CRLF | Respecter la conversion EOL déclarée dans les attributs figés ; contrôler le contenu compilé après cette conversion et garder les fixtures binaires exactes. Comparaison brute initiale refusée, rattachement source au commit vérifié. |
 | Inventaire mêlant compilation et métadonnées Git cachées | Conserver les entrées compilées et contrôler séparément `.gitattributes`, dont les règles préservent les fixtures brutes ; ne pas exclure globalement les fichiers cachés. |
 
 Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; leurs audits natifs restent attribués aux lots d'origine. Les anciennes mentions « paquet suivant à valider » ne remplacent pas les limites actuelles du TODO.
