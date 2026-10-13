@@ -6,7 +6,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Observation | Cause / suite |
 | --- | --- |
-| Suggestion Branches orange dans le débordement | Candidat `d5ad2dc17` : suite 844/844 et packaging verts, audit natif Light expose un état ComboBoxItem Fluent reprenant l’accent Ubuntu. Livraison refusée ; palette du présentateur corrigée et test rendu sous accent orange passé en clair/sombre, inline/débordement (UI 09). Audit natif du nouveau paquet attendu. Preuve `artifacts/linux/snapshots/d5ad2dc17/proofs/root-candidate-rejection.json`. |
+| Saisie native multirefs perd ses espaces | Candidat `0683f7184` : ComboBox.OnKeyDown traite Space comme choix dès le dropdown ouvert, puis Focus sélectionne tout. Tests TextInput atomiques insuffisants ; bypass du handler standard Space seulement quand l’éditeur est focused, sans injection de texte. Régression clavier UI 10 passée ; audit natif du nouveau paquet attendu. Preuve `artifacts/linux/snapshots/0683f7184/proofs/root-candidate-rejection.json`. |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
@@ -49,6 +49,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Piège | Cause / règle retenue |
 | --- | --- |
 | Combo Branches perd sélection, caret ou premier clic extérieur | Annuler les refresh de suggestions différés ; restaurer le caret après focus ; fermer le popup dans le tunnel du propriétaire avant le vrai PointerPressed. Relayer Ctrl+E depuis PopupRoot. Preuves de développement `artifacts/linux/branch-filter-combo-development/`. |
+| Suggestion Branches reprend l’accent Ubuntu | Le vrai PART_ContentPresenter Fluent possède des couleurs propres : surcharger fond/texte normal, selected, hover et pressed localement. Contrôles rendus UI 09 et natifs clair/sombre `0683f7184` ; ancien candidat `d5ad2dc17` préservé. |
 | Fetch→Rebase conserve parfois All tags | Les événements radio Avalonia arrivent avant le décochage du précédent ; appliquer le mode depuis la case qui vient d’être cochée. |
 | Entrée sur une case du cherry-pick ne lance pas Pick | Garder le bouton par défaut historique depuis les cases et la liste des parents ; le focus initial appartient à la case ou au parent. |
 | Fermer le parent pendant un prompt accepte malgré tout le cherry-pick | Les enfants se ferment avant IsVisible=false du parent ; mémoriser la fermeture acceptée avant les callbacks et ne pas enregistrer les options. |

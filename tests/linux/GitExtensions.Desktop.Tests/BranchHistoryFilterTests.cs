@@ -240,18 +240,38 @@ public class BranchHistoryFilterTests
         Assert.That(combo.Text, Is.Empty); Assert.That(ScopeLabel(main), Is.EqualTo("All branches"));
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
-            main.RequestedThemeVariant = theme; combo.Text = "  feature  absent-first\tmain ^absent-second  "; Editor(combo).Focus(); Press(main, PhysicalKey.Enter);
-            foreach (string token in new[] { "absent-first", "^absent-second" })
+            main.RequestedThemeVariant = theme;
+            foreach (bool overflow in new[] { false, true })
             {
-                await Until(() => main.OwnedWindows.Any(window => window.Name == "BranchFilterInvalidReference"));
-                Window warning = main.OwnedWindows.Single(window => window.Name == "BranchFilterInvalidReference"); await Layout(warning);
-                Assert.That(warning.Owner, Is.SameAs(main)); Assert.That(warning.ActualThemeVariant, Is.EqualTo(theme));
-                Assert.That(Field<TextBlock>(warning, "BranchFilterWarningMessage").Text, Does.Contain("\"" + token + "\"").And.Contain("will be ignored"));
-                Capture(warning, "branch-filter-invalid-" + token.TrimStart('^') + "-" + theme);
-                Click(Field<Button>(warning, "BranchFilterWarningOK")); await Until(() => !warning.IsVisible);
+                main.Width = overflow ? 860 : 1440; await Layout(main);
+                ComboBox editing = combo;
+                if (overflow)
+                {
+                    Field<ListBox>(main, "RevisionHistory").Focus();
+                    Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                    Press(main, PhysicalKey.E, RawInputModifiers.Control); await Layout(main);
+                    editing = OverflowControls(Field<CompactBrowserToolbar>(main, "RepositoryToolbar")).OfType<ComboBox>().Single(control => control.Name == "BranchHistoryFilterOverflow");
+                }
+                Editor(editing).Focus(); Press(main, PhysicalKey.A, RawInputModifiers.Control);
+                string[] accepted = Hashes(main);
+                await TypeBranchExpression(main, editing, "feature missing-native-branch main ^absent-second");
+                Assert.That(combo.Text, Is.EqualTo(editing.Text), "Inline and overflow must preserve the entire multi-token draft.");
+                Assert.That(Hashes(main), Is.EqualTo(accepted), "Spaces/text entry must not apply a history filter.");
+                Capture((TopLevel)editing.GetVisualRoot()!, "branch-filter-typed-expression-" + (overflow ? "overflow-" : "inline-") + theme);
+                Press(main, PhysicalKey.Enter);
+                foreach (string token in new[] { "missing-native-branch", "^absent-second" })
+                {
+                    await Until(() => main.OwnedWindows.Any(window => window.Name == "BranchFilterInvalidReference"));
+                    Window warning = main.OwnedWindows.Single(window => window.Name == "BranchFilterInvalidReference"); await Layout(warning);
+                    Assert.That(warning.Owner, Is.SameAs(main)); Assert.That(warning.ActualThemeVariant, Is.EqualTo(theme));
+                    Assert.That(Field<TextBlock>(warning, "BranchFilterWarningMessage").Text, Does.Contain("\"" + token + "\"").And.Contain("will be ignored"));
+                    Capture(warning, "branch-filter-invalid-" + token.TrimStart('^') + "-" + (overflow ? "overflow-" : "inline-") + theme);
+                    Click(Field<Button>(warning, "BranchFilterWarningOK")); await Until(() => !warning.IsVisible);
+                }
+                await Idle(main); Assert.That(combo.Text, Is.EqualTo("feature main"));
+                Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature main" })).Select(commit => commit.Hash)));
             }
-            await Idle(main); Assert.That(combo.Text, Is.EqualTo("feature main"));
-            Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature main" })).Select(commit => commit.Hash)));
+            main.Width = 1440; await Layout(main);
         }
         Assert.That(await State(f), Is.EqualTo(before));
     }
@@ -432,6 +452,37 @@ public class BranchHistoryFilterTests
     }
 
     private static ComboBox Branch(MainWindow main) => Field<ComboBox>(main, "BranchHistoryFilter");
+    private static async Task TypeBranchExpression(MainWindow main, ComboBox combo, string expression)
+    {
+        string typed = ""; bool? spaceHandled = null;
+        void ObserveSpace(object? sender, KeyEventArgs args)
+        { if (args.Key == Key.Space) { spaceHandled = args.Handled; } }
+        combo.AddHandler(Control.KeyDownEvent, ObserveSpace, RoutingStrategies.Bubble, handledEventsToo: true);
+        try
+        {
+            foreach (char character in expression)
+            {
+                PhysicalKey key = character switch
+                { ' ' => PhysicalKey.Space, '-' => PhysicalKey.Minus, '^' => PhysicalKey.Digit6, _ => Enum.Parse<PhysicalKey>(char.ToUpperInvariant(character).ToString()) };
+                RawInputModifiers modifiers = character == '^' ? RawInputModifiers.Shift : RawInputModifiers.None;
+                bool popupWasOpen = combo.IsDropDownOpen; spaceHandled = null;
+                main.KeyPressQwerty(key, modifiers);
+                if (character == ' ')
+                {
+                    Assert.That(spaceHandled, Is.False, "Space must remain available to native TextInput after the editor's KeyDown.");
+                    Assert.That(combo.IsDropDownOpen, Is.EqualTo(popupWasOpen), "Space must not select/close the suggestion list like Enter.");
+                    Assert.That(combo.Text, Is.EqualTo(typed), "Space KeyDown must not discard/select-all any previously typed tokens.");
+                }
+                main.KeyTextInput(character.ToString()); main.KeyReleaseQwerty(key, modifiers);
+                typed += character; await Layout(main);
+                Assert.That(combo.Text, Is.EqualTo(typed), "Every real key/TextInput pair must preserve the exact expression prefix.");
+                Assert.That(Editor(combo).IsFocused, Is.True);
+                Assert.That(Editor(combo).SelectionStart, Is.EqualTo(typed.Length));
+                Assert.That(Editor(combo).SelectionEnd, Is.EqualTo(typed.Length));
+            }
+        }
+        finally { combo.RemoveHandler(Control.KeyDownEvent, ObserveSpace); }
+    }
     private static async Task AssertSelectedRowWithHistoricalPalette(ComboBox combo, ComboBoxItem item, ThemeVariant theme, string scope)
     {
         Assert.That(item.IsSelected, Is.True);

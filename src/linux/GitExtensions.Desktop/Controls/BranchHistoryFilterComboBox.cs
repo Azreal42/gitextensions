@@ -99,6 +99,15 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
         ConfigurePopup();
     }
 
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs args)
+    {
+        // Avalonia 11.3.22 treats Space like Enter whenever the popup is open,
+        // including editable combos. The real editor must receive its native
+        // TextInput instead; do not consume the key or inject replacement text.
+        if (args.Key == Avalonia.Input.Key.Space && _editor?.IsFocused == true) { return; }
+        base.OnKeyDown(args);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs args)
     {
         base.OnPropertyChanged(args);
