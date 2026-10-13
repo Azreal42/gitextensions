@@ -120,6 +120,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Piège | Cause / sortie |
 | --- | --- |
 | Commentaire XML contenant deux tirets consécutifs | Le projet ne se charge pas ; éviter cette séquence même pour citer une option CLI. Essai arrêté conservé. |
+| Témoin pré-HELLO absent : chemin LD_PRELOAD avec espaces | [ld.so traite les espaces comme séparateurs](https://man7.org/linux/man-pages/man8/ld.so.8.html), sans échappement. Bibliothèque privée renommée ; chemins Git littéraux et assertions conservés. [375/376 Core, un échec conservé](../../artifacts/linux/graceful-process-root-checks-20261014-02/core-tests.log), suites suivantes non exécutées. |
+| Catch et pattern locaux homonymes, build CS0136 | Noms distincts pour l’erreur du handshake et celle de Stop. [Essai échoué conservé](../../artifacts/linux/graceful-process-root-checks-20261014-01/build.log) ; nouvel essai : six projets sans diagnostic et 30 tests ciblés réussis. |
 | Helper C : symbole privé en collision avec glibc | `group_member` est déjà déclaré ; préfixer les symboles internes. Premier build échoué conservé, build suivant réussi. |
 | Trace du build attend le serveur Roslyn après compilation | `strace -f` suit aussi VBCSCompiler ; désactiver UseSharedCompilation pour les nouveaux essais. Ancien serveur possédé arrêté via la commande SDK normale, sans relancer le build. |
 | Fixture stdin vide dans un shell asynchrone | Sauver le vrai fd 0 avant la liste en arrière-plan puis le transmettre au producteur ; `<&0` pouvait lire /dev/null. [Git direct a confirmé le défaut](../../artifacts/linux/bisect-process-root-checks-20261013-04/root-duplex-fixture-diagnosis.json) ; fixture corrigée vérifiée dans la suite Core complète. |

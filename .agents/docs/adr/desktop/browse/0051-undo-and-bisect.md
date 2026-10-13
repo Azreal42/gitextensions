@@ -1,6 +1,6 @@
 # 0051 — Undo et Bisect depuis Browse
 
-Statut : code et candidats Debian `05ee73cff` / `e94c5d0cf` vérifiés ; audit natif Undo/Bisect ouvert.
+Statut : code et candidats Debian `05ee73cff` / `e94c5d0cf` vérifiés ; parcours natif clair Bisect à une sélection validé, autres variantes et Undo ouverts.
 
 ## Intention
 
