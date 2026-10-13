@@ -135,6 +135,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. BlameEncodingScenarios.All,
     .. ReflogScenarios.All,
     .. ObjectRecoveryScenarios.All,
+    .. CleanScenarios.All,
     .. PullFetchScenarios.All,
     .. PullAdvancedScenarios.All,
     .. BranchFilterScenarios.All,

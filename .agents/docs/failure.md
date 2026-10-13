@@ -37,6 +37,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Valeur initiale d’une combo disparaît à l’ouverture | AutoCompleteBox peut reporter le texte vide du gabarit après montage ; initialiser la sélection présente dans ItemsSource et tester la vraie activation modale. |
 | Message déclaré Latin1 mais écrit UTF-8 | Codec strict partagé, stdin binaire et draft atomique ; valider avant toute mutation. |
 | Auteur UTF-8 altéré dans un commit au message CP1252 | `git show --encoding=UTF-8` recode aussi le buffer des en-têtes. Lire l’identité brute puis appliquer `check-mailmap` ; garder le formatage Git pour le sujet et la date. Scénarios fsck vérifiés. |
+| Exclusion Clean interprète un antislash Linux comme séparateur | `ToPosixPath` original remplace le séparateur natif seulement. Garder les antislashs Linux comme données du motif Git ; transformer les espaces en `?` une seule fois dans Core. |
 | CP1252 du hunk appliqué aux chemins range-diff UTF-8 | Séparer sections contenu/metadata/fichier. Git peut tronquer un en-tête contenant newline ; ne pas reconstruire des octets absents. |
 | Merge ignore `pull.ff=only` | `--no-rebase` prime aussi sur la config ff-only ; réappliquer `--ff-only`. Rebase garde la priorité de l'oracle Git natif. |
 | Précontrôles Pull divergent de FormPull | Token Main dès l'initialisation ; [ All ] force Fetch, confirmation rebase garde No sans commande de repli. |
@@ -48,6 +49,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Libellé français du sélecteur Clean tronqué | Une traduction sur deux lignes était coupée par le bouton de 25 px ; mesurer le texte réel, garder NoWrap et adapter padding/largeur au caption. |
 | Saisie native multirefs perd ses espaces | ComboBox.OnKeyDown traite Space comme choix puis sélectionne tout. Bypass seulement quand le vrai éditeur est focused, sans injection de texte ; tests par key/TextInput et saisie native multirefs clair/sombre vérifiés sur `a7bdda7d6`. |
 | Choix de suggestion copie un éditeur vide | SetValue local masque le TemplateBinding Fluent ; SetCurrentValue garde l’éditeur synchronisé. L’assertion Combo.Text et un Focus correcteur masquaient le défaut. UI 22 et parcours natifs du payload `a7bdda7d6` vérifiés. |
 | Clic dans Branches débordé rend Entrée inactive | Le survol MenuItem tardif après mapping reprend le focus ; protéger PointerReleased seul ne suffit pas. Bloquer PointerEnteredItem uniquement sur la combo focused réellement survolée. UI 22 et parcours natifs du payload `a7bdda7d6` vérifiés. |
