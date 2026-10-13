@@ -37,6 +37,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Valeur initiale d’une combo disparaît à l’ouverture | AutoCompleteBox peut reporter le texte vide du gabarit après montage ; initialiser la sélection présente dans ItemsSource et tester la vraie activation modale. |
 | Message déclaré Latin1 mais écrit UTF-8 | Codec strict partagé, stdin binaire et draft atomique ; valider avant toute mutation. |
 | Auteur UTF-8 altéré dans un commit au message CP1252 | `git show --encoding=UTF-8` recode aussi le buffer des en-têtes. Lire l’identité brute puis appliquer `check-mailmap` ; garder le formatage Git pour le sujet et la date. Scénarios fsck vérifiés. |
+| `cleanup` choisit un autre dépôt après refus d’accès | `Directory.Exists` masque les erreurs IO comme des absences ; classifier avec `File.GetAttributes`, réserver le repli aux chemins absents/non-dépôts. Test Linux avec permission search refusée et cwd distinct. |
 | Exclusion Clean interprète un antislash Linux comme séparateur | `ToPosixPath` original remplace le séparateur natif seulement. Garder les antislashs Linux comme données du motif Git ; transformer les espaces en `?` une seule fois dans Core. |
 | CP1252 du hunk appliqué aux chemins range-diff UTF-8 | Séparer sections contenu/metadata/fichier. Git peut tronquer un en-tête contenant newline ; ne pas reconstruire des octets absents. |
 | Merge ignore `pull.ff=only` | `--no-rebase` prime aussi sur la config ff-only ; réappliquer `--ff-only`. Rebase garde la priorité de l'oracle Git natif. |
@@ -128,6 +129,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Pixels sélectionnés absents ou rejetés | Attendre une frame, exiger la vraie sélection, comparer le mélange anticrénelé plutôt qu'un pixel opaque. |
 | Geste XTest envoyé avant rendu, focus logique sans focus X11 | IsViewable peut précéder une frame encore noire ; mesurer une vraie frame rendue et le titre/PID avant input. Calibration sans WM explicite, sans preuve Wayland. |
 | WM_DELETE_WINDOW absent dans Xvfb sans WM | Avalonia met en cache les atoms absents ; le harnais pose les trois noms standard avant GUI et garde la connexion jusqu’à la fin du driver. Aucun comportement du WM hôte revendiqué. |
+| Clic natif sur un menu refusé malgré le bon PID | Un popup Avalonia possède sa propre fenêtre X11 ; cibler son ID issu de la dernière capture, pas celui du parent. Garder l’essai refusé hors acceptation et reprendre un cas complet. |
+| Contrôle du runtime inclut les rendus des tests | Les PNG et traces de fermeture produits dans le working directory de test sont des sorties ; conserver leurs témoins séparément et vérifier les vrais fichiers construits avec leur ensemble de chemins exact. |
 | Capture Git intermédiaire oubliée dans un audit natif | Les états finaux ne remplacent pas le témoin avant redémarrage ; conserver l’essai non accepté et reprendre un cas complet. |
 | Plan natif vert puis launcher exit 2 | Figer/copier le launcher avant lancement, vérifier séparément exécution et fermeture. |
 | Harnais ne trouve pas un titre contenant des guillemets | Lire le vrai titre via XFetchName et vérifier le PID par XRes ; ne pas découper la sortie de xwininfo sur le premier guillemet. |

@@ -8,6 +8,7 @@ internal static class Program
 {
     internal static string? RepositoryPath { get; private set; }
     internal static bool SmokeTest { get; private set; }
+    internal static DesktopStartupRequest StartupRequest { get; private set; } = DesktopStartupRequest.Browse;
 
     [STAThread]
     public static int Main(string[] args)
@@ -23,28 +24,32 @@ internal static class Program
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
             return AskpassApplication.Run(args[1..]);
         }
-        if (args.Contains("--version", StringComparer.Ordinal))
+        bool cleanup = DesktopStartupArguments.IsCleanupInvocation(args);
+        if (!cleanup && args.Contains("--version", StringComparer.Ordinal))
         {
             Console.WriteLine($"Git Extensions {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
             return 0;
         }
 
-        if (args.Contains("--help", StringComparer.Ordinal))
+        if (!cleanup && args.Contains("--help", StringComparer.Ordinal))
         {
-            Console.WriteLine("Usage: gitextensions [repository-directory] | --version | --smoke-test [repository-directory]");
+            Console.WriteLine("Usage: gitextensions [repository-directory] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]");
             return 0;
         }
 
-        SmokeTest = args.Contains("--smoke-test", StringComparer.Ordinal);
-        RepositoryPath = args.FirstOrDefault(a => a != "--smoke-test");
-        if (RepositoryPath?.StartsWith('-') == true)
+        DesktopStartupArguments startup;
+        try { startup = DesktopStartupArguments.Parse(args); }
+        catch (ArgumentException error)
         {
-            Console.Error.WriteLine($"Unknown option: {RepositoryPath}");
+            Console.Error.WriteLine(error.Message);
             return 2;
         }
+        SmokeTest = startup.SmokeTest;
+        RepositoryPath = startup.Mode == DesktopStartupMode.Browse ? startup.RepositoryArgument : null;
 
         try
         {
+            StartupRequest = DesktopStartupDispatcher.PrepareAsync(startup, Environment.CurrentDirectory).GetAwaiter().GetResult();
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
             GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, "gitextensions-askpass");
             GitRunner.AskpassUiCulture = CultureInfo.CurrentUICulture.Name;

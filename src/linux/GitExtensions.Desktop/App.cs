@@ -17,9 +17,16 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow();
+            if (Program.StartupRequest.Arguments.Mode == DesktopStartupMode.Cleanup)
+            {
+                desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
+            }
+            desktop.MainWindow = CreateStartupWindow(Program.StartupRequest);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
+
+    internal static Avalonia.Controls.Window CreateStartupWindow(DesktopStartupRequest request)
+        => DesktopStartupDispatcher.CreateMainWindow(request);
 }

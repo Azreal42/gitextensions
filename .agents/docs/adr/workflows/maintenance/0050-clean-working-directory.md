@@ -14,6 +14,8 @@ Git décide des suppressions actuelles : le preview est readonly, sans force ; C
 
 Le parent puis `submodule foreach --recursive` conservent l'ordre et les erreurs natifs ; les enfants reçoivent les inclusions et options, pas les exclusions. Les chemins utilisateur restent des données. Après annulation ou fermeture, aucun nouvel enfant ne démarre ; signaler les effets partiels, sans rollback fictif.
 
-Les sélecteurs contrôlent les chemins physiques du worktree et les métadonnées Git. Les tests avec objets StorageProvider ne valent pas audit du vrai sélecteur natif. Le dispatcher CLI historique `cleanup` reste à porter.
+Les sélecteurs contrôlent les chemins physiques du worktree et les métadonnées Git. Les tests avec objets StorageProvider ne valent pas audit du vrai sélecteur natif.
 
-Repères : `CleanupRepositoryDialog`, `MainWindow.Cleanup/Browser`, `GitRepository.Clean*`, `CleanMode` original partagé. Preuves et validations restantes dans [TODO](../../../todo.md).
+La commande historique `cleanup` ouvre seulement ce dialogue : deuxième argument littéral, dépôt ou parent de fichier puis cwd, sans MRU, filtre implicite ni preview/nettoyage automatique. Un refus d’accès ne doit pas choisir un autre dépôt. La fermeture du dialogue termine cette session autonome ; audit natif encore requis.
+
+Repères : `CleanupRepositoryDialog`, `DesktopStartupArguments/Dispatcher`, `MainWindow.Cleanup/Browser`, `GitRepository.Clean*`, `CleanMode` original partagé. Preuves et validations restantes dans [TODO](../../../todo.md).
