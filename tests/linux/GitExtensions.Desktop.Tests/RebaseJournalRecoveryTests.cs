@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using GitExtensions.Linux;
@@ -15,9 +16,11 @@ public class RebaseJournalRecoveryTests
     [AvaloniaTest] public Task TruncatedNativeMergeKeepsRealConflictAndAbortLight() => DamagedActive("merge", "truncated", false);
     [AvaloniaTest] public Task MissingNativeApplyStateKeepsRealConflictAndAbortDark() => DamagedActive("apply", "missing", true);
     [AvaloniaTest] public Task InvalidSavedCodecDoesNotGuessMessagesOrEnableContinue() => DamagedActive("merge", "codec", false, resolved: true);
+    [AvaloniaTest] public Task LongJournalDiagnosticKeepsCurrentHashNoticeAndAbortInViewportDark() => DamagedActive("merge", "long-codec", true);
+    [AvaloniaTest] public Task OldCp1252NativeJournalWithoutTodoCodecKeepsExactBytesAndAbortDark() => DamagedActive("merge", "todo-codec-provenance", true, cp1252: true);
     [AvaloniaTest] public Task TruncatedLegacyMergeKeepsRealConflictAndAbortDark() => DamagedActive("merge", "truncated", true, legacy: true);
 
-    private async Task DamagedActive(string backend, string damage, bool dark, bool resolved = false, bool legacy = false)
+    private async Task DamagedActive(string backend, string damage, bool dark, bool resolved = false, bool legacy = false, bool cp1252 = false)
     {
         using OptionalLocksDisabled locks = new();
         using RebaseUiFixture f = await RebaseUiFixture.Create(conflict: true);
@@ -25,6 +28,7 @@ public class RebaseJournalRecoveryTests
         string initialHead = await f.Text("rev-parse", "HEAD"), initialIndex = await f.Text("ls-files", "--stage");
         string initialFiles = Worktree(f), config = Hash(f.File(".git/config"));
         await f.Git("config", "rebase.backend", backend);
+        if (cp1252) { await f.Git("config", "i18n.commitEncoding", "windows-1252"); }
         config = Hash(f.File(".git/config"));
         if (legacy)
         {
@@ -48,8 +52,18 @@ public class RebaseJournalRecoveryTests
         Assert.That(dialog.State.Options, Is.Null);
         Assert.That(dialog.State.Steps, Is.Empty);
         Assert.That(dialog.State.TodoText, Is.Null, "Damaged metadata must never supply a guessed codec or rewritten todo.");
-        Assert.That(Field<TextBlock>(dialog, "RebaseJournalNotice").IsVisible, Is.True);
-        Assert.That(Field<TextBlock>(dialog, "RebaseJournalNotice").Text, Does.Contain("Abort"));
+        TextBlock identity = Field<TextBlock>(dialog, "RebaseCurrentCommit"), notice = Field<TextBlock>(dialog, "RebaseJournalNotice");
+        Assert.That(identity.IsVisible, Is.True);
+        Assert.That(identity.Text, Does.Contain(f.Topic), "The actual current Git identity must remain visible without decoding a todo.");
+        Assert.That(notice.IsVisible, Is.True);
+        Assert.That(notice.Text, Does.Contain("Abort"));
+        Assert.That(notice.Text, Does.Not.Contain(f.Root), "Technical journal details must not displace the recovery actions.");
+        Assert.That(ToolTip.GetTip(notice), Is.EqualTo(dialog.State.JournalError));
+        Pump(dialog);
+        ScrollViewer details = Field<ScrollViewer>(dialog, "RebaseJournalDetails");
+        Assert.That(details.Bounds.Height, Is.LessThanOrEqualTo(74));
+        Assert.That(identity.TranslatePoint(default, dialog)!.Value.Y, Is.GreaterThanOrEqualTo(0));
+        Assert.That(details.TranslatePoint(new Point(0, details.Bounds.Height), dialog)!.Value.Y, Is.LessThanOrEqualTo(dialog.ClientSize.Height));
         foreach (string action in new[] { "ContinueRebase", "EditRebaseTodo", "SkipRebase", "CommitRebase" })
         { Assert.That(Field<Button>(dialog, action).IsEnabled, Is.False, action); }
         Assert.That(Field<Button>(dialog, "AbortRebase").IsEnabled, Is.True);
@@ -66,6 +80,7 @@ public class RebaseJournalRecoveryTests
         Assert.That(dialog.IsVisible, Is.True, "Keep the warning and recovery action visible after successful Abort.");
         Assert.That(dialog.Warnings, Is.Not.Empty);
         Assert.That(dialog.State!.IsActive, Is.False);
+        Assert.That(Field<TextBlock>(dialog, "RebaseCurrentCommit").IsVisible, Is.False);
         Assert.That(dialog.State.HasRecoverableJournal, Is.True);
         Assert.That(Field<Button>(dialog, "PreserveRebaseJournal").IsVisible, Is.True);
         Assert.That(Field<Button>(dialog, "ExecuteRebase").IsEnabled, Is.False);
@@ -151,10 +166,17 @@ public class RebaseJournalRecoveryTests
     {
         string state = System.IO.Path.Combine(directory, "state.json");
         if (kind == "missing") { System.IO.File.Delete(state); }
-        else if (kind == "codec")
+        else if (kind == "todo-codec-provenance")
         {
             JsonObject value = JsonNode.Parse(System.IO.File.ReadAllText(state))!.AsObject();
-            value["EncodingName"] = "utf-16"; System.IO.File.WriteAllText(state, value.ToJsonString());
+            value.Remove("TodoEncodingName");
+            System.IO.File.WriteAllText(state, value.ToJsonString());
+        }
+        else if (kind is "codec" or "long-codec")
+        {
+            JsonObject value = JsonNode.Parse(System.IO.File.ReadAllText(state))!.AsObject();
+            value["EncodingName"] = kind == "long-codec" ? "unsupported-rebase-codec-" + new string('x', 2048) : "utf-16";
+            System.IO.File.WriteAllText(state, value.ToJsonString());
         }
         else { System.IO.File.WriteAllText(state, "{\"RepositoryPath\":"); }
     }

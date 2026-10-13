@@ -524,7 +524,7 @@ public sealed partial class GitRepository
     }
 
     private async Task<GitResult> ExecuteAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken, string? standardInput = null, int[]? allowedExitCodes = null,
-        IReadOnlyDictionary<string, string?>? environment = null)
+        IReadOnlyDictionary<string, string?>? environment = null, Func<GitBinaryResult, GitOutputDecoding>? outputDecoder = null)
     {
         string? command = arguments.FirstOrDefault();
         bool worktreeRequired = command is "status" or "add" or "rm" or "restore" or "checkout" or "switch" or "commit" or "stash"
@@ -540,7 +540,7 @@ public sealed partial class GitRepository
         // Enable literal handling only on commands that receive user pathspecs.
         string[] pathOptions = arguments.FirstOrDefault() is "add" or "reset" or "rm" or "diff" or "show" or "blame" or "restore" or "checkout" or "ls-files" or "ls-tree" or "log" or "grep" or "bisect"
             ? ["--literal-pathspecs"] : [];
-        GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. pathOptions, .. arguments], cancellationToken, standardInput, environment).ConfigureAwait(false);
+        GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. pathOptions, .. arguments], cancellationToken, standardInput, environment, outputDecoder).ConfigureAwait(false);
         if (!result.Success && !(allowedExitCodes?.Contains(result.ExitCode) ?? false))
         {
             throw new GitCommandException(arguments, result);

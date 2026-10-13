@@ -40,6 +40,38 @@ public class NativeRebaseEditorTests
     }
 
     [AvaloniaTest]
+    public async Task NativeTodoUsesUtf8BesideCp1252MessagesWithoutChangingGit()
+    {
+        using RebaseUiFixture f = await RebaseUiFixture.Create(conflict: true);
+        await f.Git("config", "i18n.commitencoding", "windows-1252");
+        f.Write("encoded-third.txt", "third\n");
+        await f.Repository.StageAsync(["encoded-third.txt"]); await f.Repository.CommitAsync("Ã©");
+        string third = await f.Text("rev-parse", "HEAD");
+        f.Write("encoded-fourth.txt", "fourth\n");
+        await f.Repository.StageAsync(["encoded-fourth.txt"]); await f.Repository.CommitAsync("Après €");
+        string fourth = await f.Text("rev-parse", "HEAD");
+        await f.StartConflict();
+        string path = f.File(".git/rebase-merge/git-rebase-todo");
+        byte[] before = System.IO.File.ReadAllBytes(path);
+        string text = new UTF8Encoding(false, true).GetString(before), witness = await f.Witness();
+        GitRebaseEditorRequest request = f.Request(GitRebaseEditorKind.Todo);
+        Assert.That(request.EncodingName, Is.EqualTo("utf-8"));
+        Assert.That(request.Text, Is.EqualTo(text).And.Contains("Ã©").And.Contains("Après €"));
+        RebaseDialog dialog = await f.Show();
+        Assert.That(dialog.State!.Steps.Single(step => step.CommitHash == third).Subject, Is.EqualTo("Ã©"));
+        Assert.That(dialog.State.Steps.Single(step => step.CommitHash == fourth).Subject, Is.EqualTo("Après €"));
+        NativeRebaseEditorWindow editor = f.ShowEditor(request);
+        Assert.That(Field<TextBox>(editor, "NativeRebaseEditorText").Text, Is.EqualTo(text));
+        Click(Field<Button>(editor, "SaveNativeRebaseEditor"));
+        Assert.That(editor.ExitCode, Is.Zero);
+        Assert.That(System.IO.File.ReadAllBytes(path), Is.EqualTo(before));
+        Assert.That(await f.Witness(), Is.EqualTo(witness));
+        string message = f.File(".git/COMMIT_EDITMSG");
+        System.IO.File.WriteAllBytes(message, Encoding.ASCII.GetBytes("message\n"));
+        Assert.That(f.Request(GitRebaseEditorKind.Message).EncodingName, Is.EqualTo("windows-1252"));
+    }
+
+    [AvaloniaTest]
     public async Task NativeMessageUsesStrictCp1252AndPreservesCommentsAndSourceBytes()
     {
         using RebaseUiFixture f = await RebaseUiFixture.Create(conflict: true); await f.Git("config", "i18n.commitencoding", "windows-1252"); await f.StartConflict();

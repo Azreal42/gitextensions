@@ -7,11 +7,15 @@ public sealed record GitResult(int ExitCode, string StandardOutput, string Stand
 {
     public bool Success => ExitCode == 0;
     public IReadOnlyList<string> Warnings { get; init; } = [];
+    public byte[] StandardOutputBytes { get; init; } = [];
+    public byte[] StandardErrorBytes { get; init; } = [];
 }
 
 public sealed record GitBinaryResult(int ExitCode, byte[] StandardOutput, string StandardError)
 {
     public bool Success => ExitCode == 0;
+    public byte[] StandardErrorBytes { get; init; } = [];
+    public IReadOnlyList<string> Warnings { get; init; } = [];
 }
 
 public sealed class GitCommandException : Exception
@@ -40,11 +44,14 @@ public sealed class GitRunner(string executable = "git")
         IReadOnlyList<string> arguments,
         CancellationToken cancellationToken = default,
         string? standardInput = null,
-        IReadOnlyDictionary<string, string?>? environment = null)
+        IReadOnlyDictionary<string, string?>? environment = null,
+        Func<GitBinaryResult, GitOutputDecoding>? outputDecoder = null)
     {
         GitBinaryResult result = await RunBinaryAsync(workingDirectory, arguments, cancellationToken,
             standardInput is null ? null : Encoding.UTF8.GetBytes(standardInput), environment).ConfigureAwait(false);
-        return new GitResult(result.ExitCode, Encoding.UTF8.GetString(result.StandardOutput), result.StandardError);
+        GitOutputDecoding decoded = outputDecoder is null ? GitOutputDecoding.Utf8(result) : outputDecoder(result);
+        return new GitResult(result.ExitCode, decoded.StandardOutput, decoded.StandardError)
+        { StandardOutputBytes = result.StandardOutput, StandardErrorBytes = result.StandardErrorBytes, Warnings = decoded.Warnings };
     }
 
     public async Task<GitBinaryResult> RunBinaryAsync(
@@ -109,8 +116,9 @@ public sealed class GitRunner(string executable = "git")
         using Process process = new() { StartInfo = startInfo };
         process.Start();
         using MemoryStream buffer = new();
+        using MemoryStream errorBuffer = new();
         Task output = process.StandardOutput.BaseStream.CopyToAsync(buffer);
-        Task<string> error = process.StandardError.ReadToEndAsync();
+        Task error = process.StandardError.BaseStream.CopyToAsync(errorBuffer);
         try
         {
             IOException? inputError = null;
@@ -138,12 +146,16 @@ public sealed class GitRunner(string executable = "git")
             }
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             await output.ConfigureAwait(false);
+            await error.ConfigureAwait(false);
             if (process.ExitCode == 0 && inputError is not null)
             {
                 throw inputError;
             }
 
-            return new GitBinaryResult(process.ExitCode, buffer.ToArray(), await error.ConfigureAwait(false));
+            List<string> warnings = [];
+            byte[] errorBytes = errorBuffer.ToArray();
+            return new GitBinaryResult(process.ExitCode, buffer.ToArray(), GitOutputText.Utf8(errorBytes, "stderr", warnings))
+            { StandardErrorBytes = errorBytes, Warnings = warnings };
         }
         catch
         {

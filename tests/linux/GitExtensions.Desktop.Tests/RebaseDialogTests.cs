@@ -77,6 +77,37 @@ public class RebaseDialogTests
     }
 
     [AvaloniaTest]
+    public async Task RawOutputWarningsRemainVisibleAfterSuccessAndRefusal()
+    {
+        foreach (bool refuse in new[] { false, true })
+        {
+            using RebaseUiFixture f = await RebaseUiFixture.Create();
+            await f.Git("config", "i18n.commitEncoding", "windows-1252");
+            string hook = f.File(".git/hooks/pre-rebase");
+            System.IO.File.WriteAllText(hook, "#!/bin/sh\nprintf '%s\\n' 'External UTF8 café λ' >&2\nprintf '\\377\\n' >&2\nexit " + (refuse ? "1" : "0") + "\n", new UTF8Encoding(false, true));
+            if (!OperatingSystem.IsWindows()) { System.IO.File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+            string before = await f.Witness();
+            RebaseDialog dialog = await f.Show();
+            Click(Field<Button>(dialog, "ExecuteRebase"));
+            await Until(() => !dialog.IsBusy && (dialog.Succeeded || dialog.LastError is not null));
+            Assert.That(dialog.Succeeded, Is.EqualTo(!refuse), dialog.LastError);
+            Assert.That(dialog.Aborted, Is.False);
+            Assert.That(dialog.IsVisible, Is.True, "A warning must stay available after Git exits.");
+            Assert.That(dialog.Warnings, Has.Some.Contains("stderr"));
+            Pump(dialog);
+            Assert.That(Field<TextBlock>(dialog, "RebaseJournalNotice").IsVisible, Is.True);
+            Assert.That(Field<TextBlock>(dialog, "RebaseJournalNotice").Text, Does.Contain("\\xNN"));
+            if (refuse)
+            {
+                Assert.That(dialog.LastError, Does.Contain("External UTF8 café λ").And.Contain("\\xFF").And.Not.Contain("\uFFFD"));
+                Assert.That((dialog.LastException as GitCommandException)!.Result.StandardErrorBytes, Does.Contain((byte)255));
+                Assert.That(await f.Witness(), Is.EqualTo(before));
+            }
+            else { Assert.That(dialog.LastError, Is.Null); }
+        }
+    }
+
+    [AvaloniaTest]
     public async Task CancelAndNewRepositoryInstanceRediscoverNativeConflictAndFrozenOptions()
     {
         using RebaseUiFixture f = await RebaseUiFixture.Create(conflict: true); RebaseDialog dialog = await f.Show(interactive: true);

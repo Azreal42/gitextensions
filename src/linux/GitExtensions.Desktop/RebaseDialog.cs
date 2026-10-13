@@ -21,6 +21,7 @@ public sealed class RebaseDialog : RepositoryDialog
     private readonly RebasePreferencesStore _preferences = new();
     private readonly string? _initialOnto, _initialFrom, _initialTo;
     private readonly TextBlock _current = new() { Name = "RebaseCurrentBranch" };
+    private readonly TextBlock _currentCommit = new() { Name = "RebaseCurrentCommit", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly ComboBox _onto = Choice("RebaseOn", 270), _to = Choice("RebaseRangeTo", 184);
     private readonly TextBox _from = new() { Name = "RebaseRangeFrom", Width = 100, Height = 24, MinHeight = 24 };
     private readonly CheckBox _interactive = Toggle("RebaseInteractive"), _merges = Toggle("RebasePreserveMerges"),
@@ -33,6 +34,8 @@ public sealed class RebaseDialog : RepositoryDialog
     private readonly TextBlock _conflictNotice = new() { Name = "RebaseConflictNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _encodingNotice = new() { Name = "RebaseEncodingNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _journalNotice = new() { Name = "RebaseJournalNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
+    private readonly ScrollViewer _journalDetails = new() { Name = "RebaseJournalDetails", IsVisible = false, MaxHeight = 74,
+        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private GitRebaseState? _state;
     private GitRebaseCapabilities? _capabilities;
     private bool _loaded, _closingAccepted, _dirty;
@@ -83,16 +86,17 @@ public sealed class RebaseDialog : RepositoryDialog
         Grid.SetColumn(toLabel, 4); range.Children.Add(toLabel); Grid.SetColumn(_to, 5); range.Children.Add(_to);
         _options.Children.Add(flags); _options.Children.Add(range);
         StackPanel top = new() { Spacing = 7, Children = { current,
-            new TextBlock { Text = Text("lblRebase", "Rebase current branch on top of another branch") }, branch, _options,
+            new TextBlock { Text = Text("lblRebase", "Rebase current branch on top of another branch") }, branch, _options, _currentCommit,
             new TextBlock { Text = Text("lblCommitsToReapply", "Commits to re-apply:") } } };
         DockPanel controls = new() { LastChildFill = true, Margin = new Thickness(8) };
         DockPanel.SetDock(top, Dock.Top); controls.Children.Add(top);
         _conflictNotice.Text = Text("btnSolveMergeconflicts", "There are unresolved merge conflicts\r\n").TrimEnd();
         _cancel = new() { Name = "CancelRebase", Content = T("Cancel"), IsCancel = true, MinWidth = 75, Height = 25 };
         _cancel.Click += (_, _) => Close();
+        _journalDetails.Content = new StackPanel { Spacing = 3, Children = { _encodingNotice, _journalNotice } };
         StackPanel actions = new() { Spacing = 3, Margin = new Thickness(0, 4, 0, 0), Children =
         {
-            _encodingNotice, _journalNotice, _conflictNotice, _conflicts,
+            _journalDetails, _conflictNotice, _conflicts,
             new WrapPanel { Orientation = Orientation.Horizontal, Children = { _preserveJournal, _addFiles, _commit, _editTodo, _skip } },
             new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6,
                 Children = { _resolve, _continue, _abort, _execute, _cancel } }
@@ -180,16 +184,21 @@ public sealed class RebaseDialog : RepositoryDialog
             _authorDate.IsChecked = options.CommitterDateIsAuthorDate; _updateRefs.IsChecked = options.UpdateRefs ?? _capabilities?.UpdateRefs;
         }
         _patches.ItemsSource = _state.Steps; _patches.SelectedItem = _state.Steps.FirstOrDefault(patch => patch.Status == GitRebaseStepStatus.Applying) ?? _state.Steps.FirstOrDefault();
+        _currentCommit.IsVisible = _state.IsActive && _state.Steps.Count == 0 && _state.CurrentCommit is not null;
+        _currentCommit.Text = _currentCommit.IsVisible ? T("Currently applying:") + " " + _state.CurrentCommit : null;
         _conflicts.ItemsSource = _state.Conflicts.Select(conflict => conflict.Path).ToArray();
         _encodingNotice.IsVisible = _state.EncodingError is not null;
-        _encodingNotice.Text = _state.EncodingError is string error
-            ? error + " " + T("Restore the original commit message encoding and reopen this window to continue. Abort is available.") : null;
+        _encodingNotice.Text = _state.EncodingError is not null
+            ? T("The rebase text encoding is unavailable. Continue is unavailable; Abort is available.") : null;
+        ToolTip.SetTip(_encodingNotice, _state.EncodingError);
         _journalNotice.IsVisible = _state.JournalError is not null || Warnings.Count != 0;
-        _journalNotice.Text = _state.JournalError is string journalError
-            ? journalError + " " + T(_state.IsActive
-                ? "The rebase journal cannot be read. Continue is unavailable; Abort is available."
+        _journalDetails.IsVisible = _encodingNotice.IsVisible || _journalNotice.IsVisible;
+        _journalNotice.Text = _state.JournalError is not null
+            ? T(_state.IsActive
+                ? "The rebase journal cannot be read. Saved options are unavailable. Continue is unavailable; Abort is available."
                 : "The unfinished journal has been kept. Preserve it to start a new rebase.")
             : string.Join(Environment.NewLine, Warnings);
+        ToolTip.SetTip(_journalNotice, _state.JournalError ?? string.Join(Environment.NewLine, Warnings));
         Status.Text = _state.IsActive ? T(_state.HasConflicts ? "There are unresolved merge conflicts" : "Continue rebase") : Text("lblRebase", "Rebase current branch on top of another branch");
         UpdateActions();
     }
@@ -236,6 +245,7 @@ public sealed class RebaseDialog : RepositoryDialog
         {
             MarkRepositoryChanged();
             try { Warnings = (await command(token)).Warnings; }
+            catch (GitCommandException error) { Warnings = error.Result.Warnings; throw; }
             finally { await ReloadAsync(CancellationToken.None); }
             finished = _state?.IsActive == false;
             Aborted = finished && operation == GitOperationAction.Abort;

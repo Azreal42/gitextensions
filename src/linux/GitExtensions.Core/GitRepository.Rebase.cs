@@ -99,8 +99,10 @@ public sealed partial class GitRepository
             RebaseEditorState state = new(editorExecutable, await GetGitPathAsync("rebase-merge/done", cancellationToken).ConfigureAwait(false), messages, encoding.WebName);
             await File.WriteAllBytesAsync(System.IO.Path.Combine(directory, "todo"), todoBytes, cancellationToken).ConfigureAwait(false);
             await File.WriteAllTextAsync(System.IO.Path.Combine(directory, "state.json"), JsonSerializer.Serialize(state), cancellationToken).ConfigureAwait(false);
-            return await ExecuteAsync(["-c", "i18n.logOutputEncoding=" + encoding.WebName, "rebase", "--interactive", "--keep-empty", "--", upstream], cancellationToken,
-                environment: GitRebaseEditor.EnvironmentFor(directory, state)).ConfigureAwait(false);
+            return await ExecuteAsync(["-c", "i18n.commitEncoding=" + state.EncodingName, "-c", "i18n.logOutputEncoding=UTF-8",
+                "rebase", "--interactive", "--keep-empty", "--", upstream], cancellationToken,
+                environment: GitRebaseEditor.EnvironmentFor(directory, state),
+                outputDecoder: GitRebaseOutputDecoder.ForEncoding(state.EncodingName, state.EncodingName, "utf-8")).ConfigureAwait(false);
         }
         finally
         {
@@ -144,8 +146,10 @@ public sealed partial class GitRepository
                 state = state with { EditorExecutable = editorExecutable };
                 WriteLegacyRebaseEditorState(directory, state);
             }
-            return await ExecuteAsync(["-c", "i18n.logOutputEncoding=" + state.EncodingName, "rebase", "--" + action.ToString().ToLowerInvariant()],
-                token, environment: GitRebaseEditor.EnvironmentFor(directory, state)).ConfigureAwait(false);
+            return await ExecuteAsync(["-c", "i18n.commitEncoding=" + state.EncodingName, "-c", "i18n.logOutputEncoding=UTF-8",
+                "rebase", "--" + action.ToString().ToLowerInvariant()],
+                token, environment: GitRebaseEditor.EnvironmentFor(directory, state),
+                outputDecoder: GitRebaseOutputDecoder.ForEncoding(state.EncodingName, state.EncodingName, "utf-8")).ConfigureAwait(false);
         }
         finally { await CleanupObsoleteRebaseJournalsAsync(lease).ConfigureAwait(false); }
     }

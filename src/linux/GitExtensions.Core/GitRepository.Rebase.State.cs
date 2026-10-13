@@ -29,6 +29,22 @@ public sealed partial class GitRepository
             try { encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false); }
             catch (NotSupportedException error) { encoding = null; encodingError = error.Message; }
         }
+        Encoding? todoEncoding = encoding;
+        if (backend == GitRebaseBackend.Merge && encoding is not null && legacySession is null)
+        {
+            // Saved UTF-8 journals are compatible with the earlier generator. External
+            // UTF-8 sessions retain the existing current-config convention, with strict reads.
+            // A non-UTF8 old/native or external script may contain mixed/recoded subjects;
+            // neither valid-UTF8 guessing nor converting its existing bytes can establish intent.
+            string? todoName = session is not null ? GitRebaseEditor.NativeTodoEncodingName(session)
+                : encoding.CodePage == Encoding.UTF8.CodePage ? "utf-8" : null;
+            if (todoName is null)
+            {
+                encodingError = "This native rebase has no reliable declared todo codec. Its instruction subjects may be mixed or altered. Abort remains available; no existing bytes have been converted.";
+                encoding = todoEncoding = null;
+            }
+            else { todoEncoding = GitRebaseEditor.GetStrictEncoding(todoName); }
+        }
         async Task<string?> Read(string name, Encoding? codec = null, bool trim = true)
         {
             string file = System.IO.Path.Combine(root, name);
@@ -71,8 +87,8 @@ public sealed partial class GitRepository
         if (backend == GitRebaseBackend.Merge)
         {
             todoPath = System.IO.Path.Combine(merge, "git-rebase-todo");
-            todoText = await Read("git-rebase-todo", encoding, trim: false).ConfigureAwait(false) ?? "";
-            string done = await Read("done", encoding, trim: false).ConfigureAwait(false) ?? "";
+            todoText = await Read("git-rebase-todo", todoEncoding, trim: false).ConfigureAwait(false) ?? "";
+            string done = await Read("done", todoEncoding, trim: false).ConfigureAwait(false) ?? "";
             foreach ((string text, bool applied) in new[] { (done, true), (todoText, false) })
             {
                 foreach (string raw in text.Split('\n'))
@@ -116,7 +132,8 @@ public sealed partial class GitRepository
         return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
             await Read("head-name").ConfigureAwait(false), current, patches,
             await GetConflictsAsync(cancellationToken).ConfigureAwait(false), todoPath, todoText)
-            { Options = legacySession is null ? session?.Options : null, UsesLegacyPlan = legacySession is not null, JournalPaths = journals.Paths };
+            { Options = legacySession is null ? session?.Options : null, UsesLegacyPlan = legacySession is not null, JournalPaths = journals.Paths,
+                TodoEncodingName = backend == GitRebaseBackend.Merge ? todoEncoding?.WebName : null };
     }
 
     private static string? RebaseTodoCommitHash(string[] parts)

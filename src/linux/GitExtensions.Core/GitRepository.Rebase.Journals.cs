@@ -32,6 +32,13 @@ public sealed partial class GitRepository
                     if (state.GitDirectory != gitDirectory || state.SkippedCommits is null
                         || state.SkippedCommits.Any(hash => hash is null || !IsRebaseHash(hash)))
                     { throw new IOException("The native rebase journal has an invalid worktree identity or skipped-commit list."); }
+                    // Older non-UTF8 native scripts can be mixed or recoded by Git's
+                    // cumulative pretty formatter. A live Apply backend needs no todo;
+                    // once absent, keep the undeclared journal rather than infer its origin.
+                    bool activeApply = Directory.Exists(System.IO.Path.Combine(gitDirectory, "rebase-apply"))
+                        && !Directory.Exists(System.IO.Path.Combine(gitDirectory, "rebase-merge"));
+                    if (GitRebaseEditor.NativeTodoEncodingName(state) is null && !activeApply)
+                    { throw new NotSupportedException("This older native journal does not declare a reliable todo codec. Its bytes are preserved; Abort remains available while Git is active."); }
                     native = state;
                 }
                 else

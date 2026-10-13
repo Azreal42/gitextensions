@@ -35,6 +35,7 @@ public sealed record GitRebaseState(GitRebaseBackend Backend, string? OriginalHe
 {
     public GitRebaseOptions? Options { get; init; }
     public string? EncodingError { get; init; }
+    public string? TodoEncodingName { get; init; }
     public string? JournalError { get; init; }
     public IReadOnlyList<string> JournalPaths { get; init; } = [];
     public bool UsesLegacyPlan { get; init; }

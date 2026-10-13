@@ -36,7 +36,14 @@ internal static partial class RebaseAdvancedScenarios
         ("damaged legacy journals retain Git recovery and exact explicit preservation", Guard(InvalidLegacyJournalsAsync)),
         ("ambiguous native and legacy journals remain preserved through Git Abort and explicit recovery", Guard(AmbiguousRebaseJournalsAsync)),
         ("damaged journals after terminal Abort require exact explicit preservation before a fresh attempt", Guard(DamagedTerminalAbortJournalsAsync)),
-        ("orphan preservation uses the actual linked worktree GitDirectory without touching the primary checkout", Guard(LinkedWorktreeJournalPreservationAsync))
+        ("orphan preservation uses the actual linked worktree GitDirectory without touching the primary checkout", Guard(LinkedWorktreeJournalPreservationAsync)),
+        ("native merge and apply diagnostics retain CP1252 subjects and UTF8 paths through Continue and Skip", Guard(NativeMixedRebaseOutputAsync)),
+        ("native subject decoding uses the declared CP1252 codec even for valid UTF8-looking bytes", Guard(AmbiguousCp1252RebaseOutputAsync)),
+        ("UTF8 external output and administrative reads remain independent of Rebase subject decoding", Guard(ExternalUtf8RebaseOutputAsync)),
+        ("legacy start Continue and Skip preserve mixed diagnostic bytes for both editor overloads", Guard(LegacyMixedRebaseOutputAsync)),
+        ("Abort with invalid codec and journal preserves raw output and merges warnings without losing success", Guard(AbortOutputWithoutCodecAsync)),
+        ("valid changed commit encoding is rejected before mutation and restored Continue retains saved object codec", Guard(ValidEncodingChangeRebaseOutputAsync)),
+        ("old native journal and external rebase todo codecs retain explicit recovery without guessing or byte migration", Guard(NativeTodoCodecCompatibilityAsync))
     ];
     private const string ModeVariable = "GITEXTENSIONS_REBASE_TEST_MODE";
     private const string CaptureVariable = "GITEXTENSIONS_REBASE_TEST_CAPTURE";
@@ -327,6 +334,14 @@ internal static partial class RebaseAdvancedScenarios
         using RepositoryFixture f = await RepositoryFixture.CreateAsync(); await Topic(f); await f.Repository.SetConfigAsync("i18n.commitEncoding", "windows-1252");
         await f.Repository.CommitAsync(new GitCommitOptions("Café £ original", Amend: true)); using EditorScope editor = new(f, "reword");
         await f.Repository.RebaseAsync(new GitRebaseOptions { BranchName = "main", Interactive = true }, editor.Executable);
+        foreach (string capture in Directory.GetFiles(editor.DirectoryPath, "*-*.json"))
+        {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllBytes(capture));
+            GitRebaseEditorKind kind = (GitRebaseEditorKind)document.RootElement.GetProperty("Kind").GetInt32();
+            string? encoding = document.RootElement.GetProperty("EncodingName").GetString();
+            Check(encoding == (kind == GitRebaseEditorKind.Todo ? "utf-8" : "windows-1252"),
+                "The native editor must declare UTF8 Todo and CP1252 Message independently.");
+        }
         Check(editor.Texts(GitRebaseEditorKind.Message).Single().Contains("Café £ original", StringComparison.Ordinal), "The native editor must decode Git's actual legacy bytes correctly.");
         GitBinaryResult raw = await new GitRunner().RunBinaryAsync(f.Repository.Path, ["cat-file", "commit", "HEAD"]);
         Check(raw.Success && Encoding.ASCII.GetString(raw.StandardOutput).Contains("encoding windows-1252", StringComparison.Ordinal)

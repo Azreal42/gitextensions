@@ -47,7 +47,7 @@ public sealed partial class GitRepository
             if (Directory.Exists(directory))
             { throw new InvalidOperationException("Stale native rebase editor state exists. Reload and complete its recovery before starting another rebase."); }
             GitRepositoryInfo info = await GetInfoAsync(token).ConfigureAwait(false);
-            NativeRebaseEditorState state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, [], options);
+            NativeRebaseEditorState state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, [], options) { TodoEncodingName = "utf-8" };
             token.ThrowIfCancellationRequested();
             CreatePrivateRebaseDirectory(directory);
             try
@@ -136,7 +136,7 @@ public sealed partial class GitRepository
         {
             Encoding encoding = await GetCommitMessageEncodingAsync(token).ConfigureAwait(false);
             GitRepositoryInfo info = await GetInfoAsync(token).ConfigureAwait(false);
-            state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, []);
+            state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, []) { TodoEncodingName = "utf-8" };
             token.ThrowIfCancellationRequested(); CreatePrivateRebaseDirectory(directory); created = true;
             GitRebaseEditor.WriteNativeState(directory, state);
         }
@@ -162,9 +162,10 @@ public sealed partial class GitRepository
 
     private Task<GitResult> ExecuteNativeRebaseAsync(IReadOnlyList<string> arguments, string directory,
         NativeRebaseEditorState state, CancellationToken token)
-        // Git uses its output encoding while generating the editable message and todo subjects.
-        // Pin it to the strict commit codec so editor bytes and commits have the same encoding.
-        => ExecuteAsync(["-c", "i18n.logOutputEncoding=" + state.EncodingName, .. arguments], token,
-            environment: GitRebaseEditor.NativeEnvironmentFor(directory, state));
+        // Git's user-format renderer reencodes its accumulated script buffer. UTF-8 avoids
+        // mixed or repeatedly recoded todo subjects; messages and commit objects keep their saved codec.
+        => ExecuteAsync(["-c", "i18n.commitEncoding=" + state.EncodingName, "-c", "i18n.logOutputEncoding=UTF-8", .. arguments], token,
+            environment: GitRebaseEditor.NativeEnvironmentFor(directory, state),
+            outputDecoder: GitRebaseOutputDecoder.ForEncoding(state.EncodingName, GitRebaseEditor.NativeTodoEncodingName(state) ?? "utf-8", "utf-8"));
 
 }

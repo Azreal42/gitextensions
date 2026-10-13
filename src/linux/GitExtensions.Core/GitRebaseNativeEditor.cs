@@ -27,7 +27,11 @@ public sealed class GitRebaseEditorRequest
 }
 
 internal sealed record NativeRebaseEditorState(string RepositoryPath, string GitDirectory, string EditorExecutable,
-    string EncodingName, IReadOnlyList<string> SkippedCommits, GitRebaseOptions? Options = null);
+    string EncodingName, IReadOnlyList<string> SkippedCommits, GitRebaseOptions? Options = null)
+{
+    // Older journals did not distinguish Git's generated instruction text from commit messages.
+    public string? TodoEncodingName { get; init; }
+}
 
 public static partial class GitRebaseEditor
 {
@@ -44,7 +48,8 @@ public static partial class GitRebaseEditor
         NativeRebaseEditorState state = ReadNativeState(directory);
         GitRebaseEditorKind kind = args[0] == "--edit-rebase-todo" ? GitRebaseEditorKind.Todo : GitRebaseEditorKind.Message;
         string path = ValidateNativeEditorPath(directory, state, args[1], kind);
-        Encoding encoding = ValidateCurrentEncoding(state);
+        _ = ValidateCurrentEncoding(state);
+        Encoding encoding = NativeEditorEncoding(state, kind);
         return new(directory, Hash(File.ReadAllBytes(System.IO.Path.Combine(directory, "state.json"))), path,
             state.RepositoryPath, kind, encoding, File.ReadAllBytes(path));
     }
@@ -56,7 +61,8 @@ public static partial class GitRebaseEditor
         if (text.Contains('\0')) { throw new ArgumentException("Rebase editor text cannot contain NUL.", nameof(text)); }
         NativeRebaseEditorState state = ReadNativeState(request.Directory);
         string path = ValidateNativeEditorPath(request.Directory, state, request.FilePath, request.Kind);
-        byte[] bytes = ValidateCurrentEncoding(state).GetBytes(text);
+        _ = ValidateCurrentEncoding(state);
+        byte[] bytes = NativeEditorEncoding(state, request.Kind).GetBytes(text);
         if (Hash(File.ReadAllBytes(System.IO.Path.Combine(request.Directory, "state.json"))) != request.StateHash)
         { throw new InvalidOperationException("The rebase editor session changed. Reopen the editor before saving."); }
         // Keep Git's file locked across the compare and write. Git waits for this editor process,
@@ -97,12 +103,14 @@ public static partial class GitRebaseEditor
         if (info.RootPath != state.RepositoryPath || info.GitDirectory != state.GitDirectory || info.IsBare)
         { throw new InvalidOperationException("Native rebase editor state belongs to a different repository."); }
         _ = GetStrictEncoding(state.EncodingName);
+        ValidateNativeTodoEncoding(state);
         return state;
     }
 
     internal static void WriteNativeState(string directory, NativeRebaseEditorState state)
     {
         _ = GetStrictEncoding(state.EncodingName);
+        ValidateNativeTodoEncoding(state);
         string temporary = System.IO.Path.Combine(directory, "state-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
@@ -134,6 +142,19 @@ public static partial class GitRebaseEditor
         { throw new NotSupportedException("Rebase editor encoding must be UTF-8 or an ASCII-compatible single-byte encoding."); }
         return encoding.CodePage == Encoding.UTF8.CodePage ? new UTF8Encoding(false, true) : encoding;
     }
+
+    internal static string? NativeTodoEncodingName(NativeRebaseEditorState state)
+        => state.TodoEncodingName ?? (GetStrictEncoding(state.EncodingName).CodePage == Encoding.UTF8.CodePage ? "utf-8" : null);
+
+    private static void ValidateNativeTodoEncoding(NativeRebaseEditorState state)
+    {
+        if (state.TodoEncodingName is not null && GetStrictEncoding(state.TodoEncodingName).CodePage != Encoding.UTF8.CodePage)
+        { throw new NotSupportedException("Native rebase journals must declare UTF-8 instruction text separately from the commit codec."); }
+    }
+
+    private static Encoding NativeEditorEncoding(NativeRebaseEditorState state, GitRebaseEditorKind kind)
+        => GetStrictEncoding(kind == GitRebaseEditorKind.Message ? state.EncodingName
+            : NativeTodoEncodingName(state) ?? throw new NotSupportedException("This older native journal does not identify a reliable todo codec. Abort remains available; no todo bytes have been converted."));
 
     private static Encoding ValidateCurrentEncoding(NativeRebaseEditorState state)
     {
