@@ -37,10 +37,16 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 - [x] Pull avancé : tags/prune/unshallow, autostash historique et proposition de réapplication ; workflow de sous-modules partagé avec Checkout. ADR 0039.
 - [x] Cherry-pick : options mémorisées, parent de merge, choix de révision et dialogue par sélection ; récupération des cibles renommées couvertes. ADR 0040.
 - [x] Retrait de sous-module : confirmation, index/configuration préparés sous verrous ; fichiers et dépôt interne conservés. ADR 0041.
-- [x] Combo éditable « Branches: » : suggestions Local/Remote/Tag, brouillon conservé, Entrée, expressions, avertissements et Ctrl+E/débordement ; dix parcours natifs clair/sombre sur le paquet livré. ADR 0042.
+- [x] Combo éditable « Branches: » : suggestions Local/Remote/Tag, brouillon conservé, Entrée, expressions, avertissements et Ctrl+E/débordement ; dix parcours natifs clair/sombre sur `a7bdda7d6`. ADR 0042.
+- [x] Merge : fenêtre et aide originales, options typées et resolver commun lisant les stages réels ; sans commit et choix Ours vérifiés en natif. ADR 0043.
+- [x] Reset/Revert : cinq modes Reset et autre branche, parent de merge, séquence et AutoCommit ; checkout/force et Revert vérifiés en natif. ADR 0044.
+- [x] Reprise Cherry-pick : options figées retrouvées après fermeture/redémarrage normaux ; Continue sans commit et restauration exacte Abort/Skip vérifiés en natif. ADR 0045.
+- [x] Commit & Push : commit unique, succès distant et conservation du commit après rejet/Cancel vérifiés en natif. ADR 0046.
 - [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
 
-Dernier paquet local vérifié et livré : source `a7bdda7d6`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/a7bdda7d6/proofs/delivery-verification.json) contient source complète, checksum et contrôles : 844 tests (235 Core, 35 Plugins, 574 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, installation/lancement isolés, APT simulé et repaquetage identique. Dix parcours natifs de la combo Branches passent en clair/sombre sur le payload exact. Les audits Push rapide, options Pull, Cherry-pick et retrait de sous-module restent attribués au paquet `0cf3b7026`. Ce paquet n’a pas remplacé l’ancienne version installée sur l’hôte ; aucun push de ce lot.
+Dernier paquet local vérifié et livré : source `d144dcf69`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/d144dcf69/proofs/delivery-verification-v2.json) contient source complète, checksum et contrôles : 916 tests (270 Core, 35 Plugins, 611 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, 25 étapes de packaging, installation/lancement isolés, APT simulé et repaquetage identique. Les 22 parcours natifs clair/sombre du payload exact couvrent les sous-périmètres Merge/Reset/Revert, reprise Cherry-pick et Commit & Push décrits ci-dessus. La reprise couvre un redémarrage normal ; la résolution Cherry-pick utilise la fixture Git, pas le resolver UI. Les essais rejetés et anomalies du harnais restent conservés hors acceptation. L’ancienne installation hôte reste distincte ; aucun push de ce lot.
+
+Les dix parcours de la combo Branches restent attribués à `a7bdda7d6`. Les audits Push rapide, options Pull, Cherry-pick et retrait de sous-module restent attribués à `0cf3b7026`.
 
 Les preuves des paquets précédents restent dans [les snapshots](../../artifacts/linux/snapshots/). Chaque audit natif garde son SHA et son périmètre : les contrôles courants ne valent pas nouvel audit étendu du sélecteur de branche, de tous les workflows Pull, de Blame ou du reader.
 
@@ -62,8 +68,7 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 
 ## Prochains écarts concrets
 
-- Lot local en validation, non livré : Merge et resolver index commun, cinq modes Reset/Reset autre branche, fenêtres Revert, Commit & Push partagé, reprise durable Cherry-pick. Le [candidat d144dcf69](../../artifacts/linux/snapshots/d144dcf69/proofs/root-package-verification-before-native.json) passe 916/916 tests (270 Core, 35 Plugins, 611 Desktop), six builds sans diagnostic et 25 étapes de packaging, installation/lancement isolés et repaquetage identique. Audits natifs de ces cinq workflows en cours avant livraison. ADR 0043–0046. Le paquet courant reste a7bdda7d6.
-- Cherry-pick : journal par worktree et déplacements prévisibles couverts au Core ; reprendre les cas UI et le redémarrage natif avant livraison. Les destinations imprévues restent refusées avant rollback.
+- Cherry-pick : audit natif après crash et des autres modes/séries ; destinations imprévues refusées avant rollback, restauration IO interrompue conservée en état Restoring.
 - Merge/Rebase/Reset/Revert : Rebase standard reste un prompt ; compléter la fenêtre et ses options, scripts, sortie continue, réglages distribués et resolver avancé (diffs/renommages/sous-modules).
 - Push : scripts Before/After, PR hébergeurs, grille ls-remote directe et sortie continue ; SSH/askpass Git système conservés.
 - Pull : sortie Git continue, scripts Before/After, source URL et destination locale Fetch.

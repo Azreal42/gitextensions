@@ -1,6 +1,6 @@
 # ADR 0043 · Merge et conflits
 
-Statut : implémenté ; validation en cours, paquet courant dans le TODO.
+Statut : sous-périmètre vérifié et livré sur `d144dcf69` ; limites dans le [TODO](../../../todo.md).
 
 Besoin : proposer les choix de FormMergeBranch avec les images d’aide originales, plutôt qu’une simple confirmation. Le choix fast-forward doit primer sur merge.ff. Sans commit n’empêche pas un fast-forward natif ; squash n’ajoute pas de parent de merge. Les messages automatiques gardent le nom sélectionné et les messages personnalisés respectent le codec Git.
 

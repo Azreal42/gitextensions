@@ -1,6 +1,6 @@
 # ADR 0045 · Reprise durable du cherry-pick
 
-Statut : implémenté ; validation en cours, paquet courant dans le TODO.
+Statut : sous-périmètre vérifié et livré sur `d144dcf69` ; limites dans le [TODO](../../../todo.md).
 
 Besoin : retrouver une tentative interrompue après fermeture du dialogue ou redémarrage, sans perdre l’index et les changements préexistants. Le journal privé est propre au worktree et précède Git : options, identité, fichiers/liens/modes, index et objets staged devenus non atteignables après résolution/GC. Aucune ref temporaire ne sert à les retenir.
 

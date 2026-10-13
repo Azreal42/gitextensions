@@ -1,6 +1,6 @@
 # ADR 0044 · Reset et Revert
 
-Statut : implémenté ; validation en cours, paquet courant dans le TODO.
+Statut : sous-périmètre vérifié et livré sur `d144dcf69` ; limites dans le [TODO](../../../todo.md).
 
 Besoin : retrouver les fenêtres dédiées Windows. Reset courant propose Soft/Mixed/Keep/Merge/Hard, Soft par défaut ; seul Hard demande l’avertissement de perte des changements. Reset autre branche exige Force pour un déplacement non fast-forward, protège les autres worktrees et mémorise le choix de checkout.
 
