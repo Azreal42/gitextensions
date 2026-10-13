@@ -139,17 +139,24 @@ public sealed class GitRunner(string executable = "git")
         byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch)
     {
         using Process process = new() { StartInfo = startInfo };
+        using GitProcessGroup? processes = OperatingSystem.IsLinux() ? new GitProcessGroup() : null;
         process.Start();
         using MemoryStream buffer = new();
         using MemoryStream errorBuffer = new();
         Task output = CopyOutputAsync(process.StandardOutput.BaseStream, buffer, GitProcessOutputStream.StandardOutput, outputReceived);
         Task error = CopyOutputAsync(process.StandardError.BaseStream, errorBuffer, GitProcessOutputStream.StandardError, outputReceived);
-        Task control = OperatingSystem.IsLinux() ? launch!.ObserveExecAsync(process.Id) : Task.CompletedTask;
+        Task control = Task.CompletedTask;
         Task<IOException?> input = Task.FromResult<IOException?>(null);
         TaskCompletionSource cancellation = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using CancellationTokenRegistration registration = cancellationToken.Register(() => cancellation.TrySetResult());
         try
         {
+            if (OperatingSystem.IsLinux())
+            {
+                processes!.CaptureStartedChild(process);
+                processes!.PinOutputPipes(process.StandardOutput.BaseStream, process.StandardError.BaseStream);
+                control = launch!.ObserveExecAsync(process.Id, processes, cancellationToken);
+            }
             input = WriteInputAsync(process, standardInput, cancellationToken);
             Task exited = process.WaitForExitAsync(CancellationToken.None);
             // Monitor all four directions from the outset. Git can produce stdout while a large stdin is still blocked.
@@ -178,7 +185,10 @@ public sealed class GitRunner(string executable = "git")
         {
             if (OperatingSystem.IsLinux())
             {
-                if (GitProcessGroup.Stop(process) is Exception stopFailure)
+                try { launch!.CancelUnacknowledgedHandshake(); }
+                catch (Exception handshakeFailure) { failure.Data["GitProcessHandshakeStopFailure"] = handshakeFailure; }
+                // Ownership was captured synchronously after Process.Start: neither HELLO nor exec completion gates stopping.
+                if (await processes!.StopAsync().ConfigureAwait(false) is Exception stopFailure)
                 {
                     failure.Data["GitProcessStopFailure"] = stopFailure;
                     // Surface the initial exception even if permissions prevent stopping an inherited writer.

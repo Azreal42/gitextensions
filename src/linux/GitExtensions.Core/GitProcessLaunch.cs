@@ -47,7 +47,7 @@ internal sealed class GitProcessLaunch : IDisposable
         }
     }
 
-    internal async Task ObserveExecAsync(int processId)
+    internal async Task ObserveExecAsync(int processId, GitProcessGroup processes, CancellationToken cancellationToken)
     {
         try
         {
@@ -60,10 +60,15 @@ internal sealed class GitProcessLaunch : IDisposable
             byte[]? hello = await ReceiveRecordAsync(connection).ConfigureAwait(false);
             if (hello is null || !ValidRecord(hello, processId, 0, 0))
             { throw new InvalidDataException("The private Git launcher did not provide a valid handshake."); }
+            processes.AuthenticateLeader(processId);
+            cancellationToken.ThrowIfCancellationRequested();
             // The child cannot exec or exit as Git until this acknowledgement is sent. This removes the exit/accept race.
             Volatile.Write(ref _acknowledged, 1);
-            if (await connection.SendAsync(new byte[] { 0xA5 }, SocketFlags.None, _controlCancellation.Token).ConfigureAwait(false) != 1)
-            { throw new IOException("The private Git launcher acknowledgement was not sent."); }
+            using (CancellationTokenSource acknowledgement = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _controlCancellation.Token))
+            {
+                if (await connection.SendAsync(new byte[] { 0xA5 }, SocketFlags.None, acknowledgement.Token).ConfigureAwait(false) != 1)
+                { throw new IOException("The private Git launcher acknowledgement was not sent."); }
+            }
             byte[]? errorRecord = await ReceiveRecordAsync(connection).ConfigureAwait(false);
             if (errorRecord is null)
             {
@@ -80,6 +85,8 @@ internal sealed class GitProcessLaunch : IDisposable
             catch (Exception witnessFailure) { nativeError.Data["GitProcessExecWitnessFailure"] = witnessFailure; }
             throw nativeError;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        { cancellationToken.ThrowIfCancellationRequested(); throw; }
         catch (OperationCanceledException exception) when (_controlCancellation.IsCancellationRequested)
         { throw new IOException("The private Git launcher exited without a valid acknowledged handshake.", exception); }
     }
@@ -87,6 +94,14 @@ internal sealed class GitProcessLaunch : IDisposable
     internal void ParentExited()
     {
         if (Volatile.Read(ref _acknowledged) == 0) { _controlCancellation.Cancel(); }
+    }
+
+    internal void CancelUnacknowledgedHandshake()
+    {
+        if (Volatile.Read(ref _acknowledged) != 0) { return; }
+        _controlCancellation.Cancel();
+        // Also reject a connected child still in the listener backlog; it must never wait forever for an ACK.
+        _listener.Dispose();
     }
 
     private async Task<byte[]?> ReceiveRecordAsync(Socket connection)

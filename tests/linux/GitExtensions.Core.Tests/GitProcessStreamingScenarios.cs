@@ -22,7 +22,12 @@ internal static partial class GitProcessStreamingScenarios
         ("Git launch resolves a relative executable before changing the child working directory", Guard(RelativeExecutablePathAsync)),
         ("missing and non-executable Git programs retain native launch errors without callbacks or effects", Guard(LaunchErrorsAsync)),
         ("a missing script interpreter retains Process.Start's native exec error without Git output", Guard(MissingInterpreterAsync)),
-        ("an invalid executable format retains Process.Start's ENOEXEC instead of becoming a Git exit", Guard(InvalidFormatAsync))
+        ("an invalid executable format retains Process.Start's ENOEXEC instead of becoming a Git exit", Guard(InvalidFormatAsync)),
+        ("graceful checkout cancellation lets actual Git remove its owned lock and preserves a concurrent foreign Git lock", Guard(GracefulCheckoutWithForeignGitAsync)),
+        ("graceful cancellation cleans the real orphaned checkout owner after its direct leader has exited", Guard(GracefulOrphanCheckoutAsync)),
+        ("a checkout observer fault retains its exact exception and native bytes while SIGINT cleans the owned index lock", Guard(GracefulObserverCheckoutAsync)),
+        ("witnessed SIGINT-ignoring actors with and without pipes survive the grace period then all stop before cancellation returns", Guard(IgnoredInterruptFallsBackAsync)),
+        ("cancellation stops the actual native launcher blocked before HELLO and postACK before exec without dispatching Git", Guard(BlockedNativeLaunchCancellationAsync))
     ];
     private static Func<Task> Guard(Func<Task> test) => async () =>
     {
