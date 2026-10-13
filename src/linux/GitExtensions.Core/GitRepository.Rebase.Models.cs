@@ -19,6 +19,7 @@ public sealed record GitRebaseCapabilities(Version GitVersion, bool SupportRebas
     bool AutoSquash, bool AutoStash, bool UpdateRefs);
 public enum GitRebaseBackend { None, Merge, Apply }
 public enum GitRebaseStepStatus { Applied, Applying, Pending, Skipped }
+public sealed record GitRebasePreservedJournal(string OriginalPath, string PreservedPath);
 public sealed record GitRebasePatch(string Action, string RawLine, string? CommitHash, GitCommit? Commit,
     GitRebaseStepStatus Status, string? PatchPath = null)
 {
@@ -34,11 +35,16 @@ public sealed record GitRebaseState(GitRebaseBackend Backend, string? OriginalHe
 {
     public GitRebaseOptions? Options { get; init; }
     public string? EncodingError { get; init; }
+    public string? JournalError { get; init; }
+    public IReadOnlyList<string> JournalPaths { get; init; } = [];
     public bool UsesLegacyPlan { get; init; }
     public bool IsActive => Backend != GitRebaseBackend.None;
     public bool HasConflicts => Conflicts.Count > 0;
     public IReadOnlyList<GitRebasePatch> TodoPatches => Steps;
-    public bool CanContinue => IsActive && !HasConflicts && EncodingError is null;
-    public bool CanEditTodo => Backend == GitRebaseBackend.Merge && TodoPath is not null && EncodingError is null && !UsesLegacyPlan;
+    public bool HasRecoverableJournal => !IsActive && JournalError is not null && JournalPaths.Count != 0;
+    public bool CanSkip => IsActive && EncodingError is null && JournalError is null;
+    public bool CanCommit => CanSkip;
+    public bool CanContinue => CanSkip && !HasConflicts;
+    public bool CanEditTodo => Backend == GitRebaseBackend.Merge && TodoPath is not null && CanSkip && !UsesLegacyPlan;
     public string? Current => CurrentCommit;
 }

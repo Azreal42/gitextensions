@@ -93,6 +93,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Fixture de commit prétend CP1252 sur argv UTF-8 | Fournir les octets via stdin/fichier et contrôler le header/octet du commit source avant toute comparaison. |
 | Revert ne rejette pas le hook attendu | Reproduire les hooks réellement exécutés par Git : prepare-commit-msg peut échouer en 128, préserver le draft puis remonter stderr natif. |
 | Codec Rebase invalide masque la reprise et bloque Abort | Lire le codec sauvegardé avant la config ; sans codec fiable garder l’état minimal. Abort ne dépend ni du codec courant ni de l’éditeur. |
+| Journal privé invalide masque Abort | Projeter le backend Git minimal sans codec/options devinés ; conserver les métadonnées et laisser Abort disponible. |
+| Nettoyage invalide masque un Abort Git réussi | Séparer succès Git et avertissement de journal conservé ; après fin, récupération explicite par renommage sans suivre les liens. |
 | Journal Rebase obsolète après une fin au terminal | Nettoyer uniquement un journal reconnu du worktree sans backend actif, sous verrou de commande ; préserver les contenus inconnus. |
 | Pull périmé peut remiser une résolution Rebase stagée | Revérifier le backend sous verrou avant autostash/fetch, même si la fenêtre Pull était déjà ouverte. |
 
@@ -112,7 +114,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
 | Culture/Alt/HEAD du test ne correspondent pas à l'écran | Fixer culture avant construction, poser focus initial, sélectionner le vrai commit attendu ; réouverture conserve volontairement la sélection. |
 | Pixels sélectionnés absents ou rejetés | Attendre une frame, exiger la vraie sélection, comparer le mélange anticrénelé plutôt qu'un pixel opaque. |
-| Geste XTest envoyé avant mapping, focus logique sans focus X11 | Attendre IsViewable, matcher le préfixe du titre ; calibration du vrai modal sans WM explicitée. Ni preuve de premier clic ni preuve Wayland. |
+| Geste XTest envoyé avant rendu, focus logique sans focus X11 | IsViewable peut précéder une frame encore noire ; mesurer une vraie frame rendue et le titre/PID avant input. Calibration sans WM explicite, sans preuve Wayland. |
 | WM_DELETE_WINDOW absent dans Xvfb sans WM | Avalonia met en cache les atoms absents ; le harnais pose les trois noms standard avant GUI et garde la connexion jusqu’à la fin du driver. Aucun comportement du WM hôte revendiqué. |
 | Plan natif vert puis launcher exit 2 | Figer/copier le launcher avant lancement, vérifier séparément exécution et fermeture. |
 | Harnais ne trouve pas un titre contenant des guillemets | Lire le vrai titre via XFetchName et vérifier le PID par XRes ; ne pas découper la sortie de xwininfo sur le premier guillemet. |

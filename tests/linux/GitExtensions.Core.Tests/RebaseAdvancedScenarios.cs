@@ -30,7 +30,13 @@ internal static partial class RebaseAdvancedScenarios
         ("rebase worktree lease protects a live native editor across processes and cancellation", Guard(NativeRebaseLeaseAsync)),
         ("rebase worktree lease protects startup before backend creation and releases after cancellation", Guard(RebaseStartupLeaseAsync)),
         ("rebase worktree leases isolate linked worktrees and preserve unsafe stale journals", Guard(RebaseLeaseIsolationAsync)),
-        ("pull-rebase refuses paused merge and apply sessions before auto-stash or fetch", Guard(PullRebaseActiveBackendAsync))
+        ("pull-rebase refuses paused merge and apply sessions before auto-stash or fetch", Guard(PullRebaseActiveBackendAsync)),
+        ("damaged native merge journals retain Git recovery and exact explicit preservation", Guard(InvalidNativeMergeJournalsAsync)),
+        ("damaged native apply journals retain Git recovery and exact explicit preservation", Guard(InvalidNativeApplyJournalsAsync)),
+        ("damaged legacy journals retain Git recovery and exact explicit preservation", Guard(InvalidLegacyJournalsAsync)),
+        ("ambiguous native and legacy journals remain preserved through Git Abort and explicit recovery", Guard(AmbiguousRebaseJournalsAsync)),
+        ("damaged journals after terminal Abort require exact explicit preservation before a fresh attempt", Guard(DamagedTerminalAbortJournalsAsync)),
+        ("orphan preservation uses the actual linked worktree GitDirectory without touching the primary checkout", Guard(LinkedWorktreeJournalPreservationAsync))
     ];
     private const string ModeVariable = "GITEXTENSIONS_REBASE_TEST_MODE";
     private const string CaptureVariable = "GITEXTENSIONS_REBASE_TEST_CAPTURE";

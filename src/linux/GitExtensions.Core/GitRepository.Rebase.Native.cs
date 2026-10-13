@@ -102,9 +102,12 @@ public sealed partial class GitRepository
         // change. Git restores its own checkout; no editor or current codec is needed.
         if (action == GitOperationAction.Abort)
         {
-            try { return await ExecuteAsync(["rebase", "--abort"], token).ConfigureAwait(false); }
-            finally { await CleanupObsoleteRebaseJournalsAsync(lease).ConfigureAwait(false); }
+            GitResult aborted = await ExecuteAsync(["rebase", "--abort"], token).ConfigureAwait(false);
+            IReadOnlyList<string> warnings = await CleanupRebaseJournalsWithWarningsAsync(lease).ConfigureAwait(false);
+            return aborted with { Warnings = [.. aborted.Warnings, .. warnings] };
         }
+        RebaseJournalInspection journals = InspectRebaseJournals(lease.GitDirectory);
+        if (journals.Error is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + journals.Error); }
         string legacy = System.IO.Path.Combine(lease.GitDirectory, "gitextensions-rebase");
         if (Directory.Exists(legacy))
         {
@@ -114,6 +117,7 @@ public sealed partial class GitRepository
             throw new NotSupportedException("A legacy rebase plan has frozen messages. Continue, skip or abort it using its saved plan; native todo editing is unavailable.");
         }
         GitRebaseState rebase = await GetRebaseStateAsync(token).ConfigureAwait(false);
+        if (rebase.JournalError is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + rebase.JournalError); }
         if (rebase.EncodingError is not null) { throw new NotSupportedException(rebase.EncodingError); }
         if (action is null && !rebase.CanEditTodo) { throw new InvalidOperationException("The apply backend has no editable todo."); }
         if (editorExecutable is not null) { GitRebaseEditor.ValidateExecutable(editorExecutable); }

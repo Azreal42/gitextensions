@@ -6,6 +6,7 @@ namespace GitExtensions.Linux;
 public sealed record GitResult(int ExitCode, string StandardOutput, string StandardError)
 {
     public bool Success => ExitCode == 0;
+    public IReadOnlyList<string> Warnings { get; init; } = [];
 }
 
 public sealed record GitBinaryResult(int ExitCode, byte[] StandardOutput, string StandardError)

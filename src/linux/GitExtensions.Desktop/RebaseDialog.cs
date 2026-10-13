@@ -29,15 +29,17 @@ public sealed class RebaseDialog : RepositoryDialog
     private readonly ListBox _patches = new() { Name = "RebasePatches", MinHeight = 100, SelectionMode = SelectionMode.Single, Focusable = true };
     private readonly ListBox _conflicts = new() { Name = "RebaseConflictFiles", MaxHeight = 70, IsVisible = false };
     private readonly StackPanel _options = new() { Name = "RebaseOptions", Spacing = 3 };
-    private readonly Button _execute, _continue, _skip, _abort, _resolve, _addFiles, _commit, _editTodo, _stash, _chooseFrom, _cancel;
+    private readonly Button _execute, _continue, _skip, _abort, _resolve, _addFiles, _commit, _editTodo, _stash, _chooseFrom, _cancel, _preserveJournal;
     private readonly TextBlock _conflictNotice = new() { Name = "RebaseConflictNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _encodingNotice = new() { Name = "RebaseEncodingNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _journalNotice = new() { Name = "RebaseJournalNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private GitRebaseState? _state;
     private GitRebaseCapabilities? _capabilities;
     private bool _loaded, _closingAccepted, _dirty;
     public GitRebaseState? State => _state;
     public bool Succeeded { get; private set; }
     public bool Aborted { get; private set; }
+    public IReadOnlyList<string> Warnings { get; private set; } = [];
     internal string EditorExecutable { get; set; } = Environment.ProcessPath ?? throw new InvalidOperationException("Cannot locate the rebase editor application.");
 
     public RebaseDialog(GitRepository repository, string? initialOnto = null, string? initialFrom = null, string? initialTo = null,
@@ -62,6 +64,8 @@ public sealed class RebaseDialog : RepositoryDialog
         _addFiles = Button("AddRebaseFiles", "btnAddFiles", "&Add files", AddFilesAsync);
         _commit = Button("CommitRebase", "btnCommit", "C&ommit...", CommitAsync);
         _editTodo = Button("EditRebaseTodo", "btnEditTodo", "&Edit todo...", EditTodoAsync);
+        _preserveJournal = Action("PreserveRebaseJournal", "Preserve journal", PreserveJournalAsync);
+        _preserveJournal.Height = 25;
         _stash = Action("StashBeforeRebase", "Stash", StashAsync);
         _chooseFrom = Action("ChooseRebaseFrom", "…", ChooseFromAsync); _chooseFrom.Width = 25; _chooseFrom.Height = 24;
         StackPanel current = new() { Orientation = Orientation.Horizontal, Spacing = 8, Children =
@@ -88,8 +92,8 @@ public sealed class RebaseDialog : RepositoryDialog
         _cancel.Click += (_, _) => Close();
         StackPanel actions = new() { Spacing = 3, Margin = new Thickness(0, 4, 0, 0), Children =
         {
-            _encodingNotice, _conflictNotice, _conflicts,
-            new WrapPanel { Orientation = Orientation.Horizontal, Children = { _addFiles, _commit, _editTodo, _skip } },
+            _encodingNotice, _journalNotice, _conflictNotice, _conflicts,
+            new WrapPanel { Orientation = Orientation.Horizontal, Children = { _preserveJournal, _addFiles, _commit, _editTodo, _skip } },
             new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6,
                 Children = { _resolve, _continue, _abort, _execute, _cancel } }
         } };
@@ -180,6 +184,12 @@ public sealed class RebaseDialog : RepositoryDialog
         _encodingNotice.IsVisible = _state.EncodingError is not null;
         _encodingNotice.Text = _state.EncodingError is string error
             ? error + " " + T("Restore the original commit message encoding and reopen this window to continue. Abort is available.") : null;
+        _journalNotice.IsVisible = _state.JournalError is not null || Warnings.Count != 0;
+        _journalNotice.Text = _state.JournalError is string journalError
+            ? journalError + " " + T(_state.IsActive
+                ? "The rebase journal cannot be read. Continue is unavailable; Abort is available."
+                : "The unfinished journal has been kept. Preserve it to start a new rebase.")
+            : string.Join(Environment.NewLine, Warnings);
         Status.Text = _state.IsActive ? T(_state.HasConflicts ? "There are unresolved merge conflicts" : "Continue rebase") : Text("lblRebase", "Rebase current branch on top of another branch");
         UpdateActions();
     }
@@ -207,23 +217,31 @@ public sealed class RebaseDialog : RepositoryDialog
     {
         if (!Enum.IsDefined(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         if (_state?.IsActive != true || action == GitOperationAction.Continue && !_state.CanContinue
-            || action == GitOperationAction.Skip && _state.EncodingError is not null) { return Task.CompletedTask; }
+            || action == GitOperationAction.Skip && !_state.CanSkip) { return Task.CompletedTask; }
         return RecoverAsync(action);
     }
     private Task EditTodoAsync() => MutateAsync("Edit todo", token => Repository.EditRebaseTodoAsync(EditorExecutable, token), closeFinished: false);
+    private Task PreserveJournalAsync() => RunAsync("Preserve journal", async token =>
+    {
+        IReadOnlyList<GitRebasePreservedJournal> preserved = await Repository.PreserveOrphanedRebaseJournalsAsync(token);
+        MarkRepositoryChanged();
+        Warnings = preserved.Select(journal => T("The journal was preserved at:") + " " + journal.PreservedPath).ToArray();
+        await ReloadAsync(token);
+        FocusAction();
+    }, cancellationToken: _token);
     private async Task MutateAsync(string label, Func<CancellationToken, Task<GitResult>> command, bool closeFinished = true, GitOperationAction? operation = null)
     {
-        bool finished = false; Succeeded = Aborted = false;
+        bool finished = false; Succeeded = Aborted = false; Warnings = [];
         await RunAsync(label, async token =>
         {
             MarkRepositoryChanged();
-            try { await command(token); }
+            try { Warnings = (await command(token)).Warnings; }
             finally { await ReloadAsync(CancellationToken.None); }
             finished = _state?.IsActive == false;
             Aborted = finished && operation == GitOperationAction.Abort;
             Succeeded = finished && closeFinished && operation != GitOperationAction.Abort;
         }, cancellationToken: _token);
-        if (finished && closeFinished && LastError is null && !_closingAccepted) { Close(); }
+        if (finished && closeFinished && LastError is null && Warnings.Count == 0 && _state?.HasRecoverableJournal != true && !_closingAccepted) { Close(); }
         else { FocusAction(); }
     }
 
@@ -236,19 +254,21 @@ public sealed class RebaseDialog : RepositoryDialog
         _interactive.IsEnabled &= !dates; _merges.IsEnabled &= !dates; _autosquash.IsEnabled &= !dates && _interactive.IsChecked == true;
         _updateRefs.IsVisible = _capabilities?.SupportUpdateRefs == true;
         _from.IsEnabled = _to.IsEnabled = _chooseFrom.IsEnabled = ready && !pending && _range.IsChecked == true;
-        _execute.IsVisible = !pending; _execute.IsEnabled = ready && !pending;
+        _execute.IsVisible = !pending; _execute.IsEnabled = ready && !pending && _state?.HasRecoverableJournal != true;
         _continue.IsVisible = pending && !conflict; _continue.IsEnabled = ready && _state?.CanContinue == true;
         _resolve.IsVisible = pending && conflict; _resolve.IsEnabled = ready && conflict;
         foreach (Button button in new[] { _skip, _abort, _addFiles, _commit }) { button.IsVisible = pending; button.IsEnabled = ready && pending; }
-        _skip.IsEnabled &= _state?.EncodingError is null; _commit.IsEnabled &= _state?.EncodingError is null;
+        _skip.IsEnabled &= _state?.CanSkip == true; _commit.IsEnabled &= _state?.CanCommit == true;
+        _preserveJournal.IsVisible = _state?.HasRecoverableJournal == true;
+        _preserveJournal.IsEnabled = ready && _state?.HasRecoverableJournal == true;
         _editTodo.IsVisible = pending; _editTodo.IsEnabled = ready && _state?.CanEditTodo == true;
         _stash.IsEnabled = ready && !pending && _dirty; _conflictNotice.IsVisible = _conflicts.IsVisible = pending && conflict;
-        _execute.IsDefault = !pending; _continue.IsDefault = pending && _state?.CanContinue == true; _resolve.IsDefault = pending && conflict;
+        _execute.IsDefault = !pending && _state?.HasRecoverableJournal != true; _continue.IsDefault = pending && _state?.CanContinue == true; _resolve.IsDefault = pending && conflict;
     }
     private void FocusAction()
     {
         if (!IsVisible || IsBusy || _closingAccepted) { return; }
-        Control target = _state?.IsActive != true ? _onto : _state.HasConflicts ? _resolve
+        Control target = _state?.HasRecoverableJournal == true ? _cancel : _state?.IsActive != true ? _onto : _state.HasConflicts ? _resolve
             : _state.CanContinue ? _continue : _cancel;
         target.Focus();
     }

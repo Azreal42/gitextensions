@@ -152,6 +152,8 @@ public sealed partial class GitRepository
 
     private async Task<RebaseEditorState> ValidateLegacyRebaseCodecAsync(string directory, RebaseLease lease, CancellationToken token)
     {
+        RebaseJournalInspection journals = InspectRebaseJournals(lease.GitDirectory);
+        if (journals.Error is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + journals.Error); }
         EnsureRebaseMetadataSafety(directory); EnsureRebaseMetadataFileSafety(System.IO.Path.Combine(directory, "state.json"));
         RebaseEditorState state = GitRebaseEditor.ReadState(directory);
         if (state.DonePath != System.IO.Path.Combine(lease.GitDirectory, "rebase-merge", "done"))

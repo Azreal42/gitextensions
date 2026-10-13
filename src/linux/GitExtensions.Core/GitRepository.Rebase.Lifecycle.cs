@@ -45,6 +45,8 @@ public sealed partial class GitRepository
     private async Task CleanupObsoleteRebaseJournalsAsync(RebaseLease lease)
     {
         if (HasRebaseBackend(lease)) { return; }
+        RebaseJournalInspection journals = InspectRebaseJournals(lease.GitDirectory);
+        if (journals.Error is not null) { throw new IOException("An invalid rebase journal has been preserved: " + journals.Error); }
         foreach (string name in new[] { "gitextensions-rebase", GitRebaseEditor.NativeStateDirectoryName })
         { await CleanupRebaseStateAsync(System.IO.Path.Combine(lease.GitDirectory, name), lease).ConfigureAwait(false); }
     }

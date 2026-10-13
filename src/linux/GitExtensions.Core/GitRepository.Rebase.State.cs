@@ -11,16 +11,18 @@ public sealed partial class GitRepository
         string merge = await GetGitPathAsync("rebase-merge", cancellationToken).ConfigureAwait(false);
         string apply = await GetGitPathAsync("rebase-apply", cancellationToken).ConfigureAwait(false);
         GitRebaseBackend backend = Directory.Exists(merge) ? GitRebaseBackend.Merge : Directory.Exists(apply) ? GitRebaseBackend.Apply : GitRebaseBackend.None;
-        if (backend == GitRebaseBackend.None) { return new(backend, null, null, null, null, [], [], null, null); }
+        GitRepositoryInfo info = await GetInfoAsync(cancellationToken).ConfigureAwait(false);
+        RebaseJournalInspection journals = InspectRebaseJournals(info.GitDirectory);
+        if (backend == GitRebaseBackend.None)
+        { return new(backend, null, null, null, null, [], [], null, null) { JournalError = journals.Error, JournalPaths = journals.Paths }; }
         string root = backend == GitRebaseBackend.Merge ? merge : apply;
-        string journal = await GetGitPathAsync(GitRebaseEditor.NativeStateDirectoryName, cancellationToken).ConfigureAwait(false);
-        NativeRebaseEditorState? session = Directory.Exists(journal) ? GitRebaseEditor.ReadNativeState(journal) : null;
+        NativeRebaseEditorState? session = journals.Error is null ? journals.Native : null;
         IReadOnlyList<string> skipped = session?.SkippedCommits ?? [];
-        string legacy = await GetGitPathAsync("gitextensions-rebase", cancellationToken).ConfigureAwait(false);
-        RebaseEditorState? legacySession = Directory.Exists(legacy) ? GitRebaseEditor.ReadState(legacy) : null;
+        RebaseEditorState? legacySession = journals.Error is null ? journals.Legacy : null;
         Encoding? encoding;
         string? encodingError = null;
-        if (legacySession is not null) { encoding = GitRebaseEditor.GetStrictEncoding(legacySession.EncodingName); }
+        if (journals.Error is not null) { encoding = null; }
+        else if (legacySession is not null) { encoding = GitRebaseEditor.GetStrictEncoding(legacySession.EncodingName); }
         else if (session is not null) { encoding = GitRebaseEditor.GetStrictEncoding(session.EncodingName); }
         else
         {
@@ -42,7 +44,8 @@ public sealed partial class GitRepository
             // Preserve visibility/Abort without guessing how to decode a native todo.
             return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
                 await Read("head-name").ConfigureAwait(false), current, [],
-                await GetConflictsAsync(cancellationToken).ConfigureAwait(false), null, null) { EncodingError = encodingError };
+                await GetConflictsAsync(cancellationToken).ConfigureAwait(false), null, null)
+                { EncodingError = encodingError, JournalError = journals.Error, JournalPaths = journals.Paths };
         }
         List<GitRebasePatch> patches = [];
         Dictionary<string, GitCommit?> metadata = new(StringComparer.Ordinal);
@@ -113,7 +116,7 @@ public sealed partial class GitRepository
         return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
             await Read("head-name").ConfigureAwait(false), current, patches,
             await GetConflictsAsync(cancellationToken).ConfigureAwait(false), todoPath, todoText)
-            { Options = legacySession is null ? session?.Options : null, UsesLegacyPlan = legacySession is not null };
+            { Options = legacySession is null ? session?.Options : null, UsesLegacyPlan = legacySession is not null, JournalPaths = journals.Paths };
     }
 
     private static string? RebaseTodoCommitHash(string[] parts)
