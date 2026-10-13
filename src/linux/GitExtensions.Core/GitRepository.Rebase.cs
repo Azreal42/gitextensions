@@ -26,9 +26,14 @@ public sealed partial class GitRepository
         GitRebaseEditor.ValidateExecutable(editorExecutable);
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         string? directory = null;
+        RebaseLease? lease = null;
+        bool created = false;
         try
         {
             await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+            lease = await AcquireRebaseLeaseAsync(cancellationToken).ConfigureAwait(false);
+            if (HasRebaseBackend(lease)) { throw new InvalidOperationException("A rebase is already in progress."); }
+            await CleanupObsoleteRebaseJournalsAsync(lease).ConfigureAwait(false);
             Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);
             if (await ResolveRevisionAsync("HEAD", cancellationToken).ConfigureAwait(false) != plan.Head)
             {
@@ -89,11 +94,7 @@ public sealed partial class GitRepository
             foreach (string message in messages.Values) { _ = encoding.GetBytes(message); }
             if (Directory.Exists(await GetGitPathAsync(GitRebaseEditor.NativeStateDirectoryName, cancellationToken).ConfigureAwait(false)))
             { throw new InvalidOperationException("A native rebase session must be completed first."); }
-            Directory.CreateDirectory(directory);
-            if (!OperatingSystem.IsWindows())
-            {
-                File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            }
+            CreatePrivateRebaseDirectory(directory); created = true;
 
             RebaseEditorState state = new(editorExecutable, await GetGitPathAsync("rebase-merge/done", cancellationToken).ConfigureAwait(false), messages, encoding.WebName);
             await File.WriteAllBytesAsync(System.IO.Path.Combine(directory, "todo"), todoBytes, cancellationToken).ConfigureAwait(false);
@@ -105,53 +106,73 @@ public sealed partial class GitRepository
         {
             try
             {
-                if (directory is not null)
+                if (directory is not null && lease is not null && created)
                 {
-                    await CleanupRebaseStateAsync(directory).ConfigureAwait(false);
+                    await CleanupRebaseStateAsync(directory, lease, createdByThisCommand: true).ConfigureAwait(false);
                 }
             }
             finally
             {
+                lease?.Dispose();
                 _mutationLock.Release();
             }
         }
     }
 
-    private async Task<GitResult> ManageRebaseOperationAsync(GitOperationAction action, CancellationToken cancellationToken)
+    private Task<GitResult> ManageRebaseOperationAsync(GitOperationAction action, CancellationToken cancellationToken)
+        => WithMutationAsync(async token =>
+        {
+            await EnsureWorktreeAsync(token).ConfigureAwait(false);
+            using RebaseLease lease = await AcquireRebaseLeaseAsync(token).ConfigureAwait(false);
+            string legacy = System.IO.Path.Combine(lease.GitDirectory, "gitextensions-rebase");
+            if (action == GitOperationAction.Abort || !Directory.Exists(legacy))
+            { return await RunNativeRebaseOperationWithLeaseAsync(action, null, lease, token).ConfigureAwait(false); }
+            return await RunLegacyRebaseOperationWithLeaseAsync(action, null, lease, token).ConfigureAwait(false);
+        }, cancellationToken);
+
+    private async Task<GitResult> RunLegacyRebaseOperationWithLeaseAsync(GitOperationAction action, string? editorExecutable,
+        RebaseLease lease, CancellationToken token)
     {
-        string legacy = await GetGitPathAsync("gitextensions-rebase", cancellationToken).ConfigureAwait(false);
-        if (!Directory.Exists(legacy))
-        { return await RunNativeRebaseOperationAsync(action, null, cancellationToken).ConfigureAwait(false); }
-        await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        string directory = System.IO.Path.Combine(lease.GitDirectory, "gitextensions-rebase");
         try
         {
-            await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
-            Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);
-            RebaseEditorState state = GitRebaseEditor.ReadState(legacy);
-            if (action != GitOperationAction.Abort && state.EncodingName != encoding.WebName)
-            { throw new InvalidOperationException("The commit encoding changed during this rebase. Restore its original encoding before continuing."); }
+            RebaseEditorState state = await ValidateLegacyRebaseCodecAsync(directory, lease, token).ConfigureAwait(false);
+            if (editorExecutable is not null && editorExecutable != state.EditorExecutable)
+            {
+                GitRebaseEditor.ValidateExecutable(editorExecutable);
+                token.ThrowIfCancellationRequested();
+                state = state with { EditorExecutable = editorExecutable };
+                WriteLegacyRebaseEditorState(directory, state);
+            }
             return await ExecuteAsync(["-c", "i18n.logOutputEncoding=" + state.EncodingName, "rebase", "--" + action.ToString().ToLowerInvariant()],
-                cancellationToken, environment: GitRebaseEditor.EnvironmentFor(legacy, state)).ConfigureAwait(false);
+                token, environment: GitRebaseEditor.EnvironmentFor(directory, state)).ConfigureAwait(false);
         }
-        finally
-        {
-            try { await CleanupRebaseStateAsync(legacy).ConfigureAwait(false); }
-            finally { _mutationLock.Release(); }
-        }
+        finally { await CleanupObsoleteRebaseJournalsAsync(lease).ConfigureAwait(false); }
     }
 
-    private async Task CleanupRebaseStateAsync(string directory)
+    private async Task<RebaseEditorState> ValidateLegacyRebaseCodecAsync(string directory, RebaseLease lease, CancellationToken token)
     {
-        if (!Directory.Exists(directory))
-        {
-            return;
-        }
+        EnsureRebaseMetadataSafety(directory); EnsureRebaseMetadataFileSafety(System.IO.Path.Combine(directory, "state.json"));
+        RebaseEditorState state = GitRebaseEditor.ReadState(directory);
+        if (state.DonePath != System.IO.Path.Combine(lease.GitDirectory, "rebase-merge", "done"))
+        { throw new IOException("The legacy rebase journal belongs to another worktree."); }
+        _ = GitRebaseEditor.GetStrictEncoding(state.EncodingName);
+        Encoding encoding = await GetCommitMessageEncodingAsync(token).ConfigureAwait(false);
+        if (state.EncodingName != encoding.WebName)
+        { throw new InvalidOperationException("The commit encoding changed during this rebase. Restore its original encoding before editing or continuing."); }
+        return state;
+    }
 
-        if (!Directory.Exists(await GetGitPathAsync("rebase-merge", CancellationToken.None).ConfigureAwait(false))
-            && !Directory.Exists(await GetGitPathAsync("rebase-apply", CancellationToken.None).ConfigureAwait(false)))
+    private static void WriteLegacyRebaseEditorState(string directory, RebaseEditorState state)
+    {
+        string path = System.IO.Path.Combine(directory, "state.json"), temporary = System.IO.Path.Combine(directory, "state-" + Guid.NewGuid().ToString("N") + ".tmp");
+        EnsureRebaseMetadataSafety(directory); EnsureRebaseMetadataFileSafety(path);
+        try
         {
-            Directory.Delete(directory, recursive: true);
+            File.WriteAllBytes(temporary, JsonSerializer.SerializeToUtf8Bytes(state));
+            File.Move(temporary, path, overwrite: true);
         }
+        finally { File.Delete(temporary); }
     }
 
     private async Task<string> GetGitPathAsync(string name, CancellationToken cancellationToken)

@@ -33,10 +33,12 @@ public sealed record GitRebaseState(GitRebaseBackend Backend, string? OriginalHe
     string? TodoPath, string? TodoText)
 {
     public GitRebaseOptions? Options { get; init; }
+    public string? EncodingError { get; init; }
+    public bool UsesLegacyPlan { get; init; }
     public bool IsActive => Backend != GitRebaseBackend.None;
     public bool HasConflicts => Conflicts.Count > 0;
     public IReadOnlyList<GitRebasePatch> TodoPatches => Steps;
-    public bool CanContinue => IsActive && !HasConflicts;
-    public bool CanEditTodo => Backend == GitRebaseBackend.Merge && TodoPath is not null;
+    public bool CanContinue => IsActive && !HasConflicts && EncodingError is null;
+    public bool CanEditTodo => Backend == GitRebaseBackend.Merge && TodoPath is not null && EncodingError is null && !UsesLegacyPlan;
     public string? Current => CurrentCommit;
 }

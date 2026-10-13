@@ -13,11 +13,20 @@ public sealed partial class GitRepository
         GitRebaseBackend backend = Directory.Exists(merge) ? GitRebaseBackend.Merge : Directory.Exists(apply) ? GitRebaseBackend.Apply : GitRebaseBackend.None;
         if (backend == GitRebaseBackend.None) { return new(backend, null, null, null, null, [], [], null, null); }
         string root = backend == GitRebaseBackend.Merge ? merge : apply;
-        Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);
         string journal = await GetGitPathAsync(GitRebaseEditor.NativeStateDirectoryName, cancellationToken).ConfigureAwait(false);
         NativeRebaseEditorState? session = Directory.Exists(journal) ? GitRebaseEditor.ReadNativeState(journal) : null;
         IReadOnlyList<string> skipped = session?.SkippedCommits ?? [];
-        if (session is not null) { encoding = GitRebaseEditor.GetStrictEncoding(session.EncodingName); }
+        string legacy = await GetGitPathAsync("gitextensions-rebase", cancellationToken).ConfigureAwait(false);
+        RebaseEditorState? legacySession = Directory.Exists(legacy) ? GitRebaseEditor.ReadState(legacy) : null;
+        Encoding? encoding;
+        string? encodingError = null;
+        if (legacySession is not null) { encoding = GitRebaseEditor.GetStrictEncoding(legacySession.EncodingName); }
+        else if (session is not null) { encoding = GitRebaseEditor.GetStrictEncoding(session.EncodingName); }
+        else
+        {
+            try { encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false); }
+            catch (NotSupportedException error) { encoding = null; encodingError = error.Message; }
+        }
         async Task<string?> Read(string name, Encoding? codec = null, bool trim = true)
         {
             string file = System.IO.Path.Combine(root, name);
@@ -27,6 +36,14 @@ public sealed partial class GitRepository
         }
         string? current = await Read("stopped-sha").ConfigureAwait(false)
             ?? EmptyToNull((await ExecuteAsync(["rev-parse", "--verify", "REBASE_HEAD"], cancellationToken, allowedExitCodes: [1, 128]).ConfigureAwait(false)).StandardOutput.Trim());
+        if (encoding is null)
+        {
+            // Administrative identities and conflicts are codec-independent.
+            // Preserve visibility/Abort without guessing how to decode a native todo.
+            return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
+                await Read("head-name").ConfigureAwait(false), current, [],
+                await GetConflictsAsync(cancellationToken).ConfigureAwait(false), null, null) { EncodingError = encodingError };
+        }
         List<GitRebasePatch> patches = [];
         Dictionary<string, GitCommit?> metadata = new(StringComparer.Ordinal);
         async Task<GitCommit?> Commit(string? hash)
@@ -95,7 +112,8 @@ public sealed partial class GitRepository
         }
         return new(backend, await Read("orig-head").ConfigureAwait(false), await Read("onto").ConfigureAwait(false),
             await Read("head-name").ConfigureAwait(false), current, patches,
-            await GetConflictsAsync(cancellationToken).ConfigureAwait(false), todoPath, todoText) { Options = session?.Options };
+            await GetConflictsAsync(cancellationToken).ConfigureAwait(false), todoPath, todoText)
+            { Options = legacySession is null ? session?.Options : null, UsesLegacyPlan = legacySession is not null };
     }
 
     private static string? RebaseTodoCommitHash(string[] parts)

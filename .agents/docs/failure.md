@@ -92,6 +92,9 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Blob staged encore présent après GC | resolve-undo (REUC) peut le retenir ; attester sa suppression native puis absence réelle avant de tester la restauration. |
 | Fixture de commit prétend CP1252 sur argv UTF-8 | Fournir les octets via stdin/fichier et contrôler le header/octet du commit source avant toute comparaison. |
 | Revert ne rejette pas le hook attendu | Reproduire les hooks réellement exécutés par Git : prepare-commit-msg peut échouer en 128, préserver le draft puis remonter stderr natif. |
+| Codec Rebase invalide masque la reprise et bloque Abort | Lire le codec sauvegardé avant la config ; sans codec fiable garder l’état minimal. Abort ne dépend ni du codec courant ni de l’éditeur. |
+| Journal Rebase obsolète après une fin au terminal | Nettoyer uniquement un journal reconnu du worktree sans backend actif, sous verrou de commande ; préserver les contenus inconnus. |
+| Pull périmé peut remiser une résolution Rebase stagée | Revérifier le backend sous verrou avant autostash/fetch, même si la fenêtre Pull était déjà ouverte. |
 
 ## Build et validation — repères
 
@@ -104,6 +107,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Assert.ThrowsAsync bloque le dispatcher Avalonia | Attendre réellement la tâche et capturer l’exception ; l’assertion NUnit synchrone ne laisse pas avancer le modal. |
 | Bouton visible mais clic central traverse au Panel | Un Background null local efface le style et son fond ; ClearValue rend aussi survol/pression au thème. Conserver un seul clic au centre dans le test. |
 | Compteur Click reste nul malgré fermeture | Button.ClickEvent route en Bubble ; écouter la route réelle, sans rejouer le geste. |
+| Modal déjà OwnedWindows mais hit-test encore vide | L’apparition précède le commit du renderer headless ; attendre la vraie cible entre frames avant l’unique premier clic. Échec initial conservé, oracles Git/callback inchangés. |
 | Tests Avalonia bloquent ou teardown masque l'exception | Attente async normale sur dispatcher, BindingPriority.Template pour TemplateBinding ; ne pas modifier l'isolation pour masquer le défaut. |
 | AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
 | Culture/Alt/HEAD du test ne correspondent pas à l'écran | Fixer culture avant construction, poser focus initial, sélectionner le vrai commit attendu ; réouverture conserve volontairement la sélection. |

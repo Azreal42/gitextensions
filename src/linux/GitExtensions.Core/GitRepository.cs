@@ -458,7 +458,7 @@ public sealed partial class GitRepository
         => CherryPickCommittedAsync(revision, cancellationToken);
 
     public Task<GitResult> RebaseAsync(string revision, CancellationToken cancellationToken = default)
-        => MutateAsync(["rebase", "--", ValidateValue(revision)], cancellationToken);
+        => StartSimpleRebaseAsync(ValidateValue(revision), cancellationToken);
 
     public Task<GitResult> ManageOperationAsync(string operation, GitOperationAction action, CancellationToken cancellationToken = default)
     {

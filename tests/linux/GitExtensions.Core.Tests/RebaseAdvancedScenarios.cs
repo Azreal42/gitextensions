@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using GitExtensions.Linux;
 
-internal static class RebaseAdvancedScenarios
+internal static partial class RebaseAdvancedScenarios
 {
     internal static readonly (string Name, Func<Task> Run)[] All =
     [
@@ -22,7 +22,15 @@ internal static class RebaseAdvancedScenarios
         ("rebase editor preimage and pathname guards preserve concurrent text", Guard(EditorGuardsAsync)),
         ("rebase incompatible native message is rejected without file corruption", Guard(EditorEncodingFailureAsync)),
         ("rebase invalid options codecs and pre-cancellation leave state untouched", Guard(ValidationAsync)),
-        ("rebase cancellation terminates a blocked native editor and stays recoverable", Guard(EditorCancellationAsync))
+        ("rebase cancellation terminates a blocked native editor and stays recoverable", Guard(EditorCancellationAsync)),
+        ("rebase saved native codec keeps merge and apply Abort independent of current configuration", Guard(SavedNativeAbortCodecAsync)),
+        ("rebase saved legacy codec keeps recovery readable and Abort available", Guard(SavedLegacyAbortCodecAsync)),
+        ("external rebase invalid codecs expose minimal merge and apply recovery without mutation", Guard(ExternalAbortCodecAsync)),
+        ("terminal Abort and completion permit new native and legacy rebase attempts", Guard(TerminalRebaseLifecycleAsync)),
+        ("rebase worktree lease protects a live native editor across processes and cancellation", Guard(NativeRebaseLeaseAsync)),
+        ("rebase worktree lease protects startup before backend creation and releases after cancellation", Guard(RebaseStartupLeaseAsync)),
+        ("rebase worktree leases isolate linked worktrees and preserve unsafe stale journals", Guard(RebaseLeaseIsolationAsync)),
+        ("pull-rebase refuses paused merge and apply sessions before auto-stash or fetch", Guard(PullRebaseActiveBackendAsync))
     ];
     private const string ModeVariable = "GITEXTENSIONS_REBASE_TEST_MODE";
     private const string CaptureVariable = "GITEXTENSIONS_REBASE_TEST_CAPTURE";
@@ -30,6 +38,7 @@ internal static class RebaseAdvancedScenarios
     // Registered before the ordinary console suite by Root. This is a real child executable invoked by Git.
     internal static bool TryHandleEditor(string[] args, out int exitCode)
     {
+        if (TryHandleLifecycleWorker(args, out exitCode)) { return true; }
         exitCode = 0;
         if (!GitRebaseEditor.IsNativeEditorInvocation(args) || Environment.GetEnvironmentVariable(ModeVariable) is not string mode) { return false; }
         try

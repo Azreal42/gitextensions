@@ -150,9 +150,9 @@ public sealed class ResetRevertDialogTests
             Pointer(Field<Button>(dialog, "ExecuteResetCurrentBranch"));
             if (hard)
             {
-                await Until(() => dialog.OwnedWindows.Any(window => window.Name == "ResetHardWarning")); Pointer(Field<Button>(dialog.OwnedWindows.Single(window => window.Name == "ResetHardWarning"), "ConfirmHardReset"));
+                await Until(() => dialog.OwnedWindows.Any(window => window.Name == "ResetHardWarning")); await PointerAfterPopupClosed(Field<Button>(dialog.OwnedWindows.Single(window => window.Name == "ResetHardWarning"), "ConfirmHardReset"));
                 await Until(() => dialog.OwnedWindows.OfType<CheckoutSubmodulePrompt>().Any()); CheckoutSubmodulePrompt prompt = dialog.OwnedWindows.OfType<CheckoutSubmodulePrompt>().Single();
-                Button yes = prompt.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "UpdateCheckoutSubmodules"); Pointer(yes);
+                Button yes = prompt.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "UpdateCheckoutSubmodules"); await PointerAfterPopupClosed(yes);
             }
             await Until(() => !dialog.IsVisible && !dialog.IsBusy, () => dialog.LastError);
             Assert.That(dialog.SubmodulesUpdated, Is.True); Assert.That(callbacks, Is.EqualTo(1)); Assert.That((await f.GitAt(worktree, "rev-parse", "HEAD")).StandardOutput.Trim(), Is.EqualTo(one));

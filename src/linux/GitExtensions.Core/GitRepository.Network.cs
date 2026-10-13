@@ -62,6 +62,14 @@ public sealed partial class GitRepository
         {
             await EnsureWorktreeAsync(token).ConfigureAwait(false);
             await ValidateUnshallowAsync(options.Unshallow, token).ConfigureAwait(false);
+            using RebaseLease? rebaseLease = mode == GitPullMode.Rebase
+                ? await AcquireRebaseLeaseAsync(token).ConfigureAwait(false) : null;
+            if (rebaseLease is not null)
+            {
+                if (HasRebaseBackend(rebaseLease))
+                { throw new InvalidOperationException("A rebase is already in progress. Continue, skip or abort it before pulling again."); }
+                await CleanupObsoleteRebaseJournalsAsync(rebaseLease).ConfigureAwait(false);
+            }
             if (mode == GitPullMode.Merge && (await GetConfigAsync("^pull\\.ff$", cancellationToken: token).ConfigureAwait(false)).LastOrDefault().Value == "only")
             { arguments.Insert(2, "--ff-only"); }
             string[] global = await GetNetworkOptionsAsync(token).ConfigureAwait(false);
@@ -81,7 +89,9 @@ public sealed partial class GitRepository
                     if (current?.Hash != previous?.Hash) { saved = current; }
                 }
             }
-            GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. global, .. arguments], token).ConfigureAwait(false);
+            GitResult result;
+            try { result = await _runner.RunAsync(Path, [.. GlobalOptions, .. global, .. arguments], token).ConfigureAwait(false); }
+            finally { if (rebaseLease is not null) { await CleanupObsoleteRebaseJournalsAsync(rebaseLease).ConfigureAwait(false); } }
             // Git errors are returned with the saved stash so the host can keep it
             // and expose conflict recovery. Cancellation still propagates normally.
             return new GitPullExecutionResult(result, saved, arguments.ToArray()) { StashResult = stashResult };

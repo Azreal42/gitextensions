@@ -128,6 +128,70 @@ public class RebaseDialogTests
         Assert.That(System.IO.File.ReadAllBytes(f.File("untracked λ [1].dat")), Is.EqualTo(bytes)); Assert.That((await f.Repository.GetRebaseStateAsync()).IsActive, Is.False);
     }
 
+    [AvaloniaTest] public Task ExternalMergeWithUnknownEncodingRemainsAbortable() => ExternalInvalidEncodingRemainsAbortable("merge", "unknown-rebase-ui-codec");
+    [AvaloniaTest] public Task ExternalMergeWithUtf16EncodingRemainsAbortable() => ExternalInvalidEncodingRemainsAbortable("merge", "utf-16");
+    [AvaloniaTest] public Task ExternalApplyWithUnknownEncodingRemainsAbortable() => ExternalInvalidEncodingRemainsAbortable("apply", "unknown-rebase-ui-codec");
+    [AvaloniaTest] public Task ExternalApplyWithUtf16EncodingRemainsAbortable() => ExternalInvalidEncodingRemainsAbortable("apply", "utf-16");
+    private async Task ExternalInvalidEncodingRemainsAbortable(string backend, string codec)
+    {
+        using RebaseUiFixture f = await RebaseUiFixture.Create(conflict: true);
+        f.Write("untracked [codec].dat", "kept\0bytes\n");
+        string originalHead = await f.Text("rev-parse", "HEAD"), originalIndex = await f.Text("ls-files", "--stage");
+        byte[] untracked = System.IO.File.ReadAllBytes(f.File("untracked [codec].dat"));
+        GitResult conflict = await new GitRunner().RunAsync(f.Root, ["-c", "rebase.backend=" + backend, "rebase", "main"]);
+        Assert.That(conflict.Success, Is.False);
+        await f.Git("config", "i18n.commitEncoding", codec);
+        byte[] config = System.IO.File.ReadAllBytes(f.File(".git/config"));
+        string pending = await f.Witness();
+        RebaseDialog dialog = await f.Show(dark: backend == "apply");
+        Assert.That(dialog.LastError, Is.Null); Assert.That(dialog.State!.IsActive, Is.True);
+        Assert.That(dialog.State.Backend, Is.EqualTo(backend == "merge" ? GitRebaseBackend.Merge : GitRebaseBackend.Apply));
+        Assert.That(dialog.State.CurrentCommit, Is.EqualTo(f.Topic)); Assert.That(dialog.State.HasConflicts, Is.True);
+        Assert.That(dialog.State.EncodingError, Does.Contain(codec)); Assert.That(dialog.State.Steps, Is.Empty);
+        Assert.That(dialog.State.TodoText, Is.Null, "Unknown todo bytes must not acquire a guessed decoding.");
+        Assert.That(Field<TextBlock>(dialog, "RebaseEncodingNotice").IsVisible, Is.True);
+        Assert.That(Field<TextBlock>(dialog, "RebaseEncodingNotice").Text, Does.Contain("Abort"));
+        foreach (string action in new[] { "ContinueRebase", "EditRebaseTodo", "SkipRebase", "CommitRebase" })
+        { Assert.That(Field<Button>(dialog, action).IsEnabled, Is.False, action); }
+        Assert.That(Field<Button>(dialog, "AbortRebase").IsEnabled, Is.True);
+        Assert.That(Field<Button>(dialog, "AbortRebase").IsDefault, Is.False, "A codec error must not make Abort the Enter action.");
+        Assert.That(await f.Witness(), Is.EqualTo(pending), "Reading an unreadable external session must preserve its exact preimage.");
+        Capture(dialog, "rebase-external-" + backend + "-" + (codec == "utf-16" ? "utf16" : "unknown") + ".png");
+        Click(Field<Button>(dialog, "AbortRebase")); await Until(() => !dialog.IsVisible && !dialog.IsBusy);
+        Assert.That(dialog.Aborted, Is.True, dialog.LastError); Assert.That(dialog.Succeeded, Is.False);
+        Assert.That(await f.Text("rev-parse", "HEAD"), Is.EqualTo(originalHead)); Assert.That(await f.Text("ls-files", "--stage"), Is.EqualTo(originalIndex));
+        Assert.That(await f.Text("branch", "--show-current"), Is.EqualTo("topic"));
+        Assert.That(System.IO.File.ReadAllBytes(f.File(".git/config")), Is.EqualTo(config));
+        Assert.That(System.IO.File.ReadAllBytes(f.File("untracked [codec].dat")), Is.EqualTo(untracked));
+        Assert.That((await f.Repository.GetRebaseStateAsync()).IsActive, Is.False);
+    }
+
+    [AvaloniaTest] public Task NativeJournalWithUnknownEncodingKeepsReadableStateAndAllowsAbort() => NativeJournalEncodingChanged("unknown-rebase-ui-codec");
+    [AvaloniaTest] public Task NativeJournalWithUtf16EncodingKeepsReadableStateAndAllowsAbort() => NativeJournalEncodingChanged("utf-16");
+    private async Task NativeJournalEncodingChanged(string codec)
+    {
+        using RebaseUiFixture f = await RebaseUiFixture.Create(conflict: true);
+        string originalHead = await f.Text("rev-parse", "HEAD"), originalIndex = await f.Text("ls-files", "--stage");
+        await f.StartConflict(); f.Write("base.txt", "resolved café\n"); await f.Git("add", "base.txt");
+        await f.Git("config", "i18n.commitEncoding", codec);
+        byte[] config = System.IO.File.ReadAllBytes(f.File(".git/config")); string pending = await f.Witness();
+        byte[] journal = System.IO.File.ReadAllBytes(f.File(".git/gitextensions-rebase-native/state.json"));
+        RebaseDialog dialog = await f.Show();
+        Assert.That(dialog.LastError, Is.Null); Assert.That(dialog.State!.EncodingError, Is.Null, "The saved codec still identifies the native todo bytes.");
+        Assert.That(dialog.State.CurrentCommit, Is.EqualTo(f.Topic)); Assert.That(dialog.State.Steps.Any(patch => patch.CommitHash == f.Topic), Is.True);
+        Assert.That(Field<Button>(dialog, "ContinueRebase").IsEnabled, Is.True);
+        Click(Field<Button>(dialog, "ContinueRebase")); await Until(() => !dialog.IsBusy && dialog.LastError is not null);
+        Assert.That(dialog.LastError, Does.Contain(codec)); Assert.That(dialog.IsVisible, Is.True);
+        Assert.That(dialog.Succeeded || dialog.Aborted, Is.False); Assert.That(dialog.State!.IsActive, Is.True);
+        Assert.That(await f.Witness(), Is.EqualTo(pending), "Continue must reject the changed codec before writing Git state.");
+        Assert.That(System.IO.File.ReadAllBytes(f.File(".git/gitextensions-rebase-native/state.json")), Is.EqualTo(journal));
+        Click(Field<Button>(dialog, "AbortRebase")); await Until(() => !dialog.IsVisible && !dialog.IsBusy);
+        Assert.That(dialog.Aborted, Is.True, dialog.LastError); Assert.That(dialog.Succeeded, Is.False);
+        Assert.That(await f.Text("rev-parse", "HEAD"), Is.EqualTo(originalHead)); Assert.That(await f.Text("ls-files", "--stage"), Is.EqualTo(originalIndex));
+        Assert.That(System.IO.File.ReadAllBytes(f.File(".git/config")), Is.EqualTo(config));
+        Assert.That(Directory.Exists(f.File(".git/gitextensions-rebase-native")), Is.False);
+    }
+
     [AvaloniaTest]
     public async Task SkipDropsOnlyCurrentlyApplyingCommitAndKeepsTheFollowingNativeTodo()
     {

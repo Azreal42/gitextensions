@@ -29,8 +29,9 @@ public sealed class RebaseDialog : RepositoryDialog
     private readonly ListBox _patches = new() { Name = "RebasePatches", MinHeight = 100, SelectionMode = SelectionMode.Single, Focusable = true };
     private readonly ListBox _conflicts = new() { Name = "RebaseConflictFiles", MaxHeight = 70, IsVisible = false };
     private readonly StackPanel _options = new() { Name = "RebaseOptions", Spacing = 3 };
-    private readonly Button _execute, _continue, _skip, _abort, _resolve, _addFiles, _commit, _editTodo, _stash, _chooseFrom;
+    private readonly Button _execute, _continue, _skip, _abort, _resolve, _addFiles, _commit, _editTodo, _stash, _chooseFrom, _cancel;
     private readonly TextBlock _conflictNotice = new() { Name = "RebaseConflictNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _encodingNotice = new() { Name = "RebaseEncodingNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private GitRebaseState? _state;
     private GitRebaseCapabilities? _capabilities;
     private bool _loaded, _closingAccepted, _dirty;
@@ -83,14 +84,14 @@ public sealed class RebaseDialog : RepositoryDialog
         DockPanel controls = new() { LastChildFill = true, Margin = new Thickness(8) };
         DockPanel.SetDock(top, Dock.Top); controls.Children.Add(top);
         _conflictNotice.Text = Text("btnSolveMergeconflicts", "There are unresolved merge conflicts\r\n").TrimEnd();
-        Button cancel = new() { Name = "CancelRebase", Content = T("Cancel"), IsCancel = true, MinWidth = 75, Height = 25 };
-        cancel.Click += (_, _) => Close();
+        _cancel = new() { Name = "CancelRebase", Content = T("Cancel"), IsCancel = true, MinWidth = 75, Height = 25 };
+        _cancel.Click += (_, _) => Close();
         StackPanel actions = new() { Spacing = 3, Margin = new Thickness(0, 4, 0, 0), Children =
         {
-            _conflictNotice, _conflicts,
+            _encodingNotice, _conflictNotice, _conflicts,
             new WrapPanel { Orientation = Orientation.Horizontal, Children = { _addFiles, _commit, _editTodo, _skip } },
             new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6,
-                Children = { _resolve, _continue, _abort, _execute, cancel } }
+                Children = { _resolve, _continue, _abort, _execute, _cancel } }
         } };
         foreach (Button action in new[] { _addFiles, _commit, _editTodo, _skip }) { action.Margin = new Thickness(0, 0, 6, 0); }
         DockPanel.SetDock(actions, Dock.Bottom); controls.Children.Add(actions);
@@ -176,6 +177,9 @@ public sealed class RebaseDialog : RepositoryDialog
         }
         _patches.ItemsSource = _state.Steps; _patches.SelectedItem = _state.Steps.FirstOrDefault(patch => patch.Status == GitRebaseStepStatus.Applying) ?? _state.Steps.FirstOrDefault();
         _conflicts.ItemsSource = _state.Conflicts.Select(conflict => conflict.Path).ToArray();
+        _encodingNotice.IsVisible = _state.EncodingError is not null;
+        _encodingNotice.Text = _state.EncodingError is string error
+            ? error + " " + T("Restore the original commit message encoding and reopen this window to continue. Abort is available.") : null;
         Status.Text = _state.IsActive ? T(_state.HasConflicts ? "There are unresolved merge conflicts" : "Continue rebase") : Text("lblRebase", "Rebase current branch on top of another branch");
         UpdateActions();
     }
@@ -202,7 +206,8 @@ public sealed class RebaseDialog : RepositoryDialog
     public Task ManageRebaseAsync(GitOperationAction action)
     {
         if (!Enum.IsDefined(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
-        if (_state?.IsActive != true || action == GitOperationAction.Continue && !_state.CanContinue) { return Task.CompletedTask; }
+        if (_state?.IsActive != true || action == GitOperationAction.Continue && !_state.CanContinue
+            || action == GitOperationAction.Skip && _state.EncodingError is not null) { return Task.CompletedTask; }
         return RecoverAsync(action);
     }
     private Task EditTodoAsync() => MutateAsync("Edit todo", token => Repository.EditRebaseTodoAsync(EditorExecutable, token), closeFinished: false);
@@ -235,11 +240,18 @@ public sealed class RebaseDialog : RepositoryDialog
         _continue.IsVisible = pending && !conflict; _continue.IsEnabled = ready && _state?.CanContinue == true;
         _resolve.IsVisible = pending && conflict; _resolve.IsEnabled = ready && conflict;
         foreach (Button button in new[] { _skip, _abort, _addFiles, _commit }) { button.IsVisible = pending; button.IsEnabled = ready && pending; }
+        _skip.IsEnabled &= _state?.EncodingError is null; _commit.IsEnabled &= _state?.EncodingError is null;
         _editTodo.IsVisible = pending; _editTodo.IsEnabled = ready && _state?.CanEditTodo == true;
         _stash.IsEnabled = ready && !pending && _dirty; _conflictNotice.IsVisible = _conflicts.IsVisible = pending && conflict;
-        _execute.IsDefault = !pending; _continue.IsDefault = pending && !conflict; _resolve.IsDefault = pending && conflict;
+        _execute.IsDefault = !pending; _continue.IsDefault = pending && _state?.CanContinue == true; _resolve.IsDefault = pending && conflict;
     }
-    private void FocusAction() { if (!IsVisible || IsBusy || _closingAccepted) { return; } (_state?.IsActive != true ? _onto : _state?.HasConflicts == true ? (Control)_resolve : _continue).Focus(); }
+    private void FocusAction()
+    {
+        if (!IsVisible || IsBusy || _closingAccepted) { return; }
+        Control target = _state?.IsActive != true ? _onto : _state.HasConflicts ? _resolve
+            : _state.CanContinue ? _continue : _cancel;
+        target.Focus();
+    }
     protected override void OnClosing(WindowClosingEventArgs args)
     { bool previous = _closingAccepted; _closingAccepted = true; base.OnClosing(args); if (args.Cancel) { _closingAccepted = previous; } }
 

@@ -20,6 +20,10 @@ public sealed partial class GitRepository
         return WithMutationAsync(async token =>
         {
             await EnsureWorktreeAsync(token).ConfigureAwait(false);
+            using RebaseLease lease = await AcquireRebaseLeaseAsync(token).ConfigureAwait(false);
+            if (HasRebaseBackend(lease))
+            { throw new InvalidOperationException("A rebase is already in progress. Continue, skip or abort it first."); }
+            await CleanupObsoleteRebaseJournalsAsync(lease).ConfigureAwait(false);
             if (options.From is null ^ options.OnTo is null)
             { throw new ArgumentException("From and OnTo must both have values, or neither may.", nameof(options)); }
             string branch = ValidateValue(options.BranchName);
@@ -45,7 +49,7 @@ public sealed partial class GitRepository
             GitRepositoryInfo info = await GetInfoAsync(token).ConfigureAwait(false);
             NativeRebaseEditorState state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, [], options);
             token.ThrowIfCancellationRequested();
-            Directory.CreateDirectory(directory); SetPrivateRebaseDirectory(directory);
+            CreatePrivateRebaseDirectory(directory);
             try
             {
                 GitRebaseEditor.WriteNativeState(directory, state);
@@ -65,7 +69,7 @@ public sealed partial class GitRepository
                 arguments.Add(branch);
                 return await ExecuteNativeRebaseAsync(arguments, directory, state, token).ConfigureAwait(false);
             }
-            finally { await CleanupRebaseStateAsync(directory).ConfigureAwait(false); }
+            finally { await CleanupRebaseStateAsync(directory, lease, createdByThisCommand: true).ConfigureAwait(false); }
         }, cancellationToken);
     }
 
@@ -86,46 +90,71 @@ public sealed partial class GitRepository
         => WithMutationAsync(async token =>
         {
             await EnsureWorktreeAsync(token).ConfigureAwait(false);
-            GitRebaseState rebase = await GetRebaseStateAsync(token).ConfigureAwait(false);
-            if (!rebase.IsActive) { throw new InvalidOperationException("No rebase is in progress."); }
-            if (action is null && !rebase.CanEditTodo) { throw new InvalidOperationException("The apply backend has no editable todo."); }
-            Encoding encoding = await GetCommitMessageEncodingAsync(token).ConfigureAwait(false);
-            if (editorExecutable is not null) { GitRebaseEditor.ValidateExecutable(editorExecutable); }
-            string directory = await GetGitPathAsync(GitRebaseEditor.NativeStateDirectoryName, token).ConfigureAwait(false);
-            NativeRebaseEditorState state;
-            if (Directory.Exists(directory))
-            {
-                state = GitRebaseEditor.ReadNativeState(directory);
-                if (action != GitOperationAction.Abort && state.EncodingName != encoding.WebName)
-                { throw new InvalidOperationException("The commit encoding changed during this rebase. Restore its original encoding before editing or continuing."); }
-                if (editorExecutable is not null) { state = state with { EditorExecutable = editorExecutable }; GitRebaseEditor.WriteNativeState(directory, state); }
-            }
-            else
-            {
-                GitRepositoryInfo info = await GetInfoAsync(token).ConfigureAwait(false);
-                state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, []);
-                token.ThrowIfCancellationRequested(); Directory.CreateDirectory(directory); SetPrivateRebaseDirectory(directory);
-                GitRebaseEditor.WriteNativeState(directory, state);
-            }
-            try
-            {
-                string operation = action is null ? "--edit-todo" : "--" + action.Value.ToString().ToLowerInvariant();
-                GitResult result;
-                try { result = await ExecuteNativeRebaseAsync(["rebase", operation], directory, state, token).ConfigureAwait(false); }
-                catch (GitCommandException error) when (action == GitOperationAction.Skip)
-                {
-                    // Skip can successfully advance to a new conflict. Only record it if Git actually moved.
-                    GitRebaseState after = await GetRebaseStateAsync(CancellationToken.None).ConfigureAwait(false);
-                    if (rebase.CurrentCommit is not null && after.CurrentCommit != rebase.CurrentCommit)
-                    { GitRebaseEditor.WriteNativeState(directory, state with { SkippedCommits = [.. state.SkippedCommits, rebase.CurrentCommit] }); }
-                    throw new GitCommandException(error.Arguments, error.Result);
-                }
-                if (action == GitOperationAction.Skip && rebase.CurrentCommit is not null && Directory.Exists(directory))
-                { GitRebaseEditor.WriteNativeState(directory, state with { SkippedCommits = [.. state.SkippedCommits, rebase.CurrentCommit] }); }
-                return result;
-            }
-            finally { await CleanupRebaseStateAsync(directory).ConfigureAwait(false); }
+            using RebaseLease lease = await AcquireRebaseLeaseAsync(token).ConfigureAwait(false);
+            return await RunNativeRebaseOperationWithLeaseAsync(action, editorExecutable, lease, token).ConfigureAwait(false);
         }, cancellationToken);
+
+    private async Task<GitResult> RunNativeRebaseOperationWithLeaseAsync(GitOperationAction? action, string? editorExecutable,
+        RebaseLease lease, CancellationToken token)
+    {
+        if (!HasRebaseBackend(lease)) { throw new InvalidOperationException("No rebase is in progress."); }
+        // Abort must remain available after an invalid or incompatible config
+        // change. Git restores its own checkout; no editor or current codec is needed.
+        if (action == GitOperationAction.Abort)
+        {
+            try { return await ExecuteAsync(["rebase", "--abort"], token).ConfigureAwait(false); }
+            finally { await CleanupObsoleteRebaseJournalsAsync(lease).ConfigureAwait(false); }
+        }
+        string legacy = System.IO.Path.Combine(lease.GitDirectory, "gitextensions-rebase");
+        if (Directory.Exists(legacy))
+        {
+            if (action is GitOperationAction legacyAction)
+            { return await RunLegacyRebaseOperationWithLeaseAsync(legacyAction, editorExecutable, lease, token).ConfigureAwait(false); }
+            _ = await ValidateLegacyRebaseCodecAsync(legacy, lease, token).ConfigureAwait(false);
+            throw new NotSupportedException("A legacy rebase plan has frozen messages. Continue, skip or abort it using its saved plan; native todo editing is unavailable.");
+        }
+        GitRebaseState rebase = await GetRebaseStateAsync(token).ConfigureAwait(false);
+        if (rebase.EncodingError is not null) { throw new NotSupportedException(rebase.EncodingError); }
+        if (action is null && !rebase.CanEditTodo) { throw new InvalidOperationException("The apply backend has no editable todo."); }
+        if (editorExecutable is not null) { GitRebaseEditor.ValidateExecutable(editorExecutable); }
+        string directory = System.IO.Path.Combine(lease.GitDirectory, GitRebaseEditor.NativeStateDirectoryName);
+        bool created = false;
+        NativeRebaseEditorState state;
+        if (Directory.Exists(directory))
+        {
+            state = GitRebaseEditor.ReadNativeState(directory);
+            Encoding encoding = await GetCommitMessageEncodingAsync(token).ConfigureAwait(false);
+            if (state.EncodingName != encoding.WebName)
+            { throw new InvalidOperationException("The commit encoding changed during this rebase. Restore its original encoding before editing or continuing."); }
+            if (editorExecutable is not null) { state = state with { EditorExecutable = editorExecutable }; GitRebaseEditor.WriteNativeState(directory, state); }
+        }
+        else
+        {
+            Encoding encoding = await GetCommitMessageEncodingAsync(token).ConfigureAwait(false);
+            GitRepositoryInfo info = await GetInfoAsync(token).ConfigureAwait(false);
+            state = new(info.RootPath, info.GitDirectory, editorExecutable ?? "", encoding.WebName, []);
+            token.ThrowIfCancellationRequested(); CreatePrivateRebaseDirectory(directory); created = true;
+            GitRebaseEditor.WriteNativeState(directory, state);
+        }
+        try
+        {
+            string operation = action is null ? "--edit-todo" : "--" + action.Value.ToString().ToLowerInvariant();
+            GitResult result;
+            try { result = await ExecuteNativeRebaseAsync(["rebase", operation], directory, state, token).ConfigureAwait(false); }
+            catch (GitCommandException error) when (action == GitOperationAction.Skip)
+            {
+                // Skip can successfully advance to a new conflict. Only record it if Git actually moved.
+                GitRebaseState after = await GetRebaseStateAsync(CancellationToken.None).ConfigureAwait(false);
+                if (rebase.CurrentCommit is not null && after.CurrentCommit != rebase.CurrentCommit)
+                { GitRebaseEditor.WriteNativeState(directory, state with { SkippedCommits = [.. state.SkippedCommits, rebase.CurrentCommit] }); }
+                throw new GitCommandException(error.Arguments, error.Result);
+            }
+            if (action == GitOperationAction.Skip && rebase.CurrentCommit is not null && Directory.Exists(directory))
+            { GitRebaseEditor.WriteNativeState(directory, state with { SkippedCommits = [.. state.SkippedCommits, rebase.CurrentCommit] }); }
+            return result;
+        }
+        finally { await CleanupRebaseStateAsync(directory, lease, created).ConfigureAwait(false); }
+    }
 
     private Task<GitResult> ExecuteNativeRebaseAsync(IReadOnlyList<string> arguments, string directory,
         NativeRebaseEditorState state, CancellationToken token)
@@ -134,9 +163,4 @@ public sealed partial class GitRepository
         => ExecuteAsync(["-c", "i18n.logOutputEncoding=" + state.EncodingName, .. arguments], token,
             environment: GitRebaseEditor.NativeEnvironmentFor(directory, state));
 
-    private static void SetPrivateRebaseDirectory(string path)
-    {
-        if (!OperatingSystem.IsWindows())
-        { File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
-    }
 }

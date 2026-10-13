@@ -83,6 +83,52 @@ public class PullAdvancedDialogTests
     }
 
     [AvaloniaTest]
+    public async Task PullOpenedBeforeAnotherInstancePausesRebasePreservesTheStagedResolutionAndExposesRecovery()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); f.Root.SetEnvironment("GIT_OPTIONAL_LOCKS", "0");
+        await Fixture.Commit(f.Repository, "file.txt", "local conflict\n", "Local conflict");
+        await Fixture.Commit(f.Writer, "file.txt", "remote conflict\n", "Remote conflict"); await f.Writer.PushAsync("origin", "main");
+        new PullPreferencesStore().Save(new(AutoStash: true, IncludeUntrackedFilesInAutoStash: true));
+        PullDialog pull = await f.OpenAsync(GitPullAction.Rebase, branch: "main");
+        Assert.That(Field<Button>(pull, "ExecutePull").IsEnabled, Is.True);
+        GitRepository otherInstance = new(f.Repository.Path); await otherInstance.FetchRemoteAsync("origin");
+        GitCommandException? conflict = null;
+        try { await otherInstance.RebaseAsync(new GitRebaseOptions { BranchName = "origin/main" }, "/usr/bin/true"); }
+        catch (GitCommandException error) { conflict = error; }
+        Assert.That(conflict, Is.Not.Null, "The other instance must leave a genuine native rebase conflict.");
+        await File.WriteAllTextAsync(f.Root.File, "staged resolution café\n"); await otherInstance.StageAsync(["file.txt"]);
+        await File.WriteAllBytesAsync(f.Root.PathInRepository("untracked [literal] λ.dat"), [0, 255, 13, 10]);
+        GitRebaseState state = await otherInstance.GetRebaseStateAsync(); Assert.That(state.IsActive && state.CanContinue, Is.True);
+        string gitDirectory = (await f.Repository.GetInfoAsync()).GitDirectory;
+        async Task<string> Witness()
+        {
+            Dictionary<string, string> files = Directory.EnumerateFiles(f.Repository.Path, "*", SearchOption.AllDirectories)
+                .Where(path => !path.StartsWith(gitDirectory + Path.DirectorySeparatorChar, StringComparison.Ordinal)).Order(StringComparer.Ordinal)
+                .ToDictionary(path => Path.GetRelativePath(f.Repository.Path, path), path => Convert.ToHexString(File.ReadAllBytes(path)));
+            Dictionary<string, string> metadata = new(StringComparer.Ordinal);
+            foreach (string name in new[] { "HEAD", "ORIG_HEAD", "index", "config", "FETCH_HEAD" })
+            { string path = Path.Combine(gitDirectory, name); if (File.Exists(path)) { metadata[name] = Convert.ToHexString(File.ReadAllBytes(path)); } }
+            foreach (string name in new[] { "rebase-merge", "rebase-apply", "gitextensions-rebase-native" })
+            {
+                string directory = Path.Combine(gitDirectory, name); if (!Directory.Exists(directory)) { continue; }
+                foreach (string path in Directory.EnumerateFiles(directory).Order(StringComparer.Ordinal))
+                { metadata[Path.GetRelativePath(gitDirectory, path)] = Convert.ToHexString(File.ReadAllBytes(path)); }
+            }
+            return JsonSerializer.Serialize(new { files, metadata, refs = (await f.Git(f.Repository, "show-ref")).StandardOutput,
+                remoteRefs = (await f.Git(f.Server, "show-ref")).StandardOutput });
+        }
+        string before = await Witness();
+        // The real first click uses the stale dialog state, exactly as a second instance can leave it.
+        Pointer(pull, "ExecutePull"); await Until(() => !pull.IsBusy && pull.LastError is not null);
+        Assert.That(pull.LastException, Is.TypeOf<InvalidOperationException>()); Assert.That(pull.Succeeded || pull.Cancelled, Is.False);
+        Assert.That(await Witness(), Is.EqualTo(before), "A stale Pull must not stash the staged resolution, fetch, or alter native recovery state.");
+        Assert.That((await f.Repository.GetStashesAsync()).Count, Is.Zero); Assert.That((await f.Repository.GetRebaseStateAsync()).CanContinue, Is.True);
+        Assert.That(Field<Button>(pull, "ExecutePull").IsEnabled, Is.False);
+        Assert.That(Field<Button>(pull, "ContinuePullOperation").IsEnabled, Is.True); Assert.That(Field<Button>(pull, "AbortPullOperation").IsEnabled, Is.True);
+        Assert.That(pull.OwnedWindows, Is.Empty); pull.Close();
+    }
+
+    [AvaloniaTest]
     public async Task OriginalTagAndPruneCouplingsWorkWithThePointerAndNoTagsWorksWithItsAccessKey()
     {
         await using Fixture f = await Fixture.CreateAsync(); CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
