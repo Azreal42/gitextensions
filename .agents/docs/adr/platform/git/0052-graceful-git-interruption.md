@@ -1,6 +1,6 @@
 # ADR 0052 · Interruption des processus Git possédés
 
-Statut : source `fbd82d6bb` vérifiée localement ; paquet et audit GUI ouverts.
+Statut : source et candidat Debian `fbd82d6bb` vérifiés ; audit GUI ouvert, candidat non livré.
 
 Besoin : libérer l’interface après annulation ou erreur d’observateur, conserver les effets Git partiels et protéger les autres invocations Git.
 
