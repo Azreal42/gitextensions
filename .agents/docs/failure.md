@@ -36,7 +36,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Clone réécrit le sous-dossier saisi | Observer TextProperty immédiatement, avant le TextChanged différé. |
 | Valeur initiale d’une combo disparaît à l’ouverture | AutoCompleteBox peut reporter le texte vide du gabarit après montage ; initialiser la sélection présente dans ItemsSource et tester la vraie activation modale. |
 | Message déclaré Latin1 mais écrit UTF-8 | Codec strict partagé, stdin binaire et draft atomique ; valider avant toute mutation. |
-| Auteur UTF-8 altéré dans un commit au message CP1252 | `git show --encoding=UTF-8` recode aussi le buffer des en-têtes. Lire l’identité brute puis appliquer `check-mailmap` ; garder le formatage Git pour le sujet et la date. Scénarios fsck vérifiés. |
+| Auteur UTF-8 altéré dans un commit au message CP1252 | `git show` recode aussi les en-têtes ; les formes de commande Windows/Linux produisent la même altération dans l’aperçu. Pour la grille, lire l’identité brute puis `check-mailmap`, garder le formatage Git du sujet/date. Ne pas changer le codec global du viewer ; codecs message et hunks distincts. |
 | `cleanup` choisit un autre dépôt après refus d’accès | `Directory.Exists` masque les erreurs IO comme des absences ; classifier avec `File.GetAttributes`, réserver le repli aux chemins absents/non-dépôts. Test Linux avec permission search refusée et cwd distinct. |
 | Exclusion Clean interprète un antislash Linux comme séparateur | `ToPosixPath` original remplace le séparateur natif seulement. Garder les antislashs Linux comme données du motif Git ; transformer les espaces en `?` une seule fois dans Core. |
 | CP1252 du hunk appliqué aux chemins range-diff UTF-8 | Séparer sections contenu/metadata/fichier. Git peut tronquer un en-tête contenant newline ; ne pas reconstruire des octets absents. |
@@ -137,5 +137,6 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Coordinateur disparu malgré app/keeper exit 0 | Conserver l’exit extérieur et le rapport manquant ; ne pas inventer coordinator0. Session/groupe isolés et nouveau cas avant acceptation. |
 | Manifeste du harnais contient son propre SHA vide | Écrire le manifeste après le gel des fichiers puis le hasher à l’extérieur ; conserver l’ancienne anomalie et vérifier chaque fichier réel. |
 | Hash DPKG hôte différent après validation | Comparer avant/après dans l'intervalle du test ; changement hôte ultérieur consigné séparément. |
+| Inventaire mêlant compilation et métadonnées Git cachées | Conserver les entrées compilées et contrôler séparément `.gitattributes`, dont les règles préservent les fixtures brutes ; ne pas exclure globalement les fichiers cachés. |
 
 Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; leurs audits natifs restent attribués aux lots d'origine. Les anciennes mentions « paquet suivant à valider » ne remplacent pas les limites actuelles du TODO.
