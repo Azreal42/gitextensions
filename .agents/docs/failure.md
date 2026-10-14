@@ -9,6 +9,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
+| Sonde askpass après `--version` produit exit129 | `GlobalArguments` confond cette requête terminale avec une option globale. Sonde readonly superflue, clone natif réussi ; conserver le résultat réel et corriger le préfixe. |
 | Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
 
 ## Git et état des workflows — résolus
