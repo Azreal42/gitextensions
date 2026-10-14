@@ -9,13 +9,13 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
-| Sonde askpass après `--version` produit exit129 | `GlobalArguments` confond cette requête terminale avec une option globale. Sonde readonly superflue, clone natif réussi ; conserver le résultat réel et corriger le préfixe. |
 | Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
 
 ## Git et état des workflows — résolus
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Sonde askpass après `--version` produit exit129 | Une requête de version/aide ne demande pas d’authentification. Garder son résultat natif sans sous-processus de configuration ; respecter les helpers explicites et les valeurs littérales des options des vraies commandes. |
 | Stash non suivi laissé malgré exit 0 | `--literal-pathspecs` global casse le nettoyage de `stash push -u` ; réserver les pathspecs littéraux aux arguments concernés. |
 | Bare bloque à `stash list` | Lire le reflog de `refs/stash`, sans exiger un worktree. |
 | Action de fichier Stash revient aux changements courants | Le refresh générique perd la sélection ; comme FormStash, conserver le snapshot et ses fichiers après Cherry pick/Reset, puis relire le status pour les conflits. |
@@ -59,6 +59,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Autocomplétion perdue au clic | La perte de focus effaçait la sélection et fermait la liste avant release. Préserver ce cycle et accepter le chemin littéral de la ligne réellement pointée. [Premier essai conservé](../../artifacts/linux/clone-input-root-checks-20261014-01/root-failed-targeted-review.json). |
 | Erreur Git absente avant le démarrage du suivi | Une sonde readonly peut échouer avant tout callback ; afficher son vrai GitResult final sans inventer de chunks. Correctif vérifié dans les 30 tests ciblés et les 1159 tests complets. |
 | Erreur de préférence masque les avertissements Git | Séparer les notices, effacer l’erreur après une sauvegarde réussie et borner les détails défilables ; test réel réussi dans les suites ciblée et complète. |
 | Libellé français du sélecteur Clean tronqué | Une traduction sur deux lignes était coupée par le bouton de 25 px ; mesurer le texte réel, garder NoWrap et adapter padding/largeur au caption. |
