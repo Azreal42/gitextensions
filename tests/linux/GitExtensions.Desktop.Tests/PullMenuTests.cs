@@ -214,6 +214,7 @@ public class PullMenuTests
             string local = await f.CommitAsync(f.Client, "seed.txt", "local edit\n", "Local conflict");
             await f.AdvanceAsync("zeta", "seed.txt", "remote edit\n");
             MainWindow main = await f.ShowAsync(); ExecuteMenu(main, action);
+            await AcknowledgeProcessFailure(main);
             if (action == GitPullAction.Rebase)
             {
                 await Until(() => main.OwnedWindows.OfType<RebaseDialog>().Any(rebase => rebase.State?.HasConflicts == true && !rebase.IsBusy));
@@ -244,6 +245,7 @@ public class PullMenuTests
         string local = await f.CommitAsync(f.Client, "seed.txt", "local edit\n", "Local conflict");
         string remote = await f.AdvanceAsync("zeta", "seed.txt", "remote edit\n");
         MainWindow main = await f.ShowAsync(); ExecuteMenu(main, GitPullAction.Merge);
+        await AcknowledgeProcessFailure(main);
         await Until(() => main.OwnedWindows.OfType<PullDialog>().Any());
         PullDialog dialog = main.OwnedWindows.OfType<PullDialog>().Single(); await Until(() => !dialog.IsBusy);
         Click(Field<Button>(dialog, "ResolvePullConflict"));
@@ -309,6 +311,7 @@ public class PullMenuTests
         string alpha = await f.AdvanceAsync("alpha", "first.txt", "first remote\n");
         await f.AdvanceAsync("zeta", "second.txt", "second remote\n");
         MainWindow main = await f.ShowAsync(); Press(main, PhysicalKey.P, RawInputModifiers.Control | RawInputModifiers.Shift);
+        await AcknowledgeProcessFailure(main);
         await Until(() => main.OwnedWindows.OfType<PullDialog>().Any());
         PullDialog dialog = main.OwnedWindows.OfType<PullDialog>().Single(); await Until(() => !dialog.IsBusy);
         Assert.That(Field<AutoCompleteBox>(dialog, "PullRemote").Text, Is.EqualTo("alpha"));
@@ -412,6 +415,91 @@ public class PullMenuTests
     }
 
     [AvaloniaTest]
+    public async Task QuickFetchShortcutStreamsItsConfiguredRemoteAndKeepWaitsForAcknowledgmentBeforeBrowseRefresh()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("Private gated native Git executable requires Linux."); return; }
+        await using Fixture f = await Fixture.CreateAsync(); MainWindow main = await f.ShowAsync();
+        await f.AdvanceAsync("alpha", "alpha.txt", "alpha remains outside quick fetch\n");
+        string remote = await f.AdvanceAsync("zeta", "zeta.txt", "configured remote advances\n");
+        new ProcessDialogPreferencesStore().Save(new(false));
+        string gate = Path.Combine(f.Client, "gated-quick-fetch"), marker = gate + ".started", release = gate + ".release";
+        static string Quote(string value) => "'" + value.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
+        await File.WriteAllTextAsync(gate, "#!/bin/sh\ncase \" $* \" in *' fetch '*)\n /usr/bin/env git \"$@\"\n status=$?\n : > " + Quote(marker) + "\n while test ! -f " + Quote(release) + "; do sleep 0.02; done\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
+        File.SetUnixFileMode(gate, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        typeof(MainWindow).GetField("_repository", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(main, new GitRepository(f.Client, new GitRunner(gate)));
+        Press(main, PhysicalKey.ArrowDown, RawInputModifiers.Control | RawInputModifiers.Shift);
+        await Until(() => File.Exists(marker) && main.OwnedWindows.OfType<GitProcessDialog>().Any());
+        GitProcessDialog process = main.OwnedWindows.OfType<GitProcessDialog>().Single();
+        await Until(() => Field<TextBox>(process, "ProcessOutput").Text?.Contains("From ", StringComparison.Ordinal) == true);
+        Assert.That(process.IsRunning, Is.True); Assert.That(main.IsBusy, Is.True); Assert.That(process.Owner, Is.SameAs(main));
+        Assert.That(Field<CheckBox>(process, "KeepDialogOpen").IsChecked, Is.True);
+        await File.WriteAllTextAsync(release, "release\n"); await Until(() => !process.IsRunning);
+        Assert.That(main.IsBusy, Is.True); Assert.That(process.Result!.Success, Is.True);
+        Click(Field<Button>(process, "Ok")); await Idle(main);
+        Assert.That(await f.Ref("refs/remotes/zeta/main"), Is.EqualTo(remote)); Assert.That(await f.Ref("refs/remotes/alpha/main"), Is.EqualTo(f.Initial));
+        Assert.That(await f.Ref("HEAD"), Is.EqualTo(f.Initial)); Assert.That(main.OwnedWindows, Is.Empty); Assert.That(main.LastException, Is.Null);
+        File.Delete(gate); File.Delete(marker); File.Delete(release);
+    }
+
+    [AvaloniaTest]
+    public async Task QuickFetchAbortKeepsItsCancellationMessageAndRefreshesNativePartialRefsWithoutAnotherOperation()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("Private gated native Git executable requires Linux."); return; }
+        await using Fixture f = await Fixture.CreateAsync(); MainWindow main = await f.ShowAsync();
+        string remote = await f.AdvanceAsync("zeta", "zeta.txt", "native partial fetch change\n");
+        CommitGraph graph = main.GetVisualDescendants().OfType<CommitGraph>().Single();
+        Assert.That(graph.References.Single(reference => reference.Name == "refs/remotes/zeta/main").Hash, Is.EqualTo(f.Initial));
+        string gate = Path.Combine(f.Client, "gated-abort-fetch"), marker = gate + ".started";
+        static string Quote(string value) => "'" + value.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
+        await File.WriteAllTextAsync(gate, "#!/bin/sh\ncase \" $* \" in *' fetch '*)\n /usr/bin/env git \"$@\"\n status=$?\n : > " + Quote(marker) + "\n sleep 60 &\n wait\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
+        File.SetUnixFileMode(gate, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        typeof(MainWindow).GetField("_repository", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(main, new GitRepository(f.Client, new GitRunner(gate)));
+        Press(main, PhysicalKey.ArrowDown, RawInputModifiers.Control | RawInputModifiers.Shift);
+        await Until(() => File.Exists(marker) && main.OwnedWindows.OfType<GitProcessDialog>().Any());
+        GitProcessDialog process = main.OwnedWindows.OfType<GitProcessDialog>().Single();
+        await Until(() => process.StandardErrorBytes.Length > 0);
+        Assert.That(await f.Ref("refs/remotes/zeta/main"), Is.EqualTo(remote)); Assert.That(process.IsRunning, Is.True);
+        Click(Field<Button>(process, "Abort")); await Idle(main);
+        Assert.That(process.Outcome!.WasCancelled, Is.True); Assert.That(process.Result, Is.Null);
+        Assert.That(Field<TextBlock>(main, "RepositoryStatus").Text, Is.EqualTo("Operation cancelled")); Assert.That(main.LastException, Is.Null);
+        Assert.That(graph.References.Single(reference => reference.Name == "refs/remotes/zeta/main").Hash, Is.EqualTo(remote));
+        Assert.That(graph.CurrentHead, Is.EqualTo(f.Initial)); Assert.That(main.OwnedWindows, Is.Empty);
+        File.Delete(gate); File.Delete(marker);
+    }
+
+    [AvaloniaTest]
+    public async Task QuickFetchKeepsItsActualNativeFailureAndMessageEvenWhenTheFollowingReadOnlyRefreshFails()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("Private native Git executable requires Linux."); return; }
+        foreach (bool failRefresh in new[] { false, true })
+        {
+            await using Fixture f = await Fixture.CreateAsync(); MainWindow main = await f.ShowAsync();
+            await f.Git("config", "remote.zeta.url", f.Bare("missing-quick-fetch"));
+            string gate = Path.Combine(f.Client, "native-error-fetch"), marker = gate + ".finished";
+            static string Quote(string value) => "'" + value.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
+            string refresh = failRefresh ? "case \" $* \" in *' status '*) if test -f " + Quote(marker) + "; then exec /usr/bin/env git status --private-refresh-error; fi;; esac\n" : "";
+            await File.WriteAllTextAsync(gate, "#!/bin/sh\n" + refresh + "case \" $* \" in *' fetch '*)\n /usr/bin/env git \"$@\"\n status=$?\n : > " + Quote(marker) + "\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
+            File.SetUnixFileMode(gate, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            typeof(MainWindow).GetField("_repository", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .SetValue(main, new GitRepository(f.Client, new GitRunner(gate)));
+            Press(main, PhysicalKey.ArrowDown, RawInputModifiers.Control | RawInputModifiers.Shift);
+            await Until(() => main.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+            GitProcessDialog process = main.OwnedWindows.OfType<GitProcessDialog>().Single();
+            GitCommandException native = (GitCommandException)process.Error!;
+            Assert.That(native.Result, Is.SameAs(process.Result)); Assert.That(native.Result.Success, Is.False);
+            Assert.That(native.Result.StandardError, Does.Contain("missing-quick-fetch"));
+            Click(Field<Button>(process, "Ok")); await Idle(main);
+            Assert.That(main.LastException, Is.SameAs(native), "Readonly refresh cannot replace the actual network error.");
+            Assert.That(main.LastException!.Message, Does.Contain("missing-quick-fetch").And.Not.Contain("private-refresh-error"));
+            Assert.That(Field<TextBlock>(main, "RepositoryStatus").Text, Is.EqualTo("Fetch failed — see command output"));
+            Assert.That(await f.Ref("HEAD"), Is.EqualTo(f.Initial)); Assert.That(main.OwnedWindows, Is.Empty);
+            File.Delete(gate); File.Delete(marker);
+        }
+    }
+
+    [AvaloniaTest]
     public async Task CancellingAQuickFetchStopsTheProcessAndDoesNotOpenAFallbackDialog()
     {
         if (!OperatingSystem.IsLinux()) { Assert.Ignore("Private executable gate uses Linux process cancellation."); return; }
@@ -424,7 +512,7 @@ public class PullMenuTests
             .SetValue(main, new GitRepository(f.Client, new GitRunner(gate)));
         ExecuteMenu(main, GitPullAction.Fetch);
         await Until(() => File.Exists(marker));
-        Click(Field<Button>(main, "BrowseCancelOperation")); await Idle(main);
+        Click(Field<Button>(main.OwnedWindows.OfType<GitProcessDialog>().Single(), "Abort")); await Idle(main);
         Assert.That(main.OwnedWindows, Is.Empty, "Cancellation must terminate rather than opening a retry dialog.");
         Assert.That(await f.Ref("HEAD"), Is.EqualTo(f.Initial));
         Assert.That(await f.Ref("refs/remotes/zeta/main"), Is.EqualTo(f.Initial));
@@ -465,6 +553,12 @@ public class PullMenuTests
         root.MouseMove(point); root.MouseDown(point, Avalonia.Input.MouseButton.Left); root.MouseUp(point, Avalonia.Input.MouseButton.Left); Pump(root);
     }
     private static async Task Idle(MainWindow main) { await Task.Delay(20); await Until(() => !main.IsBusy); Pump(main); }
+    private static async Task AcknowledgeProcessFailure(Window owner)
+    {
+        await Until(() => owner.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+        GitProcessDialog process = owner.OwnedWindows.OfType<GitProcessDialog>().Single();
+        Assert.That(process.Outcome!.Success, Is.False); Click(Field<Button>(process, "Ok"));
+    }
     private static async Task Until(Func<bool> predicate)
     {
         DateTime deadline = DateTime.UtcNow.AddSeconds(20);
@@ -497,6 +591,7 @@ public class PullMenuTests
                 ["GIT_CONFIG_COUNT"] = "1", ["GIT_CONFIG_KEY_0"] = "protocol.file.allow", ["GIT_CONFIG_VALUE_0"] = "always"
             }) { _environment[key] = Environment.GetEnvironmentVariable(key); Environment.SetEnvironmentVariable(key, value); }
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US"); Directory.CreateDirectory(_root);
+            new ProcessDialogPreferencesStore().Save(new(true));
         }
         internal static async Task<Fixture> CreateAsync()
         {

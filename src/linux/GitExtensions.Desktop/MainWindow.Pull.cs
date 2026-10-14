@@ -172,7 +172,40 @@ public sealed partial class MainWindow
 
     private Task QuickFetchAsync() => RunAsync("Fetch", async repository =>
     {
-        GitResult result = await repository.FetchConfiguredRemoteAsync(Token);
-        AppendOutput(result.StandardOutput + result.StandardError);
-    });
+        bool attempted = false;
+        Exception? operationError = null;
+        Window owner = WorkflowOwner;
+        try
+        {
+            System.Collections.Concurrent.ConcurrentQueue<GitProcessOutput> chunks = new();
+            GitProcessDialogResult process = await GitProcessDialog.ShowAsync(owner, repository.Path, "git fetch --progress", true,
+                (token, output) =>
+                {
+                    token.ThrowIfCancellationRequested(); attempted = true;
+                    return repository.FetchConfiguredRemoteAsync(token, chunk => { chunks.Enqueue(chunk); output(chunk); });
+                }, Token);
+            if (process.Result is GitResult result) { AppendOutput(result.StandardOutput + result.StandardError); }
+            else
+            {
+                GitProcessTextDecoder stdout = new(), stderr = new(); System.Text.StringBuilder text = new();
+                while (chunks.TryDequeue(out GitProcessOutput? chunk))
+                { text.Append((chunk.Stream == GitProcessOutputStream.StandardOutput ? stdout : stderr).Append(chunk.Bytes.Span)); }
+                text.Append(stdout.Append([], flush: true)).Append(stderr.Append([], flush: true));
+                if (text.Length > 0) { AppendOutput(text.ToString()); }
+            }
+            Token.ThrowIfCancellationRequested();
+            if (process.WasCancelled || process.OwnerCloseRequested || !owner.IsVisible) { throw new OperationCanceledException(Token); }
+            if (process.Error is Exception error) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw(); }
+        }
+        catch (Exception error) { operationError = error; throw; }
+        finally
+        {
+            // Refresh partial ref updates inside the original operation, before its error/status is reported.
+            if (attempted && owner.IsVisible && !_lifetime.IsCancellationRequested)
+            {
+                try { await RefreshDataAsync(repository); }
+                catch when (operationError is not null) { /* Preserve the operation's native failure or interruption. */ }
+            }
+        }
+    }, refresh: false);
 }

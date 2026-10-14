@@ -36,6 +36,7 @@ public class PullAdvancedDialogTests
         new PullPreferencesStore().Save(new(AutoStash: true, IncludeUntrackedFilesInAutoStash: true));
         PullDialog pull = await f.OpenAsync(GitPullAction.Rebase);
         Task execution = pull.ExecuteAsync(pull);
+        await AcknowledgeProcessFailure(pull);
         await Until(() => pull.OwnedWindows.OfType<RebaseDialog>().Any(dialog => dialog.State?.HasConflicts == true && !dialog.IsBusy));
         RebaseDialog recovery = pull.OwnedWindows.OfType<RebaseDialog>().Single();
         Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1));
@@ -64,6 +65,7 @@ public class PullAdvancedDialogTests
         new PullPreferencesStore().Save(new(AutoStash: true, IncludeUntrackedFilesInAutoStash: true));
         PullDialog pull = await f.OpenAsync(GitPullAction.Rebase);
         Task execution = pull.ExecuteAsync(pull);
+        await AcknowledgeProcessFailure(pull);
         await Until(() => pull.OwnedWindows.OfType<RebaseDialog>().Any(dialog => dialog.State?.HasConflicts == true && !dialog.IsBusy));
         RebaseDialog first = pull.OwnedWindows.OfType<RebaseDialog>().Single(); first.Close(); await execution.WaitAsync(TimeSpan.FromSeconds(15));
         Assert.That(pull.Succeeded || pull.Cancelled, Is.False);
@@ -119,7 +121,7 @@ public class PullAdvancedDialogTests
         }
         string before = await Witness();
         // The real first click uses the stale dialog state, exactly as a second instance can leave it.
-        Pointer(pull, "ExecutePull"); await Until(() => !pull.IsBusy && pull.LastError is not null);
+        Pointer(pull, "ExecutePull"); await AcknowledgeProcessFailure(pull); await Until(() => !pull.IsBusy && pull.LastError is not null);
         Assert.That(pull.LastException, Is.TypeOf<InvalidOperationException>()); Assert.That(pull.Succeeded || pull.Cancelled, Is.False);
         Assert.That(await Witness(), Is.EqualTo(before), "A stale Pull must not stash the staged resolution, fetch, or alter native recovery state.");
         Assert.That((await f.Repository.GetStashesAsync()).Count, Is.Zero); Assert.That((await f.Repository.GetRebaseStateAsync()).CanContinue, Is.True);
@@ -263,7 +265,8 @@ public class PullAdvancedDialogTests
     public async Task FailedPullExposesGitOutputKeepsAutoStashAndDoesNotOfferToPop()
     {
         await using Fixture f = await Fixture.CreateAsync(); await File.WriteAllTextAsync(f.Root.File, "saved before failure\n"); new PullPreferencesStore().Save(new(AutoStash: true));
-        PullDialog dialog = await f.OpenAsync(branch: "missing-private-branch"); await dialog.ExecuteAsync(dialog).WaitAsync(TimeSpan.FromSeconds(10));
+        PullDialog dialog = await f.OpenAsync(branch: "missing-private-branch"); Task execution = dialog.ExecuteAsync(dialog);
+        await AcknowledgeProcessFailure(dialog); await execution.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.That(dialog.Succeeded, Is.False); Assert.That(dialog.LastException, Is.TypeOf<GitCommandException>());
         Assert.That(Field<TextBox>(dialog, "PullOutput").Text, Does.Contain("missing-private-branch")); Assert.That(dialog.OwnedWindows, Is.Empty);
         Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1)); Assert.That(await f.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(f.Initial));
@@ -299,10 +302,11 @@ public class PullAdvancedDialogTests
         Task execution = dialog.ExecuteAsync(dialog); await Until(() => File.Exists(marker));
         int pid = int.Parse(await File.ReadAllTextAsync(marker), CultureInfo.InvariantCulture);
         foreach (string name in new[] { "PullAutoStash", "PullTagsFollow", "PullPruneTags", "PullRemote", "PullStashChanges" }) { Assert.That(Field<Control>(dialog, name).IsEnabled, Is.False); }
-        Pointer(dialog, "ClosePull"); await execution.WaitAsync(TimeSpan.FromSeconds(10)); await Until(() => !dialog.IsVisible);
+        Pointer(dialog.OwnedWindows.OfType<GitProcessDialog>().Single(), "Abort"); await execution.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.That(dialog.LastError, Is.EqualTo("Operation cancelled")); Assert.That((await f.Repository.GetStashesAsync()).Count, Is.EqualTo(1));
         Assert.That(await f.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(f.Initial));
         try { using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById(pid); Assert.That(process.HasExited, Is.True); } catch (ArgumentException) { }
+        dialog.Close(); await Until(() => !dialog.IsVisible);
     }
 
     [AvaloniaTest]
@@ -320,7 +324,13 @@ public class PullAdvancedDialogTests
             GitSubmodule child = (await module.GetSubmodulesAsync(token)).Single(); Assert.That(child.Path, Is.EqualTo(Fixture.NestedPath)); Assert.That(child.Head, Is.EqualTo(child.ExpectedHead)); callbacks++;
         });
         dialog.RequestedThemeVariant = ThemeVariant.Dark;
+        new ProcessDialogPreferencesStore().Save(new(false));
         Task execution = dialog.ExecuteAsync(dialog);
+        await Until(() => dialog.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+        GitProcessDialog process = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+        Assert.That(execution.IsCompleted, Is.False); Assert.That(callbacks, Is.Zero);
+        Assert.That(dialog.OwnedWindows.OfType<SubmoduleUpdateDialog>(), Is.Empty, "Submodules must wait for the Pull process acknowledgment.");
+        Pointer(process, "Ok");
         await Until(() => dialog.OwnedWindows.OfType<SubmoduleUpdateDialog>().Any());
         Assert.That(dialog.OwnedWindows.OfType<SubmoduleUpdateDialog>().Single().ActualThemeVariant, Is.EqualTo(ThemeVariant.Dark),
             "The progress window must inherit the Pull owner's theme even when the application theme differs.");
@@ -350,7 +360,9 @@ public class PullAdvancedDialogTests
         await using Fixture f = await Fixture.CreateAsync(); await f.AddModulesAsync(); int callbacks = 0;
         PullDialog dialog = await f.OpenAsync(afterUpdate: _ => { callbacks++; return Task.CompletedTask; }); dialog.RequestedThemeVariant = ThemeVariant.Dark;
         using CancellationTokenSource cancellation = new(); Task execution = dialog.ExecuteAsync(dialog, cancellationToken: cancellation.Token);
-        Window prompt = await Owned(dialog, ""); Assert.That(prompt, Is.TypeOf<CheckoutSubmodulePrompt>()); Assert.That(prompt.ActualThemeVariant, Is.EqualTo(ThemeVariant.Dark));
+        await Until(() => dialog.OwnedWindows.OfType<CheckoutSubmodulePrompt>().Any());
+        Window prompt = dialog.OwnedWindows.OfType<CheckoutSubmodulePrompt>().Single(); Pump(prompt);
+        Assert.That(prompt, Is.TypeOf<CheckoutSubmodulePrompt>()); Assert.That(prompt.ActualThemeVariant, Is.EqualTo(ThemeVariant.Dark));
         Pointer(prompt, "RememberSubmoduleCheckout"); cancellation.Cancel(); await execution.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.That(dialog.LastError, Is.EqualTo("Operation cancelled")); Assert.That(new SubmoduleCheckoutPreferencesStore().Load().Decision, Is.Null); Assert.That(callbacks, Is.Zero);
         Assert.That(await new GitRepository(f.Root.PathInRepository(Fixture.ModulePath)).ResolveRevisionAsync("HEAD"), Is.EqualTo(f.OldModuleHead)); Assert.That(dialog.OwnedWindows, Is.Empty); dialog.Close();
@@ -368,6 +380,12 @@ public class PullAdvancedDialogTests
     { Pump(window); window.KeyPressQwerty(PhysicalKey.AltLeft, RawInputModifiers.Alt); window.KeyPressQwerty(key, RawInputModifiers.Alt); window.KeyReleaseQwerty(key, RawInputModifiers.Alt); window.KeyReleaseQwerty(PhysicalKey.AltLeft, RawInputModifiers.None); Dispatcher.UIThread.RunJobs(); }
     private static async Task Until(Func<bool> predicate) { using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15)); while (!predicate()) { await Task.Delay(20, timeout.Token); } }
     private static async Task<Window> Owned(Window owner, string name) { await Until(() => owner.OwnedWindows.Any(window => name.Length == 0 || window.Name == name)); Window result = owner.OwnedWindows.Single(window => name.Length == 0 || window.Name == name); Pump(result); return result; }
+    private static async Task AcknowledgeProcessFailure(Window owner)
+    {
+        await Until(() => owner.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+        GitProcessDialog process = owner.OwnedWindows.OfType<GitProcessDialog>().Single();
+        Assert.That(process.Outcome!.Success, Is.False); Pointer(process, "Ok");
+    }
     private static async Task Closed(PullDialog dialog) { await Until(() => !dialog.IsVisible && !dialog.IsBusy); Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString()); Assert.That(dialog.Succeeded, Is.True); }
     private static void Capture(Window window, string name) { Pump(window); using WriteableBitmap? frame = window.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null); string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, name); frame!.Save(path); TestContext.AddTestAttachment(path); }
 
@@ -384,7 +402,8 @@ public class PullAdvancedDialogTests
         internal string Initial { get; }
         internal string OldModuleHead { get; private set; } = "";
         internal string NewModuleHead { get; private set; } = "";
-        private Fixture(ReferenceFixture root, GitRepository server, GitRepository writer, string initial) { Root = root; Server = server; Writer = writer; Initial = initial; _owner.Show(); }
+        private Fixture(ReferenceFixture root, GitRepository server, GitRepository writer, string initial)
+        { Root = root; Server = server; Writer = writer; Initial = initial; new ProcessDialogPreferencesStore().Save(new(true)); _owner.Show(); }
         internal static async Task<Fixture> CreateAsync()
         {
             ReferenceFixture root = await ReferenceFixture.CreateAsync();

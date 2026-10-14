@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -43,6 +45,8 @@ public sealed class PullDialog : RepositoryDialog
     internal bool Succeeded { get; private set; }
     internal bool Cancelled { get; private set; }
     internal bool Attempted { get; private set; }
+    internal GitProcessDialogResult? LastProcess { get; private set; }
+    internal GitStash? PendingAutoStash => _pendingAutoStash;
 
     public PullDialog(GitRepository repository, GitPullAction action = GitPullAction.Merge, string? remote = null, string? branch = null,
         Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
@@ -221,21 +225,32 @@ public sealed class PullDialog : RepositoryDialog
             token.ThrowIfCancellationRequested();
             _store.Save(_store.Load() with { DialogAction = mode, AutoStash = _autoStash.IsChecked == true });
             Attempted = true; MarkRepositoryChanged();
+            Exception? operationError = null;
             try
             {
                 GitResult result;
                 if (mode == GitPullAction.Fetch)
                 {
-                    result = All ? await Repository.FetchAllAsync(fetchOptions, token)
-                        : branch is not null ? await Repository.FetchRemoteBranchAsync(remote, branch, fetchOptions, token)
-                        : await Repository.FetchRemoteAsync(remote, fetchOptions, token);
-                    _output.Text = result.StandardOutput + result.StandardError;
+                    result = await RunProcessAsync(owner, "git fetch — " + (All ? "[ All ]" : remote + (branch is null ? "" : " / " + branch)),
+                        (ct, output) => All ? Repository.FetchAllAsync(fetchOptions, ct, output)
+                            : branch is not null ? Repository.FetchRemoteBranchAsync(remote, branch, fetchOptions, ct, output)
+                            : Repository.FetchRemoteAsync(remote, fetchOptions, ct, output), token);
                 }
                 else
                 {
-                    GitPullExecutionResult execution = await Repository.PullWithOptionsAsync(mode == GitPullAction.Rebase ? GitPullMode.Rebase : GitPullMode.Merge, remote, branch, pullOptions, token);
+                    GitPullExecutionResult? execution = null;
+                    result = await RunProcessAsync(owner, "git pull " + (mode == GitPullAction.Rebase ? "--rebase" : "--no-rebase") + " — " + remote + (branch is null ? "" : " / " + branch),
+                        async (ct, output) =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            // A retry owns its own checkpoint; earlier saved changes remain in Git's stash list.
+                            _pendingAutoStash = null;
+                            execution = await Repository.PullWithOptionsAsync(mode == GitPullAction.Rebase ? GitPullMode.Rebase : GitPullMode.Merge,
+                                remote, branch, pullOptions, ct, output, stash => _pendingAutoStash = stash);
+                            return execution.Result;
+                        }, token);
+                    if (execution is null) { throw new InvalidOperationException(T("No native Git result was returned.")); }
                     _pendingAutoStash = execution.AutoStash;
-                    result = execution.Result;
                     _output.Text = (execution.StashResult?.StandardOutput ?? "") + (execution.StashResult?.StandardError ?? "") + result.StandardOutput + result.StandardError;
                     await RefreshOperationAsync(token);
                     if (!result.Success && mode == GitPullAction.Rebase && _operationName == "rebase")
@@ -252,9 +267,34 @@ public sealed class PullDialog : RepositoryDialog
                 }
                 Succeeded = true; Status.Text = T("Done");
             }
-            catch (GitCommandException ex) { _output.Text = ex.Result.StandardOutput + ex.Result.StandardError; throw; }
-            finally { if (!token.IsCancellationRequested) { await RefreshOperationAsync(token); } }
+            catch (Exception error) { operationError = error; throw; }
+            finally
+            {
+                if (!token.IsCancellationRequested)
+                {
+                    try { await RefreshOperationAsync(token); }
+                    catch when (operationError is not null) { /* Preserve the operation's native failure or interruption. */ }
+                }
+            }
         }, cancellationToken: cancellationToken);
+
+    private async Task<GitResult> RunProcessAsync(Window owner, string description,
+        Func<CancellationToken, Action<GitProcessOutput>, Task<GitResult>> command, CancellationToken token)
+    {
+        ConcurrentQueue<GitProcessOutput> chunks = new();
+        LastProcess = null; _output.Text = "";
+        LastProcess = await GitProcessDialog.ShowAsync(owner, Repository.Path, description, true,
+            (ct, output) => command(ct, chunk => { chunks.Enqueue(chunk); output(chunk); }), token, preserveStreamedOutput: true);
+        GitProcessTextDecoder stdout = new(), stderr = new(); StringBuilder text = new();
+        while (chunks.TryDequeue(out GitProcessOutput? chunk))
+        { text.Append((chunk.Stream == GitProcessOutputStream.StandardOutput ? stdout : stderr).Append(chunk.Bytes.Span)); }
+        text.Append(stdout.Append([], flush: true)).Append(stderr.Append([], flush: true));
+        _output.Text = text.Length > 0 ? text.ToString() : LastProcess.Result?.StandardOutput + LastProcess.Result?.StandardError;
+        if (LastProcess.WasCancelled || LastProcess.OwnerCloseRequested || token.IsCancellationRequested || !owner.IsVisible)
+        { Cancelled = true; throw new OperationCanceledException(token); }
+        if (LastProcess.Error is Exception error) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw(); }
+        return LastProcess.Result ?? throw new InvalidOperationException(T("No native Git result was returned."));
+    }
 
     private async Task<bool> HasMergeToRebaseAsync(string remote, string? branch, CancellationToken token)
     {

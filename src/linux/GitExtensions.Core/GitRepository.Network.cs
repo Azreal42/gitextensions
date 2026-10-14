@@ -4,35 +4,35 @@ public sealed partial class GitRepository
 {
     // Ordinary fetches preserve fetch.prune and remote tagopt. Explicit choices
     // only add their original flags; they never rewrite the user's Git config.
-    public Task<GitResult> FetchConfiguredRemoteAsync(CancellationToken cancellationToken = default)
-        => FetchNetworkAsync(null, null, new(), false, cancellationToken);
+    public Task<GitResult> FetchConfiguredRemoteAsync(CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchNetworkAsync(null, null, new(), false, cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchRemoteAsync(string remote, bool prune = false, CancellationToken cancellationToken = default)
-        => FetchRemoteAsync(remote, new GitFetchOptions(Prune: prune), cancellationToken);
+    public Task<GitResult> FetchRemoteAsync(string remote, bool prune = false, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchRemoteAsync(remote, new GitFetchOptions(Prune: prune), cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchRemoteAsync(string remote, GitFetchOptions options, CancellationToken cancellationToken = default)
-        => FetchNetworkAsync(ValidateValue(remote), null, options, false, cancellationToken);
+    public Task<GitResult> FetchRemoteAsync(string remote, GitFetchOptions options, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchNetworkAsync(ValidateValue(remote), null, options, false, cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchAllAsync(CancellationToken cancellationToken = default)
-        => FetchAllAsync(new GitFetchOptions(), cancellationToken);
+    public Task<GitResult> FetchAllAsync(CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchAllAsync(new GitFetchOptions(), cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchAllAsync(GitFetchOptions options, CancellationToken cancellationToken = default)
-        => FetchNetworkAsync(null, null, options, true, cancellationToken);
+    public Task<GitResult> FetchAllAsync(GitFetchOptions options, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchNetworkAsync(null, null, options, true, cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchRemoteBranchAsync(string remote, string branch, bool prune = false, CancellationToken cancellationToken = default)
-        => FetchRemoteBranchAsync(remote, branch, new GitFetchOptions(Prune: prune), cancellationToken);
+    public Task<GitResult> FetchRemoteBranchAsync(string remote, string branch, bool prune = false, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchRemoteBranchAsync(remote, branch, new GitFetchOptions(Prune: prune), cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchRemoteBranchAsync(string remote, string branch, GitFetchOptions options, CancellationToken cancellationToken = default)
-        => FetchNetworkAsync(ValidateValue(remote), ValidateValue(branch), options, false, cancellationToken);
+    public Task<GitResult> FetchRemoteBranchAsync(string remote, string branch, GitFetchOptions options, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchNetworkAsync(ValidateValue(remote), ValidateValue(branch), options, false, cancellationToken, outputReceived);
 
-    public Task<GitResult> FetchPruneAllAsync(CancellationToken cancellationToken = default)
-        => FetchAllAsync(new GitFetchOptions(Prune: true), cancellationToken);
+    public Task<GitResult> FetchPruneAllAsync(CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => FetchAllAsync(new GitFetchOptions(Prune: true), cancellationToken, outputReceived);
 
-    public Task<GitResult> PullMergeAsync(string? remote = null, string? branch = null, CancellationToken cancellationToken = default)
-        => PullLegacyAsync(GitPullMode.Merge, remote, branch, cancellationToken);
+    public Task<GitResult> PullMergeAsync(string? remote = null, string? branch = null, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => PullLegacyAsync(GitPullMode.Merge, remote, branch, cancellationToken, outputReceived);
 
-    public Task<GitResult> PullRebaseAsync(string? remote = null, string? branch = null, CancellationToken cancellationToken = default)
-        => PullLegacyAsync(GitPullMode.Rebase, remote, branch, cancellationToken);
+    public Task<GitResult> PullRebaseAsync(string? remote = null, string? branch = null, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => PullLegacyAsync(GitPullMode.Rebase, remote, branch, cancellationToken, outputReceived);
 
     public async Task<bool> IsShallowRepositoryAsync(CancellationToken cancellationToken = default)
         => (await ExecuteAsync(["rev-parse", "--is-shallow-repository"], cancellationToken).ConfigureAwait(false)).StandardOutput.Trim() == "true";
@@ -53,9 +53,11 @@ public sealed partial class GitRepository
     }
 
     /// <summary>Save tracked local changes if requested, then pull under the mutation lock.
-    /// Reapplication is deliberately left to the host's original Yes/No/remember prompt.</summary>
+    /// Reapplication is deliberately left to the host's original Yes/No/remember prompt.
+    /// The stash checkpoint remains available to the host if the subsequent pull is interrupted.</summary>
     public Task<GitPullExecutionResult> PullWithOptionsAsync(GitPullMode mode, string? remote, string? branch,
-        GitPullOptions options, CancellationToken cancellationToken = default)
+        GitPullOptions options, CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null,
+        Action<GitStash>? autoStashCreated = null)
     {
         List<string> arguments = ValidatePullArguments(mode, remote, branch, options);
         return WithMutationAsync(async token =>
@@ -83,14 +85,32 @@ public sealed partial class GitRepository
                 if (status.StandardOutput.Length > 0)
                 {
                     GitStash? previous = (await GetStashesAsync(token).ConfigureAwait(false)).FirstOrDefault();
-                    stashResult = await ExecuteAsync(options.IncludeUntrackedInAutoStash
-                        ? ["stash", "push", "--include-untracked"] : ["stash", "push"], token).ConfigureAwait(false);
-                    GitStash? current = (await GetStashesAsync(token).ConfigureAwait(false)).FirstOrDefault();
-                    if (current?.Hash != previous?.Hash) { saved = current; }
+                    string[] stashArguments = options.IncludeUntrackedInAutoStash
+                        ? ["stash", "push", "--include-untracked"] : ["stash", "push"];
+                    Exception? stashError = null;
+                    try
+                    {
+                        stashResult = await _runner.RunAsync(Path, [.. GlobalOptions, .. stashArguments], token, outputReceived: outputReceived).ConfigureAwait(false);
+                        if (!stashResult.Success) { throw new GitCommandException(stashArguments, stashResult); }
+                    }
+                    catch (Exception error) { stashError = error; throw; }
+                    finally
+                    {
+                        try
+                        {
+                            // Cancellation may follow Git's actual stash write before its runner returns.
+                            // Discover that durable checkpoint without starting another mutation.
+                            using CancellationTokenSource recovery = new(TimeSpan.FromSeconds(5));
+                            GitStash? current = (await GetStashesAsync(recovery.Token).ConfigureAwait(false)).FirstOrDefault();
+                            if (current is not null && current.Hash != previous?.Hash)
+                            { saved = current; autoStashCreated?.Invoke(current); }
+                        }
+                        catch when (stashError is not null) { /* Preserve the original native failure or interruption. */ }
+                    }
                 }
             }
             GitResult result;
-            try { result = await _runner.RunAsync(Path, [.. GlobalOptions, .. global, .. arguments], token).ConfigureAwait(false); }
+            try { result = await _runner.RunAsync(Path, [.. GlobalOptions, .. global, .. arguments], token, outputReceived: outputReceived).ConfigureAwait(false); }
             finally { if (rebaseLease is not null) { await CleanupObsoleteRebaseJournalsAsync(rebaseLease).ConfigureAwait(false); } }
             // Git errors are returned with the saved stash so the host can keep it
             // and expose conflict recovery. Cancellation still propagates normally.
@@ -98,14 +118,14 @@ public sealed partial class GitRepository
         }, cancellationToken);
     }
 
-    private async Task<GitResult> PullLegacyAsync(GitPullMode mode, string? remote, string? branch, CancellationToken token)
+    private async Task<GitResult> PullLegacyAsync(GitPullMode mode, string? remote, string? branch, CancellationToken token, Action<GitProcessOutput>? outputReceived)
     {
-        GitPullExecutionResult result = await PullWithOptionsAsync(mode, remote, branch, new(), token).ConfigureAwait(false);
+        GitPullExecutionResult result = await PullWithOptionsAsync(mode, remote, branch, new(), token, outputReceived).ConfigureAwait(false);
         if (!result.Result.Success) { throw new GitCommandException(result.Arguments, result.Result); }
         return result.Result;
     }
 
-    private Task<GitResult> FetchNetworkAsync(string? remote, string? branch, GitFetchOptions options, bool all, CancellationToken token)
+    private Task<GitResult> FetchNetworkAsync(string? remote, string? branch, GitFetchOptions options, bool all, CancellationToken token, Action<GitProcessOutput>? outputReceived)
     {
         ValidateFetchChoices(options);
         List<string> arguments = ["fetch", "--progress"];
@@ -122,7 +142,7 @@ public sealed partial class GitRepository
         {
             await ValidateUnshallowAsync(options.Unshallow, cancellation).ConfigureAwait(false);
             string[] global = await GetNetworkOptionsAsync(cancellation).ConfigureAwait(false);
-            GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. global, .. arguments], cancellation).ConfigureAwait(false);
+            GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. global, .. arguments], cancellation, outputReceived: outputReceived).ConfigureAwait(false);
             if (!result.Success) { throw new GitCommandException(arguments, result); }
             return result;
         }, token);

@@ -99,11 +99,21 @@ public class CommitAndPushWorkflowTests
         await Until(() => f.Dialog.OwnedWindows.Any(window => window.Name == "PushRejectedConfirmation"));
         Window rejection = f.Dialog.OwnedWindows.Single(window => window.Name == "PushRejectedConfirmation");
         await PointerClick(Field<Button>(rejection, "PushChoice2"));
+        await Until(() => f.Dialog.OwnedWindows.OfType<PullDialog>().Any(pull => pull.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning)),
+            "Recovery Pull completed and awaits its Process acknowledgment", f.DescribeStateAsync);
+        PullDialog pull = f.Dialog.OwnedWindows.OfType<PullDialog>().Single();
+        GitProcessDialog process = pull.OwnedWindows.OfType<GitProcessDialog>().Single();
+        Assert.That(process.Outcome!.Success, Is.True); Assert.That(process.Result!.Success, Is.True);
+        Assert.That(Field<CheckBox>(process, "KeepDialogOpen").IsChecked, Is.True); Assert.That(process.Owner, Is.SameAs(pull));
+        Assert.That(f.Dialog.IsBusy && f.Dialog.HasCommitted && !f.Dialog.PushCompleted, Is.True);
+        Assert.That(await f.RemoteHead(), Is.EqualTo(remote), "Publishing the rebased commit must wait for the Pull acknowledgment.");
+        await PointerClick(Field<Button>(process, "Ok"));
         await Until(() => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.PushCompleted, Is.True, f.Dialog.LastError);
         Assert.That(await f.RemoteHead(), Is.EqualTo(await f.Head()));
         Assert.That(await f.Text("rev-parse", "HEAD^"), Is.EqualTo(remote));
         Assert.That(await f.Text("log", "-1", "--format=%s"), Is.EqualTo("Committed for push"));
+        Assert.That(await f.Text("rev-list", "--count", "HEAD"), Is.EqualTo("3"), "Rebase must replay the successful local commit exactly once.");
         Assert.That(await f.Text("status", "--porcelain"), Is.Empty);
         Assert.That(File.ReadAllText(Path.Combine(f.Repository.Path, "remote.txt")), Is.EqualTo("remote change\n"));
         Assert.That(File.ReadAllText(Path.Combine(f.Repository.Path, "local.txt")), Is.EqualTo("local change\n"));

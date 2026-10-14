@@ -319,7 +319,7 @@ public class PushDialogTests
     public async Task RejectedCurrentBranchCanPullRebaseAndRetryWhileKeepingUsefulGitOutput()
     {
         await using Fixture f = await Fixture.CreateAsync();
-        await f.AdvanceRemoteAsync(); await f.CommitAsync("local.txt", "local\n", "Local change");
+        await f.AdvanceRemoteAsync(); string? remote = await f.RemoteRef("zeta", "main"); await f.CommitAsync("local.txt", "local\n", "Local change");
         string before = await f.Head(); PushDialog dialog = await f.ShowAsync();
         Task push = dialog.ExecuteAsync(dialog);
         await Until(() => dialog.OwnedWindows.Any(window => window.Name == "PushRejectedConfirmation"));
@@ -339,14 +339,26 @@ public class PushDialogTests
             Capture(rejection, "classic-push-rejected-" + theme + ".png");
         }
         await Answer(dialog, "PushRejectedConfirmation", 2);
+        await Until(() => dialog.OwnedWindows.OfType<PullDialog>().Any(pull => pull.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning)));
+        PullDialog pull = dialog.OwnedWindows.OfType<PullDialog>().Single();
+        GitProcessDialog process = pull.OwnedWindows.OfType<GitProcessDialog>().Single();
+        Assert.That(process.Outcome!.Success, Is.True); Assert.That(process.Result!.Success, Is.True);
+        Assert.That(Field<CheckBox>(process, "KeepDialogOpen").IsChecked, Is.True); Assert.That(process.Owner, Is.SameAs(pull));
+        Assert.That(dialog.IsBusy, Is.True); Assert.That(dialog.Succeeded, Is.False); Assert.That(push.IsCompleted, Is.False);
+        Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(remote), "Retrying the Push must wait for the Pull acknowledgment.");
+        PointerClick(Field<Button>(process, "Ok"));
         await push.WaitAsync(TimeSpan.FromSeconds(20));
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.Head(), Is.Not.EqualTo(before));
         Assert.That((await f.Repository.GetLogAsync(1, all: false)).Single().Parents, Has.Count.EqualTo(1));
+        Assert.That(await f.GitText("rev-parse", "HEAD^"), Is.EqualTo(remote));
+        Assert.That(await f.GitText("rev-list", "--count", "HEAD"), Is.EqualTo("3"), "Rebase must replay the single local commit exactly once.");
         Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(await f.Head()));
         Assert.That(Field<TextBox>(dialog, "PushOutput").Text, Does.Contain("[rejected]"));
         Assert.That(Field<TextBox>(dialog, "PushOutput").Text, Does.Contain("main -> main"));
         Assert.That(await f.GitText("status", "--porcelain"), Is.Empty);
+        Assert.That(File.ReadAllText(Path.Combine(f.Client, "remote.txt")), Is.EqualTo("remote\n"));
+        Assert.That(File.ReadAllText(Path.Combine(f.Client, "local.txt")), Is.EqualTo("local\n"));
     }
 
     [AvaloniaTest]

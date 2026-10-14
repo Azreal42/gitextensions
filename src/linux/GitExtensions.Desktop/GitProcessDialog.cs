@@ -16,6 +16,8 @@ namespace GitExtensions.Linux.Desktop;
 /// <summary>Result remains null for an interrupted process: cancellation never invents an exit code or command output.</summary>
 public sealed record GitProcessDialogResult(GitResult? Result, Exception? Error, bool WasCancelled, bool CommandStarted)
 {
+    /// <summary>The owner requested closure; a completed native command can still have succeeded.</summary>
+    public bool OwnerCloseRequested { get; init; }
     public bool Success => !WasCancelled && Error is null && Result?.Success == true;
 }
 
@@ -43,7 +45,7 @@ public sealed class GitProcessDialog : Window
     private Task? _completion;
     private GitProcessDialogResult? _outcome;
     private int _drainScheduled, _resourcesDisposed;
-    private bool _closeRequested, _ownerCloseRequested, _closed, _starting = true, _preferenceFailed;
+    private bool _closeRequested, _ownerCloseRequested, _ownerCloseObserved, _closed, _starting = true, _preferenceFailed;
     private string? _preferenceError;
 
     public GitProcessDialog(string workingDirectory, string commandDescription, bool useDialogSettings,
@@ -76,6 +78,12 @@ public sealed class GitProcessDialog : Window
         Opened += (_, _) => { _starting = false; _completion ??= ExecuteAsync(); };
         Closing += (_, args) =>
         {
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing)
+            {
+                // Child continuations can resume before the owner's own Closing event or visibility change.
+                _ownerCloseObserved = true;
+                if (_outcome is not null) { _outcome = _outcome with { OwnerCloseRequested = true }; }
+            }
             if (IsRunning)
             {
                 // Avalonia asks children before raising the owner's Closing event. Retain the request we defer.
@@ -138,7 +146,7 @@ public sealed class GitProcessDialog : Window
         AppendText(_stdoutDecoder.Append([], flush: true), _stdoutLine); AppendText(_stderrDecoder.Append([], flush: true), _stderrLine);
         FinishLine(_stdoutLine); FinishLine(_stderrLine);
         bool cancelled = _operation.IsCancellationRequested || error is OperationCanceledException;
-        _outcome = new(result, error, cancelled, started); IsRunning = false;
+        _outcome = new(result, error, cancelled, started) { OwnerCloseRequested = _ownerCloseObserved }; IsRunning = false;
         if (!_closed)
         {
             // Like the original plain-text console, transient CR progress stays out of the completed view.
