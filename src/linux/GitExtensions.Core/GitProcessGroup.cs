@@ -66,7 +66,7 @@ internal sealed class GitProcessGroup : IDisposable
     internal async Task<Exception?> StopAsync()
     {
         Exception? failure = null;
-        void Signal(OwnedProcess member, int signal)
+        bool Signal(OwnedProcess member, int signal)
         {
             int result;
             do { result = (int)SendSignal(SendSignalSyscall, member.Handle, signal, IntPtr.Zero, 0); }
@@ -76,50 +76,56 @@ internal sealed class GitProcessGroup : IDisposable
                 int error = Marshal.GetLastPInvokeError();
                 if (error != NoSuchProcess) { failure ??= new Win32Exception(error, "Cannot signal an owned Git process."); }
             }
+            return result == 0;
+        }
+        Dictionary<OwnedProcess, long> interrupted = [];
+        HashSet<OwnedProcess> terminated = [];
+        HashSet<OwnedProcess> forced = [];
+        bool AdvanceStops()
+        {
+            bool live = false;
+            foreach (OwnedProcess member in _members)
+            {
+                if (terminated.Contains(member)) { continue; }
+                if (!member.IsAlive()) { terminated.Add(member); continue; }
+                live = true;
+                if (!interrupted.TryGetValue(member, out long started))
+                {
+                    if (!Signal(member, SigInt)) { continue; }
+                    interrupted[member] = started = Stopwatch.GetTimestamp();
+                }
+                if (Stopwatch.GetElapsedTime(started) >= TimeSpan.FromMilliseconds(500) && forced.Add(member))
+                {
+                    // Freeze the witnessed actor before the final scan; any later scan failure still forces its cleanup.
+                    Signal(member, SigStop); Signal(member, SigKill);
+                }
+            }
+            return live;
         }
         try
         {
-            Stopwatch discovery = Stopwatch.StartNew(); Discover(discovery, TimeSpan.FromMilliseconds(10));
-            // Readers continue to drain in GitRunner throughout this grace period. Cancellation remains the original outcome.
-            Stopwatch grace = Stopwatch.StartNew();
-            HashSet<OwnedProcess> interrupted = [];
-            while (true)
+            // A finite cursor survives every quantum. Time spent on earlier host processes cannot discard later candidates.
+            // The second snapshot is taken after all first-pass actors stop, to observe their final inherited pipe holders.
+            // Actors born after the final snapshot still need broader lifecycle ownership; a fork storm cannot prolong a snapshot.
+            for (int pass = 0; pass < 2 && failure is null; pass++)
             {
-                foreach (OwnedProcess member in _members)
+                DiscoveryCursor discovery = new();
+                while (!discovery.Complete && failure is null)
                 {
-                    if (grace.Elapsed >= TimeSpan.FromMilliseconds(500)) { break; }
-                    if (interrupted.Add(member)) { Signal(member, SigInt); }
+                    AdvanceStops();
+                    Stopwatch quantum = Stopwatch.StartNew();
+                    do
+                    {
+                        // Finish this candidate's stable proof before advancing; a deadline cannot skip a half-read holder.
+                        Inspect(discovery.Next());
+                        AdvanceStops();
+                    } while (!discovery.Complete && failure is null && quantum.Elapsed < TimeSpan.FromMilliseconds(10));
+                    await Task.Yield();
                 }
-                if (grace.Elapsed >= TimeSpan.FromMilliseconds(500) || failure is not null) { break; }
-                bool live = false;
-                foreach (OwnedProcess member in _members)
-                {
-                    if (grace.Elapsed >= TimeSpan.FromMilliseconds(500) || member.IsAlive()) { live = true; break; }
-                }
-                if (!live)
-                {
-                    int before = _members.Count; Discover(grace, TimeSpan.FromMilliseconds(500));
-                    if (before == _members.Count) { break; }
-                }
-                TimeSpan remaining = TimeSpan.FromMilliseconds(500) - grace.Elapsed;
-                if (remaining <= TimeSpan.Zero || failure is not null) { break; }
-                await Task.Delay(remaining < TimeSpan.FromMilliseconds(10) ? remaining : TimeSpan.FromMilliseconds(10)).ConfigureAwait(false);
-                Discover(grace, TimeSpan.FromMilliseconds(500));
+                // Each late live actor gets its own grace from the actual SIGINT, not from a dead leader or a slow scan.
+                // Output readers in GitRunner keep draining, and known actors without pipes are also awaited here.
+                while (failure is null && AdvanceStops()) { await Task.Delay(1).ConfigureAwait(false); }
             }
-            // Freeze witnessed parents before the final descendant scan, so they cannot keep forking during forced cleanup.
-            HashSet<OwnedProcess> frozen = [];
-            Stopwatch forcedDiscovery = Stopwatch.StartNew();
-            int previous = _members.Count;
-            for (int pass = 0; pass < 4; pass++)
-            {
-                foreach (OwnedProcess member in _members) { if (frozen.Add(member)) { Signal(member, SigStop); } }
-                previous = _members.Count; Discover(forcedDiscovery, TimeSpan.FromMilliseconds(100));
-                if (previous == _members.Count || failure is not null || forcedDiscovery.Elapsed >= TimeSpan.FromMilliseconds(100)) { break; }
-            }
-            foreach (OwnedProcess member in _members.AsEnumerable().Reverse()) { Signal(member, SigKill); }
-            // A parent can have exited before its final pipe holder was first observed; retain the pinned-pipe proof here too.
-            discovery.Restart(); previous = _members.Count; Discover(discovery, TimeSpan.FromMilliseconds(20));
-            foreach (OwnedProcess member in _members.Skip(previous)) { Signal(member, SigKill); }
         }
         catch (Exception exception) { failure ??= exception; }
         finally
@@ -142,44 +148,51 @@ internal sealed class GitProcessGroup : IDisposable
         return failure;
     }
 
-    private void Discover(Stopwatch clock, TimeSpan deadline)
+    private sealed class DiscoveryCursor
     {
-        if (_leader == 0) { return; }
+        // Snapshot names, not numeric ownership: every candidate still requires a fresh stable reference and proof.
+        private readonly string[] _directories = Directory.GetDirectories("/proc");
+        private int _next;
+        internal bool Complete => _next == _directories.Length;
+        internal string Next() => _directories[_next++];
+    }
+
+    private void Inspect(string directory)
+    {
+        if (_leader == 0 || !int.TryParse(Path.GetFileName(directory), NumberStyles.None, CultureInfo.InvariantCulture, out int pid)
+            || pid <= 1 || pid == Environment.ProcessId || _members.Any(member => member.Pid == pid && member.IsAlive())) { return; }
         // No numeric kill(-SID): a reused group ID must never make a new invocation our target.
         // New members need a live stable parent/session anchor across capture, or an actual FD on our still-pinned pipes.
         // An unobserved child which closes all pipes and becomes orphaned after the last anchor exits cannot be proven here,
         // even if it retained the old SID. Comprehensive ownership of such children remains a separate lifecycle requirement.
-        // One bounded pass; Stop signals captured members between passes even if another actor keeps forking.
-        foreach (string directory in Directory.EnumerateDirectories("/proc"))
+        // This unlocked prefilter only avoids needless descriptor captures for unrelated host actors. It grants no ownership.
+        ProcessState? hint = ProcessState.Read(directory + "/stat");
+        if (hint is not ProcessState suggested || !suggested.IsAlive
+            || suggested.Session != _leader && !_members.Any(member => member.Pid == suggested.Parent)) { return; }
+        OwnedProcess? candidate = OwnedProcess.Open(pid);
+        if (candidate is null) { return; }
+        bool owned = false;
+        try
         {
-            if (clock.Elapsed >= deadline) { return; }
-            if (!int.TryParse(Path.GetFileName(directory), NumberStyles.None, CultureInfo.InvariantCulture, out int pid)
-                || pid <= 1 || pid == Environment.ProcessId || _members.Any(member => member.Pid == pid && member.IsAlive())) { continue; }
-            OwnedProcess? candidate = OwnedProcess.Open(pid);
-            if (candidate is null) { continue; }
-            bool owned = false;
-            try
+            if (candidate.State() is not ProcessState initial || !initial.IsAlive) { return; }
+            foreach (OwnedProcess anchor in _members)
             {
-                if (candidate.State() is not ProcessState initial || !initial.IsAlive) { continue; }
-                foreach (OwnedProcess anchor in _members)
-                {
-                    if (clock.Elapsed >= deadline) { return; }
-                    if (anchor.State() is not ProcessState before || !before.IsAlive) { continue; }
-                    bool parent = initial.Parent == before.Pid;
-                    bool session = before.Session == _leader && initial.Session == _leader;
-                    if (!parent && !session) { continue; }
-                    if (candidate.State() is not ProcessState current || !current.IsAlive
-                        || parent && current.Parent != before.Pid || session && current.Session != _leader) { continue; }
-                    if (anchor.State() is ProcessState after && after.IsAlive && after.Started == before.Started
-                        && (!session || after.Session == _leader)) { owned = true; break; }
-                }
-                if (!owned && initial.Session == _leader && candidate.HasPipe(_pipes.Select(pipe => pipe.Identity), () => clock.Elapsed >= deadline)
-                    && candidate.State() is ProcessState holder && holder.IsAlive && holder.Session == _leader)
-                { owned = true; }
-                if (owned) { _members.Add(candidate); candidate = null; }
+                if (anchor.Pid != initial.Parent && initial.Session != _leader) { continue; }
+                if (anchor.State() is not ProcessState before || !before.IsAlive) { continue; }
+                bool parent = initial.Parent == before.Pid;
+                bool session = before.Session == _leader && initial.Session == _leader;
+                if (!parent && !session) { continue; }
+                if (candidate.State() is not ProcessState current || !current.IsAlive
+                    || parent && current.Parent != before.Pid || session && current.Session != _leader) { continue; }
+                if (anchor.State() is ProcessState after && after.IsAlive && after.Started == before.Started
+                    && (!session || after.Session == _leader)) { owned = true; break; }
             }
-            finally { candidate?.Dispose(); }
+            if (!owned && initial.Session == _leader && candidate.HasPipe(_pipes.Select(pipe => pipe.Identity))
+                && candidate.State() is ProcessState holder && holder.IsAlive && holder.Session == _leader)
+            { owned = true; }
+            if (owned) { _members.Add(candidate); candidate = null; }
         }
+        finally { candidate?.Dispose(); }
     }
 
     public void Dispose()
@@ -191,6 +204,12 @@ internal sealed class GitProcessGroup : IDisposable
     private readonly record struct ProcessState(int Pid, int Parent, int Session, long Started, char Status)
     {
         internal bool IsAlive => Status is not ('Z' or 'X' or 'x');
+        internal static ProcessState? Read(string path)
+        {
+            try { return Parse(File.ReadAllText(path)); }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+        }
         internal static ProcessState Parse(string stat)
         {
             int name = stat.IndexOf('('), end = stat.LastIndexOf(')');
@@ -227,12 +246,7 @@ internal sealed class GitProcessGroup : IDisposable
             }
             return new(pid, new SafeFileHandle((IntPtr)descriptor, ownsHandle: true));
         }
-        internal ProcessState? State()
-        {
-            try { return ProcessState.Parse(File.ReadAllText(DirectoryPath + "/stat")); }
-            catch (IOException) { return null; }
-            catch (UnauthorizedAccessException) { return null; }
-        }
+        internal ProcessState? State() => ProcessState.Read(DirectoryPath + "/stat");
         internal bool IsAlive()
         {
             if (State() is ProcessState state && !state.IsAlive) { return false; }
@@ -244,13 +258,12 @@ internal sealed class GitProcessGroup : IDisposable
             if (error == NoSuchProcess) { return false; }
             throw new Win32Exception(error, "Cannot determine whether an owned Git process has stopped.");
         }
-        internal bool HasPipe(IEnumerable<FileIdentity> pipes, Func<bool> expired)
+        internal bool HasPipe(IEnumerable<FileIdentity> pipes)
         {
             try
             {
-                foreach (string path in Directory.EnumerateFileSystemEntries(DirectoryPath + "/fd"))
+                foreach (string path in Directory.GetFileSystemEntries(DirectoryPath + "/fd"))
                 {
-                    if (expired()) { return false; }
                     // Inspecting ordinary file descriptors could stat a remote filesystem. Only anonymous pipes can match.
                     if (new FileInfo(path).LinkTarget is not string link || !link.StartsWith("pipe:[", StringComparison.Ordinal)) { continue; }
                     int descriptor = OpenDirectory(path, PathOnly | CloseOnExec);

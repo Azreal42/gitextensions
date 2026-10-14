@@ -27,7 +27,8 @@ internal static partial class GitProcessStreamingScenarios
         ("graceful cancellation cleans the real orphaned checkout owner after its direct leader has exited", Guard(GracefulOrphanCheckoutAsync)),
         ("a checkout observer fault retains its exact exception and native bytes while SIGINT cleans the owned index lock", Guard(GracefulObserverCheckoutAsync)),
         ("witnessed SIGINT-ignoring actors with and without pipes survive the grace period then all stop before cancellation returns", Guard(IgnoredInterruptFallsBackAsync)),
-        ("cancellation stops the actual native launcher blocked before HELLO and postACK before exec without dispatching Git", Guard(BlockedNativeLaunchCancellationAsync))
+        ("cancellation stops the actual native launcher blocked before HELLO and postACK before exec without dispatching Git", Guard(BlockedNativeLaunchCancellationAsync)),
+        ("progressive cancellation signals both independent orphaned Git pipes and observes their actual natural exit130", Guard(IndependentOrphanPipesAsync))
     ];
     private static Func<Task> Guard(Func<Task> test) => async () =>
     {
