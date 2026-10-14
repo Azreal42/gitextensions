@@ -48,6 +48,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Abandon du cherry-pick laisse le conflit sur une cible renommée | Le diff source seul ne décrit pas le checkout ; sauvegarder les cibles de renommage pertinentes et refuser les redirections hors couverture avant toute écriture. |
 | Sous-module retiré revient après refresh | La dernière .gitmodules reste volontairement sur disque ; la liste suit les gitlinks de l'index, comme git submodule status. |
 | Retrait incohérent avec .gitmodules modifiée | rm --cached refuse parfois avant Save+Stage ; Windows ignorait ce résultat. Préparer le futur contenu sur copies si des sections restent, garder les protections du gitlink et publier les fichiers sous verrous Git. |
+| Fermer le propriétaire après succès Git réapplique encore le stash | Les continuations enfant précèdent le masquage du parent ; mémoriser la demande de fermeture et arrêter le workflow sans réécrire le résultat natif. [Lot corrigé et vérifié](../../artifacts/linux/pull-process-root-checks-20261014-04/root-full-result-review.json). |
 
 ## Lecteurs et UI — résolus
 
@@ -135,6 +136,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | SDK Snap inutilisable dans le sandbox | Utiliser le SDK officiel local `.dotnet` et une version complète dans global.json. |
 | Version Debian contient HOME | Expansion Bash de `~` ; citer le caractère et vérifier le paquet reproductible. |
 | `dotnet test` annonce succès sans scénarios Core/Plugins | Projets console IsTestProject=false : `dotnet run --no-build --no-restore` et compteurs des logs. Apphost et DOTNET_ROOT local requis pour helpers enfants. |
+| CA1416 sur les permissions d’un helper Linux | Placer la garde Linux au site d’appel ; build relancé sans diagnostic, essai initial conservé. |
+| Tests Pull attendent la suite avant acquittement Process | Acquitter le vrai modal terminé, y compris dans Push → Pull et Commit & Push ; garder les oracles Git et les essais refusés. |
 | VSTest arrêté avant tout scénario dans le sandbox | Socket TCP local refusé (`SocketException 13`) ; exécuter les tests isolés avec cet accès, garder l’essai arrêté hors validation. |
 | Assert.ThrowsAsync bloque le dispatcher Avalonia | Attendre réellement la tâche et capturer l’exception ; l’assertion NUnit synchrone ne laisse pas avancer le modal. |
 | Bouton visible mais clic central traverse au Panel | Un Background null local efface le style et son fond ; ClearValue rend aussi survol/pression au thème. Conserver un seul clic au centre dans le test. |
