@@ -150,6 +150,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. RebaseAdvancedScenarios.All,
     .. PushScenarios.All,
     .. PushStreamingScenarios.All,
+    .. CloneStreamingScenarios.All,
     .. GrepScenarios.All,
     ("Linux cancellation treats zombie and dead procfs tasks as terminated", LinuxProcessState.VerifyStatesAsync),
     ("difftastic formatter retains original sample gutters and right column", DifftasticScenarios.OriginalFixtureAsync),

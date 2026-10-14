@@ -37,6 +37,13 @@ public class DialogAccessKeyTests
             PressAlt(dialog, PhysicalKey.P); Assert.That(Field<RadioButton>(dialog, "ClonePersonal").IsChecked, Is.True);
             dialog.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
             if (dialog.IsVisible) { dialog.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None); }
+            await Until(() => dialog.OwnedWindows.OfType<GitProcessDialog>().Any());
+            GitProcessDialog process = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+            await Until(() => !process.IsRunning);
+            Assert.That(process.Result?.Success, Is.True, process.Error?.ToString());
+            Assert.That(dialog.IsVisible, Is.True, "Clone must wait for the real Process acknowledgment.");
+            Assert.That(dialog.CreatedRepository, Is.Null);
+            PushProcessTestDriver.Pointer(Field<Button>(process, "Ok"));
             await Until(() => !dialog.IsVisible);
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(dialog.CreatedRepository!.Path, Is.EqualTo(Path.Combine(fixture.Root, child)));

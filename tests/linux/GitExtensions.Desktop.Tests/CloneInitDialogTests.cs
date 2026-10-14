@@ -92,7 +92,7 @@ public class CloneInitDialogTests
         Assert.That(Field<ComboBox>(dialog, "CloneBranches").ItemsSource!.Cast<string>(), Does.Contain("other"));
         Assert.That(Field<TextBox>(dialog, "CloneBranch").Text, Is.EqualTo("main"));
         Click(dialog, "CloneRepository");
-        await Until(() => !dialog.IsBusy);
+        await PushProcessTestDriver.UntilAsync(dialog, () => !dialog.IsBusy);
         Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
         GitRepository cloned = dialog.CreatedRepository!;
         Assert.That((await cloned.RunAsync(["rev-parse", "--is-shallow-repository"])).StandardOutput.Trim(), Is.EqualTo("true"));
@@ -124,7 +124,7 @@ public class CloneInitDialogTests
             if (mode == "bare") { Field<RadioButton>(dialog, "CloneBare").IsChecked = true; }
             if (mode != "topic") { Assert.That(Field<CheckBox>(dialog, "CloneSubmodules").IsEnabled, Is.False); }
             Click(dialog, "CloneRepository");
-            await Until(() => !dialog.IsBusy);
+            await PushProcessTestDriver.UntilAsync(dialog, () => !dialog.IsBusy);
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(dialog.CreatedRepository!.IsBare, Is.EqualTo(mode == "bare"));
             string file = Path.Combine(dialog.CreatedRepository.Path, "file.txt");
@@ -152,11 +152,11 @@ public class CloneInitDialogTests
         try
         {
             Click(clone, "CloneRepository");
-            await Until(() => !clone.IsBusy);
+            await PushProcessTestDriver.UntilAsync(clone, () => !clone.IsBusy);
             Assert.That(clone.LastError, Does.Contain("inside"));
             Field<TextBox>(clone, "CloneSubdirectory").Text = Path.GetFileName(fixture.Repository);
             Click(clone, "CloneRepository");
-            await Until(() => !clone.IsBusy);
+            await PushProcessTestDriver.UntilAsync(clone, () => !clone.IsBusy);
             Assert.That(clone.LastError, Does.Contain("not an empty directory"));
             Assert.That(clone.CreatedRepository, Is.Null);
             Assert.That(clone.IsVisible, Is.True);

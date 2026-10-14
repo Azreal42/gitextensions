@@ -24,12 +24,22 @@ public sealed partial class GitRepository
 
     public static async Task<GitRepository> CloneAsync(string source, string destination, GitCloneOptions options, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(destination);
+        string fullPath = System.IO.Path.GetFullPath(destination);
+        await CloneCommandAsync(source, fullPath, options, cancellationToken).ConfigureAwait(false);
+        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Runs the native clone only. Discovery of the destination is a separate readonly operation.</summary>
+    public static async Task<GitResult> CloneCommandAsync(string source, string destination, GitCloneOptions options,
+        CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+    {
         ValidateValue(source);
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         ArgumentNullException.ThrowIfNull(options);
         if (options.Depth is <= 0) { throw new ArgumentOutOfRangeException(nameof(options), "Clone depth must be positive."); }
         if (options.NoCheckout && options.Branch is not null) { throw new ArgumentException("Choose a branch or no checkout.", nameof(options)); }
-        List<string> arguments = ["clone"];
+        List<string> arguments = ["clone", "-v", "--progress"];
         if (options.Bare) { arguments.Add("--bare"); }
         if (options.RecurseSubmodules && !options.Bare && !options.NoCheckout) { arguments.Add("--recurse-submodules"); }
         if (options.NoCheckout && !options.Bare) { arguments.Add("--no-checkout"); }
@@ -46,8 +56,11 @@ public sealed partial class GitRepository
         Directory.CreateDirectory(parent);
         GitRepository repository = new(parent);
         arguments.AddRange(["--", source, fullPath]);
-        await repository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
-        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
+        if (outputReceived is null) { return await repository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false); }
+        GitResult result = await repository._runner.RunAsync(parent, [.. GlobalOptions, .. arguments], cancellationToken,
+            outputReceived: outputReceived).ConfigureAwait(false);
+        if (!result.Success) { throw new GitCommandException(arguments, result); }
+        return result;
     }
 
     public static async Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string source, CancellationToken cancellationToken = default)

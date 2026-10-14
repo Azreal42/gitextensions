@@ -10,6 +10,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -24,6 +25,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private readonly ComboBox _destinationHistory = new() { Name = "CloneDestinations", Width = 28, Height = 24 };
     private Task? _initialization;
     private long _sourceVersion;
+    private Window? _closingOwner;
     private readonly TextBox _source = new() { Name = "CloneSource", Height = 24 };
     private readonly TextBox _destination = new() { Name = "CloneDestination", Height = 24 };
     private readonly TextBox _subdirectory = new() { Name = "CloneSubdirectory", Height = 24 };
@@ -37,10 +39,27 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private readonly string _defaultBranch;
     private readonly string _noCheckout;
 
+    public GitProcessDialogResult? LastProcess { get; private set; }
+
     public CloneDialog(string destination = "", string source = "", GitRepository? repository = null) : base("Clone repository")
     {
         _context = repository;
         _explicitSource = !string.IsNullOrEmpty(source);
+        // Retain the owner's request before a busy Process can veto child closure.
+        // StartupRepositoryDialog cancels our token and closes only after drainage.
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
+        Closing += (_, args) =>
+        {
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingOwner = Owner as Window; }
+        };
+        Closed += (_, _) =>
+        {
+            Window? owner = _closingOwner; _closingOwner = null;
+            if (owner is not null)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } });
+            }
+        };
         Width = 655;
         _defaultBranch = T("(default: remote HEAD)");
         _noCheckout = T("(none: don't checkout after clone)");
@@ -199,15 +218,33 @@ public sealed class CloneDialog : StartupRepositoryDialog
 
     private Task CloneAsync() => RunAsync("Clone", async token =>
     {
+        LastProcess = null;
         string directory = AbsoluteDirectory(_destination.Text);
         string subdirectory = _subdirectory.Text ?? "";
         if (Path.IsPathRooted(subdirectory) || subdirectory.Split(Path.DirectorySeparatorChar).Any(part => part == ".."))
         { throw new ArgumentException("Subdirectory must remain inside the destination folder."); }
         string path = Path.GetFullPath(Path.Combine(directory, subdirectory));
-        GitRepository cloned = await GitRepository.CloneAsync(_source.Text ?? "", path, ReadOptions(), token);
-        _preferences.Save(new(directory, _recursive.IsChecked == true));
+        string source = _source.Text ?? "";
+        GitCloneOptions options = ReadOptions();
+        string description = "git clone -v --progress" + (options.Bare ? " --bare" : "")
+            + (options.Depth is int depth ? " --depth=" + depth.ToString(CultureInfo.InvariantCulture) + " --no-single-branch" : "")
+            + " — " + source;
+        LastProcess = await GitProcessDialog.ShowAsync(this, directory, description, true,
+            (ct, output) => GitRepository.CloneCommandAsync(source, path, options, ct, output), token);
+        if (LastProcess.WasCancelled || LastProcess.OwnerCloseRequested || LastProcess.WorkflowStopRequested
+            || token.IsCancellationRequested || !IsVisible)
+        { throw new OperationCanceledException(token); }
+        if (LastProcess.CompletionError is Exception completionError) { ExceptionDispatchInfo.Capture(completionError).Throw(); }
+        if (LastProcess.Error is Exception error) { ExceptionDispatchInfo.Capture(error).Throw(); }
+        if (LastProcess.Result?.Success != true) { throw new InvalidOperationException(T("No native Git result was returned.")); }
+        // Keep discovery out of the clone observer: its output is neither transfer
+        // progress nor the native clone result displayed by the process window.
+        GitRepository cloned = await GitRepository.OpenAsync(path, token);
+        token.ThrowIfCancellationRequested();
+        if (!IsVisible) { throw new OperationCanceledException(token); }
+        _preferences.Save(new(directory, options.RecurseSubmodules));
         RepositoryHistoryState history = LoadLocalHistory();
-        _sourcesStore.Visit(_source.Text ?? "", history.HistorySize);
+        _sourcesStore.Visit(source, history.HistorySize);
         try { _localHistoryStore.Save(history.Visit(cloned.Path)); }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         Complete(cloned);

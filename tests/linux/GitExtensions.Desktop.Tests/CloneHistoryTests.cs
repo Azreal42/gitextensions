@@ -112,7 +112,7 @@ public class CloneHistoryTests
             CloneDialog dialog = NewClone(fixture.Root, source.Path, subdirectory);
             try
             {
-                Click(dialog, "CloneRepository"); await Until(() => !dialog.IsBusy);
+                Click(dialog, "CloneRepository"); await PushProcessTestDriver.UntilAsync(dialog, () => !dialog.IsBusy);
                 Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
                 Assert.That(dialog.CreatedRepository!.Path, Is.EqualTo(expected));
                 Assert.That(dialog.IsVisible, Is.False);
@@ -142,7 +142,7 @@ public class CloneHistoryTests
         CloneDialog dialog = NewClone(fixture.Root, Path.Combine(fixture.Root, "absent literal source\n雪"), "failed clone");
         try
         {
-            Click(dialog, "CloneRepository"); await Until(() => !dialog.IsBusy);
+            Click(dialog, "CloneRepository"); await PushProcessTestDriver.UntilAsync(dialog, () => !dialog.IsBusy);
             Assert.That(dialog.LastError, Is.Not.Null.And.Not.Empty);
             Assert.That(dialog.CreatedRepository, Is.Null); Assert.That(dialog.IsVisible, Is.True);
             AssertHistoryFilesUnchanged(before);
@@ -199,7 +199,7 @@ public class CloneHistoryTests
             Field<TextBox>(clone, "CloneDestination").Text = parent; Field<TextBox>(clone, "CloneSubdirectory").Text = child;
             string expected = Path.Combine(parent, child);
             Click(clone, "CloneRepository");
-            await Until(() => main.OwnedWindows.Any(window => window is not CloneDialog && window.Title == "Open"));
+            await PushProcessTestDriver.UntilAsync(main, () => main.OwnedWindows.Any(window => window is not CloneDialog && window.Title == "Open"));
             Window question = main.OwnedWindows.Single(window => window.Title == "Open");
             Assert.That(question.GetVisualDescendants().OfType<Button>().Select(button => button.Content as string), Is.EquivalentTo(new[] { "Yes", "No" }));
             Assert.That(new RepositoryHistoryStore().Load().Recent.First().Path, Is.EqualTo(expected), "Success visits the clone before the Open answer.");
@@ -253,7 +253,7 @@ public class CloneHistoryTests
         CloneDialog dialog = NewClone(fixture.Root, source, "credential clone");
         try
         {
-            Click(dialog, "CloneRepository"); await Until(() => !dialog.IsBusy);
+            Click(dialog, "CloneRepository"); await PushProcessTestDriver.UntilAsync(dialog, () => !dialog.IsBusy);
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(dialog.CreatedRepository, Is.Not.Null);
             Assert.That(File.ReadAllText(sources.FilePath), Is.EqualTo(before));
