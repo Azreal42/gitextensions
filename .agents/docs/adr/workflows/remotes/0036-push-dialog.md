@@ -8,4 +8,4 @@ Conserver la distinction remote/URL, source/destination, tracking, récursion de
 
 Les préférences durables gardent récursion et confirmations, pas une force activée au prochain lancement. Clone et Push partagent l'historique des destinations. Relire le dépôt après toute tentative qui peut avoir changé les refs ou la configuration, y compris un rejet partiel ou la fermeture d'un dialogue enfant.
 
-Repères : FormPush ; PushDialog, PushPreferencesStore, CloneSourcesStore, GitRepository.Push, GitPushRequest ; PushScenarios et PushDialogTests. Sortie Git continue et autres intégrations réseau restent dans l'audit général.
+Repères : FormPush ; PushDialog, PushPreferencesStore, CloneSourcesStore, GitRepository.Push, GitPushRequest ; PushScenarios et PushDialogTests. Sortie continue et reprise dans le même Process : [ADR 0055](0055-owned-push-process.md) ; audit natif et autres intégrations dans le TODO.

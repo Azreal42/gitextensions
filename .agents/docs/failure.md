@@ -49,6 +49,9 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Sous-module retiré revient après refresh | La dernière .gitmodules reste volontairement sur disque ; la liste suit les gitlinks de l'index, comme git submodule status. |
 | Retrait incohérent avec .gitmodules modifiée | rm --cached refuse parfois avant Save+Stage ; Windows ignorait ce résultat. Préparer le futur contenu sur copies si des sections restent, garder les protections du gitlink et publier les fichiers sous verrous Git. |
 | Fermer le propriétaire après succès Git réapplique encore le stash | Les continuations enfant précèdent le masquage du parent ; mémoriser la demande de fermeture et arrêter le workflow sans réécrire le résultat natif. [Lot corrigé et vérifié](../../artifacts/linux/pull-process-root-checks-20261014-04/root-full-result-review.json). |
+| Done avant récupération d’un Push rejeté | Le hook de fin précède Done/fermeture ; le Pull imbriqué et son acquittement précèdent la reprise dans le même Process. |
+| Sortie d’une ancienne tentative attribuée au nouveau transfert | Vider la console courante au redémarrage ; garder distinctes les sorties natives des tentatives. |
+| Clôture imbriquée tardive ou deuxième Close transforme un succès en annulation | Observer la clôture du propriétaire avant le veto d’un enfant occupé ; arrêter les continuations, attendre Git, garder l’issue native et rendre la fermeture finale idempotente. |
 
 ## Lecteurs et UI — résolus
 
@@ -135,6 +138,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Fixture stdin vide dans un shell asynchrone | Sauver le vrai fd 0 avant la liste en arrière-plan puis le transmettre au producteur ; `<&0` pouvait lire /dev/null. [Git direct a confirmé le défaut](../../artifacts/linux/bisect-process-root-checks-20261013-04/root-duplex-fixture-diagnosis.json) ; fixture corrigée vérifiée dans la suite Core complète. |
 | SDK Snap inutilisable dans le sandbox | Utiliser le SDK officiel local `.dotnet` et une version complète dans global.json. |
 | Version Debian contient HOME | Expansion Bash de `~` ; citer le caractère et vérifier le paquet reproductible. |
+| Fixture blob résolue comme commit | ResolveRevisionAsync ajoute `^{commit}` ; résoudre le blob par la vraie commande rev-parse sans cette contrainte, conserver les assertions de transfert. |
 | `dotnet test` annonce succès sans scénarios Core/Plugins | Projets console IsTestProject=false : `dotnet run --no-build --no-restore` et compteurs des logs. Apphost et DOTNET_ROOT local requis pour helpers enfants. |
 | CA1416 sur les permissions d’un helper Linux | Placer la garde Linux au site d’appel ; build relancé sans diagnostic, essai initial conservé. |
 | Tests Pull attendent la suite avant acquittement Process | Acquitter le vrai modal terminé, y compris dans Push → Pull et Commit & Push ; garder les oracles Git et les essais refusés. |
@@ -142,7 +146,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Assert.ThrowsAsync bloque le dispatcher Avalonia | Attendre réellement la tâche et capturer l’exception ; l’assertion NUnit synchrone ne laisse pas avancer le modal. |
 | Bouton visible mais clic central traverse au Panel | Un Background null local efface le style et son fond ; ClearValue rend aussi survol/pression au thème. Conserver un seul clic au centre dans le test. |
 | Compteur Click reste nul malgré fermeture | Button.ClickEvent route en Bubble ; écouter la route réelle, sans rejouer le geste. |
-| Modal déjà OwnedWindows mais hit-test encore vide | L’apparition précède le commit du renderer headless ; attendre la vraie cible entre frames avant l’unique premier clic. Échec initial conservé, oracles Git/callback inchangés. |
+| Modal déjà OwnedWindows mais hit-test encore vide | Stabiliser les frames via les API publiques avant le clic ; conserver visibilité, zone et hit-test stricts. Helper partagé Push/Bisect ; [échecs conservés](../../artifacts/linux/push-process-root-checks-20261014-05/root-failed-full-review-01.json), [validation finale](../../artifacts/linux/push-process-root-checks-20261014-07/root-full-result-review.json). |
 | Tests Avalonia bloquent ou teardown masque l'exception | Attente async normale sur dispatcher, BindingPriority.Template pour TemplateBinding ; ne pas modifier l'isolation pour masquer le défaut. |
 | Test d’infobulle exige PopupRoot en headless | Le host réel est OverlayPopupHost ; tester son ouverture, son rattachement, le présentateur et ses pixels sans changer la configuration des popups. Le natif reste une validation distincte. |
 | AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
