@@ -93,7 +93,7 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - Commit : superprojet/branche inline, templates avancés, validation personnalisée et scripts ; dialogues/raccourcis historiques restants.
 - Viewer : recherche inter-fichiers, autres options globales, sélection entre Patch/Word/DFT, encodages des autres contextes de lecture et grep, codecs image et graphes très larges.
 - Listes : menus contextuels/difftools, détails/compteurs des sous-modules et noms complets/abrégés.
-- Plugins : CI/hébergeurs, chargement tiers, viewer Gource/OpenGL réel, avatars personnalisés et sortie AutoCompile continue. FindLargeFiles : analyse des blobs portée ; grille Windows avec sélection Delete, confirmation, suppression des chemins de tout l’historique et purge refs/original/reflogs/GC encore absentes.
+- Plugins : CI/hébergeurs, chargement tiers, viewer Gource/OpenGL réel, avatars personnalisés et sortie AutoCompile continue. FindLargeFiles : grille Windows, cases Delete, confirmation et suppression historique implémentées. [1186 tests réussis](../../artifacts/linux/history-removal-root-checks-20261014-04/root-full-result-review.json) (389 Core, 35 Plugins, 762 Desktop), zéro échec/ignoré ; 39 ciblés et six projets Release sans diagnostic. [Sources rattachées au commit `b21e51028`](../../artifacts/linux/history-removal-root-checks-20261014-04/root-source-commit-binding-01.json). ADR 0053. Audit natif et nouveau candidat Debian encore requis ; aucune livraison de ce lot.
 - Préférences/intégrations Linux complètes ; roundtrip des chemins à octets non UTF-8 et notes reflog personnalisées ambiguës (voir Failure).
 
 Aucune famille ouverte n'est retirée du périmètre.
