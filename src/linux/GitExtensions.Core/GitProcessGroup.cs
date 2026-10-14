@@ -84,18 +84,24 @@ internal sealed class GitProcessGroup : IDisposable
         bool AdvanceStops()
         {
             bool live = false;
-            foreach (OwnedProcess member in _members)
+            // Capturing a member's children can append stable references to this list.
+            // Finish this finite batch; new anchors receive their own turn in the next call.
+            int membersAtStart = _members.Count;
+            for (int index = 0; index < membersAtStart; index++)
             {
+                OwnedProcess member = _members[index];
                 if (terminated.Contains(member)) { continue; }
                 if (!member.IsAlive()) { terminated.Add(member); continue; }
                 live = true;
                 if (!interrupted.TryGetValue(member, out long started))
                 {
+                    CaptureChildren(member);
                     if (!Signal(member, SigInt)) { continue; }
                     interrupted[member] = started = Stopwatch.GetTimestamp();
                 }
                 if (Stopwatch.GetElapsedTime(started) >= TimeSpan.FromMilliseconds(500) && forced.Add(member))
                 {
+                    CaptureChildren(member);
                     // Freeze the witnessed actor before the final scan; any later scan failure still forces its cleanup.
                     Signal(member, SigStop); Signal(member, SigKill);
                 }
@@ -155,6 +161,15 @@ internal sealed class GitProcessGroup : IDisposable
         private int _next;
         internal bool Complete => _next == _directories.Length;
         internal string Next() => _directories[_next++];
+    }
+
+    private void CaptureChildren(OwnedProcess member)
+    {
+        // A relay can exit on its first SIGINT and leave children holding different pipes.
+        // Read its finite local snapshot while the owned reference still supplies an anchor.
+        // These IDs remain only candidates: Inspect brackets the actual ownership proof.
+        foreach (int child in member.ChildrenSnapshot())
+        { Inspect("/proc/" + child.ToString(CultureInfo.InvariantCulture)); }
     }
 
     private void Inspect(string directory)
@@ -247,6 +262,34 @@ internal sealed class GitProcessGroup : IDisposable
             return new(pid, new SafeFileHandle((IntPtr)descriptor, ownsHandle: true));
         }
         internal ProcessState? State() => ProcessState.Read(DirectoryPath + "/stat");
+        internal int[] ChildrenSnapshot()
+        {
+            if (State() is not ProcessState before || !before.IsAlive) { return []; }
+            HashSet<int> children = [];
+            try
+            {
+                // A child may be created by any thread, not only the thread-group leader.
+                string[] threads = Directory.GetDirectories(DirectoryPath + "/task");
+                foreach (string thread in threads)
+                {
+                    try
+                    {
+                        foreach (string word in File.ReadAllText(thread + "/children").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            if (int.TryParse(word, NumberStyles.None, CultureInfo.InvariantCulture, out int child) && child > 1)
+                            { children.Add(child); }
+                        }
+                    }
+                    catch (IOException) { /* A thread can exit during this finite snapshot. */ }
+                    catch (UnauthorizedAccessException) { }
+                }
+            }
+            catch (IOException) { return []; }
+            catch (UnauthorizedAccessException) { return []; }
+            if (State() is not ProcessState after || !after.IsAlive || after.Pid != before.Pid
+                || after.Started != before.Started || after.Session != before.Session) { return []; }
+            return children.ToArray();
+        }
         internal bool IsAlive()
         {
             if (State() is ProcessState state && !state.IsAlive) { return false; }

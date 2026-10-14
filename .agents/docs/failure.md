@@ -10,8 +10,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
 | Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
-| Lecture de branches Clone laisse des descendants actifs derrière un relais | Le relais reçoit SIGINT puis SIGKILL ; les trois descendants avec pipes intermédiaires restent actifs. Perte d’ancre avant découverte probable, timing du scan non observé. Capturer les enfants possédés avant interruption/force à valider ; SID seul reste insuffisant. [Essai natif conservé](../../artifacts/linux/snapshots/991c8c71c/native-clone-inputs/pilots/light/A01-attempt-01/proofs/root-a01-failed-attempt-review-01.json). Nettoyage Root séparé, sans acceptation produit. |
-| Destination Clone avec LF paraît vide au focus | La valeur copiée est exacte et l’aperçu échappé lisible ; le TextBox à hauteur fixe coupe le texte multiligne. Rendre l’édition lisible sans transformer le chemin Git. |
+| Lecture de branches Clone laisse des descendants actifs derrière un relais | Interrompre le relais avant de capturer ses enfants peut perdre l’ancre de descendants aux pipes intermédiaires. Capture locale avant signaux vérifiée par trois régressions réelles avant/après ; reprise GUI du nouveau payload requise. SID seul reste insuffisant ; nettoyage Root de l’ancien essai distinct de la réussite produit. |
 
 ## Git et état des workflows — résolus
 
@@ -61,6 +60,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Destination LF vide au focus ou après Ctrl+A | Hauteur fixe puis défilement horizontal jusqu’au caret masquent les lignes courtes. Replier les valeurs multiligne avec hauteur bornée, sans transformer le texte ; conserver 24 px pour les chemins ordinaires. Glyphes, copie littérale et six rendus clair/sombre vérifiés en headless ; audit natif restant dans TODO. |
 | Autocomplétion perdue au clic | La perte de focus effaçait la sélection et fermait la liste avant release. Préserver ce cycle et accepter le chemin littéral de la ligne réellement pointée. [Premier essai conservé](../../artifacts/linux/clone-input-root-checks-20261014-01/root-failed-targeted-review.json). |
 | Erreur Git absente avant le démarrage du suivi | Une sonde readonly peut échouer avant tout callback ; afficher son vrai GitResult final sans inventer de chunks. Correctif vérifié dans les 30 tests ciblés et les 1159 tests complets. |
 | Erreur de préférence masque les avertissements Git | Séparer les notices, effacer l’erreur après une sauvegarde réussie et borner les détails défilables ; test réel réussi dans les suites ciblée et complète. |

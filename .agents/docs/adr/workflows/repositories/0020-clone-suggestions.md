@@ -8,4 +8,6 @@ Décision : source explicite, puis presse-papiers valide, historique et enfin re
 
 La destination propose les dossiers locaux avec ajout du suffixe sélectionné ; Entrée/Tab accepte, Échap restaure la saisie. Les captions montrent le nom lisible et le chemin complet en infobulle, sans modifier la valeur. Charger les branches à la demande en gardant le formulaire éditable ; une nouvelle source/requête invalide la réponse précédente et le choix saisi reste prioritaire. Annuler et attendre cette lecture avant Clone ou fermeture. F1 et « ? » ouvrent la section Clone du manuel de la même version majeure/mineure.
 
+Un chemin contenant CR/LF reste éditable et copiable littéralement dans un champ replié à hauteur bornée ; une valeur ordinaire rétablit le champ compact historique. Échapper uniquement les captions et l’aperçu, jamais la valeur du contrôle.
+
 Repères : `CloneDialog`, `CloneDirectoryCompletion`, `CloneSourcesStore`, `RepositoryHistoryStore`, `GitRepository.CloneDefaults`, `MainWindow.Workflows`, `CloneCompletionTests`, `CloneBranchLoadingTests`. Progression/acquittement : [ADR 0056](0056-owned-clone-process.md), validations et limites dans le TODO.

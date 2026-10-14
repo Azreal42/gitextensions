@@ -308,6 +308,10 @@ public class CloneHistoryTests
         {
             foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
             {
+                Field<ComboBox>(dialog, "CloneSources").SelectedItem = null;
+                Field<ComboBox>(dialog, "CloneDestinations").SelectedItem = null;
+                Field<TextBox>(dialog, "CloneSource").Text = fixture.Repository.Path;
+                Field<TextBox>(dialog, "CloneDestination").Text = fixture.Root;
                 dialog.RequestedThemeVariant = theme;
                 Render(dialog);
                 foreach (string name in new[] { "ClonePersonal", "CloneBare" })

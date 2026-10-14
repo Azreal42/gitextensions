@@ -36,7 +36,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private long _branchVersion;
     private bool _updatingBranches, _branchClosing, _branchClosePending;
     private readonly TextBox _source = new() { Name = "CloneSource", Height = 24 };
-    private readonly TextBox _destination = new() { Name = "CloneDestination", Height = 24 };
+    private readonly TextBox _destination = new() { Name = "CloneDestination", Height = 24, MaxHeight = 80 };
     private readonly TextBox _subdirectory = new() { Name = "CloneSubdirectory", Height = 24 };
     private readonly TextBox _branch = new() { Name = "CloneBranch", Height = 24 };
     private readonly ComboBox _branches = new() { Name = "CloneBranches", MinWidth = 36, Width = 36, Height = 24 };
@@ -354,6 +354,12 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private void UpdateLocation()
     {
         string destination = _destination.Text ?? "";
+        bool multiline = destination.Contains('\n') || destination.Contains('\r');
+        // Linux directory names can contain line breaks; keep their literal text editable.
+        _destination.Height = multiline ? double.NaN : 24;
+        _destination.VerticalContentAlignment = multiline ? VerticalAlignment.Top : VerticalAlignment.Center;
+        _destination.TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        ScrollViewer.SetHorizontalScrollBarVisibility(_destination, multiline ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Hidden);
         string subdirectory = _subdirectory.Text ?? "";
         try
         {

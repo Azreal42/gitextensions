@@ -6,6 +6,8 @@ Besoin : libérer l’interface après annulation ou erreur d’observateur, con
 
 Décision : découvrir les acteurs avec progression conservée et parcours finis. Accorder à chaque acteur vivant prouvé 500 ms après son SIGINT, puis forcer son arrêt ; un parent déjà mort ne consomme pas cette grâce. Attendre leur fin avec des références stables ; l’arrêt reste indépendant du handshake et d’exec. Conserver l’erreur initiale et les octets déjà reçus.
 
+Avant SIGINT ou arrêt forcé d’un acteur vivant, capturer ses enfants depuis les tâches de sa référence stable : un relais peut sortir immédiatement et fermer la dernière ancre de ses descendants. Les nouveaux acteurs sont traités dans un lot fini suivant. Régression CLI réelle vérifiée ; nouveau parcours GUI encore requis.
+
 Limite : conserver les verrous étrangers ou sans preuve. Un enfant jamais observé, devenu orphelin sans pipes, reste hors preuve ; reprise forcée des verrous, sous-modules/worktrees et croissance continue à valider.
 
 Repères : `GitProcessGroup`, `GitProcessLaunch`, `GitRunner`, `GitProcessStreamingScenarios.Interruption`, `GitProcessStreamingScenarios.OrphanProgress`. Preuves et périmètre restant : [TODO](../../../todo.md).

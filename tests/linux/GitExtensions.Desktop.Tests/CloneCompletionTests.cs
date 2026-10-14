@@ -4,9 +4,11 @@ using System.Security.Cryptography;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -71,6 +73,23 @@ public sealed class CloneCompletionTests
             Assert.That(destination.Text, Is.EqualTo(literal), "The pointer accepts the full literal path, including whitespace and shell metacharacters.");
             Assert.That(popup.IsOpen, Is.False); Assert.That(destination.SelectedText, Is.Empty);
             Assert.That(destination.ClearSelectionOnLostFocus, Is.EqualTo(clearSelectionOnLostFocus));
+            CloneInteractionFixture.Pump(clone);
+            CloneInteractionFixture.Capture(clone, "clone-directory-accepted-" + theme);
+            AssertAcceptedLinesVisible(destination);
+            CloneInteractionFixture.Press(clone, PhysicalKey.A, RawInputModifiers.Control);
+            Assert.That(destination.SelectedText, Is.EqualTo(literal), "Selecting the accepted multiline value retains every literal character.");
+            CloneInteractionFixture.Capture(clone, "clone-directory-accepted-selected-" + theme);
+            AssertAcceptedLinesVisible(destination);
+            CloneInteractionFixture.Press(clone, PhysicalKey.C, RawInputModifiers.Control);
+            Assert.That(await ClipboardExtensions.TryGetTextAsync(clone.Clipboard!), Is.EqualTo(literal),
+                "Copying the displayed selection preserves the literal Linux directory name.");
+            string ordinary = rawParent + "ordinary destination";
+            CloneInteractionFixture.Edit(clone, destination, ordinary);
+            CloneInteractionFixture.Pump(clone);
+            Assert.That(destination.Text, Is.EqualTo(ordinary));
+            Assert.That(destination.Bounds.Height, Is.EqualTo(CloneInteractionFixture.Field<TextBox>(clone, "CloneSubdirectory").Bounds.Height),
+                "Replacing the multiline path restores the ordinary compact field height.");
+            CloneInteractionFixture.Capture(clone, "clone-directory-ordinary-" + theme);
             Assert.That(clone.LastProcess, Is.Null); Assert.That(clone.CreatedRepository, Is.Null);
             f.SameHistories(histories); Assert.That(f.Materials(), Is.EqualTo(materials)); f.NoTransport();
         }
@@ -298,6 +317,22 @@ public sealed class CloneCompletionTests
                 clone.Close(); await CloneInteractionFixture.Until(() => !clone.IsVisible);
             }
         }
+    }
+    private static void AssertAcceptedLinesVisible(TextBox editor)
+    {
+        TextPresenter presenter = editor.GetVisualDescendants().OfType<TextPresenter>().Single();
+        ScrollContentPresenter viewport = editor.GetVisualDescendants().OfType<ScrollContentPresenter>().Single();
+        Point origin = presenter.TranslatePoint(default, viewport)!.Value;
+        Rect first = presenter.TextLayout.HitTestTextPosition(0);
+        Rect last = presenter.TextLayout.HitTestTextPosition((editor.Text ?? "").Length - 1);
+        Rect glyph = presenter.TextLayout.HitTestTextPosition((editor.Text ?? "").LastIndexOf('雪'));
+        TestContext.WriteLine($"Accepted destination: origin={origin}, viewport={viewport.Bounds.Size}, first={first}, last={last}, final glyph={glyph}");
+        Assert.That(origin.Y + first.Top, Is.GreaterThanOrEqualTo(-1), "The accepted path's first line must remain inside its editor viewport.");
+        Assert.That(origin.Y + last.Bottom, Is.LessThanOrEqualTo(viewport.Bounds.Height + 1),
+            "The accepted path's last line must remain inside its editor viewport at focus and during selection.");
+        Assert.That(origin.X + glyph.Left, Is.GreaterThanOrEqualTo(-1), "The last line's visible glyph must not be scrolled off the left of its editor.");
+        Assert.That(origin.X + glyph.Right, Is.LessThanOrEqualTo(viewport.Bounds.Width + 1),
+            "The last line's visible glyph must not be scrolled off the right of its editor.");
     }
 }
 
