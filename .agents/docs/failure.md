@@ -161,5 +161,6 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Hash DPKG hôte différent après validation | Comparer avant/après dans l'intervalle du test ; changement hôte ultérieur consigné séparément. |
 | Objet Git LF comparé au checkout CRLF | Respecter la conversion EOL déclarée dans les attributs figés ; contrôler le contenu compilé après cette conversion et garder les fixtures binaires exactes. Comparaison brute initiale refusée, rattachement source au commit vérifié. |
 | Inventaire mêlant compilation et métadonnées Git cachées | Conserver les entrées compilées et contrôler séparément `.gitattributes`, dont les règles préservent les fixtures brutes ; ne pas exclure globalement les fichiers cachés. |
+| WM_DELETE sur le propriétaire désactivé d’un Process modal ignoré | Avalonia X11 vérifie IsEnabled avant Closing ; Pull P01 `7fc8756da` reste non accepté. Conserver les matériaux avant acquittement et le nettoyage normal distinct ; ne pas assimiler l’envoi du message à la fermeture du propriétaire. |
 
 Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; leurs audits natifs restent attribués aux lots d'origine. Les anciennes mentions « paquet suivant à valider » ne remplacent pas les limites actuelles du TODO.
