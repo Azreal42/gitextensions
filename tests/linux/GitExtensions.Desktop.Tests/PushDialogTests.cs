@@ -17,7 +17,7 @@ using NUnit.Framework;
 namespace GitExtensions.Desktop.Tests;
 
 [NonParallelizable]
-public class PushDialogTests
+public partial class PushDialogTests
 {
     [AvaloniaTest]
     public async Task QuickPushShortcutAndShiftPointerPushTheCheckoutWithoutOpeningTheConfigurationWindow()
@@ -42,7 +42,7 @@ public class PushDialogTests
                     main.MouseUp(center, MouseButton.Left, RawInputModifiers.Shift);
                 }
                 else { main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); }
-                await Until(() => !main.IsBusy);
+                await PushProcessTestDriver.UntilAsync(main, () => !main.IsBusy);
                 Assert.That(main.OwnedWindows.OfType<PushDialog>(), Is.Empty);
                 Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(head));
                 Assert.That(await f.Head(), Is.EqualTo(head));
@@ -74,7 +74,7 @@ public class PushDialogTests
         try
         {
             await main.OpenRepositoryAsync(f.Client); main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift);
-            await Until(() => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
+            await PushProcessTestDriver.UntilAsync(main, () => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
             PushDialog fallback = main.OwnedWindows.OfType<PushDialog>().Single();
             Assert.That(fallback.Attempted, Is.True); Assert.That(fallback.LastError, Does.Contain("private quick-push rejection"));
             Assert.That(fallback.OwnedWindows, Is.Empty);
@@ -83,7 +83,7 @@ public class PushDialogTests
             Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(f.Initial));
             Assert.That(await f.Head(), Is.EqualTo(head));
             File.Delete(hook); PointerClick(Field<Button>(fallback, "ExecutePush"));
-            await Until(() => !fallback.IsVisible && !main.IsBusy);
+            await PushProcessTestDriver.UntilAsync(main, () => !fallback.IsVisible && !main.IsBusy);
             Assert.That(fallback.Succeeded, Is.True, fallback.LastError);
             Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(head));
         }
@@ -102,7 +102,7 @@ public class PushDialogTests
             await Until(() => main.OwnedWindows.Any(window => window.Name == "PushNewBranchConfirmation"));
             Window confirmation = main.OwnedWindows.Single(window => window.Name == "PushNewBranchConfirmation");
             PointerClick(Field<Button>(confirmation, "PushChoice0"));
-            await Until(() => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
+            await PushProcessTestDriver.UntilAsync(main, () => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
             PushDialog fallback = main.OwnedWindows.OfType<PushDialog>().Single();
             Assert.That(fallback.Attempted, Is.False); Assert.That(fallback.Cancelled, Is.True);
             Assert.That(Field<AutoCompleteBox>(fallback, "PushBranch").Text, Is.EqualTo("unpublished"));
@@ -128,7 +128,7 @@ public class PushDialogTests
             ListBox history = Field<ListBox>(main, "RevisionHistory");
             history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Initial);
             Pump(main); await Until(() => !main.IsBusy); Click(Field<Button>(main, "BrowsePush"));
-            await Until(() => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
+            await PushProcessTestDriver.UntilAsync(main, () => main.OwnedWindows.OfType<PushDialog>().Any(dialog => dialog.IsReady && !dialog.IsBusy));
             PushDialog dialog = main.OwnedWindows.OfType<PushDialog>().Single();
             Assert.That(Field<AutoCompleteBox>(dialog, "PushBranch").Text, Is.EqualTo("main"));
             Assert.That(Field<ComboBox>(dialog, "PushRemote").SelectedItem, Is.EqualTo("zeta"));
@@ -136,7 +136,7 @@ public class PushDialogTests
             string actual = await f.Head();
             await f.CommitAsync("last.txt", "last\n", "Last change before push"); actual = await f.Head();
             Click(Field<Button>(dialog, "ExecutePush"));
-            await Until(() => !dialog.IsVisible && !main.IsBusy);
+            await PushProcessTestDriver.UntilAsync(main, () => !dialog.IsVisible && !main.IsBusy);
             Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
             Assert.That(await f.RemoteRef("zeta", "published"), Is.EqualTo(actual));
             Assert.That(await f.Head(), Is.EqualTo(actual));
@@ -163,7 +163,7 @@ public class PushDialogTests
         await Answer(dialog, "PushTrackingConfirmation", 0); await second;
         Assert.That(dialog.Attempted, Is.False); Assert.That(await f.RemoteRef("zeta", branch), Is.Null);
         Task third = dialog.ExecuteAsync(dialog);
-        await Answer(dialog, "PushTrackingConfirmation", 2); await third;
+        await Answer(dialog, "PushTrackingConfirmation", 2); await PushProcessTestDriver.CompleteAsync(third, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("zeta", branch), Is.EqualTo(f.Initial));
         Assert.That(await f.GitText("config", "--get", "branch." + branch + ".remote", allowFailure: true), Is.Empty);
@@ -181,7 +181,7 @@ public class PushDialogTests
         Click(Field<Button>(dialog, "PushShowOptions"));
         Field<ComboBox>(dialog, "PushRecursiveSubmodules").SelectedIndex = 2;
         Task pushed = dialog.ExecuteAsync(dialog);
-        await Answer(dialog, "PushNewBranchConfirmation", 1); await Answer(dialog, "PushTrackingConfirmation", 1); await pushed;
+        await Answer(dialog, "PushNewBranchConfirmation", 1); await Answer(dialog, "PushTrackingConfirmation", 1); await PushProcessTestDriver.CompleteAsync(pushed, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.GitText("config", "branch.feature.remote"), Is.EqualTo("zeta"));
         Assert.That(await f.GitText("config", "branch.feature.merge"), Is.EqualTo("refs/heads/renamed-destination"));
@@ -208,7 +208,7 @@ public class PushDialogTests
         Field<RadioButton>(dialog, "PushToUrl").IsChecked = true;
         Assert.That(Field<AutoCompleteBox>(dialog, "PushRemoteBranch").Text, Is.EqualTo("feature"));
         Field<AutoCompleteBox>(dialog, "PushDestination").Text = f.Remote("alpha");
-        await dialog.ExecuteAsync(dialog);
+        await PushProcessTestDriver.CompleteAsync(dialog.ExecuteAsync(dialog), dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("alpha", "feature"), Is.EqualTo(f.Initial));
         Assert.That(await f.RemoteRef("zeta", "feature"), Is.Null);
@@ -236,7 +236,7 @@ public class PushDialogTests
         Assert.That(Field<AutoCompleteBox>(dialog, "PushDestination").Text, Is.EqualTo(f.Remote("alpha")));
         Assert.That(await f.GitText("config", "remote.alternate.url"), Is.EqualTo(f.Remote("zeta")));
         Assert.That(await f.GitText("config", "remote.alternate.pushurl"), Is.EqualTo(f.Remote("alpha")));
-        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushNewBranchConfirmation", 1); await push;
+        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushNewBranchConfirmation", 1); await PushProcessTestDriver.CompleteAsync(push, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("alpha", "main"), Is.EqualTo(f.Initial));
         Assert.That(await f.GitText("config", "branch.main.remote"), Is.EqualTo("zeta"));
@@ -251,7 +251,7 @@ public class PushDialogTests
         Assert.That(Field<AutoCompleteBox>(detached, "PushBranch").Text, Is.EqualTo("HEAD"));
         Assert.That(Field<Button>(detached, "ExecutePush").IsEnabled, Is.False);
         Field<AutoCompleteBox>(detached, "PushRemoteBranch").Text = "detached-copy";
-        Task push = detached.ExecuteAsync(detached); await Answer(detached, "PushNewBranchConfirmation", 1); await push;
+        Task push = detached.ExecuteAsync(detached); await Answer(detached, "PushNewBranchConfirmation", 1); await PushProcessTestDriver.CompleteAsync(push, detached);
         Assert.That(detached.Succeeded, Is.True, detached.LastError);
         Assert.That(await f.RemoteRef("zeta", "detached-copy"), Is.EqualTo(f.Initial));
         Assert.That((await f.Repository.GetStatusAsync()).IsDetached, Is.True);
@@ -261,7 +261,7 @@ public class PushDialogTests
         bare.Show(); await bare.InitializeAsync();
         Assert.That(Field<AutoCompleteBox>(bare, "PushBranch").Text, Is.EqualTo("main"));
         Assert.That(Field<Button>(bare, "PushPull").IsEnabled, Is.False);
-        await bare.ExecuteAsync(bare);
+        await PushProcessTestDriver.CompleteAsync(bare.ExecuteAsync(bare), bare);
         Assert.That(bare.Succeeded, Is.True, bare.LastError);
         Assert.That(await f.RemoteRef("alpha", "main"), Is.EqualTo(f.Initial));
     }
@@ -273,7 +273,7 @@ public class PushDialogTests
         await f.Git("tag", "v1"); await f.Git("tag", "v2");
         PushDialog dialog = await f.ShowAsync(); Field<TabControl>(dialog, "PushTabs").SelectedIndex = 1; Pump(dialog);
         Assert.That(Field<AutoCompleteBox>(dialog, "PushTag").Text, Is.EqualTo("[ All ]"));
-        await dialog.ExecuteAsync(dialog); Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
+        await PushProcessTestDriver.CompleteAsync(dialog.ExecuteAsync(dialog), dialog); Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("zeta", "v1", tag: true), Is.EqualTo(f.Initial)); Assert.That(await f.RemoteRef("zeta", "v2", tag: true), Is.EqualTo(f.Initial));
         await f.CommitAsync("tagged.txt", "tagged\n", "New tag target"); await f.Git("tag", "-f", "v1");
         Field<AutoCompleteBox>(dialog, "PushTag").Text = "v1";
@@ -282,7 +282,7 @@ public class PushDialogTests
         Field<TabControl>(dialog, "PushTabs").SelectedIndex = 0; Pump(dialog);
         Assert.That(Field<CheckBox>(dialog, "PushForceWithLease").IsChecked, Is.True);
         Field<TabControl>(dialog, "PushTabs").SelectedIndex = 1; Pump(dialog);
-        await dialog.ExecuteAsync(dialog); Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
+        await PushProcessTestDriver.CompleteAsync(dialog.ExecuteAsync(dialog), dialog); Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("zeta", "v1", tag: true), Is.EqualTo(await f.Head()));
         Assert.That(await f.RemoteRef("zeta", "v2", tag: true), Is.EqualTo(f.Initial));
     }
@@ -308,7 +308,7 @@ public class PushDialogTests
         feature.Children.OfType<TextBox>().Single().Text = "mapped-feature";
         stale.Children.OfType<CheckBox>().Last().IsChecked = true;
         Assert.That(stale.Children.OfType<CheckBox>().Take(2).All(action => !action.IsVisible), Is.True);
-        await dialog.ExecuteAsync(dialog); Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
+        await PushProcessTestDriver.CompleteAsync(dialog.ExecuteAsync(dialog), dialog); Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("zeta", "mapped-feature"), Is.EqualTo(f.Initial));
         Assert.That(await f.RemoteRef("zeta", "stale"), Is.Null);
         Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(f.Initial));
@@ -322,8 +322,8 @@ public class PushDialogTests
         await f.AdvanceRemoteAsync(); string? remote = await f.RemoteRef("zeta", "main"); await f.CommitAsync("local.txt", "local\n", "Local change");
         string before = await f.Head(); PushDialog dialog = await f.ShowAsync();
         Task push = dialog.ExecuteAsync(dialog);
-        await Until(() => dialog.OwnedWindows.Any(window => window.Name == "PushRejectedConfirmation"));
-        Window rejection = dialog.OwnedWindows.Single(window => window.Name == "PushRejectedConfirmation");
+        await Until(() => PushProcessTestDriver.Windows(dialog).Any(window => window.Name == "PushRejectedConfirmation"));
+        Window rejection = PushProcessTestDriver.Windows(dialog).Single(window => window.Name == "PushRejectedConfirmation");
         Assert.That(rejection.GetVisualDescendants().OfType<AccessText>().Any(text => text.Text == "Pull with _rebase"), Is.True);
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
@@ -339,15 +339,15 @@ public class PushDialogTests
             Capture(rejection, "classic-push-rejected-" + theme + ".png");
         }
         await Answer(dialog, "PushRejectedConfirmation", 2);
-        await Until(() => dialog.OwnedWindows.OfType<PullDialog>().Any(pull => pull.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning)));
-        PullDialog pull = dialog.OwnedWindows.OfType<PullDialog>().Single();
+        await Until(() => PushProcessTestDriver.Windows(dialog).OfType<PullDialog>().Any(pull => pull.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning)));
+        PullDialog pull = PushProcessTestDriver.Windows(dialog).OfType<PullDialog>().Single();
         GitProcessDialog process = pull.OwnedWindows.OfType<GitProcessDialog>().Single();
         Assert.That(process.Outcome!.Success, Is.True); Assert.That(process.Result!.Success, Is.True);
         Assert.That(Field<CheckBox>(process, "KeepDialogOpen").IsChecked, Is.True); Assert.That(process.Owner, Is.SameAs(pull));
         Assert.That(dialog.IsBusy, Is.True); Assert.That(dialog.Succeeded, Is.False); Assert.That(push.IsCompleted, Is.False);
         Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(remote), "Retrying the Push must wait for the Pull acknowledgment.");
         PointerClick(Field<Button>(process, "Ok"));
-        await push.WaitAsync(TimeSpan.FromSeconds(20));
+        await PushProcessTestDriver.CompleteAsync(push, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.Head(), Is.Not.EqualTo(before));
         Assert.That((await f.Repository.GetLogAsync(1, all: false)).Single().Parents, Has.Count.EqualTo(1));
@@ -368,7 +368,9 @@ public class PushDialogTests
         await using Fixture f = await Fixture.CreateAsync();
         await f.AdvanceRemoteAsync(); await f.CommitAsync("local.txt", "local\n", "Local change");
         string remote = (await f.RemoteRef("zeta", "main"))!; PushDialog dialog = await f.ShowAsync();
-        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushRejectedConfirmation", 4); await push;
+        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushRejectedConfirmation", 4);
+        await Answer(dialog, "PushRejectedConfirmation", 0); // The native stale-lease rejection offers recovery again in the same Process.
+        await PushProcessTestDriver.CompleteAsync(push, dialog);
         Assert.That(dialog.Succeeded, Is.False); Assert.That(dialog.IsVisible, Is.True); Assert.That(dialog.LastError, Does.Contain("stale info"));
         Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(remote));
         Assert.That(Field<Button>(dialog, "ExecutePush").IsEnabled, Is.True);
@@ -376,7 +378,7 @@ public class PushDialogTests
         string hook = Path.Combine(f.Remote("zeta"), "hooks", "pre-receive"); await File.WriteAllTextAsync(hook, "#!/bin/sh\necho private-server-rejected >&2\nexit 1\n");
         File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         Field<CheckBox>(dialog, "PushForceWithLease").IsChecked = true;
-        await dialog.ExecuteAsync(dialog);
+        await PushProcessTestDriver.CompleteAsync(dialog.ExecuteAsync(dialog), dialog);
         Assert.That(dialog.Succeeded, Is.False); Assert.That(dialog.LastError, Does.Contain("private-server-rejected"));
         Assert.That(dialog.OwnedWindows, Is.Empty, "Server hook errors must not offer an automatic force or pull.");
         Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(remote));
@@ -390,7 +392,7 @@ public class PushDialogTests
         PushDialog dialog = await f.ShowAsync(); Field<CheckBox>(dialog, "ForcePushBranches").IsChecked = true;
         Task cancel = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushForceConfirmation", 0); await cancel;
         Assert.That(dialog.Attempted, Is.False); Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(f.Initial));
-        Task lease = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushForceConfirmation", 1); await lease;
+        Task lease = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushForceConfirmation", 1); await PushProcessTestDriver.CompleteAsync(lease, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(Field<CheckBox>(dialog, "ForcePushBranches").IsChecked, Is.Not.True);
         Assert.That(Field<CheckBox>(dialog, "PushForceWithLease").IsChecked, Is.True);
@@ -407,7 +409,7 @@ public class PushDialogTests
         Assert.That(Field<AutoCompleteBox>(dialog, "PushRemoteBranch").IsEnabled, Is.False);
         Task cancelled = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushForceConfirmation", 0); await cancelled;
         Assert.That(dialog.Attempted, Is.False); Assert.That(await f.RemoteRef("zeta", destination[11..]), Is.Null);
-        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushForceConfirmation", 1); await push;
+        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushForceConfirmation", 1); await PushProcessTestDriver.CompleteAsync(push, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(Field<AutoCompleteBox>(dialog, "PushBranch").Text, Is.EqualTo("HEAD:" + destination));
         Assert.That(await f.RemoteRef("zeta", destination[11..]), Is.EqualTo(f.Initial));
@@ -415,7 +417,7 @@ public class PushDialogTests
         Field<AutoCompleteBox>(dialog, "PushBranch").Text = ":" + destination;
         Task deleteCancelled = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushDeleteConfirmation", 0); await deleteCancelled;
         Assert.That(await f.RemoteRef("zeta", destination[11..]), Is.EqualTo(f.Initial));
-        Task deleted = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushDeleteConfirmation", 1); await deleted;
+        Task deleted = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushDeleteConfirmation", 1); await PushProcessTestDriver.CompleteAsync(deleted, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError); Assert.That(await f.RemoteRef("zeta", destination[11..]), Is.Null);
         Assert.That(await f.Head(), Is.EqualTo(f.Initial)); Assert.That(await f.GitText("status", "--porcelain"), Is.Empty);
     }
@@ -491,8 +493,8 @@ public class PushDialogTests
     }
     private static async Task Answer(PushDialog owner, string name, int value, bool remember = false)
     {
-        await Until(() => owner.OwnedWindows.Any(window => window.Name == name && window.IsVisible));
-        Window child = owner.OwnedWindows.Single(window => window.Name == name);
+        await Until(() => PushProcessTestDriver.Windows(owner).Any(window => window.Name == name && window.IsVisible));
+        Window child = PushProcessTestDriver.Windows(owner).Single(window => window.Name == name);
         if (remember) { Field<CheckBox>(child, "PushConfirmationRemember").IsChecked = true; }
         PointerClick(Field<Button>(child, "PushChoice" + value));
     }
@@ -512,6 +514,7 @@ public class PushDialogTests
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly string? _oldConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        private readonly string? _oldOptionalLocks = Environment.GetEnvironmentVariable("GIT_OPTIONAL_LOCKS");
         public string Root { get; } = Path.Combine(Path.GetTempPath(), "gitextensions-push-ui-" + Guid.NewGuid().ToString("N"));
         public string Client => Path.Combine(Root, "client");
         public string Remote(string name) => Path.Combine(Root, name + ".git");
@@ -524,7 +527,8 @@ public class PushDialogTests
             Fixture f = new();
             try
             {
-                Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(f.Root, "config")); Directory.CreateDirectory(f.Client);
+                Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(f.Root, "config"));
+                Environment.SetEnvironmentVariable("GIT_OPTIONAL_LOCKS", "0"); Directory.CreateDirectory(f.Client);
                 await f.Git("init", "-b", "main"); await f.Configure(f.Client); await f.CommitAsync("initial.txt", "initial\n", "Initial commit"); f.Initial = await f.Head();
                 foreach (string remote in new[] { "alpha", "zeta" })
                 {
@@ -572,6 +576,7 @@ public class PushDialogTests
             { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
             foreach (Window window in Windows) { window.Close(); }
             Dispatcher.UIThread.RunJobs(); Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", _oldConfig);
+            Environment.SetEnvironmentVariable("GIT_OPTIONAL_LOCKS", _oldOptionalLocks);
             if (Directory.Exists(Root)) { Directory.Delete(Root, true); }
         }
     }

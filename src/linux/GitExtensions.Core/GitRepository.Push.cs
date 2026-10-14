@@ -3,7 +3,8 @@ namespace GitExtensions.Linux;
 public sealed partial class GitRepository
 {
     /// <summary>Pushes the selected refs without changing the checkout, Git configuration, or hook policy.</summary>
-    public Task<GitResult> PushAsync(GitPushRequest request, CancellationToken cancellationToken = default)
+    public Task<GitResult> PushAsync(GitPushRequest request, CancellationToken cancellationToken = default,
+        Action<GitProcessOutput>? outputReceived = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
@@ -86,7 +87,13 @@ public sealed partial class GitRepository
                 && !(source.Length is 40 or 64 && source.All(Uri.IsHexDigit))
                 && (await GetReferencesAsync(token).ConfigureAwait(false)).Any(reference => reference.IsBranch && reference.ShortName == source))
             { arguments[^1] = "refs/heads/" + arguments[^1]; }
-            return await ExecuteAsync(arguments, token).ConfigureAwait(false);
+            // Only the actual push is observed. Reference/configuration probes keep their
+            // existing decoding and never masquerade as transfer output.
+            if (outputReceived is null) { return await ExecuteAsync(arguments, token).ConfigureAwait(false); }
+            GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. arguments], token,
+                outputReceived: outputReceived).ConfigureAwait(false);
+            if (!result.Success) { throw new GitCommandException(arguments, result); }
+            return result;
         }, cancellationToken);
     }
 

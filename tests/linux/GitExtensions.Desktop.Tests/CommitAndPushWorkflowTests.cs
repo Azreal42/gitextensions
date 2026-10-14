@@ -23,7 +23,7 @@ public class CommitAndPushWorkflowTests
     {
         await using Fixture f = await Fixture.CreateAsync(close: true);
         await f.StageChangeAsync(); await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
-        await Until(() => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.HasCommitted && f.Dialog.PushCompleted, Is.True, f.Dialog.LastError);
         Assert.That(await f.RemoteHead(), Is.EqualTo(await f.Head()));
         Assert.That(await f.Text("log", "-1", "--format=%s"), Is.EqualTo("Committed for push"));
@@ -40,7 +40,7 @@ public class CommitAndPushWorkflowTests
         f.Dialog.RequestedThemeVariant = ThemeVariant.Dark;
         string hook = f.Hook("printf 'private commit push rejection\\n' >&2\nexit 1\n");
         await f.StageChangeAsync(); await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
-        await Until(() => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
         PushDialog push = f.Dialog.OwnedWindows.OfType<PushDialog>().Single(); string committed = await f.Head();
         Assert.That(f.Dialog.HasCommitted, Is.True); Assert.That(f.Dialog.PushCompleted, Is.False);
         Assert.That(push.LastError, Does.Contain("private commit push rejection"));
@@ -49,7 +49,7 @@ public class CommitAndPushWorkflowTests
         Assert.That(await f.RemoteHead(), Is.EqualTo(f.Initial)); Assert.That(committed, Is.Not.EqualTo(f.Initial));
         Assert.That(await f.Text("status", "--porcelain"), Is.Empty);
         File.Delete(hook); await PointerClick(Field<Button>(push, "ExecutePush"));
-        await Until(() => !push.IsVisible && !f.Dialog.IsBusy);
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !push.IsVisible && !f.Dialog.IsBusy);
         Assert.That(f.Dialog.PushCompleted, Is.True, f.Dialog.LastError); Assert.That(f.Dialog.LastError, Is.Null);
         Assert.That(f.Dialog.IsVisible, Is.True, "Both original close preferences were disabled.");
         Assert.That(await f.Head(), Is.EqualTo(committed)); Assert.That(await f.RemoteHead(), Is.EqualTo(committed));
@@ -62,10 +62,10 @@ public class CommitAndPushWorkflowTests
         await using Fixture f = await Fixture.CreateAsync(close: true);
         f.Hook("printf 'explicit rejected push\\n' >&2\nexit 1\n");
         await f.StageChangeAsync(); await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
-        await Until(() => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
         PushDialog push = f.Dialog.OwnedWindows.OfType<PushDialog>().Single(); string committed = await f.Head();
         Press(push, PhysicalKey.Escape);
-        await Until(() => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.HasCommitted, Is.True); Assert.That(f.Dialog.PushCompleted, Is.False);
         Assert.That(f.Dialog.LastError, Does.Contain("explicit rejected push"));
         Assert.That(await f.Head(), Is.EqualTo(committed)); Assert.That(await f.RemoteHead(), Is.EqualTo(f.Initial));
@@ -78,13 +78,13 @@ public class CommitAndPushWorkflowTests
     {
         await using Fixture f = await Fixture.CreateAsync(close: false); await f.AdvanceRemoteAsync();
         string remote = await f.RemoteHead(); await f.StageChangeAsync(); await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
-        await Until(() => f.Dialog.OwnedWindows.Any(window => window.Name == "PushRejectedConfirmation"));
-        Window rejection = f.Dialog.OwnedWindows.Single(window => window.Name == "PushRejectedConfirmation");
+        await Until(() => PushProcessTestDriver.Windows(f.Dialog).Any(window => window.Name == "PushRejectedConfirmation"));
+        Window rejection = PushProcessTestDriver.Windows(f.Dialog).Single(window => window.Name == "PushRejectedConfirmation");
         string committed = await f.Head(); await PointerClick(Field<Button>(rejection, "PushChoice0"));
-        await Until(() => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
         PushDialog push = f.Dialog.OwnedWindows.OfType<PushDialog>().Single();
         Assert.That(push.Cancelled, Is.True); Assert.That(push.LastError, Does.Contain("[rejected]"));
-        Press(push, PhysicalKey.Escape); await Until(() => !f.Dialog.IsBusy);
+        Press(push, PhysicalKey.Escape); await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy);
         Assert.That(f.Dialog.IsVisible, Is.True); Assert.That(f.Dialog.HasCommitted, Is.True); Assert.That(f.Dialog.PushCompleted, Is.False);
         Assert.That(f.Dialog.LastError, Does.Contain("[rejected]"));
         Assert.That(await f.Head(), Is.EqualTo(committed)); Assert.That(await f.RemoteHead(), Is.EqualTo(remote));
@@ -96,19 +96,19 @@ public class CommitAndPushWorkflowTests
     {
         await using Fixture f = await Fixture.CreateAsync(close: true); await f.AdvanceRemoteAsync();
         string remote = await f.RemoteHead(); await f.StageChangeAsync(); await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
-        await Until(() => f.Dialog.OwnedWindows.Any(window => window.Name == "PushRejectedConfirmation"));
-        Window rejection = f.Dialog.OwnedWindows.Single(window => window.Name == "PushRejectedConfirmation");
+        await Until(() => PushProcessTestDriver.Windows(f.Dialog).Any(window => window.Name == "PushRejectedConfirmation"));
+        Window rejection = PushProcessTestDriver.Windows(f.Dialog).Single(window => window.Name == "PushRejectedConfirmation");
         await PointerClick(Field<Button>(rejection, "PushChoice2"));
-        await Until(() => f.Dialog.OwnedWindows.OfType<PullDialog>().Any(pull => pull.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning)),
+        await Until(() => PushProcessTestDriver.Windows(f.Dialog).OfType<PullDialog>().Any(pull => pull.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning)),
             "Recovery Pull completed and awaits its Process acknowledgment", f.DescribeStateAsync);
-        PullDialog pull = f.Dialog.OwnedWindows.OfType<PullDialog>().Single();
+        PullDialog pull = PushProcessTestDriver.Windows(f.Dialog).OfType<PullDialog>().Single();
         GitProcessDialog process = pull.OwnedWindows.OfType<GitProcessDialog>().Single();
         Assert.That(process.Outcome!.Success, Is.True); Assert.That(process.Result!.Success, Is.True);
         Assert.That(Field<CheckBox>(process, "KeepDialogOpen").IsChecked, Is.True); Assert.That(process.Owner, Is.SameAs(pull));
         Assert.That(f.Dialog.IsBusy && f.Dialog.HasCommitted && !f.Dialog.PushCompleted, Is.True);
         Assert.That(await f.RemoteHead(), Is.EqualTo(remote), "Publishing the rebased commit must wait for the Pull acknowledgment.");
         await PointerClick(Field<Button>(process, "Ok"));
-        await Until(() => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.PushCompleted, Is.True, f.Dialog.LastError);
         Assert.That(await f.RemoteHead(), Is.EqualTo(await f.Head()));
         Assert.That(await f.Text("rev-parse", "HEAD^"), Is.EqualTo(remote));
@@ -128,7 +128,7 @@ public class CommitAndPushWorkflowTests
         await Until(() => f.Dialog.OwnedWindows.Any());
         Window confirmation = f.Dialog.OwnedWindows.Single();
         Button accept = confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel);
-        await PointerClick(accept); await Until(() => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
+        await PointerClick(accept); await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.HasCommitted && f.Dialog.PushCompleted, Is.True, f.Dialog.LastError);
         Assert.That(await f.Head(), Is.Not.EqualTo(f.Initial)); Assert.That(await f.RemoteHead(), Is.EqualTo(await f.Head()));
         Assert.That(await f.Text("rev-list", "--count", "HEAD"), Is.EqualTo("1"), "This was an amend, not an additional commit.");
@@ -143,14 +143,14 @@ public class CommitAndPushWorkflowTests
         await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
         await Until(() => f.Dialog.OwnedWindows.Any()); Window confirmation = f.Dialog.OwnedWindows.Single();
         await PointerClick(confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel));
-        await Until(() => f.Dialog.OwnedWindows.Any(window => window.Name == "PushRejectedConfirmation"));
-        Window rejection = f.Dialog.OwnedWindows.Single(window => window.Name == "PushRejectedConfirmation");
+        await Until(() => PushProcessTestDriver.Windows(f.Dialog).Any(window => window.Name == "PushRejectedConfirmation"));
+        Window rejection = PushProcessTestDriver.Windows(f.Dialog).Single(window => window.Name == "PushRejectedConfirmation");
         await PointerClick(Field<Button>(rejection, "PushChoice0"));
-        await Until(() => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => f.Dialog.OwnedWindows.OfType<PushDialog>().Any(window => window.IsReady && !window.IsBusy));
         PushDialog push = f.Dialog.OwnedWindows.OfType<PushDialog>().Single();
         Assert.That(Field<CheckBox>(push, "PushForceWithLease").IsChecked, Is.False);
         Assert.That(await f.RemoteHead(), Is.EqualTo(f.Initial)); string amended = await f.Head(); Assert.That(amended, Is.Not.EqualTo(f.Initial));
-        Press(push, PhysicalKey.Escape); await Until(() => !f.Dialog.IsBusy);
+        Press(push, PhysicalKey.Escape); await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy);
         Assert.That(f.Dialog.HasCommitted && !f.Dialog.PushCompleted && f.Dialog.IsVisible, Is.True);
         Assert.That(await f.Head(), Is.EqualTo(amended)); Assert.That(await f.Text("status", "--porcelain"), Is.Empty);
     }
@@ -161,13 +161,13 @@ public class CommitAndPushWorkflowTests
         await using Fixture f = await Fixture.CreateAsync(close: false, forceAmend: true);
         await f.PublishAdditionalCommitAsync(); string published = await f.Head(); await f.Dialog.RefreshAsync();
         await PointerClick(Field<CheckBox>(f.Dialog, "Amend"), f.DescribeGitAsync);
-        await Until(() => !f.Dialog.IsBusy && Field<CheckBox>(f.Dialog, "Amend").IsChecked == true,
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && Field<CheckBox>(f.Dialog, "Amend").IsChecked == true,
             "Amend selected before the original Reset soft action", () => f.DescribeStateAsync());
         await PointerClick(Field<Button>(f.Dialog, "ResetSoft"), f.DescribeGitAsync);
         await Until(() => f.Dialog.OwnedWindows.Any(), "Reset soft confirmation opened", () => f.DescribeStateAsync());
         Window confirmation = f.Dialog.OwnedWindows.Single();
         await PointerClick(confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel), f.DescribeGitAsync);
-        await Until(() => !f.Dialog.IsBusy && !confirmation.IsVisible && !Field<CheckBox>(f.Dialog, "Amend").IsEnabled,
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !confirmation.IsVisible && !Field<CheckBox>(f.Dialog, "Amend").IsEnabled,
             "Confirmed soft reset completed and Amend disabled", () => f.DescribeStateAsync());
         Assert.That(Field<CheckBox>(f.Dialog, "Amend").IsEnabled, Is.False);
         Assert.That(await f.Head(), Is.EqualTo(f.Initial)); Assert.That(await f.RemoteHead(), Is.EqualTo(published));
@@ -175,7 +175,7 @@ public class CommitAndPushWorkflowTests
         Assert.That(File.ReadAllText(Path.Combine(f.Repository.Path, "published.txt")), Is.EqualTo("published change\n"));
         Field<TextBox>(f.Dialog, "Message").Text = "Replacement after soft reset";
         await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"), f.DescribeGitAsync);
-        await Until(() => !f.Dialog.IsBusy, "Replacement commit and force-with-lease push finished", () => f.DescribeStateAsync());
+        await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy, "Replacement commit and force-with-lease push finished", () => f.DescribeStateAsync());
         Assert.That(f.Dialog.HasCommitted && f.Dialog.PushCompleted, Is.True, f.Dialog.LastError);
         Assert.That(f.Dialog.IsVisible, Is.True); Assert.That(Field<CheckBox>(f.Dialog, "Amend").IsEnabled, Is.True);
         Assert.That(await f.RemoteHead(), Is.EqualTo(await f.Head())); Assert.That(await f.Head(), Is.Not.EqualTo(published));
@@ -191,7 +191,7 @@ public class CommitAndPushWorkflowTests
         f.Hook("printf started > '" + marker + "'\nsleep 30\n");
         await f.StageChangeAsync(); await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
         await Until(() => File.Exists(marker)); string committed = await f.Head();
-        f.Dialog.Close(); await Until(() => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
+        f.Dialog.Close(); await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.HasCommitted, Is.True); Assert.That(f.Dialog.PushCompleted, Is.False);
         Assert.That(await f.Head(), Is.EqualTo(committed)); Assert.That(await f.RemoteHead(), Is.EqualTo(f.Initial));
         Assert.That(await f.Text("status", "--porcelain"), Is.Empty);

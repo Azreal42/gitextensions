@@ -22,7 +22,7 @@ using NUnit.Framework;
 namespace GitExtensions.Desktop.Tests;
 
 [TestFixture, NonParallelizable]
-public sealed class GitProcessDialogTests
+public sealed partial class GitProcessDialogTests
 {
     [AvaloniaTest]
     public async Task DefaultSettingsKeepActualGitOutputOpenUntilOkWithoutChangingTheRepository()
@@ -244,13 +244,7 @@ public sealed class GitProcessDialogTests
     { Stopwatch timer = Stopwatch.StartNew(); while (!condition() && timer.Elapsed < TimeSpan.FromSeconds(15)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); } Assert.That(condition(), Is.True, "Native process/dialog did not settle within fifteen seconds."); }
     private static async Task<GitProcessDialog> Ready(Window owner)
     { await Until(() => owner.OwnedWindows.OfType<GitProcessDialog>().Any(window => window.IsVisible && window.Outcome is not null)); GitProcessDialog phase = owner.OwnedWindows.OfType<GitProcessDialog>().Single(window => window.IsVisible); Pump(phase); return phase; }
-    private static void Pointer(Control control)
-    {
-        TopLevel top = TopLevel.GetTopLevel(control)!; Pump(top); Point point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), top)!.Value;
-        Assert.That(control.IsEffectivelyEnabled && control.IsEffectivelyVisible && new Rect(default, top.ClientSize).Contains(point)
-            && (top.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(control) == true, Is.True, control.Name);
-        top.MouseMove(point); top.MouseDown(point, MouseButton.Left); top.MouseUp(point, MouseButton.Left); Dispatcher.UIThread.RunJobs();
-    }
+    private static void Pointer(Control control) => PushProcessTestDriver.Pointer(control);
     private static void Press(TopLevel window, PhysicalKey key, Window releaseOn)
     { window.KeyPressQwerty(key, RawInputModifiers.None); if (releaseOn.IsVisible) { releaseOn.KeyReleaseQwerty(key, RawInputModifiers.None); } Dispatcher.UIThread.RunJobs(); }
     private static bool Running(int pid)

@@ -13,6 +13,7 @@ using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using GitExtensions.Extensibility.Git;
+using System.Runtime.ExceptionServices;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -46,11 +47,12 @@ public sealed class PushDialog : RepositoryDialog
     private IReadOnlyList<GitRemote> _remotes = [];
     private IReadOnlyList<KeyValuePair<string, string>> _configuration = [];
     private string? _currentBranch;
-    private bool _bare, _updating, _forceUpdating;
+    private bool _bare, _updating, _forceUpdating, _workflowStopRequested;
     internal bool IsReady { get; private set; }
     public bool Succeeded { get; private set; }
     public bool Attempted { get; private set; }
     public bool Cancelled { get; private set; }
+    public GitProcessDialogResult? LastProcess { get; private set; }
 
     public PushDialog(GitRepository repository, Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Push")
     {
@@ -146,7 +148,7 @@ public sealed class PushDialog : RepositoryDialog
         if (forceWithLease) { _lease.IsChecked = true; }
         if (IsReady) { await ExecuteAsync(owner, cancellationToken); }
         cancellationToken.ThrowIfCancellationRequested();
-        if (!Succeeded) { await ShowDialog(owner); }
+        if (!_workflowStopRequested && owner.IsVisible && !Succeeded) { await ShowDialog(owner); }
         cancellationToken.ThrowIfCancellationRequested();
     }
 
@@ -331,6 +333,7 @@ public sealed class PushDialog : RepositoryDialog
     internal Task ExecuteAsync(Window owner, CancellationToken cancellationToken = default) => RunAsync("Push", async token =>
     {
         Succeeded = Cancelled = false;
+        _workflowStopRequested = false; LastProcess = null;
         GitPushRequest request = ReadOptions();
         if (!IsReady || string.IsNullOrWhiteSpace(request.Destination)) { throw new ArgumentException(C("_configureRemote", "Please configure a remote repository first.\nWould you like to do it now?")); }
         if (request.Mode == GitPushMode.Branch && (string.IsNullOrWhiteSpace(request.Source) || !request.Source.Contains(':') && string.IsNullOrWhiteSpace(request.DestinationRef))) { throw new ArgumentException(C("_noCurrentBranch", "No branch is selected, cannot push.")); }
@@ -389,51 +392,82 @@ public sealed class PushDialog : RepositoryDialog
 
     private async Task PushAndRecoverAsync(Window owner, GitPushRequest request, CancellationToken token)
     {
-        try { Append(await Repository.PushAsync(request, token)); Succeeded = true; Status.Text = C("_pushToCaption", "Push to {0}").Replace("{0}", request.Destination, StringComparison.Ordinal); }
-        catch (GitCommandException exception)
+        GitPushRequest current = request;
+        HashSet<int> appended = [];
+        void AppendAttempt(GitProcessAttemptResult attempt)
         {
-            Append(exception.Result);
+            if (!appended.Add(attempt.Number)) { return; }
+            if (attempt.Result is GitResult result) { Append(result); }
+            else
+            {
+                GitProcessTextDecoder stdout = new(), stderr = new();
+                _output.Text = (_output.Text ?? "") + stdout.Append(attempt.StandardOutputBytes.Span, flush: true)
+                    + stderr.Append(attempt.StandardErrorBytes.Span, flush: true);
+            }
+        }
+        GitProcessCommand Command(GitPushRequest options) => new(
+            "git push" + (options.Force == GitPushForce.ForceWithLease ? " --force-with-lease" : options.Force == GitPushForce.Force ? " --force" : "") + " — " + options.Destination,
+            (ct, output) => Repository.PushAsync(options, ct, output));
+        GitProcessCommand first = Command(current);
+        LastProcess = await GitProcessDialog.ShowAsync(owner, Repository.Path, first.Description, true, first.Execute, token,
+            handleOnExit: async (process, attempt, ct) =>
+        {
+            AppendAttempt(attempt);
+            if (attempt.Error is not GitCommandException exception) { return null; }
             string output = exception.Result.StandardError + exception.Result.StandardOutput;
             // A hook/permission failure is not a non-fast-forward rejection. Never offer an automatic force for it.
             bool rejected = output.Contains("[rejected]", StringComparison.Ordinal) && !output.Contains("[remote rejected]", StringComparison.Ordinal);
-            if (!rejected || request.Mode != GitPushMode.Branch || request.Source != _currentBranch || _toRemote.IsChecked != true || _bare) { throw; }
+            if (!rejected || current.Mode != GitPushMode.Branch || current.Source != _currentBranch || _toRemote.IsChecked != true || _bare) { return null; }
             GitPullAction? action = _preferences.RejectedAction;
             bool force = false;
             if (action is null)
             {
                 GitPullAction defaultAction = new PullPreferencesStore().Load().DefaultAction;
-                var choice = await ChoiceAsync(owner, "PushRejectedConfirmation", string.Format(C("_pullRepositoryCaption", "Push was rejected from \"{0}\""), request.Destination),
+                var choice = await ChoiceAsync(process, "PushRejectedConfirmation", string.Format(C("_pullRepositoryCaption", "Push was rejected from \"{0}\""), current.Destination),
                     C("_pullRepositoryMergeInstruction", "The push was rejected because the tip of your current branch is behind its remote counterpart. Merge the remote changes before pushing again."),
                     [(1, string.Format(A("_pullDefaultButton", "&Pull with the default pull action ({0})"), T(defaultAction.ToString().ToLowerInvariant()))),
-                     (2, A("_pullRebaseButton", "Pull with &rebase")), (3, A("_pullMergeButton", "Pull with &merge")), (4, A("_pushForceButton", "&Force push with lease")), (0, T("Cancel"))], true, token, commandLinks: true);
+                     (2, A("_pullRebaseButton", "Pull with &rebase")), (3, A("_pullMergeButton", "Pull with &merge")), (4, A("_pushForceButton", "&Force push with lease")), (0, T("Cancel"))], true, ct, commandLinks: true);
                 action = choice.Value switch { 1 => GitPullAction.Default, 2 => GitPullAction.Rebase, 3 => GitPullAction.Merge, _ => GitPullAction.None };
                 force = choice.Value == 4;
                 if (choice.Remember && !force) { _preferences = _preferences with { RejectedAction = action }; _store.Save(_preferences); }
             }
             if (force)
             {
-                Append(await Repository.PushAsync(request with { Force = GitPushForce.ForceWithLease }, token)); Succeeded = true; return;
+                ct.ThrowIfCancellationRequested();
+                // A literal '+' is a force refspec too; choosing lease must not leave
+                // it in place and accidentally bypass the safer requested mode.
+                current = current with { Force = GitPushForce.ForceWithLease, Source = current.Source?.TrimStart('+') };
+                _force.IsChecked = false; _lease.IsChecked = true;
+                return Command(current);
             }
             if (action == GitPullAction.Default) { action = new PullPreferencesStore().Load().DefaultAction; }
-            if (action == GitPullAction.None) { Cancelled = true; throw; }
+            if (action == GitPullAction.None) { Cancelled = true; return null; }
             if (action is not (GitPullAction.Merge or GitPullAction.Rebase)) { throw new InvalidOperationException(T("Automatical pull can only be performed, when the default pull action is either set to Merge or Rebase.")); }
             if (action == GitPullAction.Rebase)
             {
-                string remoteBranch = "refs/remotes/" + request.Destination + "/" + request.DestinationRef;
+                string remoteBranch = "refs/remotes/" + current.Destination + "/" + current.DestinationRef;
                 if (_references.Any(reference => reference.Name == remoteBranch)
-                    && (await Repository.RunAsync(["rev-list", "--merges", remoteBranch + "..HEAD", "--"], token)).StandardOutput.Length > 0)
+                    && (await Repository.RunAsync(["rev-list", "--merges", remoteBranch + "..HEAD", "--"], ct)).StandardOutput.Length > 0)
                 { throw new InvalidOperationException(T("Can not perform automatical pull, when the pull action is set to Rebase and one of the commits that are about to be rebased is a merge commit.")); }
             }
             PullDialog? pull = null;
-            pull = new(Repository, action.Value, request.Destination, request.DestinationRef,
-                cancellation => _afterSubmoduleUpdateAsync?.Invoke(pull!, cancellation) ?? Task.CompletedTask) { RequestedThemeVariant = owner.ActualThemeVariant };
+            pull = new(Repository, action.Value, current.Destination, current.DestinationRef,
+                cancellation => _afterSubmoduleUpdateAsync?.Invoke(pull!, cancellation) ?? Task.CompletedTask) { RequestedThemeVariant = process.ActualThemeVariant };
             bool once = false;
-            pull.Opened += async (_, _) => { if (once) { return; } once = true; await pull.InitializeAsync(token); if (pull.IsReady) { await pull.ExecuteAsync(pull, cancellationToken: token); if (pull.Succeeded) { pull.Close(); } } };
-            using CancellationTokenRegistration registration = token.Register(() => Dispatcher.UIThread.Post(pull.Close));
-            await pull.ShowDialog(owner); token.ThrowIfCancellationRequested();
-            if (!pull.Succeeded) { if (pull.LastError is not null) { _output.Text += "\n" + pull.LastError; } throw; }
-            Append(await Repository.PushAsync(request, token)); Succeeded = true;
-        }
+            pull.Opened += async (_, _) => { if (once) { return; } once = true; await pull.InitializeAsync(ct); if (pull.IsReady) { await pull.ExecuteAsync(pull, cancellationToken: ct); if (pull.Succeeded) { pull.Close(); } } };
+            await process.ShowCompletionDialogAsync<object?>(pull); ct.ThrowIfCancellationRequested();
+            if (!pull.Succeeded) { if (pull.LastError is not null) { _output.Text += "\n" + pull.LastError; } return null; }
+            return Command(current);
+        });
+        // Cancellation skips recovery, but its already observed native bytes still
+        // belong to the cumulative Push log and must survive the stopped workflow.
+        foreach (GitProcessAttemptResult attempt in LastProcess.Attempts) { AppendAttempt(attempt); }
+        if (LastProcess.WorkflowStopRequested || LastProcess.OwnerCloseRequested || LastProcess.WasCancelled || token.IsCancellationRequested || !owner.IsVisible)
+        { _workflowStopRequested = Cancelled = true; throw new OperationCanceledException(token); }
+        if (LastProcess.CompletionError is Exception completionError) { ExceptionDispatchInfo.Capture(completionError).Throw(); }
+        if (LastProcess.Error is Exception error) { ExceptionDispatchInfo.Capture(error).Throw(); }
+        if (LastProcess.Result?.Success != true) { throw new InvalidOperationException(T("No native Git result was returned.")); }
+        Succeeded = true; Status.Text = C("_pushToCaption", "Push to {0}").Replace("{0}", current.Destination, StringComparison.Ordinal);
     }
     private void Append(GitResult result) => _output.Text = (_output.Text ?? "") + result.StandardOutput + result.StandardError;
 
@@ -516,8 +550,22 @@ public sealed class PushDialog : RepositoryDialog
         }
         else { dialog.Content = body; }
         dialog.KeyDown += (_, args) => { if (args.Key == Key.Escape) { args.Handled = true; dialog.Close((0, false)); } };
+        void Closing(object? sender, WindowClosingEventArgs args)
+        {
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _workflowStopRequested = Cancelled = true; }
+        }
+        dialog.Closing += Closing;
         using CancellationTokenRegistration registration = token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
-        var result = await dialog.ShowDialog<(int Value, bool Remember)>(owner); token.ThrowIfCancellationRequested(); return result;
+        try
+        {
+            var result = owner is GitProcessDialog process
+                ? await process.ShowCompletionDialogAsync<(int Value, bool Remember)>(dialog)
+                : await dialog.ShowDialog<(int Value, bool Remember)>(owner);
+            token.ThrowIfCancellationRequested();
+            if (_workflowStopRequested) { throw new OperationCanceledException(token); }
+            return result;
+        }
+        finally { dialog.Closing -= Closing; }
     }
 
     private static DynamicResourceExtension Resource(string name) => new("Classic" + name + "Brush");
