@@ -1,6 +1,6 @@
 # ADR 0053 · Retirer les gros fichiers de l’historique
 
-Statut : implémenté ; 1186 tests réussis, six projets Release sans diagnostic et candidat Debian vérifié. Audit natif encore requis ; non livré.
+Statut : implémenté ; 1186 tests réussis, build et candidat Debian vérifiés. Pilote natif clair multi-chemins validé ; autres thèmes, réglages et erreurs/annulation encore ouverts. Non livré.
 
 Besoin : retrouver l’analyse automatique et la grille Windows, choisir les chemins à retirer et voir les résultats réels de la réécriture.
 
