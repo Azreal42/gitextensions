@@ -1,6 +1,6 @@
 # ADR 0052 · Interruption des processus Git possédés
 
-Statut : premier C01 GUI `fbd82d6bb` refusé ; correction progressive `91a47a6b6` vérifiée localement et sous trace, candidat Debian vérifié indépendamment, audit GUI à reprendre ; candidat non livré.
+Statut : premier C01 GUI `fbd82d6bb` refusé ; correction progressive `91a47a6b6` vérifiée localement, sous trace et dans une variante C01 native claire. Candidat Debian vérifié indépendamment, non livré ; autres variantes et thèmes ouverts.
 
 Besoin : libérer l’interface après annulation ou erreur d’observateur, conserver les effets Git partiels et protéger les autres invocations Git.
 
