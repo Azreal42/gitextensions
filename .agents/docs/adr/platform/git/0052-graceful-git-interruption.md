@@ -1,6 +1,6 @@
 # ADR 0052 · Interruption des processus Git possédés
 
-Statut : candidat Debian `fbd82d6bb` vérifié ; premier C01 GUI refusé, correction non vérifiée, candidat non livré.
+Statut : premier C01 GUI `fbd82d6bb` refusé ; correction progressive `91a47a6b6` vérifiée localement et sous trace, nouveau candidat en construction, audit GUI à reprendre.
 
 Besoin : libérer l’interface après annulation ou erreur d’observateur, conserver les effets Git partiels et protéger les autres invocations Git.
 
@@ -8,4 +8,4 @@ Décision : découvrir les acteurs avec progression conservée et parcours finis
 
 Limite : conserver les verrous étrangers ou sans preuve. Un enfant jamais observé, devenu orphelin sans pipes, reste hors preuve ; reprise forcée des verrous, sous-modules/worktrees et croissance continue à valider.
 
-Repères : `GitProcessGroup`, `GitProcessLaunch`, `GitRunner`, `GitProcessStreamingScenarios.Interruption`. Preuves et périmètre restant : [TODO](../../../todo.md).
+Repères : `GitProcessGroup`, `GitProcessLaunch`, `GitRunner`, `GitProcessStreamingScenarios.Interruption`, `GitProcessStreamingScenarios.OrphanProgress`. Preuves et périmètre restant : [TODO](../../../todo.md).
