@@ -10,6 +10,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
 | Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
+| Lecture de branches Clone laisse des descendants actifs derrière un relais | Le relais reçoit SIGINT puis SIGKILL ; les trois descendants avec pipes intermédiaires restent actifs. Perte d’ancre avant découverte probable, timing du scan non observé. Capturer les enfants possédés avant interruption/force à valider ; SID seul reste insuffisant. [Essai natif conservé](../../artifacts/linux/snapshots/991c8c71c/native-clone-inputs/pilots/light/A01-attempt-01/proofs/root-a01-failed-attempt-review-01.json). Nettoyage Root séparé, sans acceptation produit. |
+| Destination Clone avec LF paraît vide au focus | La valeur copiée est exacte et l’aperçu échappé lisible ; le TextBox à hauteur fixe coupe le texte multiligne. Rendre l’édition lisible sans transformer le chemin Git. |
 
 ## Git et état des workflows — résolus
 
