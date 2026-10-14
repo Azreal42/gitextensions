@@ -92,6 +92,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("SHA256 repository status/history", Sha256Async),
     ("cancellation terminates Git and descendants", CancellationAsync),
     ("askpass isolates response streams and preserves explicit helpers", AskpassAsync),
+    .. AskpassInformationScenarios.All,
     ("ZIP and TAR exports preserve committed bytes, literal paths and revision filters", ArchiveExportsAsync),
     ("mailbox exports retain root, inclusive range and individual selection semantics", FormatPatchExportsAsync),
     ("raw patch options apply, check, reverse, stage and fix whitespace", DiffPatchFilesAsync),

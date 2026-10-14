@@ -88,7 +88,7 @@ public class CloneInitDialogTests
         Field<CheckBox>(dialog, "CloneSubmodules").IsChecked = false;
         Field<TextBox>(dialog, "CloneBranch").Text = "main";
         Click(dialog, "RefreshCloneBranches");
-        await Until(() => !dialog.IsBusy);
+        await Until(() => !dialog.IsBranchLoading);
         Assert.That(Field<ComboBox>(dialog, "CloneBranches").ItemsSource!.Cast<string>(), Does.Contain("other"));
         Assert.That(Field<TextBox>(dialog, "CloneBranch").Text, Is.EqualTo("main"));
         Click(dialog, "CloneRepository");

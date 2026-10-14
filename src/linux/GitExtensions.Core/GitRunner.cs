@@ -255,6 +255,11 @@ public sealed class GitRunner(string executable = "git")
             return;
         }
 
+        string[] prefix = GlobalArguments(arguments, out bool informationRequest);
+        // These requests print information or help instead of running a command.
+        // Appending a config probe would turn --version into `version config`.
+        if (informationRequest) { return; }
+
         bool explicitGitHelper = startInfo.Environment.ContainsKey("GIT_ASKPASS");
         bool explicitSshHelper = startInfo.Environment.ContainsKey("SSH_ASKPASS");
         bool nativeHelper = false;
@@ -262,7 +267,6 @@ public sealed class GitRunner(string executable = "git")
         {
             // core.askpass sits between GIT_ASKPASS and SSH_ASKPASS in Git's precedence.
             // Probe with the same global options/environment so repository, -c and config-env choices are respected.
-            string[] prefix = GlobalArguments(arguments);
             GitBinaryResult configured = await RunBinaryCoreAsync(startInfo.WorkingDirectory, [.. prefix, "config", "--get", "core.askpass"],
                 cancellationToken, null, new Dictionary<string, string?>(startInfo.Environment), applyAskpass: false).ConfigureAwait(false);
             if (configured.ExitCode == 1)
@@ -290,11 +294,15 @@ public sealed class GitRunner(string executable = "git")
         }
     }
 
-    private static string[] GlobalArguments(IReadOnlyList<string> arguments)
+    private static string[] GlobalArguments(IReadOnlyList<string> arguments, out bool informationRequest)
     {
+        informationRequest = false;
         int index = 0;
         while (index < arguments.Count && arguments[index].StartsWith('-') && arguments[index] != "--")
         {
+            if (arguments[index] is "--version" or "-v" or "--help" or "-h"
+                or "--exec-path" or "--html-path" or "--man-path" or "--info-path")
+            { informationRequest = true; break; }
             string option = arguments[index++];
             if (option is "-c" or "-C" or "--git-dir" or "--work-tree" or "--namespace" or "--config-env")
             {
@@ -305,6 +313,8 @@ public sealed class GitRunner(string executable = "git")
                 index++;
             }
         }
+
+        if (index < arguments.Count && (arguments[index] is "version" or "help")) { informationRequest = true; }
 
         return arguments.Take(index).ToArray();
     }
