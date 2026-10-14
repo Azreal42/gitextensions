@@ -6,7 +6,7 @@ namespace GitExtensions.Linux.Plugins;
 public sealed class FindLargeFilesPlugin : INativePlugin
 {
     public PluginDescriptor Descriptor { get; } = new(new Guid("5AE20AB1-D677-46C5-ABDB-7874FF5A9296"),
-        "Find large files", "Find blobs at least the configured size throughout the selected revision's history. This operation only analyses the repository.",
+        "Find large files", "Find blobs at least the configured size throughout the selected revision's history and review files to remove from history.",
         "IconFindLargeFiles",
         [new("minimumMegabytes", "Minimum size (MiB)", PluginParameterKind.Number, "1", Required: true),
          new("revision", "Revision", PluginParameterKind.Text, "HEAD", Required: true)]);
@@ -59,7 +59,7 @@ public sealed class FindLargeFilesPlugin : INativePlugin
             .Select(blob => new PluginRow(blob.Hash, [blob.Hash, blob.Path, blob.Size.ToString(CultureInfo.InvariantCulture),
                 blob.CompressedSize?.ToString(CultureInfo.InvariantCulture) ?? "Unknown", blob.Commits.Count.ToString(CultureInfo.InvariantCulture),
                 blob.LastCommit.ToString("O", CultureInfo.InvariantCulture)])).ToArray();
-        return new($"{rows.Length} distinct blob(s) at least {threshold} bytes in {revision} history. Identical blobs are aggregated across commits; the first encountered path is retained, as in the original plugin.",
+        return new($"{rows.Length} distinct blob(s) at least {threshold} bytes in {revision} history. Identical blobs are grouped across commits; each row shows its first path.",
             new(["Object", "Path", "Size (bytes)", "Compressed size (bytes)", "Commit count", "Last commit date"], rows));
     }
 

@@ -24,6 +24,7 @@ public sealed class GitProcessDialog : Window
 {
     private readonly Func<CancellationToken, Action<GitProcessOutput>, Task<GitResult>> _command;
     private readonly ProcessDialogPreferencesStore _store;
+    private readonly bool _preserveStreamedOutput;
     private readonly CancellationTokenSource _operation;
     private readonly ConcurrentQueue<GitProcessOutput> _chunks = new();
     private readonly GitProcessTextDecoder _stdoutDecoder = new(), _stderrDecoder = new();
@@ -42,16 +43,17 @@ public sealed class GitProcessDialog : Window
     private Task? _completion;
     private GitProcessDialogResult? _outcome;
     private int _drainScheduled, _resourcesDisposed;
-    private bool _closeRequested, _closed, _starting = true, _preferenceFailed;
+    private bool _closeRequested, _ownerCloseRequested, _closed, _starting = true, _preferenceFailed;
     private string? _preferenceError;
 
     public GitProcessDialog(string workingDirectory, string commandDescription, bool useDialogSettings,
         Func<CancellationToken, Action<GitProcessOutput>, Task<GitResult>> command, CancellationToken cancellationToken = default,
-        ProcessDialogPreferencesStore? preferencesStore = null)
+        ProcessDialogPreferencesStore? preferencesStore = null, bool preserveStreamedOutput = false)
     {
         ArgumentNullException.ThrowIfNull(command); ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(commandDescription);
-        _command = command; _store = preferencesStore ?? new(); _operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _command = command; _store = preferencesStore ?? new(); _preserveStreamedOutput = preserveStreamedOutput;
+        _operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         CommandDescription = commandDescription; UseDialogSettings = useDialogSettings;
         _display.Append(commandDescription).Append('\n');
         Name = "GitProcessDialog"; Title = Text("$this", "Process") + " (" + workingDirectory + ")";
@@ -72,7 +74,15 @@ public sealed class GitProcessDialog : Window
         UpdateOutput();
         SetBadge("StatusBadgeWaiting");
         Opened += (_, _) => { _starting = false; _completion ??= ExecuteAsync(); };
-        Closing += (_, args) => { if (IsRunning) { args.Cancel = true; RequestClose(); } };
+        Closing += (_, args) =>
+        {
+            if (IsRunning)
+            {
+                // Avalonia asks children before raising the owner's Closing event. Retain the request we defer.
+                if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _ownerCloseRequested = true; }
+                args.Cancel = true; RequestClose();
+            }
+        };
         Closed += (_, _) => { _closed = true; if (IsRunning) { _operation.Cancel(); } else { DisposeResources(); } };
         AddHandler(KeyDownEvent, (_, args) => { if (args.Key == Key.Escape) { args.Handled = true; RequestClose(); } }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _starting = false;
@@ -90,11 +100,11 @@ public sealed class GitProcessDialog : Window
 
     public static async Task<GitProcessDialogResult> ShowAsync(Window owner, string workingDirectory, string commandDescription, bool useDialogSettings,
         Func<CancellationToken, Action<GitProcessOutput>, Task<GitResult>> command, CancellationToken cancellationToken = default,
-        ProcessDialogPreferencesStore? preferencesStore = null)
+        ProcessDialogPreferencesStore? preferencesStore = null, bool preserveStreamedOutput = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!owner.IsVisible) { return new(null, null, true, false); }
-        GitProcessDialog dialog = new(workingDirectory, commandDescription, useDialogSettings, command, cancellationToken, preferencesStore)
+        GitProcessDialog dialog = new(workingDirectory, commandDescription, useDialogSettings, command, cancellationToken, preferencesStore, preserveStreamedOutput)
             { RequestedThemeVariant = owner.ActualThemeVariant };
         void OwnerClosed(object? sender, EventArgs args) => dialog.RequestClose();
         owner.Closed += OwnerClosed;
@@ -106,6 +116,9 @@ public sealed class GitProcessDialog : Window
             if (dialog.IsRunning) { dialog.RequestClose(); }
             if (dialog._completion is Task completion) { await completion; }
             dialog.Close(); dialog.DisposeResources();
+            // The native command and its pipe drainage have completed and the child has released its owner.
+            // A busy RepositoryDialog can now observe Closing and finish its own deferred close.
+            if (dialog._ownerCloseRequested && owner.IsVisible) { owner.Close(); }
         }
         return dialog._outcome ?? new(null, null, true, false);
     }
@@ -134,9 +147,10 @@ public sealed class GitProcessDialog : Window
             {
                 // A readonly revision-validation probe can fail before the observed command starts.
                 // Its actual exception result must still be readable, without inventing streamed callbacks.
-                if (!_stdout.ToArray().AsSpan().SequenceEqual(result.StandardOutputBytes)
+                if ((!_preserveStreamedOutput || _stdout.Length == 0 && _stderr.Length == 0)
+                    && (!_stdout.ToArray().AsSpan().SequenceEqual(result.StandardOutputBytes)
                     || !_stderr.ToArray().AsSpan().SequenceEqual(result.StandardErrorBytes)
-                    || _stdout.Length == 0 && _stderr.Length == 0 && (result.StandardOutput.Length > 0 || result.StandardError.Length > 0))
+                    || _stdout.Length == 0 && _stderr.Length == 0 && (result.StandardOutput.Length > 0 || result.StandardError.Length > 0)))
                 {
                     _display.Clear(); _display.Append(CommandDescription).Append('\n');
                     AppendText(result.StandardOutput, _stdoutLine); AppendText(result.StandardError, _stderrLine);

@@ -134,7 +134,7 @@ internal sealed class GitProcessLaunch : IDisposable
         if (!bytes.SequenceEqual(errorRecord)) { throw new InvalidDataException("The exec-error witness differs from the authenticated control record."); }
     }
 
-    private static string ResolveDirectExecutable(string executable)
+    internal static string ResolveDirectExecutable(string executable)
     {
         ArgumentException.ThrowIfNullOrEmpty(executable);
         if (executable.Contains('\0')) { throw new ArgumentException("Git executable paths cannot contain NUL.", nameof(executable)); }

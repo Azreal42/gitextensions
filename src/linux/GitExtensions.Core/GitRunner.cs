@@ -34,6 +34,8 @@ public sealed class GitCommandException : Exception
 /// <summary>Runs Git directly. Paths, revision names and messages never pass through a shell.</summary>
 public sealed class GitRunner(string executable = "git")
 {
+    internal string Executable => executable;
+
     /// <summary>Optional desktop fallback. Applied only to child processes with a display, preserving explicit user helpers.</summary>
     public static string? AskpassFallbackPath { get; set; }
     /// <summary>The desktop UI culture name, propagated only to its askpass fallback. It never contains credential data.</summary>

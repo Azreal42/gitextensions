@@ -43,6 +43,13 @@ public sealed partial class MainWindow
                 await dialog.ShowDialog(this);
                 SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
             }
+            else if (plugin is FindLargeFilesPlugin)
+            {
+                FindLargeFilesDialog dialog = new(_repository, values);
+                dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+                await dialog.ShowDialog(this);
+                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
+            }
             else if (plugin is GitImpactPlugin impact)
             {
                 GitImpactDialog dialog = new(_repository, impact.GetOptions(values));
