@@ -37,6 +37,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Propriétaire fermé mais checkout busy reste ouvert | Propager la fermeture ancêtre, annuler/attendre Git avant fermeture des fenêtres. |
 | Deuxième confirmation AutoCompile hors thread UI | Marshaler chaque confirmation, y compris après continuation sur worker. |
 | Clone réécrit le sous-dossier saisi | Observer TextProperty immédiatement, avant le TextChanged différé. |
+| Clone attendu fermé avant son acquittement Process | Keep/OK diffère découverte, MRU et ouverture ; un test de raccourci doit cliquer réellement OK avant les assertions finales. [Essai conservé](../../artifacts/linux/clone-process-root-checks-20261014-01/root-failed-full-review-01.json). |
 | Valeur initiale d’une combo disparaît à l’ouverture | AutoCompleteBox peut reporter le texte vide du gabarit après montage ; initialiser la sélection présente dans ItemsSource et tester la vraie activation modale. |
 | Message déclaré Latin1 mais écrit UTF-8 | Codec strict partagé, stdin binaire et draft atomique ; valider avant toute mutation. |
 | Auteur UTF-8 altéré dans un commit au message CP1252 | `git show` recode aussi les en-têtes ; les formes de commande Windows/Linux produisent la même altération dans l’aperçu. Pour la grille, lire l’identité brute puis `check-mailmap`, garder le formatage Git du sujet/date. Ne pas changer le codec global du viewer ; codecs message et hunks distincts. |
