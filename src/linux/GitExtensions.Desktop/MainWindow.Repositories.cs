@@ -105,8 +105,12 @@ public sealed partial class MainWindow
                 _repositoryPath.Text = "";
                 _history = [];
                 _historyGraph.Commits = []; _historyGraph.References = []; _historyGraph.CurrentHead = null;
-                foreach (ListBox list in new[] { _commits, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _tree, _hunks }) { list.ItemsSource = null; }
+                foreach (ListBox list in new[] { _commits, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _hunks }) { list.ItemsSource = null; }
                 _changesFilesView?.SetGroups([], preserveSelection: false);
+                _fileTreeView?.SetGroups([], preserveSelection: false);
+                CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;
+                _fileTreeRepository = null; _fileTreeRevision = null; _allFileTreePaths = [];
+                _fileTreeEntries = new Dictionary<string, GitTreeEntry>(); ClearFileGrepViewer();
                 _navigation.ItemsSource = null;
                 ClearRevisionDiff();
                 _navigationRevisionFilter = null; ResetBranchFilter();

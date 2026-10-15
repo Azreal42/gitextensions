@@ -15,6 +15,8 @@ using Avalonia.Threading;
 using GitExtensions.Extensibility.Git;
 using GitExtensions.Linux.Desktop;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Desktop.Controls;
+using Avalonia.Controls.Documents;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -42,11 +44,12 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private readonly ConditionalWeakTable<Image, Bitmap> _images = new();
     private readonly Dictionary<TreeViewItem, FileStatusListNode> _models = [];
     private readonly Dictionary<TreeViewItem, TreeViewItem?> _parents = [];
+    private readonly HashSet<Run> _mutedPathRuns = [];
     private readonly Dictionary<(string Group, FileStatusListNodeKind Kind, string Key), bool> _expansion = [];
     private readonly List<string> _history = ["^(?!.*NotThisWord)", @"^(?!.*\bg?tests?/)"];
     private readonly Dictionary<Control, string> _toolbarRoles = [];
     private readonly TextBlock _noFiles = new() { FontStyle = FontStyle.Italic, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(2, 0) };
-    private readonly Grid _filterRow = new() { ColumnDefinitions = new ColumnDefinitions("*,20"), Height = 24 };
+    private readonly Grid _filterRow = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Height = 24 };
     private IReadOnlyList<FileStatusListGroup> _groups = [];
     private FileStatusListOptions _options;
     private FileStatusListDiffFilter _diffFilter = new();
@@ -54,17 +57,22 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private CancellationTokenSource? _pendingFilter;
     private IDisposable? _filterBackgroundBinding;
     private bool _updatingFilter, _updatingToolbar, _disposed;
+    private readonly bool _fileTreeMode;
 
     public FileStatusListView(TreeView tree, Func<FileStatusListEntry, Control>? fileHeaderFactory = null,
-        FileStatusListPreferencesStore? preferencesStore = null)
+        FileStatusListPreferencesStore? preferencesStore = null, bool fileTreeMode = false)
     {
         ArgumentNullException.ThrowIfNull(tree);
         Tree = tree;
         Name = (tree.Name ?? "FileStatus") + "View";
-        _store = preferencesStore ?? new(); _options = _store.Load();
+        _fileTreeMode = fileTreeMode;
+        _store = preferencesStore ?? new(); _options = fileTreeMode ? new() : _store.Load();
         _fileHeader = fileHeaderFactory ?? DefaultFileHeader;
         _filter.Name = Prefix("Filter"); _filter.ItemsSource = _history.ToArray();
         _filter.PlaceholderText = T("Filter files using a regular expression...");
+        _filter.FontWeight = FontWeight.Normal;
+        _filter.Styles.Add(new Style(selector => selector.OfType<TextBlock>().Name("PART_Watermark"))
+        { Setters = { new Setter(TextBlock.FontStyleProperty, FontStyle.Italic) } });
         ToolTip.SetTip(_filter, T("Filter files using a regular expression..."));
         _filter.Styles.Add(new Style(selector => selector.OfType<TextBox>())
         { Setters = { new Setter(TextBox.BackgroundProperty, new Binding(nameof(Background)) { Source = _filter }) } });
@@ -103,6 +111,9 @@ public sealed class FileStatusListView : UserControl, IDisposable
         SettingsMenu.Items.Add(_toolbarMenu);
         SettingsMenu.Opening += (_, _) => RefreshToolbarMenu();
         Button settings = IconButton("Settings", "Settings", "Settings.png", () => { });
+        settings.Width = 32;
+        settings.Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center,
+            Children = { Icon("Settings.png"), new PathIcon { Data = Geometry.Parse("M 0,0 L 6,0 L 3,3 Z"), Width = 6, Height = 3 } } };
         settings.Flyout = SettingsMenu; _toolbar.Children.Add(settings); _toolbarRoles[settings] = "Settings";
 
         _filterRow.Children.Add(_filter); Grid.SetColumn(_clearFilter, 1); _filterRow.Children.Add(_clearFilter);
@@ -110,12 +121,13 @@ public sealed class FileStatusListView : UserControl, IDisposable
         Border bar = ClassicChrome.Border(_toolbar, new Thickness(0, 0, 0, 1)); DockPanel.SetDock(bar, Dock.Top); layout.Children.Add(bar);
         DockPanel.SetDock(_filterRow, Dock.Top); layout.Children.Add(_filterRow);
         _noFiles.Text = T("No changes"); _noFiles.Name = Prefix("NoChanges");
-        Grid treeHost = new(); treeHost.Children.Add(Tree); treeHost.Children.Add(_noFiles); layout.Children.Add(treeHost);
+        Grid treeHost = new(); treeHost.Children.Add(ClassicTreeViewAppearance.Wrap(Tree, indent: 14, inset: 4, showRootLines: fileTreeMode)); treeHost.Children.Add(_noFiles); layout.Children.Add(treeHost);
         Content = layout;
-        Tree.Styles.Add(new Style(selector => selector.OfType<TreeViewItem>())
-        { Setters = { new Setter(PaddingProperty, new Thickness(0)), new Setter(MinHeightProperty, 24d) } });
-        _store.Changed += PreferencesChanged;
+        bar.IsVisible = !fileTreeMode;
+        if (!fileTreeMode) { _store.Changed += PreferencesChanged; }
         ActualThemeVariantChanged += ThemeChanged;
+        AttachedToVisualTree += (_, _) => UpdatePathSelectionColors();
+        Tree.SelectionChanged += TreeSelectionChanged;
         UpdateToolbar(); ApplyFilterPalette();
     }
 
@@ -123,6 +135,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     public Panel Toolbar => _toolbar;
     public MenuFlyout SettingsMenu { get; }
     public bool IsUpdating { get; private set; }
+    public bool GroupByRevision { get; set; }
     public string FilterText { get => _filter.Text ?? ""; set => _filter.Text = value; }
     public string? FilterError { get; private set; }
     public bool IsFilterActive => FilterText.Length != 0;
@@ -167,6 +180,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         IsUpdating = true;
         try { Tree.UnselectAll(); foreach (TreeViewItem item in selected) { ExpandAncestors(item); Tree.SelectedItems!.Add(item); } }
         finally { IsUpdating = false; }
+        UpdatePathSelectionColors();
         // Hosts may update a diff once for this logical selection, rather than for each intermediate item.
         DisplayChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -186,7 +200,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         if (_disposed || options == _options) { return; }
         if (!Enum.IsDefined(options.SortMode)) { throw new ArgumentOutOfRangeException(nameof(options)); }
         _options = options;
-        if (!_store.Save(options)) { Rebuild(); }
+        if (_fileTreeMode || !_store.Save(options)) { Rebuild(); }
     }
     private void PreferencesChanged(object? sender, EventArgs args)
     {
@@ -252,13 +266,13 @@ public sealed class FileStatusListView : UserControl, IDisposable
             ? [.. Tree.SelectedItems?.OfType<TreeViewItem>().Where(_models.ContainsKey).Select(item => Identity(_models[item])) ?? []] : [];
         foreach ((TreeViewItem item, FileStatusListNode node) in _models) { _expansion[Identity(node)] = item.IsExpanded; }
         FileStatusListModelGroup[] groups = _groups.Select(group => new FileStatusListModelGroup(group.Tag, group.Key, group.Entries, group.AlwaysVisible, group.IsBaseComparison)).ToArray();
-        IReadOnlyList<FileStatusListNode> nodes = FileStatusListBuilder.Build(groups, _options, entry => _diffFilter.Matches(entry.DiffStatus) && MatchesName(entry, _predicate));
+        IReadOnlyList<FileStatusListNode> nodes = FileStatusListBuilder.Build(groups, _options, entry => _diffFilter.Matches(entry.DiffStatus) && MatchesName(entry, _predicate), GroupByRevision);
         IsUpdating = true;
         try
         {
             Tree.UnselectAll();
             foreach (TreeViewItem old in _models.Keys) { old.Header = null; }
-            Tree.ItemsSource = null; _models.Clear(); _parents.Clear();
+            Tree.ItemsSource = null; _models.Clear(); _parents.Clear(); _mutedPathRuns.Clear();
             TreeViewItem[] roots = nodes.Select(node => CreateItem(node, null)).ToArray(); Tree.ItemsSource = roots;
             TreeViewItem[] restored = _models.Where(pair => selected.Contains(Identity(pair.Value))).Select(pair => pair.Key).ToArray();
             if (restored.Length == 0 && selectFirst) { restored = [_models.FirstOrDefault(pair => pair.Value.Entry is not null).Key ?? roots.FirstOrDefault()!]; }
@@ -270,6 +284,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
             UpdateToolbar();
         }
         finally { IsUpdating = false; }
+        UpdatePathSelectionColors();
         DisplayChanged?.Invoke(this, EventArgs.Empty);
 
         TreeViewItem CreateItem(FileStatusListNode node, TreeViewItem? parent)
@@ -284,7 +299,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
             _models.Add(item, node); _parents.Add(item, parent);
             item.ItemsSource = node.Children.Select(child => CreateItem(child, item)).ToArray();
             item.IsExpanded = _expansion.TryGetValue(Identity(node), out bool expanded) ? expanded
-                : node.Kind != FileStatusListNodeKind.Revision || group.Entries.Count > 0
+                : _fileTreeMode ? IsFilterActive : node.Kind != FileStatusListNodeKind.Revision || group.Entries.Count > 0
                     && (_groups.Count < 3 || group == _groups[0] || group.ExpandSmallDiff && group.Entries.Count <= 7);
             return item;
         }
@@ -326,12 +341,49 @@ public sealed class FileStatusListView : UserControl, IDisposable
         ToolTip.SetTip(button, T(tip)); button.Click += (_, _) => action(); return button;
     }
     private Control DefaultFileHeader(FileStatusListEntry entry)
-        => IconHeader(ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path)
-            + (entry.OriginalPath is null ? "" : " (" + ExportDialogControls.DisplayPath(entry.OriginalPath) + ")"), IconName(entry));
+        => CreateFileHeader(entry, _fileTreeMode ? "File.png" : IconName(entry));
+
+    public Control CreateFileHeader(FileStatusListEntry entry, string? icon = null)
+    {
+        string path = ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path);
+        string suffix = entry.OriginalPath is null ? "" : " (" + ExportDialogControls.DisplayPath(entry.OriginalPath) + ")";
+        int separator = path.LastIndexOf('/');
+        TextBlock text = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0), TextTrimming = TextTrimming.CharacterEllipsis };
+        if (separator >= 0)
+        {
+            Run prefix = new(path[..(separator + 1)]);
+            _mutedPathRuns.Add(prefix);
+            prefix.Bind(TextElement.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush"));
+            text.Inlines!.Add(prefix);
+        }
+        text.Inlines!.Add(new Run(path[(separator + 1)..]));
+        if (suffix.Length > 0)
+        {
+            Run previous = new(suffix); _mutedPathRuns.Add(previous); previous.Bind(TextElement.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush")); text.Inlines.Add(previous);
+        }
+        Grid header = new() { ColumnDefinitions = new("16,*"), Height = ClassicTreeViewAppearance.RowHeight };
+        header.Children.Add(Icon(icon ?? IconName(entry))); Grid.SetColumn(text, 1); header.Children.Add(text);
+        ToolTip.SetTip(header, path + suffix); return header;
+    }
+    private void TreeSelectionChanged(object? sender, SelectionChangedEventArgs args)
+    { if (!IsUpdating) { UpdatePathSelectionColors(); } }
+    private void UpdatePathSelectionColors()
+    {
+        IBrush neutral = this.TryFindResource("ClassicDisabledBrush", ActualThemeVariant, out object? value) && value is IBrush found ? found : Brushes.Gray;
+        foreach (TreeViewItem item in _models.Keys)
+        {
+            if (item.Header is not Grid grid) { continue; }
+            TextBlock? text = grid.Children.OfType<TextBlock>().FirstOrDefault();
+            if (text?.Inlines is null) { continue; }
+            IBrush brush = item.IsSelected && ActualThemeVariant != ThemeVariant.Dark ? Brush.Parse("#c0c0c0")
+                : neutral;
+            foreach (Run run in text.Inlines.OfType<Run>().Where(_mutedPathRuns.Contains)) { run.Foreground = brush; }
+        }
+    }
     private Control IconHeader(string label, string icon)
     {
-        Grid header = new() { ColumnDefinitions = new ColumnDefinitions("16,*"), Height = 24, ClipToBounds = true };
-        header.Children.Add(Icon(icon)); TextBlock text = new() { Text = label, Margin = new Thickness(4, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+        Grid header = new() { ColumnDefinitions = new ColumnDefinitions("16,*"), Height = ClassicTreeViewAppearance.RowHeight, ClipToBounds = true };
+        header.Children.Add(Icon(icon)); TextBlock text = new() { Text = label, Margin = new Thickness(2, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         Grid.SetColumn(text, 1); header.Children.Add(text); ToolTip.SetTip(header, label); return header;
     }
     internal Image CreateIcon(string name) => Icon(name);
@@ -342,7 +394,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         {
             using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + name)); bitmap = new(stream); _bitmaps[name] = bitmap;
         }
-        Image image = new() { Source = bitmap, Width = 16, Height = 16, Stretch = Stretch.None, VerticalAlignment = VerticalAlignment.Center, UseLayoutRounding = true };
+        Image image = new() { Source = bitmap, Tag = name, Width = 16, Height = 16, Stretch = Stretch.None, VerticalAlignment = VerticalAlignment.Center, UseLayoutRounding = true };
         _images.Add(image, bitmap); return image;
     }
     private void UpdateToolbar()
@@ -359,7 +411,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
             _flatGroups.IsChecked = ShowGroupNodesInFlatList; _flatGroups.IsEnabled = IsFlat && SortMode != FileStatusListSortMode.FilePathFlat;
             bool comparison = _groups.Any(group => group.IsBaseComparison);
             bool noFiles = Entries.Count == 0 && _groups.Count <= 1 && !_groups.Any(group => group.AlwaysVisible);
-            _noFiles.IsVisible = noFiles; _filterRow.IsVisible = !noFiles;
+            _noFiles.IsVisible = noFiles && !_fileTreeMode; _filterRow.IsVisible = !noFiles || _fileTreeMode;
             foreach (ToggleButton toggle in new[] { _unequal, _onlyB, _onlyA, _same }) { toggle.IsVisible = comparison; }
             foreach ((Control control, string role) in _toolbarRoles)
             {
@@ -389,7 +441,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
             _toolbarMenu.Items.Add(item);
         }
     }
-    private void ThemeChanged(object? sender, EventArgs args) { ApplyFilterPalette(); ApplySortButtonPalette(); ApplyDiffButtonColors(); }
+    private void ThemeChanged(object? sender, EventArgs args) { ApplyFilterPalette(); ApplySortButtonPalette(); ApplyDiffButtonColors(); UpdatePathSelectionColors(); }
     private void ApplySortButtonPalette()
     {
         // Fluent's checked styles draw on their ContentPresenter, bypassing Background setters.
@@ -471,6 +523,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     {
         if (_disposed) { return; } _disposed = true; CancelPendingFilter();
         _store.Changed -= PreferencesChanged; ActualThemeVariantChanged -= ThemeChanged;
+        Tree.SelectionChanged -= TreeSelectionChanged;
         _filter.PropertyChanged -= FilterPropertyChanged; _filter.SelectionChanged -= FilterSelectionChanged;
         _filterBackgroundBinding?.Dispose(); _filter.IsDropDownOpen = false;
         _viewMode.Flyout?.Hide();

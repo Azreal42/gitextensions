@@ -132,6 +132,8 @@ public sealed partial class MainWindow
         };
         _tabs.SelectionChanged += async (_, args) =>
         {
+            if (!_layingOutCommitInfo && args.Source == _tabs && !_busy && (_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab"
+                && SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
             if (!_layingOutCommitInfo && args.Source == _tabs && (_tabs.SelectedItem as TabItem)?.Name == "GpgTab")
             {
                 await RunAsync("Commit signature", async repository =>

@@ -403,21 +403,32 @@ public sealed partial class MainWindow
 
     private Task OpenSubmoduleAsync() => _submodules.SelectedItem is GitSubmodule module && _repository is not null ? OpenRepositoryAsync(Path.Combine(_repository.Path, module.Path)) : Task.CompletedTask;
 
-    private Task ShowFileAsync(string path) => RunAsync("File contents", async r =>
+    private Task ShowFileAsync(string path)
     {
+        // Native pointer selection can notify again for the current row. Its immutable
+        // blob is already displayed; a redundant busy read would swallow a double-click.
+        string? identity = _repository is null ? null : string.Join('\0', _repository.Path, path, _fileTreeRevision ?? CurrentRevision, "blob");
+        if (identity is not null && _fileContent?.TextView is { IsDocumentReady: true } viewer && viewer.DocumentIdentity == identity)
+        { return Task.CompletedTask; }
+        return RunAsync("File contents", r => LoadTreeFileAsync(r, path), refresh: false);
+    }
+
+    private async Task LoadTreeFileAsync(GitRepository r, string path)
+    {
+        string revision = _fileTreeRevision ?? CurrentRevision;
         _fileContent?.ClearImage();
         _fileContent?.TextView.BeginDocumentLoad();
         if (_fileContent is not null)
         {
-            _fileContent.TextView.DocumentIdentity = string.Join('\0', r.Path, path, CurrentRevision, "blob");
+            _fileContent.TextView.DocumentIdentity = string.Join('\0', r.Path, path, revision, "blob");
             await _fileContent.TextView.ConfigureRepositoryAsync(r, Token);
         }
         if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.PlainText; }
-        GitTreeEntry? entry = (await r.GetTreeAsync(CurrentRevision, path, Token)).FirstOrDefault(item => item.Path == path);
+        GitTreeEntry? entry = (await r.GetTreeAsync(revision, path, Token)).FirstOrDefault(item => item.Path == path);
         if (entry?.IsSubmodule == true) { _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}"; return; }
-        byte[] bytes = await r.GetFileBytesAsync(path, CurrentRevision, Token);
+        byte[] bytes = await r.GetFileBytesAsync(path, revision, Token);
         _fileContent?.ShowFile(path, bytes, await r.GetFileEncodingNameAsync(Token));
-    }, refresh: false);
+    }
 
     private Task BlameAsync() => RunAsync("Blame", async r =>
     {

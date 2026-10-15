@@ -13,10 +13,11 @@ internal static class ClassicTreeViewAppearance
 {
     internal const double RowHeight = 18, Indent = 19, ChevronSize = 7;
     private const string TreeClass = "classic-tree";
-    private static readonly FuncValueConverter<int, Thickness> LevelIndent = new(level => new Thickness(6 + level * Indent, 0, 0, 0));
 
-    public static Control Wrap(TreeView tree)
+    public static Control Wrap(TreeView tree, double indent = Indent, double inset = 6, bool showRootLines = true)
     {
+        FuncValueConverter<int, Thickness> levelIndent = new(level => new Thickness(inset + Math.Max(0, level - (showRootLines ? 0 : 1)) * indent, 0, 0, 0));
+        FuncValueConverter<int, double> gutterWidth = new(level => !showRootLines && level == 0 ? 0 : indent);
         tree.Classes.Add(TreeClass);
         // Keep the inset inside each header. ScrollViewer padding would make
         // focus/BringIntoView shift a narrow chevron underneath the pointer.
@@ -46,13 +47,15 @@ internal static class ClassicTreeViewAppearance
             new Style(selector => Item(selector).Template().OfType<Grid>().Name("PART_Header"))
             {
                 Setters = { new Setter(Layoutable.MarginProperty, new Binding(nameof(TreeViewItem.Level))
-                    { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Converter = LevelIndent }) }
+                    { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Converter = levelIndent }) }
             },
             new Style(selector => Item(selector).Template().OfType<Panel>().Name("PART_ExpandCollapseChevronContainer"))
             {
                 Setters =
                 {
-                    new Setter(Layoutable.WidthProperty, Indent),
+                    new Setter(Layoutable.WidthProperty, new Binding(nameof(TreeViewItem.Level))
+                        { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Converter = gutterWidth }),
+                    new Setter(Visual.ClipToBoundsProperty, true),
                     new Setter(Layoutable.MarginProperty, new Thickness(0)),
                     new Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Center)
                 }
@@ -69,7 +72,7 @@ internal static class ClassicTreeViewAppearance
                 }
             }
         });
-        return new Grid { ClipToBounds = true, Children = { tree, new ClassicTreeConnectors(tree) { Name = "ClassicTreeConnectors", IsHitTestVisible = false } } };
+        return new Grid { ClipToBounds = true, Children = { tree, new ClassicTreeConnectors(tree, indent, showRootLines) { Name = "ClassicTreeConnectors", IsHitTestVisible = false } } };
     }
 
     private static Selector Item(Selector? selector) => selector.OfType<TreeView>().Class(TreeClass).Descendant().OfType<TreeViewItem>();

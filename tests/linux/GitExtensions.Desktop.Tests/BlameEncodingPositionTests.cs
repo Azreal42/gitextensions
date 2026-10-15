@@ -267,8 +267,9 @@ public sealed class BlameEncodingPositionTests
         await Helpers.Until(() => !main.IsBusy);
         TabControl tabs = Helpers.Field<TabControl>(main, "DetailsTabs");
         tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "FileTreeTab"); main.UpdateLayout();
-        ListBox tree = main.GetVisualDescendants().OfType<ListBox>().Single(list => list.Items.OfType<string>().Contains(LiteralPath));
-        tree.SelectedItem = LiteralPath;
+        await Helpers.Until(() => !main.IsBusy);
+        FileStatusListView fileList = Helpers.Field<FileStatusListView>(main, "CommitFileStatusList");
+        TreeView tree = fileList.Tree; fileList.SelectTags([LiteralPath]);
         await Helpers.Until(() => !main.IsBusy);
         FileContentView content = main.GetVisualDescendants().OfType<FileContentView>().Single(view => view.IsEffectivelyVisible);
         Assert.That(content.TextView.Text, Is.EqualTo(source));
@@ -276,8 +277,10 @@ public sealed class BlameEncodingPositionTests
         Assert.That(content.TextView.GoToFileLine(180), Is.True);
         int offset = content.TextView.Editor.Document.GetLineByNumber(180).Offset + 3;
         content.TextView.Select(offset, 8);
-        Button action = main.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Blame");
-        PointerClick(main, action);
+        tree.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Control.ContextRequestedEvent, Source = tree });
+        Dispatcher.UIThread.RunJobs();
+        MenuItem action = tree.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "tsmiBlame");
+        action.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent)); tree.ContextMenu.Close();
         await Helpers.Until(() => main.OwnedWindows.OfType<BlameDialog>().Any());
         BlameDialog dialog = main.OwnedWindows.OfType<BlameDialog>().Single();
         try

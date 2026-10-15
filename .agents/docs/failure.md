@@ -195,3 +195,12 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Chevron compact impossible à cliquer | Un padding du TreeView provoque un BringIntoView horizontal de 6 px au focus, entre appui et relâchement. Mettre le retrait dans les entêtes, garder le viewport sans padding et vérifier un vrai clic immobile. |
 | Une hauteur fixe masque les descendants | La hauteur du TreeViewItem inclut ses enfants ; fixer uniquement le Border d’entête à 18 px et garder une hauteur automatique pour l’item. |
 | Des pointillés deviennent un trait gris | Des limites de tirets de 1 px à demi-pixel mélangent les pixels voisins. Aligner les limites longitudinales sur des pixels entiers et contrôler alternance d’encre et de fond dans le rendu effectif. |
+
+## Panneaux de fichiers
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Les tests du menu voient des actions périmées | ContextMenu.Open(Control) contourne Opening dans Avalonia 11.3.22. Utiliser ContextRequested ou un vrai clic droit, comme l’utilisateur ; le handler Opening capture alors la sélection actuelle. |
+| Fermer un menu perturbe la recherche modale | Ne recharger à la fermeture que si le clic droit a changé la sélection. Un rechargement systématique vole le focus et peut chevaucher grep. |
+| Arbre présent, contenu effacé au changement de commit | Recharger explicitement le blob du chemin conservé quand le panneau File tree est actif, y compris après rafraîchissement. |
+| Une lookup de couleur empêche le chargement du dépôt | Avant attachement, une ressource peut être UnsetValue. Employer TryFindResource avec thème explicite et un fallback ; réappliquer après attachement et changement de thème. |

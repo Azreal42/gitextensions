@@ -95,7 +95,7 @@ public sealed class CompactNavigationTreeTests
         await f.Window.OpenRepositoryAsync(f.Repository); Pump(f.Window);
         folder = BrowseTestHelpers.NavigationNodes(tree).Single(item => Label(item).Children.OfType<TextBlock>().Single().Text == "codex");
         Assert.That(folder.IsExpanded, Is.False);
-        Assert.That(f.Window.GetVisualDescendants().OfType<Control>().Single(control => control.Name == "ClassicTreeConnectors").IsHitTestVisible, Is.False);
+        Assert.That(((Grid)tree.Parent!).Children.Single(control => control.Name == "ClassicTreeConnectors").IsHitTestVisible, Is.False);
         Assert.That((await new GitRepository(f.Repository).GetStatusAsync()).Changes, Is.Empty);
     }
 

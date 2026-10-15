@@ -178,7 +178,7 @@ public class FileStatusListViewTests
                 Rect glyphBounds = new(presenter.TranslatePoint(default, fixture.Window)!.Value, presenter.Bounds.Size);
                 AssertColorGlyph(frame, glyphBounds.Deflate(3), foreground, background, minimum: 4);
             }
-            Assert.That(Rows(fixture.View.Tree).Where(item => item.IsEffectivelyVisible).All(item => item.Bounds.Height >= 24), Is.True);
+            Assert.That(Rows(fixture.View.Tree).Where(item => item.IsEffectivelyVisible).All(item => item.Bounds.Height >= 18), Is.True);
             SplitButton split = Field<SplitButton>(fixture.Window, "FilesViewMode");
             Assert.That(split.GetVisualDescendants().OfType<Image>().Single().Bounds.Width, Is.EqualTo(16));
             split.Flyout!.ShowAt(split); fixture.Window.UpdateLayout(); Dispatcher.UIThread.RunJobs();

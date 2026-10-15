@@ -30,7 +30,7 @@ public sealed partial class MainWindow : Window
     private readonly ListBox _worktrees = new();
     private readonly ListBox _submodules = new() { Name = "SubmodulesList" };
     private readonly ListBox _configuration = new();
-    private readonly ListBox _tree = new();
+    private readonly TreeView _tree = new() { SelectionMode = SelectionMode.Multiple };
     private readonly BranchHistoryFilterComboBox _historyRevision = new();
     private readonly TextBox _filePath = new() { Watermark = "Repository-relative file path", MinWidth = 240 };
     private readonly TextBox _fileView = ReadOnlyText();
@@ -131,7 +131,7 @@ public sealed partial class MainWindow : Window
         };
         _tree.SelectionChanged += async (_, _) =>
         {
-            if (!_refreshing && !_settingGrepTree && _tree.SelectedItem is string path)
+            if (!_refreshing && !_selectingFileContext && !_settingGrepTree && _fileTreeView?.IsUpdating != true && SelectedTreePath is string path)
             {
                 _filePath.Text = path;
                 await ShowSelectedTreeFileAsync(path);
@@ -186,7 +186,7 @@ public sealed partial class MainWindow : Window
             _lifetime.Cancel(); _operation?.Cancel();
             CancelBranchMenuRead();
             _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose(); _dashboard?.Dispose();
-            _revisionFilesView?.Dispose(); _changesFilesView?.Dispose();
+            _revisionFilesView?.Dispose(); _changesFilesView?.Dispose(); _fileTreeView?.Dispose();
             await _backgroundFetch.DisposeAsync();
         };
         AddHandler(KeyDownEvent, HandleShortcuts, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -218,7 +218,7 @@ public sealed partial class MainWindow : Window
             new TabItem { Header = "Stashes", Content = Panel(_stashes, Row(Button("Create…", StashAsync), Button("Apply", () => ApplyStashAsync(false)), Button("Pop", () => ApplyStashAsync(true)), Button("Delete…", DropStashAsync), Button("Show diff", ShowStashAsync))) },
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", () => RunAsync("Prune worktrees", r => r.PruneWorktreesAsync(cancellationToken: Token))))) },
             new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Initialize / update", UpdateSubmodulesAndBuildAsync), Button("Sync URLs", () => RunAsync("Sync submodules", r => r.SyncSubmodulesAsync(cancellationToken: Token))), BuildSubmoduleRemovalButton(), Button("Open", OpenSubmoduleAsync))) },
-            new TabItem { Header = "Files", Content = Split(BuildFilesPanel(), BuildGrepFileContent()) },
+            new TabItem { Header = "Files", Content = BuildFileTreePane() },
             new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync), Button(_translations.Translate("DiffViewerSettingsPage", "$this", "Text", "Diff viewer") + "…", DiffViewerSettingsAsync))) },
             new TabItem { Header = "Repository", Content = BuildRepositoryTools() }
         ];
@@ -379,7 +379,7 @@ public sealed partial class MainWindow : Window
             string treeRevision = visibleHistory.FirstOrDefault(commit => commit.Hash == selectedHash)?.Hash
                 ?? visibleHistory.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))?.Hash
                 ?? visibleHistory.FirstOrDefault()?.Hash ?? "HEAD";
-            string[] tree = status.IsUnborn ? [] : (await repository.GetTreeAsync(treeRevision, cancellationToken: Token)).Select(entry => entry.Path).ToArray();
+            IReadOnlyList<GitTreeEntry> tree = status.IsUnborn ? [] : await repository.GetTreeAsync(treeRevision, cancellationToken: Token);
             Token.ThrowIfCancellationRequested();
             if (opening)
             {
@@ -437,6 +437,9 @@ public sealed partial class MainWindow : Window
             _commitContent?.ClearImage(); _diff.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
             _changesContent?.ClearImage(); _changesDiff.Text = null; _selectedPatch = null; _hunks.ItemsSource = null;
             if (changedRepository) { _fileContent?.ClearImage(); _fileView.Text = null; _filePath.Text = null; }
+            if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is string treePath
+                && (!_fileGrepSettings.ShowSearchBox || _fileGrepSettings.Expression.Length == 0))
+            { await LoadTreeFileAsync(repository, treePath); }
             if (_commits.SelectedItem is GitCommit selectedCommit)
             {
                 await LoadCommitFilesAsync(repository, selectedCommit.Hash, selectedRevisionDiff);

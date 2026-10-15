@@ -132,7 +132,7 @@ public sealed partial class GitRepository
             // Validate every collision/deletion before resetting any selected index entry.
             foreach (string path in sources.Keys)
             {
-                ValidateStashFileLocation(path);
+                ValidateWorktreeFileLocation(path);
                 string fullPath = System.IO.Path.Combine(Path, path);
                 if (!indexed.Contains(path) && (File.Exists(fullPath) || Directory.Exists(fullPath) || new FileInfo(fullPath).LinkTarget is not null))
                 { throw new InvalidOperationException("An untracked path would be overwritten: " + path); }
@@ -141,7 +141,7 @@ public sealed partial class GitRepository
             }
             if (deleteNewFiles)
             {
-                foreach (string path in missing) { ValidateStashFileDeletion(path); }
+                foreach (string path in missing) { ValidateWorktreeFileDeletion(path); }
             }
             // Windows first unstages selected paths towards HEAD, then checks out existing
             // snapshot files. Optional deletion affects the worktree, not the HEAD index entry.
@@ -155,7 +155,7 @@ public sealed partial class GitRepository
                 foreach (string path in missing)
                 {
                     token.ThrowIfCancellationRequested();
-                    ValidateStashFileDeletion(path);
+                    ValidateWorktreeFileDeletion(path);
                     File.Delete(System.IO.Path.Combine(Path, path));
                 }
             }
@@ -198,15 +198,15 @@ public sealed partial class GitRepository
         => files.SelectMany(file => file.Status == 'R' && file.OriginalPath is not null ? new[] { file.OriginalPath, file.Path } : [file.Path])
             .Distinct(StringComparer.Ordinal).ToArray();
 
-    private void ValidateStashFileDeletion(string path)
+    private void ValidateWorktreeFileDeletion(string path)
     {
-        ValidateStashFileLocation(path);
+        ValidateWorktreeFileLocation(path);
         string fullPath = System.IO.Path.Combine(Path, path);
         if (Directory.Exists(fullPath) && new DirectoryInfo(fullPath).LinkTarget is null)
-        { throw new InvalidOperationException("Resetting stash files cannot delete a directory: " + path); }
+        { throw new InvalidOperationException("Resetting files cannot delete a directory: " + path); }
     }
 
-    private void ValidateStashFileLocation(string path)
+    private void ValidateWorktreeFileLocation(string path)
     {
         string fullPath = System.IO.Path.Combine(Path, path);
         for (string? parent = System.IO.Path.GetDirectoryName(fullPath); parent is not null && parent != Path; parent = System.IO.Path.GetDirectoryName(parent))

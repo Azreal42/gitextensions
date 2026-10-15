@@ -13,6 +13,7 @@ public sealed partial class MainWindow
     private FileGrepSettings _fileGrepSettings = new(ShowSearchBox: false);
     private Control? _fileGrepBar;
     private string[] _allFileTreePaths = [];
+    private IReadOnlyDictionary<string, GitTreeEntry> _fileTreeEntries = new Dictionary<string, GitTreeEntry>();
     private GitRepository? _fileTreeRepository;
     private string? _fileTreeRevision;
     private GitGrepResult? _fileGrepResult;
@@ -23,10 +24,32 @@ public sealed partial class MainWindow
     internal bool IsFileGrepBusy { get; private set; }
     internal GitGrepResult? FileGrepResult => _fileGrepResult;
 
+    private FileStatusListView? _fileTreeView;
+    private string? SelectedTreePath => (_tree.SelectedItem as TreeViewItem)?.Tag as string;
+
+    private Control BuildFileTreePane()
+    {
+        Grid pane = new() { Name = "FileTreeSplit", ColumnDefinitions = new("240,4,*") };
+        pane.Children.Add(ClassicChrome.Border(BuildFilesPanel(), new Thickness(0, 0, 1, 0)));
+        GridSplitter splitter = new() { Width = 4, MinWidth = 4, HorizontalAlignment = HorizontalAlignment.Stretch };
+        Grid.SetColumn(splitter, 1); pane.Children.Add(splitter);
+        Control content = BuildGrepFileContent(); Grid.SetColumn(content, 2); pane.Children.Add(content);
+        return pane;
+    }
+
     private Control BuildFilesPanel()
     {
         _tree.Name = "CommitFileTree";
-        Button search = Button("Search…", SearchAsync); search.Name = "FindInCommitFiles";
+        _fileTreeView = new FileStatusListView(_tree, FileTreeEntryHeader, fileTreeMode: true) { Name = "CommitFileStatusList" };
+        ConfigureFileContextMenu(_tree, isFileTree: true);
+        _fileTreeView.DisplayChanged += async (_, _) =>
+        {
+            if (!_refreshing && !_settingGrepTree && !_busy && !_selectingFileContext)
+            {
+                if (SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
+                else { _filePath.Text = null; ClearFileGrepViewer(); }
+            }
+        };
         Button clear = new() { Name = "ClearFileGrep", Content = "×", Height = 24, Width = 24, MinWidth = 0, Padding = default };
         clear.Click += (_, _) => UpdateFileGrepSettings(_fileGrepSettings with { Expression = "" });
         Grid filter = new() { Name = "FileGrepBar", ColumnDefinitions = new("*,Auto"), IsVisible = false };
@@ -40,7 +63,8 @@ public sealed partial class MainWindow
             }
         };
         Closed += (_, _) => { CancelFileGrep(); _fileGrepNavigation?.Cancel(); };
-        return Panel(_tree, Row(_filePath, Button("Blame", BlameAsync), Button("File history", FileHistoryAsync), search), filter);
+        DockPanel panel = new(); DockPanel.SetDock(filter, Dock.Top); panel.Children.Add(filter); panel.Children.Add(_fileTreeView);
+        return panel;
     }
 
     private Control BuildGrepFileContent()
@@ -78,16 +102,27 @@ public sealed partial class MainWindow
         if (!settings.ShowSearchBox || settings.Expression.Length == 0) { ClearFileGrep(); }
     }
 
-    private void SetFileTreePaths(GitRepository repository, string revision, string[] paths)
+    private void SetFileTreePaths(GitRepository repository, string revision, IReadOnlyList<GitTreeEntry> entries)
     {
+        _fileTreeEntries = entries.ToDictionary(entry => entry.Path, StringComparer.Ordinal);
+        string[] paths = entries.Select(entry => entry.Path).ToArray();
         bool changed = _fileTreeRepository?.Path != repository.Path || _fileTreeRevision != revision;
         if (changed) { CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null; }
         _fileTreeRepository = repository; _fileTreeRevision = revision; _allFileTreePaths = paths;
         _settingGrepTree = true;
-        try { _tree.ItemsSource = paths; }
+        try { UpdateFileTreeEntries(paths); }
         finally { _settingGrepTree = false; }
         if (_fileGrepSettings.ShowSearchBox && _fileGrepSettings.Expression.Length > 0)
         { Dispatcher.UIThread.Post(async () => await SearchFileGrepAsync()); }
+    }
+
+    private Control FileTreeEntryHeader(FileStatusListEntry entry)
+        => _fileTreeView!.CreateFileHeader(entry, _fileTreeEntries.GetValueOrDefault(entry.Path)?.IsSubmodule == true ? "FolderSubmodule.png" : "File.png");
+
+    private void UpdateFileTreeEntries(string[] paths)
+    {
+        _fileTreeView!.SetGroups([new FileStatusListGroup("tree", "tree", new TextBlock(),
+            paths.Select(path => new FileStatusListEntry(path, path, Status: ' ')).ToArray())]);
     }
 
     private void CancelFileGrep()
@@ -99,7 +134,7 @@ public sealed partial class MainWindow
     {
         CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;
         _settingGrepTree = true;
-        try { _tree.ItemsSource = _allFileTreePaths; }
+        try { UpdateFileTreeEntries(_allFileTreePaths); }
         finally { _settingGrepTree = false; }
     }
 
@@ -135,18 +170,23 @@ public sealed partial class MainWindow
             _fileGrepResult = result;
             _fileGrepHistory.RemoveAll(item => item == settings.Expression); _fileGrepHistory.Insert(0, settings.Expression);
             if (_fileGrepHistory.Count > 30) { _fileGrepHistory.RemoveRange(30, _fileGrepHistory.Count - 30); }
-            string? previous = _tree.SelectedItem as string;
+            string? previous = SelectedTreePath;
             string[] paths = result.Matches.Where(match => !match.IsContext && match.HasLosslessPath)
                 .Select(match => match.Path).Concat(result.BinaryMatches.Where(match => match.HasLosslessPath).Select(match => match.Path))
                 .Distinct(StringComparer.Ordinal).ToArray();
             _settingGrepTree = true;
-            try { _tree.ItemsSource = paths; _tree.SelectedItem = paths.FirstOrDefault(path => path == previous) ?? paths.FirstOrDefault(); }
+            try
+            {
+                UpdateFileTreeEntries(paths);
+                if ((paths.FirstOrDefault(path => path == previous) ?? paths.FirstOrDefault()) is string selectedPath)
+                { _fileTreeView!.SelectTags([selectedPath]); }
+            }
             finally { _settingGrepTree = false; }
             int blocked = result.Matches.Count(match => !match.IsContext && !match.HasLosslessPath) + result.BinaryMatches.Count(match => !match.HasLosslessPath);
             _state.Text = result.Matches.Count(match => !match.IsContext) + " source-line matches in " + paths.Length + " files"
                 + (result.BinaryMatches.Count == 0 ? "" : "; " + result.BinaryMatches.Count + " binary file matches (no line or column)")
                 + (blocked == 0 ? "" : "; non-UTF8 pathnames cannot be navigated") + (result.StandardError.Length == 0 ? "" : "; " + result.StandardError.Trim());
-            if (_tree.SelectedItem is string selected) { _filePath.Text = selected; await ShowGrepFileAsync(selected); }
+            if (SelectedTreePath is string selected) { _filePath.Text = selected; await ShowGrepFileAsync(selected); }
             else { _filePath.Text = null; ClearFileGrepViewer(); }
         }
         catch (OperationCanceledException) { }
@@ -155,7 +195,7 @@ public sealed partial class MainWindow
             if (version == _fileGrepVersion && _repository == repository)
             {
                 LastException = ex; _state.Text = ex.Message; AppendOutput(ex.Message);
-                _settingGrepTree = true; try { _tree.ItemsSource = _allFileTreePaths; } finally { _settingGrepTree = false; }
+                _settingGrepTree = true; try { UpdateFileTreeEntries(_allFileTreePaths); } finally { _settingGrepTree = false; }
             }
         }
         finally { if (version == _fileGrepVersion) { IsFileGrepBusy = false; } }
@@ -182,7 +222,7 @@ public sealed partial class MainWindow
             byte[] bytes = result.Revision is string hash ? await repository.GetFileBytesAsync(path, hash, token)
                 : await repository.GetComparisonFileBytesAsync(new GitCompareRevision(Kind: result.Cached ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree), path, token);
             token.ThrowIfCancellationRequested();
-            if (version != _fileGrepVersion || _repository != repository || _fileGrepResult != result || _tree.SelectedItem as string != path) { return; }
+            if (version != _fileGrepVersion || _repository != repository || _fileGrepResult != result || SelectedTreePath != path) { return; }
             _fileContent.ShowFile(path, bytes, result.EncodingName);
             GitDecodedFile decoded = GitFileEncodingCodec.DecodeFile(bytes, viewer.FileEncodingName ?? result.EncodingName);
             if (decoded.IsLossless && hit?.TextColumn is int column && viewer.GoToFileLine(hit.LineNumber))

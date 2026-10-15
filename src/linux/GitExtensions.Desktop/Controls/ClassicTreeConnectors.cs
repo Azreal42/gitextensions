@@ -8,7 +8,7 @@ using Avalonia.VisualTree;
 namespace GitExtensions.Linux.Desktop.Controls;
 
 /// <summary>Non-interactive dotted hierarchy lines, measured from the native headers and clipped to their viewport.</summary>
-internal sealed class ClassicTreeConnectors(TreeView tree) : Control
+internal sealed class ClassicTreeConnectors(TreeView tree, double indent = ClassicTreeViewAppearance.Indent, bool showRootLines = true) : Control
 {
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -44,7 +44,7 @@ internal sealed class ClassicTreeConnectors(TreeView tree) : Control
                 var rows = siblings.Select(item => (Item: item, Header: Header(item))).Where(row => row.Header is not null).ToArray();
                 if (rows.Length == 0) { return; }
                 Rect first = rows[0].Header!.Value;
-                double x = Math.Floor(first.X + ClassicTreeViewAppearance.Indent / 2) + .5;
+                double x = Math.Floor(first.X + indent / 2) + .5;
                 double top = parent?.Bottom ?? first.Center.Y;
                 foreach ((TreeViewItem item, Rect? bounds) in rows)
                 {
@@ -53,9 +53,10 @@ internal sealed class ClassicTreeConnectors(TreeView tree) : Control
                     double end = expandable ? y - 5 : y;
                     // Place dash boundaries on whole pixels: half-pixel endpoints
                     // blend adjacent 1px dashes into an apparently solid line.
-                    if (Math.Floor(end) > Math.Ceiling(top)) { context.DrawLine(pen, new Point(x, Math.Ceiling(top)), new Point(x, Math.Floor(end))); }
+                    bool draw = parent is not null || showRootLines;
+                    if (draw && Math.Floor(end) > Math.Ceiling(top)) { context.DrawLine(pen, new Point(x, Math.Ceiling(top)), new Point(x, Math.Floor(end))); }
                     double start = expandable ? x + 5 : x;
-                    context.DrawLine(pen, new Point(Math.Ceiling(start), y), new Point(Math.Floor(header.X + ClassicTreeViewAppearance.Indent - 2), y));
+                    if (draw) { context.DrawLine(pen, new Point(Math.Ceiling(start), y), new Point(Math.Floor(header.X + indent - 2), y)); }
                     top = expandable ? y + 5 : y;
                     if (item.IsExpanded) { DrawSiblings(item.Items.OfType<TreeViewItem>().ToArray(), header); }
                 }

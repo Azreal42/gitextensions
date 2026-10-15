@@ -287,7 +287,7 @@ public class CommitDisplayFilterTests
                 TreeView tree = View(dialog, isStaged).Tree;
                 foreach (TreeViewItem leaf in FileStatusTestHelpers.Rows(tree).Where(item => item.Tag is GitChange && item.IsEffectivelyVisible))
                 {
-                    Assert.That(leaf.Bounds.Height, Is.EqualTo(24));
+                    Assert.That(leaf.Bounds.Height, Is.EqualTo(18));
                     Assert.That(leaf.Header, Is.TypeOf<Grid>());
                     Assert.That(((Grid)leaf.Header!).Children.OfType<Image>().Single().Width, Is.EqualTo(16));
                 }

@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using GitExtensions.Desktop.Controls;
 using GitCommands.Settings;
+using GitExtensions.Linux.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -52,7 +53,7 @@ public sealed partial class MainWindow
     private Control BuildFileContent()
     {
         _fileContent = new FileContentView(_fileView);
-        return Panel(_fileContent, Row(_fileContent.TextView.ReadingMenu.CreateEncodingSelector()));
+        return _fileContent;
     }
 
     private void RequestDiffAppearanceReload(object? sender, EventArgs args)
@@ -79,13 +80,9 @@ public sealed partial class MainWindow
         _commitContent.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
             await ChangeRevisionViewerOptionsAsync(_commitContent.TextView.ComparisonMenu.Options);
         _commitContent.TextView.DisplayOptionsChanged += RequestDiffAppearanceReload;
-        _revisionFiles.Styles.Add(new Style(selector => selector.OfType<TreeViewItem>())
-        {
-            Setters = { new Setter(PaddingProperty, new Thickness(0)), new Setter(MinHeightProperty, 24d) }
-        });
         _revisionFiles.SelectionChanged += async (_, args) =>
         {
-            if (args.Source == _revisionFiles && !_loadingCommitFiles && _revisionFilesView?.IsUpdating != true && !_refreshing && !_busy
+            if (args.Source == _revisionFiles && !_selectingFileContext && !_loadingCommitFiles && _revisionFilesView?.IsUpdating != true && !_refreshing && !_busy
                 && _revisionFiles.SelectedItem is TreeViewItem item)
             {
                 await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, item), refresh: false);
@@ -106,10 +103,11 @@ public sealed partial class MainWindow
             _revisionDiffPreferences with { ShowDiffForAllParents = allParents.IsChecked });
         omit.Click += async (_, _) => await ChangeRevisionDiffPreferencesAsync(
             _revisionDiffPreferences with { OmitUninterestingDiff = omit.IsChecked });
-        _revisionFilesView = new FileStatusListView(_revisionFiles, RevisionDiffFileHeader) { Name = "RevisionFileStatusList" };
+        _revisionFilesView = new FileStatusListView(_revisionFiles) { Name = "RevisionFileStatusList", GroupByRevision = true };
+        ConfigureFileContextMenu(_revisionFiles, isFileTree: false);
         _revisionFilesView.SettingsMenu.Items.Add(allParents);
         _revisionFilesView.SettingsMenu.Items.Add(omit);
-        _revisionFilesView.Toolbar.Children.Add(RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
+        _revisionFilesView.Toolbar.Children.Insert(1, RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
             _commits.SelectedItem is GitCommit commit ? RunAsync("File diff", repository => LoadCommitFilesAsync(repository, commit.Hash), refresh: false) : Task.CompletedTask));
         _revisionFilesView.DisplayChanged += async (_, _) =>
         {
@@ -118,9 +116,11 @@ public sealed partial class MainWindow
             { await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, selected), refresh: false); }
             else { _commitContent?.ClearImage(); _diff.Text = ""; }
         };
-        Grid split = new() { Name = "RevisionDiffSplit", ColumnDefinitions = new ColumnDefinitions("300,7,*") };
+        _revisionFilesView.Toolbar.Children.Insert(_revisionFilesView.Toolbar.Children.Count - 1,
+            RevisionDiffIconButton("RevisionFilesFindInCommitFiles", "Find in commit files using git-grep...", "ViewFile.png", OpenFileGrepFromDiffAsync));
+        Grid split = new() { Name = "RevisionDiffSplit", ColumnDefinitions = new ColumnDefinitions("420,4,*") };
         split.Children.Add(ClassicChrome.Border(_revisionFilesView, new Thickness(0, 0, 1, 0)));
-        GridSplitter splitter = new() { Name = "RevisionDiffSplitter", Width = 7, HorizontalAlignment = HorizontalAlignment.Stretch };
+        GridSplitter splitter = new() { Name = "RevisionDiffSplitter", Width = 4, MinWidth = 4, HorizontalAlignment = HorizontalAlignment.Stretch };
         Grid.SetColumn(splitter, 1);
         split.Children.Add(splitter);
         DockPanel viewer = new();
@@ -238,22 +238,6 @@ public sealed partial class MainWindow
         finally { _loadingCommitFiles = false; }
     }
 
-    private Control RevisionDiffFileHeader(FileStatusListEntry entry)
-    {
-        string caption = ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path)
-            + (entry.OriginalPath is null ? "" : " ← " + ExportDialogControls.DisplayPath(entry.OriginalPath));
-        StackPanel source = (StackPanel)IconLabel(caption, FileStatusListView.IconName(entry));
-        Image image = (Image)source.Children[0];
-        source.Children.Remove(image);
-        TextBlock label = new() { Text = caption, Margin = new Thickness(4, 0), VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis };
-        Grid header = new() { ColumnDefinitions = new ColumnDefinitions("16,*"), Height = 24, ClipToBounds = true };
-        header.Children.Add(image);
-        Grid.SetColumn(label, 1); header.Children.Add(label);
-        ToolTip.SetTip(header, caption);
-        return header;
-    }
-
     private Control RevisionDiffGroupHeader(GitRevisionDiffGroup group, int? shown = null, int? total = null)
     {
         string shortRevision = group.BaseRevision is null ? group.Revision[..Math.Min(9, group.Revision.Length)]
@@ -272,7 +256,9 @@ public sealed partial class MainWindow
         {
             int count = total ?? group.Files.Count;
             string fraction = shown is int visible && visible < count ? visible + "/" : "";
-            text.Text = "(" + fraction + count + ") " + text.Text;
+            string? subject = _history.FirstOrDefault(commit => commit.Hash == group.BaseRevision)?.Subject;
+            text.Text = "(" + fraction + count + ") " + text.Text + (subject is null ? "" : ": " + subject);
+            panel.Height = ClassicTreeViewAppearance.RowHeight;
         }
         return header;
     }

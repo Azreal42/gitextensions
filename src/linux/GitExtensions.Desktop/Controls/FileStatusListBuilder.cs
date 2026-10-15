@@ -6,11 +6,11 @@ namespace GitExtensions.Desktop.Controls;
 public static class FileStatusListBuilder
 {
     public static IReadOnlyList<FileStatusListNode> Build(IReadOnlyList<FileStatusListModelGroup> groups,
-        FileStatusListOptions options, Func<FileStatusListEntry, bool>? matches = null)
+        FileStatusListOptions options, Func<FileStatusListEntry, bool>? matches = null, bool groupByRevision = false)
     {
         ArgumentNullException.ThrowIfNull(groups); ArgumentNullException.ThrowIfNull(options);
         List<FileStatusListNode> roots = [];
-        bool showRevisionGroups = groups.Count > 1;
+        bool showRevisionGroups = groups.Count > 1 || groupByRevision && groups.Any(group => group.Entries.Count > 0);
         foreach (FileStatusListModelGroup group in groups)
         {
             FileStatusListEntry[] entries = group.Entries.Where(entry => group.AlwaysVisible || matches?.Invoke(entry) != false).ToArray();

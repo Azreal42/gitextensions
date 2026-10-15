@@ -38,12 +38,18 @@ public class FileHistoryDialogTests
         TabControl tabs = Field<TabControl>(window, "DetailsTabs");
         tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "FileTreeTab");
         window.UpdateLayout();
-        ListBox tree = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Items.OfType<string>().Contains(LiteralPath));
-        tree.SelectedItem = LiteralPath;
+        await Until(() => !window.IsBusy);
+        FileStatusListView fileList = Field<FileStatusListView>(window, "CommitFileStatusList");
+        TreeView tree = fileList.Tree; fileList.SelectTags([LiteralPath]);
         await Until(() => !window.IsBusy);
         string originalPreview = window.GetVisualDescendants().OfType<FileContentView>().Single(view => view.IsEffectivelyVisible).TextView.Text;
-        Button Action(string label) => window.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == label);
-        Action("File history").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        MenuItem Action(string name)
+        {
+            tree.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Control.ContextRequestedEvent, Source = tree });
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            return tree.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == name);
+        }
+        Action("tsmiFileHistory").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); tree.ContextMenu!.Close();
         await Until(() => window.OwnedWindows.OfType<FileHistoryDialog>().Any());
         FileHistoryDialog history = window.OwnedWindows.OfType<FileHistoryDialog>().Single();
         try
@@ -58,8 +64,8 @@ public class FileHistoryDialogTests
         }
         finally { history.Close(); }
         await Until(() => !window.IsBusy);
-        Assert.That(Action("Blame").IsEnabled, Is.True);
-        Action("Blame").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        MenuItem blameAction = Action("tsmiBlame"); Assert.That(blameAction.IsEnabled, Is.True);
+        blameAction.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); tree.ContextMenu!.Close();
         await Until(() => window.OwnedWindows.OfType<BlameDialog>().Any());
         BlameDialog blame = window.OwnedWindows.OfType<BlameDialog>().Single();
         try

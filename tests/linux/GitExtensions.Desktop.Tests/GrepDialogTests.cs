@@ -29,7 +29,7 @@ public class GrepDialogTests
         MainWindow main = await f.ShowAsync(); string hash = await f.Repository.ResolveRevisionAsync("HEAD"), before = await f.SnapshotAsync();
         FindInCommitFilesDialog dialog = await Open(main); Enter(dialog, "café"); Click(Find<Button>(dialog, "GrepFind"));
         await Until(() => !dialog.IsVisible && !main.IsFileGrepBusy && main.FileGrepResult is not null);
-        ListBox files = Find<ListBox>(main, "CommitFileTree"); Assert.That(files.Items.OfType<string>(), Is.EqualTo(new[] { path }));
+        TreeView files = Find<TreeView>(main, "CommitFileTree"); Assert.That(FileStatusTestHelpers.Rows(files).Select(item => item.Tag).OfType<string>(), Is.EqualTo(new[] { path }));
         FileContentView content = Find<FileContentView>(main, "CommitFileContent");
         Assert.That(content.TextView.Text, Is.EqualTo(source)); Assert.That(content.TextView.SyntaxPath, Is.EqualTo(path));
         Assert.That(content.TextView.DocumentIdentity, Is.EqualTo(string.Join('\0', f.Root, path, hash, "blob")));
@@ -53,13 +53,13 @@ public class GrepDialogTests
         Assert.That(Find<AutoCompleteBox>(dialog, "GrepExpression").GetVisualDescendants().OfType<TextBox>().Single().Text, Is.EqualTo("target"));
         Assert.That(dialog.ActualThemeVariant, Is.EqualTo(main.ActualThemeVariant));
         dialog.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.Escape, RawInputModifiers.None);
-        await Until(() => !dialog.IsVisible); Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EqualTo(new[] { "matching.txt" }));
+        await Until(() => !dialog.IsVisible); Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EqualTo(new[] { "matching.txt" }));
         dialog = await Open(main); Click(Find<CheckBox>(dialog, "GrepShowSearchBox")); dialog.Close(); await Until(() => !dialog.IsVisible);
         Assert.That(main.FileGrepResult, Is.Null); Assert.That(Find<Control>(main, "FileGrepBar").IsVisible, Is.False);
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EquivalentTo(new[] { "seed.txt", "matching.txt" }));
+        Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EquivalentTo(new[] { "seed.txt", "matching.txt" }));
         dialog = await Open(main); Enter(dialog, "target"); Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible);
         TextBox input = Find<TextBox>(main, "FileGrepExpression"); input.Focus(); input.SelectAll(); main.KeyPressQwerty(PhysicalKey.Backspace, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.Backspace, RawInputModifiers.None); Pump(main);
-        Assert.That(main.FileGrepResult, Is.Null); Assert.That(Find<ListBox>(main, "CommitFileTree").Items.Count, Is.EqualTo(2));
+        Assert.That(main.FileGrepResult, Is.Null); Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Count(item => item.Tag is string), Is.EqualTo(2));
     }
 
     [AvaloniaTest]
@@ -68,11 +68,11 @@ public class GrepDialogTests
         await using Fixture f = await Fixture.CreateAsync(); await f.WriteAsync("exact.txt", "CAT\n"); await f.WriteAsync("suffix.txt", "catfish\n"); await f.CommitAsync(); MainWindow main = await f.ShowAsync();
         FindInCommitFilesDialog dialog = await Open(main); Enter(dialog, "cat"); Click(Find<CheckBox>(dialog, "GrepMatchCase")); Click(Find<CheckBox>(dialog, "GrepMatchWholeWord"));
         TextBox options = Find<TextBox>(dialog, "GrepOptions"); options.Focus(); dialog.KeyTextInput("--fixed-strings"); Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible);
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EqualTo(new[] { "exact.txt" }));
+        Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EqualTo(new[] { "exact.txt" }));
         dialog = await Open(main); Enter(dialog, "["); options = Find<TextBox>(dialog, "GrepOptions"); options.Focus(); options.SelectAll(); dialog.KeyPressQwerty(PhysicalKey.Backspace, RawInputModifiers.None); dialog.KeyReleaseQwerty(PhysicalKey.Backspace, RawInputModifiers.None);
         Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible);
         Assert.That(main.LastException, Is.TypeOf<GitCommandException>()); Assert.That(main.FileGrepResult, Is.Null);
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EquivalentTo(new[] { "seed.txt", "exact.txt", "suffix.txt" }));
+        Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EquivalentTo(new[] { "seed.txt", "exact.txt", "suffix.txt" }));
     }
 
     [AvaloniaTest]
@@ -81,16 +81,16 @@ public class GrepDialogTests
         await using Fixture f = await Fixture.CreateAsync(); await f.WriteAsync("old.txt", "target old\n"); await f.CommitAsync(); string oldHash = await f.Repository.ResolveRevisionAsync("HEAD");
         await f.WriteAsync("old.txt", "gone\n"); await f.WriteAsync("new.txt", "target new\n"); await f.CommitAsync(); MainWindow main = await f.ShowAsync();
         FindInCommitFilesDialog dialog = await Open(main); Enter(dialog, "target"); Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible);
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EqualTo(new[] { "new.txt" }));
+        Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EqualTo(new[] { "new.txt" }));
         ListBox commits = Find<ListBox>(main, "RevisionHistory"); commits.SelectedItem = commits.Items.OfType<GitCommit>().Single(commit => commit.Hash == oldHash);
         await Until(() => !main.IsBusy && !main.IsFileGrepBusy && main.FileGrepResult?.Revision == oldHash);
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EqualTo(new[] { "old.txt" }));
+        Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EqualTo(new[] { "old.txt" }));
         Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.Text, Is.EqualTo("target old\n"));
         GitRepository other = await GitRepository.InitAsync(Path.Combine(f.Root, "other-repository")); await Fixture.Configure(other);
         await File.WriteAllTextAsync(Path.Combine(other.Path, "other.txt"), "no match\n"); await other.StageAllAsync(); await other.CommitAsync("Other source");
         await main.OpenRepositoryAsync(other.Path); await Until(() => !main.IsBusy && !main.IsFileGrepBusy && main.FileGrepResult is not null);
         Assert.That(main.FileGrepResult!.Revision, Is.EqualTo(await other.ResolveRevisionAsync("HEAD"))); Assert.That(main.FileGrepResult.HasMatches, Is.False);
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items, Is.Empty); Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.Text, Is.Empty.Or.Null);
+        Assert.That(Find<TreeView>(main, "CommitFileTree").Items, Is.Empty); Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.Text, Is.Empty.Or.Null);
         Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.IsDocumentReady, Is.False); Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.DocumentIdentity, Is.Null);
     }
 
@@ -128,14 +128,14 @@ public class GrepDialogTests
         FindInCommitFilesDialog dialog = await Open(main); Enter(dialog, "target"); Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible);
         Assert.That(main.FileGrepResult!.HasMatches, Is.True); Assert.That(main.FileGrepResult.Matches, Is.Empty);
         GitGrepBinaryMatch binary = main.FileGrepResult.BinaryMatches.Single(); Assert.That(binary.Path, Is.EqualTo(path)); Assert.That(binary.PathBytes.ToArray(), Is.EqualTo(Encoding.UTF8.GetBytes(path)));
-        Assert.That(Find<ListBox>(main, "CommitFileTree").Items.OfType<string>(), Is.EqualTo(new[] { path }));
+        Assert.That(FileStatusTestHelpers.Rows(Find<TreeView>(main, "CommitFileTree")).Select(item => item.Tag).OfType<string>(), Is.EqualTo(new[] { path }));
         FileContentView content = Find<FileContentView>(main, "CommitFileContent"); Assert.That(content.TextView.Text, Is.EqualTo("Binary file\n" + Convert.ToHexString(source)));
         Assert.That(content.TextView.SyntaxPath, Is.Null); Assert.That(content.TextView.DocumentIdentity, Is.EqualTo(string.Join('\0', f.Root, path, hash, "blob")));
         Assert.That(main.LastException, Is.Null);
         content.TextView.Select(12, 4); dialog = await Open(main); Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible); Pump(main);
         Assert.That(content.TextView.SelectionLength, Is.EqualTo(4), "A binary filename match has no source coordinates that could override the reader's position.");
         dialog = await Open(main); TextBox options = Find<TextBox>(dialog, "GrepOptions"); options.Focus(); dialog.KeyTextInput("-I"); Click(Find<Button>(dialog, "GrepFind")); await GrepIdle(main); await Until(() => !dialog.IsVisible);
-        Assert.That(main.FileGrepResult!.HasMatches, Is.False); Assert.That(Find<ListBox>(main, "CommitFileTree").Items, Is.Empty);
+        Assert.That(main.FileGrepResult!.HasMatches, Is.False); Assert.That(Find<TreeView>(main, "CommitFileTree").Items, Is.Empty);
         Assert.That(await f.SnapshotAsync(), Is.EqualTo(before)); Assert.That(await File.ReadAllBytesAsync(f.File(path)), Is.EqualTo(Encoding.UTF8.GetBytes("different worktree\n")));
     }
 
@@ -175,7 +175,11 @@ public class GrepDialogTests
     private static async Task GrepIdle(MainWindow main) { await Task.Delay(30); await Until(() => !main.IsBusy && !main.IsFileGrepBusy); Pump(main); }
     private static async Task<FindInCommitFilesDialog> Open(MainWindow main)
     {
-        Click(Find<Button>(main, "FindInCommitFiles")); await Until(() => main.OwnedWindows.OfType<FindInCommitFilesDialog>().Any());
+        await Until(() => !main.IsBusy);
+        TreeView tree = Find<TreeView>(main, "CommitFileTree"); tree.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Avalonia.Controls.Control.ContextRequestedEvent, Source = tree }); Pump(main);
+        await Until(() => tree.ContextMenu!.Items.Count > 0);
+        tree.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "tsmiOpenFindInCommitFilesGitGrepDialog").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        tree.ContextMenu!.Close(); await Until(() => main.OwnedWindows.OfType<FindInCommitFilesDialog>().Any());
         FindInCommitFilesDialog dialog = main.OwnedWindows.OfType<FindInCommitFilesDialog>().Single(); Pump(dialog);
         Assert.That(Find<AutoCompleteBox>(dialog, "GrepExpression").GetVisualDescendants().OfType<TextBox>().Single().IsFocused, Is.True); return dialog;
     }

@@ -172,10 +172,12 @@ public class MainWindowClassicTests
         Assert.That(VisibleDiff(window).Editor.TextArea.IsFocused, Is.True);
         Press(window, Key.D4, RawInputModifiers.Control);
         Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("FileTreeTab"));
+        await Until(() => !window.IsBusy); // The newly visible tree now loads its selected historical blob.
         Press(window, Key.Tab, RawInputModifiers.Control | RawInputModifiers.Shift);
         Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("DiffTab"));
         Press(window, Key.Tab, RawInputModifiers.Control);
         Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("FileTreeTab"));
+        await Until(() => !window.IsBusy);
 
         SelectChanges(window);
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "new.txt"), "F5 refresh\n");

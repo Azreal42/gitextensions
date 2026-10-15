@@ -18,6 +18,7 @@ public sealed partial class MainWindow
             : _fileContent?.TextView.IsKeyboardFocusWithin == true ? _fileContent.TextView : null;
         if (focusedDiff?.HandleReadingShortcut(e) == true) { return; }
         if (focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
+        if (await HandleFilePaneShortcutAsync(e)) { return; }
         Func<Task>? action = (e.Key, e.KeyModifiers) switch
         {
             (Key.F5, KeyModifiers.None) => RefreshAsync,

@@ -40,8 +40,8 @@ public class RevisionDiffGroupTests
         Assert.That(viewer.CanStagePatch, Is.False);
         main.UpdateLayout();
         Grid split = Find<Grid>(main, "RevisionDiffSplit");
-        Assert.That(split.ColumnDefinitions[0].Width.Value, Is.EqualTo(300));
-        Assert.That(Find<GridSplitter>(main, "RevisionDiffSplitter").Bounds.Width, Is.EqualTo(7));
+        Assert.That(split.ColumnDefinitions[0].Width.Value, Is.EqualTo(420));
+        Assert.That(Find<GridSplitter>(main, "RevisionDiffSplitter").Bounds.Width, Is.EqualTo(4));
         Assert.That(tree.TranslatePoint(default, main)!.Value.X + tree.Bounds.Width,
             Is.LessThan(viewer.TranslatePoint(default, main)!.Value.X));
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
@@ -67,7 +67,7 @@ public class RevisionDiffGroupTests
         Assert.That(combined.Items.OfType<TreeViewItem>().Select(File).Select(file => file.Path), Contains.Item(literal));
         combined.IsExpanded = true;
         TreeViewItem literalItem = combined.Items.OfType<TreeViewItem>().Single(item => File(item).Path == literal);
-        string caption = ((Grid)literalItem.Header!).Children.OfType<TextBlock>().Single().Text!;
+        string caption = string.Concat(((Grid)literalItem.Header!).Children.OfType<TextBlock>().Single().Inlines!.OfType<Avalonia.Controls.Documents.Run>().Select(run => run.Text));
         Assert.That(caption, Does.Contain("\\n").And.Not.Contain("\n"));
         tree.SelectedItem = literalItem;
         await Idle(fixture.Window);
@@ -90,8 +90,8 @@ public class RevisionDiffGroupTests
         option.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Idle(main);
         Assert.That(store.Load().ShowDiffForAllParents, Is.False);
-        Assert.That(Files(main).Items.OfType<TreeViewItem>().All(item => item.Tag is RevisionDiffFileSelection), Is.True);
-        Assert.That(Files(main).Items.OfType<TreeViewItem>().Select(item => ((RevisionDiffFileSelection)item.Tag!).Group.BaseRevision).Distinct(),
+        Assert.That(FileStatusTestHelpers.Rows(Files(main)).Any(item => item.Tag is RevisionDiffFileSelection), Is.True);
+        Assert.That(FileStatusTestHelpers.Rows(Files(main)).Select(item => item.Tag).OfType<RevisionDiffFileSelection>().Select(item => item.Group.BaseRevision).Distinct(),
             Is.EqualTo(new[] { ((GitCommit)History(main).SelectedItem!).Parents[0] }));
         MainWindow reopened = new();
         try
@@ -103,7 +103,7 @@ public class RevisionDiffGroupTests
             Find<TabControl>(reopened, "DetailsTabs").SelectedItem = Find<TabControl>(reopened, "DetailsTabs").Items.OfType<TabItem>().Single(tab => tab.Name == "DiffTab");
             reopened.UpdateLayout(); Dispatcher.UIThread.RunJobs();
             Assert.That(Setting(reopened, "RevisionDiffAllParents").IsChecked, Is.False);
-            Assert.That(Files(reopened).Items.OfType<TreeViewItem>().All(item => item.Tag is RevisionDiffFileSelection), Is.True);
+            Assert.That(FileStatusTestHelpers.Rows(Files(reopened)).Any(item => item.Tag is RevisionDiffFileSelection), Is.True);
             MenuItem restored = Setting(reopened, "RevisionDiffAllParents");
             restored.IsChecked = true; restored.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             await Idle(reopened);

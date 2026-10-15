@@ -99,8 +99,8 @@ public class CommitDialogTests
         Assert.That(Find<CheckBox>(dialog, "Amend").Content, Is.EqualTo("Rectifier le commit"));
         Assert.That(FileStatusTestHelpers.Changes(unstaged).Single().Path, Is.EqualTo("file.txt"));
         Assert.That(FileStatusTestHelpers.Changes(staged).Single().Path, Is.EqualTo("file.txt"));
-        Assert.That(unstaged.GetVisualDescendants().OfType<TreeViewItem>().Single().Bounds.Height, Is.EqualTo(24));
-        Assert.That(staged.GetVisualDescendants().OfType<TreeViewItem>().Single().Bounds.Height, Is.EqualTo(24));
+        Assert.That(unstaged.GetVisualDescendants().OfType<TreeViewItem>().Single().Bounds.Height, Is.EqualTo(18));
+        Assert.That(staged.GetVisualDescendants().OfType<TreeViewItem>().Single().Bounds.Height, Is.EqualTo(18));
         Rect unstagedBounds = Bounds(dialog, unstaged);
         Rect stagedBounds = Bounds(dialog, staged);
         Rect diffBounds = Bounds(dialog, diff);
