@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
+using Avalonia.Platform;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -43,6 +45,27 @@ public sealed class CompactNavigationTreeTests
             ToggleButton arrow = root.GetVisualDescendants().OfType<ToggleButton>().Single(control => control.Name == "PART_ExpandCollapseChevron" && control.TemplatedParent == root);
             Assert.That(arrow.Bounds.Size, Is.EqualTo(new Size(7, 7)));
             Assert.That(tree.GetVisualDescendants().OfType<TreeViewItem>().Any(item => Header(item).Bounds.Height > 18), Is.False);
+            // Assert real alternating pixels, not just a DashStyle declaration.
+            // Fractional dash endpoints otherwise look like a continuous gray line.
+            using (var frame = f.Window.CaptureRenderedFrame()!)
+            using (ILockedFramebuffer buffer = frame.Lock())
+            {
+                Assert.That(f.Window.TryFindResource("ClassicDisabledBrush", theme, out object? color), Is.True);
+                byte ink = ((ISolidColorBrush)color!).Color.R;
+                byte[] pixels = new byte[buffer.RowBytes * buffer.Size.Height]; Marshal.Copy(buffer.Address, pixels, 0, pixels.Length);
+                int x = (int)Math.Floor(arrow.TranslatePoint(new Point(3.5, 3.5), f.Window)!.Value.X);
+                int from = (int)Header(root).TranslatePoint(default, f.Window)!.Value.Y + 20;
+                int to = (int)Header(tree.Items.OfType<TreeViewItem>().Skip(1).First()).TranslatePoint(default, f.Window)!.Value.Y - 2;
+                int dots = 0, gaps = 0;
+                byte background = ((ISolidColorBrush)tree.Background!).Color.R;
+                for (int y = from; y < to; y++)
+                {
+                    int offset = y * buffer.RowBytes + x * 4;
+                    if (pixels[offset] == ink && pixels[offset + 1] == ink && pixels[offset + 2] == ink) { dots++; }
+                    if (pixels[offset] == background && pixels[offset + 1] == background && pixels[offset + 2] == background) { gaps++; }
+                }
+                Assert.That(dots, Is.GreaterThan(10)); Assert.That(gaps, Is.GreaterThan(10));
+            }
             Capture(f.Window, tree, "compact-tree-" + theme);
         }
     }

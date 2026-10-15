@@ -194,3 +194,4 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | --- | --- |
 | Chevron compact impossible à cliquer | Un padding du TreeView provoque un BringIntoView horizontal de 6 px au focus, entre appui et relâchement. Mettre le retrait dans les entêtes, garder le viewport sans padding et vérifier un vrai clic immobile. |
 | Une hauteur fixe masque les descendants | La hauteur du TreeViewItem inclut ses enfants ; fixer uniquement le Border d’entête à 18 px et garder une hauteur automatique pour l’item. |
+| Des pointillés deviennent un trait gris | Des limites de tirets de 1 px à demi-pixel mélangent les pixels voisins. Aligner les limites longitudinales sur des pixels entiers et contrôler alternance d’encre et de fond dans le rendu effectif. |

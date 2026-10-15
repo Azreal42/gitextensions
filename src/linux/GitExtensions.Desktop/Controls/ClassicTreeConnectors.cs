@@ -51,9 +51,11 @@ internal sealed class ClassicTreeConnectors(TreeView tree) : Control
                     Rect header = bounds!.Value; double y = Math.Floor(header.Center.Y) + .5;
                     bool expandable = item.Items.Count != 0;
                     double end = expandable ? y - 5 : y;
-                    if (end > top) { context.DrawLine(pen, new Point(x, top), new Point(x, end)); }
+                    // Place dash boundaries on whole pixels: half-pixel endpoints
+                    // blend adjacent 1px dashes into an apparently solid line.
+                    if (Math.Floor(end) > Math.Ceiling(top)) { context.DrawLine(pen, new Point(x, Math.Ceiling(top)), new Point(x, Math.Floor(end))); }
                     double start = expandable ? x + 5 : x;
-                    context.DrawLine(pen, new Point(start, y), new Point(header.X + ClassicTreeViewAppearance.Indent - 2, y));
+                    context.DrawLine(pen, new Point(Math.Ceiling(start), y), new Point(Math.Floor(header.X + ClassicTreeViewAppearance.Indent - 2), y));
                     top = expandable ? y + 5 : y;
                     if (item.IsExpanded) { DrawSiblings(item.Items.OfType<TreeViewItem>().ToArray(), header); }
                 }
