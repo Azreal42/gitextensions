@@ -117,9 +117,11 @@ public sealed partial class GitRepository
     public async Task<GitResult> CommitAsync(GitCommitOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (options.FixupRevision is not null && options.SquashRevision is not null)
+        int targetedKinds = (options.FixupRevision is null ? 0 : 1)
+            + (options.SquashRevision is null ? 0 : 1) + (options.AmendRevision is null ? 0 : 1);
+        if (targetedKinds > 1 || options.Amend && targetedKinds != 0)
         {
-            throw new ArgumentException("A commit cannot be both fixup and squash.", nameof(options));
+            throw new ArgumentException("Choose one targeted commit kind; amending HEAD is a separate operation.", nameof(options));
         }
 
         if (options.Sign == false && options.SigningKey is not null)
@@ -177,6 +179,18 @@ public sealed partial class GitRepository
         if (message is null && options.TemplatePath is not null)
         {
             message = await GetCommitTemplateAsync(options.TemplatePath, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (options.AmendRevision is not null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(message);
+            string target = await ResolveRevisionAsync(options.AmendRevision, cancellationToken).ConfigureAwait(false);
+            GitCommit commit = (await GetLogAsync(1, target, cancellationToken).ConfigureAwait(false)).Single();
+            // FormCommit creates an amend! autosquash commit with an editable replacement
+            // message. This adds a child of HEAD; it never invokes --amend on HEAD itself.
+            // Building the envelope also lets the existing stdin/strict-codec path carry
+            // the edited message without passing it through Git's shell editor command.
+            message = "amend! " + commit.Subject + "\n\n" + message;
         }
 
         if (message is not null)

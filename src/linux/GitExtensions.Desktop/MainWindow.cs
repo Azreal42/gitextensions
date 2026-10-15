@@ -111,20 +111,14 @@ public sealed partial class MainWindow : Window
         _submodules.ItemTemplate = TextTemplate<GitSubmodule>(module => $"{module.Path}  {module.Url}  {(module.IsInitialized ? module.Head : "not initialized")}");
         _commits.SelectionChanged += async (_, _) =>
         {
+            RememberRevisionNavigation();
             RefreshRebaseMenu();
+            RefreshRevisionContextMenu();
             if (!_refreshing) { UpdateHistoryPresentation(); }
             if (!_refreshing && _commits.SelectedItem is GitCommit commit)
             {
-                CancelFileGrepForCommit(commit.Hash);
-                await RunAsync("Commit diff", async repository =>
-                {
-                    await LoadCommitFilesAsync(repository, commit.Hash);
-                    UpdateCommitInfo(commit);
-                    SetFileTreePaths(repository, commit.Hash, (await repository.GetTreeAsync(commit.Hash, cancellationToken: Token)).Select(entry => entry.Path).ToArray());
-                    _fileContent?.ClearImage();
-                    _fileView.Text = null;
-                    _gpgInfo.Text = null;
-                }, refresh: false);
+                if (_selectingRevisionForContextMenu) { _contextRevisionDiffPending = true; UpdateCommitInfo(commit); }
+                else { await LoadSelectedRevisionDetailsAsync(commit); }
             }
         };
         _changes.SelectionChanged += async (_, _) =>
@@ -532,6 +526,7 @@ public sealed partial class MainWindow : Window
         RefreshBranchMenu();
         RefreshSubmoduleRemovalButton();
         RefreshRebaseMenu();
+        RefreshRevisionContextMenu();
         _browserToolbar?.Place();
     }
 

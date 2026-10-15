@@ -15,10 +15,14 @@ using System.Text.RegularExpressions;
 
 namespace GitExtensions.Linux.Desktop;
 
+public enum TargetedCommitKind { Normal, Fixup, Squash, Amend }
+
 /// <summary>The FormCommit layout and workflows, using the existing Git backend and translation catalogue.</summary>
 public sealed class CommitDialog : Window
 {
     private readonly GitRepository _repository;
+    private readonly TargetedCommitKind _initialKind;
+    private readonly GitCommit? _initialTarget;
     private readonly Func<Window, CancellationToken, Task>? _afterSubmoduleUpdateAsync;
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly CancellationTokenSource _lifetime = new();
@@ -91,10 +95,16 @@ public sealed class CommitDialog : Window
     private bool _forcePushAfterSoftReset;
 
     public CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore = null,
-        Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null)
+        Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
+        TargetedCommitKind initialKind = TargetedCommitKind.Normal, GitCommit? targetCommit = null)
     {
         ArgumentNullException.ThrowIfNull(repository);
+        if (!Enum.IsDefined(initialKind)) { throw new ArgumentOutOfRangeException(nameof(initialKind)); }
+        if (initialKind != TargetedCommitKind.Normal && targetCommit is null)
+        { throw new ArgumentException("A targeted commit requires the selected revision.", nameof(targetCommit)); }
         _repository = repository;
+        _initialKind = initialKind;
+        _initialTarget = targetCommit;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferencesStore = preferencesStore ?? new CommitPreferencesStore();
         _preferences = _preferencesStore.Load();
@@ -126,7 +136,7 @@ public sealed class CommitDialog : Window
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
         _sign.ItemsSource = new[] { T("Git default GPG signing"), T("Do not sign commit"), T("Sign with default GPG"), T("Sign with specific GPG") };
-        _kind.ItemsSource = new[] { T("Normal commit"), "Fixup", "Squash" };
+        _kind.ItemsSource = new[] { T("Normal commit"), "Fixup", "Squash", "Amend" };
         _sign.SelectedIndex = _kind.SelectedIndex = 0;
         _target.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) => new TextBlock
         {
@@ -272,6 +282,17 @@ public sealed class CommitDialog : Window
     {
         await RefreshDataAsync();
         _drafts = await CommitDraftStore.OpenAsync(_repository, OperationToken);
+        if (_initialKind != TargetedCommitKind.Normal)
+        {
+            GitCommit target = _initialTarget ?? throw new InvalidOperationException("The targeted commit is missing.");
+            _kind.SelectedIndex = (int)_initialKind;
+            _amend.IsChecked = false;
+            _message.Text = _initialKind == TargetedCommitKind.Amend
+                ? target.Subject + (string.IsNullOrEmpty(target.Body) ? "" : "\n\n" + target.Body)
+                : _initialKind == TargetedCommitKind.Squash ? target.Subject : "";
+            _initialized = true;
+            return;
+        }
         (string message, bool amend) = await _drafts.LoadAsync(_preferences.RememberAmendCommitState, OperationToken);
         if (!_drafts.IsMergeCommit && amend) { _amend.IsChecked = true; }
         if (string.IsNullOrEmpty(_message.Text))
@@ -403,11 +424,15 @@ public sealed class CommitDialog : Window
         _mergePending = File.Exists(await GetGitPathAsync("MERGE_HEAD"));
         IReadOnlyList<KeyValuePair<string, string>> configuration = await _repository.GetConfigAsync("^user\\.(name|email)$", cancellationToken: OperationToken);
         _committer = $"{configuration.LastOrDefault(item => item.Key == "user.name").Value} <{configuration.LastOrDefault(item => item.Key == "user.email").Value}>";
-        string? target = (_target.SelectedItem as GitCommit)?.Hash;
+        GitCommit? selectedTarget = _target.SelectedItem as GitCommit ?? (!_initialized ? _initialTarget : null);
         IReadOnlyList<GitCommit> history = _status.IsUnborn ? Array.Empty<GitCommit>() : await _repository.GetLogAsync(100, cancellationToken: OperationToken, all: false);
-        _target.ItemsSource = history;
+        // History commands may target an older commit or one on another visible branch.
+        // Retain that exact target even when it lies outside this dialog's recent HEAD log.
+        IReadOnlyList<GitCommit> targets = selectedTarget is not null && history.All(commit => commit.Hash != selectedTarget.Hash)
+            ? history.Append(selectedTarget).ToArray() : history;
+        _target.ItemsSource = targets;
         _headCommit = history.FirstOrDefault();
-        _target.SelectedItem = history.FirstOrDefault(commit => commit.Hash == target);
+        _target.SelectedItem = targets.FirstOrDefault(commit => commit.Hash == selectedTarget?.Hash);
         ApplyFileLists();
         await LoadDiffAsync();
     }
@@ -689,7 +714,8 @@ public sealed class CommitDialog : Window
                     AllowEmpty: noStaged,
                     ResetAuthor: _amend.IsChecked == true && _resetAuthor.IsChecked == true,
                     Author: EmptyToNull(_author.Text),
-                    NoVerify: _noVerify.IsChecked);
+                    NoVerify: _noVerify.IsChecked,
+                    AmendRevision: _kind.SelectedIndex == (int)TargetedCommitKind.Amend ? target?.Hash : null);
                 bool forceWithLease = (_amend.IsChecked == true || _forcePushAfterSoftReset) && _preferences.CommitAndPushForcedWhenAmend;
                 GitResult result = await _repository.CommitAsync(options, OperationToken);
                 HasCommitted = true;

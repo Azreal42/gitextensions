@@ -15,6 +15,7 @@ public static partial class GitRebaseEditor
 
     public static bool TryHandle(string[] args, out int exitCode)
     {
+        if (TryHandleTargetedCommit(args, out exitCode)) { return true; }
         exitCode = 0;
         if (args.Length == 0 || args[0] is not ("--write-rebase-plan" or "--write-rebase-message"))
         {

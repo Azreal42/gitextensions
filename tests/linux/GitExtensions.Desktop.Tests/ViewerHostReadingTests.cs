@@ -276,7 +276,8 @@ public class ViewerHostReadingTests
         await Until(() => !compare.IsBusy && next.Text.Contains(HighChange, StringComparison.Ordinal));
         Assert.That(next.ComparisonMenu.Options, Is.EqualTo(new GitComparisonDiffOptions(IgnoreWhitespaceKind.Change)), "Remember whitespace is enabled by default; whole-file and context are reset for a new reader.");
         Assert.That(next.ComparisonMenu.SelectWhitespace(IgnoreWhitespaceKind.Eol), Is.True); await Until(() => !compare.IsBusy);
-        MenuItem save = Find<ListBox>(main, "RevisionHistory").ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "SaveCurrentViewSettingsAsDefault");
+        MenuItem view = Find<ListBox>(main, "RevisionHistory").ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionView");
+        MenuItem save = view.Items.OfType<MenuItem>().Single(item => item.Name == "SaveCurrentViewSettingsAsDefault");
         save.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         DiffViewerPreferencesStore store = new();
         using JsonDocument defaults = JsonDocument.Parse(await File.ReadAllTextAsync(store.FilePath));

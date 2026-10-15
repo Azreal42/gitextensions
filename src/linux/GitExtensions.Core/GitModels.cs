@@ -96,4 +96,5 @@ public sealed record GitCommitOptions(
     bool AllowEmpty = false,
     bool ResetAuthor = false,
     string? Author = null,
-    bool NoVerify = false);
+    bool NoVerify = false,
+    string? AmendRevision = null);

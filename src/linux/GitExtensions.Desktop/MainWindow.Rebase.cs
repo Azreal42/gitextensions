@@ -13,13 +13,17 @@ public sealed partial class MainWindow
 
     private MenuItem BuildRebaseMenu()
     {
-        _rebaseImmediate = MenuAction("Rebase", () => OpenHistoryRebaseAsync(interactive: false, immediate: true));
-        _rebaseInteractive = MenuAction("Rebase interactively", () => OpenHistoryRebaseAsync(interactive: true, immediate: true));
-        _rebaseAdvanced = MenuAction("Rebase with advanced options…", RebaseAsync);
+        _rebaseImmediate = MenuAction("Selected commit", () => OpenHistoryRebaseAsync(interactive: false, immediate: true));
+        _rebaseInteractive = MenuAction("Selected commit interactively...", () => OpenHistoryRebaseAsync(interactive: true, immediate: true));
+        _rebaseAdvanced = MenuAction("Selected commit with advanced options...", RebaseAsync);
         _rebaseImmediate.Name = "HistoryRebaseImmediate";
         _rebaseInteractive.Name = "HistoryRebaseInteractive";
         _rebaseAdvanced.Name = "HistoryRebaseAdvanced";
-        _rebaseContext = MenuGroup("Rebase on", _rebaseImmediate, _rebaseInteractive, _rebaseAdvanced);
+        _rebaseImmediate.Header = RevisionHeader("rebaseToolStripMenuItem", "&Selected commit");
+        _rebaseInteractive.Header = RevisionHeader("rebaseInteractivelyToolStripMenuItem", "Selected commit &interactively...");
+        _rebaseAdvanced.Header = RevisionHeader("rebaseWithAdvOptionsToolStripMenuItem", "Selected commit with &advanced options...");
+        _rebaseContext = new MenuItem { Header = RevisionHeader("rebaseOnToolStripMenuItem", "&Rebase current branch on"),
+            Icon = OriginalIconImage("Rebase.png"), ItemsSource = new object[] { _rebaseImmediate, _rebaseInteractive, new Separator(), _rebaseAdvanced } };
         _rebaseContext.Name = "HistoryRebaseMenu";
         _rebaseContext.SubmenuOpened += (_, _) => RefreshRebaseMenu();
         RefreshRebaseMenu();

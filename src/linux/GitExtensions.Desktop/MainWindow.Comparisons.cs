@@ -11,8 +11,9 @@ public sealed partial class MainWindow
     {
         _compareToBaseMenu = MenuAction("Compare to BASE", () => ShowComparisonAsync(new(_comparisonBase ?? throw new InvalidOperationException(T("Select a BASE revision first."))), new(CurrentRevision)));
         _compareToBaseMenu.IsEnabled = false;
-        return MenuGroup("Compare",
+        return new MenuItem { Name = "RevisionCompare", Header = T("Compare"), Icon = OriginalIconImage("Diff.png"), ItemsSource = new object[] {
             MenuAction("Open selected commits with difftool", OpenComparisonToolAsync),
+            new Separator(),
             MenuAction("Compare to branch…", CompareToBranchAsync),
             MenuAction("Compare with current branch", () => ShowComparisonAsync(new(CurrentRevision), new("HEAD"))),
             MenuAction("Select as BASE to compare", () =>
@@ -23,7 +24,7 @@ public sealed partial class MainWindow
             _compareToBaseMenu,
             MenuAction("Compare to working directory", () => ShowComparisonAsync(new(CurrentRevision), new("", GitCompareRevisionKind.WorkingTree))),
             MenuAction("Compare selected commits", CompareSelectedCommitsAsync),
-            MenuAction("Range diff", ShowSelectedRangeDiffAsync, "DiffR.png"));
+            new Separator(), MenuAction("Range diff", ShowSelectedRangeDiffAsync, "DiffR.png") } };
     }
 
     private Task ShowComparisonAsync(GitCompareRevision from, GitCompareRevision to)

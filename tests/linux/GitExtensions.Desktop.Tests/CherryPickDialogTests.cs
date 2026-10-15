@@ -91,7 +91,7 @@ public partial class CherryPickDialogTests
         Assert.That(history.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EquivalentTo(new[] { first, second }));
         Pointer((Control)history.ContainerFromIndex(firstIndex)!, button: MouseButton.Right); Pump(main);
         ContextMenu menu = history.ContextMenu!; Assert.That(menu.IsOpen, Is.True, "The actual Browse context menu must open through a right pointer click.");
-        MenuItem action = menu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Cherry-pick"); Pointer(action);
+        MenuItem action = menu.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionCherryPick"); Pointer(action);
         await Until(() => main.OwnedWindows.OfType<CherryPickDialog>().Any(window => window.Revision == first && !window.IsBusy)); CherryPickDialog one = main.OwnedWindows.OfType<CherryPickDialog>().Single();
         Assert.That(one.ActualThemeVariant, Is.EqualTo(main.ActualThemeVariant)); Pointer(Field<CheckBox>(one, "CherryPickAddReference")); Pointer(Field<Button>(one, "ExecuteCherryPick"));
         await Until(() => main.OwnedWindows.OfType<CherryPickDialog>().Any(window => window.Revision == second && !window.IsBusy)); CherryPickDialog two = main.OwnedWindows.OfType<CherryPickDialog>().Single();
