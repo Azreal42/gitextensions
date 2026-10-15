@@ -12,6 +12,8 @@ Diff et File tree utilisent FileStatusListView / FileStatusListBuilder et le mê
 
 Le filtre regex éditable reste en haut avec son indication italique. Le Diff affiche le groupe de comparaison même s’il est seul, son compte et le sujet du commit de base disponible ; les chemins plats distinguent répertoire atténué et nom du fichier. Le préfixe d’une ligne sélectionnée claire reprend le gris 192 de DrawNodeImpl. Le séparateur est de 4 px. Le File tree ne contient plus les boutons génériques Blame/File history/Search ni un sélecteur d’encodage permanent au-dessus du contenu ; les commandes restent accessibles dans leurs menus.
 
+La sélection d’un dossier affiche son compte, son chemin et les noms relatifs, comme ShowSelectedFolderAsync ; le menu Rename / move utilise le dossier sélectionné plutôt qu’un de ses enfants.
+
 Le contenu est lu depuis le commit capturé dans le File tree. Un changement de commit ou le rafraîchissement de ce panneau recharge le chemin sélectionné ; le contenu du worktree ne remplace jamais le blob historique. Grep conserve ses chemins littéraux, octets, encodages, colonnes et annulation.
 
 ## Menu et actions
@@ -22,7 +24,7 @@ Les actions Git utilisent des argv et pathspecs littéraux. Le reset prévalide 
 
 ## Adaptations et limites
 
-Linux emploie xdg-open pour les associations de fichiers/dossiers ; Open with demande un exécutable explicite. Les entrées Visual Studio, WSL et Cygwin ne sont pas affichées. Les icônes natives d’associations Windows sont remplacées par File.png (FolderSubmodule.png pour gitlinks). Le menu difftool contient les comparaisons A/B/worktree ; mémorisation de deux fichiers, outils personnalisés Windows et sous-menus scripts avancés restent ouverts. Le git-grep lancé depuis Diff ouvre la recherche du File tree. Aucun de ces écarts n’est présenté comme une parité complète.
+Linux emploie xdg-open pour les associations de fichiers/dossiers ; Open with demande un exécutable explicite. Les entrées Visual Studio, WSL et Cygwin ne sont pas affichées. Les icônes natives d’associations Windows sont remplacées par File.png (FolderSubmodule.png pour gitlinks). Le menu difftool contient les comparaisons A/B/worktree ; mémorisation de deux fichiers, outils personnalisés Windows et sous-menus scripts avancés restent ouverts. L’historique d’un dossier reste désactivé ; l’historique des fichiers fonctionne. Le git-grep lancé depuis Diff ouvre la recherche du File tree. Aucun de ces écarts n’est présenté comme une parité complète.
 
 ## Validation
 

@@ -158,6 +158,11 @@ public sealed class FileStatusListView : UserControl, IDisposable
         }
     }
     public IReadOnlyList<object> SelectedTags => SelectedEntries.Select(entry => entry.Tag).ToArray();
+    public string? SelectedFolderPath => Tree.SelectedItems?.Count == 1 && Tree.SelectedItem is TreeViewItem
+        { Tag: FileStatusListNodeTag { Kind: FileStatusListNodeKind.Folder } folder } ? folder.Key : null;
+    public string? SelectedFolderDescription => SelectedFolderPath is string folder
+        ? "(" + SelectedEntries.Count + ") " + ExportDialogControls.DisplayPath(folder) + "/\n"
+            + string.Concat(SelectedEntries.Select(entry => "\n" + ExportDialogControls.DisplayPath(entry.Path[(folder.Length + 1)..]) + "\n")) : null;
     public FileStatusListSortMode SortMode { get => _options.SortMode; set => SetOptions(_options with { SortMode = value }); }
     public bool DenseTree { get => _options.DenseTree; set => SetOptions(_options with { DenseTree = value }); }
     public bool ShowGroupNodesInFlatList { get => _options.ShowGroupNodesInFlatList; set => SetOptions(_options with { ShowGroupNodesInFlatList = value }); }

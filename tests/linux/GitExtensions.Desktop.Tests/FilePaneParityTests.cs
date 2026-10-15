@@ -105,7 +105,18 @@ public sealed class FilePaneParityTests
         TreeViewItem folder = FileStatusTestHelpers.Rows(view.Tree).Single(item => item.Tag is FileStatusListNodeTag { Kind: FileStatusListNodeKind.Folder, Key: "src/deep" });
         view.Tree.SelectedItem = folder; await Idle(main); menu = Open(view.Tree);
         Click(Item(menu, "CopyPathsToolStripMenuItem").Items.OfType<MenuItem>().First());
-        Assert.That(await main.Clipboard!.TryGetTextAsync(), Is.EqualTo("src/deep")); menu.Close();
+        Assert.That(await main.Clipboard!.TryGetTextAsync(), Is.EqualTo("src/deep"));
+        Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.Text,
+            Is.EqualTo("(2) src/deep/\n\nfile_name.txt\n\nother.txt\n"));
+        Click(Item(menu, "tsmiMove")); menu.Close();
+        await Until(() => main.OwnedWindows.Any(window => window.Title == "Rename / move"));
+        Window prompt = main.OwnedWindows.Single(window => window.Title == "Rename / move");
+        TextBox name = prompt.GetVisualDescendants().OfType<TextBox>().Single();
+        Assert.That(name.Text, Is.EqualTo("src/deep")); name.Text = "src/renamed";
+        Click(prompt.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Rename / move")); await Idle(main);
+        Assert.That(Directory.Exists(Path.Combine(f.Repository, "src/deep")), Is.False);
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(f.Repository, "src/renamed/file_name.txt")), Is.EqualTo("dirty worktree\n"));
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(f.Repository, "src/renamed/other.txt")), Is.EqualTo("other dirty\n"));
     }
 
     [AvaloniaTest]

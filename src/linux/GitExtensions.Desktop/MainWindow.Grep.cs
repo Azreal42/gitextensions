@@ -47,7 +47,7 @@ public sealed partial class MainWindow
             if (!_refreshing && !_settingGrepTree && !_busy && !_selectingFileContext)
             {
                 if (SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
-                else { _filePath.Text = null; ClearFileGrepViewer(); }
+                else { ShowSelectedTreeFolder(); }
             }
         };
         Button clear = new() { Name = "ClearFileGrep", Content = "×", Height = 24, Width = 24, MinWidth = 0, Padding = default };
@@ -118,6 +118,14 @@ public sealed partial class MainWindow
 
     private Control FileTreeEntryHeader(FileStatusListEntry entry)
         => _fileTreeView!.CreateFileHeader(entry, _fileTreeEntries.GetValueOrDefault(entry.Path)?.IsSubmodule == true ? "FolderSubmodule.png" : "File.png");
+
+    private void ShowSelectedTreeFolder()
+    {
+        _filePath.Text = null; ClearFileGrepViewer();
+        if (_fileTreeView?.SelectedFolderDescription is not string text || _fileContent is null) { return; }
+        _fileContent.TextView.Mode = DiffViewMode.PlainText; _fileView.Text = text;
+        _fileContent.TextView.CompletePlainTextDocumentLoad();
+    }
 
     private void UpdateFileTreeEntries(string[] paths)
     {

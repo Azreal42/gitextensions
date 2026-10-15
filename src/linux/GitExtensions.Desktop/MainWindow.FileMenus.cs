@@ -18,7 +18,7 @@ public sealed partial class MainWindow
     private bool _selectingFileContext;
     private bool _fileContextNeedsDetails;
     private readonly List<string> _temporaryFileDirectories = [];
-    private sealed record FileMenuSelection(GitRepository Repository, string Revision, string? Parent, GitRevisionFile[] Files, string[] CopyPaths)
+    private sealed record FileMenuSelection(GitRepository Repository, string Revision, string? Parent, GitRevisionFile[] Files, string[] CopyPaths, string? Folder)
     {
         internal string[] Paths => Files.Select(file => file.Path).Distinct(StringComparer.Ordinal).ToArray();
         internal string[] ResetPaths => Files.SelectMany(file => file.Status == 'R' && file.OriginalPath is not null
@@ -55,7 +55,8 @@ public sealed partial class MainWindow
             FileStatusListNodeTag { Kind: FileStatusListNodeKind.Folder } folder => folder.Key,
             _ => null
         }).OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
-        return new(repository, revision, parent, files, copy);
+        if (copy.Length == 0) { copy = files.Select(file => file.Path).ToArray(); }
+        return new(repository, revision, parent, files, copy, view!.SelectedFolderPath);
     }
 
     private void ConfigureFileContextMenu(TreeView tree, bool isFileTree)
@@ -85,6 +86,7 @@ public sealed partial class MainWindow
             {
                 if (_busy || _refreshing || _lifetime.IsCancellationRequested) { return; }
                 if (isFileTree && SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
+                else if (isFileTree) { ShowSelectedTreeFolder(); }
                 else if (!isFileTree && tree.SelectedItem is TreeViewItem selected)
                 { await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, selected), refresh: false); }
             });
@@ -104,7 +106,8 @@ public sealed partial class MainWindow
     private object[] BuildFileMenuItems(bool isFileTree, FileMenuSelection? selection)
     {
         bool valid = selection is { Files.Length: > 0 } && !_busy;
-        bool single = valid && selection!.Files.Length == 1;
+        bool single = valid && selection!.Files.Length == 1 && selection.Folder is null;
+        bool folderSelected = valid && selection!.Folder is not null;
         bool blob = single && (!isFileTree || _fileTreeEntries.GetValueOrDefault(selection!.Files[0].Path)?.IsSubmodule != true);
         bool worktree = valid && !selection!.Repository.IsBare;
         bool exists = single && worktree && File.Exists(Path.Combine(selection!.Repository.Path, selection.Paths[0]));
@@ -149,12 +152,12 @@ public sealed partial class MainWindow
         items.Add(Item("tsmiOpenRevisionFileWith", "Open this revision &with... (temp file)", "ViewFile.png", s => OpenRevisionFileAsync(s, true), blob && selection!.Files[0].Status != 'D', new(Key.F3, KeyModifiers.Control | KeyModifiers.Shift)));
         if (exists) { items.Add(Item("tsmiEditWorkingDirectoryFile", "&Edit working directory file", "EditFile.png", s => OpenWorkingFileAsync(s, false), gesture: new(Key.F4))); }
         items.Add(Item("tsmiSaveAs", "S&ave selected as...", "SaveAs.png", SaveFileSelectionAsync, valid && (!isFileTree || selection!.Files.All(file => _fileTreeEntries.GetValueOrDefault(file.Path)?.IsSubmodule != true)) && selection!.Files.All(file => file.Status != 'D'), new(Key.S, KeyModifiers.Control)));
-        if (exists) { items.Add(Item("tsmiMove", "Rena&me / move", null, RenameFileSelectionAsync, true, new(Key.F2))); }
+        if (exists || folderSelected && worktree) { items.Add(Item("tsmiMove", "Rena&me / move", null, RenameFileSelectionAsync, true, new(Key.F2))); }
         items.Add(new Separator()); items.Add(copy);
         items.Add(Item("tsmiShowInFolder", "Show &in folder", "BrowseFileExplorer.png", ShowFileFolderAsync, worktree));
         items.Add(new Separator());
         if (!isFileTree) { items.Add(Item("tsmiShowInFileTree", "Show in File &tree", "FileTree.png", ShowSelectionInFileTreeAsync, single && selection!.Files[0].Status != 'D')); }
-        items.Add(Item("tsmiFilterFileInGrid", "Filter file in grid", "FunnelPencil.png", FilterFileInHistoryAsync, single, new(Key.F)));
+        items.Add(Item("tsmiFilterFileInGrid", "Filter file in grid", "FunnelPencil.png", FilterFileInHistoryAsync, single || folderSelected, new(Key.F)));
         MenuItem history = Item("tsmiFileHistory", "File &history", "FileHistory.png", ShowFileHistoryAsync, single, new(Key.H));
         history.FontWeight = FontWeight.Bold; items.Add(history);
         items.Add(Item("tsmiBlame", "&Blame", "Blame.png", ShowFileBlameAsync, blob && selection!.Files[0].Status != 'D', new(Key.B)));
@@ -296,9 +299,10 @@ public sealed partial class MainWindow
     }
     private async Task RenameFileSelectionAsync(FileMenuSelection selection)
     {
-        string[]? value = await Dialogs.PromptAsync(WorkflowOwner, T("Rename / move"), (T("New name"), selection.Paths.Single()));
+        string path = selection.Folder ?? selection.Paths.Single();
+        string[]? value = await Dialogs.PromptAsync(WorkflowOwner, T("Rename / move"), (T("New name"), path));
         if (value is null || _repository != selection.Repository || _busy) { return; }
-        await RunAsync("Rename / move", repository => repository.MoveTrackedFileAsync(selection.Paths.Single(), value[0], Token));
+        await RunAsync("Rename / move", repository => repository.MoveTrackedFileAsync(path, value[0], Token));
     }
     private async Task StopTrackingFileAsync(FileMenuSelection selection)
     {
@@ -314,7 +318,7 @@ public sealed partial class MainWindow
     }
     private Task ShowFileHistoryAsync(FileMenuSelection selection) => RunAsync("File history", async repository =>
     {
-        FileHistoryDialog dialog = new(repository, selection.Paths.Single(), selection.Revision) { RequestedThemeVariant = ActualThemeVariant };
+        FileHistoryDialog dialog = new(repository, selection.Folder ?? selection.Paths.Single(), selection.Revision) { RequestedThemeVariant = ActualThemeVariant };
         dialog.Opened += async (_, _) => await dialog.InitializeAsync(); await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);
     private Task ShowFileBlameAsync(FileMenuSelection selection) => RunAsync("Blame", async repository =>
@@ -327,7 +331,7 @@ public sealed partial class MainWindow
         dialog.Opened += async (_, _) => await dialog.InitializeAsync(); await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);
     private Task FilterFileInHistoryAsync(FileMenuSelection selection)
-    { _historyQuery = _historyQuery with { Path = selection.Paths.Single(), Skip = 0 }; return RefreshAsync(); }
+    { _historyQuery = _historyQuery with { Path = selection.Folder ?? selection.Paths.Single(), Skip = 0 }; return RefreshAsync(); }
     private async Task ShowSelectionInFileTreeAsync(FileMenuSelection selection)
     {
         SetFileTreePaths(selection.Repository, selection.Revision, await selection.Repository.GetTreeAsync(selection.Revision, cancellationToken: _lifetime.Token));

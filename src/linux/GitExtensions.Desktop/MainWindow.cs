@@ -131,10 +131,10 @@ public sealed partial class MainWindow : Window
         };
         _tree.SelectionChanged += async (_, _) =>
         {
-            if (!_refreshing && !_selectingFileContext && !_settingGrepTree && _fileTreeView?.IsUpdating != true && SelectedTreePath is string path)
+            if (!_refreshing && !_selectingFileContext && !_settingGrepTree && _fileTreeView?.IsUpdating != true)
             {
-                _filePath.Text = path;
-                await ShowSelectedTreeFileAsync(path);
+                if (SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
+                else { ShowSelectedTreeFolder(); }
             }
         };
         _repositoryPath.KeyDown += async (_, e) =>
@@ -440,6 +440,7 @@ public sealed partial class MainWindow : Window
             if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is string treePath
                 && (!_fileGrepSettings.ShowSearchBox || _fileGrepSettings.Expression.Length == 0))
             { await LoadTreeFileAsync(repository, treePath); }
+            else if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is null) { ShowSelectedTreeFolder(); }
             if (_commits.SelectedItem is GitCommit selectedCommit)
             {
                 await LoadCommitFilesAsync(repository, selectedCommit.Hash, selectedRevisionDiff);

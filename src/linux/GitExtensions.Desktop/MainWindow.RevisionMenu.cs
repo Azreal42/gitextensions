@@ -99,6 +99,7 @@ public sealed partial class MainWindow
             if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is string path
                 && (!_fileGrepSettings.ShowSearchBox || _fileGrepSettings.Expression.Length == 0))
             { await LoadTreeFileAsync(repository, path); }
+            else if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is null) { ShowSelectedTreeFolder(); }
         }, refresh: false);
     }
 

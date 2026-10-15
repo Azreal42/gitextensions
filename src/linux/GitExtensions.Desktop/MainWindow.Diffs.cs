@@ -300,7 +300,13 @@ public sealed partial class MainWindow
             }
             return;
         }
-        if (item.Tag is not RevisionDiffFileSelection selection) { _commitContent.TextView.Mode = DiffViewMode.Auto; _diff.Text = T("Select a file to inspect its diff."); return; }
+        if (item.Tag is not RevisionDiffFileSelection selection)
+        {
+            string? folder = _revisionFilesView?.SelectedFolderDescription;
+            _commitContent.TextView.Mode = folder is null ? DiffViewMode.Auto : DiffViewMode.PlainText;
+            _commitContent.TextView.DocumentIdentity = null; _commitContent.TextView.SyntaxPath = null;
+            _diff.Text = folder ?? T("Select a file to inspect its diff."); return;
+        }
         _commitContent.TextView.DocumentIdentity = string.Join("\0", repository.Path, selection.File.Path, selection.Group.Kind,
             selection.Group.Revision, selection.Group.BaseRevision, selection.File.OriginalPath);
         _commitContent.TextView.SyntaxPath = selection.File.Path;
