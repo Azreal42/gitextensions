@@ -367,6 +367,10 @@ public sealed partial class MainWindow
         if (_changesContent is null) { return; }
         CancellationToken token = cancellationToken ?? Token;
         DiffView viewer = _changesContent.TextView;
+        // The previous pixels can stay visible, but their patch must stop being
+        // actionable immediately, including when the replacement read fails.
+        viewer.BeginDocumentLoad();
+        viewer.DocumentIdentity = string.Join('\0', repository.Path, change.Path, change.OriginalPath, _historyGraph.CurrentHead, staged ? "index" : "worktree");
         GitComparisonDiffOptions options = _workingViewerOptions;
         Action publish;
         if (!change.IsSubmodule && !change.IsConflict && FileContentView.IsImagePath(change.Path))
@@ -403,8 +407,7 @@ public sealed partial class MainWindow
         token.ThrowIfCancellationRequested();
         await viewer.ConfigureRepositoryAsync(repository, token);
         token.ThrowIfCancellationRequested();
-        viewer.BeginDocumentLoad(); _changesContent.ClearImage();
-        viewer.DocumentIdentity = string.Join('\0', repository.Path, change.Path, change.OriginalPath, _historyGraph.CurrentHead, staged ? "index" : "worktree");
+        _changesContent.ClearImage();
         viewer.Mode = change.IsUntracked ? DiffViewMode.PlainText : DiffViewMode.Auto;
         viewer.SyntaxPath = change.Path;
         publish();

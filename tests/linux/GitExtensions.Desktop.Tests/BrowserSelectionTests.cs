@@ -163,6 +163,7 @@ public sealed class BrowserSelectionTests
         Assert.That(files.Tree.IsKeyboardFocusWithin, Is.True);
         Button stage = main.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Stage selected lines");
         Assert.That(stage.IsEnabled, Is.False);
+        Assert.That(viewer.CanStagePatch, Is.False);
         stage.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         Assert.That((await direct.RunAsync(f.Repository, ["ls-files", "--stage"])).StandardOutput, Is.EqualTo(before));
         gate.Release(); await Idle(main);

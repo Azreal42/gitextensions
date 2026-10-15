@@ -97,7 +97,7 @@ public sealed partial class MainWindow
 
     private async Task ApplyLinesAsync(bool reverse)
     {
-        if (_workingDiffRead.Current is not null || _changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
+        if (_workingDiffRead.Current is not null || _selectedPatch is null || _changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging lines" : "Show unstaged changes before staging lines"; return; }
         byte[]? patch = GitEncodedPatch.SelectLines(_changesDiffView.Document!, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
             staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
