@@ -1,6 +1,6 @@
 # TODO
 
-Mise à jour : 14 octobre 2026. Les validations ci-dessous restent liées à leur source et à leur périmètre.
+Mise à jour : 15 octobre 2026. Les validations ci-dessous restent liées à leur source et à leur périmètre.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
@@ -47,7 +47,9 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 - [x] Commit & Push : commit unique, succès distant et conservation du commit après rejet/Cancel vérifiés en natif. ADR 0046.
 - [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
 
-Dernier paquet local vérifié et livré : source `d144dcf69`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/d144dcf69/proofs/delivery-verification-v2.json) contient source complète, checksum et contrôles : 916 tests (270 Core, 35 Plugins, 611 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, 25 étapes de packaging, installation/lancement isolés, APT simulé et repaquetage identique. Les 22 parcours natifs clair/sombre du payload exact couvrent les sous-périmètres Merge/Reset/Revert, reprise Cherry-pick et Commit & Push décrits ci-dessus. La reprise couvre un redémarrage normal ; la résolution Cherry-pick utilise la fixture Git, pas le resolver UI. Les essais rejetés et anomalies du harnais restent conservés hors acceptation. L’ancienne installation hôte reste distincte ; aucun push de ce lot.
+Dernier paquet local vérifié et livré : source `d144dcf69`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/d144dcf69/proofs/delivery-verification-v2.json) contient source complète, checksum et contrôles : 916 tests (270 Core, 35 Plugins, 611 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, 25 étapes de packaging, installation/lancement isolés, APT simulé et repaquetage identique. Les 22 parcours natifs clair/sombre du payload exact couvrent les sous-périmètres Merge/Reset/Revert, reprise Cherry-pick et Commit & Push décrits ci-dessus. La reprise couvre un redémarrage normal ; la résolution Cherry-pick utilise la fixture Git, pas le resolver UI. Les essais rejetés et anomalies du harnais restent conservés hors acceptation. Aucun push de ce lot.
+
+Installation hôte du 15 octobre : candidat `aae27bff4`, application `7.2.1-linux-alpha`, installé à la demande de l’utilisateur en remplacement de `8.0.0~linux.1`. [Version et 346 fichiers installés vérifiés](../../artifacts/linux/snapshots/aae27bff4/proofs/host-installation-verification-20261015-01.json). Retours utilisateur attendus ; les audits natifs encore ouverts restent à faire.
 
 Les dix parcours de la combo Branches restent attribués à `a7bdda7d6`. Les audits Push rapide, options Pull, Cherry-pick et retrait de sous-module restent attribués à `0cf3b7026`.
 
