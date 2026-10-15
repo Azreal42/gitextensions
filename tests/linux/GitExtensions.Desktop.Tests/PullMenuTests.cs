@@ -194,13 +194,13 @@ public class PullMenuTests
         Press(main, PhysicalKey.ArrowDown, RawInputModifiers.Control);
         await Until(() => main.OwnedWindows.OfType<PullDialog>().Any());
         PullDialog dialog = main.OwnedWindows.OfType<PullDialog>().Single(); await Until(() => !dialog.IsBusy);
-        Assert.That(Field<AutoCompleteBox>(dialog, "PullRemote").Text, Is.EqualTo("zeta"));
-        Assert.That(Field<AutoCompleteBox>(dialog, "PullRemote").IsKeyboardFocusWithin, Is.True);
-        Assert.That(Field<AutoCompleteBox>(dialog, "PullBranch").Text, Is.Empty);
+        Assert.That(Field<ComboBox>(dialog, "PullRemote").Text, Is.EqualTo("zeta"));
+        Assert.That(Field<ComboBox>(dialog, "PullRemote").IsKeyboardFocusWithin, Is.True);
+        Assert.That(Field<ComboBox>(dialog, "PullBranch").Text, Is.Empty);
         Assert.That(Field<RadioButton>(dialog, "PullRebase").IsChecked, Is.True);
         Assert.That(Field<CheckBox>(dialog, "PullPrune").IsEnabled, Is.False);
         Capture(dialog, "pull-dialog-last-mode.png");
-        Click(Field<Button>(dialog, "ClosePull")); await Idle(main);
+        Press(dialog, PhysicalKey.Escape, RawInputModifiers.None); await Idle(main);
         Assert.That(await f.GitText("for-each-ref", "--format=%(refname) %(objectname)"), Is.EqualTo(before));
         Assert.That(new PullPreferencesStore().Load().DefaultAction, Is.EqualTo(GitPullAction.Fetch));
     }
@@ -233,7 +233,7 @@ public class PullMenuTests
             Click(Field<Button>(dialog, "AbortPullOperation")); await Until(() => !dialog.IsBusy);
             Assert.That(await f.Ref("HEAD"), Is.EqualTo(local));
             Assert.That((await f.Repository.GetStatusAsync()).Changes, Is.Empty);
-            Click(Field<Button>(dialog, "ClosePull")); await Idle(main);
+            Press(dialog, PhysicalKey.Escape, RawInputModifiers.None); await Idle(main);
             Assert.That(main.GetVisualDescendants().OfType<CommitGraph>().Single().CurrentHead, Is.EqualTo(local), "All-branches order may start with the remote commit; the checked-out HEAD marker must return to the local commit.");
         }
     }
@@ -259,7 +259,7 @@ public class PullMenuTests
         Assert.That(dialog.LastError, Is.Null);
         Assert.That((await f.GitText("rev-list", "--parents", "-1", "HEAD")).Split(' ').Skip(1), Is.EqualTo(new[] { local, remote }));
         Assert.That(await File.ReadAllTextAsync(Path.Combine(f.Client, "seed.txt")), Is.EqualTo("resolved by user\n"));
-        Click(Field<Button>(dialog, "ClosePull")); await Idle(main);
+        Press(dialog, PhysicalKey.Escape, RawInputModifiers.None); await Idle(main);
     }
 
     [AvaloniaTest]
@@ -291,10 +291,10 @@ public class PullMenuTests
         PullDialog dialog = new(f.Repository); dialog.Show();
         try
         {
-            await dialog.InitializeAsync(); Field<AutoCompleteBox>(dialog, "PullBranch").Text = "*";
+            await dialog.InitializeAsync(); Field<ComboBox>(dialog, "PullBranch").Text = "*";
             Click(Field<Button>(dialog, "ExecutePull")); await Until(() => !dialog.IsBusy);
             Assert.That(dialog.LastError, Does.Contain("Wildcards")); Assert.That(dialog.Attempted, Is.False);
-            Field<AutoCompleteBox>(dialog, "PullBranch").Text = "main";
+            Field<ComboBox>(dialog, "PullBranch").Text = "main";
             using CancellationTokenSource cancelled = new(); cancelled.Cancel();
             await dialog.ExecuteAsync(dialog, cancellationToken: cancelled.Token);
             Assert.That(dialog.Succeeded, Is.False); Assert.That(dialog.Attempted, Is.False);
@@ -314,7 +314,7 @@ public class PullMenuTests
         await AcknowledgeProcessFailure(main);
         await Until(() => main.OwnedWindows.OfType<PullDialog>().Any());
         PullDialog dialog = main.OwnedWindows.OfType<PullDialog>().Single(); await Until(() => !dialog.IsBusy);
-        Assert.That(Field<AutoCompleteBox>(dialog, "PullRemote").Text, Is.EqualTo("alpha"));
+        Assert.That(Field<ComboBox>(dialog, "PullRemote").Text, Is.EqualTo("alpha"));
         Assert.That(dialog.LastError, Is.Not.Null, "Without an upstream Git requires a branch; expose that error and let the user choose.");
         Assert.That(await f.Ref("HEAD"), Is.EqualTo(f.Initial));
         EnterAutoComplete(dialog, "PullBranch", "main");
@@ -411,7 +411,7 @@ public class PullMenuTests
         Assert.That(dialog.Attempted, Is.False); Assert.That(Field<RadioButton>(dialog, "PullRebase").IsChecked, Is.True);
         Assert.That(await f.Ref("HEAD"), Is.EqualTo(before));
         Assert.That(await f.GitText("for-each-ref", "--format=%(refname) %(objectname)"), Is.EqualTo(refs));
-        Click(Field<Button>(dialog, "ClosePull")); await Idle(main);
+        Press(dialog, PhysicalKey.Escape, RawInputModifiers.None); await Idle(main);
     }
 
     [AvaloniaTest]
@@ -537,14 +537,14 @@ public class PullMenuTests
     private static T Field<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(item => item.Name == name);
     private static void EnterAutoComplete(Window dialog, string name, string value)
     {
-        TextBox text = Field<AutoCompleteBox>(dialog, name).GetVisualDescendants().OfType<TextBox>().First();
+        TextBox text = Field<ComboBox>(dialog, name).GetVisualDescendants().OfType<TextBox>().First();
         text.Focus(); text.SelectAll(); dialog.KeyTextInput(value); Pump(dialog);
         Press(dialog, PhysicalKey.Tab, RawInputModifiers.None);
-        Assert.That(Field<AutoCompleteBox>(dialog, name).Text, Is.EqualTo(value));
+        Assert.That(Field<ComboBox>(dialog, name).Text, Is.EqualTo(value));
     }
     private static void Pump(TopLevel root) { root.UpdateLayout(); Dispatcher.UIThread.RunJobs(); root.UpdateLayout(); }
     private static void Press(TopLevel root, PhysicalKey key, RawInputModifiers modifiers)
-    { root.KeyPressQwerty(key, modifiers); root.KeyReleaseQwerty(key, modifiers); Pump(root); }
+    { root.KeyPressQwerty(key, modifiers); if (root is not Window { IsVisible: false }) { root.KeyReleaseQwerty(key, modifiers); Pump(root); } }
     private static void Click(Control item)
     {
         TopLevel root = TopLevel.GetTopLevel(item)!; Pump(root);

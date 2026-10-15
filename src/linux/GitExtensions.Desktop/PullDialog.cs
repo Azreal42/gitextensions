@@ -11,7 +11,7 @@ using GitExtensions.Extensibility.Git;
 
 namespace GitExtensions.Linux.Desktop;
 
-public sealed class PullDialog : RepositoryDialog
+public sealed partial class PullDialog : RepositoryDialog
 {
     private readonly GitPullAction _initialAction;
     private readonly string? _initialRemote, _initialBranch;
@@ -19,8 +19,8 @@ public sealed class PullDialog : RepositoryDialog
     private readonly Func<Window, GitRepository, bool, CancellationToken, Task>? _resolveConflictsAsync;
     private readonly PullPreferencesStore _store = new();
     private readonly SubmoduleCheckoutPreferencesStore _submodulePreferences = new();
-    private readonly AutoCompleteBox _remote = new() { Name = "PullRemote", Height = 24, MinimumPrefixLength = 0 };
-    private readonly AutoCompleteBox _branch = new() { Name = "PullBranch", Height = 24, MinimumPrefixLength = 0 };
+    private readonly ComboBox _remote = PullChoice("PullRemote");
+    private readonly ComboBox _branch = PullChoice("PullBranch");
     private readonly RadioButton _merge = new() { Name = "PullMerge", GroupName = "PullMode" };
     private readonly RadioButton _rebase = new() { Name = "PullRebase", GroupName = "PullMode" };
     private readonly RadioButton _fetch = new() { Name = "PullFetch", GroupName = "PullMode" };
@@ -33,7 +33,8 @@ public sealed class PullDialog : RepositoryDialog
     private readonly RadioButton _tagsAll = new() { Name = "PullTagsAll", GroupName = "PullTagMode" };
     private readonly TextBox _output = new() { Name = "PullOutput", AcceptsReturn = true, IsReadOnly = true, MinHeight = 80, MaxHeight = 180, FontFamily = new("monospace") };
     private readonly ListBox _conflicts = new() { Name = "PullConflicts", Height = 72, IsVisible = false };
-    private readonly Button _execute, _continue, _abort, _resolve, _stash;
+    private readonly Button _execute, _continue, _abort, _resolve, _stash, _manage, _browse;
+    private IReadOnlyList<GitRemote> _remotes = [];
     private const string AllRemotes = "[ All ]";
     private GitStatus? _status;
     private GitRepositoryInfo? _info;
@@ -57,7 +58,9 @@ public sealed class PullDialog : RepositoryDialog
         _initialRemote = remote; _initialBranch = branch;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _resolveConflictsAsync = resolveConflictsAsync;
-        Width = 740; MinWidth = 620; SizeToContent = SizeToContent.Height;
+        Name = "PullDialog"; Width = 944; Height = 525; MinWidth = 650; MinHeight = 510;
+        ConstrainStatusHeight("PullStatusScroll", 90);
+        _statusRow = Root.Children.Single();
         _merge.Content = Label("Merge", "&Merge remote branch into current branch");
         _rebase.Content = Label("Rebase", "R&ebase current branch on top of remote branch, creates linear history (use with caution)");
         _fetch.Content = Label("Fetch", "Do not merge, only &fetch remote changes");
@@ -75,27 +78,14 @@ public sealed class PullDialog : RepositoryDialog
         _autoStash.IsChecked = _store.Load().AutoStash;
         _execute = Action("ExecutePull", "Pull", async () => { await ExecuteAsync(this); if (Succeeded) { Close(); } });
         _execute.IsDefault = true;
-        Button close = new() { Name = "ClosePull", Content = T("Cancel"), IsCancel = true };
-        close.Click += (_, _) => Close();
         _continue = Action("ContinuePullOperation", "Continue", () => ManageAsync(GitOperationAction.Continue));
         _abort = Action("AbortPullOperation", "Abort", () => ManageAsync(GitOperationAction.Abort));
         _resolve = Action("ResolvePullConflict", "Solve conflicts…", ResolveAsync);
         _stash = Action("PullStashChanges", "Stash changes", OpenStashAsync); _stash.Content = Label("Stash", "Stash &changes");
-        StackPanel buttons = ExportDialogControls.Buttons(_resolve, _continue, _abort, close, _execute);
-        StackPanel footer = new() { Children = { new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0), Spacing = 8, Children = { _stash, _autoStash } }, buttons } };
-        DockPanel.SetDock(footer, Dock.Bottom); Root.Children.Add(footer);
-        Grid fields = ReferenceDialogControls.Fields();
-        ReferenceDialogControls.Field(fields, new TextBlock { Name = "PullRemoteLabel", Text = C("PullFromRemote", "&Remote").Replace("&", "", StringComparison.Ordinal) }, _remote);
-        ReferenceDialogControls.Field(fields, new TextBlock { Name = "PullRemoteBranchLabel", Text = C("lblRemoteBranch", "Rem&ote branch").Replace("&", "", StringComparison.Ordinal) }, _branch);
-        StackPanel body = new() { Margin = new(10), Spacing = 8, Children =
-        {
-            fields,
-            ExportDialogControls.Group(C("GroupMergeOptions", "Merge options"), new StackPanel { Spacing = 2, Children = { _merge, _rebase, _fetch } }),
-            ExportDialogControls.Group(C("GroupTagOptions", "Tag options"), new StackPanel { Spacing = 2, Children = { _tagsFollow, _tagsNone, _tagsAll } }),
-            _unshallow, _prune, _pruneTags, _conflicts, _output
-        } };
-        Root.Children.Add(body);
-        Track(_remote, _branch, _merge, _rebase, _fetch, _prune, _pruneTags, _unshallow, _autoStash, _tagsFollow, _tagsNone, _tagsAll, _conflicts);
+        _manage = Action("PullManageRemotes", "Manage remotes", ManageRemotesAsync);
+        _browse = Action("PullBrowse", "Browse...", BrowseSourceAsync);
+        BuildOriginalLayout();
+        Track(_remote, _branch, _fromRemote, _fromUrl, _url, _localBranch, _merge, _rebase, _fetch, _prune, _pruneTags, _unshallow, _autoStash, _tagsFollow, _tagsNone, _tagsAll, _conflicts);
         foreach (RadioButton mode in new[] { _merge, _rebase, _fetch }) { mode.IsCheckedChanged += (_, _) => { if (mode.IsChecked == true) { UpdateMode(mode); } UpdateActions(); }; }
         _prune.IsCheckedChanged += (_, _) => { if (!_updatingFlags && _prune.IsChecked != true) { _pruneTags.IsChecked = false; } };
         _pruneTags.IsCheckedChanged += (_, _) =>
@@ -105,8 +95,8 @@ public sealed class PullDialog : RepositoryDialog
         };
         _remote.PropertyChanged += (_, change) =>
         {
-            if (change.Property == AutoCompleteBox.TextProperty && !_initializing)
-            { if (All) { _fetch.IsChecked = true; } UpdateBranchChoices(); UpdateActions(); }
+            if (change.Property == ComboBox.TextProperty && !_initializing)
+            { if (All) { _fetch.IsChecked = true; } UpdateSourceUrl(); UpdateBranchChoices(); UpdateActions(); }
         };
         _conflicts.SelectionChanged += (_, _) => UpdateActions();
         Opened += (_, _) => { if (IsReady) { FocusRemote(); } };
@@ -115,7 +105,7 @@ public sealed class PullDialog : RepositoryDialog
 
     private string C(string item, string source, string property = "Text") => Translations.Translate("FormPull", item, property, source);
     private AccessText Label(string item, string source) => new() { Text = Translations.TranslateAccessKeys("FormPull", item, "Text", source), TextWrapping = TextWrapping.Wrap };
-    private static void SetInputText(AutoCompleteBox box, string text) { box.SelectedItem = text; box.Text = text; }
+    private static void SetInputText(ComboBox box, string text) { box.SelectedItem = text; box.Text = text; }
     private void UpdateMode(RadioButton selectedMode)
     {
         // Avalonia raises the new radio's Checked before unchecking its peer.
@@ -138,7 +128,8 @@ public sealed class PullDialog : RepositoryDialog
                 _info = await Repository.GetInfoAsync(token);
                 _status = await Repository.GetStatusAsync(token);
                 _references = await Repository.GetReferencesAsync(token);
-                IReadOnlyList<GitRemote> remotes = await Repository.GetRemotesAsync(token);
+                _remotes = await Repository.GetRemotesAsync(token);
+                IReadOnlyList<GitRemote> remotes = _remotes;
                 IReadOnlyList<KeyValuePair<string, string>> configuration = await Repository.GetConfigAsync(cancellationToken: token);
                 _configuredRemote = configuration.LastOrDefault(entry => entry.Key == "branch." + _status.Branch + ".remote").Value;
                 string? remote = remotes.FirstOrDefault(item => string.Equals(item.Name, _configuredRemote, StringComparison.OrdinalIgnoreCase))?.Name ?? remotes.FirstOrDefault()?.Name;
@@ -153,7 +144,7 @@ public sealed class PullDialog : RepositoryDialog
                 _unshallow.IsVisible = await Repository.IsShallowRepositoryAsync(token);
                 _unshallow.IsChecked = false;
                 _autoStash.IsChecked = _store.Load().AutoStash;
-                UpdateBranchChoices(); await RefreshOperationAsync(token);
+                UpdateSourceUrl(); UpdateBranchChoices(); await RefreshOperationAsync(token);
                 IsReady = true; Status.Text = T("Current branch:") + " " + _status.Branch;
             }
             finally { _initializing = false; }
@@ -168,19 +159,22 @@ public sealed class PullDialog : RepositoryDialog
     }
 
     private GitPullAction Mode => _rebase.IsChecked == true ? GitPullAction.Rebase : _fetch.IsChecked == true ? GitPullAction.Fetch : GitPullAction.Merge;
-    private bool All => _remote.Text == AllRemotes;
+    private bool UseUrl => _fromUrl.IsChecked == true;
+    private string Source => UseUrl ? _url.Text ?? "" : _remote.Text ?? "";
+    private bool All => !UseUrl && _remote.Text == AllRemotes;
     private void UpdateBranchChoices()
     {
         string prefix = (_remote.Text ?? "") + "/";
-        _branch.ItemsSource = _references.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && reference.ShortName.StartsWith(prefix, StringComparison.Ordinal))
-            .Select(reference => reference.ShortName[prefix.Length..]).ToArray();
+        _branch.ItemsSource = UseUrl ? _references.Where(reference => reference.IsBranch).Select(reference => reference.ShortName).ToArray()
+            : _references.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && reference.ShortName.StartsWith(prefix, StringComparison.Ordinal))
+                .Select(reference => reference.ShortName[prefix.Length..]).ToArray();
     }
 
     internal Task ExecuteAsync(Window owner, bool confirmPruneAll = false, CancellationToken cancellationToken = default)
         => RunAsync("Pull", async token =>
         {
             Succeeded = Cancelled = false;
-            string remote = _remote.Text ?? "";
+            string remote = Source;
             string? branch = string.IsNullOrEmpty(_branch.Text) ? null : _branch.Text;
             GitPullAction mode = Mode;
             if (!IsReady || string.IsNullOrWhiteSpace(remote)) { throw new ArgumentException(T("Select a remote.")); }
@@ -207,7 +201,7 @@ public sealed class PullDialog : RepositoryDialog
                     _configuredRemote = (await Repository.GetConfigAsync(cancellationToken: token)).LastOrDefault(entry => entry.Key == "branch." + _status.Branch + ".remote").Value;
                 }
             }
-            if (mode != GitPullAction.Fetch && _status?.IsDetached != true && branch is null && !string.IsNullOrEmpty(_configuredRemote)
+            if (!UseUrl && mode != GitPullAction.Fetch && _status?.IsDetached != true && branch is null && !string.IsNullOrEmpty(_configuredRemote)
                 && !string.Equals(remote, _configuredRemote, StringComparison.OrdinalIgnoreCase))
             {
                 string message = string.Format(T("You asked to pull from the remote '{0}',\nbut did not specify a remote branch.\nBecause this is not the default configured remote for your local branch,\nyou must specify a remote branch."), remote)
@@ -222,8 +216,15 @@ public sealed class PullDialog : RepositoryDialog
                 if (choice != 2) { Cancelled = choice == 0; return; }
             }
             if (confirmPruneAll && !await ConfirmPruneAsync(owner, token)) { Cancelled = true; return; }
+            string? fetchBranch = branch;
+            if (mode == GitPullAction.Fetch && !All && !string.IsNullOrWhiteSpace(_localBranch.Text))
+            {
+                fetchBranch = await LocalFetchRefspecAsync(owner, branch, token);
+                if (fetchBranch is null) { Cancelled = true; return; }
+            }
             token.ThrowIfCancellationRequested();
             _store.Save(_store.Load() with { DialogAction = mode, AutoStash = _autoStash.IsChecked == true });
+            if (UseUrl) { _sourceHistory.Visit(remote, 30); }
             Attempted = true; MarkRepositoryChanged();
             Exception? operationError = null;
             try
@@ -233,7 +234,7 @@ public sealed class PullDialog : RepositoryDialog
                 {
                     result = await RunProcessAsync(owner, "git fetch — " + (All ? "[ All ]" : remote + (branch is null ? "" : " / " + branch)),
                         (ct, output) => All ? Repository.FetchAllAsync(fetchOptions, ct, output)
-                            : branch is not null ? Repository.FetchRemoteBranchAsync(remote, branch, fetchOptions, ct, output)
+                            : fetchBranch is not null ? Repository.FetchRemoteBranchAsync(remote, fetchBranch, fetchOptions, ct, output)
                             : Repository.FetchRemoteAsync(remote, fetchOptions, ct, output), token);
                 }
                 else
@@ -479,7 +480,18 @@ public sealed class PullDialog : RepositoryDialog
             });
             return;
         }
-        if (_conflicts.SelectedItem is not string path) { return; }
+        if (_conflicts.SelectedItem is not string path)
+        {
+            await RunAsync("Resolve conflicts", async token =>
+            {
+                ResolveConflictsDialog conflicts = new(Repository);
+                conflicts.Opened += async (_, _) => await conflicts.InitializeAsync();
+                await ShowOwnedAsync<object?>(this, conflicts, token);
+                if (conflicts.HasRepositoryChanges) { MarkRepositoryChanged(); }
+                await RefreshOperationAsync(token);
+            });
+            return;
+        }
         PatchConflictDialog dialog = new(Repository, path);
         dialog.Opened += async (_, _) => await dialog.InitializeAsync();
         await dialog.ShowDialog(this);
@@ -537,12 +549,12 @@ public sealed class PullDialog : RepositoryDialog
         _tagsFollow.IsEnabled = _tagsNone.IsEnabled = _unshallow.IsEnabled = _autoStash.IsEnabled = !IsBusy;
         _stash.IsEnabled = !IsBusy && _info?.IsBare != true;
         _branch.IsEnabled = !IsBusy && !All;
-        _execute.IsEnabled = !IsBusy && IsReady && _operationName is null && (_fetch.IsChecked == true || !All);
-        _execute.Content = T(_fetch.IsChecked == true ? "Fetch" : "Pull");
+        _execute.IsEnabled = !IsBusy && IsReady && !string.IsNullOrWhiteSpace(Source) && _operationName is null && (_fetch.IsChecked == true || !All);
+        UpdateOriginalPresentation();
         _continue.IsVisible = _abort.IsVisible = _operationName is not null;
         _continue.IsEnabled = !IsBusy && _operationName is not null && _conflicts.ItemCount == 0;
         _abort.IsEnabled = !IsBusy && _operationName is not null;
-        _resolve.IsVisible = _conflicts.IsVisible = _conflicts.ItemCount > 0;
-        _resolve.IsEnabled = !IsBusy && _conflicts.SelectedItem is string;
+        _conflicts.IsVisible = _conflicts.ItemCount > 0;
+        _resolve.IsEnabled = !IsBusy && _info?.IsBare != true;
     }
 }

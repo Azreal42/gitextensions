@@ -173,7 +173,7 @@ public class PullAdvancedDialogTests
         Assert.That(((AccessText)Field<RadioButton>(dialog, "PullTagsFollow").Content!).Text, Does.StartWith("Suivre _tagopt"));
         Assert.That(((AccessText)Field<CheckBox>(dialog, "PullPruneTags").Content!).Text, Does.Contain("étiquettes"));
         Assert.That(((AccessText)Field<CheckBox>(dialog, "PullAutoStash").Content!).Text, Is.EqualTo("_Remiser automatiquement"));
-        Assert.That(Field<TextBlock>(dialog, "PullRemoteLabel").Text, Is.EqualTo("Distant"));
+        Assert.That(((AccessText)Field<RadioButton>(dialog, "PullFromRemote").Content!).Text!.Replace("_", ""), Is.EqualTo("Distant"));
         Assert.That(Field<TextBlock>(dialog, "PullRemoteBranchLabel").Text, Is.EqualTo("Branche distante"));
         Assert.That(Field<CheckBox>(dialog, "PullUnshallow").IsVisible, Is.False, "The historical option is hidden for a full repository.");
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
@@ -183,7 +183,8 @@ public class PullAdvancedDialogTests
             {
                 Control control = Field<Control>(dialog, name); Point location = control.TranslatePoint(default, dialog)!.Value;
                 Assert.That(location.Y, Is.GreaterThanOrEqualTo(0)); Assert.That(location.Y + control.Bounds.Height, Is.LessThanOrEqualTo(dialog.ClientSize.Height));
-                if (control is ContentControl { Content: AccessText label })
+                AccessText? label = control.GetVisualDescendants().OfType<AccessText>().FirstOrDefault();
+                if (label is not null)
                 { Assert.That(label.Bounds.Height, Is.LessThanOrEqualTo(control.Bounds.Height), "Wrapped French labels must fit their actual control."); }
             }
             Color expected = Color.Parse(theme == ThemeVariant.Dark ? "#2864b4" : "#0078d7");
@@ -389,7 +390,7 @@ public class PullAdvancedDialogTests
     private static async Task Closed(PullDialog dialog) { await Until(() => !dialog.IsVisible && !dialog.IsBusy); Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString()); Assert.That(dialog.Succeeded, Is.True); }
     private static void Capture(Window window, string name) { Pump(window); using WriteableBitmap? frame = window.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null); string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, name); frame!.Save(path); TestContext.AddTestAttachment(path); }
 
-    private sealed class Fixture : IAsyncDisposable
+    internal sealed class Fixture : IAsyncDisposable
     {
         private readonly List<(PullDialog Dialog, Task Shown)> _dialogs = [];
         private readonly Window _owner = new() { Width = 1000, Height = 850 };
