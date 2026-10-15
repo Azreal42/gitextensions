@@ -249,6 +249,7 @@ public sealed partial class MainWindow
         }
         finally { _layingOutCommitInfo = false; }
         if (persist) { _browserLayoutPreferences.Save(new(position)); }
+        if (!_busy) { _ = LoadVisibleRevisionPanelAsync(); }
     }
 
     private void LimitCommitInfoWidth()

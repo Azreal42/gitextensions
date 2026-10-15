@@ -176,6 +176,11 @@ public class BrowseLayoutTests
                 AssertLayout(main, position);
                 Assert.That(Field<CommitGraph>(main, null).Commits.Any(commit => commit.Parents.Count == 2), Is.True);
                 Assert.That(Information(main).Text, Does.Contain("Main branch change"));
+                if (position != CommitInfoPosition.BelowList)
+                {
+                    Assert.That(main.GetVisualDescendants().OfType<DiffView>().Single(view => view.IsEffectivelyVisible).Text,
+                        Does.Contain("+Main branch content"), "Exposing Diff by moving Commit information must also load the selected revision.");
+                }
                 using WriteableBitmap? frame = main.CaptureRenderedFrame();
                 Assert.That(frame, Is.Not.Null);
                 string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"classic-browser-layout-{position}-{theme}.png");
@@ -294,6 +299,7 @@ public class BrowseLayoutTests
     private static async Task LayoutAsync(MainWindow main)
     {
         await Task.Yield(); Dispatcher.UIThread.RunJobs(); main.UpdateLayout();
+        await UntilAsync(() => !main.IsBusy);
     }
     private static async Task UntilAsync(Func<bool> predicate)
     {
