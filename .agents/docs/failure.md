@@ -186,3 +186,4 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Tools/Help restent anglais avec le nom de leur classe Windows | Leurs entrées sont fusionnées dans la catégorie XLF FormBrowse ; traduire avec les identifiants du Designer. |
 | Le style commun ne change pas certains menus de diff | Height/MinHeight locaux et palettes par entrée ont priorité sur les styles ; retirer ces copies et vérifier les bounds des vrais popups. |
 | Une coche masque un PNG de diff | Forcer toutes les coches dans la colonne d’icône remplace le glyph original ; conserver la colonne native distincte quand une entrée a une icône, et garder les vérifications de pixels. |
+| Translate reste sombre malgré la correction des pixels noirs | Le PNG historique contient du RGB 1 avec alpha partiel. Réutiliser la correction achromatique complète du diff et vérifier les pixels non transparents du vrai bitmap en thème sombre. |
