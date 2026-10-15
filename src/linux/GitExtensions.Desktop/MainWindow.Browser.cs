@@ -382,7 +382,7 @@ public sealed partial class MainWindow
     {
         StackPanel panel = new() { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         Uri uri = new($"avares://GitExtensions/Assets/Icons/{name}");
-        if (AssetLoader.Exists(uri)) { using Stream stream = AssetLoader.Open(uri); panel.Children.Add(new Image { Source = new Bitmap(stream), Width = 16, Height = 16 }); }
+        if (AssetLoader.Exists(uri)) { panel.Children.Add(OriginalIconImage(name)); }
         panel.Children.Add(new TextBlock { Text = translate ? T(label) : label, VerticalAlignment = VerticalAlignment.Center });
         return panel;
     }

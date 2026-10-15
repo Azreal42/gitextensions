@@ -33,7 +33,7 @@ public sealed partial class MainWindow
         Button collapse = ToolbarButton("NavigationCollapseAll", "Collapse all", "CollapseAll.png", () =>
         { foreach (TreeViewItem item in NavigationItems()) { item.IsExpanded = false; } return Task.CompletedTask; });
         toolbar.Children.Add(collapse);
-        foreach ((string name, string icon) in new[] { ("Branches", "BranchLocal.png"), ("Remotes", "BranchRemote.png"),
+        foreach ((string name, string icon) in new[] { ("Branches", "LocalBranchRoot.png"), ("Remotes", "RemoteBranchRoot.png"),
             ("Tags", "TagHorizontal.png"), ("Submodules", "FolderSubmodule.png"), ("Stashes", "stash.png"), ("Worktrees", "WorkTree.png") })
         {
             Avalonia.Controls.Primitives.ToggleButton toggle = new()
@@ -55,9 +55,7 @@ public sealed partial class MainWindow
         _navigationSearch.KeyDown += (_, args) =>
         { if (args.Key == Avalonia.Input.Key.Escape) { _navigationSearch.Text = ""; args.Handled = true; } };
         DockPanel.SetDock(search, Dock.Top); panel.Children.Add(search);
-        _navigation.Styles.Add(new Style(selector => selector.OfType<TreeViewItem>())
-        { Setters = { new Setter(MinHeightProperty, BrowseRowHeight), new Setter(PaddingProperty, new Thickness(0)) } });
-        panel.Children.Add(_navigation);
+        panel.Children.Add(Controls.ClassicTreeViewAppearance.Wrap(_navigation));
         return panel;
     }
 
@@ -112,6 +110,8 @@ public sealed partial class MainWindow
             TreeViewItem node = new() { Header = IconLabel(caption, icon, translate: false), Tag = tag,
                 IsExpanded = filter.Length > 0 || (_navigationExpansion.TryGetValue(key, out bool previous) ? previous : expanded) };
             if (children is not null) { node.ItemsSource = children.ToArray(); }
+            if (tag is GitReference { IsCurrent: true } && node.Header is StackPanel label)
+            { label.Children.OfType<TextBlock>().Single().FontWeight = FontWeight.Bold; }
             ToolTip.SetTip(node, caption); _navigationKeys[node] = key; return node;
         }
         IEnumerable<TreeViewItem> References(string group, IEnumerable<GitReference> refs, string prefix = "")
@@ -127,7 +127,7 @@ public sealed partial class MainWindow
                 {
                     string path = prefix + segment.Key + "/";
                     yield return Node("folder:" + group + ":" + path, segment.Key,
-                        group == "Remotes" && prefix.Length == 0 ? "BranchRemote.png" : "FolderClosed.png", new NavigationFolder(path), References(group, nested, path), true);
+                        group == "Remotes" && prefix.Length == 0 ? "Remote.png" : "BranchFolder.png", new NavigationFolder(path), References(group, nested, path), true);
                 }
             }
         }
@@ -142,8 +142,8 @@ public sealed partial class MainWindow
                 if (_navigationGroups[name] && (filter.Length == 0 || nodes.Length > 0))
                 { groups.Add(Node("group:" + name, T(name), icon, new NavigationGroup(name), nodes, name != "Tags")); }
             }
-            Group("Branches", "BranchLocal.png", References("Branches", _navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName))));
-            Group("Remotes", "BranchRemote.png", References("Remotes", _navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName))));
+            Group("Branches", "LocalBranchRoot.png", References("Branches", _navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName))));
+            Group("Remotes", "RemoteBranchRoot.png", References("Remotes", _navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName))));
             Group("Tags", "TagHorizontal.png", References("Tags", _navigationReferences.Where(reference => reference.IsTag && Matches(reference.ShortName))));
             Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Where(module => Matches(module.Path)).Select(module => Node("submodule:" + module.Path, module.Path, "FolderSubmodule.png", "Submodules")));
             Group("Stashes", "stash.png", _navigationStashes.Where(stash => Matches(stash.Subject)).Select(stash => Node("stash:" + stash.Reference, stash.Subject, "stash.png", "Stashes")));

@@ -187,3 +187,10 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Le style commun ne change pas certains menus de diff | Height/MinHeight locaux et palettes par entrée ont priorité sur les styles ; retirer ces copies et vérifier les bounds des vrais popups. |
 | Une coche masque un PNG de diff | Forcer toutes les coches dans la colonne d’icône remplace le glyph original ; conserver la colonne native distincte quand une entrée a une icône, et garder les vérifications de pixels. |
 | Translate reste sombre malgré la correction des pixels noirs | Le PNG historique contient du RGB 1 avec alpha partiel. Réutiliser la correction achromatique complète du diff et vérifier les pixels non transparents du vrai bitmap en thème sombre. |
+
+## Arbre de navigation
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Chevron compact impossible à cliquer | Un padding du TreeView provoque un BringIntoView horizontal de 6 px au focus, entre appui et relâchement. Mettre le retrait dans les entêtes, garder le viewport sans padding et vérifier un vrai clic immobile. |
+| Une hauteur fixe masque les descendants | La hauteur du TreeViewItem inclut ses enfants ; fixer uniquement le Border d’entête à 18 px et garder une hauteur automatique pour l’item. |
