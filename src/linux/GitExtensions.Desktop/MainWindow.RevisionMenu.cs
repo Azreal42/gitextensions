@@ -61,18 +61,7 @@ public sealed partial class MainWindow
         RevisionContextMenuAppearance.Configure(_revisionContext);
         _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
         _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
-        _revisionContext.Closed += (_, _) =>
-        {
-            bool pending = _contextRevisionDiffPending; _contextRevisionDiffPending = false;
-            if (pending)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
-                {
-                    if (!_busy && !_lifetime.IsCancellationRequested && _repository is not null && _commits.SelectedItem is GitCommit commit)
-                    { await LoadSelectedRevisionDetailsAsync(commit); }
-                }, Avalonia.Threading.DispatcherPriority.Background);
-            }
-        };
+        _revisionContext.Closed += (_, _) => QueuePendingRevisionDetails();
         _revisionContext.AddHandler(KeyDownEvent, (_, args) =>
         {
             if (args.KeyModifiers == KeyModifiers.Control && args.Key is Key.B or Key.T) { _revisionContext.Close(); }
@@ -109,6 +98,20 @@ public sealed partial class MainWindow
             SetFileTreePaths(repository, commit.Hash, (await repository.GetTreeAsync(commit.Hash, cancellationToken: Token)).Select(entry => entry.Path).ToArray());
             _fileContent?.ClearImage(); _fileView.Text = null; _gpgInfo.Text = null;
         }, refresh: false);
+    }
+
+    private void QueuePendingRevisionDetails()
+    {
+        if (!_contextRevisionDiffPending) { return; }
+        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        {
+            if (!_contextRevisionDiffPending || _busy || _revisionContext?.IsOpen == true || _lifetime.IsCancellationRequested
+                || _repository is null || _commits.SelectedItem is not GitCommit commit) { return; }
+            // Keep the request while a menu action owns a dialog. Returning to
+            // idle retries it, including when that dialog was simply cancelled.
+            _contextRevisionDiffPending = false;
+            await LoadSelectedRevisionDetailsAsync(commit);
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void RefreshRevisionContextMenu()

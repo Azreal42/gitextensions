@@ -6,7 +6,7 @@ Retrouver le menu de la capture Windows : ordre, groupes, icônes originales, ra
 
 ## Décision
 
-Conserver les menus Avalonia natifs ; appliquer localement la palette historique, des lignes de 22 px et la gouttière des icônes. Les libellés contextualisés réutilisent les XLF. Le clic droit conserve une multisélection existante et diffère le chargement du diff pour permettre l’ouverture du menu.
+Conserver les menus Avalonia natifs ; appliquer localement la palette historique, des lignes de 22 px et la gouttière des icônes. Les libellés contextualisés réutilisent les XLF. Le clic droit conserve une multisélection existante et diffère le chargement du diff pour permettre l’ouverture du menu. Une demande différée reste en attente pendant un dialogue et reprend au retour à l’état libre, y compris après Cancel ; elle ne doit pas interrompre le clic sur une action.
 
 Réutiliser les dialogues de branche, tag, reset, cherry-pick, revert, archive et comparaison. Lire les références au peuplement du menu ; exclure les références symboliques et la branche courante du checkout/suppression. Garder les protections bare et les confirmations.
 

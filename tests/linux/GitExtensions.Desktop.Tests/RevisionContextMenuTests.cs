@@ -11,6 +11,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using NUnit.Framework;
@@ -159,6 +160,29 @@ public sealed class RevisionContextMenuTests
             if (dialog is CreateBranchDialog branch) { Assert.That(branch.ReadOptions().Revision, Is.EqualTo(target.Hash)); }
             dialog.Close(); await Idle(main);
         }
+    }
+
+    [AvaloniaTest]
+    public async Task CancellingADialogAfterRightClickLoadsTheNewlySelectedCommitDiff()
+    {
+        using Fixture fixture = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
+        MainWindow main = fixture.Window; ListBox history = History(main); Pump(main);
+        GitCommit target = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Initial commit");
+        DiffView diff = main.GetVisualDescendants().OfType<DiffView>().Single(view => view.Name == "CommitDiff");
+        Assert.That(diff.DocumentIdentity, Does.Not.Contain(target.Hash));
+        ListBoxItem row = history.GetVisualDescendants().OfType<ListBoxItem>().Single(item => item.DataContext is GitCommit commit && commit.Hash == target.Hash);
+        Point point = row.TranslatePoint(new Point(100, row.Bounds.Height / 2), main)!.Value;
+        main.MouseDown(point, MouseButton.Right); main.MouseUp(point, MouseButton.Right); Pump(main);
+        Assert.That(history.ContextMenu!.IsOpen, Is.True);
+        TopLevel popup = TopLevel.GetTopLevel(history.ContextMenu.Items.OfType<MenuItem>().First())!;
+        popup.KeyPressQwerty(PhysicalKey.B, RawInputModifiers.Control); popup.KeyReleaseQwerty(PhysicalKey.B, RawInputModifiers.Control); Pump(main);
+        await Until(() => main.OwnedWindows.OfType<CreateBranchDialog>().Any(dialog => !dialog.IsBusy));
+        CreateBranchDialog dialog = main.OwnedWindows.OfType<CreateBranchDialog>().Single();
+        Assert.That(dialog.ReadOptions().Revision, Is.EqualTo(target.Hash));
+        dialog.Close(); Pump(main);
+        await Until(() => !main.IsBusy && diff.DocumentIdentity?.Contains(target.Hash, StringComparison.Ordinal) == true);
+        Assert.That(main.LastException, Is.Null);
+        Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["branch", "--list"])).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries), Has.Length.EqualTo(2));
     }
 
     [AvaloniaTest]

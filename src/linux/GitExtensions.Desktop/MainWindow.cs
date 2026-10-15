@@ -527,6 +527,7 @@ public sealed partial class MainWindow : Window
         RefreshSubmoduleRemovalButton();
         RefreshRebaseMenu();
         RefreshRevisionContextMenu();
+        if (enabled) { QueuePendingRevisionDetails(); }
         _browserToolbar?.Place();
     }
 
