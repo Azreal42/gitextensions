@@ -96,7 +96,7 @@ public class DiffViewerRenderingMenuTests
                 foreach ((string suffix, _, _) in Glyphs)
                 {
                     MenuItem item = fixture.Item(suffix); Image image = (Image)item.Icon!; Bitmap bitmap = (Bitmap)image.Source!;
-                    Assert.That(image.ActualThemeVariant, Is.EqualTo(theme)); Assert.That(item.Bounds.Height, Is.EqualTo(24));
+                    Assert.That(image.ActualThemeVariant, Is.EqualTo(theme)); Assert.That(item.Bounds.Height, Is.EqualTo(22));
                     byte[] actual = ReadBitmap(bitmap), expected = originals[suffix];
                     for (int offset = 0; offset < expected.Length; offset += 4)
                     {
@@ -210,7 +210,7 @@ public class DiffViewerRenderingMenuTests
         internal Fixture()
         {
             Controller = new(new DiffViewerPreferencesStore(Directory.Path));
-            Menu = new() { ItemsSource = Controller.CreateContextMenuItems("RevisionDiff") }; DiffViewerPopupLayout.Configure(Menu); Viewer.ContextMenu = Menu;
+            Menu = new() { ItemsSource = Controller.CreateContextMenuItems("RevisionDiff") }; Viewer.ContextMenu = Menu;
             NonPrinting = (ToggleButton)Controller.CreateNonPrintingButton(); Syntax = (ToggleButton)Controller.CreateSyntaxHighlightingButton();
             Viewer.AddHandler(InputElement.KeyDownEvent, (_, args) => Controller.HandleKeyDown(args), Avalonia.Interactivity.RoutingStrategies.Tunnel);
             Window = new() { Width = 980, Height = 420, Content = new StackPanel { Margin = new Thickness(10), Spacing = 3, Children = { new StackPanel { Orientation = Orientation.Horizontal, Children = { NonPrinting, Syntax } }, Viewer, Outside } } };

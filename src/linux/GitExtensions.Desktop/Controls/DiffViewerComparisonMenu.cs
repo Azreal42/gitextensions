@@ -166,10 +166,8 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     }
     private MenuItem Item(string name, string category, string original, string source, Command command, string? icon = null)
     {
-        MenuItem item = new() { Name = name, Header = new AccessText { Text = _translations.TranslateAccessKeys(category, original, "Text", source) },
-            Height = 24, MinHeight = 24, Padding = new Thickness(7, 2) };
+        MenuItem item = new() { Name = name, Header = new AccessText { Text = _translations.TranslateAccessKeys(category, original, "Text", source) } };
         if (command is not (Command.Increase or Command.Decrease)) { item.ToggleType = MenuItemToggleType.CheckBox; }
-        item.Resources = new ResourceDictionary { ThemeDictionaries = { [ThemeVariant.Light] = MenuResources(false), [ThemeVariant.Dark] = MenuResources(true) } };
         if (icon is not null) { item.Icon = Icon(icon); }
         item.Click += (_, _) => { Execute(command); Refresh(); }; _items.Add((item, command)); return item;
     }
@@ -208,19 +206,6 @@ public sealed class DiffViewerComparisonMenu : IDisposable
             image.ActualThemeVariantChanged += handler; _themeHandlers.Add((image, handler)); UpdateSource();
         }
         _images.Add(image); return image;
-    }
-    private static ResourceDictionary MenuResources(bool dark)
-    {
-        IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(dark); ResourceDictionary resources = new();
-        foreach ((string resource, string color) in new Dictionary<string, string>
-        {
-            ["MenuFlyoutPresenterBackground"] = "Menu", ["MenuFlyoutPresenterBorderBrush"] = "ActiveBorder",
-            ["MenuFlyoutItemBackgroundPointerOver"] = "MenuHighlight", ["MenuFlyoutItemBackgroundPressed"] = "MenuHighlight",
-            ["MenuFlyoutItemForegroundPointerOver"] = "HighlightText", ["MenuFlyoutItemForegroundPressed"] = "HighlightText",
-            ["MenuFlyoutItemKeyboardAcceleratorTextForeground"] = "MenuText", ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver"] = "HighlightText",
-            ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed"] = "HighlightText"
-        }) { resources[resource] = Brush.Parse(colors[color]); }
-        return resources;
     }
     private static ResourceDictionary ButtonResources(bool dark)
     {

@@ -305,7 +305,7 @@ public sealed class DiffView : UserControl, IDisposable
         base.OnPropertyChanged(change);
         if (change.Property == ContextMenuProperty && ContextMenu is { } menu)
         {
-            DiffViewerPopupLayout.Configure(menu);
+
         }
         if (change.Property == ModeProperty)
         {

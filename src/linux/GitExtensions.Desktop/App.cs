@@ -10,6 +10,7 @@ public sealed class App : Application
     {
         Styles.Add(new FluentTheme());
         Styles.Add(ClassicStyles.Create());
+        Styles.Add(Controls.ClassicMenuAppearance.Create());
         RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
     }
 

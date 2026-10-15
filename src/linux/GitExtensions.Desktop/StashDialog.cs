@@ -251,7 +251,6 @@ public sealed class StashDialog : RepositoryDialog
         _resetToStash.Click += async (_, _) => await ResetSelectedFilesAsync(false);
         _resetToParent.Click += async (_, _) => await ResetSelectedFilesAsync(true);
         ContextMenu menu = new() { ItemsSource = new[] { _resetFiles, _pickChanges } };
-        DiffViewerPopupLayout.Configure(menu);
         menu.Opening += (_, _) => RefreshFileMenu();
         foreach (MenuItem item in new[] { _pickChanges, _resetFiles, _resetToStash, _resetToParent })
         {

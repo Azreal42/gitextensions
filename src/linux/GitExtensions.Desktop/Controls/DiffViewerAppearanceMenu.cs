@@ -63,7 +63,6 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         MenuSet set = CreateItems(null);
         MenuFlyout flyout = new() { ItemsSource = set.Items };
-        DiffViewerPopupLayout.Configure(flyout);
         flyout.Opening += (_, _) => Synchronize();
         _flyouts.Add(flyout); UpdateMenus(); return flyout;
     }
@@ -111,18 +110,7 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
 
     private MenuItem Item(string name, string category, string originalName, string source, string? icon = null)
     {
-        MenuItem item = new() { Name = "DiffViewer" + name, Header = new AccessText { Text = _translations.TranslateAccessKeys(category, originalName, "Text", source) },
-            MinHeight = 24, Height = 24, Padding = new Avalonia.Thickness(7, 2) };
-        // Fluent draws selected/pressed states inside the template. Its check mark
-        // instead binds MenuItem.Foreground, so both must use the original pair.
-        item.Resources = new ResourceDictionary
-        {
-            ThemeDictionaries =
-            {
-                [ThemeVariant.Light] = MenuResources(dark: false),
-                [ThemeVariant.Dark] = MenuResources(dark: true)
-            }
-        };
+        MenuItem item = new() { Name = "DiffViewer" + name, Header = new AccessText { Text = _translations.TranslateAccessKeys(category, originalName, "Text", source) } };
         if (icon is not null)
         {
             if (!_bitmaps.TryGetValue(icon, out Bitmap? bitmap))
@@ -134,30 +122,6 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
             _images.Add(image); item.Icon = image;
         }
         return item;
-    }
-
-    private static ResourceDictionary MenuResources(bool dark)
-    {
-        IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(dark);
-        ResourceDictionary resources = new();
-        foreach ((string resource, string color) in new Dictionary<string, string>
-        {
-            ["MenuFlyoutPresenterBackground"] = "Menu",
-            ["MenuFlyoutPresenterBorderBrush"] = "ActiveBorder",
-            ["MenuFlyoutItemBackgroundPointerOver"] = "MenuHighlight",
-            ["MenuFlyoutItemBackgroundPressed"] = "MenuHighlight",
-            ["MenuFlyoutItemForegroundPointerOver"] = "HighlightText",
-            ["MenuFlyoutItemForegroundPressed"] = "HighlightText",
-            ["MenuFlyoutItemKeyboardAcceleratorTextForeground"] = "MenuText",
-            ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver"] = "HighlightText",
-            ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed"] = "HighlightText",
-            ["MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled"] = "GrayText",
-            ["MenuFlyoutSubItemChevron"] = "MenuText",
-            ["MenuFlyoutSubItemChevronPointerOver"] = "HighlightText",
-            ["MenuFlyoutSubItemChevronPressed"] = "HighlightText",
-            ["MenuFlyoutSubItemChevronSubMenuOpened"] = "MenuText"
-        }) { resources[resource] = Brush.Parse(colors[color]); }
-        return resources;
     }
 
     private void SelectAppearance(DiffViewerAppearance appearance)

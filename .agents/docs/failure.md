@@ -178,3 +178,11 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | WM_DELETE sur le propriétaire désactivé d’un Process modal ignoré | Avalonia X11 vérifie IsEnabled avant Closing ; Pull P01 `7fc8756da` reste non accepté. Conserver les matériaux avant acquittement et le nettoyage normal distinct ; ne pas assimiler l’envoi du message à la fermeture du propriétaire. |
 
 Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; leurs audits natifs restent attribués aux lots d'origine. Les anciennes mentions « paquet suivant à valider » ne remplacent pas les limites actuelles du TODO.
+
+## Menus partagés
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Tools/Help restent anglais avec le nom de leur classe Windows | Leurs entrées sont fusionnées dans la catégorie XLF FormBrowse ; traduire avec les identifiants du Designer. |
+| Le style commun ne change pas certains menus de diff | Height/MinHeight locaux et palettes par entrée ont priorité sur les styles ; retirer ces copies et vérifier les bounds des vrais popups. |
+| Une coche masque un PNG de diff | Forcer toutes les coches dans la colonne d’icône remplace le glyph original ; conserver la colonne native distincte quand une entrée a une icône, et garder les vérifications de pixels. |

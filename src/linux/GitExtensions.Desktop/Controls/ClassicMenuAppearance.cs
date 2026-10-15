@@ -7,40 +7,35 @@ using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
-using GitExtensions.Linux.Desktop;
 using Path = Avalonia.Controls.Shapes.Path;
 
-namespace GitExtensions.Desktop.Controls;
+namespace GitExtensions.Linux.Desktop.Controls;
 
-/// <summary>Applies the original compact revision menu appearance to a native Avalonia menu.</summary>
-public static class RevisionContextMenuAppearance
+/// <summary>Shared Windows menu metrics and colors for native menu bars, context menus and flyouts.</summary>
+internal static class ClassicMenuAppearance
 {
-    private const string MenuClass = "revision-context-menu";
     private static readonly FontFamily MenuFont = new("Segoe UI, Noto Sans, DejaVu Sans");
 
-    public static void Configure(ContextMenu menu)
+    public static Styles Create()
     {
-        ArgumentNullException.ThrowIfNull(menu);
-        if (menu.Classes.Contains(MenuClass)) { return; }
-        menu.Classes.Add(MenuClass);
-
+        Styles styles = new();
         // These are the dimensions consumed inside Fluent's native menu and
-        // submenu templates. Resources on the menu also reach later additions
+        // submenu templates. Application resources also reach later additions
         // to MenuItem.Items, including items hosted in a submenu's Popup.
-        menu.Resources["OverlayCornerRadius"] = new CornerRadius(0);
-        menu.Resources["MenuFlyoutPresenterBorderThemeThickness"] = new Thickness(1);
-        menu.Resources["MenuFlyoutPresenterThemePadding"] = new Thickness(0, 2);
-        menu.Resources["MenuFlyoutScrollerMargin"] = new Thickness(0);
-        menu.Resources["MenuFlyoutThemeMinHeight"] = 0d;
-        menu.Resources["FlyoutThemeMaxWidth"] = double.PositiveInfinity;
-        menu.Resources["MenuFlyoutItemThemePaddingNarrow"] = new Thickness(4, 0, 8, 0);
-        menu.Resources["MenuIconPresenterMargin"] = new Thickness(0, 0, 6, 0);
-        menu.Resources["MenuInputGestureTextMargin"] = new Thickness(24, 0, 0, 0);
-        menu.Resources["MenuFlyoutItemChevronMargin"] = new Thickness(10, 0, 0, 0);
-        menu.Resources["MenuFlyoutSubItemPopupHorizontalOffset"] = -1d;
-        menu.Resources["MenuFlyoutSeparatorThemeHeight"] = 6d;
-        menu.Resources["MenuFlyoutSeparatorThemePadding"] = new Thickness(26, 0, 6, 0);
-        menu.Resources.MergedDictionaries.Add(new ResourceDictionary
+        styles.Resources["OverlayCornerRadius"] = new CornerRadius(0);
+        styles.Resources["MenuFlyoutPresenterBorderThemeThickness"] = new Thickness(1);
+        styles.Resources["MenuFlyoutPresenterThemePadding"] = new Thickness(0, 2);
+        styles.Resources["MenuFlyoutScrollerMargin"] = new Thickness(0);
+        styles.Resources["MenuFlyoutThemeMinHeight"] = 0d;
+        styles.Resources["FlyoutThemeMaxWidth"] = double.PositiveInfinity;
+        styles.Resources["MenuFlyoutItemThemePaddingNarrow"] = new Thickness(4, 0, 8, 0);
+        styles.Resources["MenuIconPresenterMargin"] = new Thickness(0, 0, 6, 0);
+        styles.Resources["MenuInputGestureTextMargin"] = new Thickness(24, 0, 0, 0);
+        styles.Resources["MenuFlyoutItemChevronMargin"] = new Thickness(10, 0, 0, 0);
+        styles.Resources["MenuFlyoutSubItemPopupHorizontalOffset"] = -1d;
+        styles.Resources["MenuFlyoutSeparatorThemeHeight"] = 6d;
+        styles.Resources["MenuFlyoutSeparatorThemePadding"] = new Thickness(26, 0, 6, 0);
+        styles.Resources.MergedDictionaries.Add(new ResourceDictionary
         {
             ThemeDictionaries =
             {
@@ -50,11 +45,51 @@ public static class RevisionContextMenuAppearance
         });
 
         // Keep the native menu templates, shared shortcut/chevron columns, popup
-        // interaction, access keys and automation peers. The ancestor class
-        // limits every override to this menu while giving template-part
-        // setters precedence over Fluent's own template defaults.
-        menu.Styles.Add(new Styles
+        // interaction, access keys and automation peers. Ancestor selectors give
+        // template-part setters precedence over Fluent's own defaults, including
+        // dynamically populated items hosted in nested popups.
+        styles.Add(new Styles
         {
+            new Style(selector => selector.OfType<Menu>())
+            {
+                Setters =
+                {
+                    new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutPresenterBackground")),
+                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForeground"))
+                }
+            },
+            new Style(selector => selector.OfType<ContextMenu>())
+            {
+                Setters =
+                {
+                    new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutPresenterBackground")),
+                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForeground")),
+                    new Setter(TemplatedControl.BorderBrushProperty, Resource("MenuFlyoutPresenterBorderBrush"))
+                }
+            },
+            new Style(selector => selector.OfType<MenuItem>())
+            {
+                Setters =
+                {
+                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.PaddingProperty, new Thickness(7, 3)),
+                    new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutPresenterBackground")),
+                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForeground"))
+                }
+            },
+            new Style(selector => selector.OfType<MenuItem>().Class(":selected"))
+            {
+                Setters =
+                {
+                    new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutItemBackgroundPointerOver")),
+                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForegroundPointerOver"))
+                }
+            },
+            new Style(selector => selector.OfType<MenuItem>().Class(":disabled"))
+            {
+                Setters = { new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForegroundDisabled")) }
+            },
+
             new Style(selector => Root(selector))
             {
                 Setters =
@@ -122,13 +157,13 @@ public static class RevisionContextMenuAppearance
                     new Setter(Layoutable.MarginProperty, new Thickness(0, 0, 6, 0))
                 }
             },
-            new Style(selector => Item(selector).Class(":checked").Class(":toggle").Template().OfType<ContentControl>().Name("PART_IconPresenter"))
+            // An item carrying both a check and an original bitmap needs both.
+            // Keep Fluent's shared check column in that case, so selected diff
+            // options never replace their glyph with a check mark.
+            new Style(selector => Item(selector).Not(item => item.PropertyEquals(MenuItem.IconProperty, null))
+                .Template().OfType<ContentControl>().Name("PART_ToggleIconPresenter"))
             {
-                Setters = { new Setter(Visual.IsVisibleProperty, false) }
-            },
-            new Style(selector => Item(selector).Class(":checked").Class(":radio").Template().OfType<ContentControl>().Name("PART_IconPresenter"))
-            {
-                Setters = { new Setter(Visual.IsVisibleProperty, false) }
+                Setters = { new Setter(Grid.ColumnProperty, 0) }
             },
             new Style(selector => Item(selector).Class(":disabled").Template().OfType<ContentControl>().Name("PART_IconPresenter"))
             {
@@ -154,7 +189,7 @@ public static class RevisionContextMenuAppearance
                     new Setter(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Center)
                 }
             },
-            new Style(selector => Root(selector).Descendant().OfType<Separator>())
+            new Style(selector => selector.Is<MenuBase>().Descendant().OfType<Separator>())
             {
                 Setters =
                 {
@@ -162,7 +197,7 @@ public static class RevisionContextMenuAppearance
                     new Setter(Layoutable.MinHeightProperty, 6d),
                     new Setter(Layoutable.MarginProperty, new Thickness(0)),
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
-                    new Setter(TemplatedControl.BackgroundProperty, Resource("RevisionMenuSeparatorBrush")),
+                    new Setter(TemplatedControl.BackgroundProperty, Resource("ClassicMenuSeparatorBrush")),
                     // Only the separator's single line needs a small template;
                     // it has no menu input or accessibility behavior to replace.
                     new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate<Separator>((_, _) =>
@@ -188,10 +223,13 @@ public static class RevisionContextMenuAppearance
                 }
             }
         });
+        return styles;
     }
 
-    private static Selector Root(Selector? selector) => selector.OfType<ContextMenu>().Class(MenuClass);
-    private static Selector Item(Selector? selector) => Root(selector).Descendant().OfType<MenuItem>();
+    private static Selector Root(Selector? selector) => Selectors.Or(selector.OfType<ContextMenu>(), selector.OfType<MenuFlyoutPresenter>());
+    // MenuBase also covers the horizontal menu bar. Its top-level buttons keep
+    // the native horizontal layout; only popup rows receive an icon gutter.
+    private static Selector Item(Selector? selector) => selector.Is<MenuBase>().Descendant().OfType<MenuItem>().Not(item => item.Class(":top-level"));
     private static DynamicResourceExtension Resource(string name) => new(name);
 
     private static ResourceDictionary Palette(bool dark)
@@ -219,7 +257,7 @@ public static class RevisionContextMenuAppearance
             ["MenuFlyoutSubItemChevronPressed"] = "HighlightText",
             ["MenuFlyoutSubItemChevronSubMenuOpened"] = "HighlightText",
             ["MenuFlyoutSubItemChevronDisabled"] = "GrayText",
-            ["RevisionMenuSeparatorBrush"] = "ControlDark"
+            ["ClassicMenuSeparatorBrush"] = "ControlDark"
         }) { resources[resource] = Brush.Parse(colors[color]); }
         return resources;
     }

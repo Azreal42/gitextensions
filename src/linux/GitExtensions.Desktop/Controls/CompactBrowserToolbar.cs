@@ -35,7 +35,6 @@ internal sealed class CompactBrowserToolbar : Border
         Name = "RepositoryToolbar";
         Height = 26; MinHeight = 26; MaxHeight = 26; Padding = new Thickness(3, 1);
         _flyout.ItemsSource = _popupItems;
-        DiffViewerPopupLayout.Configure(_flyout);
         Overflow = new Button
         {
             Name = "RepositoryToolbarOverflow", Content = "»", Width = 24, Height = 24,

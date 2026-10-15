@@ -131,45 +131,6 @@ internal static class ClassicStyles
                     new Setter(TemplatedControl.ForegroundProperty, Resource("Text"))
                 }
             },
-            new Style(selector => selector.OfType<Menu>())
-            {
-                Setters =
-                {
-                    new Setter(TemplatedControl.BackgroundProperty, Resource("Menu")),
-                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuText"))
-                }
-            },
-            new Style(selector => selector.OfType<ContextMenu>())
-            {
-                Setters =
-                {
-                    new Setter(TemplatedControl.BackgroundProperty, Resource("Menu")),
-                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuText")),
-                    new Setter(TemplatedControl.BorderBrushProperty, Resource("Border"))
-                }
-            },
-            new Style(selector => selector.OfType<MenuItem>())
-            {
-                Setters =
-                {
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
-                    new Setter(TemplatedControl.PaddingProperty, new Thickness(7, 3)),
-                    new Setter(TemplatedControl.BackgroundProperty, Resource("Menu")),
-                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuText"))
-                }
-            },
-            new Style(selector => selector.OfType<MenuItem>().Class(":selected"))
-            {
-                Setters =
-                {
-                    new Setter(TemplatedControl.BackgroundProperty, Resource("MenuHighlight")),
-                    new Setter(TemplatedControl.ForegroundProperty, Resource("MenuHighlightText"))
-                }
-            },
-            new Style(selector => selector.OfType<MenuItem>().Class(":disabled"))
-            {
-                Setters = { new Setter(TemplatedControl.ForegroundProperty, Resource("Disabled")) }
-            },
             new Style(selector => selector.OfType<ListBoxItem>())
             {
                 Setters =

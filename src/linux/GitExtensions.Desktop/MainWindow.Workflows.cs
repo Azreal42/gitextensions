@@ -474,12 +474,17 @@ public sealed partial class MainWindow
 
     private Task OpenTerminalAsync()
     {
-        if (_repository is null) { return Task.CompletedTask; }
+        if (_busy || _repository is null) { return Task.CompletedTask; }
         string[] names = ["x-terminal-emulator", "gnome-terminal", "konsole", "xterm"];
         string[] directories = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator);
         string? executable = names.SelectMany(name => directories.Select(directory => Path.Combine(directory, name))).FirstOrDefault(File.Exists);
         if (executable is null) { throw new InvalidOperationException("No terminal found on PATH."); }
-        Process.Start(new ProcessStartInfo(executable) { WorkingDirectory = _repository.Path, UseShellExecute = false });
+        ProcessStartInfo info = new(executable) { WorkingDirectory = _repository.Path, UseShellExecute = false };
+        // Ctrl+G is Git bash in the original, so explicitly request Bash instead
+        // of depending on a terminal profile's configured interactive shell.
+        info.ArgumentList.Add(Path.GetFileName(executable) == "gnome-terminal" ? "--" : "-e");
+        info.ArgumentList.Add("bash");
+        ExternalLauncher(info);
         return Task.CompletedTask;
     }
 

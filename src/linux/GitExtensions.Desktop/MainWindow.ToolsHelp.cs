@@ -1,0 +1,152 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Platform;
+using GitExtensions.Linux.Desktop.Controls;
+
+namespace GitExtensions.Linux.Desktop;
+
+public sealed partial class MainWindow
+{
+    private readonly List<(MenuItem Item, bool Worktree)> _externalToolMenus = [];
+    private GitCommandLogWindow? _commandLogWindow;
+    internal Func<ProcessStartInfo, Process?> ExternalLauncher { get; set; } = Process.Start;
+    private static string DesktopVersion => typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "7.2.1-linux-alpha";
+    private const string ForkUrl = "https://github.com/Azreal42/gitextensions";
+
+    private MenuItem OriginalAction(string category, string name, string label, string? icon, Func<Task> action, KeyGesture? gesture = null)
+    {
+        MenuItem item = OriginalMenuItems.Create(_translations, category, name, label, icon, gesture);
+        item.Click += async (_, args) =>
+        {
+            if (args.Source != item || !item.IsEnabled) { return; }
+            args.Handled = true;
+            try { await action(); }
+            catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+            catch (Exception error)
+            {
+                AppendOutput(error.Message); _state.Text = error.Message;
+                if (IsVisible && !_lifetime.IsCancellationRequested) { await Dialogs.ShowErrorAsync(this, error.Message); }
+            }
+        };
+        return item;
+    }
+
+    private MenuItem BuildToolsMenu()
+    {
+        const string category = "FormBrowse";
+        MenuItem Tool(string name, string label, string icon, Func<Task> action, bool worktree = false, KeyGesture? gesture = null)
+        {
+            MenuItem item = OriginalAction(category, name, label, icon, () =>
+                !_busy && _repository is not null && !(worktree && _repository.IsBare) ? action() : Task.CompletedTask, gesture);
+            _externalToolMenus.Add((item, worktree));
+            return item;
+        }
+        MenuItem menu = new() { Name = "ToolsMenu", Header = T("Tools"), ItemsSource = new object[]
+        {
+            Tool("gitBashToolStripMenuItem", "Git &bash", "GitForWindows.png", OpenTerminalAsync, gesture: new(Key.G, KeyModifiers.Control)),
+            Tool("gitGUIToolStripMenuItem", "Git &GUI", "GitGui.png", () => LaunchGitToolAsync("gui"), worktree: true),
+            Tool("kGitToolStripMenuItem", "Git&K", "Gitk.png", () => LaunchGitToolAsync("gitk")),
+            // The original ToolsToolStripMenuItem also hides PuTTY and its separator on non-Windows.
+            new Separator(),
+            OriginalAction(category, "gitcommandLogToolStripMenuItem", "Git &command log", "GitCommandLog.png", ShowCommandLogAsync, new(Key.F12)),
+            new Separator(),
+            OriginalAction(category, "settingsToolStripMenuItem", "&Settings...", "Settings.png", ShowSettingsAsync, new(Key.OemComma, KeyModifiers.Control))
+        }};
+        menu.SubmenuOpened += (_, args) => { if (args.Source == menu) { RefreshExternalToolMenus(); } };
+        RefreshExternalToolMenus();
+        return menu;
+    }
+
+    private void RefreshExternalToolMenus()
+    {
+        foreach ((MenuItem item, bool worktree) in _externalToolMenus)
+        { item.IsEnabled = !_busy && _repository is not null && !(worktree && _repository.IsBare); }
+    }
+
+    private async Task LaunchGitToolAsync(string tool)
+    {
+        if (_repository is null || _busy || (tool == "gui" && _repository.IsBare)) { return; }
+        ProcessStartInfo info = new(tool == "gitk" ? "gitk" : "git") { WorkingDirectory = _repository.Path, UseShellExecute = false };
+        if (tool == "gui") { info.ArgumentList.Add("gui"); }
+        using Process? process = ExternalLauncher(info);
+        if (process is null) { return; }
+        await process.WaitForExitAsync(_lifetime.Token);
+        if (process.ExitCode != 0) { throw new InvalidOperationException(T(tool == "gui" ? "Git GUI could not be started. Check that git-gui is installed." : "GitK could not be started. Check that gitk is installed.")); }
+    }
+
+    private MenuItem BuildHelpMenu()
+    {
+        const string category = "FormBrowse";
+        MenuItem telemetry = OriginalAction(category, "tsmiTelemetryEnabled", "&Yes, I allow telemetry", null, ShowSettingsAsync);
+        // No collector is shipped by this alpha. Opening Settings is the original
+        // action, but a checked item would falsely imply active consent/collection.
+        telemetry.IsChecked = false;
+        return new MenuItem { Name = "HelpMenu", Header = T("Help"), ItemsSource = new object[]
+        {
+            OriginalAction(category, "userManualToolStripMenuItem", "User &manual", "GotoManual.png", () => OpenWebAsync("https://git-extensions-documentation.readthedocs.io/")),
+            OriginalAction(category, "changelogToolStripMenuItem", "&Changelog", "Changelog.png", ShowChangelogAsync),
+            new Separator(),
+            OriginalAction(category, "translateToolStripMenuItem", "&Translate", "Translate.png", () => OpenWebAsync("https://github.com/gitextensions/gitextensions/wiki/Translations")),
+            new Separator(),
+            OriginalAction(category, "donateToolStripMenuItem", "&Donate", "DollarSign.png", () => OpenWebAsync("https://opencollective.com/gitextensions")),
+            telemetry,
+            OriginalAction(category, "reportAnIssueToolStripMenuItem", "&Report an issue", "BugReport.png", ReportIssueAsync),
+            OriginalAction(category, "checkForUpdatesToolStripMenuItem", "Check for &updates", "CheckForUpdates.png", () => OpenWebAsync(ForkUrl + "/releases")),
+            OriginalAction(category, "aboutToolStripMenuItem", "&About", "information.png", () => ShowHelpTextAsync("About", "Git Extensions " + DesktopVersion + "\n\nLinux / Avalonia\n" + ForkUrl + "\n\nCopyright © 2008–2026 Git Extensions Team\nGPL-3.0-or-later"))
+        }};
+    }
+
+    private Task OpenWebAsync(string url)
+    {
+        ExternalLauncher(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } });
+        return Task.CompletedTask;
+    }
+
+    private async Task ReportIssueAsync()
+    {
+        if (Clipboard is not null)
+        { await Clipboard.SetTextAsync("Git Extensions " + DesktopVersion + "\n" + RuntimeInformation.OSDescription + "\n" + RuntimeInformation.FrameworkDescription + "\n" + RuntimeInformation.ProcessArchitecture); }
+        await OpenWebAsync(ForkUrl + "/issues");
+    }
+
+    private Task ShowChangelogAsync()
+    {
+        using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/ChangeLog.md"));
+        using StreamReader reader = new(stream);
+        return ShowHelpTextAsync("Changelog", reader.ReadToEnd());
+    }
+
+    private Task ShowHelpTextAsync(string title, string text) => new DesktopInformationWindow(T(title), text).ShowDialog(this);
+
+    private Task ShowCommandLogAsync()
+    {
+        if (_commandLogWindow is { IsVisible: true }) { _commandLogWindow.Activate(); return Task.CompletedTask; }
+        _commandLogWindow = new GitCommandLogWindow(_translations);
+        _commandLogWindow.Show(this);
+        return Task.CompletedTask;
+    }
+
+    private async Task ShowSettingsAsync()
+    {
+        if (_busy) { return; }
+        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null);
+        bool accepted = await dialog.ShowDialog<bool>(this);
+        if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
+        if (!accepted) { return; }
+        DesktopPreferences preferences = dialog.Result;
+        _preferencesStore.Save(preferences);
+        bool reload = preferences.HistoryLimit != _preferences.HistoryLimit;
+        _preferences = preferences;
+        ApplyTheme(_preferences.Theme);
+        if (reload)
+        {
+            _historyQuery = _historyQuery with { Count = _preferences.HistoryLimit };
+            _historyWindow = _historyQuery.Count;
+            if (_repository is not null) { await RefreshAsync(); }
+        }
+    }
+}

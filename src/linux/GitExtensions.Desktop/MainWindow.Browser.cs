@@ -202,8 +202,7 @@ public sealed partial class MainWindow
 
     private static Image OriginalIconImage(string icon)
     {
-        using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + icon));
-        return new Image { Source = new Bitmap(stream), Width = 16, Height = 16, Tag = icon };
+        return Controls.OriginalMenuItems.Icon(icon);
     }
 
     private void UpdateCommitInfoPositionButton()
@@ -303,8 +302,8 @@ public sealed partial class MainWindow
             BuildCommandsMenu(),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
             MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Concat(LifecycleSettingsPlugins()).Select(PluginMenuItem).ToArray()),
-            MenuGroup("Tools", MenuAction("Settings…", () => ShowWorkflowAsync("Configuration")), MenuAction("Terminal", OpenTerminalAsync), MenuAction("Theme", ChangeThemeAsync), MenuAction("Show left panel", ToggleNavigationAsync)),
-            MenuGroup("Help", MenuAction("Online manual", () => { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { "https://git-extensions-documentation.readthedocs.io/" } }); return Task.CompletedTask; }))
+            BuildToolsMenu(),
+            BuildHelpMenu()
         }
     };
 
@@ -372,8 +371,7 @@ public sealed partial class MainWindow
         MenuItem item = new() { Header = T(header), InputGesture = BrowserGesture(header), Tag = RequiresWorktree(header) };
         if (icon is not null)
         {
-            using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + icon));
-            item.Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16 };
+            item.Icon = OriginalIconImage(icon);
         }
         _actionMenus.Add(item);
         item.Click += async (_, _) => { try { await action(); } catch (Exception exception) { AppendOutput(exception.Message); } };

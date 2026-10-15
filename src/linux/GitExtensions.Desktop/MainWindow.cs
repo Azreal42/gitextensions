@@ -519,6 +519,7 @@ public sealed partial class MainWindow : Window
         if (_changesFilesView is not null) { _changesFilesView.IsEnabled = enabled; }
         foreach (Control control in selectionControls) { control.IsEnabled = enabled; }
         foreach (TabItem tab in _tabs.Items.OfType<TabItem>()) { if (tab.Name == "ChangesTab") { tab.IsEnabled = enabled && _repository?.IsBare != true; } }
+        RefreshExternalToolMenus();
         UpdatePartialStageActions();
         if (_cancelToolbarButton is not null) { _cancelToolbarButton.IsVisible = !enabled && _operation is not null; _cancelToolbarButton.IsEnabled = _operation is not null; }
         RefreshPullMenu();

@@ -90,7 +90,6 @@ public sealed class DiffViewerToolbar : Border, IDisposable
             Content = new TextBlock { Text = "»", FontSize = 14, VerticalAlignment = VerticalAlignment.Center }, Flyout = OverflowFlyout
         };
         _row.Children.Add(Overflow);
-        DiffViewerPopupLayout.Configure(OverflowFlyout);
         OverflowFlyout.Opening += (_, _) => PopulateOverflow();
         OverflowFlyout.Opened += (_, _) => { IsVisible = true; ApplyPopupPalette(); };
         OverflowFlyout.Closed += (_, _) => Dispatcher.UIThread.Post(() =>

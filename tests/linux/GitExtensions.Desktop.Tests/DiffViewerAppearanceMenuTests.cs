@@ -124,11 +124,11 @@ public class DiffViewerAppearanceMenuTests
             {
                 window.RequestedThemeVariant = theme; OpenAppearance();
                 MenuItem patch = Child("Patch"), word = Child("GitWordDiff");
-                Assert.That(patch.IsEffectivelyVisible && patch.Bounds.Height == 24, Is.True);
+                Assert.That(patch.IsEffectivelyVisible && patch.Bounds.Height == 22, Is.True);
                 foreach (MenuItem item in appearance.Items.OfType<MenuItem>().Concat(items.OfType<MenuItem>().Where(item => item != appearance)))
                 {
                     Assert.That(((AccessText)item.Header!).Text, Does.Not.Contain("&"));
-                    Assert.That(item.Bounds.Height, Is.EqualTo(24));
+                    Assert.That(item.Bounds.Height, Is.EqualTo(22));
                     if (item.Icon is Image icon) { Assert.That(icon.Bounds.Size, Is.EqualTo(new Size(16, 16))); Assert.That(icon.Source, Is.Not.Null); }
                 }
                 TopLevel root = (TopLevel)word.GetVisualRoot()!;

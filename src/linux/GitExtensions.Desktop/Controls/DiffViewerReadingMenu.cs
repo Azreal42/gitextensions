@@ -250,7 +250,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
     }
 
     private MenuItem Item(string name, string original, string source)
-        => new() { Name = "DiffViewer" + name, Header = new AccessText { Text = _translations.TranslateAccessKeys("FileViewer", original, "Text", source) }, MinHeight = 24, Height = 24, Padding = new Thickness(7, 2) };
+        => new() { Name = "DiffViewer" + name, Header = new AccessText { Text = _translations.TranslateAccessKeys("FileViewer", original, "Text", source) } };
     private string T(string category, string item, string source) => _translations.Translate(category, item, "Text", source);
 
     private static FuncControlTemplate<NumericUpDown> LineEditorTemplate() => new((owner, scope) =>

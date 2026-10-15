@@ -89,8 +89,7 @@ public sealed class DiffViewerRenderingMenu : IDisposable
         MenuItem item = new()
         {
             Name = name, Header = new AccessText { Text = _translations.TranslateAccessKeys("FileViewer", original, "Text", text) },
-            Icon = Icon(asset), ToggleType = MenuItemToggleType.CheckBox, Height = 24, MinHeight = 24, Padding = new Thickness(7, 2),
-            Resources = Resources(button: false)
+            Icon = Icon(asset), ToggleType = MenuItemToggleType.CheckBox
         };
         item.Click += (_, _) => Execute(syntax); _items.Add((item, syntax)); return item;
     }
@@ -100,7 +99,7 @@ public sealed class DiffViewerRenderingMenu : IDisposable
         ToggleButton button = new()
         {
             Name = name, Content = Icon(asset), Width = 24, Height = 24, MinWidth = 0, MinHeight = 24, Padding = default,
-            Resources = Resources(button: true)
+            Resources = ButtonResources()
         };
         ToolTip.SetTip(button, _translations.Translate("FileViewer", original, "ToolTipText", tooltip));
         button.Click += (_, _) => Execute(syntax); _buttons.Add((button, syntax)); Refresh(); return button;
@@ -128,26 +127,13 @@ public sealed class DiffViewerRenderingMenu : IDisposable
         EventHandler handler = (_, _) => UpdateSource(); image.ActualThemeVariantChanged += handler;
         _images.Add((image, handler)); UpdateSource(); return image;
     }
-    private static ResourceDictionary Resources(bool button)
-        => new() { ThemeDictionaries = { [ThemeVariant.Light] = ThemeResources(false, button), [ThemeVariant.Dark] = ThemeResources(true, button) } };
-    private static ResourceDictionary ThemeResources(bool dark, bool button)
+    private static ResourceDictionary ButtonResources()
+        => new() { ThemeDictionaries = { [ThemeVariant.Light] = ButtonThemeResources(false), [ThemeVariant.Dark] = ButtonThemeResources(true) } };
+    private static ResourceDictionary ButtonThemeResources(bool dark)
     {
         IReadOnlyDictionary<string, string> colors = ClassicStyles.OriginalColors(dark); ResourceDictionary resources = new();
-        if (button)
-        {
-            foreach (string state in new[] { "Checked", "CheckedPointerOver", "CheckedPressed" })
-            { resources["ToggleButtonBackground" + state] = Brush.Parse(colors["Highlight"]); resources["ToggleButtonBorderBrush" + state] = Brush.Parse(colors["Highlight"]); }
-        }
-        else
-        {
-            foreach ((string resource, string color) in new Dictionary<string, string>
-            {
-                ["MenuFlyoutItemBackgroundPointerOver"] = "MenuHighlight", ["MenuFlyoutItemBackgroundPressed"] = "MenuHighlight",
-                ["MenuFlyoutItemForegroundPointerOver"] = "HighlightText", ["MenuFlyoutItemForegroundPressed"] = "HighlightText",
-                ["MenuFlyoutItemKeyboardAcceleratorTextForeground"] = "MenuText", ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver"] = "HighlightText",
-                ["MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed"] = "HighlightText"
-            }) { resources[resource] = Brush.Parse(colors[color]); }
-        }
+        foreach (string state in new[] { "Checked", "CheckedPointerOver", "CheckedPressed" })
+        { resources["ToggleButtonBackground" + state] = Brush.Parse(colors["Highlight"]); resources["ToggleButtonBorderBrush" + state] = Brush.Parse(colors["Highlight"]); }
         return resources;
     }
     private void StoreChanged(object? sender, EventArgs args)

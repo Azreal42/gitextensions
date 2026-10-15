@@ -118,17 +118,23 @@ public sealed class GitRunner(string executable = "git")
             await ApplyAskpassAsync(startInfo, arguments, cancellationToken).ConfigureAwait(false);
         }
 
+        DateTimeOffset started = DateTimeOffset.Now;
+        Stopwatch elapsed = Stopwatch.StartNew();
+        int? exitCode = null;
         GitProcessLaunch? launch = null;
         Exception? failure = null;
         try
         {
             if (OperatingSystem.IsLinux()) { launch = GitProcessLaunch.Configure(startInfo); }
             cancellationToken.ThrowIfCancellationRequested();
-            return await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch).ConfigureAwait(false);
+            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch).ConfigureAwait(false);
+            exitCode = result.ExitCode;
+            return result;
         }
         catch (Exception exception) { failure = exception; throw; }
         finally
         {
+            GitCommandLog.Record(arguments, workingDirectory, started, elapsed.Elapsed, exitCode, failure is OperationCanceledException);
             if (OperatingSystem.IsLinux() && launch is not null)
             {
                 try { launch.Dispose(); }

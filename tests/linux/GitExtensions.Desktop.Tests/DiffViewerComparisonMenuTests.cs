@@ -116,7 +116,7 @@ public class DiffViewerComparisonMenuTests
                 MenuItem checkedItem = fixture.Open("Whitespace_AllSpace");
                 Assert.That(((AccessText)fixture.Item("EntireFileMenu").Header!).Text, Is.EqualTo("Afficher le fichier en _entier"));
                 foreach (MenuItem item in fixture.Menu.ItemsSource!.OfType<MenuItem>().Where(item => item.IsVisible))
-                { Assert.That(item.Bounds.Height, Is.EqualTo(24)); Assert.That(((AccessText)item.Header!).Text, Does.Not.Contain("&")); }
+                { Assert.That(item.Bounds.Height, Is.EqualTo(22)); Assert.That(((AccessText)item.Header!).Text, Does.Not.Contain("&")); }
                 foreach (Button button in new[] { fixture.Increase, fixture.Decrease, fixture.Whole })
                 { Assert.That(button.Bounds.Size, Is.EqualTo(new Size(24, 24))); Assert.That(((Image)button.Content!).Bounds.Size, Is.EqualTo(new Size(16, 16))); Assert.That(((Image)button.Content!).Source, Is.Not.Null); }
                 TopLevel root = TopLevel.GetTopLevel(checkedItem)!; Pump(root);
@@ -359,7 +359,7 @@ public class DiffViewerComparisonMenuTests
         {
             Controller = new(new DiffViewerPreferencesStore(Directory.Path));
             Menu = new() { ItemsSource = Controller.CreateContextMenuItems("RevisionDiff") };
-            DiffViewerPopupLayout.Configure(Menu); Viewer.ContextMenu = Menu;
+            Viewer.ContextMenu = Menu;
             Increase = Controller.CreateIncreaseContextButton("RevisionDiffIncreaseContext"); Decrease = Controller.CreateDecreaseContextButton("RevisionDiffDecreaseContext"); Whole = Controller.CreateWholeFileButton("RevisionDiffEntireFile");
             Viewer.AddHandler(InputElement.KeyDownEvent, (_, args) => Controller.HandleKeyDown(args), Avalonia.Interactivity.RoutingStrategies.Tunnel);
             Window = new() { Width = 980, Height = 420, Content = new StackPanel { Margin = new Thickness(10), Spacing = 3,

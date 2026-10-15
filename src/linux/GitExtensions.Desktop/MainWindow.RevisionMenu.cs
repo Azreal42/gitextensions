@@ -58,7 +58,6 @@ public sealed partial class MainWindow
                 BuildRevisionAdvancedMenu(), new Separator(), BuildComparisonMenu(), new Separator(), BuildRevisionNavigateMenu(), BuildRevisionViewMenu()
             }
         };
-        RevisionContextMenuAppearance.Configure(_revisionContext);
         _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
         _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
         _revisionContext.Closed += (_, _) => QueuePendingRevisionDetails();

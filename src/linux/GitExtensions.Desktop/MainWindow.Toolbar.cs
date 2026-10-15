@@ -163,7 +163,6 @@ public sealed partial class MainWindow
 
     private static void ConfigureBrowserFlyout(MenuFlyout flyout, Control owner)
     {
-        DiffViewerPopupLayout.Configure(flyout);
         void Palette()
         {
             MenuFlyoutPresenter? presenter = flyout.Items.OfType<Control>()
