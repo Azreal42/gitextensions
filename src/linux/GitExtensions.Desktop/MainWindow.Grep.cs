@@ -80,7 +80,6 @@ public sealed partial class MainWindow
         if (_fileTreeRevision != revision)
         {
             CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;
-            ClearFileGrepViewer();
         }
     }
 
@@ -121,6 +120,7 @@ public sealed partial class MainWindow
 
     private void ShowSelectedTreeFolder()
     {
+        _treeFileRead.Cancel();
         _filePath.Text = null; ClearFileGrepViewer();
         if (_fileTreeView?.SelectedFolderDescription is not string text || _fileContent is null) { return; }
         _fileContent.TextView.Mode = DiffViewMode.PlainText; _fileView.Text = text;

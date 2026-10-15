@@ -34,6 +34,7 @@ public sealed partial class MainWindow
 
     private void ClearWorkingDiff()
     {
+        _workingDiffRead.Cancel();
         _changesContent?.ClearImage(); _changesDiff.Text = ""; _selectedPatch = null; _hunks.ItemsSource = null;
     }
 

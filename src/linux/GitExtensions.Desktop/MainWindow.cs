@@ -52,7 +52,7 @@ public sealed partial class MainWindow : Window
     private string? _navigationRevisionFilter;
     private string? _referenceSelectionOverride;
 
-    internal bool IsBusy => _busy;
+    internal bool IsBusy => _busy || BrowserReads.Any(read => read.Pending != 0);
     internal Exception? LastException { get; private set; }
 
     public MainWindow()
@@ -111,6 +111,7 @@ public sealed partial class MainWindow : Window
         _submodules.ItemTemplate = TextTemplate<GitSubmodule>(module => $"{module.Path}  {module.Url}  {(module.IsInitialized ? module.Head : "not initialized")}");
         _commits.SelectionChanged += async (_, _) =>
         {
+            if (!_refreshing) { CancelRevisionReads(); }
             RememberRevisionNavigation();
             RefreshRebaseMenu();
             RefreshRevisionContextMenu();
@@ -183,7 +184,7 @@ public sealed partial class MainWindow : Window
         };
         Closed += async (_, _) =>
         {
-            _lifetime.Cancel(); _operation?.Cancel();
+            _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
             CancelBranchMenuRead();
             _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose(); _dashboard?.Dispose();
             _revisionFilesView?.Dispose(); _changesFilesView?.Dispose(); _fileTreeView?.Dispose();
@@ -469,12 +470,8 @@ public sealed partial class MainWindow : Window
     {
         if (_busy) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
-        // Disabling the tabs during an asynchronous diff read releases keyboard
-        // focus. Keep the viewer's command scope for consecutive reading gestures.
-        DiffView? readingView = label == "File diff"
-            ? new[] { _commitContent?.TextView, _changesDiffView, _fileContent?.TextView }
-                .FirstOrDefault(view => view?.IsKeyboardFocusWithin == true)
-            : null;
+        bool resumeSelection = BrowserReads.Any(read => read.Current is not null);
+        CancelBrowserReads();
         _busy = true;
         LastException = null;
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
@@ -503,8 +500,11 @@ public sealed partial class MainWindow : Window
             SetActionsEnabled(true);
             if (success) { _state.Text = _repositorySummary; }
             if (_pendingDiffAppearance && !_lifetime.IsCancellationRequested) { await ReloadDiffAppearancesAsync(); }
-            if (IsVisible && readingView is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true })
-            { readingView.Editor.TextArea.Focus(); }
+            if (resumeSelection && !_lifetime.IsCancellationRequested)
+            {
+                await LoadVisibleRevisionPanelAsync();
+                if ((_tabs.SelectedItem as TabItem)?.Name == "ChangesTab") { await LoadSelectedDiffAsync(); }
+            }
         }
     }
 

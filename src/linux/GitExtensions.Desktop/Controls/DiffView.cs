@@ -199,10 +199,13 @@ public sealed class DiffView : UserControl, IDisposable
     {
         string previousDefault = DefaultFileEncodingName;
         string? previousOverride = _fileEncodingName;
-        _difftasticAvailable = await repository.IsDifftasticAvailableAsync(token);
-        DefaultFileEncodingName = await repository.GetFileEncodingNameAsync(token);
-        if (_configuredRepositoryPath != repository.Path) { _fileEncodingName = null; _configuredRepositoryPath = repository.Path; }
+        bool difftasticAvailable = await repository.IsDifftasticAvailableAsync(token);
+        string encodingName = await repository.GetFileEncodingNameAsync(token);
         string? autoCrlf = (await repository.GetConfigAsync("^core\\.autocrlf$", cancellationToken: token)).LastOrDefault().Value;
+        token.ThrowIfCancellationRequested();
+        _difftasticAvailable = difftasticAvailable;
+        DefaultFileEncodingName = encodingName;
+        if (_configuredRepositoryPath != repository.Path) { _fileEncodingName = null; _configuredRepositoryPath = repository.Path; }
         CopyAutoCrlf = Enum.TryParse(autoCrlf, ignoreCase: true, out AutoCRLFType value) ? value : null;
         ReadingMenu.Refresh();
         if (previousDefault != DefaultFileEncodingName || previousOverride != _fileEncodingName) { FileEncodingChanged?.Invoke(this, EventArgs.Empty); }

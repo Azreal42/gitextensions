@@ -67,22 +67,28 @@ public sealed partial class MainWindow
         if (all) { _changesFilesView?.ClearFilter(); }
     });
 
+    private bool _settingWorkingDiffSide;
+
     private Task LoadSelectedDiffAsync()
     {
-        if (_refreshing || SelectedWorkingChange is not GitChange change) { return Task.CompletedTask; }
-        return RunAsync("File diff", async repository =>
+        if (_refreshing || _settingWorkingDiffSide || SelectedWorkingChange is not GitChange change) { return Task.CompletedTask; }
+        bool staged = change.IsStaged && (_stagedDiff.IsChecked == true || !change.IsModified);
+        _settingWorkingDiffSide = true;
+        try { _stagedDiff.IsChecked = staged; }
+        finally { _settingWorkingDiffSide = false; }
+        return ReadBrowserAsync(_workingDiffRead, "File diff", async (repository, token) =>
         {
-            bool staged = change.IsStaged && (_stagedDiff.IsChecked == true || !change.IsModified);
-            if (_stagedDiff.IsChecked != staged) { _stagedDiff.IsChecked = staged; }
-            await LoadChangedFileContentAsync(repository, change, staged);
+            _selectedPatch = null; _hunks.ItemsSource = null; UpdatePartialStageActions();
+            await LoadChangedFileContentAsync(repository, change, staged, token);
+            token.ThrowIfCancellationRequested();
             _selectedPatch = _changesDiffView?.CanStagePatch == true ? GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault() : null;
             _hunks.ItemsSource = _selectedPatch?.Hunks;
-        }, refresh: false);
+        });
     }
 
     private async Task ApplyHunksAsync(bool reverse)
     {
-        if (SelectedWorkingChange is null || _changesDiffView?.CanStagePatch != true || _selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
+        if (_workingDiffRead.Current is not null || SelectedWorkingChange is null || _changesDiffView?.CanStagePatch != true || _selectedPatch is null || _hunks.SelectedItems?.Count is not > 0) { _state.Text = "Select diff hunks first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging hunks" : "Show unstaged changes before staging hunks"; return; }
         byte[] patch = GitEncodedPatch.SelectHunks(_changesDiffView.Document!, _hunks.SelectedItems.Cast<GitPatchHunk>().Select(h => h.Index));
         await RunAsync(reverse ? "Unstage hunks" : "Stage hunks", r => r.ApplyPatchAsync(patch, staged: true, reverse: reverse, cancellationToken: Token));
@@ -91,7 +97,7 @@ public sealed partial class MainWindow
 
     private async Task ApplyLinesAsync(bool reverse)
     {
-        if (_changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
+        if (_workingDiffRead.Current is not null || _changesDiffView is null || !_changesDiffView.CanStagePatch || _changesDiffView.SelectionLength == 0 || SelectedWorkingChange is not GitChange change) { _state.Text = "Select changed lines in the diff first"; return; }
         if ((_stagedDiff.IsChecked == true) != reverse) { _state.Text = reverse ? "Show staged changes before unstaging lines" : "Show unstaged changes before staging lines"; return; }
         byte[]? patch = GitEncodedPatch.SelectLines(_changesDiffView.Document!, _changesDiffView.SelectionStart, _changesDiffView.SelectionLength,
             staged: reverse, reverse: reverse, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
@@ -403,31 +409,35 @@ public sealed partial class MainWindow
 
     private Task OpenSubmoduleAsync() => _submodules.SelectedItem is GitSubmodule module && _repository is not null ? OpenRepositoryAsync(Path.Combine(_repository.Path, module.Path)) : Task.CompletedTask;
 
-    private Task ShowFileAsync(string path)
+    private Task ShowFileAsync(string path, CancellationToken parent = default)
     {
-        // Native pointer selection can notify again for the current row. Its immutable
-        // blob is already displayed; a redundant busy read would swallow a double-click.
         string? identity = _repository is null ? null : string.Join('\0', _repository.Path, path, _fileTreeRevision ?? CurrentRevision, "blob");
         if (identity is not null && _fileContent?.TextView is { IsDocumentReady: true } viewer && viewer.DocumentIdentity == identity)
-        { return Task.CompletedTask; }
-        return RunAsync("File contents", r => LoadTreeFileAsync(r, path), refresh: false);
+        { _treeFileRead.Cancel(); return Task.CompletedTask; }
+        return ReadBrowserAsync(_treeFileRead, "File contents", (repository, token) => LoadTreeFileAsync(repository, path, token), parent);
     }
 
-    private async Task LoadTreeFileAsync(GitRepository r, string path)
+    private async Task LoadTreeFileAsync(GitRepository repository, string path, CancellationToken? cancellationToken = null)
     {
+        CancellationToken token = cancellationToken ?? Token;
         string revision = _fileTreeRevision ?? CurrentRevision;
-        _fileContent?.ClearImage();
-        _fileContent?.TextView.BeginDocumentLoad();
-        if (_fileContent is not null)
+        GitTreeEntry? entry = _fileTreeEntries.GetValueOrDefault(path)
+            ?? (await repository.GetTreeAsync(revision, path, token)).FirstOrDefault(item => item.Path == path);
+        byte[]? bytes = entry?.IsSubmodule == true ? null : await repository.GetFileBytesAsync(path, revision, token);
+        string encoding = await repository.GetFileEncodingNameAsync(token);
+        token.ThrowIfCancellationRequested();
+        if (_fileContent is null) { return; }
+        await _fileContent.TextView.ConfigureRepositoryAsync(repository, token);
+        token.ThrowIfCancellationRequested();
+        _fileContent.TextView.BeginDocumentLoad(); _fileContent.ClearImage();
+        _fileContent.TextView.DocumentIdentity = string.Join('\0', repository.Path, path, revision, "blob");
+        _fileContent.TextView.Mode = DiffViewMode.PlainText;
+        if (entry?.IsSubmodule == true)
         {
-            _fileContent.TextView.DocumentIdentity = string.Join('\0', r.Path, path, revision, "blob");
-            await _fileContent.TextView.ConfigureRepositoryAsync(r, Token);
+            _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}";
+            _fileContent.TextView.CompletePlainTextDocumentLoad();
         }
-        if (_fileContent is not null) { _fileContent.TextView.Mode = DiffViewMode.PlainText; }
-        GitTreeEntry? entry = (await r.GetTreeAsync(revision, path, Token)).FirstOrDefault(item => item.Path == path);
-        if (entry?.IsSubmodule == true) { _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}"; return; }
-        byte[] bytes = await r.GetFileBytesAsync(path, revision, Token);
-        _fileContent?.ShowFile(path, bytes, await r.GetFileEncodingNameAsync(Token));
+        else { _fileContent.ShowFile(path, bytes!, encoding); }
     }
 
     private Task BlameAsync() => RunAsync("Blame", async r =>

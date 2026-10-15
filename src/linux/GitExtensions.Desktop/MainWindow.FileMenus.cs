@@ -88,7 +88,7 @@ public sealed partial class MainWindow
                 if (isFileTree && SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
                 else if (isFileTree) { ShowSelectedTreeFolder(); }
                 else if (!isFileTree && tree.SelectedItem is TreeViewItem selected)
-                { await RunAsync("File diff", repository => ShowRevisionDiffItemAsync(repository, selected), refresh: false); }
+                { await ReadRevisionDiffAsync(selected); }
             });
         };
         tree.AddHandler(InputElement.DoubleTappedEvent, async (_, args) =>

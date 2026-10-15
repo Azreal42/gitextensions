@@ -132,16 +132,8 @@ public sealed partial class MainWindow
         };
         _tabs.SelectionChanged += async (_, args) =>
         {
-            if (!_layingOutCommitInfo && args.Source == _tabs && !_busy && (_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab"
-                && SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
-            if (!_layingOutCommitInfo && args.Source == _tabs && (_tabs.SelectedItem as TabItem)?.Name == "GpgTab")
-            {
-                await RunAsync("Commit signature", async repository =>
-                {
-                    GitResult result = await repository.RunAsync(["show", "--no-patch", "--format=Signature status: %G?%nSigner: %GS%nKey: %GK%nFingerprint: %GF", CurrentRevision], Token);
-                    _gpgInfo.Text = result.StandardOutput + result.StandardError;
-                }, refresh: false);
-            }
+            if (!_layingOutCommitInfo && args.Source == _tabs && !_busy)
+            { await LoadVisibleRevisionPanelAsync(); }
         };
         Grid.SetRow(_tabs, 2);
         right.Children.Add(_tabs);

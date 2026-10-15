@@ -90,17 +90,9 @@ public sealed partial class MainWindow
     private Task LoadSelectedRevisionDetailsAsync(GitCommit commit)
     {
         CancelFileGrepForCommit(commit.Hash);
-        return RunAsync("Commit diff", async repository =>
-        {
-            await LoadCommitFilesAsync(repository, commit.Hash);
-            UpdateCommitInfo(commit);
-            SetFileTreePaths(repository, commit.Hash, await repository.GetTreeAsync(commit.Hash, cancellationToken: Token));
-            _fileContent?.ClearImage(); _fileView.Text = null; _gpgInfo.Text = null;
-            if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is string path
-                && (!_fileGrepSettings.ShowSearchBox || _fileGrepSettings.Expression.Length == 0))
-            { await LoadTreeFileAsync(repository, path); }
-            else if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is null) { ShowSelectedTreeFolder(); }
-        }, refresh: false);
+        UpdateCommitInfo(commit);
+        _gpgInfo.Text = null;
+        return LoadVisibleRevisionPanelAsync();
     }
 
     private void QueuePendingRevisionDetails()
