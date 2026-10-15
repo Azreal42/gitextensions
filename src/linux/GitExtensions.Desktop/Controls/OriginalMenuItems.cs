@@ -32,7 +32,7 @@ internal static class OriginalMenuItems
             void UpdateSource()
             {
                 image.Source = image.ActualThemeVariant == ThemeVariant.Dark
-                    ? dark ??= GitExtensions.Desktop.Controls.DiffViewerMonochromeBitmap.CreateDark(original, Color.Parse(ClassicStyles.OriginalColors(dark: true)["MenuText"]))
+                    ? dark ??= GitExtensions.Desktop.Controls.DiffViewerRenderingBitmap.CreateDark(original, Color.Parse(ClassicStyles.OriginalColors(dark: true)["MenuText"]), Color.Parse(ClassicStyles.OriginalColors(dark: true)["Menu"]))
                     : original;
             }
             image.ActualThemeVariantChanged += (_, _) => UpdateSource();

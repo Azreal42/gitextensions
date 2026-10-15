@@ -11,6 +11,9 @@ using Avalonia.Input.Platform;
 using Avalonia.Input.Raw;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using System.Runtime.InteropServices;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -49,6 +52,24 @@ public sealed class ClassicMenuTests
                     .TranslatePoint(default, TopLevel.GetTopLevel(item)!)!.Value.X).ToArray();
                 Assert.That(labels.Distinct().Count(), Is.EqualTo(1), "Iconless entries must use the same label column.");
                 Assert.That(((ISolidColorBrush)rows[0].Foreground!).Color, Is.EqualTo(Color.Parse(theme == ThemeVariant.Dark ? "#F0F0F0" : "#000000")));
+                if (name == "HelpMenu" && theme == ThemeVariant.Dark)
+                {
+                    Bitmap translate = (Bitmap)((Image)rows.Single(item => item.Name == "translateToolStripMenuItem").Icon!).Source!;
+                    using WriteableBitmap copy = new(translate.PixelSize, translate.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+                    using ILockedFramebuffer buffer = copy.Lock(); translate.CopyPixels(buffer, AlphaFormat.Unpremul);
+                    byte[] pixels = new byte[buffer.RowBytes * buffer.Size.Height]; Marshal.Copy(buffer.Address, pixels, 0, pixels.Length);
+                    int visible = 0;
+                    for (int y = 0; y < buffer.Size.Height; y++)
+                    {
+                        for (int x = 0; x < buffer.Size.Width; x++)
+                        {
+                            int offset = y * buffer.RowBytes + x * 4;
+                            if (pixels[offset + 3] == 0) { continue; }
+                            Assert.That(pixels[offset], Is.EqualTo(240), "Translate uses RGB 1 as well as 0: adapt both with the original lightness correction."); visible++;
+                        }
+                    }
+                    Assert.That(visible, Is.GreaterThan(100));
+                }
                 using var bitmap = TopLevel.GetTopLevel(rows[0])!.CaptureRenderedFrame();
                 Assert.That(bitmap, Is.Not.Null);
                 string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"classic-{name}-{theme}.png");

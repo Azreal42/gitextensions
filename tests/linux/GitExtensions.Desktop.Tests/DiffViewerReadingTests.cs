@@ -144,7 +144,7 @@ public class DiffViewerReadingTests
                 Assert.That(((AccessText)goTo.Header!).Text, Is.EqualTo("Aller à la _ligne…"));
                 Assert.That(((AccessText)Item(fixture, "CopyNewVersion").Header!).Text, Is.EqualTo("Copier la _nouvelle version"));
                 foreach (MenuItem item in fixture.View.ContextMenu!.Items.OfType<MenuItem>().Where(item => item.Name?.StartsWith("DiffViewerCopy", StringComparison.Ordinal) == true || item == goTo))
-                { Assert.That(item.Bounds.Height, Is.EqualTo(24)); Assert.That(((AccessText)item.Header!).Text, Does.Not.Contain("&")); }
+                { Assert.That(item.Bounds.Height, Is.EqualTo(22)); Assert.That(((AccessText)item.Header!).Text, Does.Not.Contain("&")); }
                 Capture(TopLevel.GetTopLevel(goTo)!, "diff-reading-menu-fr-" + theme + ".png");
                 goTo.Focus(); TopLevel popup = TopLevel.GetTopLevel(goTo)!; Press(popup, PhysicalKey.Enter, RawInputModifiers.None);
                 Window dialog = await Owned(fixture.Window); Pump(dialog);
