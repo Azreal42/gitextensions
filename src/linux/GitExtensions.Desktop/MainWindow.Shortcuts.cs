@@ -19,6 +19,13 @@ public sealed partial class MainWindow
         if (focusedDiff?.HandleReadingShortcut(e) == true) { return; }
         if (focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
         if (await HandleFilePaneShortcutAsync(e)) { return; }
+        if (e.KeyModifiers == KeyModifiers.None && _commits.IsKeyboardFocusWithin && e.Key is Key.F2 or Key.Delete)
+        {
+            e.Handled = true;
+            try { await ExecuteQuickReferenceActionAsync(e.Key == Key.F2 ? QuickGitRefAction.Rename : QuickGitRefAction.Delete); }
+            catch (Exception exception) { LastException = exception; AppendOutput(exception.Message); _state.Text = exception.Message; }
+            return;
+        }
         if (e.KeyModifiers != KeyModifiers.Alt && (_commits.IsKeyboardFocusWithin || _workingRevision?.IsKeyboardFocusWithin == true || _indexRevision?.IsKeyboardFocusWithin == true) && await HandleHistoryMenuShortcutAsync(e)) { return; }
         Func<Task>? action = (e.Key, e.KeyModifiers) switch
         {

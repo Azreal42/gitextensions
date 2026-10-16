@@ -211,7 +211,7 @@ public static class ScriptTemplate
             ScriptReply? reply = await RequestAsync(new(remote ? ScriptRequestKind.ChooseRemote : ScriptRequestKind.ChooseReference,
                 scriptName, option, Candidates: Array.AsReadOnly(values))).ConfigureAwait(false);
             if (reply is null) { return null; }
-            if (reply.Kind != ScriptReplyKind.Accepted) { return ""; } // Original selector closure is an empty choice, not prompt cancellation.
+            if (reply.Kind != ScriptReplyKind.Accepted) { return ""; } // Linux uses an empty choice; the Windows script caller ignores DialogResult.
             string value = reply.Value ?? "";
             if (value.Length > 0 && !values.Contains(value, StringComparer.Ordinal)) { throw new ArgumentException("The selected value is not a candidate.", nameof(reply)); }
             return value;

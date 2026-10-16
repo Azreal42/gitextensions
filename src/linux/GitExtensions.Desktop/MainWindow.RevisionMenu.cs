@@ -174,6 +174,7 @@ public sealed partial class MainWindow
 
     private async Task DeleteRevisionBranchAsync(GitRepository repository, GitReference reference)
     {
+        if (reference.IsTag) { await ShowRepositoryDialogAsync(new DeleteTagDialog(repository, reference.ShortName)); return; }
         if (!reference.IsRemote) { await ShowRepositoryDialogAsync(new DeleteBranchDialog(repository, [reference.ShortName])); return; }
         await ShowRepositoryDialogAsync(new DeleteRemoteBranchDialog(repository, reference.Name));
     }

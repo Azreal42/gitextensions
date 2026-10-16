@@ -76,7 +76,12 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
         {
             _preview = await Repository.GetRemoteBranchDeletionPreviewAsync(token);
             _branches.Choices = _preview.Select(branch => branch.Reference).ToArray();
-            _branches.SelectionText = _preview.FirstOrDefault(branch => branch.Reference.Name == _initial || branch.Reference.ShortName == _initial)?.Reference.ShortName ?? "";
+            GitReference? initial = _preview.FirstOrDefault(branch => branch.Reference.Name == _initial || branch.Reference.ShortName == _initial)?.Reference;
+            _branches.SelectionText = initial?.ShortName ?? (_initial?.StartsWith("refs/remotes/", StringComparison.Ordinal) == true ? _initial[13..] : _initial) ?? "";
+            if (!string.IsNullOrEmpty(_initial) && initial is null)
+            {
+                ReportError(new InvalidOperationException(T("The selected reference does not map to a deletable remote branch.") + "\n" + _branches.SelectionText));
+            }
         });
         _statusRow.IsVisible = LastError is not null;
         if (IsVisible) { _branches.FocusEditor(); }

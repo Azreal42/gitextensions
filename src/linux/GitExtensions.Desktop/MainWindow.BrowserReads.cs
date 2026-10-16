@@ -16,13 +16,13 @@ public sealed partial class MainWindow
     private readonly BrowserRead _revisionRead = new(), _revisionDiffRead = new();
     private readonly BrowserRead _treeRead = new(), _treeFileRead = new();
     private readonly BrowserRead _workingDiffRead = new(), _signatureRead = new();
-    private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _worktreeMenuRead, _goToCommitRead];
+    private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead];
     private string? _loadedDiffSelection;
     private string RevisionSelectionIdentity => string.Join('\0', SelectedRevisionDiffCommits().Select(commit => commit.Hash));
 
     private void CancelRevisionReads()
     {
-        foreach (BrowserRead read in new[] { _revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _signatureRead }) { read.Cancel(); }
+        foreach (BrowserRead read in new[] { _revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _signatureRead, _quickReferenceRead }) { read.Cancel(); }
         _loadedDiffSelection = null;
     }
 
