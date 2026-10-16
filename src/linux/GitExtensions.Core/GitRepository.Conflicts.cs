@@ -30,12 +30,13 @@ public sealed partial class GitRepository
                 ?? throw new InvalidOperationException("The selected path is no longer conflicted.");
             if (resolution == GitConflictResolution.Delete)
             { return await ExecuteAsync(["rm", "--force", "--", path], token).ConfigureAwait(false); }
+            if (conflict.Stages.Any(stage => stage.Mode == "160000"))
+            { throw new NotSupportedException("Use the submodule conflict assistant to choose, confirm and stage a real child commit. Use Delete explicitly to resolve by deleting this gitlink."); }
             if (resolution != GitConflictResolution.Manual)
             {
                 int stage = resolution switch { GitConflictResolution.Base => 1, GitConflictResolution.Ours => 2, _ => 3 };
                 GitConflictStage source = conflict.Stages.SingleOrDefault(item => item.Stage == stage)
                     ?? throw new InvalidOperationException("This version is a deletion. Use Delete explicitly to resolve by deleting the file.");
-                if (source.Mode == "160000") { throw new NotSupportedException("Choose and stage the submodule revision before marking this conflict resolved."); }
                 // checkout-index consumes an exact index pathname, rather than a revision:path expression.
                 await ExecuteAsync(["checkout-index", "--force", "--stage=" + stage, "--", path], token).ConfigureAwait(false);
             }
@@ -46,8 +47,10 @@ public sealed partial class GitRepository
         => WithMutationAsync(async token =>
         {
             path = ValidatePath(path);
-            if (!(await GetConflictsAsync(token).ConfigureAwait(false)).Any(item => item.Path == path))
-            { throw new InvalidOperationException("The selected path is no longer conflicted."); }
+            GitConflictPath conflict = (await GetConflictsAsync(token).ConfigureAwait(false)).SingleOrDefault(item => item.Path == path)
+                ?? throw new InvalidOperationException("The selected path is no longer conflicted.");
+            if (conflict.Stages.Any(stage => stage.Mode == "160000"))
+            { throw new NotSupportedException("Use the submodule conflict assistant to resolve a gitlink; a file merge tool cannot choose its child commit safely."); }
             // The native shell helper consumes line-delimited diff output. Decline
             // quoted/control-character names before it can address a different file.
             GitResult names = await ExecuteAsync(["diff", "--name-only", "--diff-filter=U", "--", path], token).ConfigureAwait(false);

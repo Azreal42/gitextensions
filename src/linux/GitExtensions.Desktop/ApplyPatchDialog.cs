@@ -243,11 +243,18 @@ public sealed class ApplyPatchDialog : RepositoryDialog
         GitChange? selected = _files.SelectedItems?.Cast<GitChange>().FirstOrDefault(change => change.IsConflict)
             ?? _files.ItemsSource?.Cast<GitChange>().FirstOrDefault(change => change.IsConflict);
         if (selected is null) { return; }
-        PatchConflictDialog dialog = new(Repository, selected.Path);
-        await dialog.InitializeAsync();
-        await dialog.ShowDialog(this);
-        if (dialog.HasRepositoryChanges) { MarkRepositoryChanged(); }
-        await RunAsync("Refresh", ReadStateAsync);
+        await RunAsync("Solve conflicts", async token =>
+        {
+            try
+            {
+                if (await ConflictedPathDialog.ShowAsync(this, Repository, selected.Path, token)) { MarkRepositoryChanged(); }
+                token.ThrowIfCancellationRequested();
+            }
+            finally
+            {
+                if (!token.IsCancellationRequested && IsVisible) { await ReadStateAsync(token); }
+            }
+        });
     }
 
     private async Task ManageAsync(GitOperationAction action)

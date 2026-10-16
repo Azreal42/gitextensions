@@ -492,11 +492,19 @@ public sealed partial class PullDialog : RepositoryDialog
             });
             return;
         }
-        PatchConflictDialog dialog = new(Repository, path);
-        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
-        await dialog.ShowDialog(this);
-        if (dialog.HasRepositoryChanges) { Attempted = true; MarkRepositoryChanged(); }
-        await RefreshOperationAsync(default);
+        await RunAsync("Resolve conflicts", async token =>
+        {
+            try
+            {
+                if (await ConflictedPathDialog.ShowAsync(this, Repository, path, token))
+                { Attempted = true; MarkRepositoryChanged(); }
+                token.ThrowIfCancellationRequested();
+            }
+            finally
+            {
+                if (!token.IsCancellationRequested && IsVisible) { await RefreshOperationAsync(token); }
+            }
+        });
     }
 
     private Task ManageAsync(GitOperationAction action) => RunAsync("Pull", async token =>

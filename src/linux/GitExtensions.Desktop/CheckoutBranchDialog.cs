@@ -37,6 +37,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly bool _autoNormalize;
     private readonly string _replacement;
     private readonly Func<CancellationToken, Task>? _afterSubmoduleUpdateAsync;
+    private readonly CheckoutBranchConstraint? _constraint;
     private readonly SubmoduleCheckoutPreferencesStore _submodulePreferences = new();
     private Window? _owner;
     private Window? _defaultOwner;
@@ -46,12 +47,20 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private bool _bare;
     private string? _originalStash;
     public GitCheckoutResult? LastResult { get; private set; }
+    public bool Succeeded { get; private set; }
 
-    public CheckoutBranchDialog(GitRepository repository, GitReference? reference = null, bool autoNormalize = true, string replacement = "_", Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Checkout branch")
+    public CheckoutBranchDialog(GitRepository repository, GitReference? reference = null, bool autoNormalize = true, string replacement = "_", Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
+        CheckoutBranchConstraint? constraint = null) : base(repository, "Checkout branch")
     {
         _autoNormalize = autoNormalize;
         _replacement = replacement;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
+        _constraint = constraint;
+        if (constraint is not null)
+        {
+            ArgumentNullException.ThrowIfNull(constraint.ReadReferencesAsync);
+            ArgumentNullException.ThrowIfNull(constraint.CheckoutAsync);
+        }
         if (autoNormalize) { GitBranchNaming.Normalize("", replacement); }
         _initial = reference;
         Width = 660;
@@ -139,11 +148,15 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
             _bare = (await Repository.GetInfoAsync(token)).IsBare;
             GitStatus status = await Repository.GetStatusAsync(token);
             _dirty = status.Changes.Count > 0;
-            _references = await Repository.GetReferencesAsync(token);
+            _references = _constraint is null ? await Repository.GetReferencesAsync(token) : await _constraint.ReadReferencesAsync(token);
             _originalStash = (await Repository.GetStashesAsync(token)).FirstOrDefault()?.Hash;
+            if (_constraint is not null && !_references.Any(branch => branch.IsBranch && branch.SymbolicTarget is null)) { _remote.IsChecked = true; }
             PopulateBranches();
-            _branches.SelectedItem = _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault(branch => branch.Name == _initial?.Name || _initial is null && branch.IsCurrent)
-                ?? (_initial is null ? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault() : null);
+            if (_constraint is null)
+            {
+                _branches.SelectedItem = _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault(branch => branch.Name == _initial?.Name || _initial is null && branch.IsCurrent)
+                    ?? (_initial is null ? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault() : null);
+            }
             _current.Text = T("Current branch:") + " " + status.Branch + (_dirty ? "    " + status.Changes.Count + " " + T("Local changes") : "");
             Status.Text = _bare ? T("This operation requires a working tree.") : T("Select branch");
         }, cancellationToken: cancellationToken);
@@ -156,9 +169,10 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private void PopulateBranches()
     {
         string? selected = (_branches.SelectedItem as GitReference)?.Name;
-        GitReference[] choices = _references.Where(reference => _remote.IsChecked == true ? reference.IsRemote && reference.SymbolicTarget is null : reference.IsBranch).ToArray();
+        GitReference[] choices = _references.Where(reference => reference.SymbolicTarget is null && (_remote.IsChecked == true ? reference.IsRemote : reference.IsBranch)).ToArray();
         _branches.ItemsSource = choices;
-        _branches.SelectedItem = choices.FirstOrDefault(reference => reference.Name == selected) ?? choices.FirstOrDefault();
+        _branches.SelectedItem = choices.FirstOrDefault(reference => reference.Name == selected)
+            ?? (_constraint is null || choices.Length == 1 ? choices.FirstOrDefault() : null);
     }
 
     private LocalChangesAction Changes => _discard.IsChecked == true ? LocalChangesAction.Reset : _merge.IsChecked == true ? LocalChangesAction.Merge : _stash.IsChecked == true ? LocalChangesAction.Stash : LocalChangesAction.DontChange;
@@ -181,7 +195,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         get
         {
             ReferencePreferences preferences = _preferences.Load();
-            return LastError is null && !_bare && !preferences.AlwaysShowCheckoutDialog && _initial?.IsBranch == true
+            return _constraint is null && LastError is null && !_bare && !preferences.AlwaysShowCheckoutDialog && _initial?.IsBranch == true
                 && (_branches.SelectedItem as GitReference)?.Name == _initial.Name
                 && (!_dirty || preferences.UseDefaultCheckoutChanges);
         }
@@ -198,9 +212,14 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
 
     private async Task CheckoutAsync(CancellationToken cancellationToken)
     {
+        if (IsBusy) { return; }
+        Succeeded = false;
+        LastResult = null;
         _checkout.Focus();
         NormalizeName();
         GitCheckoutOptions options = ReadOptions();
+        GitReference? selected = _branches.SelectedItem as GitReference;
+        if (_constraint is not null && selected is null) { Status.Text = T("Select branch"); return; }
         if (_defaultOwner is not null && !_dirty) { options = options with { Changes = LocalChangesAction.DontChange }; }
         Window operationOwner = _defaultOwner ?? this;
         if (options.Changes == LocalChangesAction.Reset && _dirty && !await Dialogs.ConfirmAsync(this, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
@@ -208,7 +227,11 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         await RunAsync("Checkout", async token =>
         {
             string? previousHead = (await Repository.GetStatusAsync(token)).Head;
-            try { LastResult = await Repository.CheckoutAsync(options, token); }
+            try
+            {
+                LastResult = _constraint is null ? await Repository.CheckoutAsync(options, token) : await _constraint.CheckoutAsync(selected!, options, token);
+                if (!LastResult.Result.Success) { throw new GitCommandException(["switch"], LastResult.Result); }
+            }
             finally
             {
                 MarkRepositoryChanged();
@@ -228,14 +251,19 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                 if (update is null)
                 {
                     SubmoduleCheckoutDecision? decision = await CheckoutSubmodulePrompt.ShowAsync(operationOwner, token);
+                    if (_constraint is not null && decision is null) { Status.Text = T("Operation cancelled"); return; }
                     update = decision?.Update;
                     if (decision is { Remember: true }) { _submodulePreferences.Remember(decision.Update); }
                 }
-                if (update == true && await SubmoduleUpdateDialog.ShowAsync(operationOwner, Repository, token) && _afterSubmoduleUpdateAsync is not null)
+                if (update == true)
                 {
-                    await _afterSubmoduleUpdateAsync(token);
+                    bool updated = await SubmoduleUpdateDialog.ShowAsync(operationOwner, Repository, token);
+                    if (_constraint is not null && !updated) { Status.Text = T("Operation cancelled"); return; }
+                    if (updated && _afterSubmoduleUpdateAsync is not null) { await _afterSubmoduleUpdateAsync(token); }
                 }
             }
+            token.ThrowIfCancellationRequested();
+            Succeeded = true;
             Close();
         }, cancellationToken: cancellationToken);
     }
@@ -243,6 +271,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     protected override void UpdateActions()
     {
         bool revision = _detached.IsChecked == true;
+        _detached.IsVisible = _constraint is null;
         _selectionAccess.Content = revision ? _revisionLabel : _selectionLabel;
         _selectionAccess.Target = revision ? _revision : _branches;
         _branches.IsVisible = !revision;

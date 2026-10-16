@@ -343,9 +343,19 @@ public sealed class StashDialog : RepositoryDialog
     {
         string? path = _fileList.SelectedTags.OfType<FileChoice>().FirstOrDefault(file => file.Change?.IsConflict == true)?.Path
             ?? _status?.Changes.FirstOrDefault(change => change.IsConflict)?.Path;
-        if (path is null) { return; }
-        PatchConflictDialog dialog = new(Repository, path); dialog.Opened += async (_, _) => await dialog.InitializeAsync();
-        await dialog.ShowDialog(this); if (dialog.HasRepositoryChanges) { MarkRepositoryChanged(); } await InitializeAsync();
+        if (IsBusy || !IsVisible || path is null) { return; }
+        await RunAsync("Solve conflicts", async token =>
+        {
+            try
+            {
+                if (await ConflictedPathDialog.ShowAsync(this, Repository, path, token)) { MarkRepositoryChanged(); }
+                token.ThrowIfCancellationRequested();
+            }
+            finally
+            {
+                if (!token.IsCancellationRequested && IsVisible) { await RefreshAsync(token, selectHash: Selected?.Hash); }
+            }
+        });
     }
 
     protected override void UpdateActions()

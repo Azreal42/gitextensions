@@ -231,18 +231,29 @@ public sealed class CherryPickDialog : RepositoryDialog
 
     private async Task RefreshConflictsAsync()
     {
-        await RunAsync("Solve conflicts", async token =>
-        {
-            IReadOnlyList<string> paths = await Repository.GetCherryPickConflictsAsync(token);
-            _conflicts.ItemsSource = paths; _conflicts.SelectedIndex = paths.Count > 0 ? 0 : -1;
-        }, cancellationToken: _token);
+        await RunAsync("Solve conflicts", ReadConflictsAsync, cancellationToken: _token);
+    }
+    private async Task ReadConflictsAsync(CancellationToken token)
+    {
+        IReadOnlyList<string> paths = await Repository.GetCherryPickConflictsAsync(token);
+        _conflicts.ItemsSource = paths; _conflicts.SelectedIndex = paths.Count > 0 ? 0 : -1;
     }
     private async Task ResolveAsync()
     {
-        if (_conflicts.SelectedItem is not string path) { return; }
-        PatchConflictDialog editor = new(Repository, path) { RequestedThemeVariant = ActualThemeVariant }; await editor.InitializeAsync(); await editor.ShowDialog(this);
-        if (editor.HasRepositoryChanges) { MarkRepositoryChanged(); }
-        await RefreshConflictsAsync();
+        if (IsBusy || IsClosingOrClosed || _conflicts.SelectedItem is not string path) { return; }
+        await RunAsync("Solve conflicts", async token =>
+        {
+            try
+            {
+                if (await ConflictedPathDialog.ShowAsync(this, Repository, path, token)) { MarkRepositoryChanged(); }
+                token.ThrowIfCancellationRequested();
+            }
+            finally
+            {
+                if (!token.IsCancellationRequested && !IsClosingOrClosed) { await ReadConflictsAsync(token); }
+            }
+        }, cancellationToken: _token);
+        FocusOriginalControl();
     }
     private async Task RecoverAsync(GitOperationAction action)
     {

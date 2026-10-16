@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -14,13 +15,21 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
     private readonly TextBlock _stages = new() { Name = "ConflictStages", TextWrapping = TextWrapping.Wrap };
     private readonly Dictionary<GitConflictResolution, Button> _choices = [];
     private readonly Button _tool;
+    private Window? _closingOwner;
     public IReadOnlyList<GitConflictPath> Conflicts { get; private set; } = [];
 
     public ResolveConflictsDialog(GitRepository repository) : base(repository, "Resolve conflicts")
     {
         Name = "ResolveConflictsDialog"; Width = 690; Height = 430; MinWidth = 590; MinHeight = 340;
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         _files.ItemTemplate = new FuncDataTemplate<GitConflictPath>((item, _) => new TextBlock { Text = item is null ? "" : ExportDialogControls.DisplayPath(item.Path), Margin = new Thickness(3), TextTrimming = TextTrimming.CharacterEllipsis });
         _files.SelectionChanged += (_, _) => UpdateActions();
+        _files.DoubleTapped += async (_, _) => await MergeToolAsync();
+        _files.KeyDown += async (_, args) =>
+        {
+            if (args.Key == Key.Enter && args.KeyModifiers == KeyModifiers.None && _files.SelectedItem is GitConflictPath)
+            { args.Handled = true; await MergeToolAsync(); }
+        };
         Track(_files);
         StackPanel actions = new() { Spacing = 4, Margin = new Thickness(6, 0, 0, 0) };
         Add(GitConflictResolution.Base, "Use base version"); Add(GitConflictResolution.Ours, "Use local version (ours)");
@@ -32,6 +41,12 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
         StackPanel footer = ExportDialogControls.Buttons(Action("RefreshConflicts", "Refresh", InitializeAsync), Action("CloseConflicts", "Close", () => { Close(); return Task.CompletedTask; }));
         DockPanel.SetDock(footer, Dock.Bottom); Root.Children.Add(footer);
         _stages.Margin = new Thickness(10, 2); DockPanel.SetDock(_stages, Dock.Bottom); Root.Children.Add(_stages); Root.Children.Add(content);
+        Closing += (_, args) => { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingOwner = Owner as Window; } };
+        Closed += (_, _) =>
+        {
+            Window? owner = _closingOwner; _closingOwner = null;
+            if (owner is not null) { Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
         UpdateActions();
         void Add(GitConflictResolution choice, string label)
         {
@@ -51,6 +66,7 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
     private async Task ResolveAsync(GitConflictResolution choice)
     {
         if (IsBusy || _files.SelectedItem is not GitConflictPath selected) { return; }
+        if (choice == GitConflictResolution.Manual && IsSubmodule(selected)) { await ResolveSubmoduleAsync(selected.Path); return; }
         if (choice != GitConflictResolution.Manual
             && !await Dialogs.ConfirmAsync(this, T("Resolve conflicts"), T("Replace the working file with the selected version?") + "\n" + ExportDialogControls.DisplayPath(selected.Path))) { return; }
         if (!IsVisible) { return; }
@@ -64,16 +80,31 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
     private Task MergeToolAsync()
     {
         if (IsBusy || _files.SelectedItem is not GitConflictPath selected) { return Task.CompletedTask; }
+        if (IsSubmodule(selected)) { return ResolveSubmoduleAsync(selected.Path); }
         return RunAsync("Open merge tool", async token => { MarkRepositoryChanged(); await Repository.RunMergeToolAsync(selected.Path, token); await ReloadAsync(token); });
     }
+
+    private Task ResolveSubmoduleAsync(string path) => RunAsync("Submodule conflict", async token =>
+    {
+        try
+        {
+            if (await ConflictedPathDialog.ShowAsync(this, Repository, path, token)) { MarkRepositoryChanged(); }
+            token.ThrowIfCancellationRequested();
+        }
+        finally { if (!token.IsCancellationRequested) { await ReloadAsync(token); } }
+    });
+
+    private static bool IsSubmodule(GitConflictPath conflict) => conflict.Stages.Any(stage => stage.Mode == "160000");
     protected override void UpdateActions()
     {
         GitConflictPath? selected = _files.SelectedItem as GitConflictPath;
+        bool submodule = selected is not null && IsSubmodule(selected);
         foreach ((GitConflictResolution choice, Button button) in _choices)
         {
             int stage = choice switch { GitConflictResolution.Base => 1, GitConflictResolution.Ours => 2, GitConflictResolution.Theirs => 3, _ => 0 };
-            button.IsEnabled = !IsBusy && selected is not null && (stage == 0 || selected.Stages.Any(item => item.Stage == stage && item.Mode != "160000"));
+            button.IsEnabled = !IsBusy && selected is not null && (stage == 0 || !submodule && selected.Stages.Any(item => item.Stage == stage));
         }
+        _choices[GitConflictResolution.Manual].Content = T(submodule ? "Resolve submodule…" : "Mark as resolved");
         if (_tool is not null) { _tool.IsEnabled = !IsBusy && selected is not null; }
         _stages.Text = selected is null ? "" : string.Join("\n", selected.Stages.Select(stage => $"{stage.Stage}: {stage.Mode}  {stage.Hash}"));
     }

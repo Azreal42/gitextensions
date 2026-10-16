@@ -146,6 +146,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. SubmoduleRemovalScenarios.All,
     .. SubmoduleAddScenarios.All,
     .. SubmoduleManagementScenarios.All,
+    .. SubmoduleConflictScenarios.All,
     .. CherryPickScenarios.All,
     .. MergeConflictScenarios.All,
     .. ResetRevertScenarios.All,
@@ -185,6 +186,7 @@ if (args.Contains("--remote-settings-only", StringComparer.Ordinal)) { tests = R
 if (args.Contains("--worktrees-only", StringComparer.Ordinal)) { tests = WorktreeScenarios.All.ToArray(); }
 if (args.Contains("--submodule-add-only", StringComparer.Ordinal)) { tests = SubmoduleAddScenarios.All.ToArray(); }
 if (args.Contains("--submodule-management-only", StringComparer.Ordinal)) { tests = SubmoduleManagementScenarios.All.ToArray(); }
+if (args.Contains("--submodule-conflict-only", StringComparer.Ordinal)) { tests = SubmoduleConflictScenarios.All.ToArray(); }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
 
 int failures = 0;
