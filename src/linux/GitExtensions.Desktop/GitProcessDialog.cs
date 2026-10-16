@@ -358,6 +358,15 @@ public sealed class GitProcessDialog : Window
         if (_outcome?.CompletionError is Exception completionError) { notices.Add(completionError.Message); }
         _notice.Text = string.Join(Environment.NewLine, notices.Distinct()); _noticeScroll.IsVisible = _notice.IsVisible = notices.Count > 0;
     }
+    /// <summary>A deferred owner close must retain its intent even when the owner handles Closing before its children.</summary>
+    internal void RequestOwnerClose()
+    {
+        _ownerCloseObserved = true;
+        _ownerCloseRequested |= IsRunning;
+        if (_outcome is not null) { _outcome = _outcome with { OwnerCloseRequested = true }; }
+        RequestClose();
+    }
+
     private void RequestClose()
     {
         if (_closed) { return; }

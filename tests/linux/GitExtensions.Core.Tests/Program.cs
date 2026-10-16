@@ -150,6 +150,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. CherryPickRecoveryScenarios.All,
     .. RebaseAdvancedScenarios.All,
     .. PushScenarios.All,
+    .. RemoteBranchDeletionScenarios.All,
     .. PushStreamingScenarios.All,
     .. CloneStreamingScenarios.All,
     .. ScriptScenarios.All,
@@ -173,6 +174,8 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("plain clipboard text and invalid UTF16 selections remain explicit", DiffClipboardScenarios.PlainAndValidationAsync),
     ("real partial Git patch version copies never reconstruct omitted file content", DiffClipboardScenarios.RealPartialPatchAsync),
 ];
+
+if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }
 
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)

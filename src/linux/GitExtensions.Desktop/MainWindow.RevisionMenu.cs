@@ -175,19 +175,7 @@ public sealed partial class MainWindow
     private async Task DeleteRevisionBranchAsync(GitRepository repository, GitReference reference)
     {
         if (!reference.IsRemote) { await ShowRepositoryDialogAsync(new DeleteBranchDialog(repository, [reference.ShortName])); return; }
-        IReadOnlyList<GitRemote> remotes = await repository.GetRemotesAsync(_lifetime.Token);
-        GitRemote remote = remotes.Where(candidate => reference.ShortName.StartsWith(candidate.Name + "/", StringComparison.Ordinal))
-            .OrderByDescending(candidate => candidate.Name.Length).FirstOrDefault() ?? throw new InvalidOperationException(T("Remote not found."));
-        string branch = reference.ShortName[(remote.Name.Length + 1)..];
-        if (!await Dialogs.ConfirmAsync(WorkflowOwner, T("Delete remote branch"), T("Delete remote branch") + " " + reference.ShortName + "?")) { return; }
-        if (_repository != repository || _busy) { return; }
-        await RunAsync("Delete remote branch", async r =>
-        {
-            GitResult result = await r.PushAsync(new GitPushRequest(remote.Name, GitPushMode.Multiple,
-                Actions: [new GitPushAction(null, "refs/heads/" + branch, Delete: true)]), Token);
-            AppendOutput(result.StandardOutput + result.StandardError);
-            if (!result.Success) { throw new GitCommandException(["push"], result); }
-        });
+        await ShowRepositoryDialogAsync(new DeleteRemoteBranchDialog(repository, reference.Name));
     }
 
     private async Task CheckoutRevisionWithConfirmationAsync()

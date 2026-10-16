@@ -175,7 +175,7 @@ public sealed partial class MainWindow
     {
         if (_repository is null || _busy) { return; }
         GitReference reference = SelectedReference();
-        if (reference.IsRemote) { _state.Text = "Remote deletion requires Push with an explicit refspec"; return; }
+        if (reference.IsRemote) { await ShowRepositoryDialogAsync(new DeleteRemoteBranchDialog(_repository, reference.Name)); return; }
         await ShowRepositoryDialogAsync(reference.IsTag ? new DeleteTagDialog(_repository, reference.ShortName) : new DeleteBranchDialog(_repository, [reference.ShortName]));
     }
 
