@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Input.Raw;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using GitExtensions.Linux;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop;
@@ -26,13 +27,13 @@ public sealed class ComparisonSelectionTests
     public async Task ARealFilterBurstKeepsEveryCharacterAndDoesNotReadTheSameSelectedFileAgain()
     {
         await using Fixture f = await Fixture.CreateAsync(); CompareRevisionsDialog dialog = f.Dialog;
-        TextBox filter = Field<TextBox>(dialog, "ComparisonFileFilter"); string selected = dialog.SelectedFile!.Path;
+        TextBox filter = FilterEditor(dialog); string selected = dialog.SelectedFile!.Path;
         int calls = f.Gate.Commands.Count; f.Gate.Arm(selected);
         PushProcessTestDriver.Pointer(filter); TypeBurst(dialog, "context-focus-compare");
         Assert.That(filter.Text, Is.EqualTo("context-focus-compare"));
         Assert.That(dialog.FocusManager!.GetFocusedElement(), Is.SameAs(filter));
         Assert.That(filter.IsEffectivelyEnabled, Is.True); Assert.That(dialog.IsBusy, Is.False);
-        await Idle(dialog); Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(selected));
+        await Until(() => FileView(dialog).FilteredEntries.Count == 2); await Idle(dialog); Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(selected));
         Assert.That(f.Gate.Commands.Count, Is.EqualTo(calls), "Retaining the same selected file is a local filter operation, not another Git read.");
         Assert.That(Diff(dialog), Does.Contain("new A")); Assert.That(dialog.LastError, Is.Null);
     }
@@ -44,11 +45,12 @@ public sealed class ComparisonSelectionTests
     {
         await using Fixture f = await Fixture.CreateAsync(dark); CompareRevisionsDialog dialog = f.Dialog;
         f.Gate.Arm(B); SelectFile(dialog, B); await Until(() => f.Gate.Started(B)); int pid = f.Gate.LatestPid(B);
-        TextBox filter = Field<TextBox>(dialog, "ComparisonFileFilter");
+        TextBox filter = FilterEditor(dialog);
         Assert.That(dialog.IsBusy, Is.False); Assert.That(filter.IsEffectivelyEnabled, Is.True);
         PushProcessTestDriver.Pointer(filter); TypeBurst(dialog, "context-focus-compare");
         Assert.That(filter.Text, Is.EqualTo("context-focus-compare")); Assert.That(dialog.FocusManager!.GetFocusedElement(), Is.SameAs(filter));
         Assert.That(f.Gate.BlockedCommands(B), Is.EqualTo(1), "Filtering must reuse the pending read rather than repeatedly cancelling and starting it.");
+        await Until(() => FileView(dialog).FilteredEntries.Count == 2);
         f.Gate.Release(B); await Idle(dialog);
         Assert.That(Alive(pid), Is.False); Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(B));
         Assert.That(dialog.FocusManager!.GetFocusedElement(), Is.SameAs(filter), "Publishing the file must keep the user's filter focus.");
@@ -81,13 +83,16 @@ public sealed class ComparisonSelectionTests
     {
         await using Fixture f = await Fixture.CreateAsync(); CompareRevisionsDialog dialog = f.Dialog;
         f.Gate.Arm(B); SelectFile(dialog, B); await Until(() => f.Gate.Started(B)); int pid = f.Gate.LatestPid(B);
-        TextBox filter = Field<TextBox>(dialog, "ComparisonFileFilter"); PushProcessTestDriver.Pointer(filter); TypeBurst(dialog, "no-matching-file");
-        await Idle(dialog); Assert.That(Alive(pid), Is.False); f.Gate.Release(B);
-        Assert.That(dialog.SelectedFile, Is.Null); Assert.That(Diff(dialog), Is.EqualTo("No differences"));
-        Assert.That(Field<TextBlock>(dialog, "ComparisonSelectedPath").Text, Is.EqualTo("No differences"));
-        Press(dialog, PhysicalKey.A, RawInputModifiers.Control); Press(dialog, PhysicalKey.Backspace); await Idle(dialog);
+        TextBox filter = FilterEditor(dialog); PushProcessTestDriver.Pointer(filter); TypeBurst(dialog, "no-matching-file");
+        await Until(() => FileView(dialog).FilteredEntries.Count == 0); await Idle(dialog); Assert.That(Alive(pid), Is.False); f.Gate.Release(B);
+        Assert.That(dialog.SelectedFile, Is.Null); Assert.That(Diff(dialog), Is.Empty);
+        Assert.That(Field<TextBlock>(dialog, "ComparisonSelectedPath").Text, Is.Empty);
+        Press(dialog, PhysicalKey.A, RawInputModifiers.Control); Press(dialog, PhysicalKey.Backspace);
+        await Until(() => FileView(dialog).FilteredEntries.Count == 3);
+        Assert.That(dialog.SelectedFile, Is.Null, "Clearing a filter does not silently choose a different file.");
+        SelectFile(dialog, A); await Idle(dialog);
         Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(A)); Assert.That(Diff(dialog), Does.Contain("new A"));
-        Assert.That(dialog.FocusManager!.GetFocusedElement(), Is.SameAs(filter));
+        PushProcessTestDriver.Pointer(filter); Assert.That(dialog.FocusManager!.GetFocusedElement(), Is.SameAs(filter));
     }
 
     [AvaloniaTest]
@@ -131,11 +136,35 @@ public sealed class ComparisonSelectionTests
         Assert.That(dialog.Comparison, Is.Null); Assert.That(Diff(dialog), Does.Not.Contain("new B"));
     }
 
+    [AvaloniaTest]
+    public async Task SortAndFilterRebuildsKeepThePendingLeafThenCancelItWhenANewerLeafIsSelected()
+    {
+        await using Fixture f = await Fixture.CreateAsync(); CompareRevisionsDialog dialog = f.Dialog;
+        f.Gate.Arm(B); SelectFile(dialog, B); await Until(() => f.Gate.Started(B)); int first = f.Gate.LatestPid(B);
+        PushProcessTestDriver.Pointer(Field<Avalonia.Controls.Primitives.ToggleButton>(dialog, "ComparisonFilesByExtension"));
+        TextBox editor = FilterEditor(dialog); PushProcessTestDriver.Pointer(editor); TypeBurst(dialog, "context-focus-compare");
+        await Until(() => FileView(dialog).FilteredEntries.Count == 2);
+        Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(B)); Assert.That(f.Gate.BlockedCommands(B), Is.EqualTo(1));
+        Assert.That(dialog.FocusManager!.GetFocusedElement(), Is.SameAs(editor));
+        PushProcessTestDriver.Pointer(Field<Avalonia.Controls.Primitives.ToggleButton>(dialog, "ComparisonFilesByStatus"));
+        Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(B)); Assert.That(f.Gate.BlockedCommands(B), Is.EqualTo(1));
+        f.Gate.Arm(A); SelectFile(dialog, A); await Until(() => f.Gate.Started(A)); await Until(() => !Alive(first));
+        f.Gate.Release(B); f.Gate.Release(A); await Idle(dialog);
+        Assert.That(dialog.SelectedFile!.Path, Is.EqualTo(A)); Assert.That(Diff(dialog), Does.Contain("new A").And.Not.Contain("new B"));
+        Assert.That(dialog.LastError, Is.Null);
+    }
+
+    private static FileStatusListView FileView(CompareRevisionsDialog dialog) => Field<FileStatusListView>(dialog, "ComparisonFileStatusList");
+    private static TextBox FilterEditor(CompareRevisionsDialog dialog)
+        => Field<ComboBox>(dialog, "ComparisonFilesFilter").GetVisualDescendants().OfType<TextBox>().Single();
     private static void SelectFile(CompareRevisionsDialog dialog, string path)
     {
-        ListBox list = Field<ListBox>(dialog, "ComparisonFiles");
-        GitRevisionFile file = list.Items.OfType<GitRevisionFile>().Single(item => item.Path == path); list.ScrollIntoView(file); Pump(dialog);
-        PushProcessTestDriver.Pointer((Control)list.ContainerFromIndex(list.Items.IndexOf(file))!); Pump(dialog);
+        FileStatusListView view = FileView(dialog);
+        GitRevisionFile file = dialog.Comparison!.Files.Single(item => item.Path == path);
+        TreeViewItem item = view.FindItemByTag(file)!;
+        foreach (TreeViewItem parent in item.GetVisualAncestors().OfType<TreeViewItem>()) { parent.IsExpanded = true; }
+        item.BringIntoView(); Pump(dialog);
+        PushProcessTestDriver.Pointer(item); Pump(dialog);
     }
     private static string Diff(CompareRevisionsDialog dialog) => Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text;
     private static T Field<T>(TopLevel root, string name) where T : Control => PushProcessTestDriver.Field<T>(root, name);
@@ -165,7 +194,7 @@ public sealed class ComparisonSelectionTests
         private Fixture(ReferenceFixture repository, NativeGate gate, string before, bool dark)
         {
             _repository = repository; Gate = gate; Owner.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light; Owner.Show();
-            Dialog = new(new(repository.Repository.Path, new GitRunner(gate.Executable)), before, "HEAD") { RequestedThemeVariant = Owner.ActualThemeVariant };
+            Dialog = new(new(repository.Repository.Path, new GitRunner(gate.Executable)), before, "HEAD", new FileStatusListPreferencesStore(repository.Output("file-list-preferences"))) { RequestedThemeVariant = Owner.ActualThemeVariant };
             Shown = Dialog.ShowDialog(Owner);
         }
         internal static async Task<Fixture> CreateAsync(bool dark = false)

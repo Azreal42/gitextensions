@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Desktop.Controls;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -127,13 +128,14 @@ public class RenameCompareDialogTests
         {
             await dialog.InitializeAsync(); await Idle(dialog);
             Assert.That(dialog.Comparison!.Files.Select(file => file.Status), Is.EquivalentTo(new[] { 'R', 'A', 'D' }));
-            ListBox files = Field<ListBox>(dialog, "ComparisonFiles");
+            TreeView files = Field<TreeView>(dialog, "ComparisonFiles");
+            FileStatusListView filesView = Field<FileStatusListView>(dialog, "ComparisonFileStatusList");
             GitRevisionFile rename = dialog.Comparison.Files.Single(file => file.Path == renamed);
             Assert.That(rename.OriginalPath, Is.EqualTo("file.txt"));
-            files.SelectedItem = rename; await Idle(dialog);
+            files.SelectedItem = filesView.FindItemByTag(rename); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("-line 30").And.Contain("+changed 30").And.Not.Contain("old deleted file"));
             Capture(dialog, "classic-compare-revisions.png");
-            Assert.That(files.GetVisualDescendants().OfType<ListBoxItem>().Select(row => row.Bounds.Height), Is.All.EqualTo(24));
+            Assert.That(files.GetVisualDescendants().OfType<TreeViewItem>().Where(row => row.IsEffectivelyVisible).Select(row => ((Control)row.Header!).Bounds.Height), Is.All.EqualTo(ClassicTreeViewAppearance.RowHeight));
             foreach (string name in new[] { "ComparisonBaseBranch", "ComparisonBaseCommit", "ComparisonCompareBranch", "ComparisonCompareCommit", "ComparisonSwap" })
             { Assert.That(((Image)Field<Button>(dialog, name).Content!).Width, Is.EqualTo(16)); }
             TabControl tabs = Field<TabControl>(dialog, "ComparisonTabs");
@@ -148,9 +150,12 @@ public class RenameCompareDialogTests
             string savedBase = Output(fixture, "saved base.cs");
             await dialog.SaveSelectedFileAsync(savedBase, baseSide: true);
             Assert.That(await File.ReadAllTextAsync(savedBase), Is.EqualTo(initial));
-            Field<TextBox>(dialog, "ComparisonFileFilter").Text = "λ"; await Idle(dialog);
-            Assert.That(files.Items.OfType<GitRevisionFile>().Single().Path, Is.EqualTo(renamed));
-            Field<TextBox>(dialog, "ComparisonFileFilter").Text = "deleted"; await Idle(dialog);
+            Field<ComboBox>(dialog, "ComparisonFilesFilter").Text = "λ";
+            await Until(() => filesView.FilteredEntries.Count == 1); await Idle(dialog);
+            Assert.That(filesView.FilteredEntries.Single().Path, Is.EqualTo(renamed));
+            Field<ComboBox>(dialog, "ComparisonFilesFilter").Text = "deleted";
+            await Until(() => filesView.FilteredEntries.Count == 1 && filesView.FilteredEntries.Single().Path == "deleted.txt");
+            files.SelectedItem = filesView.FindItemByTag(dialog.Comparison.Files.Single(file => file.Path == "deleted.txt")); await Idle(dialog);
             Assert.That(Field<TabItem>(dialog, "ComparisonCompareTab").IsEnabled, Is.False);
             Assert.That(Field<TabItem>(dialog, "ComparisonBaseTab").IsEnabled, Is.True);
             Assert.That(dialog.HasRepositoryChanges, Is.False);
@@ -260,14 +265,14 @@ public class RenameCompareDialogTests
             await dialog.InitializeAsync();
             await Idle(dialog);
             Assert.That(dialog.Comparison!.Base.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
-            Field<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison.Files.Single(file => file.Path == untracked); await Idle(dialog);
+            Field<TreeView>(dialog, "ComparisonFiles").SelectedItem = Field<FileStatusListView>(dialog, "ComparisonFileStatusList").FindItemByTag(dialog.Comparison.Files.Single(file => file.Path == untracked)); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("+literal untracked"));
             Assert.That(Field<TabItem>(dialog, "ComparisonBaseTab").IsEnabled, Is.False);
             Assert.That(Field<Button>(dialog, "ComparisonSaveBase").IsEnabled, Is.False);
             Assert.That(Field<Button>(dialog, "ComparisonFileTool").IsEnabled, Is.False);
             Click(dialog, "ComparisonSwap"); await Idle(dialog);
             Assert.That(Field<Button>(dialog, "ComparisonDirectoryTool").IsEnabled, Is.False);
-            Field<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison!.Files.Single(file => file.Path == untracked); await Idle(dialog);
+            Field<TreeView>(dialog, "ComparisonFiles").SelectedItem = Field<FileStatusListView>(dialog, "ComparisonFileStatusList").FindItemByTag(dialog.Comparison!.Files.Single(file => file.Path == untracked)); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("-literal untracked"));
             Assert.That(Field<Button>(dialog, "ComparisonSaveCompare").IsEnabled, Is.False);
             Assert.That(dialog.HasRepositoryChanges, Is.False);
@@ -367,7 +372,7 @@ public class RenameCompareDialogTests
         try
         {
             await dialog.InitializeAsync();
-            Field<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison!.Files.Single(file => file.Path == "file.txt"); await Idle(dialog);
+            Field<TreeView>(dialog, "ComparisonFiles").SelectedItem = Field<FileStatusListView>(dialog, "ComparisonFileStatusList").FindItemByTag(dialog.Comparison!.Files.Single(file => file.Path == "file.txt")); await Idle(dialog);
             DiffView view = Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView;
             view.Editor.Focus(); Press(dialog, PhysicalKey.F, RawInputModifiers.Control);
             Window find = dialog.OwnedWindows.Single(window => window.Name == "DiffViewerFindDialog");

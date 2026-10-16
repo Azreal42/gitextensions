@@ -1,6 +1,6 @@
+using GitExtensions.Linux.Desktop.Controls;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -19,9 +19,9 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     private readonly ComparisonRevisionSelector _base;
     private readonly ComparisonRevisionSelector _compare;
     private readonly CheckBox _mergeBase = new() { Name = "CompareToMergeBase" };
-    private readonly TextBox _filter = ReferenceDialogControls.Text("ComparisonFileFilter");
     private readonly TextBlock _fileCaption = new() { Name = "ComparisonSelectedPath", TextTrimming = TextTrimming.CharacterEllipsis };
-    private readonly ListBox _files = new() { Name = "ComparisonFiles" };
+    private readonly TreeView _files = new() { Name = "ComparisonFiles", SelectionMode = SelectionMode.Multiple };
+    private readonly FileStatusListView _filesView;
     private readonly TabControl _tabs = new() { Name = "ComparisonTabs" };
     private readonly FileHistoryContentView _diff = new() { Name = "ComparisonDiff" };
     private readonly FileHistoryContentView _baseView = new() { Name = "ComparisonBaseView" };
@@ -31,25 +31,27 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     private readonly Button _saveBase;
     private readonly Button _saveCompare;
     private readonly List<Bitmap> _icons = [];
-    private readonly Dictionary<char, Bitmap> _fileIcons = [];
     private GitComparison? _comparison;
     private string? _fixedMergeBase;
     private bool _mergeBaseLoaded;
     private bool _loading;
     private bool _bare;
     public GitComparison? Comparison => _comparison;
-    public GitRevisionFile? SelectedFile => _files.SelectedItem as GitRevisionFile;
+    public GitRevisionFile? SelectedFile => _files.SelectedItems?.Count == 1 && _files.SelectedItem is TreeViewItem { Tag: GitRevisionFile file } ? file : null;
+    public IReadOnlyList<GitRevisionFile> SelectedFiles => _files.SelectedItems?.Count == 1
+        ? _filesView.SelectedTags.OfType<GitRevisionFile>().ToArray()
+        : _files.SelectedItems?.OfType<TreeViewItem>().Select(item => item.Tag).OfType<GitRevisionFile>().Distinct().ToArray() ?? [];
     public string? MergeBaseRevision => _fixedMergeBase;
 
-    public CompareRevisionsDialog(GitRepository repository, GitCompareRevision baseRevision, GitCompareRevision compareRevision)
-        : this(repository, baseRevision?.Revision ?? throw new ArgumentNullException(nameof(baseRevision)), compareRevision?.Revision ?? throw new ArgumentNullException(nameof(compareRevision)))
+    public CompareRevisionsDialog(GitRepository repository, GitCompareRevision baseRevision, GitCompareRevision compareRevision, FileStatusListPreferencesStore? fileListPreferences = null)
+        : this(repository, baseRevision?.Revision ?? throw new ArgumentNullException(nameof(baseRevision)), compareRevision?.Revision ?? throw new ArgumentNullException(nameof(compareRevision)), fileListPreferences)
     {
         _loading = true;
         try { _base.Set(baseRevision); _compare.Set(compareRevision); }
         finally { _loading = false; }
     }
 
-    public CompareRevisionsDialog(GitRepository repository, string baseRevision = "HEAD~1", string compareRevision = "HEAD") : base(repository, "Diff")
+    public CompareRevisionsDialog(GitRepository repository, string baseRevision = "HEAD~1", string compareRevision = "HEAD", FileStatusListPreferencesStore? fileListPreferences = null) : base(repository, "Diff")
     {
         Width = 1100; Height = 720; MinWidth = 800; MinHeight = 440;
         _base = new("ComparisonBase", true, baseRevision, T);
@@ -70,11 +72,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         Button close = new() { Name = "CloseComparison", Content = T("Close"), IsCancel = true }; close.Click += (_, _) => Close();
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(6, 4), Children = { _fileTool, _saveBase, _saveCompare, close } };
         DockPanel.SetDock(actions, Dock.Bottom); Root.Children.Add(actions);
-        _filter.Watermark = T("Filter files");
-        DockPanel files = new(); DockPanel.SetDock(_filter, Dock.Top); files.Children.Add(_filter); files.Children.Add(_files);
-        _files.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
-        { Setters = { new Setter(HeightProperty, 24d), new Setter(MinHeightProperty, 24d), new Setter(PaddingProperty, new Thickness(2, 0)) } });
-        _files.ItemTemplate = new FuncDataTemplate<GitRevisionFile>((file, _) => FileRow(file));
+        _filesView = new FileStatusListView(_files, preferencesStore: fileListPreferences) { Name = "ComparisonFileStatusList" };
         _tabs.ItemsSource = new[]
         {
             new TabItem { Name = "ComparisonDiffTab", Header = T("Diff"), Content = _diff },
@@ -97,26 +95,26 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         _diff.TextView.Search.OpenDiffToolRequested = () => OpenToolAsync(false);
         _fileCaption.Margin = new Thickness(5, 2); DockPanel.SetDock(_fileCaption, Dock.Top); viewer.Children.Add(_fileCaption); viewer.Children.Add(_tabs);
         Grid body = new() { ColumnDefinitions = new ColumnDefinitions("300,4,*"), Margin = new Thickness(6, 0, 6, 4) };
-        body.Children.Add(ClassicChrome.Border(files, new Thickness(1)));
+        body.Children.Add(ClassicChrome.Border(_filesView, new Thickness(1)));
         GridSplitter splitter = new() { Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch }; Grid.SetColumn(splitter, 1); body.Children.Add(splitter);
         Grid.SetColumn(viewer, 2); body.Children.Add(viewer); Root.Children.Add(body);
-        Track(_base, _compare, _mergeBase, _filter, _files, _tabs);
+        Track(_base, _compare, _mergeBase, _filesView, _files, _tabs);
         _base.Edited += (_, _) => InputsEdited(); _compare.Edited += (_, _) => InputsEdited();
         _base.BranchButton.Click += async (_, _) => await ChooseBranchAsync(_base);
         _compare.BranchButton.Click += async (_, _) => await ChooseBranchAsync(_compare);
         _base.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_base);
         _compare.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_compare);
         _mergeBase.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await InitializeAsync(); } };
-        _files.SelectionChanged += async (_, _) => { if (!_loading && !_applyingFileFilter && !IsBusy) { await LoadSelectionAsync(); } };
+        _files.SelectionChanged += async (_, args) => { if (args.Source == _files && !_loading && !_filesView.IsUpdating && !IsBusy) { await LoadSelectionAsync(); } };
+        _filesView.DisplayChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
-        _filter.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty && !_loading) { ApplyFileFilter(); } };
         AddHandler(KeyDownEvent, async (_, args) => await HandleKeyAsync(args), RoutingStrategies.Tunnel);
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
         {
             if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(ReloadSelectionAsync); }
         };
         InitializeSelectionLifetime();
-        Closed += (_, _) => { _base.Dispose(); _compare.Dispose(); _diff.Dispose(); _baseView.Dispose(); _compareView.Dispose(); foreach (Bitmap icon in _icons) { icon.Dispose(); } };
+        Closed += (_, _) => { _filesView.Dispose(); _base.Dispose(); _compare.Dispose(); _diff.Dispose(); _baseView.Dispose(); _compareView.Dispose(); foreach (Bitmap icon in _icons) { icon.Dispose(); } };
         UpdateActions();
     }
 
@@ -143,26 +141,31 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     private async Task ReadComparisonAsync(CancellationToken token)
     {
         _comparison = await Repository.GetComparisonAsync(_mergeBase.IsChecked == true && _fixedMergeBase is not null ? new(_fixedMergeBase) : _base.Read(), _compare.Read(), token);
-        ApplyFileFilter();
+        SetFileGroups();
         await ReadSelectedAsync(token);
         if (LastError is null) { Status.Text = _comparison.Files.Count + " " + T("files") + (_comparison.Files.Count == 0 ? " — " + T("No differences") : ""); }
     }
 
-    private void ApplyFileFilter()
+    private void SetFileGroups()
     {
-        string? selected = SelectedFile?.Path;
-        string search = _filter.Text ?? "";
-        GitRevisionFile[] visible = _comparison?.Files.Where(file => file.Path.Contains(search, StringComparison.OrdinalIgnoreCase)
-            || file.OriginalPath?.Contains(search, StringComparison.OrdinalIgnoreCase) == true).ToArray() ?? [];
-        _applyingFileFilter = true;
-        try
+        FileStatusListEntry[] entries = _comparison?.Files.Select(file => new FileStatusListEntry(file, file.Path,
+            file.OriginalPath, file.Status, file.SimilarityPercent, file.DiffStatus)).ToArray() ?? [];
+        GitComparison? comparison = _comparison;
+        _filesView.SetGroups(comparison is null ? [] : [new(comparison, "comparison", ComparisonGroupHeader(comparison, entries.Length, entries.Length), entries, Name: "ComparisonFileGroup")
+        { HeaderFactory = (shown, total) => ComparisonGroupHeader(comparison, shown, total) }]);
+    }
+
+    private Control ComparisonGroupHeader(GitComparison comparison, int shown, int total)
+    {
+        string revision = comparison.Base.Kind switch
         {
-            if (!_files.Items.OfType<GitRevisionFile>().SequenceEqual(visible)) { _files.ItemsSource = visible; }
-            _files.SelectedItem = visible.FirstOrDefault(file => file.Path == selected) ?? visible.FirstOrDefault();
-        }
-        finally { _applyingFileFilter = false; }
-        UpdateActions();
-        if (!_loading && !IsBusy) { _ = LoadSelectionAsync(); }
+            GitCompareRevisionKind.Index => T("Commit index"), GitCompareRevisionKind.WorkingTree => T("Working directory"),
+            _ => comparison.Base.Revision[..Math.Min(9, comparison.Base.Revision.Length)]
+        };
+        string count = shown < total ? shown + "/" + total : total.ToString();
+        return new StackPanel { Orientation = Orientation.Horizontal, Height = ClassicTreeViewAppearance.RowHeight, Children =
+        { _filesView.CreateIcon("Diff.png"), new TextBlock { Text = "(" + count + ") " + T("Diff with A ") + revision,
+            Margin = new Thickness(2, 0), VerticalAlignment = VerticalAlignment.Center } } };
     }
 
     public GitComparisonDiffOptions ReadDiffOptions() => _diff.TextView.ComparisonMenu.Options;
@@ -171,7 +174,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     {
         if (_loading || IsBusy) { return; }
         CancelSelectionRead(); _loadedSelection = null;
-        _comparison = null; _files.ItemsSource = null;
+        _comparison = null; _filesView.SetGroups([]);
         _diff.ShowDiff(T("Choose revisions and press Compare.")); _baseView.ShowDiff(""); _compareView.ShowDiff("");
         Status.Text = T("Choose revisions and press Compare."); UpdateActions();
     }
@@ -231,9 +234,10 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
             AvaloniaEdit.Document.DocumentLine? next = forward ? hunks.FirstOrDefault(line => line.Offset > view.CaretOffset) : hunks.LastOrDefault(line => line.Offset < view.CaretOffset);
             if (next is null)
             {
-                int index = _files.SelectedIndex + (forward ? 1 : -1);
-                if (index < 0 || index >= _files.Items.Count) { return; }
-                _loading = true; try { _files.SelectedIndex = index; } finally { _loading = false; }
+                TreeViewItem[] files = FileItems(_files.Items).ToArray();
+                int index = Array.FindIndex(files, item => ReferenceEquals(item, _files.SelectedItem)) + (forward ? 1 : -1);
+                if (index < 0 || index >= files.Length) { return; }
+                _loading = true; try { _filesView.SelectTags([files[index].Tag!]); files[index].BringIntoView(); } finally { _loading = false; }
                 await ReadSelectedAsync(token);
                 next = forward ? view.Editor.Document.Lines.FirstOrDefault(line => view.Editor.Document.GetText(line).StartsWith("@@ ", StringComparison.Ordinal))
                     : view.Editor.Document.Lines.LastOrDefault(line => view.Editor.Document.GetText(line).StartsWith("@@ ", StringComparison.Ordinal));
@@ -259,18 +263,13 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         _diff.TextView.ComparisonMenu.SetHostBusy(IsBusy);
         _diff.TextView.RenderingMenu.SetHostBusy(IsBusy);
     }
-    private Control FileRow(GitRevisionFile? file)
+    private static IEnumerable<TreeViewItem> FileItems(System.Collections.IEnumerable items)
     {
-        if (file is null) { return new TextBlock(); }
-        if (!_fileIcons.TryGetValue(file.Status, out Bitmap? icon))
+        foreach (TreeViewItem item in items.OfType<TreeViewItem>())
         {
-            string name = file.Status switch { 'A' => "FileStatusAdded.png", 'D' => "FileStatusRemoved.png", 'R' => "FileStatusRenamed.png", 'C' => "FileStatusCopied.png", _ => "FileStatusModified.png" };
-            using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + name));
-            icon = new(stream); _icons.Add(icon); _fileIcons.Add(file.Status, icon);
+            if (item.Tag is GitRevisionFile) { yield return item; }
+            foreach (TreeViewItem child in FileItems(item.Items)) { yield return child; }
         }
-        return new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5, Height = 24, Children =
-        { new Image { Source = icon, Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center },
-          new TextBlock { Text = ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center } } };
     }
     private Button IconAction(string name, string file, string tip, Func<Task> action)
     {

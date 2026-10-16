@@ -104,7 +104,7 @@ public class ViewerHostReadingTests
         CompareRevisionsDialog dialog = fixture.Track(new CompareRevisionsDialog(fixture.Repository, fixture.BaseRevision, "HEAD"));
         dialog.Show();
         await dialog.InitializeAsync();
-        Find<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison!.Files.Single(file => file.Path == LiteralPath);
+        Find<TreeView>(dialog, "ComparisonFiles").SelectedItem = Find<FileStatusListView>(dialog, "ComparisonFileStatusList").FindItemByTag(dialog.Comparison!.Files.Single(file => file.Path == LiteralPath));
         DiffView view = Find<FileHistoryContentView>(dialog, "ComparisonDiff").TextView;
         await Until(() => !dialog.IsBusy && view.Text.Contains(HighChange, StringComparison.Ordinal));
         Assert.That(view.Editor.Document.LineCount, Is.LessThan(30));
@@ -271,7 +271,7 @@ public class ViewerHostReadingTests
         CompareRevisionsDialog compare = fixture.Track(new CompareRevisionsDialog(fixture.Repository,
             new GitCompareRevision("HEAD"), new GitCompareRevision("", GitCompareRevisionKind.WorkingTree)));
         compare.Show(); await compare.InitializeAsync();
-        Find<ListBox>(compare, "ComparisonFiles").SelectedItem = compare.Comparison!.Files.Single(file => file.Path == LiteralPath);
+        Find<TreeView>(compare, "ComparisonFiles").SelectedItem = Find<FileStatusListView>(compare, "ComparisonFileStatusList").FindItemByTag(compare.Comparison!.Files.Single(file => file.Path == LiteralPath));
         DiffView next = Find<FileHistoryContentView>(compare, "ComparisonDiff").TextView;
         await Until(() => !compare.IsBusy && next.Text.Contains(HighChange, StringComparison.Ordinal));
         Assert.That(next.ComparisonMenu.Options, Is.EqualTo(new GitComparisonDiffOptions(IgnoreWhitespaceKind.Change)), "Remember whitespace is enabled by default; whole-file and context are reset for a new reader.");

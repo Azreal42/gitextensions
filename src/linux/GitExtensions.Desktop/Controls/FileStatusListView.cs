@@ -4,6 +4,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
@@ -58,6 +60,16 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private IDisposable? _filterBackgroundBinding;
     private bool _updatingFilter, _updatingToolbar, _disposed;
     private readonly bool _fileTreeMode;
+    private sealed record ModeInputFocus(Control Trigger, TopLevel Host, IReadOnlyList<FileStatusListGroup> Groups, string Filter)
+    {
+        public (string Group, FileStatusListNodeKind Kind, string Key)? Row { get; init; }
+        public bool RowSelected { get; init; }
+        public TextBox? Editor { get; init; }
+        public int Caret { get; init; }
+        public int Start { get; init; }
+        public int End { get; init; }
+    }
+    private ModeInputFocus? _modeInputFocus;
 
     public FileStatusListView(TreeView tree, Func<FileStatusListEntry, Control>? fileHeaderFactory = null,
         FileStatusListPreferencesStore? preferencesStore = null, bool fileTreeMode = false)
@@ -95,8 +107,14 @@ public sealed class FileStatusListView : UserControl, IDisposable
         _flatGroups.Click += (_, _) => ShowGroupNodesInFlatList = _flatGroups.IsChecked;
         _viewMode = new() { Name = Prefix("ViewMode"), Height = 24, MinHeight = 24, Width = 32, Padding = new Thickness(2, 0) };
         _viewMode.Resources["ButtonMinHeight"] = 24d;
-        _viewMode.Flyout = new MenuFlyout { ItemsSource = _sortMenus.Cast<object>().Concat(new object[] { new Separator(), _dense, _flatGroups }).ToArray() };
-        _viewMode.Click += (_, _) => SortMode = IsFlat ? (FileStatusListSortMode)((int)SortMode - 1) : (FileStatusListSortMode)((int)SortMode + 1);
+        MenuFlyout modes = new() { ItemsSource = _sortMenus.Cast<object>().Concat(new object[] { new Separator(), _dense, _flatGroups }).ToArray() };
+        _viewMode.Flyout = modes; CaptureModePointer(_viewMode);
+        modes.Closed += (_, _) => RestoreModeInputAfterAction(_viewMode);
+        _viewMode.Click += (_, _) =>
+        {
+            SortMode = IsFlat ? (FileStatusListSortMode)((int)SortMode - 1) : (FileStatusListSortMode)((int)SortMode + 1);
+            RestoreModeInputAfterAction(_viewMode);
+        };
         ToolTip.SetTip(_viewMode, T("Toggle flat list / tree"));
         _toolbar.Children.Add(_viewMode); _toolbarRoles[_viewMode] = "ViewMode";
         _byPath = SortButton("ByPath", "Group by file path", "FolderClosed.png", FileStatusListSortMode.FilePath);
@@ -197,6 +215,59 @@ public sealed class FileStatusListView : UserControl, IDisposable
         ApplyFilter("");
     }
 
+    private void CaptureModePointer(Control trigger)
+    {
+        // A later keyboard action cannot consume an abandoned pointer press.
+        // Escape inside the active mode popup still belongs to its opening origin.
+        trigger.AddHandler(InputElement.KeyDownEvent, (_, _) =>
+        { if (_viewMode.Flyout?.IsOpen != true) { _modeInputFocus = null; } }, RoutingStrategies.Tunnel);
+        trigger.AddHandler(InputElement.PointerPressedEvent, (_, args) =>
+        {
+            if (!args.GetCurrentPoint(trigger).Properties.IsLeftButtonPressed || _viewMode.Flyout?.IsOpen == true) { return; }
+            _modeInputFocus = null;
+            if (_disposed || !Tree.IsEffectivelyEnabled || TopLevel.GetTopLevel(this) is not TopLevel host
+                || host.FocusManager?.GetFocusedElement() is not Control input) { return; }
+            ModeInputFocus origin = new(trigger, host, _groups, FilterText);
+            if (input is TextBox editor && editor.GetVisualAncestors().Contains(_filter))
+            { _modeInputFocus = origin with { Editor = editor, Caret = editor.CaretIndex, Start = editor.SelectionStart, End = editor.SelectionEnd }; }
+            else if (input.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault() is TreeViewItem row && _models.TryGetValue(row, out FileStatusListNode? node))
+            { _modeInputFocus = origin with { Row = Identity(node), RowSelected = row.IsSelected }; }
+        }, RoutingStrategies.Tunnel);
+    }
+
+    private void RestoreModeInputAfterAction(Control trigger)
+    {
+        ModeInputFocus? origin = _modeInputFocus;
+        if (origin is null || !ReferenceEquals(origin.Trigger, trigger)) { return; }
+        // Popup dismissal restores its own focus first. This callback belongs only to
+        // this pointer action, never to filtering, a rebuild or peer preference changes.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!ReferenceEquals(_modeInputFocus, origin) || ReferenceEquals(trigger, _viewMode) && _viewMode.Flyout?.IsOpen == true) { return; }
+            _modeInputFocus = null;
+            if (_disposed || !IsEffectivelyEnabled || !Tree.IsEffectivelyEnabled || !Tree.IsEffectivelyVisible
+                || !origin.Host.IsVisible || TopLevel.GetTopLevel(Tree) != origin.Host || !ReferenceEquals(_groups, origin.Groups) || FilterText != origin.Filter
+                || origin.Host is Window window && (!window.IsActive || !window.IsEffectivelyEnabled || window.OwnedWindows.Any(child => child.IsVisible))) { return; }
+            Control? current = origin.Host.FocusManager?.GetFocusedElement() as Control;
+            bool fromMode = current is null || ReferenceEquals(current, origin.Host)
+                || current.GetSelfAndVisualAncestors().Contains(trigger)
+                || ReferenceEquals(trigger, _viewMode) && current.GetSelfAndVisualAncestors().OfType<MenuItem>()
+                    .Any(item => _sortMenus.Contains(item) || ReferenceEquals(item, _dense) || ReferenceEquals(item, _flatGroups));
+            if (!fromMode) { return; }
+            if (origin.Editor is TextBox editor)
+            {
+                if (!editor.IsEffectivelyVisible || !editor.IsEffectivelyEnabled || TopLevel.GetTopLevel(editor) != origin.Host || (editor.Text ?? "") != origin.Filter) { return; }
+                editor.Focus(NavigationMethod.Pointer); editor.CaretIndex = origin.Caret; editor.SelectionStart = origin.Start; editor.SelectionEnd = origin.End;
+            }
+            else if (origin.Row is { } identity)
+            {
+                TreeViewItem? row = _models.FirstOrDefault(pair => Identity(pair.Value) == identity).Key;
+                if (row is { Focusable: true, IsEffectivelyEnabled: true, IsEffectivelyVisible: true } && row.IsSelected == origin.RowSelected)
+                { row.BringIntoView(); row.Focus(NavigationMethod.Pointer); }
+            }
+        });
+    }
+
     private string Prefix(string suffix) => (Tree.Name ?? "FileStatus") + suffix;
     private string T(string source) => _translations.Translate(source);
     private bool IsFlat => SortMode is FileStatusListSortMode.FilePathFlat or FileStatusListSortMode.FileExtensionFlat or FileStatusListSortMode.FileStatusFlat;
@@ -280,7 +351,10 @@ public sealed class FileStatusListView : UserControl, IDisposable
             Tree.ItemsSource = null; _models.Clear(); _parents.Clear(); _mutedPathRuns.Clear();
             TreeViewItem[] roots = nodes.Select(node => CreateItem(node, null)).ToArray(); Tree.ItemsSource = roots;
             TreeViewItem[] restored = _models.Where(pair => selected.Contains(Identity(pair.Value))).Select(pair => pair.Key).ToArray();
-            if (restored.Length == 0 && selectFirst) { restored = [_models.FirstOrDefault(pair => pair.Value.Entry is not null).Key ?? roots.FirstOrDefault()!]; }
+            // Match FileStatusList's sole-root-leaf selection, including a filter rebuild.
+            // A parent containing one file is deliberately not this case.
+            if (roots.Length == 1 && roots[0].Items.Count == 0) { restored = [roots[0]]; }
+            else if (restored.Length == 0 && selectFirst) { restored = [_models.FirstOrDefault(pair => pair.Value.Entry is not null).Key ?? roots.FirstOrDefault()!]; }
             foreach (TreeViewItem? item in restored)
             {
                 if (item is null) { continue; }
@@ -300,6 +374,10 @@ public sealed class FileStatusListView : UserControl, IDisposable
                 : node.Kind == FileStatusListNodeKind.Revision ? group.HeaderFactory?.Invoke(shown, group.Entries.Count) ?? group.Header
                 : IconHeader(node.Kind == FileStatusListNodeKind.Placeholder ? "- " + T("No changes") + " -" : node.Label, node.Icon);
             TreeViewItem item = new() { Tag = node.Tag, Header = header };
+            // The Fluent part has its own template value; a style setter cannot override it.
+            // Focus the row naturally on pointer input, rather than consuming Left on its inner Border.
+            item.TemplateApplied += static (_, args) =>
+            { if (args.NameScope.Find<Border>("PART_LayoutRoot") is Border surface) { surface.Focusable = false; } };
             if (node.Kind == FileStatusListNodeKind.Revision) { item.Name = group.Name; }
             _models.Add(item, node); _parents.Add(item, parent);
             item.ItemsSource = node.Children.Select(child => CreateItem(child, item)).ToArray();
@@ -330,7 +408,9 @@ public sealed class FileStatusListView : UserControl, IDisposable
     {
         ToggleButton button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = 24, MinHeight = 24,
             CornerRadius = new CornerRadius(0), BorderThickness = new Thickness(1), Padding = new Thickness(2, 0) };
-        ToolTip.SetTip(button, T(tip)); button.Click += (_, _) => { if (!_updatingToolbar) { SortMode = IsFlat ? (FileStatusListSortMode)((int)basis + 1) : basis; } };
+        CaptureModePointer(button);
+        ToolTip.SetTip(button, T(tip)); button.Click += (_, _) =>
+        { if (!_updatingToolbar) { SortMode = IsFlat ? (FileStatusListSortMode)((int)basis + 1) : basis; RestoreModeInputAfterAction(button); } };
         _toolbar.Children.Add(button); _toolbarRoles[button] = name; return button;
     }
     private ToggleButton DiffButton(string name, string caption, string tip, string color, Action<bool> update)
@@ -526,7 +606,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     };
     public void Dispose()
     {
-        if (_disposed) { return; } _disposed = true; CancelPendingFilter();
+        if (_disposed) { return; } _disposed = true; _modeInputFocus = null; CancelPendingFilter();
         _store.Changed -= PreferencesChanged; ActualThemeVariantChanged -= ThemeChanged;
         Tree.SelectionChanged -= TreeSelectionChanged;
         _filter.PropertyChanged -= FilterPropertyChanged; _filter.SelectionChanged -= FilterSelectionChanged;

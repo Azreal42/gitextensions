@@ -11,7 +11,7 @@ public sealed partial class CompareRevisionsDialog
     private CancellationTokenSource? _selectionRead;
     private SelectionRead? _requestedSelection, _loadedSelection;
     private Task? _selectionTask;
-    private bool _applyingFileFilter, _selectionClosing, _selectionClosed;
+    private bool _selectionClosing, _selectionClosed;
     private Window? _closingSelectionOwner;
     internal Task SelectionCompletion => Task.WhenAll(_selectionTasks.ToArray());
     internal bool IsSelectionLoading => _selectionTasks.Any(task => !task.IsCompleted);
@@ -65,12 +65,12 @@ public sealed partial class CompareRevisionsDialog
         tabs[2].IsEnabled = file is not null && !file.IsDeleted;
         if (_tabs.SelectedIndex == 1 && !tabs[1].IsEnabled || _tabs.SelectedIndex == 2 && !tabs[2].IsEnabled)
         { _tabs.SelectedIndex = 0; }
-        _fileCaption.Text = file is null ? T("No differences") : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
+        _fileCaption.Text = file is null ? "" : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
         UpdateActions();
         if (file is null || _comparison is null)
         {
             CancelSelectionRead(); _loadedSelection = null;
-            _diff.ShowDiff(T("No differences")); _baseView.ShowDiff(""); _compareView.ShowDiff(""); return Task.CompletedTask;
+            _diff.ShowDiff(""); _baseView.ShowDiff(""); _compareView.ShowDiff(""); return Task.CompletedTask;
         }
         SelectionRead selection = new(_comparison, file, _tabs.SelectedIndex);
         if (!force && SameSelection(selection, _requestedSelection) && _selectionTask is { IsCompleted: false } current) { return current; }
