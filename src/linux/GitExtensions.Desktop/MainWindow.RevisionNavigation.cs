@@ -1,4 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Threading;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -8,6 +11,7 @@ public sealed partial class MainWindow
     private int _revisionNavigationIndex = -1;
     private GitRepository? _revisionNavigationRepository;
     private bool _movingRevisionNavigation;
+    private readonly BrowserRead _goToCommitRead = new();
 
     private MenuItem BuildRevisionNavigateMenu() => BuildHistoryNavigateMenu(context: true);
 
@@ -25,8 +29,51 @@ public sealed partial class MainWindow
 
     private async Task GoToRevisionAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(WorkflowOwner, T("Go to commit"), (T("Commit"), ""));
-        if (values is not null && !string.IsNullOrWhiteSpace(values[0])) { await NavigateToRevisionAsync(values[0]); }
+        if (_busy || _goToCommitRead.Current is not null || _repository is not GitRepository repository || _lifetime.IsCancellationRequested) { return; }
+        LastException = null;
+        GoToCommitDialog dialog = new(repository) { RequestedThemeVariant = ActualThemeVariant };
+        using CancellationTokenSource read = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _goToCommitRead.Current = read;
+        dialog.Opened += async (_, _) => await dialog.InitializeAsync(read.Token);
+        using CancellationTokenRegistration close = read.Token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
+        try { await dialog.ShowDialog(WorkflowOwner); }
+        finally
+        {
+            dialog.Close(); await dialog.Completion;
+            if (_goToCommitRead.Current == read) { _goToCommitRead.Current = null; }
+        }
+        if (read.IsCancellationRequested || _repository != repository || _lifetime.IsCancellationRequested || !dialog.WasAccepted) { return; }
+        if (dialog.SelectedCommitHash is not string hash)
+        {
+            LastException = dialog.ResolutionError;
+            await ShowGoToCommitErrorAsync("_noRevisionFoundError", "No revision found.");
+        }
+        else if (!_history.Any(commit => commit.Hash == hash)) { await ShowFilteredRevisionErrorAsync(hash); }
+        else { SelectVisibleRevision(hash); }
+    }
+
+    private Task ShowFilteredRevisionErrorAsync(string hash)
+    {
+        string message = _translations.Translate("MessageBoxes", "_cannotFindRevisionFilter", "Text",
+            "Revision \"{0}\" is not visible in the revision grid. Remove the revision filter.");
+        return ShowGoToCommitErrorAsync(null, string.Format(System.Globalization.CultureInfo.CurrentCulture, message, hash[..Math.Min(7, hash.Length)]));
+    }
+
+    private async Task ShowGoToCommitErrorAsync(string? key, string source)
+    {
+        string message = key is null ? source : _translations.Translate("MessageBoxes", key, "Text", source);
+        _state.Text = message;
+        Window error = new() { Name = "GoToCommitError", Title = _translations.Translate("MessageBoxes", "_cannotFindRevisionCaption", "Text", "Cannot find revision"),
+            Width = 520, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
+        Button accept = new() { Name = "CloseGoToCommitError", Content = T("OK"), IsDefault = true, IsCancel = true, MinWidth = 75 };
+        accept.Click += (_, _) => error.Close();
+        error.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
+        {
+            new TextBlock { Name = "GoToCommitErrorMessage", Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+            new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { accept } }
+        } };
+        await error.ShowDialog(WorkflowOwner);
+        if (!_lifetime.IsCancellationRequested) { _commits.Focus(); }
     }
 
     private async Task NavigateToRevisionAsync(string revision)
@@ -60,14 +107,19 @@ public sealed partial class MainWindow
         if (_repository == repository && !string.IsNullOrEmpty(hash)) { SelectVisibleRevision(hash); }
     }
 
-    private Task NavigateRevisionHistoryAsync(int direction)
+    private async Task NavigateRevisionHistoryAsync(int direction)
     {
         int next = _revisionNavigationIndex + direction;
-        if (_revisionNavigationRepository != _repository || next < 0 || next >= _revisionNavigation.Count) { return Task.CompletedTask; }
+        if (_revisionNavigationRepository != _repository || next < 0 || next >= _revisionNavigation.Count) { return; }
         _movingRevisionNavigation = true;
-        try { _revisionNavigationIndex = next; SelectVisibleRevision(_revisionNavigation[next]); }
+        try
+        {
+            _revisionNavigationIndex = next;
+            string hash = _revisionNavigation[next];
+            if (_history.Any(commit => commit.Hash == hash)) { SelectVisibleRevision(hash); }
+            else { await ShowFilteredRevisionErrorAsync(hash); }
+        }
         finally { _movingRevisionNavigation = false; RefreshRevisionContextMenu(); }
-        return Task.CompletedTask;
     }
 
     private Task SearchRevisionAsync(int direction)

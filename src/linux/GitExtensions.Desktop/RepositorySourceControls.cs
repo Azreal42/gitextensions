@@ -34,23 +34,26 @@ internal static class RepositorySourceControls
         return name.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
     }
 
-    internal static IDisposable CompleteHistory(ComboBox choice, Panel host) => new HistoryCompletion(choice, host);
+    internal static IDisposable CompleteHistory(ComboBox choice, Panel host, Action<string>? selectionCommitted = null,
+        StringComparison comparison = StringComparison.Ordinal) => new HistoryCompletion(choice, host, selectionCommitted, comparison);
 
     /// <summary>SuggestAppend from the same MRU shown by the editable choice, preserving case-sensitive Linux paths.</summary>
     private sealed class HistoryCompletion : IDisposable
     {
         private readonly ComboBox _choice;
+        private readonly Action<string>? _selectionCommitted;
+        private readonly StringComparison _comparison;
         private readonly Panel _host;
         private readonly Popup _popup;
         private readonly ListBox _suggestions = new() { MaxHeight = 200, Padding = default, BorderThickness = default };
         private TextBox? _editor;
         private Window? _window;
-        private bool _changing, _disposed, _retainingSelection, _clearSelectionOnLostFocus;
+        private bool _changing, _disposed, _retainingSelection, _clearSelectionOnLostFocus, _nativeDropDownQueued;
         private string? _typed, _pressedItem;
 
-        internal HistoryCompletion(ComboBox choice, Panel host)
+        internal HistoryCompletion(ComboBox choice, Panel host, Action<string>? selectionCommitted, StringComparison comparison)
         {
-            _choice = choice; _host = host;
+            _choice = choice; _host = host; _selectionCommitted = selectionCommitted; _comparison = comparison;
             _suggestions.Name = choice.Name + "HistorySuggestions";
             _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>()) { Setters =
             {
@@ -72,7 +75,7 @@ internal static class RepositorySourceControls
                 ToolTip.SetTip(caption, ExportDialogControls.DisplayPath(value ?? "")); return caption;
             });
             _popup = new() { Name = choice.Name + "HistoryCompletionPopup", PlacementTarget = choice, Placement = PlacementMode.Bottom,
-                IsLightDismissEnabled = true, OverlayInputPassThroughElement = choice, OverlayDismissEventPassThrough = true, MaxWidth = 600,
+                IsLightDismissEnabled = true, OverlayInputPassThroughElement = choice, OverlayDismissEventPassThrough = true, MaxWidth = selectionCommitted is null ? 600 : double.PositiveInfinity,
                 Child = ClassicChrome.Border(_suggestions, new Thickness(1)) };
             _popup.Closed += PopupClosed;
             if (host is DockPanel) { DockPanel.SetDock(_popup, Dock.Bottom); }
@@ -84,7 +87,7 @@ internal static class RepositorySourceControls
             choice.TemplateApplied += TemplateApplied;
             choice.AttachedToVisualTree += Attached;
             choice.DetachedFromVisualTree += Detached;
-            choice.LostFocus += LostFocus;
+            choice.LostFocus += LostFocus; choice.DropDownOpened += NativeDropDownOpened;
             _suggestions.AddHandler(InputElement.KeyDownEvent, KeyDown, RoutingStrategies.Tunnel);
             _suggestions.AddHandler(InputElement.PointerPressedEvent, PointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
             _suggestions.AddHandler(InputElement.PointerReleasedEvent, PointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
@@ -99,11 +102,11 @@ internal static class RepositorySourceControls
             string typed = editor.Text ?? "";
             Dismiss();
             if (typed.Length == 0 || editor.CaretIndex != typed.Length || editor.SelectionStart != editor.SelectionEnd) { return; }
-            string[] matches = _choice.Items.OfType<string>().Where(item => item.StartsWith(typed, StringComparison.Ordinal)).ToArray();
+            string[] matches = _choice.Items.OfType<string>().Where(item => item.StartsWith(typed, _comparison)).ToArray();
             if (matches.Length == 0) { return; }
             _typed = typed; _suggestions.ItemsSource = matches; _suggestions.SelectedIndex = 0;
             _choice.IsDropDownOpen = false;
-            _popup.Width = Math.Min(600, Math.Max(100, _choice.Bounds.Width));
+            _popup.Width = CompletionWidth;
             if (!_retainingSelection)
             {
                 _clearSelectionOnLostFocus = editor.ClearSelectionOnLostFocus; _retainingSelection = true;
@@ -111,6 +114,48 @@ internal static class RepositorySourceControls
             }
             _popup.IsOpen = true;
             Preview(matches[0]);
+        }
+
+        private double CompletionWidth => _selectionCommitted is null ? Math.Min(600, Math.Max(100, _choice.Bounds.Width)) : _choice.Bounds.Width;
+
+        private void NativeDropDownOpened(object? sender, EventArgs args)
+        {
+            // Finish ComboBox's own popup/binding transition before replacing it.
+            // Closing and reopening synchronously inside PopupOpened reenters its template bindings.
+            if (_selectionCommitted is null || _disposed || _nativeDropDownQueued || _popup.IsOpen) { return; }
+            _nativeDropDownQueued = true; AttachEditor();
+            string typed = _editor?.Text ?? _choice.Text ?? "";
+            int caret = _editor?.CaretIndex ?? typed.Length, start = _editor?.SelectionStart ?? 0, end = _editor?.SelectionEnd ?? 0;
+            if (_editor is TextBox editor && !_retainingSelection)
+            {
+                _clearSelectionOnLostFocus = editor.ClearSelectionOnLostFocus; _retainingSelection = true;
+                editor.SetCurrentValue(TextBox.ClearSelectionOnLostFocusProperty, false);
+            }
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    if (_disposed || !_choice.IsEffectivelyEnabled || _window?.IsVisible != true || !_choice.IsDropDownOpen) { return; }
+                    _changing = true;
+                    try
+                    {
+                        _choice.IsDropDownOpen = false;
+                        _editor?.Focus(); _choice.Text = typed;
+                        if (_editor is TextBox input)
+                        {
+                            input.Text = typed; input.CaretIndex = caret; input.SelectionStart = start; input.SelectionEnd = end;
+                        }
+                    }
+                    finally { _changing = false; }
+                    _typed = typed; _suggestions.ItemsSource = _choice.Items.OfType<string>().ToArray(); _suggestions.SelectedIndex = -1;
+                    _popup.Width = CompletionWidth; _popup.IsOpen = true;
+                }
+                finally
+                {
+                    _nativeDropDownQueued = false;
+                    if (!_popup.IsOpen) { PopupClosed(null, EventArgs.Empty); }
+                }
+            });
         }
 
         private void Preview(string value)
@@ -125,7 +170,7 @@ internal static class RepositorySourceControls
             finally { _changing = false; }
         }
 
-        private void Accept(string? value = null)
+        private void Accept(string? value = null, bool commit = false)
         {
             value ??= _suggestions.SelectedItem as string;
             if (value is not null) { Preview(value); }
@@ -140,7 +185,9 @@ internal static class RepositorySourceControls
                 }
                 finally { _changing = false; }
             }
+            string accepted = value ?? _choice.Text ?? "";
             Dismiss();
+            if (commit) { _selectionCommitted?.Invoke(accepted); }
         }
 
         private void KeyDown(object? sender, KeyEventArgs args)
@@ -159,7 +206,7 @@ internal static class RepositorySourceControls
                 }
                 _editor?.Focus(); args.Handled = true;
             }
-            else if (args.Key is Key.Enter or Key.Tab) { Accept(); args.Handled = args.Key == Key.Enter; }
+            else if (args.Key is Key.Enter or Key.Tab) { Accept(commit: args.Key == Key.Enter); args.Handled = args.Key == Key.Enter; }
             else if (args.Key is Key.Down or Key.Up && _suggestions.ItemCount > 0)
             {
                 int direction = args.Key == Key.Down ? 1 : -1;
@@ -234,7 +281,7 @@ internal static class RepositorySourceControls
         {
             ListBoxItem? row = Row(args.Source); string? pressed = _pressedItem; _pressedItem = null;
             if (args.InitialPressMouseButton == MouseButton.Left && row?.Content is string value && value == pressed
-                && new Rect(row.Bounds.Size).Contains(args.GetPosition(row))) { Accept(value); args.Handled = true; }
+                && new Rect(row.Bounds.Size).Contains(args.GetPosition(row))) { Accept(value, commit: true); args.Handled = true; }
         }
 
         private void Dismiss() { _typed = null; _pressedItem = null; _popup.IsOpen = false; }
@@ -259,7 +306,7 @@ internal static class RepositorySourceControls
             _choice.RemoveHandler(InputElement.TextInputEvent, Complete); _choice.RemoveHandler(InputElement.KeyDownEvent, KeyDown);
             _choice.RemoveHandler(InputElement.PointerPressedEvent, ChoicePointerPressed);
             _choice.PropertyChanged -= ChoiceChanged; _choice.TemplateApplied -= TemplateApplied;
-            _choice.AttachedToVisualTree -= Attached; _choice.DetachedFromVisualTree -= Detached; _choice.LostFocus -= LostFocus;
+            _choice.AttachedToVisualTree -= Attached; _choice.DetachedFromVisualTree -= Detached; _choice.LostFocus -= LostFocus; _choice.DropDownOpened -= NativeDropDownOpened;
             if (_editor is not null) { _editor.PropertyChanged -= EditorChanged; }
             _suggestions.RemoveHandler(InputElement.KeyDownEvent, KeyDown);
             _suggestions.RemoveHandler(InputElement.PointerPressedEvent, PointerPressed); _suggestions.RemoveHandler(InputElement.PointerReleasedEvent, PointerReleased);
