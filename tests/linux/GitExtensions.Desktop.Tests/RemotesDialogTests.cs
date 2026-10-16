@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -378,19 +379,40 @@ public sealed class RemotesDialogTests
         try
         {
             ComboBox remote = Field<ComboBox>(dialog, "TrackingRemote"), merge = Field<ComboBox>(dialog, "TrackingMergeBranch");
+            Button save = Field<Button>(dialog, "SaveBranchTracking"); int saveClicks = 0;
+            save.Click += (_, args) => { if (args.Source == save) { saveClicks++; } };
             SetChoice(remote, "origin"); SetChoice(merge, "release/λ"); merge.Focus();
-            Pointer(dialog, "SaveBranchTracking"); await IdleAsync(dialog);
+            Pointer(dialog, "SaveBranchTracking"); await SavedTrackingAsync("set both", "origin", "release/λ");
+            Assert.That(saveClicks, Is.EqualTo(1), "Both pending values must finish from one Save click, even if a field validation is still queued.");
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(await TextAsync(f, "config", "branch.feature.remote"), Is.EqualTo("origin"));
             Assert.That(await TextAsync(f, "config", "branch.feature.merge"), Is.EqualTo("refs/heads/release/λ"));
-            SetChoice(merge, ""); Pointer(dialog, "SaveBranchTracking"); await IdleAsync(dialog);
+            SetChoice(merge, ""); Pointer(dialog, "SaveBranchTracking"); await SavedTrackingAsync("unset merge", "origin", null);
+            Assert.That(saveClicks, Is.EqualTo(2));
             Assert.That(await ValuesAsync(f, "branch.feature.merge"), Is.Empty);
             Assert.That(await TextAsync(f, "config", "branch.feature.remote"), Is.EqualTo("origin"));
-            SetChoice(remote, ""); Pointer(dialog, "SaveBranchTracking"); await IdleAsync(dialog);
+            SetChoice(remote, ""); Pointer(dialog, "SaveBranchTracking"); await SavedTrackingAsync("unset remote", null, null);
+            Assert.That(saveClicks, Is.EqualTo(3));
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(await ValuesAsync(f, "branch.feature.remote"), Is.Empty);
             Assert.That(await TextAsync(f, "config", "branch.feature.description"), Is.EqualTo("keep description"));
             Assert.That(await TextAsync(f, "rev-parse", "feature"), Is.EqualTo(await TextAsync(f, "rev-parse", "HEAD")));
+
+            async Task SavedTrackingAsync(string stage, string? expectedRemote, string? expectedMerge)
+            {
+                // IsBusy can become false between queued validations; the refreshed row witnesses their completion.
+                int observedClicks = saveClicks;
+                await Until(() => !dialog.IsBusy && Tracking(dialog).Any(row => row.LocalBranch == "feature"
+                    && row.Remote == expectedRemote && row.MergeBranch == expectedMerge),
+                    () => $"stage={stage}; clicks={saveClicks}; busy={dialog.IsBusy}; row={RowState()}; error={dialog.LastError}");
+                Assert.That(saveClicks, Is.EqualTo(observedClicks), "Waiting for queued validation must never issue another Save click.");
+            }
+
+            string RowState()
+            {
+                GitBranchTrackingSnapshot? row = Tracking(dialog).SingleOrDefault(row => row.LocalBranch == "feature");
+                return JsonSerializer.Serialize(new { LocalBranch = row?.LocalBranch, Remote = row?.Remote, MergeBranch = row?.MergeBranch, ConfigurationRevision = row?.ConfigurationRevision });
+            }
         }
         finally { await CloseAsync(dialog); }
     }
