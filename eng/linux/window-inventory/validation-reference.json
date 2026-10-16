@@ -1,12 +1,12 @@
 {
-  "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
-  "trx": "artifacts/linux/worktree-desktop-checks-20261016-full01/desktop.trx",
-  "trx_sha256": "4726880cfe46a11cc82e648d5732a2fccf3f2bab61671175f2e40db5bd125c62",
+  "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
+  "trx": "artifacts/linux/add-submodule-desktop-checks-20261016-13-final-full/desktop.trx",
+  "trx_sha256": "ce32782303a4a14ea0bbd91d9c1ce6615c36f069af306a680cc0e535afa1af5c",
   "meaning": "Frozen results from an actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "965",
-    "executed": "965",
-    "passed": "965",
+    "total": "984",
+    "executed": "984",
+    "passed": "984",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -22,6 +22,9 @@
     "pending": "0"
   },
   "classes": {
+    "AddSubmoduleDialogTests": {
+      "Passed": 17
+    },
     "AskpassTests": {
       "Passed": 11
     },
@@ -301,6 +304,9 @@
     "RemotesDialogTests": {
       "Passed": 25
     },
+    "RemotesTrackingValidationTests": {
+      "Passed": 2
+    },
     "RenameCompareDialogTests": {
       "Passed": 14
     },
@@ -376,20 +382,22 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
-      "passed": 498,
-      "total": 498,
-      "execution_result": "artifacts/linux/worktrees-core-20261016-04/full-result.json",
-      "source_hashes_verified": 156,
+      "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
+      "passed": 514,
+      "total": 514,
+      "execution_result": "artifacts/linux/submodule-add-core-20261016-02/full-result.json",
+      "source_hashes_verified": 187,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete apphost execution on the final, consent-guarded Worktrees source."
+      "meaning": "Actual complete component execution earlier in this tranche; all recorded inputs verified against the final source SHA. Not rerun for the subsequent Desktop-only tracking fix."
     },
     "plugins": {
-      "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
+      "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/worktree-plugins-checks-20261016-01/result.json",
-      "meaning": "Actual complete execution on the final Core source."
+      "execution_result": "artifacts/linux/submodule-add-plugins-checks-20261016-01/plugins-result.json",
+      "source_hashes_verified": 145,
+      "runtime_inputs_unchanged": true,
+      "meaning": "Actual complete component execution earlier in this tranche; all recorded inputs verified against the final source SHA. Not rerun for the subsequent Desktop-only tracking fix."
     }
   }
 }

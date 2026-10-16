@@ -279,3 +279,16 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Menu worktree construit busy reste désactivé lors d’Open(control) | Avalonia ne passe pas par Opening dans ce chemin ; recalculer aussi dans Opened, avec les mêmes gardes. |
 | Colonnes de données dérivent de 1 px chacune | Un Grid de ligne arrangé sur la largeur avec gouttière redistribue les pixels ; borner sa largeur à la somme exacte des colonnes comme le header. |
 | Abort test clique OK après fermeture du Process | Abort ferme après drainage ; acquitter uniquement un modal encore visible, puis vérifier les acteurs et l’état Git réel. |
+
+
+## Ajout de sous-module — résolus
+
+| Observation | Cause / suite |
+| --- | --- |
+| Branches proposées depuis un autre dépôt que celui cloné | Une URL relative se combine à la dernière URL brute du remote avant insteadOf ; `ls-remote` peut aussi réinterpréter un dossier comme un remote. Utiliser une définition `-c` éphémère après résolution native. |
+| Destination LF supposée réussie alors que le dossier existe | Git peut cloner puis refuser la clé de sous-module. Conserver le vrai code retour et le clone partiel ; existence du dossier ne signifie pas succès. |
+| Tab ne suit pas Source → Browse | L’ordre d’ajout aux conteneurs diffère du Designer ; conserver les TabIndex Windows explicites. |
+| Tout le texte sélectionné après clic de suggestion | ComboBox sélectionne au GotFocus ; rendre le focus avant de terminer la sélection/caret d’acceptation. |
+| Un vieux message de branches ou « Add submodule… » persiste après la fin | Effacer l’erreur lors d’un retry de la même source, et afficher l’état réellement terminé quand Process est fermé sans OK. |
+| Une seconde valeur de tracking validée pendant Save disparaît sans erreur | Le Reload final hors file prenait IsBusy avant l’écriture suivante. Réserver le Reload dans la même file avant RunAsync, y compris les validations provoquées par la perte de focus. Conserver le rafraîchissement Initialize de Windows, même sans champ modifié. |
+| Le test Save lit une seule des deux clés après !IsBusy | IsBusy peut être faux entre deux écritures en file. Attendre la ligne complète attendue, puis vérifier la configuration native ; aucun clic Save supplémentaire. |

@@ -1,0 +1,23 @@
+id,source,line,kind,feature,level,linux
+BrowseDlg,setup/installer/UI/WixUI.wxs,25,WiX library reference,"Sélection du dossier MSI, bibliothèque WiX",NA,Aucun dialogue : chemin d’installation du paquet Debian fixe.
+CancelDlg,setup/installer/UI/MaintenanceTypeDlg.wxs,50,WiX library reference,"Annulation standard MSI, bibliothèque WiX",NA,"Annulation gérée par l’installateur système/APT/DPKG, sans confirmation MSI dédiée."
+FilesInUse,setup/installer/UI/WixUI.wxs,26,WiX library reference,"Fichiers verrouillés, bibliothèque WiX",NA,Aucun équivalent applicatif dédié ; les règles Linux et le gestionnaire de paquets s’appliquent.
+GitEx_CancelDlg,setup/installer/UI/CancelDlg.wxs,16,source-owned,Confirmation d’annulation,NA,Annulation et gestion de l’état partiel déléguées au gestionnaire de paquets.
+GitEx_CustomizeDlg,setup/installer/UI/CustomizeDlg.wxs,16,source-owned,Sélection des composants,NA,Payload du paquet Debian ; pas de sélection de composants MSI ni d’extension shell Windows.
+GitEx_ErrorDlg,setup/installer/UI/ErrorDlg.wxs,16,source-owned,Erreur de l’installateur,NA,Erreur et logs du gestionnaire de paquets ; pas de fenêtre Avalonia correspondante.
+GitEx_ExitDialog,setup/installer/UI/ExitDialog.wxs,16,source-owned,Installation terminée,NA,Résultat du gestionnaire de paquets ; lancement via le raccourci .desktop.
+GitEx_FatalError,setup/installer/UI/FatalError.wxs,16,source-owned,Échec fatal de l’installation,NA,Échec et logs du gestionnaire de paquets ; pas de fenêtre Avalonia correspondante.
+GitEx_InstallDirDlg,setup/installer/UI/InstallDirDlg.wxs,16,source-owned,Choix du dossier d’installation,NA,Chemin du paquet Debian fixé par le packaging ; aucun sélecteur de destination équivalent.
+GitEx_MaintenanceTypeDlg,setup/installer/UI/MaintenanceTypeDlg.wxs,16,source-owned,"Modifier, réparer ou supprimer",NA,Mise à jour/réinstallation/suppression APT/DPKG ; pas de choix des composants MSI.
+GitEx_MaintenanceWelcomeDlg,setup/installer/UI/MaintenanceWelcomeDlg.wxs,16,source-owned,Accueil de la maintenance,NA,Mise à jour/réinstallation/suppression par le gestionnaire de paquets ; aucun assistant dédié.
+GitEx_ProgressDlg,setup/installer/UI/ProgressDlg.wxs,16,source-owned,Progression de l’installation,NA,Progression et logs du gestionnaire de paquets/APT/DPKG.
+GitEx_TelemetryDlg,setup/installer/UI/TelemetryDlg.wxs,29,source-owned,Consentement à la télémétrie à l’installation,NA,"Pas de page dans l’installateur Debian ; entrée de consentement dans Help, collecte Linux non implémentée."
+GitEx_UserExit,setup/installer/UI/UserExit.wxs,16,source-owned,Installation interrompue par l’utilisateur,NA,Résultat et état du gestionnaire de paquets après annulation.
+GitEx_VerifyReadyDlg,setup/installer/UI/VerifyReadyDlg.wxs,16,source-owned,Confirmation avant installation ou maintenance,NA,"Confirmation et résumé gérés par l’installateur système/APT, sans copie du dialogue MSI."
+GitEx_WelcomeDlg,setup/installer/UI/WelcomeDlg.wxs,16,source-owned,Accueil de l’installation,NA,"Ouverture du paquet dans l’installateur système, ou commande APT/DPKG ; aucun accueil Avalonia dédié."
+InvalidDirDlg,setup/installer/UI/WixUI.wxs,37,WiX library reference,"Destination MSI invalide, bibliothèque WiX",NA,Aucun dialogue de choix de dossier ; les erreurs de chemin relèvent du gestionnaire de paquets.
+MsiRMFilesInUse,setup/installer/UI/WixUI.wxs,27,WiX library reference,"Applications à fermer, Windows Restart Manager",NA,Aucun Restart Manager Windows reproduit ; pas de fermeture automatique de l’application par le portage.
+OutOfDiskDlg,setup/installer/UI/VerifyReadyDlg.wxs,33,WiX library reference,"Espace disque insuffisant, bibliothèque WiX",NA,Vérification de l’espace et erreur du gestionnaire de paquets ; pas de dialogue applicatif.
+OutOfRbDiskDlg,setup/installer/UI/VerifyReadyDlg.wxs,24,WiX library reference,"Espace insuffisant pour le rollback MSI, bibliothèque WiX",NA,État et récupération du paquet gérés par APT/DPKG ; pas de rollback MSI reproduit.
+PrepareDlg,setup/installer/UI/WixUI.wxs,28,WiX library reference,"Préparation de l’installation, bibliothèque WiX",NA,Préparation et vérification du paquet par l’installateur système/APT/DPKG.
+ResumeDlg,setup/installer/UI/WixUI.wxs,29,WiX library reference,"Reprise d’installation, bibliothèque WiX",NA,Récupération de l’état du paquet par APT/DPKG ; aucun dialogue de reprise MSI reproduit.

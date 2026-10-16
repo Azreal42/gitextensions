@@ -14,6 +14,8 @@ Désactiver reprend le comportement Windows : déplacer toutes les valeurs vers 
 
 Ne pas modifier global/includes silencieusement : les opérations structurelles sur une section héritée et les effacements que Git ne sait pas masquer sont refusés avant mutation. Les resets d’URL héritées exigent le support natif de Git. Sur Git 2.53, un branch.remote hérité ne peut pas être masqué par une valeur vide sans casser for-each-ref ; proposer une valeur valide ou éditer la source.
 
+Save recharge les listes même sans champ modifié, comme Initialize sous Windows. Sérialiser ce rechargement avec les validations de tracking ; réserver sa place avant toute désactivation ou perte de focus réentrante. Une valeur validée pendant une écriture doit atteindre Git et rester affichée sans clic supplémentaire.
+
 Repères : RemotesDialog.*, GitRepository.RemoteSettings.*, GitRemoteSettings, ClassicChoiceAppearance, MainWindow.Workflows, PullDialog.Source, PushDialog. Référence Windows : FormRemotes et ConfigFileRemoteSettingsManager.
 
-Validation ciblée : RemotesDialogTests, RemoteReferenceColorTests et RemoteSettingsScenarios ; exécutions complètes et paquet liés au commit dans le TODO. La grille de tracking utilise une liste sortable ; redimensionnement des colonnes et copie de cellules WinForms restent à reprendre. Scripts Before/AfterFetch et audit natif étendu restent ouverts. N3 ne vaut pas parité intégrale.
+Validation ciblée : RemotesDialogTests, RemotesTrackingValidationTests, RemoteReferenceColorTests et RemoteSettingsScenarios ; exécutions complètes et paquet liés au commit dans le TODO. La grille de tracking utilise une liste sortable ; redimensionnement des colonnes et copie de cellules WinForms restent à reprendre. Scripts Before/AfterFetch et audit natif étendu restent ouverts. N3 ne vaut pas parité intégrale.

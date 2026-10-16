@@ -6,13 +6,16 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `5be2a8aa4` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 18 N1 substituts minimaux, 25 N2 partielles, 44 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `5b372bee1` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 45 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
-L’inventaire contient aussi les 76 types Window Avalonia (dont 2 bases abstraites), 30 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
+L’inventaire contient aussi les 77 types Window Avalonia (dont 2 bases abstraites), 30 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
-Écarts concrets à traiter selon cette matrice : fenêtre complète d’ajout de sous-module ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
+
+Écarts concrets à traiter selon cette matrice : gestion complète des sous-modules et assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; boutons Yes/No de l’askpass natif (la version Linux demande encore une saisie). Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Ajout de sous-module : dialogue Windows compact, Source/MRU SuggestAppend partagé, branche éditable/requête annulable, Force et Process natif, erreurs/effets partiels conservés. ADR 0069 ; audit natif exhaustif ouvert.
 
 - [x] Worktrees : fenêtres Windows de gestion/création, grille compacte, chemins/branches, actions Repository/arbre/barre, switch après modal, Git natif et consentements de suppression. Portage ciblé testé ; ADR 0068.
 
@@ -204,4 +207,17 @@ Source `5be2a8aa4` : gestion et création dédiées, dispositions/icônes Window
 
 [Candidat Debian](../../artifacts/linux/snapshots/5be2a8aa4/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `1eb7e00390dbb0701e57495f92486edfe0d97f6cd3c9809d995d195b4e1fbe8d` : checkout figé, extraction/installation/lancement isolés vérifiés. Remplace `bc33a8871` avant installation hôte. L’hôte reste `879f7bae3` ; aucune application arrêtée. Aucun push.
 
-Les deux écrans Worktrees passent N1 → N3 ciblé testé. Restent l’audit GUI natif et l’ensemble des gestes/claviers/copies de cellules du DataGridView. Prochaine fenêtre : ajout de sous-module. Les 13 familles restent ouvertes ; aucun N4.
+Les deux écrans Worktrees passent N1 → N3 ciblé testé. Restent l’audit GUI natif et l’ensemble des gestes/claviers/copies de cellules du DataGridView. Les 13 familles restent ouvertes ; aucun N4.
+
+
+## Ajout de sous-module — 16 octobre 2026
+
+Source `5b372bee1` : FormAddSubmodule dédié, trois champs et deux boutons Windows, Force et ordre Tab. SuggestAppend Source/URL partagé avec Remotes ; aucune écriture aux récents. Branches lues dans le contexte Git réel, sans publier une réponse obsolète. Ajout/Force et staging laissés à Git ; dépôt existant accepté, annulation drainée, effets partiels et erreurs conservés. Le parent relit son état après fermeture. ADR 0069.
+
+Remotes : Save conserve le Reload Windows et le sérialise avec les validations de tracking, y compris une seconde valeur validée pendant la première écriture. Deux scénarios vérifient la configuration native et le rafraîchissement sans champ modifié après changement externe. ADR 0067.
+
+[Validation complète](../../artifacts/linux/snapshots/5b372bee1/proofs/source-validation.json) : **984 Desktop, 514 Core, 35 Plugins**, soit 1533 scénarios distincts, zéro échec/ignoré. 19 nouveaux scénarios UI et 16 Core. Core/Plugins ont été exécutés dans cette tranche puis leurs entrées revérifiées contre ce SHA ; le correctif final de tracking ne touche que Desktop. Les essais diagnostiques restent conservés hors acceptation. [Rendus headless](../../artifacts/linux/snapshots/5b372bee1/proofs/headless-visual-review.json) inspectés ; aucune certification de toutes les variantes GUI natives.
+
+[Candidat Debian](../../artifacts/linux/snapshots/5b372bee1/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `67b864840a5b4f6fceb35011be7c819e1fc29026123969be4527a1020fe09474` : checkout figé, extraction/installation/lancement isolés vérifiés. Remplace les candidats `5be2a8aa4`, `b9a6f8e31` et `0ccdb83c2` avant installation hôte. Les deux derniers conservent le défaut de seconde validation Remotes et ne constituent pas la livraison finale. Aucun paquet de cette tranche installé sur l’hôte, aucune application de l’utilisateur arrêtée, aucun push.
+
+FormAddSubmodule passe N1 → N3 ciblé testé. FormSubmodules reste N1 et FormMergeSubmodule N0. Priorité suivante : grille/détails et Pull du module sélectionné ; Update/Sync doivent cibler la sélection (ils agissent encore globalement), et Sync doit reprendre la portée non récursive Windows. Les 13 familles restent ouvertes, aucun N4.

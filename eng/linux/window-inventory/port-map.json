@@ -784,14 +784,15 @@
       "linux": [
         "RemotesDialog"
       ],
-      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites.",
+      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture.",
       "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation.",
       "visual": "rapproche",
       "tests": [
         "RemotesDialogTests",
         "RemoteReferenceColorTests",
         "PushDialogTests",
-        "PullLayoutTests"
+        "PullLayoutTests",
+        "RemotesTrackingValidationTests"
       ],
       "adr": [
         "0067"
@@ -1160,8 +1161,8 @@
         "SubmoduleRemovalDialog",
         "SubmoduleUpdateDialog"
       ],
-      "implemented": "Liste, ajout, mise à jour/sync, ouverture et retrait conservant les données.",
-      "remaining": "Fenêtre de gestion, détails et commandes de chaque sous-module encore partiels.",
+      "implemented": "Liste, ajout dédié, mise à jour/sync globales, ouverture et retrait conservant les données.",
+      "remaining": "Gestion complète et détails Windows, séparateur persistant et Pull du module sélectionné absents. Update/Sync du workflow générique ciblent tous les modules malgré la sélection ; Sync ajoute --recursive contrairement à la commande Windows. Reprendre les commandes sur le seul module sélectionné.",
       "visual": "integre",
       "tests": [
         "SubmoduleRemovalDialogTests",
@@ -1175,26 +1176,27 @@
     "GitUI.CommandsDialogs.SubmodulesDialog.FormAddSubmodule": {
       "feature": "Ajout de sous-module",
       "group": "repositories",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "MainWindow@AddSubmoduleAsync",
-        "Dialogs@PromptAsync"
+        "AddSubmoduleDialog",
+        "MainWindow@AddSubmoduleAsync"
       ],
-      "implemented": "Dernière version validée : saisie URL et chemin par prompt, ajout réel par Git.",
-      "remaining": "Valider le dialogue dédié en cours, ses options/suggestions, le rendu, les commandes réelles et l’annulation ; la présence du code ne vaut pas portage fonctionnel testé.",
-      "visual": "generique",
-      "tests": [],
-      "adr": [],
-      "in_progress": {
-        "description": "Dialogue AddSubmoduleDialog dédié et moteur Git natif écrits dans le checkout. Compilation, scénarios Core et tests Desktop non exécutés ; N1 conservé pour la dernière version validée.",
-        "linux": [
-          "AddSubmoduleDialog",
-          "MainWindow@AddSubmoduleAsync"
-        ],
-        "tests": [
-          "AddSubmoduleDialogTests"
-        ]
-      }
+      "implemented": "Dialogue Windows compact Source/Local path/Branch, Browse de la source, Force et Add sans action par défaut ; MRU partagé SuggestAppend, nom proposé, branche libre et requête annulable contextualisée. Git natif possède clone/index/gitlink/.gitmodules ; destination déjà Git admise, effets partiels conservés et parent relu après modal.",
+      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les variantes de complétion restent ouverts. Le maintien des champs après erreur/Abort corrige volontairement la fermeture Windows inconditionnelle ; aucune promesse de rollback ou de transaction contre toutes les mutations externes.",
+      "visual": "rapproche",
+      "tests": [
+        "AddSubmoduleDialogTests"
+      ],
+      "adr": [
+        "0069"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs Git AddSubmodule",
+          "source": "tests/linux/GitExtensions.Core.Tests/SubmoduleAddScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.FormMergeSubmodule": {
       "feature": "Résolution d’un conflit de sous-module",
