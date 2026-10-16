@@ -25,7 +25,7 @@ SaveFileDialog,src/app/GitUI/CommandsDialogs/BrowseDialog/FormGitCommandLog.cs,1
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/BrowseDialog/FormOpenDirectory.cs,99,GitUI.CommandsDialogs.BrowseDialog.FormOpenDirectory,LoadClick,MessageBoxes.Show,N2,NON_AUDITE_INDIVIDUELLEMENT,MainWindow@ChooseRepositoryAsync; DashboardControl
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/BrowseDialog/FormUpdates.cs,273,GitUI.CommandsDialogs.BrowseDialog.FormUpdates,btnUpdateNow_Click,MessageBoxes.Show,N1,NON_AUDITE_INDIVIDUELLEMENT,MainWindow@BuildHelpMenu
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/BrowseDialog/MenuCommand.cs,69,GitUI.CommandsDialogs.BrowseDialog.MenuCommand,CreateToolStripItem,MessageBoxes.Show,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormAddToGitIgnore.cs,91,GitUI.CommandsDialogs.FormAddToGitIgnore,AddToIgnoreClick,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormAddToGitIgnore.cs,91,GitUI.CommandsDialogs.FormAddToGitIgnore,AddToIgnoreClick,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,AddToGitIgnoreDialog
 OpenFileDialog,src/app/GitUI/CommandsDialogs/FormApplyPatch.cs,155,GitUI.CommandsDialogs.FormApplyPatch,SelectPatchFile,construction,N3,NON_AUDITE_INDIVIDUELLEMENT,ApplyPatchDialog; PatchConflictDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormApplyPatch.cs,178,GitUI.CommandsDialogs.FormApplyPatch,Apply_Click,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,ApplyPatchDialog; PatchConflictDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormArchive.cs,106,GitUI.CommandsDialogs.FormArchive,Save_Click,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,ArchiveDialog; ExportRevisionPicker
@@ -91,18 +91,18 @@ MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormFormatPatch.cs,62,GitUI.
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormFormatPatch.cs,73,GitUI.CommandsDialogs.FormFormatPatch,FormatPatch_Click,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,FormatPatchDialog; ExportRevisionPicker
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormFormatPatch.cs,106,GitUI.CommandsDialogs.FormFormatPatch,FormatPatch_Click,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,FormatPatchDialog; ExportRevisionPicker
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormFormatPatch.cs,110,GitUI.CommandsDialogs.FormFormatPatch,FormatPatch_Click,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,FormatPatchDialog; ExportRevisionPicker
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitAttributes.cs,88,GitUI.CommandsDialogs.FormGitAttributes,SaveFile,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitAttributes.cs,100,GitUI.CommandsDialogs.FormGitAttributes,FormGitAttributesClosing,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitAttributes.cs,132,GitUI.CommandsDialogs.FormGitAttributes,FormGitAttributesLoad,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitIgnore.cs,156,GitUI.CommandsDialogs.FormGitIgnore,SaveGitIgnore,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitIgnore.cs,166,GitUI.CommandsDialogs.FormGitIgnore,FormGitIgnoreFormClosing,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitIgnore.cs,190,GitUI.CommandsDialogs.FormGitIgnore,FormGitIgnoreLoad,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitAttributes.cs,88,GitUI.CommandsDialogs.FormGitAttributes,SaveFile,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitAttributes.cs,100,GitUI.CommandsDialogs.FormGitAttributes,FormGitAttributesClosing,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitAttributes.cs,132,GitUI.CommandsDialogs.FormGitAttributes,FormGitAttributesLoad,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitIgnore.cs,156,GitUI.CommandsDialogs.FormGitIgnore,SaveGitIgnore,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitIgnore.cs,166,GitUI.CommandsDialogs.FormGitIgnore,FormGitIgnoreFormClosing,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormGitIgnore.cs,190,GitUI.CommandsDialogs.FormGitIgnore,FormGitIgnoreLoad,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormInit.cs,55,GitUI.CommandsDialogs.FormInit,InitClick,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,InitDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormInit.cs,61,GitUI.CommandsDialogs.FormInit,InitClick,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,InitDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormInit.cs,72,GitUI.CommandsDialogs.FormInit,InitClick,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,InitDialog
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormMailMap.cs,92,GitUI.CommandsDialogs.FormMailMap,SaveFile,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormMailMap.cs,104,GitUI.CommandsDialogs.FormMailMap,FormMailMapFormClosing,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
-MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormMailMap.cs,136,GitUI.CommandsDialogs.FormMailMap,FormMailMapLoad,MessageBoxes.Show,N0,NON_AUDITE_INDIVIDUELLEMENT,
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormMailMap.cs,92,GitUI.CommandsDialogs.FormMailMap,SaveFile,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormMailMap.cs,104,GitUI.CommandsDialogs.FormMailMap,FormMailMapFormClosing,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
+MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormMailMap.cs,136,GitUI.CommandsDialogs.FormMailMap,FormMailMapLoad,MessageBoxes.Show,N3,NON_AUDITE_INDIVIDUELLEMENT,RulesFileEditorDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormPull.cs,264,GitUI.CommandsDialogs.FormPull,PullAndShowDialogWhenFailed,MessageBoxes.ConfirmSuppressible,N2,NON_AUDITE_INDIVIDUELLEMENT,PullDialog; GitProcessDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormPull.cs,295,GitUI.CommandsDialogs.FormPull,MergetoolClick,MessageBoxes.Show,N2,NON_AUDITE_INDIVIDUELLEMENT,PullDialog; GitProcessDialog
 MessageBox/TaskDialog,src/app/GitUI/CommandsDialogs/FormPull.cs,400,GitUI.CommandsDialogs.FormPull,PullChanges,TaskDialog.ShowDialog,N2,NON_AUDITE_INDIVIDUELLEMENT,PullDialog; GitProcessDialog

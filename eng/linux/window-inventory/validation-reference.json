@@ -1,12 +1,12 @@
 {
-  "source_sha": "a35747a13d60688f0fce32de296d314ecebdf51f",
-  "trx": "artifacts/linux/remote-branch-deletion-full-checks-20261016-02/desktop.trx",
-  "trx_sha256": "8954222bd170f5f12982d47baa765f57df03313ad7f2b9003cc35e25dff3d5cc",
+  "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
+  "trx": "artifacts/linux/rules-files-full-checks-20261016-01/desktop.trx",
+  "trx_sha256": "be7cb37ad464162f776cb4788a3e93c7ddf3b3535e6d8a92b68245aad59b7dba",
   "meaning": "Frozen results from an actual complete execution; importing them does not rerun tests or certify complete window parity.",
   "counters": {
-    "total": "886",
-    "executed": "886",
-    "passed": "886",
+    "total": "915",
+    "executed": "915",
+    "passed": "915",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -169,6 +169,9 @@
     "DiffViewerToolbarTests": {
       "Passed": 3
     },
+    "EditableFileViewTests": {
+      "Passed": 11
+    },
     "ExportDialogTests": {
       "Passed": 13
     },
@@ -316,6 +319,9 @@
     "RevisionHistoryRowTests": {
       "Passed": 6
     },
+    "RulesFileEditorDialogTests": {
+      "Passed": 18
+    },
     "ScriptsPreferencesStoreTests": {
       "Passed": 8
     },
@@ -358,18 +364,18 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "a35747a13d60688f0fce32de296d314ecebdf51f",
-      "passed": 445,
-      "total": 445,
-      "execution_result": "artifacts/linux/remote-branch-deletion-core-full-20261016-03/core-result.json",
-      "meaning": "Actual complete apphost execution; changed source hashes verified against this commit."
+      "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
+      "passed": 461,
+      "total": 461,
+      "execution_result": "artifacts/linux/rules-files-core-full-20261016-02/core-result.json",
+      "meaning": "Actual complete execution of the component source; Core apphost source hashes verified against this commit."
     },
     "plugins": {
-      "source_sha": "a35747a13d60688f0fce32de296d314ecebdf51f",
+      "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/remote-branch-deletion-full-checks-20261016-02/plugins-result.json",
-      "meaning": "Actual complete execution after the tracking changes, against the same component source."
+      "execution_result": "artifacts/linux/rules-files-full-checks-20261016-01/plugins-result.json",
+      "meaning": "Actual complete execution of the component source; Core apphost source hashes verified against this commit."
     }
   }
 }

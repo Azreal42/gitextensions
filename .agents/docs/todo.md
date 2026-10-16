@@ -6,14 +6,15 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `a35747a13` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 14 N0 absentes, 21 N1 substituts minimaux, 25 N2 partielles, 37 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `e5775072e` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 21 N1 substituts minimaux, 25 N2 partielles, 41 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
-L’inventaire contient aussi les 72 types Window Avalonia (dont 2 bases abstraites), 26 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
+L’inventaire contient aussi les 74 types Window Avalonia (dont 2 bases abstraites), 27 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
-Écarts concrets à traiter selon cette matrice : fenêtres complètes Remotes/Worktrees/Ajout de sous-module ; éditeurs .gitignore/.gitattributes/.mailmap ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : fenêtres complètes Remotes/Worktrees/Ajout de sous-module ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
 
+- [x] Éditeurs de règles et assistant ignore/exclude : aides, dispositions et motifs Windows, viewer partagé modifiable, recherche/remplacement, sauvegarde/dirty-close et aperçu Git annulable. Portage ciblé testé ; ADR 0066.
 - [x] Fork et sous-modules clonés ; build portable .NET 10, C4, arbre ADR et suivi des échecs en place.
 - [x] Noyau Git portable : chemins difficiles, binaires, hunks/lignes, encodages stricts, conflits, réseau local, signature SSH, rebase interactif et annulation.
 - [x] Requêtes Git de version/aide : aucune sonde askpass ajoutée ; arguments et octets natifs conservés, précédence des helpers des vraies commandes couverte par les tests.
@@ -156,3 +157,15 @@ Source `a35747a13` : dialogue dédié et sélecteur à cases, raccordés à la r
 [Paquet](../../artifacts/linux/snapshots/a35747a13/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `001303d9f9f686f58239a6c5d26014d45e701cd7c2bc39398b621a01c2ec2301` : construction depuis checkout figé, extraction/installation/lancement isolés vérifiés. **Non installé sur l’hôte** ; celui-ci reste `879f7bae3`. Aucun push.
 
 Restent ouverts : scripts Before/AfterPush, Process par remote Windows, remotes à plusieurs push URLs/serveurs sans atomic, mode multicolonne >350 branches et réutilisation du sélecteur dans tous ses consommateurs. Audit natif étendu non exécuté ; aucune famille globale clôturée, aucun niveau N4 attribué.
+
+## Éditeurs des règles et matrice actualisée
+
+Source `e5775072e` : .gitignore, .git/info/exclude, .gitattributes, .mailmap et ajout assisté depuis Repository/Browse/Commit. Une seule édition/recherche partagée ; erreurs et fermetures annulées conservent le buffer. Les effets réels check-ignore/check-attr/check-mailmap et le rafraîchissement de la grille sont couverts, sans staging implicite.
+
+[Validation complète](../../artifacts/linux/snapshots/e5775072e/proofs/source-validation.json) : **915 Desktop, 461 Core, 35 Plugins**, zéro échec/ignoré, soit 1411 scénarios distincts. Les premiers ciblés rejetés restent diagnostiques, hors acceptation. Rendus headless clair/sombre inspectés ; audit natif étendu non exécuté.
+
+[Candidat Debian](../../artifacts/linux/snapshots/e5775072e/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha` : checkout figé, extraction/installation/lancement isolés vérifiés ; SHA256 `82b9dc6a92d5ddfdf6b69f1ae066402db2d835ae85fd6338d656f3627c7207c7`. Non installé sur l’hôte, qui reste `879f7bae3`. Aucun push.
+
+La matrice compte toujours 99 fenêtres métier et 32 pages ; quatre écrans de règles passent de N0 à N3 ciblé testé. FormEditor reste N1 et FindAndReplaceForm N2 (recherche multi-fichiers absente). Les 13 familles et l’audit final restent ouverts ; aucune entrée N4.
+
+Rendu de l’assistant de motifs : champ multiligne débordant du cadre et placement vertical du compteur/message vide à aligner sur Windows. [14 captures headless revues avec ces écarts ouverts](../../artifacts/linux/snapshots/e5775072e/proofs/headless-visual-review.json) ; ce contrôle ne certifie pas la parité visuelle.

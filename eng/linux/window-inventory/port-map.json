@@ -925,46 +925,74 @@
     "GitUI.CommandsDialogs.FormGitIgnore": {
       "feature": "Édition de .gitignore/exclude",
       "group": "files",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Aucun écran dédié équivalent trouvé.",
-      "remaining": "Éditeur, choix des chemins/règles et branchement des commandes de ce dialogue à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N3",
+      "linux": [
+        "RulesFileEditorDialog"
+      ],
+      "implemented": "Éditeur partagé modifiable pour .gitignore et .git/info/exclude ; aide originale, motifs par défaut XDG, ajout assisté, sauvegarde explicite et fermeture Yes/No/Cancel.",
+      "remaining": "Audit natif étendu, traductions longues et variantes de chemins/éditeur Windows encore à comparer ; aucune parité exhaustive certifiée.",
+      "visual": "rapproche",
+      "tests": [
+        "RulesFileEditorDialogTests",
+        "EditableFileViewTests"
+      ],
+      "adr": [
+        "0066"
+      ]
     },
     "GitUI.CommandsDialogs.FormGitAttributes": {
       "feature": "Édition de .gitattributes",
       "group": "files",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Aucun écran dédié équivalent trouvé.",
-      "remaining": "Éditeur, choix des chemins/règles et branchement des commandes de ce dialogue à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N3",
+      "linux": [
+        "RulesFileEditorDialog"
+      ],
+      "implemented": "Édition du fichier racine .gitattributes, aide originale et sauvegarde réelle ; effet check-attr vérifié, sans staging implicite.",
+      "remaining": "Audit natif étendu, traductions et variantes complètes du viewer Windows encore ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "RulesFileEditorDialogTests",
+        "EditableFileViewTests"
+      ],
+      "adr": [
+        "0066"
+      ]
     },
     "GitUI.CommandsDialogs.FormMailMap": {
       "feature": "Édition de .mailmap",
       "group": "files",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Aucun écran dédié équivalent trouvé.",
-      "remaining": "Éditeur, choix des chemins/règles et branchement des commandes de ce dialogue à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N3",
+      "linux": [
+        "RulesFileEditorDialog"
+      ],
+      "implemented": "Édition de .mailmap et aide originale ; sauvegarde, check-mailmap natif et relecture des identités de la grille (%aN/%aE).",
+      "remaining": "Audit natif étendu et variantes de configuration mailmap/encodage de toutes les identités Windows encore ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "RulesFileEditorDialogTests",
+        "EditableFileViewTests"
+      ],
+      "adr": [
+        "0066"
+      ]
     },
     "GitUI.CommandsDialogs.FormAddToGitIgnore": {
       "feature": "Ajout assisté de motifs à .gitignore",
       "group": "files",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Aucun écran dédié équivalent trouvé.",
-      "remaining": "Éditeur, choix des chemins/règles et branchement des commandes de ce dialogue à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N3",
+      "linux": [
+        "AddToGitIgnoreDialog"
+      ],
+      "implemented": "Motifs multiligne ordonnés, aperçu natif incluant les fichiers suivis, debounce/annulation et ajout à ignore/exclude ; noms littéraux échappés depuis les listes de fichiers.",
+      "remaining": "Rendu à aligner : le champ multiligne déborde le cadre des motifs, et compteur/message vide ne suivent pas encore la répartition verticale Windows. Audit natif étendu, traductions longues et totalité des consommateurs/raccourcis du menu restent ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "RulesFileEditorDialogTests",
+        "EditableFileViewTests"
+      ],
+      "adr": [
+        "0066"
+      ]
     },
     "GitUI.CommandsDialogs.FormViewPatch": {
       "feature": "Lecture d’un fichier patch",
@@ -1274,15 +1302,17 @@
         "DiffViewerFindDialog",
         "DiffViewerSearch"
       ],
-      "implemented": "Recherche, occurrences, casse, mots, région et navigation dans les viewers.",
-      "remaining": "Mode remplacement d’un éditeur modifiable et toute la recherche multi-fichiers Windows non portés.",
+      "implemented": "Recherche, occurrences, casse, mots, région et navigation ; remplacement simple/global et Ctrl+H dans les éditeurs modifiables, avec undo groupé.",
+      "remaining": "Recherche multi-fichiers Windows et audit natif exhaustif encore ouverts ; le mode lecture seule conserve ses protections.",
       "visual": "adapte",
       "tests": [
         "DiffViewerSearchTests",
+        "EditableFileViewTests",
         "ViewerEscapeHostTests"
       ],
       "adr": [
-        "0028"
+        "0028",
+        "0066"
       ]
     },
     "GitUI.FormFindInCommitFilesGitGrep": {
