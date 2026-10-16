@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -14,9 +15,13 @@ using Process child = Process.Start(git)!;
 string[] paths = child.StandardOutput.ReadToEnd().Split('\0', StringSplitOptions.RemoveEmptyEntries).Where(p => p.EndsWith(".cs", StringComparison.Ordinal)).Distinct().Order(StringComparer.Ordinal).ToArray();
 child.WaitForExit(); if (child.ExitCode != 0) { throw new InvalidOperationException("git ls-files failed"); }
 List<object> types = [], objects = [], calls = [], diagnostics = [];
+Dictionary<string, string> fileHashes = new(StringComparer.Ordinal);
 foreach (string path in paths)
 {
-    string source = File.ReadAllText(Path.Combine(root, path));
+    byte[] bytes = File.ReadAllBytes(Path.Combine(root, path));
+    fileHashes.Add(path, Convert.ToHexStringLower(SHA256.HashData(bytes)));
+    using StreamReader reader = new(new MemoryStream(bytes));
+    string source = reader.ReadToEnd();
     foreach (string mode in new[] { "release", "debug" })
     {
         bool linux = path.StartsWith("src/linux/", StringComparison.Ordinal) || path.StartsWith("tests/linux/", StringComparison.Ordinal);
@@ -55,6 +60,6 @@ foreach (string path in paths)
         }
     }
 }
-Console.Write(JsonSerializer.Serialize(new { files = paths, types, objects, calls, diagnostics }, new JsonSerializerOptions { WriteIndented = true }));
+Console.Write(JsonSerializer.Serialize(new { files = paths, file_hashes = fileHashes, types, objects, calls, diagnostics }, new JsonSerializerOptions { WriteIndented = true }));
 
 return 0;

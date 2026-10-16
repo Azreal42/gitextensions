@@ -22,6 +22,20 @@ PARSER.add_argument('--check', action='store_true', help='Check generated files 
 ARGS = PARSER.parse_args()
 RAW = json.loads(ARGS.syntax.read_text())
 MAP = json.loads(ARGS.map.read_text())
+
+def verify_syntax_snapshot():
+    paths = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--',
+        'src/app', 'src/plugins', 'src/linux', 'tests/linux'], cwd=ROOT).decode().split('\0')
+    current = {p for p in paths if p.endswith('.cs')}
+    recorded = RAW.get('file_hashes', {})
+    if current != set(RAW['files']) or current != recorded.keys():
+        raise SystemExit('Recensement Roslyn périmé (liste/empreintes absentes ou différentes) : relancer le recensement Roslyn.')
+    for path in sorted(current):
+        if not (ROOT/path).is_file() or hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != recorded[path]:
+            raise SystemExit('Recensement Roslyn périmé : '+path+' a changé ; relancer le recensement Roslyn.')
+    return recorded
+
+SOURCE_HASHES = verify_syntax_snapshot()
 if RAW['diagnostics']:
     raise SystemExit('Roslyn syntax errors: ' + str(RAW['diagnostics'][:5]))
 TYPES = {}
@@ -230,7 +244,7 @@ PAGE_COUNT=collections.Counter(r['level'] for r in rows if r['category']=='setti
 source_paths=sorted(p for p in RAW['files'])
 digest=hashlib.sha256()
 for path in source_paths:
-    digest.update(path.encode()+b'\0'+hashlib.sha256((ROOT/path).read_bytes()).digest())
+    digest.update(path.encode()+b'\0'+bytes.fromhex(SOURCE_HASHES[path]))
 anchor=subprocess.check_output(['git','log','-1','--format=%H','--','src/app','src/plugins','src/linux','tests/linux'],cwd=ROOT,text=True).strip()
 report=dict(schema_version=1,code_reference_commit=anchor,source_digest_sha256=digest.hexdigest(),scanned_csharp_files=len(source_paths),parsed_configurations=['Windows release','Windows debug','Linux release','Linux debug'],levels=MAP['levels'],counts=dict(windows_form_types=len(WINDOWS),native_dialog_resources=len(NATIVE),windows_business_dialogs=sum(WINDOW_COUNT.values()),windows_support_classes=sum(r['level']=='BASE' for r in rows if r['category']=='windows'),settings_types=len(SETTINGS),settings_pages=sum(PAGE_COUNT.values()),settings_support_classes=sum(r['level']=='BASE' for r in rows if r['category']=='settings'),linux_window_types=len(LINUX),linux_abstract_bases=sum(t['abstract'] for t in LINUX),linux_dynamic_factories=sum(x['platform']=='linux' for x in DYNAMIC),windows_dynamic_hosts=sum(x['platform']=='windows' for x in DYNAMIC),windows_levels=dict(sorted(WINDOW_COUNT.items())),settings_levels=dict(sorted(PAGE_COUNT.items())),system_dialog_sites=len(SYSTEM),designer_files=len({x['source'] for x in DESIGNERS})),validation_reference=dict(trx=str(TRX.relative_to(ROOT)),source_sha=REFERENCE['source_sha'],trx_sha256=REFERENCE['trx_sha256'],reference_snapshot='eng/linux/window-inventory/validation-reference.json',additional_suites=REFERENCE.get('additional_suites',{}),current_linux_code_equivalent=VALIDATION_CODE_EQUIVALENT,meaning='Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites.'),screens=rows,linux_reverse=reverse,dynamic_factories=DYNAMIC,system_dialog_sites=SYSTEM,designer_reconciliation=DESIGNERS)
 scopes=['src/app','src/plugins','src/native','src/linux','tests/linux']
@@ -335,6 +349,7 @@ outputs={
  'windows-linux-system-dialog-sites.csv':csv_text(list(system_rows[0]),system_rows),
  'windows-linux-installer-dialogs.csv':csv_text(list(INSTALLER[0]),INSTALLER),
 }
+verify_syntax_snapshot()
 for name,value in outputs.items():
     destination=DOCS/name
     if ARGS.check:
