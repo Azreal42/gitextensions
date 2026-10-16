@@ -388,23 +388,31 @@ public sealed partial class GitRepository
     public async Task<IReadOnlyList<GitWorktree>> GetWorktreesAsync(CancellationToken cancellationToken = default)
         => GitOutputParser.ParseWorktrees((await ExecuteAsync(["worktree", "list", "--porcelain", "-z"], cancellationToken).ConfigureAwait(false)).StandardOutput);
 
-    public Task<GitResult> AddWorktreeAsync(string path, string revision, string? newBranch = null, CancellationToken cancellationToken = default)
+    public async Task<GitResult> AddWorktreeAsync(string path, string revision, string? newBranch = null, CancellationToken cancellationToken = default)
     {
-        List<string> arguments = ["worktree", "add"];
-        if (newBranch is not null)
-        {
-            arguments.AddRange(["-b", ValidateValue(newBranch)]);
-        }
-
-        arguments.AddRange(["--", System.IO.Path.GetFullPath(path), ValidateValue(revision)]);
-        return MutateAsync(arguments, cancellationToken);
+        GitResult result = (await CreateWorktreeAsync(new(path, revision, newBranch), cancellationToken).ConfigureAwait(false)).Result;
+        if (!result.Success) { throw new GitCommandException(["worktree", "add"], result); }
+        return result;
     }
 
-    public Task<GitResult> RemoveWorktreeAsync(string path, bool force = false, CancellationToken cancellationToken = default)
-        => MutateAsync(force ? ["worktree", "remove", "--force", "--", System.IO.Path.GetFullPath(path)] : ["worktree", "remove", "--", System.IO.Path.GetFullPath(path)], cancellationToken);
+    public async Task<GitResult> RemoveWorktreeAsync(string path, bool force = false, CancellationToken cancellationToken = default)
+    {
+        string full = System.IO.Path.GetFullPath(path, Path);
+        GitRulesIdentity? identity = GitRulesIdentity.ReadPath(GitRulesFiles.Resolve(full).Path);
+        WorktreeSnapshot selected = (await GetWorktreeSnapshotsAsync(cancellationToken).ConfigureAwait(false))
+            .SingleOrDefault(tree => tree.Path == full || identity is not null && tree.Binding.Root.Identity == identity)
+            ?? throw new ArgumentException("Select a registered worktree.", nameof(path));
+        GitResult result = (await DeleteWorktreeAsync(selected, discardChanges: force, cancellationToken: cancellationToken).ConfigureAwait(false)).Result;
+        if (!result.Success) { throw new GitCommandException(["worktree", "remove"], result); }
+        return result;
+    }
 
-    public Task<GitResult> PruneWorktreesAsync(CancellationToken cancellationToken = default)
-        => MutateAsync(["worktree", "prune"], cancellationToken);
+    public async Task<GitResult> PruneWorktreesAsync(CancellationToken cancellationToken = default)
+    {
+        GitResult result = await PruneWorktreesAsync(cancellationToken, outputReceived: null).ConfigureAwait(false);
+        if (!result.Success) { throw new GitCommandException(["worktree", "prune"], result); }
+        return result;
+    }
 
     public async Task<IReadOnlyList<GitSubmodule>> GetSubmodulesAsync(CancellationToken cancellationToken = default)
     {

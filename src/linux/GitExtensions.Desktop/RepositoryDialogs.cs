@@ -49,6 +49,13 @@ public abstract class RepositoryDialog : Window
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
     protected void ReportError(Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
 
+    protected void CollapseEmptyStatus()
+    {
+        void Update() => _statusBorder.IsVisible = !string.IsNullOrEmpty(Status.Text);
+        Status.PropertyChanged += (_, change) => { if (change.Property == TextBlock.TextProperty) { Update(); } };
+        Update();
+    }
+
     /// <summary>Keep multiline command output accessible without displacing a dialog's recovery controls.</summary>
     protected void ConstrainStatusHeight(string name, double maxHeight)
     {

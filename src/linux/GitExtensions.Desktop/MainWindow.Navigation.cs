@@ -55,6 +55,15 @@ public sealed partial class MainWindow
         _navigationSearch.KeyDown += (_, args) =>
         { if (args.Key == Avalonia.Input.Key.Escape) { _navigationSearch.Text = ""; args.Handled = true; } };
         DockPanel.SetDock(search, Dock.Top); panel.Children.Add(search);
+        _navigation.KeyDown += async (_, args) =>
+        {
+            if (args.Key != Avalonia.Input.Key.Enter || args.KeyModifiers != Avalonia.Input.KeyModifiers.None || _busy
+                || _navigation.SelectedItem is not TreeViewItem { Tag: GitWorktree worktree }) { return; }
+            args.Handled = true;
+            if (IsCurrentWorktreePath(worktree.Path) || !Directory.Exists(worktree.Path)) { return; }
+            try { await OpenWorktreePathAsync(worktree.Path, confirm: true); }
+            catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
+        };
         panel.Children.Add(Controls.ClassicTreeViewAppearance.Wrap(_navigation));
         return panel;
     }
@@ -91,6 +100,7 @@ public sealed partial class MainWindow
     {
         _navigationReferences = references; _navigationStashes = stashes; _navigationSubmodules = submodules; _navigationWorktrees = worktrees;
         RebuildNavigation();
+        RefreshWorktreeMenu();
     }
 
     private void RebuildNavigation()
@@ -131,6 +141,39 @@ public sealed partial class MainWindow
                 }
             }
         }
+        IEnumerable<TreeViewItem> Worktrees()
+        {
+            string main = _navigationWorktrees.FirstOrDefault()?.Path ?? _repository?.Path ?? "";
+            string parent = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(main)) ?? main;
+            string[] paths = _navigationWorktrees.Select(worktree => Path.GetRelativePath(parent, worktree.Path)).ToArray();
+            string prefix = CommonWorktreePathPrefix(paths.Skip(1).ToArray());
+            for (int i = 0; i < _navigationWorktrees.Count; i++)
+            {
+                GitWorktree worktree = _navigationWorktrees[i];
+                string path = i != 0 && prefix.Length != 0 ? paths[i][prefix.Length..] : paths[i];
+                string caption = WorktreeDisplayName(worktree, path);
+                if (!Matches(caption) && !Matches(worktree.Path)) { continue; }
+                TreeViewItem node = Node("worktree:" + worktree.Path, caption, "WorkTree.png", worktree);
+                node.ContextMenu = BuildWorktreeNodeMenu(worktree);
+                bool current = IsCurrentWorktreePath(worktree.Path), exists = Directory.Exists(worktree.Path);
+                if (node.Header is StackPanel label)
+                {
+                    TextBlock text = label.Children.OfType<TextBlock>().Single();
+                    if (current) { text.FontWeight = FontWeight.Bold; }
+                    if (!exists) { text.Opacity = .6; }
+                }
+                ToolTip.SetTip(node, worktree.Path + (current ? " (" + T("current") + ")" : !exists ? " (" + T("deleted") + ")" : "")
+                    + "\n" + WorktreeDisplayName(worktree, T("Branch") + ":") + (worktree.Head is null ? "" : "\nHEAD: " + worktree.Head));
+                node.DoubleTapped += async (_, args) =>
+                {
+                    args.Handled = true;
+                    if (_busy || IsCurrentWorktreePath(worktree.Path) || !Directory.Exists(worktree.Path)) { return; }
+                    try { await OpenWorktreePathAsync(worktree.Path, confirm: true); }
+                    catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
+                };
+                yield return node;
+            }
+        }
         _updatingNavigation = true;
         try
         {
@@ -140,14 +183,18 @@ public sealed partial class MainWindow
             {
                 TreeViewItem[] nodes = children.ToArray();
                 if (_navigationGroups[name] && (filter.Length == 0 || nodes.Length > 0))
-                { groups.Add(Node("group:" + name, T(name), icon, new NavigationGroup(name), nodes, name != "Tags")); }
+                {
+                    TreeViewItem root = Node("group:" + name, T(name), icon, new NavigationGroup(name), nodes, name != "Tags");
+                    if (name == "Worktrees") { root.ContextMenu = BuildWorktreeRootMenu(); }
+                    groups.Add(root);
+                }
             }
             Group("Branches", "LocalBranchRoot.png", References("Branches", _navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName))));
             Group("Remotes", "RemoteBranchRoot.png", References("Remotes", _navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName))));
             Group("Tags", "TagHorizontal.png", References("Tags", _navigationReferences.Where(reference => reference.IsTag && Matches(reference.ShortName))));
             Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Where(module => Matches(module.Path)).Select(module => Node("submodule:" + module.Path, module.Path, "FolderSubmodule.png", "Submodules")));
             Group("Stashes", "stash.png", _navigationStashes.Where(stash => Matches(stash.Subject)).Select(stash => Node("stash:" + stash.Reference, stash.Subject, "stash.png", "Stashes")));
-            Group("Worktrees", "WorkTree.png", _navigationWorktrees.Where(worktree => Matches(worktree.Path)).Select(worktree => Node("worktree:" + worktree.Path, worktree.Path, "WorkTree.png", "Worktrees")));
+            Group("Worktrees", "WorkTree.png", Worktrees());
             _navigationAppliedFilter = filter;
             _navigation.ItemsSource = groups;
             _navigation.SelectedItem = NavigationItems().FirstOrDefault(node => _navigationKeys.GetValueOrDefault(node) == _navigationSelectionKey);

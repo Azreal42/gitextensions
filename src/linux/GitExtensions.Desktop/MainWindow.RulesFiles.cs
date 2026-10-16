@@ -17,11 +17,19 @@ public sealed partial class MainWindow
         MenuItem remotes = OriginalMenuItems.Create(_translations, "FormBrowse", "manageRemoteRepositoriesToolStripMenuItem1", "Remo&te repositories...", "Remotes.png");
         remotes.Tag = false; _actionMenus.Add(remotes);
         remotes.Click += async (_, _) => await ManageRemotesAsync();
+        MenuItem worktrees = OriginalMenuItems.Create(_translations, "FormBrowse", "manageWorktreeToolStripMenuItem", "Manage &worktrees...", "WorkTree.png");
+        _manageWorktreesMenu = worktrees; worktrees.IsEnabled = !_busy && _repository is not null;
+        worktrees.Tag = false; worktrees.InputGesture = new(Avalonia.Input.Key.W, Avalonia.Input.KeyModifiers.Control | Avalonia.Input.KeyModifiers.Alt);
+        _actionMenus.Add(worktrees); worktrees.Click += async (_, _) =>
+        {
+            try { await ManageWorktreesAsync(); }
+            catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
+        };
         return new MenuItem { Header = T("Repository"), ItemsSource = new object[]
         {
             remotes,
             MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")),
-            MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), new Separator(),
+            worktrees, MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), new Separator(),
             Rule("editgitignoreToolStripMenuItem1", "Edit .git&ignore", GitRulesFileKind.Ignore, "EditGitIgnore.png"),
             Rule("editgitinfoexcludeToolStripMenuItem", "Edit .git/info/&exclude", GitRulesFileKind.LocalExclude),
             Rule("editGitAttributesToolStripMenuItem", "Edit .git&attributes", GitRulesFileKind.Attributes),

@@ -80,6 +80,7 @@ public sealed partial class MainWindow
             { arrow.Bind(PathIcon.ForegroundProperty, new Binding(nameof(TemplatedControl.Foreground)) { Source = _recent }); }
         };
         toolbar.Add(_recent, _recentToolbarMenu);
+        toolbar.Add(BuildWorktreeButton(), BuildWorktreeOverflow());
         _currentBranchButton = BuildCurrentBranchButton();
         toolbar.Add(_currentBranchButton, _branchOverflow!);
         toolbar.Add(BuildPullButton(), new MenuItem { Name = "PullOverflow", Header = T("Pull/Fetch…"), Icon = OriginalIconImage("Pull.png"), ItemsSource = CreatePullMenu("PullOverflow") });
@@ -270,6 +271,7 @@ public sealed partial class MainWindow
         }
         UpdateHistoryScopePresentation();
         _quickHistoryFilter.Text = QuickFilterValue();
+        RefreshWorktreeMenu();
         _browserToolbar?.Place();
         if (_repository is not null) { Title = Path.GetFileName(_repository.Path.TrimEnd(Path.DirectorySeparatorChar)) + " (" + status.Branch + ") — Git Extensions"; }
     }

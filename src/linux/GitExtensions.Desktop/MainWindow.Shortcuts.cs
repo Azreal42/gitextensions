@@ -45,7 +45,7 @@ public sealed partial class MainWindow
             (Key.OemComma, KeyModifiers.Control) => ShowSettingsAsync,
             (Key.F12, KeyModifiers.None) => ShowCommandLogAsync,
             (Key.C, KeyModifiers.Control | KeyModifiers.Alt) => ToggleNavigationAsync,
-            (Key.W, KeyModifiers.Control | KeyModifiers.Alt) => () => ShowWorkflowAsync("Worktrees"),
+            (Key.W, KeyModifiers.Control | KeyModifiers.Alt) => () => ManageWorktreesAsync(),
             (Key.N, KeyModifiers.Control | KeyModifiers.Shift) => NotesAsync,
             (Key.Enter, KeyModifiers.Control) when (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab" => CommitAsync,
             (Key.A, KeyModifiers.Control | KeyModifiers.Shift) => () => SetHistoryScopeAsync(true),

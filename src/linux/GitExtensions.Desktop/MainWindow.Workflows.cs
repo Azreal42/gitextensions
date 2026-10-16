@@ -380,19 +380,11 @@ public sealed partial class MainWindow
         }, refresh: false);
     }
 
-    private async Task AddWorktreeAsync()
-    {
-        string[]? values = await Dialogs.PromptAsync(this, "Add worktree", ("Directory", ""), ("Revision", "HEAD"), ("New branch (blank for existing revision)", ""));
-        if (values is not null) { await RunAsync("Add worktree", r => r.AddWorktreeAsync(values[0], values[1], Optional(values[2]), Token)); }
-    }
+    private Task AddWorktreeAsync() => CreateWorktreeAsync();
 
-    private Task OpenWorktreeAsync() => _worktrees.SelectedItem is GitWorktree worktree ? OpenRepositoryAsync(worktree.Path) : Task.CompletedTask;
+    private Task OpenWorktreeAsync() => _worktrees.SelectedItem is GitWorktree worktree ? OpenWorktreePathAsync(worktree.Path, confirm: true) : Task.CompletedTask;
 
-    private async Task RemoveWorktreeAsync()
-    {
-        if (_worktrees.SelectedItem is not GitWorktree worktree) { return; }
-        if (await Dialogs.ConfirmAsync(this, "Remove worktree", $"Remove {worktree.Path}? Git will refuse dirty or locked worktrees.")) { await RunAsync("Remove worktree", r => r.RemoveWorktreeAsync(worktree.Path, cancellationToken: Token)); }
-    }
+    private Task RemoveWorktreeAsync() => _worktrees.SelectedItem is GitWorktree worktree ? DeleteWorktreePathAsync(worktree.Path) : Task.CompletedTask;
 
     private async Task AddSubmoduleAsync()
     {

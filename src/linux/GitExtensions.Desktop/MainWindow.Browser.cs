@@ -85,6 +85,7 @@ public sealed partial class MainWindow
                 SetNavigationBranchFilter(reference.Name);
                 await ReloadHistoryAsync();
             }
+            else if (item.Tag is GitWorktree { Head: { } head }) { SelectVisibleRevision(head, focus: false); }
             else if (item.Tag is string workflow) { await ShowWorkflowAsync(workflow); }
         };
 
@@ -402,6 +403,7 @@ public sealed partial class MainWindow
     private async Task ShowWorkflowAsync(string name)
     {
         if (name == "Stashes") { await ShowStashDialogAsync(); return; }
+        if (name == "Worktrees") { await ManageWorktreesAsync(); return; }
         if (name == "Changes")
         {
             if (_repository is null || _busy) { return; }

@@ -30,9 +30,11 @@ internal sealed class CloneDirectoryCompletion : IDisposable
     private string? _pressedPath;
     internal Func<string, IReadOnlyList<string>, Task>? BeforeApply { get; set; }
 
-    internal CloneDirectoryCompletion(TextBox editor, Panel host)
+    internal CloneDirectoryCompletion(TextBox editor, Panel host, string controlNamePrefix = "Clone")
     {
         _editor = editor;
+        _suggestions.Name = controlNamePrefix + "DirectorySuggestions";
+        _error.Name = controlNamePrefix + "DirectoryCompletionError";
         foreach (string state in new[] { ":selected", ":pointerover", ":pressed" })
         {
             _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>().Class(state))
@@ -52,7 +54,7 @@ internal sealed class CloneDirectoryCompletion : IDisposable
             ToolTip.SetTip(caption, ExportDialogControls.DisplayPath(path ?? ""));
             return caption;
         });
-        _popup = new() { Name = "CloneDirectoryCompletionPopup", PlacementTarget = editor, Placement = PlacementMode.Bottom,
+        _popup = new() { Name = controlNamePrefix + "DirectoryCompletionPopup", PlacementTarget = editor, Placement = PlacementMode.Bottom,
             IsLightDismissEnabled = true, OverlayInputPassThroughElement = editor, OverlayDismissEventPassThrough = true, MaxWidth = 450,
             Child = new StackPanel { Children = { _suggestions, _error } } };
         _popup.Closed += PopupClosed;

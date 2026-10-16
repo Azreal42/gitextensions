@@ -37,12 +37,12 @@ public sealed partial class MainWindow
         SelectVisibleRevision(hash);
     }
 
-    private void SelectVisibleRevision(string hash)
+    private void SelectVisibleRevision(string hash, bool focus = true)
     {
         GitCommit? row = _history.FirstOrDefault(commit => commit.Hash == hash);
         if (row is null) { _state.Text = T("The revision is not visible with the current history filters.") + " " + hash; return; }
         _commits.SelectedItems?.Clear(); _commits.SelectedItem = row; _commits.ScrollIntoView(row);
-        _commits.Focus();
+        if (focus) { _commits.Focus(); }
     }
 
     private async Task NavigateToMergeBaseAsync()

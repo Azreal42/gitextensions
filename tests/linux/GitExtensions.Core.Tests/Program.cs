@@ -152,6 +152,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. PushScenarios.All,
     .. RemoteBranchDeletionScenarios.All,
     .. RemoteSettingsScenarios.All,
+    .. WorktreeScenarios.All,
     .. RulesFileScenarios.All,
     .. PushStreamingScenarios.All,
     .. CloneStreamingScenarios.All,
@@ -179,6 +180,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 
 if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }
 if (args.Contains("--remote-settings-only", StringComparer.Ordinal)) { tests = RemoteSettingsScenarios.All.ToArray(); }
+if (args.Contains("--worktrees-only", StringComparer.Ordinal)) { tests = WorktreeScenarios.All.ToArray(); }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
 
 int failures = 0;

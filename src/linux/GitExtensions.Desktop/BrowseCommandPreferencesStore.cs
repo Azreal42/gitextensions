@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace GitExtensions.Linux.Desktop;
 
-public sealed record BrowseCommandPreferences(bool DontConfirmUndoLastCommit = false);
+public sealed record BrowseCommandPreferences(bool DontConfirmUndoLastCommit = false, bool DontConfirmSwitchWorktree = false);
 
 public sealed class BrowseCommandPreferencesStore
 {
