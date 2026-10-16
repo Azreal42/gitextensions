@@ -301,7 +301,7 @@ def md():
     '## Écarts prioritaires révélés par le relevé','',
     '- Paramètres : pages absentes ou dispersées, notamment raccourcis configurables, scripts/événements, langue, fontes, outils et intégrations CI.',
     '- Sous-modules : '+MAP['entries']['GitUI.CommandsDialogs.FormSubmodules']['remaining'],
-    '- Sélecteurs de scripts et fenêtres de PR/hébergement absents ; éditeurs de règles présents sur un périmètre ciblé testé.','- Journal Git partiel : métadonnées disponibles, sorties/cache/stacks/export Windows absents.','- Menus View/Navigate : le périmètre récent est testé, mais recherche incrémentale et sélection interactive des parents/enfants restent ouverts.','',
+    '- Scripts : dialogues de saisie présents, moteur et menus à raccorder ; fenêtres de PR/hébergement absentes. Éditeurs de règles présents sur un périmètre ciblé testé.','- Journal Git partiel : métadonnées disponibles, sorties/cache/stacks/export Windows absents.','- Menus View/Navigate : le périmètre récent est testé, mais recherche incrémentale et sélection interactive des parents/enfants restent ouverts.','',
     '## Fenêtres Windows et équivalents Linux','']
     if report['checkout_changes'] or not VALIDATION_CODE_EQUIVALENT or report['counts']['in_progress_screens']:
         point=out.index('## Écarts prioritaires révélés par le relevé')

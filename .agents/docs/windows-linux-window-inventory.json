@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "5195129c311e04adbcff068b207cda31d4103429",
-  "source_digest_sha256": "16a8542959251b70a3dbfcd8cde486d108e763d9055620610776b7d6ac623566",
-  "scanned_csharp_files": 1892,
+  "code_reference_commit": "189c18a6ca049fab004d25702c2a3b3785c273ed",
+  "source_digest_sha256": "a95c41cfb839f97c90c60482500dcc93c532afc75c12b7c62e77fc0320ea2bf1",
+  "scanned_csharp_files": 1899,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,13 +26,13 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 80,
-    "linux_abstract_bases": 2,
+    "linux_window_types": 84,
+    "linux_abstract_bases": 3,
     "linux_dynamic_factories": 31,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N0": 9,
-      "N1": 14,
+      "N0": 6,
+      "N1": 17,
       "N2": 25,
       "N3": 49,
       "NA": 2
@@ -50,33 +50,37 @@
     "in_progress_screens": 1
   },
   "validation_reference": {
-    "trx": "artifacts/linux/annotated-reference-desktop-checks-20261016-02-full/desktop.trx",
-    "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-    "trx_sha256": "bc813162211ddbcda1068f46003b34063db506b78f3cb3d0ed7fdf41f493e9c5",
+    "trx": "artifacts/linux/dialog-input-desktop-checks-20261016-02-full/desktop.trx",
+    "source_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
+    "trx_sha256": "f4df0772ca402890ed93d1274b5e99b09b188a712c0b61a6ea5f964f2e6d4180",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
         "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
+        "candidate_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
         "passed": 554,
         "total": 554,
         "execution_result": "artifacts/linux/annotated-reference-core-checks-20261016-01-full/full-result.json",
         "source_hashes_verified": 201,
         "runtime_hashes_verified": 8,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
+        "reexecuted_on_candidate": false,
+        "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on189."
       },
       "plugins": {
         "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
+        "candidate_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
         "passed": 35,
         "total": 35,
         "execution_result": "artifacts/linux/annotated-reference-plugins-checks-20261016-01/plugins-result.json",
         "source_hashes_verified": 154,
         "runtime_hashes_verified": 10,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
+        "reexecuted_on_candidate": false,
+        "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on189."
       }
     },
-    "current_linux_code_equivalent": false,
+    "current_linux_code_equivalent": true,
     "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
@@ -841,7 +845,7 @@
           "id": "GitExtensions.Linux.Desktop.BisectDialog",
           "label": "BisectDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 195,
+          "line": 216,
           "kind": "window"
         },
         {
@@ -1067,6 +1071,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GoToCommitDialogTests.cs",
           "test_class": "GoToCommitDialogTests",
@@ -1786,7 +1796,7 @@
       "group": "navigation",
       "level": "N2",
       "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus après fermeture du sous-menu Copy encore défectueux en natif. Browse reste N2.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus au navigateur après annulation d’un dialogue encore défectueux en natif. Browse reste N2.",
       "visual": "rapproche",
       "linux": [
         {
@@ -1811,6 +1821,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FilePaneParityTests.cs",
           "test_class": "FilePaneParityTests",
           "passed_in_reference_run": 7,
@@ -1820,6 +1836,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistoryMenuParityTests.cs",
           "test_class": "HistoryMenuParityTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
+          "test_class": "RevisionContextFocusTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -1836,29 +1858,25 @@
         ".agents/docs/adr/ui/0062-classic-file-panes.md",
         ".agents/docs/adr/ui/0063-scoped-browser-selection-reads.md",
         ".agents/docs/adr/ui/0064-original-history-menus.md",
-        ".agents/docs/adr/workflows/references/0075-reference-display-targets.md"
+        ".agents/docs/adr/workflows/references/0075-reference-display-targets.md",
+        ".agents/docs/adr/ui/0076-revision-context-focus.md",
+        ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md"
       ],
       "in_progress": {
-        "description": "Correction5195129c3 : focus de la ligne au clic droit, même déjà sélectionnée ; aucun rappel générique à la fermeture qui volerait le focus des dialogues. Ancien comportement6/9 rouges, correctif isolé32/32 dont11 nouveaux casUI. Root32/32 réexécutés sur le commit et paquet isolé vérifié ; navigation native après Copy/Échap et F5 verte ; première frappe Create branch rouge, candidat global non accepté ; dernier Desktop complet1145/1145 reste a62aa7133. Browse resteN2.",
+        "description": "Source 189c18a6c : focus de la ligne au clic droit, champ restauré après lecture Git et trois saisies partagées. Desktop complet 1190/1190 ; Core 554 et Plugins 35 réellement exécutés sur a62 et réutilisés par entrées inchangées. Trois groupes natifs verts, dont première frappe après chargement retardé ; après Cancel, les flèches vont à Start. Candidat global non accepté, correction MainWindow isolée en cours. Browse reste N2.",
         "linux": [
           {
             "id": "GitExtensions.Linux.Desktop.MainWindow",
-            "label": "MainWindow.BuildRevisionContextMenu",
-            "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-            "line": 34,
+            "label": "MainWindow.RunAsync",
+            "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
+            "line": 477,
             "kind": "window"
           }
         ],
-        "tests": [
-          {
-            "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
-            "test_class": "RevisionContextFocusTests",
-            "passed_in_reference_run": 0,
-            "results_present": false
-          }
-        ],
+        "tests": [],
         "adr": [
-          "0076"
+          "0076",
+          "0077"
         ]
       }
     },
@@ -2527,7 +2545,7 @@
       "group": "references",
       "level": "N3",
       "implemented": "Nom normalisé, révision, checkout/tracking et options de création.",
-      "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe native perdue après initialisation asynchrone depuis le menu contextuel (candidat519) ; correction en cours, preuve rouge conservée.",
+      "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe après lecture Git retardée vérifiée en natif sur189 ; retour clavier au navigateur après annulation encore ouvert.",
       "visual": "rapproche",
       "linux": [
         {
@@ -2543,6 +2561,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BranchNameNormalizationTests.cs",
           "test_class": "BranchNameNormalizationTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -2572,8 +2596,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
           "test_class": "RevisionContextFocusTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 11,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextMenuTests.cs",
@@ -2583,7 +2607,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/references/0012-reference-dialogs.md"
+        ".agents/docs/adr/workflows/references/0012-reference-dialogs.md",
+        ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md"
       ]
     },
     {
@@ -4377,7 +4402,7 @@
           "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
           "label": "SparseCheckoutDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 382,
+          "line": 403,
           "kind": "window"
         }
       ],
@@ -6955,6 +6980,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportDialogTests.cs",
           "test_class": "ExportDialogTests",
           "passed_in_reference_run": 13,
@@ -7197,6 +7228,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -7445,6 +7482,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -7861,7 +7904,7 @@
           "id": "GitExtensions.Linux.Desktop.NoteDialog",
           "label": "NoteDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 127,
+          "line": 148,
           "kind": "window"
         }
       ],
@@ -8225,13 +8268,30 @@
       "category": "windows",
       "feature": "Choix de fichier demandé par un script",
       "group": "helpers",
-      "level": "N0",
-      "implemented": "Pas d’équivalent script connecté au sélecteur de fichiers.",
-      "remaining": "Fenêtre et consommateur du moteur de scripts à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "implemented": "Fenêtre dédiée présente, sans caller scripts : saisie exacte, seule chaîne vide annulée par OK ; Browse multisélection depuis « . », fichiers locaux existants cités selon Windows, remplacement complet et CancelBrowse conservant le texte ; erreurs et réponses tardives gardées.",
+      "remaining": "Raccorder UserFiles et le futur routeur ; auditer le picker natif. OpenFilePickerAsync ne prend pas de CancellationToken : les gardes empêchent une publication tardive et BrowseCompletion expose le drainage, mais la fermeture/annulation du picker natif n’est pas garantie. Scripts complets et audit OS/DPI ouverts.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.FilePromptDialog",
+          "label": "FilePromptDialog",
+          "source": "src/linux/GitExtensions.Desktop/FilePromptDialog.cs",
+          "line": 15,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
+          "test_class": "ScriptInputDialogTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.ScriptsEngine.SimplePrompt",
@@ -8256,13 +8316,30 @@
       "category": "windows",
       "feature": "Saisie demandée par un script",
       "group": "helpers",
-      "level": "N0",
-      "implemented": "Pas de branchement UI de la saisie des scripts.",
-      "remaining": "Moteur d’exécution, événements et saisies de scripts à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "implemented": "Fenêtre dédiée présente, sans caller scripts : titre/label littéraux, défaut non trimé, vide accepté, un seul bouton OK. Échap est traité uniquement dans txtUserInput : désélection puis annulation ; Tab vers OK puis Échap laisse la fenêtre ouverte.",
+      "remaining": "Raccorder UserInput au contexte et au moteur de scripts ; consommateur des résultats explicites absent. Exécution, événements, menus et préférences restent ouverts ; audit natif, Wayland et DPI non réalisés.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.SimplePromptDialog",
+          "label": "SimplePromptDialog",
+          "source": "src/linux/GitExtensions.Desktop/SimplePromptDialog.cs",
+          "line": 12,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
+          "test_class": "ScriptInputDialogTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
@@ -8284,7 +8361,7 @@
       "group": "navigation",
       "level": "N3",
       "implemented": "Sélecteur compact Windows sans bordure : groupes local/remote/tag, tri culturel, huit lignes, première référence, recherche par frappe native, Entrée/double-clic et annulation. F2/Suppr sur le commit focalisé : zéro/une/plusieurs références, types et hash bruts conservés, revalidation après choix, dialogues métier partagés. Activation avant la première touche et retour aux flèches/F2 vérifiés sous X11/Openbox ; homonymes branche/tag, refus distant explicite, renommage et suppression d’un tag annoté réellement exécutés.",
-      "remaining": "Mode Select prêt dans la fenêtre, mais raccord du moteur de scripts et FormQuickStringSelector non portés. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
+      "remaining": "Mode Select prêt dans la fenêtre, mais raccord du moteur de scripts absent ; FormQuickStringSelector est une UI N1 distincte. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -8298,7 +8375,7 @@
           "id": "GitExtensions.Linux.Desktop.QuickGitRefSelectorDialog",
           "label": "QuickGitRefSelectorDialog",
           "source": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
-          "line": 18,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -8356,12 +8433,42 @@
       "feature": "Infrastructure de fenêtres",
       "group": "infrastructure",
       "level": "BASE",
-      "implemented": "Classe de base, sans écran métier autonome.",
-      "remaining": "Ne pas compter comme une fenêtre utilisateur.",
+      "implemented": "Base Avalonia commune aux sélecteurs de références et de chaînes : liste compacte, cadre/palette, limites de mesure et de lignes, pied de fenêtre, focus/activation et validation explicite. Aucun écran autonome.",
+      "remaining": "Support BASE exclu des comptes des fenêtres métier ; routage scripts et audit natif étendu des nouveaux consommateurs restent ouverts.",
       "visual": "base",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.QuickItemSelectorDialog`1",
+          "label": "QuickItemSelectorDialog",
+          "source": "src/linux/GitExtensions.Desktop/QuickItemSelectorDialog.cs",
+          "line": 18,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickGitRefSelectorDialogTests.cs",
+          "test_class": "QuickGitRefSelectorDialogTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
+          "test_class": "ScriptInputDialogTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/references/0074-quick-reference-selector.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.UserControls.RevisionGrid.FormQuickStringSelector",
@@ -8381,13 +8488,30 @@
       "category": "windows",
       "feature": "Choix rapide de texte utilisé par les scripts",
       "group": "navigation",
-      "level": "N0",
-      "implemented": "Aucun équivalent de ce sélecteur de scripts.",
-      "remaining": "Fenêtre, filtrage et branchement du moteur de scripts à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "implemented": "Fenêtre de saisie dédiée présente, sans caller scripts : tri CurrentCulture, doublons et chaînes vides conservés, première sélection, huit lignes, mesure bornée à 100 caractères ; Select/Entrée/double-clic et résultat Accepted/Cancelled explicite.",
+      "remaining": "Raccorder les demandes de choix au contexte et au moteur de scripts ; consommer l’acceptation explicite sans réutiliser une sélection conservée après Échap. Exécution, événements, menus et préférences scripts restent ouverts ; audit natif, Wayland et DPI non réalisés.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.QuickStringSelectorDialog",
+          "label": "QuickStringSelectorDialog",
+          "source": "src/linux/GitExtensions.Desktop/QuickStringSelectorDialog.cs",
+          "line": 7,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
+          "test_class": "ScriptInputDialogTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.UserControls.RevisionGrid.FormRevisionFilter",
@@ -8583,6 +8707,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
+          "test_class": "CreateBranchInitializationFocusTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -9028,11 +9158,11 @@
       "id": "GitExtensions.Linux.Desktop.BisectDialog",
       "name": "BisectDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 195,
+      "line": 216,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 195
+          "line": 216
         }
       ],
       "bases": [
@@ -9686,6 +9816,30 @@
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GeneralSettingsPage",
           "name": "GeneralSettingsPage",
           "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.FilePromptDialog",
+      "name": "FilePromptDialog",
+      "source": "src/linux/GitExtensions.Desktop/FilePromptDialog.cs",
+      "line": 15,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/FilePromptDialog.cs",
+          "line": 15
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.ScriptsEngine.FormFilePrompt",
+          "name": "FormFilePrompt",
+          "level": "N1"
         }
       ],
       "note": ""
@@ -10376,11 +10530,11 @@
       "id": "GitExtensions.Linux.Desktop.NoteDialog",
       "name": "NoteDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 127,
+      "line": 148,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 127
+          "line": 148
         }
       ],
       "bases": [
@@ -10567,15 +10721,15 @@
       "id": "GitExtensions.Linux.Desktop.QuickGitRefSelectorDialog",
       "name": "QuickGitRefSelectorDialog",
       "source": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
-      "line": 18,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
-          "line": 18
+          "line": 12
         }
       ],
       "bases": [
-        "Window"
+        "QuickItemSelectorDialog<QuickGitReferenceItem>"
       ],
       "abstract": false,
       "windows": [
@@ -10583,6 +10737,54 @@
           "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
           "name": "FormQuickGitRefSelector",
           "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.QuickItemSelectorDialog`1",
+      "name": "QuickItemSelectorDialog",
+      "source": "src/linux/GitExtensions.Desktop/QuickItemSelectorDialog.cs",
+      "line": 18,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/QuickItemSelectorDialog.cs",
+          "line": 18
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": true,
+      "windows": [
+        {
+          "id": "GitUI.UserControls.RevisionGrid.FormQuickItemSelector",
+          "name": "FormQuickItemSelector",
+          "level": "BASE"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.QuickStringSelectorDialog",
+      "name": "QuickStringSelectorDialog",
+      "source": "src/linux/GitExtensions.Desktop/QuickStringSelectorDialog.cs",
+      "line": 7,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/QuickStringSelectorDialog.cs",
+          "line": 7
+        }
+      ],
+      "bases": [
+        "QuickItemSelectorDialog<string>"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.UserControls.RevisionGrid.FormQuickStringSelector",
+          "name": "FormQuickStringSelector",
+          "level": "N1"
         }
       ],
       "note": ""
@@ -11058,14 +11260,38 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.SimplePromptDialog",
+      "name": "SimplePromptDialog",
+      "source": "src/linux/GitExtensions.Desktop/SimplePromptDialog.cs",
+      "line": 12,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/SimplePromptDialog.cs",
+          "line": 12
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.ScriptsEngine.SimplePrompt",
+          "name": "SimplePrompt",
+          "level": "N1"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
       "name": "SparseCheckoutDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 382,
+      "line": 403,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 382
+          "line": 403
         }
       ],
       "bases": [
@@ -11607,7 +11833,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 287,
+      "line": 308,
       "method": "ConfirmRangeAsync",
       "text": "new() { Name = \"BisectRangeConfirmation\", Title = Title, Width = 470, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -11617,7 +11843,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 337,
+      "line": 358,
       "method": "ShowNativeErrorAsync",
       "text": "new() { Name = \"BisectNativeError\", Title = T(\"Error\"), Width = 520, MaxHeight = 540, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -15734,8 +15960,7 @@
   ],
   "group_levels": {
     "navigation": {
-      "N0": 1,
-      "N1": 1,
+      "N1": 2,
       "N2": 2,
       "N3": 3
     },
@@ -15767,8 +15992,7 @@
       "N3": 1
     },
     "helpers": {
-      "N0": 2,
-      "N1": 1,
+      "N1": 3,
       "N2": 4
     },
     "settings": {

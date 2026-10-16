@@ -361,6 +361,15 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Les badges changent mais le tooltip garde les anciens tags | Actualiser le tooltip au même point de présentation, y compris sans aucune référence restante. |
 | Une capture réécrite fait croire que le runtime testé a changé | Capturer explicitement DLL/PDB/SO/XLF, deps/runtimeconfig et helpers ; lister captures/traces comme sorties. Garder le lot brut et sa comparaison fausse, sans réécrire son résultat. |
 
-- Clic droit sur une révision : sélectionner un élément ne lui donne pas automatiquement le focus Avalonia. Deux Échap après Copy peuvent laisser les flèches sans effet ; observation native a62 conservée, correction et preuve de non-régression encore requises. Ne pas masquer ce défaut par un clic/Ctrl+1 dans le harnais.
+- Clic droit sur une révision : sélectionner un élément ne lui donne pas automatiquement le focus Avalonia. Focaliser sa ligne avant le menu, même déjà sélectionnée ; ne pas réparer le test par clic/Ctrl+1. Deux origines natives validées sur 189.
 
-- Première frappe de Create branch (519, natif) : le champ reçoit Focus sur Opened, puis InitializeAsync passe par RunAsync qui désactive les champs. Le retour à IsEnabled ne garantit pas le focus. Cause à confirmer par chargement retardé ; ne pas prendre une première frappe headless verte pour une preuve native.
+- Première frappe de Create branch : Opened focalise le champ, puis InitializeAsync/RunAsync le désactive et perd le focus. Préserver le vrai contrôle suivi et le restaurer sous gardes après UpdateActions. Une vraie lecture Git retardée et la première frappe native sont nécessaires ; attendre seulement une fenêtre non busy peut précéder le début de son initialisation.
+
+- Retour au navigateur : les champs d’un dialogue corrigés ne prouvent pas le retour après Cancel. Sur 189, Up sélectionne Start puis Down l’ouvre ; conserver ce rouge et auditer séparément MainWindow.RunAsync et le remplacement des lignes au refresh.
+
+## Saisies de scripts
+
+| Piège | Règle retenue |
+| --- | --- |
+| Le picker ferme le propriétaire avant lecture du token CTS | Capturer le token avant l’appel ; ignorer les réponses tardives et exposer leur drainage. L’API native n’accepte pas d’annulation, son arrêt reste à auditer. |
+| Échap intercepté partout dans SimplePrompt | Garder le handler sur txtUserInput comme Windows ; Échap sur OK ne ferme pas la fenêtre. |

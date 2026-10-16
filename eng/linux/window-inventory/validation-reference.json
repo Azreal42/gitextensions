@@ -1,12 +1,12 @@
 {
-  "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-  "trx": "artifacts/linux/annotated-reference-desktop-checks-20261016-02-full/desktop.trx",
-  "trx_sha256": "bc813162211ddbcda1068f46003b34063db506b78f3cb3d0ed7fdf41f493e9c5",
-  "meaning": "Frozen results of actual complete execution; this does not certify complete window parity.",
+  "source_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
+  "trx": "artifacts/linux/dialog-input-desktop-checks-20261016-02-full/desktop.trx",
+  "trx_sha256": "f4df0772ca402890ed93d1274b5e99b09b188a712c0b61a6ea5f964f2e6d4180",
+  "meaning": "Actual complete Desktop execution; Core/Plugins reused from unchanged a62 inputs. Native post-modal focus remains a known failure; no global parity acceptance.",
   "counters": {
-    "total": "1145",
-    "executed": "1145",
-    "passed": "1145",
+    "total": "1190",
+    "executed": "1190",
+    "passed": "1190",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -132,6 +132,9 @@
     },
     "ConflictRoutingTests": {
       "Passed": 9
+    },
+    "CreateBranchInitializationFocusTests": {
+      "Passed": 11
     },
     "DashboardTests": {
       "Passed": 6
@@ -346,6 +349,9 @@
     "RevisionAdvancedTests": {
       "Passed": 10
     },
+    "RevisionContextFocusTests": {
+      "Passed": 11
+    },
     "RevisionContextMenuTests": {
       "Passed": 8
     },
@@ -357,6 +363,9 @@
     },
     "RulesFileEditorDialogTests": {
       "Passed": 19
+    },
+    "ScriptInputDialogTests": {
+      "Passed": 23
     },
     "ScriptsPreferencesStoreTests": {
       "Passed": 8
@@ -413,23 +422,27 @@
   "additional_suites": {
     "core": {
       "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
+      "candidate_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
       "passed": 554,
       "total": 554,
       "execution_result": "artifacts/linux/annotated-reference-core-checks-20261016-01-full/full-result.json",
       "source_hashes_verified": 201,
       "runtime_hashes_verified": 8,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
+      "reexecuted_on_candidate": false,
+      "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on189."
     },
     "plugins": {
       "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
+      "candidate_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
       "passed": 35,
       "total": 35,
       "execution_result": "artifacts/linux/annotated-reference-plugins-checks-20261016-01/plugins-result.json",
       "source_hashes_verified": 154,
       "runtime_hashes_verified": 10,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
+      "reexecuted_on_candidate": false,
+      "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on189."
     }
   }
 }

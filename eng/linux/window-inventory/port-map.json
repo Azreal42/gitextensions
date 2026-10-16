@@ -67,12 +67,21 @@
       "feature": "Infrastructure de fenêtres",
       "group": "infrastructure",
       "level": "BASE",
-      "linux": [],
-      "implemented": "Classe de base, sans écran métier autonome.",
-      "remaining": "Ne pas compter comme une fenêtre utilisateur.",
+      "linux": [
+        "QuickItemSelectorDialog"
+      ],
+      "implemented": "Base Avalonia commune aux sélecteurs de références et de chaînes : liste compacte, cadre/palette, limites de mesure et de lignes, pied de fenêtre, focus/activation et validation explicite. Aucun écran autonome.",
+      "remaining": "Support BASE exclu des comptes des fenêtres métier ; routage scripts et audit natif étendu des nouveaux consommateurs restent ouverts.",
       "visual": "base",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "ScriptInputDialogTests",
+        "QuickGitRefSelectorDialogTests",
+        "QuickReferenceWorkflowTests"
+      ],
+      "adr": [
+        "0074",
+        "0078"
+      ]
     },
     "GitUI.CommandsDialogs.FormBrowse": {
       "feature": "Navigation principale, historique, menus, fichiers",
@@ -82,14 +91,16 @@
         "MainWindow"
       ],
       "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus après fermeture du sous-menu Copy encore défectueux en natif. Browse reste N2.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus au navigateur après annulation d’un dialogue encore défectueux en natif. Browse reste N2.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
         "BrowserSelectionTests",
         "HistoryMenuParityTests",
         "FilePaneParityTests",
-        "AnnotatedReferencePresentationTests"
+        "AnnotatedReferencePresentationTests",
+        "RevisionContextFocusTests",
+        "CreateBranchInitializationFocusTests"
       ],
       "adr": [
         "0031",
@@ -98,18 +109,19 @@
         "0062",
         "0063",
         "0064",
-        "0075"
+        "0075",
+        "0076",
+        "0077"
       ],
       "in_progress": {
-        "description": "Correction5195129c3 : focus de la ligne au clic droit, même déjà sélectionnée ; aucun rappel générique à la fermeture qui volerait le focus des dialogues. Ancien comportement6/9 rouges, correctif isolé32/32 dont11 nouveaux casUI. Root32/32 réexécutés sur le commit et paquet isolé vérifié ; navigation native après Copy/Échap et F5 verte ; première frappe Create branch rouge, candidat global non accepté ; dernier Desktop complet1145/1145 reste a62aa7133. Browse resteN2.",
+        "description": "Source 189c18a6c : focus de la ligne au clic droit, champ restauré après lecture Git et trois saisies partagées. Desktop complet 1190/1190 ; Core 554 et Plugins 35 réellement exécutés sur a62 et réutilisés par entrées inchangées. Trois groupes natifs verts, dont première frappe après chargement retardé ; après Cancel, les flèches vont à Start. Candidat global non accepté, correction MainWindow isolée en cours. Browse reste N2.",
         "linux": [
-          "MainWindow@BuildRevisionContextMenu"
+          "MainWindow@RunAsync"
         ],
-        "tests": [
-          "RevisionContextFocusTests"
-        ],
+        "tests": [],
         "adr": [
-          "0076"
+          "0076",
+          "0077"
         ]
       }
     },
@@ -176,7 +188,7 @@
         "MainWindow@ExecuteQuickReferenceActionAsync"
       ],
       "implemented": "Sélecteur compact Windows sans bordure : groupes local/remote/tag, tri culturel, huit lignes, première référence, recherche par frappe native, Entrée/double-clic et annulation. F2/Suppr sur le commit focalisé : zéro/une/plusieurs références, types et hash bruts conservés, revalidation après choix, dialogues métier partagés. Activation avant la première touche et retour aux flèches/F2 vérifiés sous X11/Openbox ; homonymes branche/tag, refus distant explicite, renommage et suppression d’un tag annoté réellement exécutés.",
-      "remaining": "Mode Select prêt dans la fenêtre, mais raccord du moteur de scripts et FormQuickStringSelector non portés. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
+      "remaining": "Mode Select prêt dans la fenêtre, mais raccord du moteur de scripts absent ; FormQuickStringSelector est une UI N1 distincte. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
       "visual": "rapproche",
       "tests": [
         "QuickGitRefSelectorDialogTests",
@@ -196,13 +208,19 @@
     "GitUI.UserControls.RevisionGrid.FormQuickStringSelector": {
       "feature": "Choix rapide de texte utilisé par les scripts",
       "group": "navigation",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Aucun équivalent de ce sélecteur de scripts.",
-      "remaining": "Fenêtre, filtrage et branchement du moteur de scripts à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "linux": [
+        "QuickStringSelectorDialog"
+      ],
+      "implemented": "Fenêtre de saisie dédiée présente, sans caller scripts : tri CurrentCulture, doublons et chaînes vides conservés, première sélection, huit lignes, mesure bornée à 100 caractères ; Select/Entrée/double-clic et résultat Accepted/Cancelled explicite.",
+      "remaining": "Raccorder les demandes de choix au contexte et au moteur de scripts ; consommer l’acceptation explicite sans réutiliser une sélection conservée après Échap. Exécution, événements, menus et préférences scripts restent ouverts ; audit natif, Wayland et DPI non réalisés.",
+      "visual": "rapproche",
+      "tests": [
+        "ScriptInputDialogTests"
+      ],
+      "adr": [
+        "0078"
+      ]
     },
     "GitUI.CommandsDialogs.SearchWindow`1": {
       "feature": "Recherche incrémentale de fichiers/candidats",
@@ -375,14 +393,16 @@
         "CreateBranchDialog"
       ],
       "implemented": "Nom normalisé, révision, checkout/tracking et options de création.",
-      "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe native perdue après initialisation asynchrone depuis le menu contextuel (candidat519) ; correction en cours, preuve rouge conservée.",
+      "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe après lecture Git retardée vérifiée en natif sur189 ; retour clavier au navigateur après annulation encore ouvert.",
       "visual": "rapproche",
       "tests": [
         "ReferenceDialogTests",
-        "ReferenceMenuTests"
+        "ReferenceMenuTests",
+        "CreateBranchInitializationFocusTests"
       ],
       "adr": [
-        "0012"
+        "0012",
+        "0077"
       ]
     },
     "GitUI.CommandsDialogs.FormCheckoutBranch": {
@@ -1371,24 +1391,36 @@
     "GitUI.ScriptsEngine.SimplePrompt": {
       "feature": "Saisie demandée par un script",
       "group": "helpers",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de branchement UI de la saisie des scripts.",
-      "remaining": "Moteur d’exécution, événements et saisies de scripts à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "linux": [
+        "SimplePromptDialog"
+      ],
+      "implemented": "Fenêtre dédiée présente, sans caller scripts : titre/label littéraux, défaut non trimé, vide accepté, un seul bouton OK. Échap est traité uniquement dans txtUserInput : désélection puis annulation ; Tab vers OK puis Échap laisse la fenêtre ouverte.",
+      "remaining": "Raccorder UserInput au contexte et au moteur de scripts ; consommateur des résultats explicites absent. Exécution, événements, menus et préférences restent ouverts ; audit natif, Wayland et DPI non réalisés.",
+      "visual": "rapproche",
+      "tests": [
+        "ScriptInputDialogTests"
+      ],
+      "adr": [
+        "0078"
+      ]
     },
     "GitUI.ScriptsEngine.FormFilePrompt": {
       "feature": "Choix de fichier demandé par un script",
       "group": "helpers",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas d’équivalent script connecté au sélecteur de fichiers.",
-      "remaining": "Fenêtre et consommateur du moteur de scripts à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "linux": [
+        "FilePromptDialog"
+      ],
+      "implemented": "Fenêtre dédiée présente, sans caller scripts : saisie exacte, seule chaîne vide annulée par OK ; Browse multisélection depuis « . », fichiers locaux existants cités selon Windows, remplacement complet et CancelBrowse conservant le texte ; erreurs et réponses tardives gardées.",
+      "remaining": "Raccorder UserFiles et le futur routeur ; auditer le picker natif. OpenFilePickerAsync ne prend pas de CancellationToken : les gardes empêchent une publication tardive et BrowseCompletion expose le drainage, mais la fermeture/annulation du picker natif n’est pas garantie. Scripts complets et audit OS/DPI ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "ScriptInputDialogTests"
+      ],
+      "adr": [
+        "0078"
+      ]
     },
     "GitUI.FindAndReplaceForm": {
       "feature": "Recherche/remplacement dans le lecteur/éditeur",
