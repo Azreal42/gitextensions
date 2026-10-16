@@ -32,9 +32,9 @@
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 9,
-      "N1": 15,
+      "N1": 14,
       "N2": 25,
-      "N3": 48,
+      "N3": 49,
       "NA": 2
     },
     "settings_levels": {
@@ -47,38 +47,38 @@
     "designer_files": 189,
     "installer_source_dialogs": 13,
     "installer_library_dialogs": 9,
-    "in_progress_screens": 1
+    "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/goto-commit-desktop-checks-20261016-08-full/desktop.trx",
-    "source_sha": "676a14e2ba34f00c52ec8df9a018474e94501de7",
-    "trx_sha256": "40c569da3e4699c4c1024627f84d963c25979c77dffe8c48229d4fccf0d97708",
+    "trx": "artifacts/linux/quick-reference-desktop-checks-20261016-07-full/desktop.trx",
+    "source_sha": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
+    "trx_sha256": "d5fe99f4585cd703265f700accf9cddc2fd1cf56b30d48650c4a4d52ba41fc09",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "cbfa41a8855b4db96997f21d94463ec8c00b865d",
-        "code_equivalent_to": "676a14e2ba34f00c52ec8df9a018474e94501de7",
-        "passed": 550,
-        "total": 550,
-        "execution_result": "artifacts/linux/goto-commit-core-20261016-02/full-result.json",
-        "source_hashes_verified": 198,
+        "source_sha": "10d889d9b8102169c2478aeb068e41fdfda5178a",
+        "code_equivalent_to": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
+        "passed": 554,
+        "total": 554,
+        "execution_result": "artifacts/linux/quick-reference-core-checks-20261016-02-full/full-result.json",
+        "source_hashes_verified": 200,
         "runtime_hashes_verified": 8,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
+        "meaning": "Actual complete execution on 10d889d9b; subsequent Desktop activation and documentation changes leave these components unchanged. Not rerun on the final candidate; recorded source/runtime inputs independently reverified."
       },
       "plugins": {
-        "source_sha": "cbfa41a8855b4db96997f21d94463ec8c00b865d",
-        "code_equivalent_to": "676a14e2ba34f00c52ec8df9a018474e94501de7",
+        "source_sha": "10d889d9b8102169c2478aeb068e41fdfda5178a",
+        "code_equivalent_to": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/goto-commit-plugins-checks-20261016-01/plugins-result.json",
-        "source_hashes_verified": 152,
+        "execution_result": "artifacts/linux/quick-reference-plugins-checks-20261016-01/plugins-result.json",
+        "source_hashes_verified": 153,
         "runtime_hashes_verified": 10,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
+        "meaning": "Actual complete execution on 10d889d9b; subsequent Desktop activation and documentation changes leave these components unchanged. Not rerun on the final candidate; recorded source/runtime inputs independently reverified."
       }
     },
-    "current_linux_code_equivalent": false,
+    "current_linux_code_equivalent": true,
     "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
@@ -1788,7 +1788,7 @@
       "group": "navigation",
       "level": "N2",
       "implemented": "Grille/graphe, sélection, panneaux, menus et focus ; lectures annulables et disposition classique.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Rattachement des tags annotés aux badges, graphe et Copy > Tags encore incorrect : distinguer l’identité brute du tag et son commit cible.",
       "visual": "rapproche",
       "linux": [
         {
@@ -2662,8 +2662,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
@@ -2741,8 +2741,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
@@ -2806,8 +2806,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
@@ -4036,8 +4036,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareDialogTests.cs",
@@ -6965,8 +6965,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -7210,8 +7210,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -7458,8 +7458,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -8248,119 +8248,50 @@
       "category": "windows",
       "feature": "Sélection rapide de référence",
       "group": "navigation",
-      "level": "N1",
-      "implemented": "Menus et combos de branches/références dans des workflows précis.",
-      "remaining": "Le sélecteur autonome est en cours de validation ci-dessous ; le substitut de référence ne couvre pas ses interactions ni le raccord des scripts.",
-      "visual": "integre",
+      "level": "N3",
+      "implemented": "Sélecteur compact Windows sans bordure : groupes local/remote/tag, tri culturel, huit lignes, première référence, recherche par frappe native, Entrée/double-clic et annulation. F2/Suppr sur le commit focalisé : zéro/une/plusieurs références, types et hash bruts conservés, revalidation après choix, dialogues métier partagés. Activation avant la première touche et retour aux flèches/F2 vérifiés sous X11/Openbox ; homonymes branche/tag, refus distant explicite, renommage et suppression d’un tag annoté réellement exécutés.",
+      "remaining": "Mode Select prêt dans la fenêtre, mais raccord du moteur de scripts et FormQuickStringSelector non portés. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Git natifs des références rapides",
+          "source": "tests/linux/GitExtensions.Core.Tests/QuickReferenceScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.BranchSuggestionButton",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.BranchFilter.cs",
-          "line": 199,
+          "id": "GitExtensions.Linux.Desktop.QuickGitRefSelectorDialog",
+          "label": "QuickGitRefSelectorDialog",
+          "source": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
+          "line": 18,
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
-          "label": "CheckoutBranchDialog",
-          "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
-          "line": 11,
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ExecuteQuickReferenceActionAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
+          "line": 12,
           "kind": "window"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchHistoryFilterTests.cs",
-          "test_class": "BranchHistoryFilterTests",
-          "passed_in_reference_run": 11,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickGitRefSelectorDialogTests.cs",
+          "test_class": "QuickGitRefSelectorDialogTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchMenuTests.cs",
-          "test_class": "BranchMenuTests",
-          "passed_in_reference_run": 11,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchNameNormalizationTests.cs",
-          "test_class": "BranchNameNormalizationTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CheckoutSubmoduleTests.cs",
-          "test_class": "CheckoutSubmoduleTests",
-          "passed_in_reference_run": 12,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
-          "test_class": "DialogAccessKeyTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
-          "test_class": "ReferenceDialogTests",
-          "passed_in_reference_run": 14,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
-          "test_class": "ReferenceMenuTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ResetRevertDialogTests.cs",
-          "test_class": "ResetRevertDialogTests",
-          "passed_in_reference_run": 12,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
-          "test_class": "SubmoduleConflictDialogTests",
-          "passed_in_reference_run": 14,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 8,
           "results_present": true
         }
       ],
-      "adr": [],
-      "in_progress": {
-        "description": "Sélecteur Windows sans bordure et parcours F2/Suppr intégrés : zéro/une/plusieurs références, groupes, tri, choix typés et gardes de contexte. Compilation et 138 scénarios Desktop ciblés réussis sur le code de 954a1412d, dont 31 nouveaux. Le candidat précédent 10d889d9b a été refusé en natif : premier Échap consommé par le dialogue métier. La correction d’activation partagée attend son contrôle natif et la suite Desktop complète ; N1 conservé. Raccord des scripts non porté.",
-        "linux": [
-          {
-            "id": "GitExtensions.Linux.Desktop.QuickGitRefSelectorDialog",
-            "label": "QuickGitRefSelectorDialog",
-            "source": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
-            "line": 18,
-            "kind": "window"
-          },
-          {
-            "id": "GitExtensions.Linux.Desktop.MainWindow",
-            "label": "MainWindow.ExecuteQuickReferenceActionAsync",
-            "source": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
-            "line": 12,
-            "kind": "window"
-          }
-        ],
-        "tests": [
-          {
-            "source": "tests/linux/GitExtensions.Desktop.Tests/QuickGitRefSelectorDialogTests.cs",
-            "test_class": "QuickGitRefSelectorDialogTests",
-            "passed_in_reference_run": 0,
-            "results_present": false
-          },
-          {
-            "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
-            "test_class": "QuickReferenceWorkflowTests",
-            "passed_in_reference_run": 0,
-            "results_present": false
-          }
-        ],
-        "adr": [
-          "0074"
-        ]
-      }
+      "adr": [
+        ".agents/docs/adr/workflows/references/0074-quick-reference-selector.md"
+      ]
     },
     {
       "id": "GitUI.UserControls.RevisionGrid.FormQuickItemSelector",
@@ -8659,8 +8590,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
           "test_class": "QuickReferenceWorkflowTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 8,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -9136,11 +9067,6 @@
           "id": "GitUI.CommandsDialogs.FormMergeSubmodule",
           "name": "FormMergeSubmodule",
           "level": "N3"
-        },
-        {
-          "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
-          "name": "FormQuickGitRefSelector",
-          "level": "N1"
         }
       ],
       "note": ""
@@ -10295,7 +10221,7 @@
         {
           "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
           "name": "FormQuickGitRefSelector",
-          "level": "N1"
+          "level": "N3"
         }
       ],
       "note": ""
@@ -10616,7 +10542,7 @@
         {
           "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
           "name": "FormQuickGitRefSelector",
-          "level": "en cours, N1 conservé"
+          "level": "N3"
         }
       ],
       "note": ""
@@ -15769,9 +15695,9 @@
   "group_levels": {
     "navigation": {
       "N0": 1,
-      "N1": 2,
+      "N1": 1,
       "N2": 2,
-      "N3": 2
+      "N3": 3
     },
     "repositories": {
       "N2": 3,

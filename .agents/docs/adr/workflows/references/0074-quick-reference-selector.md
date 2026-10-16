@@ -1,6 +1,6 @@
 # ADR 0074 · Sélecteur rapide de références
 
-Statut : en cours ; niveau N1 conservé jusqu’aux validations du candidat.
+Statut : accepté sur le périmètre ciblé N3 ; scripts et audit de parité complète restent ouverts.
 
 Besoin : F2 et Suppr dans la grille doivent agir sur la référence voulue du dernier commit sélectionné, sans confondre une branche et un tag homonymes ni déclencher une mutation au simple choix.
 
@@ -14,6 +14,6 @@ Une référence distante sans mapping supprimable reste affichée dans le dialog
 
 Le mode Select est disponible pour le futur raccord des scripts. Ce raccord et FormQuickStringSelector restent ouverts. Le caller Windows des scripts ignore DialogResult et peut conserver une sélection après Échap : l’intégration Linux devra vérifier l’acceptation explicite, sans reproduire implicitement ce défaut. Le commentaire du moteur Linux est corrigé ; son comportement ne change pas.
 
-Repères : QuickGitRefSelectorDialog, MainWindow.QuickReferences/Shortcuts/BrowserReads, GitRepository.QuickReferences ; dialogues RenameBranch/DeleteBranch/DeleteRemoteBranch/DeleteTag partagés. Première activation et focus natifs, suite complète, traductions/thèmes, Wayland et DPI/accessibilité restent à valider selon le périmètre indiqué dans le TODO.
+Repères : QuickGitRefSelectorDialog, MainWindow.QuickReferences/Shortcuts/BrowserReads, GitRepository.QuickReferences ; dialogues RenameBranch/DeleteBranch/DeleteRemoteBranch/DeleteTag partagés. Première activation et retour du focus validés sous X11/Openbox ; clair/sombre et anglais/français vérifiés en headless. En-tête sélectionné non exercé en natif, Select/scripts, Wayland et DPI/accessibilité restent ouverts.
 
-Validation connue : 138 tests Desktop ciblés réussis sur le code de `954a1412d`. Le candidat `10d889d9b` reste refusé pour le premier Échap du dialogue métier ; le contrôle natif corrigé et la suite Desktop complète ne sont pas exécutés. Core 554/554 et Plugins 35/35 ont été exécutés sur `10d889d9b`, composants inchangés dans `954a1412d` ; ce résultat ne certifie pas l’activation OS.
+Validation : [source et périmètres](../../../../../artifacts/linux/snapshots/f2c42762f/proofs/source-validation.json), [15 groupes natifs sur le paquet exact](../../../../../artifacts/linux/snapshots/f2c42762f/proofs/native-quick-reference/results.json). Le candidat antérieur 10d889d9b refusé pour sa première touche perdue reste conservé ; aucune parité N4 annoncée.

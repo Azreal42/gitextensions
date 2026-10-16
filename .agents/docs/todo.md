@@ -6,7 +6,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `954a1412d` ; dernière suite Desktop complète de référence `676a14e2b` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 15 N1 substituts minimaux, 25 N2 partielles, 48 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `954a1412d` ; dernière suite Desktop complète de référence `f2c42762f` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 14 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 80 types Window Avalonia (dont 2 bases abstraites), 31 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -14,6 +14,8 @@ L’inventaire contient aussi les 80 types Window Avalonia (dont 2 bases abstrai
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Sélecteur rapide de références : F2/Suppr, choix local/remote/tag sans ambiguïté, dialogues partagés, première touche et retour au clavier ; ADR 0074, périmètre N3 ciblé.
 
 - [x] Askpass : saisie/Yes-No/empreinte, autorisation de clé et notification distinctes ; protocole natif, fermeture sûre et vrai helper vérifiés. ADR 0072 ; audit global ouvert.
 
@@ -97,6 +99,9 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 - [ ] Audit de parité finale contre les écrans/commandes/plugins historiques.
 
 ## Prochains écarts concrets
+
+- Tags annotés : rattacher leurs badges, graphe et Copy > Tags au commit cible, en conservant l’identité brute nécessaire à la revalidation. Constat source et capture native du sélecteur ; Browse reste N2.
+- Scripts : raccorder les trois saisies Windows, le contexte actif, le vrai lanceur et les événements/menu/raccourcis. Le moteur de préparation seul ne constitue pas une exécution Desktop ou CLI.
 
 - Cherry-pick : audit natif après crash et des autres modes/séries ; destinations imprévues refusées avant rollback, restauration IO interrompue conservée en état Restoring.
 - Candidat Rebase `0ea90bef9`, vérifié, non livré : grille et contexte séparés avec sortie Git longue, aide originale défilable, infobulles clair/sombre lisibles. Un todo/done illisible conserve le hash et l’état Git réels ; les actions de continuation sont refusées, Abort reste disponible. [1008 tests vérifiés](../../artifacts/linux/rebase-layout-status-root-checks-20261013-02/local-source-verification.json) (313 Core, 35 Plugins, 660 Desktop), zéro échec/ignoré, six projets Release sans diagnostic ; 95 tests ciblés et [douze rendus headless contrôlés](../../artifacts/linux/rebase-layout-status-root-checks-20261013-02/root-headless-visual-review.json). [Paquet du même commit vérifié](../../artifacts/linux/snapshots/0ea90bef9/proofs/root-candidate-verification-01.json) : 25 étapes réussies, installation/lancement isolés, APT simulé et repaquetage identique. Audit natif du payload encore requis ; le paquet livré reste `d144dcf69`.
@@ -269,14 +274,12 @@ Exécutions complètes : 1109/1109 Desktop, 550/550 Core, 35/35 Plugins ; 1694 s
 
 [Paquet Debian](../../artifacts/linux/snapshots/676a14e2b/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `801bf7bb2bd2272d7a4c7171a5c1a0d1e0c7d0415c120667e681189046283257` : construction, extraction et installation isolée réussies. Non installé sur l’hôte ; aucun push.
 
-FormGoToCommit passe N1 → N3 ciblé testé. Tri configurable des références, audit GUI natif étendu, Wayland, DPI/accessibilité restent ouverts ; QuickGitRefSelector conserve N1 ; retour de focus des autres dialogues à auditer séparément. Les 13 familles restent ouvertes, aucun N4.
+FormGoToCommit passe N1 → N3 ciblé testé. Tri configurable des références, audit GUI natif étendu, Wayland, DPI/accessibilité restent ouverts ; QuickGitRefSelector est évalué dans le lot suivant ; retour de focus des autres dialogues à auditer séparément. Les 13 familles restent ouvertes, aucun N4.
 
-## Sélecteur rapide de références — validation en cours
+## Sélecteur rapide de références — périmètre ciblé testé
 
-Liste compacte Windows et parcours F2/Suppr intégrés dans le code courant ; dialogues métier partagés, refs typées et lectures annulables. [ADR 0074](adr/workflows/references/0074-quick-reference-selector.md). Quatre nouveaux scénarios Git natifs ciblés réussis ; premier build Desktop réussi. Premier lot UI conservé : 82/91 ; attentes de pilote corrigées, puis 91/91 ciblés réussis (31 nouveaux scénarios inclus), source et binaires inchangés pendant l’exécution. La perte de présélection distante échoue réellement contre l’ancienne initialisation ; correction restaurée et régression verte dans le lot de 91.
+F2/Suppr reprennent les choix Windows et ouvrent les dialogues métier partagés ; aucun changement Git au simple choix. Les premières touches et le retour aux flèches fonctionnent sans réparation du focus. [ADR 0074](adr/workflows/references/0074-quick-reference-selector.md). Mode Select et scripts restent à raccorder ; Wayland, DPI/accessibilité et l’audit natif étendu restent ouverts. FormQuickGitRefSelector passe N1 → N3, aucune entrée N4 et les 13 familles restent ouvertes.
 
-Suite complète et paquet/natif de cette source non validés ; N1 conservé dans la matrice. Raccord des scripts, FormQuickStringSelector et les 13 familles de migration restent ouverts. Aucun push ni installation hôte.
+[Validation source f2c42762f](../../artifacts/linux/snapshots/f2c42762f/proofs/source-validation.json) : Desktop complet 1140/1140 sur le runtime final ; Core 554/554 et Plugins 35/35 exécutés sur 10d889d9b, composants inchangés et recontrôlés, soit 1729 scénarios des trois suites. Les 138 ciblés incluent 31 nouveaux tests UI ; quatre nouveaux scénarios Core. [Matrice native du paquet exact](../../artifacts/linux/snapshots/f2c42762f/proofs/native-quick-reference/results.json) : 15 groupes, 51 captures inspectées, deux mutations prévues seulement, sorties normales et processus drainés. Le candidat rouge 10d889d9b reste conservé.
 
-Candidat `10d889d9b` refusé : sélecteur natif correct, mais le premier Échap active seulement Delete Branches. [Preuve native rouge](../../artifacts/linux/snapshots/10d889d9b/proofs/native-quick-reference/results.json) ; aucune mutation de la matrice exécutée. Suite Desktop complète volontairement non lancée sur ce candidat. Core complet 554/554 et Plugins 35/35 réussis. Correction d’activation partagée en cours de validation ; N1 conservé.
-
-Correction d’activation partagée commitée dans `954a1412d` : [138/138 tests Desktop ciblés réussis](../../artifacts/linux/quick-reference-desktop-checks-20261016-05-modal-activation/desktop.trx), compilation sans diagnostic, sources et runtime inchangés pendant le lot. Ce résultat ne remplace ni la suite complète de référence ni le contrôle natif du candidat corrigé ; N1 conservé. Le recensement Roslyn courant couvre 1889 fichiers C#, sans erreur de syntaxe.
+[Debian vérifié par extraction et installation isolée](../../artifacts/linux/snapshots/f2c42762f/proofs/package-runtime-verification.json), SHA256 `d7b004ae6c7bf27b32d6a61ceae244c9b2307e32c6c063d95b29835d118666cf`. Aucun nouveau paquet installé sur l’hôte ni push.

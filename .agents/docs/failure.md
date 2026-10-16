@@ -342,7 +342,7 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Première touche consommée pour activer une modale déjà visible | Mapper la fenêtre et focaliser son champ logique ne prouvent pas l’activation OS. Activer au passage Loaded, après rendu et avant input, sans refaire le choix du champ ; vérifier la toute première frappe sous un vrai gestionnaire de fenêtres. |
 | PID masqué dans le bac à sable pris pour un acteur arrêté | Observer les PID/start-times dans le même environnement que le lancement ; attendre le vrai résultat avant toute relance. |
 
-## Sélecteur rapide de références — en cours
+## Sélecteur rapide de références
 
 | Piège | Règle retenue |
 | --- | --- |

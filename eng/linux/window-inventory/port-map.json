@@ -82,7 +82,7 @@
         "MainWindow"
       ],
       "implemented": "Grille/graphe, sélection, panneaux, menus et focus ; lectures annulables et disposition classique.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Rattachement des tags annotés aux badges, graphe et Copy > Tags encore incorrect : distinguer l’identité brute du tag et son commit cible.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -156,33 +156,28 @@
     "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector": {
       "feature": "Sélection rapide de référence",
       "group": "navigation",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "MainWindow@BranchSuggestionButton",
-        "CheckoutBranchDialog"
+        "QuickGitRefSelectorDialog",
+        "MainWindow@ExecuteQuickReferenceActionAsync"
       ],
-      "implemented": "Menus et combos de branches/références dans des workflows précis.",
-      "remaining": "Le sélecteur autonome est en cours de validation ci-dessous ; le substitut de référence ne couvre pas ses interactions ni le raccord des scripts.",
-      "visual": "integre",
+      "implemented": "Sélecteur compact Windows sans bordure : groupes local/remote/tag, tri culturel, huit lignes, première référence, recherche par frappe native, Entrée/double-clic et annulation. F2/Suppr sur le commit focalisé : zéro/une/plusieurs références, types et hash bruts conservés, revalidation après choix, dialogues métier partagés. Activation avant la première touche et retour aux flèches/F2 vérifiés sous X11/Openbox ; homonymes branche/tag, refus distant explicite, renommage et suppression d’un tag annoté réellement exécutés.",
+      "remaining": "Mode Select prêt dans la fenêtre, mais raccord du moteur de scripts et FormQuickStringSelector non portés. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
+      "visual": "rapproche",
       "tests": [
-        "BranchMenuTests",
-        "BranchHistoryFilterTests"
+        "QuickGitRefSelectorDialogTests",
+        "QuickReferenceWorkflowTests"
       ],
-      "adr": [],
-      "in_progress": {
-        "description": "Sélecteur Windows sans bordure et parcours F2/Suppr intégrés : zéro/une/plusieurs références, groupes, tri, choix typés et gardes de contexte. Compilation et 138 scénarios Desktop ciblés réussis sur le code de 954a1412d, dont 31 nouveaux. Le candidat précédent 10d889d9b a été refusé en natif : premier Échap consommé par le dialogue métier. La correction d’activation partagée attend son contrôle natif et la suite Desktop complète ; N1 conservé. Raccord des scripts non porté.",
-        "linux": [
-          "QuickGitRefSelectorDialog",
-          "MainWindow@ExecuteQuickReferenceActionAsync"
-        ],
-        "tests": [
-          "QuickGitRefSelectorDialogTests",
-          "QuickReferenceWorkflowTests"
-        ],
-        "adr": [
-          "0074"
-        ]
-      }
+      "adr": [
+        "0074"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Git natifs des références rapides",
+          "source": "tests/linux/GitExtensions.Core.Tests/QuickReferenceScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.UserControls.RevisionGrid.FormQuickStringSelector": {
       "feature": "Choix rapide de texte utilisé par les scripts",

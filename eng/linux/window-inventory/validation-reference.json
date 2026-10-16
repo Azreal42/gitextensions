@@ -1,12 +1,12 @@
 {
-  "source_sha": "676a14e2ba34f00c52ec8df9a018474e94501de7",
-  "trx": "artifacts/linux/goto-commit-desktop-checks-20261016-08-full/desktop.trx",
-  "trx_sha256": "40c569da3e4699c4c1024627f84d963c25979c77dffe8c48229d4fccf0d97708",
+  "source_sha": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
+  "trx": "artifacts/linux/quick-reference-desktop-checks-20261016-07-full/desktop.trx",
+  "trx_sha256": "d5fe99f4585cd703265f700accf9cddc2fd1cf56b30d48650c4a4d52ba41fc09",
   "meaning": "Frozen results of actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "1109",
-    "executed": "1109",
-    "passed": "1109",
+    "total": "1140",
+    "executed": "1140",
+    "passed": "1140",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -277,6 +277,12 @@
     "PushDialogTests": {
       "Passed": 25
     },
+    "QuickGitRefSelectorDialogTests": {
+      "Passed": 23
+    },
+    "QuickReferenceWorkflowTests": {
+      "Passed": 8
+    },
     "RangeDiffWorkflowTests": {
       "Passed": 7
     },
@@ -403,26 +409,26 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "cbfa41a8855b4db96997f21d94463ec8c00b865d",
-      "code_equivalent_to": "676a14e2ba34f00c52ec8df9a018474e94501de7",
-      "passed": 550,
-      "total": 550,
-      "execution_result": "artifacts/linux/goto-commit-core-20261016-02/full-result.json",
-      "source_hashes_verified": 198,
+      "source_sha": "10d889d9b8102169c2478aeb068e41fdfda5178a",
+      "code_equivalent_to": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
+      "passed": 554,
+      "total": 554,
+      "execution_result": "artifacts/linux/quick-reference-core-checks-20261016-02-full/full-result.json",
+      "source_hashes_verified": 200,
       "runtime_hashes_verified": 8,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
+      "meaning": "Actual complete execution on 10d889d9b; subsequent Desktop activation and documentation changes leave these components unchanged. Not rerun on the final candidate; recorded source/runtime inputs independently reverified."
     },
     "plugins": {
-      "source_sha": "cbfa41a8855b4db96997f21d94463ec8c00b865d",
-      "code_equivalent_to": "676a14e2ba34f00c52ec8df9a018474e94501de7",
+      "source_sha": "10d889d9b8102169c2478aeb068e41fdfda5178a",
+      "code_equivalent_to": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/goto-commit-plugins-checks-20261016-01/plugins-result.json",
-      "source_hashes_verified": 152,
+      "execution_result": "artifacts/linux/quick-reference-plugins-checks-20261016-01/plugins-result.json",
+      "source_hashes_verified": 153,
       "runtime_hashes_verified": 10,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
+      "meaning": "Actual complete execution on 10d889d9b; subsequent Desktop activation and documentation changes leave these components unchanged. Not rerun on the final candidate; recorded source/runtime inputs independently reverified."
     }
   }
 }
