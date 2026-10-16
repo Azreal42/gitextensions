@@ -478,6 +478,7 @@ public sealed partial class MainWindow : Window
     {
         if (_busy) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
+        OperationFocus? previousFocus = CaptureOperationFocus();
         bool resumeSelection = BrowserReads.Any(read => read.Current is not null);
         CancelBrowserReads();
         _busy = true;
@@ -513,6 +514,7 @@ public sealed partial class MainWindow : Window
                 await LoadVisibleRevisionPanelAsync();
                 if ((_tabs.SelectedItem as TabItem)?.Name == "ChangesTab") { await LoadSelectedDiffAsync(); }
             }
+            RestoreOperationFocus(previousFocus);
         }
     }
 

@@ -364,7 +364,7 @@ public sealed partial class MainWindow
             item.Icon = OriginalIconImage(icon);
         }
         _actionMenus.Add(item);
-        item.Click += async (_, _) => { try { await action(); } catch (Exception exception) { AppendOutput(exception.Message); } };
+        item.Click += async (_, _) => { try { await WithMenuActionFocusAsync(item, action); } catch (Exception exception) { AppendOutput(exception.Message); } };
         return item;
     }
 

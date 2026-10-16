@@ -76,6 +76,7 @@ public sealed class HistoryFilterDialog : Window
         root.Children.Add(buttons);
         root.Children.Add(fields);
         Content = root;
+        Opened += (_, _) => _sinceEnabled.Focus();
     }
 
     public GitLogQuery ReadQuery() => new()

@@ -24,7 +24,7 @@ public sealed partial class MainWindow
         {
             if (args.Source != item || !item.IsEnabled) { return; }
             args.Handled = true;
-            try { await action(); }
+            try { await WithMenuActionFocusAsync(item, action); }
             catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
             catch (Exception error)
             {

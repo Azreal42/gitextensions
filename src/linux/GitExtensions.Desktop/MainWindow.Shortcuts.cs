@@ -8,7 +8,9 @@ namespace GitExtensions.Linux.Desktop;
 public sealed partial class MainWindow
 {
     // Defaults from HotkeySettingsManager/FormBrowse and RevisionGridControl.
-    private async void HandleShortcuts(object? sender, KeyEventArgs e)
+    private async void HandleShortcuts(object? sender, KeyEventArgs e) => await HandleShortcutsAsync(sender, e);
+
+    private async Task HandleShortcutsAsync(object? sender, KeyEventArgs e)
     {
         if (_busy || e.Handled) { return; }
         // Window tunnel handlers run before the focused viewer. Preserve the
@@ -62,7 +64,11 @@ public sealed partial class MainWindow
         if (action is not null)
         {
             e.Handled = true;
-            try { await action(); }
+            try
+            {
+                if (ReferenceEquals(sender, _revisionContext)) { _revisionContext?.Close(); }
+                await action();
+            }
             catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
             return;
         }

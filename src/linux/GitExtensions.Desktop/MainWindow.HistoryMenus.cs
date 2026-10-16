@@ -134,16 +134,16 @@ public sealed partial class MainWindow
         }
     }
 
-    private async Task<bool> HandleHistoryMenuShortcutAsync(KeyEventArgs args)
+    private async Task<bool> HandleHistoryMenuShortcutAsync(KeyEventArgs args, Action? beforeExecute = null)
     {
         if (args.KeyModifiers == KeyModifiers.None && args.Key is Key.BrowserBack or Key.BrowserForward)
         {
-            args.Handled = true; await NavigateRevisionHistoryAsync(args.Key == Key.BrowserBack ? -1 : 1); return true;
+            args.Handled = true; beforeExecute?.Invoke(); await NavigateRevisionHistoryAsync(args.Key == Key.BrowserBack ? -1 : 1); return true;
         }
         HistoryCommand? command = NavigateHistoryCommands().Concat(ViewHistoryCommands()).FirstOrDefault(c => c.Gesture is { } g && g.Key == args.Key && g.KeyModifiers == args.KeyModifiers);
         if (command is null || command.Available?.Invoke() == false || command.Execute is null) { return false; }
         args.Handled = true;
-        try { await command.Execute(); }
+        try { beforeExecute?.Invoke(); await command.Execute(); }
         catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
         finally { RefreshHistoryMenuStates(); }
         return true;
@@ -152,11 +152,14 @@ public sealed partial class MainWindow
     private async void HistoryMenuKeyDown(object? sender, KeyEventArgs args)
     {
         if (_busy || args.Handled || _repository is null) { return; }
-        if (await HandleHistoryMenuShortcutAsync(args))
+        void CloseMenu()
         {
             if (sender is MenuItem menu) { menu.IsSubMenuOpen = false; }
             _revisionContext?.Close();
         }
+        async Task ExecuteAsync() { await HandleHistoryMenuShortcutAsync(args, CloseMenu); }
+        if (sender is MenuItem source) { await WithMenuActionFocusAsync(source, ExecuteAsync); }
+        else { await ExecuteAsync(); }
     }
 
     private async void HistoryAltKeyDown(object? sender, KeyEventArgs args)

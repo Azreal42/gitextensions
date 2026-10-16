@@ -24,7 +24,7 @@ public sealed partial class MainWindow
         item.Click += async (_, args) =>
         {
             if (args.Source != item || !item.IsEnabled || _busy || _repository is null || (worktree && _repository.IsBare)) { return; }
-            try { await action(); }
+            try { await WithRevisionActionFocusAsync(action); }
             catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
         };
         _revisionActions.Add((item, worktree, available));
@@ -61,11 +61,8 @@ public sealed partial class MainWindow
         _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
         _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
         _revisionContext.Closed += (_, _) => QueuePendingRevisionDetails();
-        _revisionContext.AddHandler(KeyDownEvent, (_, args) =>
-        {
-            if (args.KeyModifiers == KeyModifiers.Control && args.Key is Key.B or Key.T) { _revisionContext.Close(); }
-            HandleShortcuts(this, args);
-        }, RoutingStrategies.Tunnel);
+        _revisionContext.AddHandler(KeyDownEvent, async (_, args) =>
+            await WithRevisionActionFocusAsync(() => HandleShortcutsAsync(_revisionContext, args)), RoutingStrategies.Tunnel);
         _commits.AddHandler(PointerPressedEvent, (_, args) =>
         {
             if (!args.GetCurrentPoint(_commits).Properties.IsRightButtonPressed || args.Source is not Control source) { return; }
@@ -139,7 +136,7 @@ public sealed partial class MainWindow
             item.Click += async (_, args) =>
             {
                 if (args.Source != item || _busy || repository is null || repository != _repository) { return; }
-                try { await action(); } catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
+                try { await WithRevisionActionFocusAsync(action); } catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
             };
             return item;
         }
