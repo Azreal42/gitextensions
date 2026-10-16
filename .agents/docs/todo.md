@@ -92,7 +92,7 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 
 - Focus : retours Create/Rename/Compare et F5 vérifiés sur7a ; Filter revisions ouvert depuis View/Ctrl+I reste inactif en natif. Réutiliser l’activation modale partagée, puis vérifier première Échap et flèches sans clic de réparation. Browse reste N2.
 - Compare : garder le filtre éditable pendant la lecture ciblée, éviter la relecture du fichier identique et rejeter les résultats périmés. Le natif7a reçoit seulement c sur context-focus-compare ; correctif isolé en cours.
-- Scripts : relier les trois saisies N1 au contexte actif, au lanceur, aux événements, menus et raccourcis ; prendre en compte le drainage du picker natif. ADR 0057/0078.
+- Scripts : pont de préparation typée intégré après25 Core/94 Desktop isolés ; suite complète suivante requise. Relier le contexte actif, le lanceur, les événements, menus et raccourcis ; conserver argv avant Quote et attendre le picker natif. Les trois saisies restent N1. ADR 0057/0078.
 - Préférences : pages absentes de raccourcis, scripts/événements, langue, fontes et outils ; réglages distribués et tri/priorités Windows, dont repli GitDefault sans --date-order.
 - Navigation : recherche incrémentale, choix interactif des parents/enfants, CI/superproject et véritables fournisseurs PR/hébergement.
 - Réseau : scripts Before/After, Process par remote pour suppression distante, variantes multi-URL/atomic, destination locale Fetch/source URL, fermeture native des propriétaires et sortie continue.

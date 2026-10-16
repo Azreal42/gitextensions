@@ -21,6 +21,8 @@ internal static class ScriptScenarios
         ("script provider declared order and global precedence match the original union", ProviderOrderAsync),
         ("script folder paths lines and columns use explicit Windows or POSIX escaping", FilesAsync),
         ("script user input labels and repeated placeholders match Windows prompt oracles", InputsAsync),
+        ("script labeled input preserves exact whitespace and consumes each recognized token once", ExactInputTokensAsync),
+        ("script quoted user input retains quotes trailing backslash and ordinary substitutions", LiteralInputValuesAsync),
         ("script prompt defaults resolve HEAD and failures before input", DefaultsAsync),
         ("script UserFiles and anonymous input distinguish empty accepted from cancelled", InputCancellationAsync),
         ("script confirmation refusal and unavailable input never produce a command", ConfirmationAsync),
@@ -272,6 +274,56 @@ internal static class ScriptScenarios
         ScriptExpansionResult noDefault = await ScriptTemplate.PrepareAsync(Script("{UserInput:input label1}"), new(), (request, _) =>
         { Check(request.DefaultValue == "", "Missing default is empty, not null."); return Task.FromResult(new ScriptReply(ScriptReplyKind.Accepted, "foo1")); });
         Check(noDefault.Arguments == "foo1", "No-default labeled input.");
+    }
+
+    private static async Task ExactInputTokensAsync()
+    {
+        foreach (bool quoted in new[] { false, true })
+        {
+            const string label = " Label \t ";
+            const string value = "  exact  ";
+            string token = "{UserInput:" + label + "=" + value + "}";
+            if (quoted) { token = "{" + token + "}"; }
+            List<ScriptRequest> seen = [];
+            ScriptExpansionResult result = await ScriptTemplate.PrepareAsync(Script(token + "|{UserInput:" + label + "}|{{UserInput:" + label + "}}"), new(), (request, _) =>
+            {
+                seen.Add(request);
+                return Task.FromResult(seen.Count == 1 ? new ScriptReply(ScriptReplyKind.Accepted, "  accepted  ") : new ScriptReply(ScriptReplyKind.Cancelled));
+            });
+            string expected = (quoted ? "\"  accepted  \"" : "  accepted  ") + "|  accepted  |\"  accepted  \"";
+            Check(result.Status == ScriptExpansionStatus.Completed && result.Arguments == expected && seen.Count == 1,
+                $"Exact UserInput token must terminate after one request (quoted={quoted}, status={result.Status}, calls={seen.Count}).");
+            Check(seen[0].Label == label && seen[0].Option == "UserInput:" + label && seen[0].DefaultValue == value,
+                "Label, option and leading/trailing default spaces are literal prompt text.");
+        }
+        int calls = 0;
+        ScriptExpansionResult distinct = await ScriptTemplate.PrepareAsync(Script("{UserInput:Label=one}|{UserInput:Label =two}|{UserInput:Label}"), new(), (request, _) =>
+        {
+            calls++;
+            return Task.FromResult(calls > 2 ? new ScriptReply(ScriptReplyKind.Cancelled) : new ScriptReply(ScriptReplyKind.Accepted, request.Label == "Label" ? "first" : "second"));
+        });
+        Check(distinct.Status == ScriptExpansionStatus.Completed && distinct.Arguments == "first|second|first" && calls == 2,
+            "Labels differing by trailing space stay distinct and an exact repeated label reuses its answer.");
+    }
+
+    private static async Task LiteralInputValuesAsync()
+    {
+        const string value = "  say \"hi\" and \\\"kept\\\" tail\\";
+        const string quotedValue = "\"  say \\\"hi\\\" and \\\"kept\\\" tail\\\\\"";
+        foreach (bool quoted in new[] { false, true })
+        {
+            string token = "{UserInput:Exact label=  \"default\" C:\\dir\\  }";
+            if (quoted) { token = "{" + token + "}"; }
+            int calls = 0;
+            ScriptExpansionResult result = await ScriptTemplate.PrepareAsync(Script("{{WorkingDir}}|" + token + "|{RepoName}"), Facts(), (request, _) =>
+            {
+                calls++;
+                Check(request.Label == "Exact label" && request.DefaultValue == "  \"default\" C:\\dir\\  ", "Quotes, backslashes and trailing spaces in defaults are not normalized.");
+                return Task.FromResult(calls == 1 ? new ScriptReply(ScriptReplyKind.Accepted, value) : new ScriptReply(ScriptReplyKind.Cancelled));
+            });
+            Check(result.Status == ScriptExpansionStatus.Completed && calls == 1 && result.Arguments == "\"/literal repo/\"|" + (quoted ? quotedValue : value) + "|Friendly description",
+                $"Input quoting and ordinary variables retain their established forms (quoted={quoted}, status={result.Status}, calls={calls}, arguments={result.Arguments}).");
+        }
     }
 
     private static async Task DefaultsAsync()

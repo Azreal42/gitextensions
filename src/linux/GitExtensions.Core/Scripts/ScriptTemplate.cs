@@ -50,6 +50,11 @@ public static class ScriptTemplate
             .Replace(CreateOption(option, false), string.Join(' ', values), StringComparison.Ordinal);
     }
 
+    // Prompt labels and defaults are literal text, unlike generic option names.
+    private static string ReplaceUserInput(string option, string arguments, string value)
+        => arguments.Replace("{{" + option + "}}", Quote(value), StringComparison.Ordinal)
+            .Replace("{" + option + "}", value, StringComparison.Ordinal);
+
     private static string Quote(string value)
     {
         string quoted = '"' + Quotes.Replace(value, "\\\"");
@@ -144,8 +149,8 @@ public static class ScriptTemplate
                 ScriptReply? reply = await RequestAsync(new(ScriptRequestKind.UserInput, scriptName, "UserInput:" + label, label, defaultValue.Arguments)).ConfigureAwait(false);
                 if (reply is null) { return Result(null, ScriptExpansionStatus.Aborted, ScriptExpansionError.InputUnavailable); }
                 if (reply.Kind != ScriptReplyKind.Accepted) { return Result(null, ScriptExpansionStatus.Cancelled); }
-                arguments = ReplaceOption("UserInput:" + label, arguments, [reply.Value ?? ""]);
-                arguments = ReplaceOption(match.Value[1..^1], arguments, [reply.Value ?? ""]);
+                arguments = ReplaceUserInput("UserInput:" + label, arguments, reply.Value ?? "");
+                arguments = ReplaceUserInput(match.Value[1..^1], arguments, reply.Value ?? "");
             }
             foreach (string option in new[] { "UserInput", "UserFiles" })
             {

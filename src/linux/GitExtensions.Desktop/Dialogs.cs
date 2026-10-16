@@ -1,6 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Styling;
+using Avalonia.Threading;
 using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
@@ -63,8 +67,16 @@ internal static class Dialogs
         => ConfirmAsync(owner, title, message, "Yes", "No", true);
 
     public static async Task<bool> ConfirmAsync(Window owner, string title, string message, string? acceptLabel = null, string? cancelLabel = null, bool acceptIsDefault = false)
+        => await ConfirmChoiceAsync(owner, title, message, acceptLabel, cancelLabel, acceptIsDefault) == true;
+
+    // A nullable decision distinguishes a declined question from closing it.
+    // The bool facade retains the historical false result in both cases.
+    internal static async Task<bool?> ConfirmChoiceAsync(Window owner, string title, string message,
+        string? acceptLabel = null, string? cancelLabel = null, bool acceptIsDefault = false, CancellationToken cancellationToken = default,
+        TranslationCatalog? translations = null, ThemeVariant? requestedThemeVariant = null)
     {
-        TranslationCatalog translations = TranslationCatalog.LoadDefault();
+        cancellationToken.ThrowIfCancellationRequested();
+        translations ??= TranslationCatalog.LoadDefault();
         title = translations.Translate(title);
         message = translations.Translate(message);
         Window dialog = new()
@@ -73,12 +85,15 @@ internal static class Dialogs
             Width = 520,
             SizeToContent = SizeToContent.Height,
             CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            RequestedThemeVariant = requestedThemeVariant
         };
         Button cancel = new() { Content = translations.Translate(cancelLabel ?? "Cancel"), IsCancel = true, IsDefault = !acceptIsDefault };
         Button accept = new() { Content = translations.Translate(acceptLabel ?? title), IsDefault = acceptIsDefault };
         cancel.Click += (_, _) => dialog.Close(false);
         accept.Click += (_, _) => dialog.Close(true);
+        dialog.AddHandler(InputElement.KeyDownEvent, (_, args) =>
+        { if (!args.Handled && args.Key == Key.Escape) { args.Handled = true; dialog.Close(null); } }, RoutingStrategies.Tunnel);
         dialog.Content = new StackPanel
         {
             Margin = new Thickness(12),
@@ -89,7 +104,15 @@ internal static class Dialogs
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, accept } }
             }
         };
-        return await dialog.ShowDialog<bool>(ActiveOwner(owner));
+        using CancellationTokenRegistration close = cancellationToken.Register(() => Dispatcher.UIThread.Post(() => { if (dialog.IsVisible) { dialog.Close(null); } }));
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            bool? answer = await dialog.ShowDialog<bool?>(ActiveOwner(owner));
+            cancellationToken.ThrowIfCancellationRequested();
+            return answer;
+        }
+        finally { dialog.Close(); }
     }
 
     private static Window ActiveOwner(Window owner)

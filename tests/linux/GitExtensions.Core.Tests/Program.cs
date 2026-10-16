@@ -193,6 +193,7 @@ if (args.Contains("--submodule-conflict-only", StringComparer.Ordinal)) { tests 
 if (args.Contains("--askpass-modes-only", StringComparer.Ordinal))
 { tests = [("askpass isolates response streams and preserves explicit helpers", AskpassAsync), .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All]; }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
+if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptScenarios.All.ToArray(); }
 
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)

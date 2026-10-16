@@ -9,6 +9,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
+| Texte préparé pris pour un argv Linux exact | Quote hérité n’est pas injectif : antislashs/guillemets distincts peuvent produire le même texte. Conserver les bornes avant encodage ; ArgumentList testé17/17, texte hérité12/17. Aucun shell implicite ni runner intégré. |
 | Compare perd la saisie rapide du filtre | Remplacer ItemsSource réémet SelectionChanged puis RunAsync désactive le champ. Garder la lecture ciblée indépendante, identifier la demande et ne publier que la sélection courante ; rouge natif7a conservé. |
 | Filtre historique visible mais inactif | Focaliser un contrôle à Opened ne garantit pas l’activation X11. Réutiliser ModalWindowActivation.AfterMapping déjà partagé par les dialogues de dépôt et GoTo ; le replay7a expire avant la première Échap, sans preuve de son traitement. |
 | Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
@@ -384,3 +385,8 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Le popup possède le focus au lancement, pas la grille | Transmettre explicitement l’origine pour les actions directes, dynamiques, partagées et leurs raccourcis. Ne pas restaurer à chaque Closed. |
 | Le bookmark survit à la première opération et contamine la suivante | Consommer l’origine à la capture ; nettoyer par identité sans réinstaller un ancien scope. |
 | Le filtre reste ouvert après Échap malgré un popup déjà fermé | Tracer la destination réelle de la touche. Ici le focus restait au propriétaire ; donner au filtre son premier contrôle interactif. La seule fermeture préalable du popup ne suffisait pas. |
+
+## Préparation typée des scripts
+
+- Défaut UserInput terminé par des espaces : le remplacement générique trimait son nom et ne consommait plus le jeton. Remplacer le jeton littéral ; deux régressions bornées conservent les refus/annulations et les autres variables.
+- Ordre des demandes : UserInput précède UserFiles, même si le texte place UserFiles en premier. Les fixtures doivent suivre ce contrat hérité, sans changer silencieusement le parseur.
