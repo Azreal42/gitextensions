@@ -116,9 +116,10 @@ public sealed partial class MainWindow
         _actionButtons.Add(_scopeButton);
         toolbar.Add(_scopeButton, _scopeOverflow);
         ConfigureBranchFilter(_historyRevision, "BranchHistoryFilter");
-        Grid branchFilter = ToolbarField(T("Branches:"), _historyRevision);
+        Grid branchFilter = ToolbarField(T("Branches:"), _historyRevision); branchFilter.Name = "HistoryToolbarBranches";
         toolbar.Add(branchFilter, BranchFilterOverflow());
-        toolbar.Add(BranchSuggestionButton(), BranchSuggestionOverflow());
+        Control suggestions = BranchSuggestionButton();
+        toolbar.Add(suggestions, BranchSuggestionOverflow());
         _quickHistoryFilter.KeyDown += async (_, args) =>
         { if (args.Key == Key.Enter && !_busy) { args.Handled = true; await ApplyQuickHistoryFilterAsync(); } };
         Button type = new() { Name = "RevisionQuickFilterType", Content = OriginalIconImage("FunnelPencil.png"),
@@ -150,7 +151,7 @@ public sealed partial class MainWindow
             return copy;
         }).ToArray() };
 
-        Grid quick = ToolbarField(T("Filter:"), _quickHistoryFilter, type);
+        Grid quick = ToolbarField(T("Filter:"), _quickHistoryFilter, type); quick.Name = "HistoryToolbarQuickFilter";
         MenuItem quickOverflow = new() { Header = T("Filter:"), ItemsSource = new Control[]
         { ToolbarInput("RevisionQuickFilterOverflow", "Filter:", _quickHistoryFilter, ApplyQuickHistoryFilterAsync), overflowTypes } };
         toolbar.Add(quick, quickOverflow);

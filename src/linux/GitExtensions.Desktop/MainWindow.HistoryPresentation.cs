@@ -23,6 +23,14 @@ public sealed partial class MainWindow
         // and fall back to the configured user only when selection is empty.
         if (selected.Length == 1) { _authoredEmail = selected[0].AuthorEmail; }
         else if (selected.Length == 0) { _authoredEmail = _configuredUserEmail; }
+        string? revision = selected.FirstOrDefault()?.Hash;
+        if (!ReferenceEquals(_relationshipSource, _history) || _relationshipRevision != revision)
+        {
+            _relationshipSource = _history; _relationshipRevision = revision;
+            _relatedHistory = RelatedHistory(revision, true);
+        }
+        _historyGraph.RelatedHashes = _highlightedHistoryBranch ?? (_historyView.DrawNonRelativesGray ? _relatedHistory : null);
+        _historyGraph.IsVisible = _historyView.ShowGraph;
         _historyGraph.SelectedHashes = selected.Select(commit => commit.Hash).ToArray();
         _historyGraph.SelectionFocused = _commits.IsKeyboardFocusWithin;
         _historyGraph.AuthoredEmail = _authoredEmail;
@@ -37,6 +45,7 @@ public sealed partial class MainWindow
         { if (entry.Hash == commit.Hash) { break; } index++; }
         bool selected = _commits.SelectedItems?.OfType<GitCommit>().Any(entry => entry.Hash == commit.Hash) == true;
         RevisionHistoryRow.UpdateState(row, selected, _commits.IsKeyboardFocusWithin, _authoredEmail, index);
+        ApplyHistoryRowOptions(row, commit);
     }
 
     private Control BuildVirtualRevisionRows()
@@ -82,7 +91,7 @@ public sealed partial class MainWindow
 
     private void UpdateVirtualRevisionRows(GitStatus status)
     {
-        if (_virtualRevisions is not null) { _virtualRevisions.IsVisible = _repository?.IsBare != true; }
+        if (_virtualRevisions is not null) { _virtualRevisions.IsVisible = _historyView.ShowArtificialCommits && _repository?.IsBare != true; }
         int working = status.Changes.Count(change => change.IsModified || change.IsUntracked);
         int indexed = status.Changes.Count(change => change.IsStaged);
         foreach ((Button? button, TextBlock? state, int count) in new[] { (_workingRevision, _workingRevisionState, working), (_indexRevision, _indexRevisionState, indexed) })

@@ -20,6 +20,7 @@ public sealed partial class MainWindow
         { RequestedThemeVariant = ActualThemeVariant };
         GitLogQuery? query = await dialog.ShowDialog<GitLogQuery?>(this);
         if (query is null) { return; }
+        _historyView = _historyView with { ShowReflog = query.Reflog };
         await ApplyBranchFilterAsync(query, dialog.RememberedBranchFilter, dialog.IsBranchFilterEnabled);
     }
 

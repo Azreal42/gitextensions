@@ -111,6 +111,7 @@ public sealed partial class MainWindow
 
     private void RefreshRevisionContextMenu()
     {
+        RefreshHistoryMenuStates();
         if (_revisionContext is null) { return; }
         bool selected = !_busy && _repository is not null && SelectedComparisonCommits().Length > 0;
         _revisionContext.IsEnabled = selected;

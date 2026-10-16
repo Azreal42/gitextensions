@@ -253,6 +253,12 @@ public sealed partial class MainWindow
     private void FocusHistoryFilter()
     {
         Control field = _quickHistoryFilter.IsFocused || _quickFilterOverflowInput?.IsFocused == true ? _historyRevision : _quickHistoryFilter;
+        string name = ReferenceEquals(field, _historyRevision) ? "HistoryToolbarBranches" : "HistoryToolbarQuickFilter";
+        if (!_historyView.ShowFilterToolbar || _historyView.HiddenToolbarItems.Contains(name))
+        {
+            _historyView = _historyView with { ShowFilterToolbar = true, HiddenToolbarItems = _historyView.HiddenToolbarItems.Where(key => key != name).ToArray() };
+            ApplyHistoryToolbarVisibility(); RefreshHistoryMenuStates(); UpdateLayout();
+        }
         Control revealed = _browserToolbar?.Reveal(field) ?? field;
         if (revealed is BranchHistoryFilterComboBox combo) { combo.FocusEditor(selectAll: true); }
         else if (revealed is TextBox editor) { editor.Focus(); editor.SelectAll(); }

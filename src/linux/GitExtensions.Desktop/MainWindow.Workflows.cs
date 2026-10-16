@@ -473,6 +473,7 @@ public sealed partial class MainWindow
 
     private Task SaveCurrentViewSettingsAsync()
     {
+        _historyViewStore.Save(_historyView);
         if (!new DiffViewerPreferencesStore().SaveCurrentViewSettingsAsDefault())
         {
             string message = T("Unable to save settings.");

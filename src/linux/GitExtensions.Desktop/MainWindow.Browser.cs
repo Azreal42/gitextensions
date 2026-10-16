@@ -286,14 +286,8 @@ public sealed partial class MainWindow
         {
             MenuGroup("Start", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), _favoritesMenu, _recentMenu, MenuAction("Dashboard", CloseRepositoryAsync), MenuAction("Refresh dashboard", RefreshDashboardAsync), MenuAction("Recent repositories settings", RecentRepositorySettingsAsync), MenuAction("Close", CloseRepositoryAsync)),
             MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), BuildGitMaintenanceMenu(), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
-            MenuGroup("Navigate", MenuAction("Parent revision", () => { SelectRelativeCommit(parent: true); return Task.CompletedTask; }),
-                MenuAction("Child revision", () => { SelectRelativeCommit(parent: false); return Task.CompletedTask; }),
-                MenuAction("All branches", () => SetHistoryScopeAsync(true)), MenuAction("Current branch", () => SetHistoryScopeAsync(false)),
-                MenuAction("Filter revisions…", FilterHistoryAsync)),
-            MenuGroup("View", MenuAction("Show left panel", ToggleNavigationAsync),
-                new MenuItem { Header = T("Commit info position"), ItemsSource = Enum.GetValues<CommitInfoPosition>().Select(position =>
-                    MenuAction(CommitInfoLayoutDescription(position).Label, () => { ApplyCommitInfoLayout(position, persist: true); return Task.CompletedTask; }, CommitInfoLayoutDescription(position).Icon)).ToArray() },
-                MenuAction("Theme", ChangeThemeAsync), SaveViewSettingsMenu()),
+            BuildHistoryNavigateMenu(),
+            BuildHistoryViewMenu(),
             BuildCommandsMenu(),
             MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
             MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Concat(LifecycleSettingsPlugins()).Select(PluginMenuItem).ToArray()),

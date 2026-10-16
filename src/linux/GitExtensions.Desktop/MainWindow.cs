@@ -72,7 +72,8 @@ public sealed partial class MainWindow : Window
         }
 
         LoadRepositoryHistory();
-        _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) };
+        _historyView = _historyViewStore.Load();
+        _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog };
         _historyWindow = _historyQuery.Count;
         _commits.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
@@ -147,6 +148,7 @@ public sealed partial class MainWindow : Window
             }
         };
         Content = BuildLayout();
+        ApplyHistoryViewPresentation();
         ApplyTheme(_preferences.Theme);
         Opened += async (_, _) =>
         {
@@ -348,7 +350,7 @@ public sealed partial class MainWindow : Window
             HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
             object? selectedRevisionDiff = changedRepository ? null : (_revisionFiles.SelectedItem as TreeViewItem)?.Tag;
             string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
-            GitLogQuery configuredQuery = opening ? new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000) } : _historyQuery;
+            GitLogQuery configuredQuery = opening ? new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog } : _historyQuery;
             int historyWindow = opening ? configuredQuery.Count : _historyWindow;
             // The toolbar editor is a draft. Refresh/background fetch/load more
             // may only query the expression explicitly accepted by the user.
@@ -362,6 +364,7 @@ public sealed partial class MainWindow : Window
                 configuredQuery = configuredQuery with { All = true, Revision = null, BranchFilter = null };
                 historyWindow = configuredQuery.Count;
             }
+            configuredQuery = ConfigureHistoryViewQuery(configuredQuery);
             GitLogQuery query = configuredQuery with
             {
                 Count = historyWindow + 1,
@@ -377,6 +380,7 @@ public sealed partial class MainWindow : Window
             IReadOnlyList<GitSubmodule> submodules = await repository.GetSubmodulesAsync(Token);
             var configuration = await repository.GetConfigAsync(cancellationToken: Token);
             GitCommit[] visibleHistory = history.Take(historyWindow).ToArray();
+            await LoadHistoryViewMetadataAsync(repository, visibleHistory, Token);
             string treeRevision = visibleHistory.FirstOrDefault(commit => commit.Hash == selectedHash)?.Hash
                 ?? visibleHistory.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))?.Hash
                 ?? visibleHistory.FirstOrDefault()?.Hash ?? "HEAD";
@@ -423,8 +427,9 @@ public sealed partial class MainWindow : Window
             _history = visibleHistory;
             if (_historyMore is not null) { _historyMore.IsVisible = _historyHasMore; }
             _historyGraph.Commits = _history;
-            _historyGraph.References = references;
+            _historyGraph.References = HistoryViewReferences(references);
             _historyGraph.CurrentHead = status.Head;
+            _highlightedHistoryBranch = null;
             _commits.ItemsSource = _historyGraph.OrderedCommits;
             _commits.SelectedItem = _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == selectedHash)
                 ?? _historyGraph.OrderedCommits.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))
@@ -463,7 +468,7 @@ public sealed partial class MainWindow : Window
             }
             else { _changesContent?.ClearImage(); _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
         }
-        finally { _refreshing = false; UpdateHistoryPresentation(); }
+        finally { _refreshing = false; RememberRevisionNavigation(); UpdateHistoryPresentation(); }
     }
 
     private async Task RunAsync(string label, Func<GitRepository, Task> action, bool refresh = true, bool requireRepository = true)

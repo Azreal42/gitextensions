@@ -9,31 +9,7 @@ public sealed partial class MainWindow
     private GitRepository? _revisionNavigationRepository;
     private bool _movingRevisionNavigation;
 
-    private MenuItem BuildRevisionNavigateMenu()
-    {
-        MenuItem Item(string name, string label, Func<Task> action, string? icon = null, Func<bool>? available = null)
-            => RevisionAction("RevisionNavigate" + name, name, label, action, icon, available: available);
-        return new MenuItem
-        {
-            Name = "RevisionNavigate", Header = RevisionHeader("navigateToolStripMenuItem", "&Navigate"), Icon = OriginalIconImage("GotoCommit.png"),
-            ItemsSource = new object[]
-            {
-                Item("Current", "Go to current revision", () => NavigateToRevisionAsync("HEAD"), "GotoCurrentRevision.png"),
-                Item("Commit", "Go to commit...", GoToRevisionAsync, "GotoCommit.png"), new Separator(),
-                Item("Child", "Go to child commit", () => { SelectRelativeCommit(false); return Task.CompletedTask; }, "GoToChildCommit.png",
-                    () => _commits.SelectedItem is GitCommit commit && _history.Any(child => child.Parents.Contains(commit.Hash))),
-                Item("Parent", "Go to parent commit", () => { SelectRelativeCommit(true); return Task.CompletedTask; }, "GoToParentCommit.png", HasRevisionParent),
-                Item("FirstParent", "Go to first parent commit", () => { SelectRelativeCommit(true); return Task.CompletedTask; }, "GoToFirstParentCommit.png", HasRevisionParent),
-                Item("LastParent", "Go to last parent commit", () => { SelectRelativeCommit(true, true); return Task.CompletedTask; }, "GoToLastParentCommit.png", HasRevisionParent),
-                Item("MergeBase", "Go to common ancestor (merge base)", NavigateToMergeBaseAsync, "GoToMergeBaseCommit.png", () => SelectedComparisonCommits().Length >= 2), new Separator(),
-                Item("Backward", "Navigate backward", () => NavigateRevisionHistoryAsync(-1), "NavigateBackward.png", () => _revisionNavigationIndex > 0),
-                Item("Forward", "Navigate forward", () => NavigateRevisionHistoryAsync(1), "NavigateForward.png", () => _revisionNavigationIndex >= 0 && _revisionNavigationIndex + 1 < _revisionNavigation.Count), new Separator(),
-                Item("Search", "Quick search", () => { FocusHistoryFilter(); return Task.CompletedTask; }),
-                Item("SearchPrevious", "Quick search previous", () => SearchRevisionAsync(-1)),
-                Item("SearchNext", "Quick search next", () => SearchRevisionAsync(1))
-            }
-        };
-    }
+    private MenuItem BuildRevisionNavigateMenu() => BuildHistoryNavigateMenu(context: true);
 
     private bool HasRevisionParent() => _commits.SelectedItem is GitCommit { Parents.Count: > 0 };
 
@@ -66,16 +42,18 @@ public sealed partial class MainWindow
         GitCommit? row = _history.FirstOrDefault(commit => commit.Hash == hash);
         if (row is null) { _state.Text = T("The revision is not visible with the current history filters.") + " " + hash; return; }
         _commits.SelectedItems?.Clear(); _commits.SelectedItem = row; _commits.ScrollIntoView(row);
+        _commits.Focus();
     }
 
     private async Task NavigateToMergeBaseAsync()
     {
         GitCommit[] selected = SelectedComparisonCommits();
-        if (selected.Length < 2) { return; }
+        if (selected.Length == 0) { return; }
         string? hash = null; GitRepository? repository = _repository;
         await RunAsync("Merge base", async r =>
         {
-            GitResult result = await r.RunAsync(new[] { "merge-base", "--octopus" }.Concat(selected.Select(commit => commit.Hash)).ToArray(), Token);
+            string[] revisions = selected.Length == 1 ? [selected[0].Hash, "HEAD"] : selected.Select(commit => commit.Hash).ToArray();
+            GitResult result = await r.RunAsync(new[] { "merge-base", "--octopus" }.Concat(revisions).ToArray(), Token);
             if (!result.Success) { throw new GitCommandException(["merge-base"], result); }
             hash = result.StandardOutput.Trim();
         }, refresh: false);
@@ -108,19 +86,5 @@ public sealed partial class MainWindow
         return Task.CompletedTask;
     }
 
-    private MenuItem BuildRevisionViewMenu()
-    {
-        MenuItem[] branches = HistoryScopeChoices("RevisionContext");
-        string[] labels = ["Show all branches", "Show current branch only", "Show filtered branches"];
-        for (int i = 0; i < branches.Length; i++) { branches[i].Header = T(labels[i]); }
-        return new MenuItem
-        {
-            Name = "RevisionView", Header = T("View"), Icon = OriginalIconImage("AdvancedSettings.png"), ItemsSource = new object[]
-            {
-                branches[0], branches[1], branches[2], new Separator(),
-                RevisionAction("RevisionAdvancedFilter", "AdvancedFilter", "Advanced filter...", FilterHistoryAsync), new Separator(),
-                new MenuItem { Header = T("Settings persistence"), IsEnabled = false }, SaveViewSettingsMenu()
-            }
-        };
-    }
+    private MenuItem BuildRevisionViewMenu() => BuildHistoryViewMenu(context: true);
 }

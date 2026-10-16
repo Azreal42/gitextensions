@@ -207,3 +207,13 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Clic de commit/fichier fait clignoter toute la fenêtre et perd les flèches haut/bas | Une lecture passait par RunAsync/SetActionsEnabled et libérait le focus natif. Séquences annulables par panneau, tokens explicites et publication complète ; charger les onglets visibles comme FormBrowse/RevisionDiffControl. Ne pas restaurer le focus par un Focus différé qui volerait le clic suivant. ADR 0063. |
 | Ancien diff réapparaît après un filtre ou s’applique au mauvais fichier | Annuler aussi au vidage de sélection et invalider l’état prêt du viewer dès le début et garder staging partiel indisponible tant que le nouveau patch n’est pas publié, même après échec de lecture. Tester avec une vraie lecture Git bloquée, pas un délai supposé. |
 | Une correction visible dans l’historique semble sans effet dans l’application | Le commit courant du dépôt n’identifie pas le binaire en cours. Vérifier le launcher avec --version et l’issue réelle d’APT : la session d’installation du focus était interrompue (143), le binaire installé restait b6b60308b. Le comparatif natif reproduit le problème sur celui-ci et valide le paquet corrigé 10cad7cb8. |
+
+## View et Navigate
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Icônes, gestes et coches divergent entre menu principal et clic droit | Définir les commandes une seule fois, avec les clés XLF RevisionGrid originales et la disponibilité dynamique. |
+| Le recyclage d’une ligne transmet un commit null | Le template crée une ligne vide puis applique ses options seulement après un Tag GitCommit valide. |
+| Retour arrière impossible après la première navigation | Enregistrer aussi la sélection initiale après la fin du chargement de l’historique. |
+| Un élément masqué revient dans le débordement | Appliquer le même prédicat de visibilité aux hôtes inline et aux éléments du popup ; garder IsVisible propre aux commandes conditionnelles. |
+| Un tri ou une option de label perd le focus | Les options visuelles actualisent les contrôles existants. Seules les options nécessitant de nouvelles données relisent Git. |

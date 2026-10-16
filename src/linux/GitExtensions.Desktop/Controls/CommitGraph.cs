@@ -46,6 +46,12 @@ public sealed class CommitGraph : Control
     private string? _currentHead;
     private IReadOnlyCollection<string> _selectedHashes = [];
     private HashSet<string> _selectedHashSet = new(StringComparer.Ordinal);
+    private IReadOnlySet<string>? _relatedHashes;
+    internal IReadOnlySet<string>? RelatedHashes
+    {
+        get => _relatedHashes;
+        set { if (ReferenceEquals(_relatedHashes, value)) { return; } _relatedHashes = value; InvalidateVisual(); }
+    }
 
     public CommitGraph()
     {
@@ -174,10 +180,12 @@ public sealed class CommitGraph : Control
                 path.EndFigure(false);
             }
 
-            context.DrawGeometry(null, new Pen(palette[stroke.Color], 2), geometry);
+            IBrush strokeBrush = _relatedHashes is not null && !_relatedHashes.Contains(stroke.Child) && !_relatedHashes.Contains(stroke.Parent)
+                ? Brushes.Gray : palette[stroke.Color];
+            context.DrawGeometry(null, new Pen(strokeBrush, 2), geometry);
             if (stroke.ContinuesOutsideHistory)
             {
-                context.DrawEllipse(palette[stroke.Color], null, new Point(boundaryX, boundaryY - 3), 2, 2);
+                context.DrawEllipse(strokeBrush, null, new Point(boundaryX, boundaryY - 3), 2, 2);
             }
         }
 
@@ -185,7 +193,7 @@ public sealed class CommitGraph : Control
         {
             GraphNode node = _layout.Nodes[row];
             Point center = new(X(node.Lane), (row + 0.5) * LineHeight - _verticalOffset);
-            IBrush brush = palette[node.Color];
+            IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(node.Commit.Hash) ? Brushes.Gray : palette[node.Color];
             _refsByHash.TryGetValue(node.Commit.Hash, out GitReference[]? refs);
             bool isHead = node.Commit.Hash == _currentHead || refs?.Any(reference => reference.IsCurrent) is true;
             Pen? outline = isHead ? new Pen(dark ? Brushes.White : Brushes.Black, 2) : null;

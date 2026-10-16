@@ -2,6 +2,8 @@ using System.Globalization;
 
 namespace GitExtensions.Linux;
 
+public enum GitLogSort { Topology, AuthorDate, Date }
+
 public sealed record GitLogQuery(
     int Count = 100,
     int Skip = 0,
@@ -26,6 +28,9 @@ public sealed record GitLogQuery(
     public string? BranchFilter { get; init; }
     /// <summary>Original ShowStashes includes the most recent stash before a custom branch filter.</summary>
     public bool IncludeLatestStashInBranchFilter { get; init; } = true;
+    public bool IncludeStashes { get; init; } = true;
+    public bool IncludeSessionRefs { get; init; } = true;
+    public GitLogSort Sort { get; init; } = GitLogSort.Topology;
 }
 
 public sealed partial class GitRepository
@@ -56,7 +61,7 @@ public sealed partial class GitRepository
             return [];
         }
 
-        List<string> arguments = ["log", "--encoding=UTF-8", "--topo-order", "-z", "--date=iso-strict", "--no-ext-diff", "--no-textconv",
+        List<string> arguments = ["log", "--encoding=UTF-8", query.Sort switch { GitLogSort.AuthorDate => "--author-date-order", GitLogSort.Date => "--date-order", _ => "--topo-order" }, "-z", "--date=iso-strict", "--no-ext-diff", "--no-textconv",
             "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b", $"--max-count={query.Count.ToString(CultureInfo.InvariantCulture)}"];
         if (query.Skip > 0)
         {
@@ -88,11 +93,13 @@ public sealed partial class GitRepository
         }
         else if (hasBranchFilter)
         {
-            if (query.IncludeLatestStashInBranchFilter) { arguments.Add("--glob=refs/stas[h]"); }
+            if (query.IncludeStashes && query.IncludeLatestStashInBranchFilter) { arguments.Add("--glob=refs/stas[h]"); }
             arguments.AddRange(branchFilterArguments!);
         }
         else if (query.All || emptyBranchFilterShowsAll)
         {
+            if (!query.IncludeStashes) { arguments.Add("--exclude=refs/stash"); }
+            if (!query.IncludeSessionRefs) { arguments.Add("--exclude=refs/sessions/*"); }
             arguments.Add("--all");
         }
 

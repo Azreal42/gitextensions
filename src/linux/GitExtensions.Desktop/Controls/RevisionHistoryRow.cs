@@ -15,6 +15,13 @@ namespace GitExtensions.Desktop.Controls;
 /// <summary>The compact original revision-grid columns: inline references and subject, author, date and hash.</summary>
 public static class RevisionHistoryRow
 {
+    internal sealed record Presentation(bool ShowAvatar, bool ShowAuthor, bool ShowDate, bool ShowId, bool RelativeDate,
+        bool ShowNotesColumn, DateTimeOffset Date, string Details, string Notes, bool Dim, IReadOnlyList<GitReference> References);
+
+    internal static void ApplyPresentation(Control row, Presentation presentation)
+    {
+        if (row is HistoryRow historyRow) { historyRow.ApplyPresentation(presentation); }
+    }
     private static TranslationCatalog? _translations;
 
     public static Control Create(GitCommit? commit, IReadOnlyList<GitReference> references, bool relativeDates = true)
@@ -80,6 +87,40 @@ public static class RevisionHistoryRow
         private int _rowIndex;
         public TextBlock[] TextCells { get; set; } = [];
         public TextBlock? AuthorName { get; set; }
+        private bool _dim;
+        private TextBlock? _notes;
+
+        public void ApplyPresentation(Presentation value)
+        {
+            if (_commit is null) { return; }
+            Grid author = Children.OfType<Grid>().Single();
+            author.Children[0].IsVisible = value.ShowAvatar;
+            author.Children[1].IsVisible = value.ShowAuthor;
+            author.ColumnDefinitions[0].Width = new GridLength(value.ShowAvatar ? 20 : 0);
+            ColumnDefinitions[1].Width = new GridLength(value.ShowAuthor ? 150 : value.ShowAvatar ? 20 : 0);
+            TextBlock date = Children.OfType<TextBlock>().Single(c => c.Name == "RevisionDate");
+            date.IsVisible = value.ShowDate;
+            date.Text = value.RelativeDate ? FormatRelativeDate(value.Date, DateTimeOffset.Now) : value.Date.LocalDateTime.ToString("G", CultureInfo.CurrentCulture);
+            ToolTip.SetTip(date, value.Date.LocalDateTime.ToString("G", CultureInfo.CurrentCulture));
+            ColumnDefinitions[2].Width = new GridLength(value.ShowDate ? 100 : 0);
+            Children.OfType<TextBlock>().Single(c => c.Name == "RevisionHash").IsVisible = value.ShowId;
+            ColumnDefinitions[3].Width = new GridLength(value.ShowId ? 75 : 0);
+            if (value.ShowNotesColumn && _notes is null)
+            {
+                _notes = Cell("RevisionNotes", ""); ColumnDefinitions.Add(new ColumnDefinition(220, GridUnitType.Pixel));
+                Grid.SetColumn(_notes, 4); Children.Add(_notes); TextCells = [.. TextCells, _notes];
+            }
+            if (_notes is not null)
+            {
+                _notes.Text = string.Join(' ', value.Notes.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
+                ToolTip.SetTip(_notes, value.Notes); _notes.IsVisible = value.ShowNotesColumn;
+                ColumnDefinitions[4].Width = new GridLength(value.ShowNotesColumn ? 220 : 0);
+            }
+            MessageCell message = Children.OfType<MessageCell>().Single();
+            message.SetPresentation(value.Details, value.References.Where(r => r.Hash == _commit.Hash).DistinctBy(r => r.Name, StringComparer.Ordinal)
+                .OrderBy(r => r.IsCurrent ? 0 : r.IsBranch ? 1 : r.IsRemote ? 2 : 3).ThenBy(r => r.Name, StringComparer.Ordinal).ToArray());
+            _dim = value.Dim; ApplyState();
+        }
 
         public HistoryRow(GitCommit? commit)
         {
@@ -102,8 +143,10 @@ public static class RevisionHistoryRow
             Background = BackgroundFor(_commit, _selected, _selectionFocused, _authoredEmail, _rowIndex, _alternateBackground, dark);
             // The host row is 20px, while its content retains the original compact 18px. Fill both consistently.
             if (this.FindAncestorOfType<ListBoxItem>() is { } item) { item.Background = Background; }
-            IBrush foreground = dark ? DarkText : _selected && _selectionFocused ? Brushes.White : Brushes.Black;
+            IBrush foreground = dark ? _dim && !_selected ? Brushes.Gray : DarkText : _selected && _selectionFocused ? Brushes.White : _dim ? Brushes.Gray : Brushes.Black;
             foreach (TextBlock text in TextCells) { text.Foreground = foreground; }
+            foreach (MessageCell message in Children.OfType<MessageCell>())
+            { message.Details.Foreground = _selected && _selectionFocused ? dark ? DarkText : Brushes.White : Brushes.Gray; }
             if (AuthorName is not null) { AuthorName.FontWeight = IsAuthored(_commit, _authoredEmail) ? FontWeight.Bold : FontWeight.Normal; }
         }
     }
@@ -139,16 +182,28 @@ public static class RevisionHistoryRow
 
     private sealed class MessageCell : Panel
     {
-        private readonly ReferenceBadge[] _badges;
+        private ReferenceBadge[] _badges;
+        private GitReference[] _references;
         private double[] _widths = [];
         private double _subjectWidth;
         public TextBlock Subject { get; }
+        public TextBlock Details { get; }
         public MessageCell(string subject, GitReference[] refs)
         {
             ClipToBounds = true;
-            _badges = refs.Select(reference => new ReferenceBadge(reference)).ToArray();
+            _references = refs; _badges = refs.Select(reference => new ReferenceBadge(reference)).ToArray();
             foreach (ReferenceBadge badge in _badges) { Children.Add(badge); }
             Subject = Cell("RevisionSubject", subject); Subject.Margin = default; Children.Add(Subject);
+            Details = Cell("RevisionMessageDetails", ""); Details.Margin = default; Details.Foreground = Brushes.Gray; Children.Add(Details);
+        }
+        public void SetPresentation(string details, GitReference[] references)
+        {
+            Details.Text = details.Length == 0 ? "" : "  " + details;
+            if (_references.SequenceEqual(references)) { return; }
+            foreach (ReferenceBadge badge in _badges) { Children.Remove(badge); }
+            _references = references; _badges = references.Select(r => new ReferenceBadge(r)).ToArray();
+            foreach (ReferenceBadge badge in _badges) { Children.Add(badge); }
+            InvalidateMeasure();
         }
         protected override Size MeasureOverride(Size availableSize)
         {
@@ -156,7 +211,8 @@ public static class RevisionHistoryRow
             for (int index = 0; index < _badges.Length; index++)
             { _badges[index].Measure(new Size(double.PositiveInfinity, 18)); _widths[index] = _badges[index].DesiredSize.Width; }
             Subject.Measure(new Size(double.PositiveInfinity, 18)); _subjectWidth = Subject.DesiredSize.Width;
-            double natural = _widths.Sum() + _badges.Length * 5 + _subjectWidth;
+            Details.Measure(new Size(double.PositiveInfinity, 18));
+            double natural = _widths.Sum() + _badges.Length * 5 + _subjectWidth + Details.DesiredSize.Width;
             double width = double.IsFinite(availableSize.Width) ? availableSize.Width : natural;
             ArrangeChildren(width, measureOnly: true);
             return new(Math.Min(natural, width), 18);
@@ -179,8 +235,13 @@ public static class RevisionHistoryRow
                 x += badgeWidth + (_badges.Length == 0 ? 0 : gaps / _badges.Length);
             }
             double subjectWidth = Math.Max(0, width - x);
+            double textWidth = Math.Min(subjectWidth, _subjectWidth);
             if (measureOnly) { Subject.Measure(new Size(subjectWidth, 18)); }
-            else { Subject.Arrange(new Rect(x, 0, subjectWidth, 18)); }
+            else
+            {
+                Subject.Arrange(new Rect(x, 0, textWidth, 18));
+                Details.Arrange(new Rect(x + textWidth, 0, Math.Max(0, subjectWidth - textWidth), 18));
+            }
         }
     }
 

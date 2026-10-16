@@ -20,6 +20,9 @@ internal sealed class CompactBrowserToolbar : Border
     private readonly ObservableCollection<Control> _popupItems = [];
     private readonly MenuFlyout _flyout = new();
     private bool _placing;
+    private Func<Control, bool> _itemVisibility = _ => true;
+    internal IReadOnlyList<Control> AllItems => _entries.Select(entry => entry.Control).ToArray();
+    internal void SetItemVisibility(Func<Control, bool> predicate) { _itemVisibility = predicate; Place(); }
     private TopLevel? _pointerOwner;
     private MenuFlyoutPresenter? _pointerPresenter;
     private PixelPoint? _lastPointerScreen, _revealPointerScreen;
@@ -156,7 +159,7 @@ internal sealed class CompactBrowserToolbar : Border
         _placing = true;
         try
         {
-            List<Entry> available = _entries.Where(entry => entry.Control.IsVisible).ToList();
+            List<Entry> available = _entries.Where(entry => entry.Control.IsVisible && _itemVisibility(entry.Control)).ToList();
             foreach (Entry entry in available) { entry.Control.Measure(new Size(double.PositiveInfinity, 24)); }
             double width = Bounds.Width - Padding.Left - Padding.Right;
             bool overflow = available.Sum(entry => entry.Control.DesiredSize.Width + 1) > width;
@@ -165,7 +168,7 @@ internal sealed class CompactBrowserToolbar : Border
             List<Control> popup = [];
             foreach (Entry entry in _entries)
             {
-                if (!entry.Control.IsVisible) { entry.Host.IsVisible = false; continue; }
+                if (!entry.Control.IsVisible || !_itemVisibility(entry.Control)) { entry.Host.IsVisible = false; continue; }
                 double desired = entry.Control.DesiredSize.Width + 1;
                 suffix |= used + desired > width - (overflow ? 25 : 0);
                 entry.Host.IsVisible = !suffix;
