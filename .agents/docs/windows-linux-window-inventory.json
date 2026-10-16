@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "code_reference_commit": "e5775072ea9af27cece29739013ac244f0799d6f",
-  "source_digest_sha256": "cba9910abda0cca76eea656b21ab3024d04b07cb554fd4573d0ff3cc19854f7b",
+  "code_reference_commit": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
+  "source_digest_sha256": "1f36f29b9a6b73dac9220bf4a3e15a6387931458e80a1d54432d0f7dda0c68a6",
   "scanned_csharp_files": 1823,
   "parsed_configurations": [
     "Windows release",
@@ -47,24 +47,26 @@
     "designer_files": 189
   },
   "validation_reference": {
-    "trx": "artifacts/linux/rules-files-full-checks-20261016-01/desktop.trx",
-    "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
-    "trx_sha256": "be7cb37ad464162f776cb4788a3e93c7ddf3b3535e6d8a92b68245aad59b7dba",
+    "trx": "artifacts/linux/ignore-layout-remote-guard-full-checks-20261016-01/desktop.trx",
+    "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
+    "trx_sha256": "248115d707225ce6bcc3fa25ab0d371af29d99ef3eb68e2b1fd58600aaaaa3eb",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
-        "passed": 461,
-        "total": 461,
-        "execution_result": "artifacts/linux/rules-files-core-full-20261016-02/core-result.json",
-        "meaning": "Actual complete execution of the component source; Core apphost source hashes verified against this commit."
+        "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
+        "passed": 463,
+        "total": 463,
+        "execution_result": "artifacts/linux/remote-branch-deletion-p1-20261016-01/green-full-result.json",
+        "source_hashes_verified": 104,
+        "runtime_inputs_unchanged": true,
+        "meaning": "Actual complete apphost execution; component source inputs verified against this commit."
       },
       "plugins": {
-        "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
+        "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/rules-files-full-checks-20261016-01/plugins-result.json",
-        "meaning": "Actual complete execution of the component source; Core apphost source hashes verified against this commit."
+        "execution_result": "artifacts/linux/ignore-layout-remote-guard-full-checks-20261016-01/plugins-result.json",
+        "meaning": "Actual complete execution after the Core correction."
       }
     },
     "current_linux_code_equivalent": true,
@@ -1416,7 +1418,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -1476,14 +1478,14 @@
       "group": "files",
       "level": "N3",
       "implemented": "Motifs multiligne ordonnés, aperçu natif incluant les fichiers suivis, debounce/annulation et ajout à ignore/exclude ; noms littéraux échappés depuis les listes de fichiers.",
-      "remaining": "Rendu à aligner : le champ multiligne déborde le cadre des motifs, et compteur/message vide ne suivent pas encore la répartition verticale Windows. Audit natif étendu, traductions longues et totalité des consommateurs/raccourcis du menu restent ouverts.",
+      "remaining": "Audit natif étendu, traductions longues et totalité des consommateurs/raccourcis du menu Windows encore à comparer.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.AddToGitIgnoreDialog",
           "label": "AddToGitIgnoreDialog",
           "source": "src/linux/GitExtensions.Desktop/AddToGitIgnoreDialog.cs",
-          "line": 13,
+          "line": 14,
           "kind": "window"
         }
       ],
@@ -1497,7 +1499,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         }
       ],
@@ -2306,7 +2308,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -2623,7 +2625,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -2654,8 +2656,8 @@
       "feature": "Suppression de branches distantes",
       "group": "references",
       "level": "N3",
-      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts.",
-      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs push URLs refusés explicitement.",
+      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts. Destinations effectives et rewrites relus par Git ; destinations multiples refusées avant tout push, sans nettoyage local.",
+      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs destinations push effectives refusés explicitement.",
       "visual": "rapproche",
       "linux": [
         {
@@ -2696,7 +2698,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -3095,7 +3097,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         }
       ],
@@ -3148,7 +3150,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         }
       ],
@@ -3299,7 +3301,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         }
       ],
@@ -5172,7 +5174,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -6647,7 +6649,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6683,7 +6685,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -6844,7 +6846,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6880,7 +6882,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -7044,7 +7046,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -7080,7 +7082,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -7626,7 +7628,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -8155,7 +8157,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
-          "passed_in_reference_run": 12,
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -8191,7 +8193,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
-          "passed_in_reference_run": 18,
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -8339,11 +8341,11 @@
       "id": "GitExtensions.Linux.Desktop.AddToGitIgnoreDialog",
       "name": "AddToGitIgnoreDialog",
       "source": "src/linux/GitExtensions.Desktop/AddToGitIgnoreDialog.cs",
-      "line": 13,
+      "line": 14,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/AddToGitIgnoreDialog.cs",
-          "line": 13
+          "line": 14
         }
       ],
       "bases": [

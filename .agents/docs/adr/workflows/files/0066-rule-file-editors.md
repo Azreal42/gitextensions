@@ -12,4 +12,4 @@ Le chemin info/exclude vient de Git, notamment dans les worktrees liés ; les no
 
 Repères : `GitRepository.RulesFiles/IgnorePatterns`, `GitRulesFile`, `GitIgnorePatterns`, `RulesFileMenus`, `MainWindow.RulesFiles`, `CommitDialog.RulesFiles`, `DiffView`, `DiffViewerSearch`. Scénarios : `RulesFileScenarios`, `RulesFileEditorDialogTests`, `EditableFileViewTests`. Restent l’audit natif étendu, les traductions longues, les autres variantes/consommateurs Windows, et les plateformes autres que Linux amd64.
 
-Écart de rendu constaté en headless : le groupe des motifs ne contraint pas encore le champ multiligne et la zone Preview à la répartition verticale Windows. Ce point reste ouvert malgré la validation fonctionnelle.
+Les cadres à légende utilisent ClassicChrome.Group, commun avec Pull : motifs bornés, aperçu extensible, compteur en bas et message vide centré. La géométrie Windows, les tailles minimale/agrandie et le défilement sont vérifiés en clair/sombre ; cela ne clôt pas l’audit natif global.

@@ -402,8 +402,8 @@
         "GitProcessDialog",
         "DeleteBranchDialog"
       ],
-      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts.",
-      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs push URLs refusés explicitement.",
+      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts. Destinations effectives et rewrites relus par Git ; destinations multiples refusées avant tout push, sans nettoyage local.",
+      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs destinations push effectives refusés explicitement.",
       "visual": "rapproche",
       "tests": [
         "RemoteBranchDeletionDialogTests"
@@ -984,7 +984,7 @@
         "AddToGitIgnoreDialog"
       ],
       "implemented": "Motifs multiligne ordonnés, aperçu natif incluant les fichiers suivis, debounce/annulation et ajout à ignore/exclude ; noms littéraux échappés depuis les listes de fichiers.",
-      "remaining": "Rendu à aligner : le champ multiligne déborde le cadre des motifs, et compteur/message vide ne suivent pas encore la répartition verticale Windows. Audit natif étendu, traductions longues et totalité des consommateurs/raccourcis du menu restent ouverts.",
+      "remaining": "Audit natif étendu, traductions longues et totalité des consommateurs/raccourcis du menu Windows encore à comparer.",
       "visual": "rapproche",
       "tests": [
         "RulesFileEditorDialogTests",

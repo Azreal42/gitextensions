@@ -6,7 +6,6 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Observation | Cause / suite |
 | --- | --- |
-| Assistant des motifs : cadre traversant le texte, compteur trop haut | Le Group partagé utilise un StackPanel non contraint ; reprendre la répartition Auto/* de la fenêtre Windows avant de valider la parité visuelle. |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
@@ -242,6 +241,7 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Faux échecs Askpass/Rebase en lançant les tests Core par DLL | Ces scénarios relancent Environment.ProcessPath comme enfant ; lancer l’apphost compilé ou dotnet run, jamais dotnet Tests.dll pour la suite complète. |
 | Le nettoyage local réutilise une liste antérieure au bouton OK | Relire les branches/configurations actuelles des seules remotes réussies ; une branche reconfigurée ou recréée sans tracking ne doit pas rester sélectionnée. |
 | Un premier retry après Abort échoue sur une branche déjà supprimée | Recharger aussi la sélection après annulation du seul Process, en retirant les succès prouvés ; aucune continuation vers le nettoyage local. |
+| Preview de suppression réduit aux seules premières URL fetch | Git pousse sur toutes les URLs sans pushurl explicite. Le faux test sans push réel masquait une suppression sur deux serveurs ; résoudre les destinations natives et leurs rewrites avant toute mutation. Régression rouge puis verte conservée. |
 
 ## Éditeurs des règles du dépôt
 
@@ -253,5 +253,6 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Fichier déjà writable via groupe refusé par chmod | Tenter l’ouverture writable avant toute modification temporaire du mode propriétaire. |
 | Motif littéral devenant wildcard, ou négation réordonnée | Échapper les chemins sélectionnés ; conserver ordre/casse/doublons des motifs saisis, séparer les sorties Git par NUL seulement. |
 | Aperçu annulé encore actif ou masquant une erreur Save | Drainer les acteurs précédents avant publication, fermeture et append ; aucune sortie d’aperçu tardive ne doit effacer l’échec d’écriture. |
+| Cadre des motifs traversant le texte, compteur trop haut | Utiliser le cadre à légende contraint partagé avec Pull ; le StackPanel mesurait le contenu sans borne. Tester les vrais viewports et les rectangles du Designer en plusieurs tailles. |
 | Menu vide au premier clic / Close appelé deux fois | Peupler le ContextMenu avant Opening ; rendre la fermeture après drainage idempotente. |
 | Cancel ferme quand même à l’action suivante | Consommer la demande de fermeture différée avant Close ; restaurer le choix de codec si le rechargement est refusé. |

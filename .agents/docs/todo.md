@@ -6,7 +6,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `e5775072e` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 21 N1 substituts minimaux, 25 N2 partielles, 41 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `2e9ab5db2` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 21 N1 substituts minimaux, 25 N2 partielles, 41 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 74 types Window Avalonia (dont 2 bases abstraites), 27 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -168,4 +168,14 @@ Source `e5775072e` : .gitignore, .git/info/exclude, .gitattributes, .mailmap et 
 
 La matrice compte toujours 99 fenêtres métier et 32 pages ; quatre écrans de règles passent de N0 à N3 ciblé testé. FormEditor reste N1 et FindAndReplaceForm N2 (recherche multi-fichiers absente). Les 13 familles et l’audit final restent ouverts ; aucune entrée N4.
 
-Rendu de l’assistant de motifs : champ multiligne débordant du cadre et placement vertical du compteur/message vide à aligner sur Windows. [14 captures headless revues avec ces écarts ouverts](../../artifacts/linux/snapshots/e5775072e/proofs/headless-visual-review.json) ; ce contrôle ne certifie pas la parité visuelle.
+## Cadres Windows et destinations push effectives
+
+Source `2e9ab5db2` : cadres à légende communs Pull/assistant de motifs, géométrie Windows, aperçu extensible, compteur/message vide ancrés et défilement borné. Trois tailles en clair/sombre sont couvertes. Les deux écarts de rendu du candidat précédent sont corrigés.
+
+La suppression distante relit toutes les destinations effectives via Git, y compris les URL fallback et les rewrites ; multiplicité ou destination changée refuse toute la sélection avant son premier push, sans nettoyage local. [Reproduction P1 avant/après](../../artifacts/linux/remote-branch-deletion-p1-20261016-01/green-targeted-result.json), vrais serveurs bare et hooks témoins ; aucun accès distant externe.
+
+[Validation](../../artifacts/linux/snapshots/2e9ab5db2/proofs/source-validation.json) : **918 Desktop, 463 Core, 35 Plugins**, soit 1416 scénarios distincts, zéro échec/ignoré. 54 ciblés UI et 17 ciblés Core ; cinq nouveaux scénarios. L’essai initial de géométrie et les reproductions rouges restent diagnostiques. [Rendus headless](../../artifacts/linux/snapshots/2e9ab5db2/proofs/headless-visual-review.json) ; audit natif étendu encore ouvert.
+
+[Candidat Debian](../../artifacts/linux/snapshots/2e9ab5db2/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `c11277c5d7557a90f9c2a5dd4f141b4fe7f9fdc8b6c03c9142108e69083f9269` : source figée, extraction/installation/lancement isolés vérifiés. Il remplace le candidat `e5775072e` avant installation hôte ; l’hôte reste `879f7bae3`. Aucun push.
+
+Prochain écran complet : Remotes (deux onglets, actifs/inactifs, URL/push/prefix/couleur et tracking), encore N1. Conserver toutes les entrées multivaleurs/inconnues et les mécanismes Git/OpenSSH ; les événements de scripts restent dans leur famille ouverte. Les 13 familles et l’audit de parité finale restent ouverts ; aucun N4.

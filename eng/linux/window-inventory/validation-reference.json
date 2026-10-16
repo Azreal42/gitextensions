@@ -1,12 +1,12 @@
 {
-  "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
-  "trx": "artifacts/linux/rules-files-full-checks-20261016-01/desktop.trx",
-  "trx_sha256": "be7cb37ad464162f776cb4788a3e93c7ddf3b3535e6d8a92b68245aad59b7dba",
+  "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
+  "trx": "artifacts/linux/ignore-layout-remote-guard-full-checks-20261016-01/desktop.trx",
+  "trx_sha256": "248115d707225ce6bcc3fa25ab0d371af29d99ef3eb68e2b1fd58600aaaaa3eb",
   "meaning": "Frozen results from an actual complete execution; importing them does not rerun tests or certify complete window parity.",
   "counters": {
-    "total": "915",
-    "executed": "915",
-    "passed": "915",
+    "total": "918",
+    "executed": "918",
+    "passed": "918",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -293,7 +293,7 @@
       "Passed": 15
     },
     "RemoteBranchDeletionDialogTests": {
-      "Passed": 12
+      "Passed": 14
     },
     "RenameCompareDialogTests": {
       "Passed": 14
@@ -320,7 +320,7 @@
       "Passed": 6
     },
     "RulesFileEditorDialogTests": {
-      "Passed": 18
+      "Passed": 19
     },
     "ScriptsPreferencesStoreTests": {
       "Passed": 8
@@ -364,18 +364,20 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
-      "passed": 461,
-      "total": 461,
-      "execution_result": "artifacts/linux/rules-files-core-full-20261016-02/core-result.json",
-      "meaning": "Actual complete execution of the component source; Core apphost source hashes verified against this commit."
+      "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
+      "passed": 463,
+      "total": 463,
+      "execution_result": "artifacts/linux/remote-branch-deletion-p1-20261016-01/green-full-result.json",
+      "source_hashes_verified": 104,
+      "runtime_inputs_unchanged": true,
+      "meaning": "Actual complete apphost execution; component source inputs verified against this commit."
     },
     "plugins": {
-      "source_sha": "e5775072ea9af27cece29739013ac244f0799d6f",
+      "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/rules-files-full-checks-20261016-01/plugins-result.json",
-      "meaning": "Actual complete execution of the component source; Core apphost source hashes verified against this commit."
+      "execution_result": "artifacts/linux/ignore-layout-remote-guard-full-checks-20261016-01/plugins-result.json",
+      "meaning": "Actual complete execution after the Core correction."
     }
   }
 }
