@@ -362,3 +362,5 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Une capture réécrite fait croire que le runtime testé a changé | Capturer explicitement DLL/PDB/SO/XLF, deps/runtimeconfig et helpers ; lister captures/traces comme sorties. Garder le lot brut et sa comparaison fausse, sans réécrire son résultat. |
 
 - Clic droit sur une révision : sélectionner un élément ne lui donne pas automatiquement le focus Avalonia. Deux Échap après Copy peuvent laisser les flèches sans effet ; observation native a62 conservée, correction et preuve de non-régression encore requises. Ne pas masquer ce défaut par un clic/Ctrl+1 dans le harnais.
+
+- Première frappe de Create branch (519, natif) : le champ reçoit Focus sur Opened, puis InitializeAsync passe par RunAsync qui désactive les champs. Le retour à IsEnabled ne garantit pas le focus. Cause à confirmer par chargement retardé ; ne pas prendre une première frappe headless verte pour une preuve native.

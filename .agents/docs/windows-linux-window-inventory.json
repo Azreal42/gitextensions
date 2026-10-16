@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-  "source_digest_sha256": "948dd36918a90de2fe030fc46a6ca7fcacaddaf11b571d7e9167abac3ea22cda",
-  "scanned_csharp_files": 1891,
+  "code_reference_commit": "5195129c311e04adbcff068b207cda31d4103429",
+  "source_digest_sha256": "16a8542959251b70a3dbfcd8cde486d108e763d9055620610776b7d6ac623566",
+  "scanned_csharp_files": 1892,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -47,7 +47,7 @@
     "designer_files": 189,
     "installer_source_dialogs": 13,
     "installer_library_dialogs": 9,
-    "in_progress_screens": 0
+    "in_progress_screens": 1
   },
   "validation_reference": {
     "trx": "artifacts/linux/annotated-reference-desktop-checks-20261016-02-full/desktop.trx",
@@ -76,7 +76,7 @@
         "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
       }
     },
-    "current_linux_code_equivalent": true,
+    "current_linux_code_equivalent": false,
     "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
@@ -1837,7 +1837,30 @@
         ".agents/docs/adr/ui/0063-scoped-browser-selection-reads.md",
         ".agents/docs/adr/ui/0064-original-history-menus.md",
         ".agents/docs/adr/workflows/references/0075-reference-display-targets.md"
-      ]
+      ],
+      "in_progress": {
+        "description": "Correction5195129c3 : focus de la ligne au clic droit, même déjà sélectionnée ; aucun rappel générique à la fermeture qui volerait le focus des dialogues. Ancien comportement6/9 rouges, correctif isolé32/32 dont11 nouveaux casUI. Root32/32 réexécutés sur le commit et paquet isolé vérifié ; navigation native après Copy/Échap et F5 verte ; première frappe Create branch rouge, candidat global non accepté ; dernier Desktop complet1145/1145 reste a62aa7133. Browse resteN2.",
+        "linux": [
+          {
+            "id": "GitExtensions.Linux.Desktop.MainWindow",
+            "label": "MainWindow.BuildRevisionContextMenu",
+            "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
+            "line": 34,
+            "kind": "window"
+          }
+        ],
+        "tests": [
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
+            "test_class": "RevisionContextFocusTests",
+            "passed_in_reference_run": 0,
+            "results_present": false
+          }
+        ],
+        "adr": [
+          "0076"
+        ]
+      }
     },
     {
       "id": "GitUI.CommandsDialogs.FormCheckoutBranch",
@@ -1988,7 +2011,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 182,
+          "line": 184,
           "kind": "window"
         },
         {
@@ -2504,7 +2527,7 @@
       "group": "references",
       "level": "N3",
       "implemented": "Nom normalisé, révision, checkout/tracking et options de création.",
-      "remaining": "Audit complet des combinaisons et de la parité visuelle restant.",
+      "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe native perdue après initialisation asynchrone depuis le menu contextuel (candidat519) ; correction en cours, preuve rouge conservée.",
       "visual": "rapproche",
       "linux": [
         {
@@ -2545,6 +2568,12 @@
           "test_class": "ReflogDialogTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
+          "test_class": "RevisionContextFocusTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextMenuTests.cs",

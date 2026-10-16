@@ -99,7 +99,19 @@
         "0063",
         "0064",
         "0075"
-      ]
+      ],
+      "in_progress": {
+        "description": "Correction5195129c3 : focus de la ligne au clic droit, même déjà sélectionnée ; aucun rappel générique à la fermeture qui volerait le focus des dialogues. Ancien comportement6/9 rouges, correctif isolé32/32 dont11 nouveaux casUI. Root32/32 réexécutés sur le commit et paquet isolé vérifié ; navigation native après Copy/Échap et F5 verte ; première frappe Create branch rouge, candidat global non accepté ; dernier Desktop complet1145/1145 reste a62aa7133. Browse resteN2.",
+        "linux": [
+          "MainWindow@BuildRevisionContextMenu"
+        ],
+        "tests": [
+          "RevisionContextFocusTests"
+        ],
+        "adr": [
+          "0076"
+        ]
+      }
     },
     "GitUI.CommandsDialogs.FormLog": {
       "feature": "Historique et diff dans une fenêtre dédiée",
@@ -363,7 +375,7 @@
         "CreateBranchDialog"
       ],
       "implemented": "Nom normalisé, révision, checkout/tracking et options de création.",
-      "remaining": "Audit complet des combinaisons et de la parité visuelle restant.",
+      "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe native perdue après initialisation asynchrone depuis le menu contextuel (candidat519) ; correction en cours, preuve rouge conservée.",
       "visual": "rapproche",
       "tests": [
         "ReferenceDialogTests",

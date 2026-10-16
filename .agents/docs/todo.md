@@ -6,7 +6,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `a62aa7133` ; suite Desktop complète de référence `a62aa7133` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 14 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `5195129c3` ; dernière suite Desktop complète de référence `a62aa7133` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 14 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 80 types Window Avalonia (dont 2 bases abstraites), 31 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -100,7 +100,7 @@ Les preuves des paquets précédents restent dans [les snapshots](../../artifact
 
 ## Prochains écarts concrets
 
-- Focus du menu contextuel : retour aux flèches après fermeture de Copy à corriger ; rattachement des tags validé sur a62aa7133, Browse reste N2.
+- Focus du menu contextuel : correction `5195129c3` en validation ciblée/native ; la référence complète reste a62aa7133, Browse reste N2.
 - Scripts : raccorder les trois saisies Windows, le contexte actif, le vrai lanceur et les événements/menu/raccourcis. Le moteur de préparation seul ne constitue pas une exécution Desktop ou CLI.
 
 - Cherry-pick : audit natif après crash et des autres modes/séries ; destinations imprévues refusées avant rollback, restauration IO interrompue conservée en état Restoring.
@@ -291,3 +291,7 @@ F2/Suppr reprennent les choix Windows et ouvrent les dialogues métier partagés
 [Validation source](../../artifacts/linux/snapshots/a62aa7133/proofs/source-validation.json) : Desktop complet 1145/1145, Core 554/554 et Plugins 35/35 réexécutés sur cette source, zéro échec/ignoré ; 1734 scénarios distincts. Développement isolé ciblé 42/42, cinq nouveaux cas UI ; ancien rattachement réellement rouge puis restauré vert. [Contrôle natif ciblé du paquet](../../artifacts/linux/snapshots/a62aa7133/proofs/native-parent-verification.json) : rattachement des trois types, Copy/tooltip après déplacement/suppression et rejet d’une réannotation périmée. Le défaut distinct de focus après fermeture du sous-menu Copy reste ouvert ; cet audit ne certifie pas le focus global ni la parité Windows complète.
 
 [Debian construit, extrait et installé en isolation](../../artifacts/linux/snapshots/a62aa7133/proofs/package-runtime-verification.json), SHA256 `540fb575463c0bf90a80dfde02f0e8a92e41a108f272a9f88b3429f9bc0c256c`. Aucun nouveau paquet installé sur l’hôte ni push.
+
+## Focus du menu contextuel — validation en cours
+
+`5195129c3` donne le focus à la ligne du clic droit avant le menu, même déjà sélectionnée ; sélection multiple et focus des dialogues préservés. [ADR 0076](adr/ui/0076-revision-context-focus.md). [Développement isolé](../../artifacts/linux/revision-context-focus-integration-20261016/isolated-development/focus-delivery.json) : ancien comportement 6/9 rouges, correctif 32/32 dont onze nouveaux cas UI. Root 32/32 réexécutés sur le commit exact, zéro ignoré ; Debian construit/extrait/installé en isolation (cinq phases exit0). Natif : navigation depuis un autre champ et après F5 verte, multi-sélection conservée ; première frappe de Create branch rouge, candidat global non accepté. Reproduction de l’initialisation asynchrone en cours ; aucune nouvelle suite complète annoncée. Les 1145/1145 et 1734 scénarios complets restent attribués à a62aa7133. Browse reste N2 et les 13 familles ouvertes.
