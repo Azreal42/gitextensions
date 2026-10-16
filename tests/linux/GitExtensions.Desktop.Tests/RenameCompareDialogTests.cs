@@ -263,10 +263,13 @@ public class RenameCompareDialogTests
             Field<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison.Files.Single(file => file.Path == untracked); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("+literal untracked"));
             Assert.That(Field<TabItem>(dialog, "ComparisonBaseTab").IsEnabled, Is.False);
+            Assert.That(Field<Button>(dialog, "ComparisonSaveBase").IsEnabled, Is.False);
+            Assert.That(Field<Button>(dialog, "ComparisonFileTool").IsEnabled, Is.False);
             Click(dialog, "ComparisonSwap"); await Idle(dialog);
             Assert.That(Field<Button>(dialog, "ComparisonDirectoryTool").IsEnabled, Is.False);
             Field<ListBox>(dialog, "ComparisonFiles").SelectedItem = dialog.Comparison!.Files.Single(file => file.Path == untracked); await Idle(dialog);
             Assert.That(Field<FileHistoryContentView>(dialog, "ComparisonDiff").TextView.Text, Does.Contain("-literal untracked"));
+            Assert.That(Field<Button>(dialog, "ComparisonSaveCompare").IsEnabled, Is.False);
             Assert.That(dialog.HasRepositoryChanges, Is.False);
         }
         finally { dialog.Close(); }
@@ -524,7 +527,7 @@ public class RenameCompareDialogTests
     private static void Press(Window owner, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None)
     { owner.KeyPressQwerty(key, modifiers); if (owner.IsVisible) { owner.KeyReleaseQwerty(key, modifiers); } }
     private static async Task Idle(RepositoryDialog dialog, bool expectSuccess = true)
-    { await Until(() => !dialog.IsBusy); if (expectSuccess) { Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString() ?? dialog.LastError); } }
+    { await Until(() => !dialog.IsBusy && (dialog is not CompareRevisionsDialog comparison || comparison.SelectionCompletion.IsCompleted)); if (expectSuccess) { Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString() ?? dialog.LastError); } }
     private static async Task Until(Func<bool> predicate)
     { using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15)); while (!predicate()) { await Task.Delay(20, timeout.Token); } }
     private static async Task<GitResult> Git(Fixture fixture, params string[] arguments)

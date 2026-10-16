@@ -50,6 +50,7 @@ public abstract class RepositoryDialog : Window
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
     protected void ReportError(Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
+    protected void ClearError() { LastError = null; LastException = null; }
 
     protected void CollapseEmptyStatus()
     {

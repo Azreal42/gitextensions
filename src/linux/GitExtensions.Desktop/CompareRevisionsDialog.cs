@@ -14,7 +14,7 @@ using GitExtensions.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
-public sealed class CompareRevisionsDialog : RepositoryDialog
+public sealed partial class CompareRevisionsDialog : RepositoryDialog
 {
     private readonly ComparisonRevisionSelector _base;
     private readonly ComparisonRevisionSelector _compare;
@@ -92,7 +92,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _diff.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
         {
             asText.IsChecked = ReadDiffOptions().TreatAllFilesAsText;
-            if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(LoadSelectionAsync); }
+            if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(ReloadSelectionAsync); }
         };
         _diff.TextView.Search.OpenDiffToolRequested = () => OpenToolAsync(false);
         _fileCaption.Margin = new Thickness(5, 2); DockPanel.SetDock(_fileCaption, Dock.Top); viewer.Children.Add(_fileCaption); viewer.Children.Add(_tabs);
@@ -107,19 +107,20 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _base.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_base);
         _compare.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_compare);
         _mergeBase.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await InitializeAsync(); } };
-        _files.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
+        _files.SelectionChanged += async (_, _) => { if (!_loading && !_applyingFileFilter && !IsBusy) { await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _filter.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty && !_loading) { ApplyFileFilter(); } };
         AddHandler(KeyDownEvent, async (_, args) => await HandleKeyAsync(args), RoutingStrategies.Tunnel);
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
         {
-            if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(LoadSelectionAsync); }
+            if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(ReloadSelectionAsync); }
         };
+        InitializeSelectionLifetime();
         Closed += (_, _) => { _base.Dispose(); _compare.Dispose(); _diff.Dispose(); _baseView.Dispose(); _compareView.Dispose(); foreach (Bitmap icon in _icons) { icon.Dispose(); } };
         UpdateActions();
     }
 
-    public override Task InitializeAsync() => RunAsync("Compare revisions", async token =>
+    public override Task InitializeAsync() => RunComparisonAsync("Compare revisions", async token =>
     {
         _loading = true;
         try
@@ -144,45 +145,32 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _comparison = await Repository.GetComparisonAsync(_mergeBase.IsChecked == true && _fixedMergeBase is not null ? new(_fixedMergeBase) : _base.Read(), _compare.Read(), token);
         ApplyFileFilter();
         await ReadSelectedAsync(token);
-        Status.Text = _comparison.Files.Count + " " + T("files") + (_comparison.Files.Count == 0 ? " — " + T("No differences") : "");
+        if (LastError is null) { Status.Text = _comparison.Files.Count + " " + T("files") + (_comparison.Files.Count == 0 ? " — " + T("No differences") : ""); }
     }
 
     private void ApplyFileFilter()
     {
         string? selected = SelectedFile?.Path;
         string search = _filter.Text ?? "";
-        _files.ItemsSource = _comparison?.Files.Where(file => file.Path.Contains(search, StringComparison.OrdinalIgnoreCase) || file.OriginalPath?.Contains(search, StringComparison.OrdinalIgnoreCase) == true).ToArray() ?? [];
-        _files.SelectedItem = _files.Items.OfType<GitRevisionFile>().FirstOrDefault(file => file.Path == selected) ?? _files.Items.OfType<GitRevisionFile>().FirstOrDefault();
+        GitRevisionFile[] visible = _comparison?.Files.Where(file => file.Path.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || file.OriginalPath?.Contains(search, StringComparison.OrdinalIgnoreCase) == true).ToArray() ?? [];
+        _applyingFileFilter = true;
+        try
+        {
+            if (!_files.Items.OfType<GitRevisionFile>().SequenceEqual(visible)) { _files.ItemsSource = visible; }
+            _files.SelectedItem = visible.FirstOrDefault(file => file.Path == selected) ?? visible.FirstOrDefault();
+        }
+        finally { _applyingFileFilter = false; }
         UpdateActions();
+        if (!_loading && !IsBusy) { _ = LoadSelectionAsync(); }
     }
 
-    private Task LoadSelectionAsync() => RunAsync("Load comparison file", ReadSelectedAsync);
-    private async Task ReadSelectedAsync(CancellationToken token)
-    {
-        GitRevisionFile? file = SelectedFile;
-        TabItem[] tabs = _tabs.Items.OfType<TabItem>().ToArray();
-        tabs[1].IsEnabled = file is not null && file.Status != 'A';
-        tabs[2].IsEnabled = file is not null && !file.IsDeleted;
-        if (_tabs.SelectedIndex == 1 && !tabs[1].IsEnabled || _tabs.SelectedIndex == 2 && !tabs[2].IsEnabled) { _tabs.SelectedIndex = 0; }
-        _fileCaption.Text = file is null ? T("No differences") : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
-        if (file is null || _comparison is null) { _diff.ShowDiff(T("No differences")); _baseView.ShowDiff(""); _compareView.ShowDiff(""); return; }
-        _diff.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.Path, file.OriginalPath, _comparison.Base, _comparison.Compare, "diff");
-        _baseView.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.OriginalPath ?? file.Path, _comparison.Base, "blob");
-        _compareView.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.Path, _comparison.Compare, "blob");
-        if (_tabs.SelectedIndex == 0)
-        {
-            _diff.TextView.BeginDocumentLoad();
-            await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
-            _diff.ShowDiff(await Repository.GetComparisonFileDiffDocumentAsync(_comparison, file, ReadDiffOptions(), _diff.TextView.DisplayOptions, token), file.Path);
-        }
-        else if (_tabs.SelectedIndex == 1) { _baseView.ShowFile(file.OriginalPath ?? file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Base, file.OriginalPath ?? file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
-        else { _compareView.ShowFile(file.Path, await Repository.GetComparisonFileBytesAsync(_comparison.Compare, file.Path, token), await Repository.GetFileEncodingNameAsync(token)); }
-    }
     public GitComparisonDiffOptions ReadDiffOptions() => _diff.TextView.ComparisonMenu.Options;
 
     private void InputsEdited()
     {
         if (_loading || IsBusy) { return; }
+        CancelSelectionRead(); _loadedSelection = null;
         _comparison = null; _files.ItemsSource = null;
         _diff.ShowDiff(T("Choose revisions and press Compare.")); _baseView.ShowDiff(""); _compareView.ShowDiff("");
         Status.Text = T("Choose revisions and press Compare."); UpdateActions();
@@ -208,7 +196,7 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
         _loading = true; try { selector.Set(new(chosen.Hash)); } finally { _loading = false; }
         await InitializeAsync();
     }
-    private Task OpenToolAsync(bool directory) => RunAsync("Open with diff tool", async token =>
+    private Task OpenToolAsync(bool directory) => RunComparisonAsync("Open with diff tool", async token =>
     {
         if (_comparison is null) { return; }
         try { await Repository.OpenComparisonDiffToolAsync(_comparison, directory ? null : SelectedFile, directory, token); }
@@ -228,15 +216,16 @@ public sealed class CompareRevisionsDialog : RepositoryDialog
     {
         if (SelectedFile is null) { return; }
         IStorageFile? output = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions { Title = T("Save as"), ShowOverwritePrompt = false, SuggestedFileName = Path.GetFileName(baseSide ? SelectedFile.OriginalPath ?? SelectedFile.Path : SelectedFile.Path) });
-        if (output?.TryGetLocalPath() is string path) { await RunAsync("Save as", token => SaveSelectedFileAsync(path, baseSide, token)); }
+        if (output?.TryGetLocalPath() is string path) { await RunComparisonAsync("Save as", token => SaveSelectedFileAsync(path, baseSide, token)); }
     }
 
     private FileHistoryContentView ActiveView => _tabs.SelectedIndex == 1 ? _baseView : _tabs.SelectedIndex == 2 ? _compareView : _diff;
     private async Task MoveChangeAsync(bool forward)
     {
         if (_tabs.SelectedIndex != 0 || _comparison is null || SelectedFile is null) { return; }
-        await RunAsync(forward ? "Next change" : "Previous change", async token =>
+        await RunComparisonAsync(forward ? "Next change" : "Previous change", async token =>
         {
+            await ReadSelectedAsync(token);
             DiffView view = _diff.TextView;
             var hunks = view.Editor.Document.Lines.Where(line => view.Editor.Document.GetText(line).StartsWith("@@ ", StringComparison.Ordinal)).ToArray();
             AvaloniaEdit.Document.DocumentLine? next = forward ? hunks.FirstOrDefault(line => line.Offset > view.CaretOffset) : hunks.LastOrDefault(line => line.Offset < view.CaretOffset);
