@@ -41,10 +41,35 @@ internal static class QuickReferenceScenarios
             Check(reference.Hash == raw, "Each reference retains its direct object hash instead of the peeled commit.");
         }
         Check(actual.Single(reference => reference.Name == "refs/tags/annotated").Hash != commit, "Annotated tags retain their own identity.");
+        Check(actual.All(reference => reference.RevisionHash == commit), "Quick references carry the commit attachment separately from native ref identities.");
         Check(actual.Any(reference => reference.Name == "refs/heads/" + Literal) && actual.Any(reference => reference.Name == "refs/remotes/origin/topic"), "Local, remote, Unicode and shell-metacharacter reference names remain literal.");
         Check(actual.All(reference => reference.Name is not ("refs/tags/blob" or "refs/tags/tree" or "refs/tags/other" or "refs/notes/not-an-action")), "Only references attached to the selected commit and the three action namespaces are returned.");
         Check((await repository.GetQuickActionReferencesAsync(blob)).Count == 0 && (await repository.GetQuickActionReferencesAsync(tree)).Count == 0, "Non-commit targets never become commit actions.");
         Check(await FileDigest(f.File(".git/index")) == before && (await repository.GetStatusAsync()).Changes.Count == 0, "Reading actions does not stage or change files.");
+
+        await Git(repository, "tag", "tags/release", commit);
+        await Git(repository, "tag", "light-blob", blob);
+        await repository.SetConfigAsync("remote.origin.url", repository.Path);
+        await repository.SetConfigAsync("remote.origin.color", "#123456");
+        IReadOnlyList<GitReference> all = await repository.GetReferencesAsync();
+        const string targetsFormat = "--format=%(refname)%00%(if)%(authordate)%(then)%(objectname)%(else)%(*objectname)%(end)";
+        Dictionary<string, string?> targets = (await Git(repository, "for-each-ref", targetsFormat)).StandardOutput
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Split('\0'))
+            .ToDictionary(fields => fields[0], fields => fields[1].Length == 0 ? null : fields[1], StringComparer.Ordinal);
+        Check(all.Count == targets.Count, "General references retain every namespace, including notes and non-commit tags.");
+        foreach (GitReference reference in all)
+        {
+            string raw = (await Git(repository, "rev-parse", "--verify", "--end-of-options", reference.Name)).StandardOutput.Trim();
+            Check(reference.Hash == raw && reference.Sha1Id?.ToString() == raw, "General references preserve the raw identity and SHA1 projection.");
+            Check(reference.RevisionHash == targets[reference.Name], "Presentation targets match the native Windows expression, including nested/non-commit cases.");
+        }
+        Check(all.Single(reference => reference.Name == "refs/tags/annotated").RevisionHash == commit, "An annotated tag is attached to its commit.");
+        Check(all.Single(reference => reference.Name == "refs/tags/tags/release").ShortName == "tags/release", "A literal tags/ prefix is not stripped from a name.");
+        Check(all.Single(reference => reference.Name == "refs/remotes/origin/topic") is { RemoteColor: "#123456", RevisionHash: not null }, "Remote color enrichment retains target metadata.");
+        GitReference snapshot = all.Single(reference => reference.Name == "refs/tags/annotated");
+        await Git(repository, "tag", "-f", "-a", "annotated", "-m", "Changed metadata, same commit", commit);
+        GitReference replaced = (await repository.GetQuickActionReferencesAsync(commit)).Single(reference => reference.Name == snapshot.Name);
+        Check(snapshot.RevisionHash == replaced.RevisionHash && snapshot.Hash != replaced.Hash, "A tag rewritten at the same commit still changes the guarded native identity.");
     }
 
     private static async Task RemoteHeadsAsync()
@@ -83,6 +108,7 @@ internal static class QuickReferenceScenarios
         Check(await FileDigest(f.File(".git/config")) == config && await FileDigest(f.File(".git/index")) == indexBefore, "Action discovery preserves configuration and index bytes.");
         string barePath = Path.Combine(f.Root, "bare repository.git"); await Git(repository, "clone", "--bare", repository.Path, barePath);
         Check((await new GitRepository(barePath).GetQuickActionReferencesAsync(commit)).Count == references.Count, "Action discovery works without a worktree.");
+        Check((await new GitRepository(barePath).GetReferencesAsync()).All(reference => reference.RevisionHash == commit), "Bare display references retain their commit attachments.");
         string orphan = (await Git(repository, "commit-tree", "HEAD^{tree}", "-p", "HEAD", "-m", "Unreferenced")).StandardOutput.Trim();
         Check((await repository.GetQuickActionReferencesAsync(orphan)).Count == 0, "An existing commit with no reference has no action candidates.");
         string shaPath = Path.Combine(f.Root, "sha256"); Directory.CreateDirectory(shaPath); GitRepository sha = new(shaPath);
@@ -91,6 +117,8 @@ internal static class QuickReferenceScenarios
         await Git(sha, "tag", "-a", "sha-tag", "-m", "SHA256 tag");
         IReadOnlyList<GitReference> shaReferences = await sha.GetQuickActionReferencesAsync(shaCommit.ToUpperInvariant());
         Check(shaCommit.Length == 64 && shaReferences.Count == 2 && shaReferences.All(reference => reference.Hash.Length == 64), "Full SHA256 and uppercase input identities preserve native reference identities.");
+        GitReference shaTag = (await sha.GetReferencesAsync()).Single(reference => reference.IsTag);
+        Check(shaTag.RevisionHash == shaCommit && shaTag.Hash != shaCommit && shaTag.Sha1Id is null, "SHA256 tags keep separate raw and display identities without a false SHA1 projection.");
     }
 
     private static async Task CancellationAsync()

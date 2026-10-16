@@ -49,12 +49,8 @@ public sealed partial class GitRepository
 
     public async Task<IReadOnlyList<GitReference>> GetReferencesAsync(CancellationToken cancellationToken = default)
     {
-        GitResult result = await ExecuteAsync(["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(symref)"], cancellationToken).ConfigureAwait(false);
-        GitReference[] references = result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line =>
-        {
-            string[] fields = line.Split('\0');
-            return new GitReference(fields[0], fields[1], EmptyToNull(fields[2]), fields[3] == "*", EmptyToNull(fields[4]));
-        }).ToArray();
+        GitReference[] references = (await ReadReferenceTargetsAsync([], cancellationToken).ConfigureAwait(false))
+            .Select(target => target.Reference).ToArray();
         if (!references.Any(reference => reference.IsRemote)) { return references; }
         IReadOnlyList<KeyValuePair<string, string>> configuration = await GetConfigAsync("^remote\\.", cancellationToken: cancellationToken).ConfigureAwait(false);
         Dictionary<string, string?> colors = new(StringComparer.Ordinal);

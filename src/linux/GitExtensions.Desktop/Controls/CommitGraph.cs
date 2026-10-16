@@ -79,7 +79,7 @@ public sealed class CommitGraph : Control
         set
         {
             _references = value ?? [];
-            _refsByHash = _references.GroupBy(reference => reference.Hash, StringComparer.Ordinal)
+            _refsByHash = _references.Where(reference => reference.RevisionHash is not null).GroupBy(reference => reference.RevisionHash!, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
             InvalidateMeasure();
             InvalidateVisual();

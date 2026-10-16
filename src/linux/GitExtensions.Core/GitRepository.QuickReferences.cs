@@ -7,22 +7,13 @@ public sealed partial class GitRepository
         CancellationToken cancellationToken = default)
     {
         string commit = ValidateObjectId(commitHash);
-        // Keep Windows' authordate/raw-or-dereference expression, rather than adding our own
-        // tag peeling policy. Git versions can differ in how nested tags are dereferenced.
-        const string format = "--format=%(refname)%00%(objectname)%00"
-            + "%(if)%(authordate)%(then)%(objectname)%(else)%(*objectname)%(end)%00"
-            + "%(if)%(authordate)%(then)%(objecttype)%(else)%(*objecttype)%(end)%00"
-            + "%(upstream:short)%00%(HEAD)%00%(symref)";
-        GitResult result = await ExecuteAsync(["--no-optional-locks", "for-each-ref", format,
-            "refs/heads/", "refs/remotes/", "refs/tags/"], cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<ReferenceTarget> targets = await ReadReferenceTargetsAsync(
+            ["refs/heads/", "refs/remotes/", "refs/tags/"], cancellationToken, noOptionalLocks: true).ConfigureAwait(false);
         List<GitReference> references = [], defaultHeads = [];
-        foreach (string line in result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        foreach (ReferenceTarget target in targets)
         {
-            string[] fields = line.Split('\0');
-            if (fields.Length != 7) { throw new FormatException("Incomplete Git reference metadata."); }
-            if (fields[2] != commit || fields[3] != "commit") { continue; }
-            // Mutations guard the native ref object, including the tag object, rather than its commit.
-            GitReference reference = new(fields[0], fields[1], EmptyToNull(fields[4]), fields[5] == "*", EmptyToNull(fields[6]));
+            GitReference reference = target.Reference;
+            if (reference.RevisionHash != commit || target.ObjectType != "commit") { continue; }
             if (IsQuickActionDefaultRemoteHead(reference.Name)) { defaultHeads.Add(reference); }
             else { references.Add(reference); }
         }

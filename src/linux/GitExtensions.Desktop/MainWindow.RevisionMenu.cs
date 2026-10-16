@@ -209,7 +209,7 @@ public sealed partial class MainWindow
         }
         foreach ((string label, bool tags, string icon) in new[] { ("Branches", false, "Branch.png"), ("Tags", true, "Tag.png") })
         {
-            string[] names = _navigationReferences.Where(reference => selected.Any(commit => commit.Hash == reference.Hash)
+            string[] names = _navigationReferences.Where(reference => selected.Any(commit => commit.Hash == reference.RevisionHash)
                 && (tags ? reference.IsTag : reference.IsBranch || reference.IsRemote) && reference.SymbolicTarget is null)
                 .Select(reference => reference.ShortName).Distinct(StringComparer.Ordinal).ToArray();
             if (names.Length == 0) { continue; }

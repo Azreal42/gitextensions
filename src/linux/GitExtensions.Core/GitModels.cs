@@ -25,6 +25,8 @@ public sealed record GitCommit(string Hash, IReadOnlyList<string> Parents, strin
 
 public sealed record GitReference(string Name, string Hash, string? Upstream, bool IsCurrent, string? SymbolicTarget = null)
 {
+    /// <summary>Windows GetRefs' native raw-or-dereferenced target, distinct from the ref object's identity.</summary>
+    public string? RevisionHash { get; init; } = Hash;
     public string? RemoteColor { get; init; }
     public bool IsBranch => Name.StartsWith("refs/heads/", StringComparison.Ordinal);
     public bool IsRemote => Name.StartsWith("refs/remotes/", StringComparison.Ordinal);

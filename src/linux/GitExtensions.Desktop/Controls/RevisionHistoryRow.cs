@@ -29,11 +29,10 @@ public static class RevisionHistoryRow
         ArgumentNullException.ThrowIfNull(references);
         HistoryRow row = new(commit);
         if (commit is null) { return row; }
-        GitReference[] refs = references.Where(reference => reference.Hash == commit.Hash).DistinctBy(reference => reference.Name, StringComparer.Ordinal)
+        GitReference[] refs = references.Where(reference => reference.RevisionHash == commit.Hash).DistinctBy(reference => reference.Name, StringComparer.Ordinal)
             .OrderBy(reference => reference.IsCurrent ? 0 : reference.IsBranch ? 1 : reference.IsRemote ? 2 : 3)
             .ThenBy(reference => reference.Name, StringComparer.Ordinal).ToArray();
-        MessageCell message = new(commit.Subject, refs) { Name = "RevisionMessage", Margin = new Thickness(4, 0) };
-        ToolTip.SetTip(message, string.Join('\n', refs.Select(reference => reference.ShortName).Append(commit.Subject).Append(commit.Body).Where(text => text.Length > 0)));
+        MessageCell message = new(commit.Subject, commit.Body, refs) { Name = "RevisionMessage", Margin = new Thickness(4, 0) };
         if (refs.Any(reference => reference.IsCurrent)) { message.Subject.FontWeight = FontWeight.Bold; }
         row.Children.Add(message);
         Grid author = new() { Name = "RevisionAuthor", ColumnDefinitions = new ColumnDefinitions("20,*") };
@@ -117,7 +116,7 @@ public static class RevisionHistoryRow
                 ColumnDefinitions[4].Width = new GridLength(value.ShowNotesColumn ? 220 : 0);
             }
             MessageCell message = Children.OfType<MessageCell>().Single();
-            message.SetPresentation(value.Details, value.References.Where(r => r.Hash == _commit.Hash).DistinctBy(r => r.Name, StringComparer.Ordinal)
+            message.SetPresentation(value.Details, value.References.Where(r => r.RevisionHash == _commit.Hash).DistinctBy(r => r.Name, StringComparer.Ordinal)
                 .OrderBy(r => r.IsCurrent ? 0 : r.IsBranch ? 1 : r.IsRemote ? 2 : 3).ThenBy(r => r.Name, StringComparer.Ordinal).ToArray());
             _dim = value.Dim; ApplyState();
         }
@@ -182,23 +181,28 @@ public static class RevisionHistoryRow
 
     private sealed class MessageCell : Panel
     {
+        private readonly string _body;
         private ReferenceBadge[] _badges;
         private GitReference[] _references;
         private double[] _widths = [];
         private double _subjectWidth;
         public TextBlock Subject { get; }
         public TextBlock Details { get; }
-        public MessageCell(string subject, GitReference[] refs)
+        public MessageCell(string subject, string body, GitReference[] refs)
         {
             ClipToBounds = true;
+            _body = body;
             _references = refs; _badges = refs.Select(reference => new ReferenceBadge(reference)).ToArray();
             foreach (ReferenceBadge badge in _badges) { Children.Add(badge); }
             Subject = Cell("RevisionSubject", subject); Subject.Margin = default; Children.Add(Subject);
             Details = Cell("RevisionMessageDetails", ""); Details.Margin = default; Details.Foreground = Brushes.Gray; Children.Add(Details);
+            SetPresentation("", refs);
         }
         public void SetPresentation(string details, GitReference[] references)
         {
             Details.Text = details.Length == 0 ? "" : "  " + details;
+            ToolTip.SetTip(this, string.Join('\n', references.Select(reference => reference.ShortName)
+                .Append(Subject.Text!).Append(_body).Where(text => text.Length > 0)));
             if (_references.SequenceEqual(references)) { return; }
             foreach (ReferenceBadge badge in _badges) { Children.Remove(badge); }
             _references = references; _badges = references.Select(r => new ReferenceBadge(r)).ToArray();
