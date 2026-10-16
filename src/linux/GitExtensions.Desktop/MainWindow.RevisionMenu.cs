@@ -69,7 +69,8 @@ public sealed partial class MainWindow
         _commits.AddHandler(PointerPressedEvent, (_, args) =>
         {
             if (!args.GetCurrentPoint(_commits).Properties.IsRightButtonPressed || args.Source is not Control source) { return; }
-            GitCommit? commit = source.GetSelfAndVisualAncestors().OfType<ListBoxItem>().FirstOrDefault()?.DataContext as GitCommit;
+            ListBoxItem? row = source.GetSelfAndVisualAncestors().OfType<ListBoxItem>().FirstOrDefault();
+            GitCommit? commit = row?.DataContext as GitCommit;
             if (commit is not null && !ReferenceEquals(_commits.SelectedItem, commit))
             {
                 GitCommit[] preserved = _commits.SelectedItems?.Contains(commit) == true
@@ -82,6 +83,7 @@ public sealed partial class MainWindow
                 }
                 finally { _selectingRevisionForContextMenu = false; }
             }
+            if (commit is not null) { row!.Focus(); }
         }, RoutingStrategies.Tunnel);
         PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu();
         return _revisionContext;
