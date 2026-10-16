@@ -218,3 +218,14 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Un élément masqué revient dans le débordement | Appliquer le même prédicat de visibilité aux hôtes inline et aux éléments du popup ; garder IsVisible propre aux commandes conditionnelles. |
 | Un tri ou une option de label perd le focus | Les options visuelles actualisent les contrôles existants. Seules les options nécessitant de nouvelles données relisent Git. |
 | Alt+flèche navigue puis sélectionne Start au relâchement | Le handler du tunnel de la fenêtre marquait la touche traitée avant le preview AccessKeyHandler, qui ignorait alors le chord. Traiter les gestes Alt dans le tunnel enfant ; vérifier aussi les événements des modificateurs et le rendu X11 réel. |
+
+## Inventaire des fenêtres
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Le nombre de fichiers Form*.cs donne un faux total | Fusionner les classes partielles/Designer et suivre l’héritage Form ; inclure les noms sans préfixe Form, plugins, askpass C++ et fabriques dynamiques. |
+| FormSettings semble porté alors que ses pages manquent | Évaluer séparément chaque page et les six paramètres CI, sans compter les bases techniques. |
+| Un prompt ou un lien externe devient une fenêtre « complète » | Distinguer N1 substitut minimal, N2 partiel, N3 fonctionnel ciblé et N4 parité entièrement auditée. Aucun N4 attribué au recensement du 16 octobre. |
+| Un test voisin certifie abusivement l’interface d’un plugin | Lier le vrai scénario et son type de preuve : tests UI Desktop ou moteur Plugins. Un test de moteur ne valide pas sa fenêtre. |
+| Une résolution de conflit fichier est assimilée à celle d’un sous-module | Le resolver refuse Base/Ours/Theirs d’un gitlink 160000 ; le staging manuel reste possible, mais FormMergeSubmodule demeure sans équivalent d’assistant. |
+| Le contrôle d’un CSV LF/CRLF échoue immédiatement après génération | Générer les CSV avec un terminateur LF explicite pour que le contenu relu soit identique sur Linux. |
