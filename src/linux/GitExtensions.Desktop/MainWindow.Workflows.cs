@@ -392,7 +392,19 @@ public sealed partial class MainWindow
         await ShowRepositoryDialogAsync(new AddSubmoduleDialog(repository));
     }
 
-    private Task OpenSubmoduleAsync() => _submodules.SelectedItem is GitSubmodule module && _repository is not null ? OpenRepositoryAsync(Path.Combine(_repository.Path, module.Path)) : Task.CompletedTask;
+    private async Task OpenSubmoduleAsync()
+    {
+        if (_repository is not { IsBare: false } repository || _busy || _submodules.SelectedItem is not GitSubmodule selected) { return; }
+        GitRepository? module = null;
+        await RunAsync("Open submodule", async _ =>
+        {
+            GitSubmoduleSnapshot snapshot = (await repository.GetSubmoduleSnapshotsAsync(Token)).SingleOrDefault(item =>
+                item.Name == selected.Name && item.Path == selected.Path && item.IndexHead == selected.ExpectedHead)
+                ?? throw new InvalidOperationException(T("The submodule registration changed. Refresh and select it again."));
+            module = await repository.OpenSubmoduleRepositoryAsync(snapshot, Token);
+        }, refresh: false);
+        if (module is not null && _repository == repository && !_lifetime.IsCancellationRequested) { await OpenRepositoryAsync(module.Path); }
+    }
 
     private Task ShowFileAsync(string path, CancellationToken parent = default)
     {

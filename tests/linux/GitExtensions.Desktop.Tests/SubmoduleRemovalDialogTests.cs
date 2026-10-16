@@ -31,7 +31,7 @@ public class SubmoduleRemovalDialogTests
             Assert.That(await f.SnapshotAsync(), Is.EqualTo(before)); Assert.That(dialog.HasRepositoryChanges, Is.False);
             Click(dialog, "RemoveSubmodule"); question = await QuestionAsync(dialog); question.Close();
             await Until(() => dialog.OwnedWindows.Count == 0); Assert.That(await f.SnapshotAsync(), Is.EqualTo(before));
-            Assert.That(Field<ListBox>(dialog, "RemovalSubmodules").SelectedItem, Is.TypeOf<GitSubmoduleRemovalSelection>());
+            Assert.That(Field<ListBox>(dialog, "RemovalSubmodules").SelectedItem, Is.TypeOf<GitSubmoduleSnapshot>());
         }
         finally { dialog.Close(); }
     }
@@ -52,7 +52,7 @@ public class SubmoduleRemovalDialogTests
             Assert.That(Field<TextBox>(dialog, "RemovalSubmoduleCommit").Text, Is.EqualTo(head));
             Assert.That(Field<TextBox>(dialog, "RemovalSubmoduleBranch").Text, Is.EqualTo("heads/main"));
             Assert.That(Field<TextBox>(dialog, "RemovalSubmoduleStatus").Text, Is.EqualTo("Modified"));
-            Assert.That(((GitSubmoduleRemovalSelection)Field<ListBox>(dialog, "RemovalSubmodules").SelectedItem!).IndexHead, Is.Not.EqualTo(head), "Readonly details must never replace the indexed selection identity.");
+            Assert.That(((GitSubmoduleSnapshot)Field<ListBox>(dialog, "RemovalSubmodules").SelectedItem!).IndexHead, Is.Not.EqualTo(head), "Readonly details must never replace the indexed selection identity.");
             // Windows takes the describe suffix from submodule status, including tags in detached checkouts.
             await moduleRepository.CreateTagAsync("module-tag"); await moduleRepository.CheckoutAsync(head, detached: true);
             await dialog.InitializeAsync();
@@ -62,10 +62,10 @@ public class SubmoduleRemovalDialogTests
             string nativeStatus = (await f.Root.GitAsync("--literal-pathspecs", "submodule", "status", "--", f.Path)).StandardOutput;
             Assert.That(nativeStatus, Does.Contain(head + " " + f.Path + " (module-tag)"), "Readonly description must match the actual native status without parsing newline paths.");
             ListBox modules = Field<ListBox>(dialog, "RemovalSubmodules"); Click(dialog, "RemoveSubmodule"); Window question = await QuestionAsync(dialog);
-            modules.SelectedItem = modules.Items.OfType<GitSubmoduleRemovalSelection>().Single(item => item.Name == "other");
+            modules.SelectedItem = modules.Items.OfType<GitSubmoduleSnapshot>().Single(item => item.Name == "other");
             Click(question, "ConfirmRemoveSubmodule"); await Until(() => !dialog.IsBusy && dialog.HasRepositoryChanges);
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
-            Assert.That(modules.Items.OfType<GitSubmoduleRemovalSelection>().Select(item => item.Name), Is.EqualTo(new[] { "other" }));
+            Assert.That(modules.Items.OfType<GitSubmoduleSnapshot>().Select(item => item.Name), Is.EqualTo(new[] { "other" }));
             Assert.That(await File.ReadAllBytesAsync(untracked), Is.EqualTo(new byte[] { 0, 255, 128 })); Assert.That(Directory.Exists(internalGit), Is.True);
             Assert.That(await new GitRepository(System.IO.Path.Combine(f.Root.Repository.Path, f.Path)).ResolveRevisionAsync("HEAD"), Is.EqualTo(head));
             Assert.That(Field<Button>(dialog, "RemoveSubmodule").IsEnabled, Is.False, "The remaining module must require explicit selection.");
@@ -101,7 +101,7 @@ public class SubmoduleRemovalDialogTests
             await File.AppendAllTextAsync(f.Root.PathInRepository(".gitmodules"), "# changed outside the dialogue\n"); string before = await f.SnapshotAsync();
             Click(question, "ConfirmRemoveSubmodule"); await Until(() => dialog.LastException is not null && !dialog.IsBusy);
             Assert.That(dialog.LastException, Is.TypeOf<InvalidOperationException>()); Assert.That(dialog.LastError, Does.Contain("changed"));
-            Assert.That(await f.SnapshotAsync(), Is.EqualTo(before)); Assert.That(dialog.HasRepositoryChanges, Is.False);
+            Assert.That(await f.SnapshotAsync(), Is.EqualTo(before)); Assert.That(dialog.HasRepositoryChanges, Is.True, "A confirmed native removal attempt conservatively refreshes the parent even when revalidation rejects it.");
             Assert.That(Field<ListBox>(dialog, "RemovalSubmodules").Items.Count, Is.EqualTo(1));
         }
         finally { dialog.Close(); }
@@ -131,21 +131,24 @@ public class SubmoduleRemovalDialogTests
             await main.OpenRepositoryAsync(f.Root.Repository.Path);
             MenuItem menu = main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Header as string == "Repository");
             menu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Submodules…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            await Until(() => main.OwnedWindows.Any(window => window.Title?.StartsWith("Submodules", StringComparison.Ordinal) == true)); Window panel = main.OwnedWindows.Single(window => window.Title?.StartsWith("Submodules", StringComparison.Ordinal) == true);
-            ListBox list = Field<ListBox>(panel, "SubmodulesList"); list.SelectedItem = list.Items.OfType<GitSubmodule>().Single();
-            await Until(() => Field<Button>(panel, "RemoveSubmoduleRegistration").IsEnabled); PointerClick(panel, "RemoveSubmoduleRegistration");
-            await Until(() => panel.OwnedWindows.OfType<SubmoduleRemovalDialog>().Any()); SubmoduleRemovalDialog dialog = panel.OwnedWindows.OfType<SubmoduleRemovalDialog>().Single();
+            await Until(() => main.OwnedWindows.OfType<SubmoduleRemovalDialog>().Any());
+            SubmoduleRemovalDialog dialog = main.OwnedWindows.OfType<SubmoduleRemovalDialog>().Single();
             await Until(() => !dialog.IsBusy && Field<Button>(dialog, "RemoveSubmodule").IsEnabled);
             Assert.That(dialog.ActualThemeVariant, Is.EqualTo(ThemeVariant.Dark)); PointerClick(dialog, "RemoveSubmodule");
             Window question = await QuestionAsync(dialog); Assert.That(question.ActualThemeVariant, Is.EqualTo(ThemeVariant.Dark)); PointerClick(question, "KeepSubmodule");
             await Until(() => dialog.OwnedWindows.Count == 0); Assert.That(await f.Root.Repository.GetSubmodulesAsync(), Has.Count.EqualTo(1));
             PointerClick(dialog, "RemoveSubmodule"); question = await QuestionAsync(dialog); PointerClick(question, "ConfirmRemoveSubmodule");
             await Until(() => !dialog.IsBusy && dialog.HasRepositoryChanges); Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
-            dialog.Close(); await Until(() => !main.IsBusy && list.Items.Count == 0);
+            dialog.Close(); await Until(() => !main.IsBusy && !dialog.IsVisible);
             Assert.That(main.LastException, Is.Null, main.LastException?.ToString()); Assert.That(File.Exists(f.Root.PathInRepository(".gitmodules")), Is.True);
             Assert.That(File.Exists(f.Root.PathInRepository(ModuleFilePath("file.txt"))), Is.True);
             Assert.That(Directory.Exists(f.Root.PathInRepository(".git/modules/module")), Is.True);
-            Assert.That(Field<Button>(panel, "RemoveSubmoduleRegistration").IsEnabled, Is.False); panel.Close();
+            menu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Submodules…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            await Until(() => main.OwnedWindows.OfType<SubmoduleRemovalDialog>().Any());
+            SubmoduleRemovalDialog reopened = main.OwnedWindows.OfType<SubmoduleRemovalDialog>().Single();
+            await Until(() => !reopened.IsBusy && Field<Button>(reopened, "AddSubmodule").IsEnabled);
+            Assert.That(Field<ListBox>(reopened, "RemovalSubmodules").Items, Is.Empty);
+            Assert.That(Field<Button>(reopened, "RemoveSubmodule").IsEnabled, Is.False); reopened.Close();
         }
         finally { main.Close(); }
     }
@@ -159,10 +162,9 @@ public class SubmoduleRemovalDialogTests
             await main.OpenRepositoryAsync(f.Root.Repository.Path);
             MenuItem menu = main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Header as string == "Repository");
             menu.Items.OfType<MenuItem>().Single(item => item.Header as string == "Submodules…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-            await Until(() => main.OwnedWindows.Any(window => window.Title?.StartsWith("Submodules", StringComparison.Ordinal) == true)); Window panel = main.OwnedWindows.Single(window => window.Title?.StartsWith("Submodules", StringComparison.Ordinal) == true);
-            ListBox list = Field<ListBox>(panel, "SubmodulesList"); list.SelectedItem = list.Items.OfType<GitSubmodule>().Single();
-            Click(panel, "RemoveSubmoduleRegistration"); await Until(() => panel.OwnedWindows.OfType<SubmoduleRemovalDialog>().Any());
-            SubmoduleRemovalDialog dialog = panel.OwnedWindows.OfType<SubmoduleRemovalDialog>().Single(); await Until(() => !dialog.IsBusy && Field<Button>(dialog, "RemoveSubmodule").IsEnabled);
+            await Until(() => main.OwnedWindows.OfType<SubmoduleRemovalDialog>().Any());
+            SubmoduleRemovalDialog dialog = main.OwnedWindows.OfType<SubmoduleRemovalDialog>().Single();
+            await Until(() => !dialog.IsBusy && Field<Button>(dialog, "RemoveSubmodule").IsEnabled);
             string before = await f.SnapshotAsync(); Click(dialog, "RemoveSubmodule"); Window question = await QuestionAsync(dialog); main.Close();
             await Until(() => !dialog.IsVisible && !question.IsVisible && !main.IsBusy); Assert.That(await f.SnapshotAsync(), Is.EqualTo(before));
         }

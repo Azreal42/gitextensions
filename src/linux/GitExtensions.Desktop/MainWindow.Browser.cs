@@ -404,6 +404,7 @@ public sealed partial class MainWindow
     {
         if (name == "Stashes") { await ShowStashDialogAsync(); return; }
         if (name == "Worktrees") { await ManageWorktreesAsync(); return; }
+        if (name == "Submodules") { await ManageSubmodulesAsync(); return; }
         if (name == "Changes")
         {
             if (_repository is null || _busy) { return; }

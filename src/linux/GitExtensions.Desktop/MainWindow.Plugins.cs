@@ -101,12 +101,6 @@ public sealed partial class MainWindow
                     token.IsCancellationRequested || _repository != repository || _busy ? Task.CompletedTask : RefreshAsync());
             }), options ?? BackgroundFetchOptions.FromValues(PluginSettings(BackgroundFetchService.Descriptor)), _lifetime.Token);
 
-    private Task UpdateSubmodulesAndBuildAsync() => RunAsync("Update submodules", async repository =>
-    {
-        await repository.UpdateSubmodulesAsync(cancellationToken: Token);
-        await AfterSubmoduleUpdateAsync(repository, WorkflowOwner, Token);
-    });
-
     private async Task AfterSubmoduleUpdateAsync(GitRepository repository, Window owner, CancellationToken token)
     {
         AutoCompileSubmodulesResult builds = await _autoCompile.AfterSubmoduleUpdateAsync(repository, actionSucceeded: true,

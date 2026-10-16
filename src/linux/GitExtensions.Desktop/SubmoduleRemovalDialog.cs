@@ -1,144 +1,118 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
 
-/// <summary>The original FormSubmodules Remove workflow; it retains module files and repositories.</summary>
-public sealed class SubmoduleRemovalDialog : RepositoryDialog
+/// <summary>The shared FormSubmodules manager, including its data-preserving Remove workflow.</summary>
+public sealed partial class SubmoduleRemovalDialog : RepositoryDialog
 {
-    private readonly ListBox _modules = new() { Name = "RemovalSubmodules", SelectionMode = SelectionMode.Single };
+    private readonly ListBox _modules = new() { Name = "RemovalSubmodules", SelectionMode = SelectionMode.Single, Focusable = true };
     private readonly TextBox _name = Detail("RemovalSubmoduleName");
     private readonly TextBox _remote = Detail("RemovalSubmoduleRemotePath");
     private readonly TextBox _path = Detail("RemovalSubmoduleLocalPath");
     private readonly TextBox _commit = Detail("RemovalSubmoduleCommit");
     private readonly TextBox _branch = Detail("RemovalSubmoduleBranch");
     private readonly TextBox _state = Detail("RemovalSubmoduleStatus");
-    private readonly Button _remove;
+    private readonly Button _remove, _update, _sync, _pull, _add;
     private readonly GitSubmodule? _initialSelection;
-    private bool _confirming;
-    private readonly Dictionary<string, (GitSubmodule Module, string? Branch)> _details = new(StringComparer.Ordinal);
+    private readonly Func<Window, GitRepository, CancellationToken, Task>? _afterSubmoduleUpdateAsync;
+    private readonly Func<Window, GitRepository, bool, CancellationToken, Task>? _resolveConflictsAsync;
+    private readonly SubmoduleDialogPreferencesStore _preferences;
+    private bool _confirming, _ready, _loaded;
+    private Window? _closingOwner;
 
-    public SubmoduleRemovalDialog(GitRepository repository, GitSubmodule? selected = null) : base(repository, "Submodules")
+    public GitProcessDialogResult? LastProcess { get; private set; }
+
+    public SubmoduleRemovalDialog(GitRepository repository, GitSubmodule? selected = null,
+        Func<Window, GitRepository, CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
+        Func<Window, GitRepository, bool, CancellationToken, Task>? resolveConflictsAsync = null,
+        string? preferencesPath = null) : base(repository, "Submodules")
     {
-        _initialSelection = selected;
-        Name = "SubmoduleRemoval";
-        Title = Original("$this", "Submodules");
-        Width = 782; Height = 372; MinWidth = 650; MinHeight = 320;
+        _initialSelection = selected; _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
+        _resolveConflictsAsync = resolveConflictsAsync; _preferences = new(preferencesPath);
+        Name = "SubmoduleRemoval"; Title = Original("$this", "Submodules");
+        Width = 782; Height = 372; MinWidth = 710; MinHeight = 350;
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
+        CollapseEmptyStatus(); ConstrainStatusHeight("SubmodulesStatusScroll", 70);
         _remove = Action("RemoveSubmodule", Original("RemoveSubmodule", "Remove"), RemoveAsync);
-        _remove.Height = 25; _remove.MinWidth = 90;
-        Button close = new() { Name = "CloseSubmoduleRemoval", Content = T("Close"), IsCancel = true, Height = 25, MinWidth = 75 };
-        close.Click += (_, _) => Close();
-        StackPanel buttons = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Margin = new Thickness(10) };
-        buttons.Children.Add(_remove); buttons.Children.Add(close);
-        DockPanel.SetDock(buttons, Dock.Bottom); Root.Children.Add(buttons);
-        Grid body = new() { ColumnDefinitions = new("222,*"), ColumnSpacing = 10, Margin = new Thickness(10, 10, 10, 0) };
-        DockPanel left = new();
-        Grid header = new() { ColumnDefinitions = new("*,90"), Margin = new Thickness(6, 0, 6, 3) };
-        header.Children.Add(new TextBlock { Name = "RemovalNameHeader", Text = Translations.Translate("FormSubmodules", "nameDataGridViewTextBoxColumn", "HeaderText", "Name") });
-        TextBlock statusHeader = new() { Name = "RemovalStatusHeader", Text = Translations.Translate("FormSubmodules", "Status", "HeaderText", "Status") }; Grid.SetColumn(statusHeader, 1); header.Children.Add(statusHeader);
-        DockPanel.SetDock(header, Dock.Top); left.Children.Add(header); left.Children.Add(_modules); body.Children.Add(left);
-        _modules.ItemTemplate = new FuncDataTemplate<GitSubmoduleRemovalSelection>((item, _) =>
-        {
-            Grid row = new() { ColumnDefinitions = new("*,90") };
-            row.Children.Add(new TextBlock { Text = item?.Name, TextTrimming = TextTrimming.CharacterEllipsis });
-            TextBlock state = new() { Text = item is null ? "" : OriginalStatus(item), TextTrimming = TextTrimming.CharacterEllipsis };
-            Grid.SetColumn(state, 1); row.Children.Add(state); return row;
-        });
-        Grid details = new() { ColumnDefinitions = new("Auto,*"), RowDefinitions = new("Auto,25,25,25,25,25,25"), RowSpacing = 7 };
-        TextBlock caption = new() { Text = Original("groupBox1", "Details"), FontWeight = FontWeight.Bold };
-        Grid.SetColumnSpan(caption, 2); details.Children.Add(caption);
-        (string Key, string Label, TextBox Input)[] fields = [("label1", "Name", _name), ("label2", "Remote path", _remote), ("label3", "Local path", _path), ("label4", "Commit", _commit), ("label5", "Branch", _branch), ("label6", "Status", _state)];
-        for (int i = 0; i < fields.Length; i++)
-        {
-            TextBlock label = new() { Text = Original(fields[i].Key, fields[i].Label), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            Grid.SetRow(label, i + 1); details.Children.Add(label);
-            Grid.SetRow(fields[i].Input, i + 1); Grid.SetColumn(fields[i].Input, 1); details.Children.Add(fields[i].Input);
-        }
-        Grid.SetColumn(details, 1); body.Children.Add(details); Root.Children.Add(body);
+        _update = OriginalButton("UpdateSubmodule", "Update", () => ProcessAsync(sync: false), "SubmodulesUpdate");
+        _sync = OriginalButton("SynchronizeSubmodule", "Synchronize", () => ProcessAsync(sync: true), "SubmodulesSync");
+        _add = OriginalButton("AddSubmodule", "Add submodule", AddAsync);
+        _pull = OriginalButton("PullSubmodule", "", PullAsync);
+        _pull.Content = ResetDialogControls.Icon("Pull");
+        _pull.Width = _pull.Height = _pull.MinWidth = _pull.MinHeight = 24; _pull.Padding = new Thickness(2);
+        ToolTip.SetTip(_pull, T("Pull"));
+        foreach (Button button in new[] { _remove, _update, _sync }) { button.MinWidth = 115; button.Height = 27; }
+        _add.Width = _add.MaxWidth = 202; _add.Height = 27; _add.HorizontalAlignment = HorizontalAlignment.Left;
+        _modules.TabIndex = _add.TabIndex = 0; _sync.TabIndex = 5; _update.TabIndex = 3; _remove.TabIndex = 6; _pull.TabIndex = 22;
+        _name.TabIndex = 8; _remote.TabIndex = 9; _path.TabIndex = 10; _commit.TabIndex = 17; _branch.TabIndex = _state.TabIndex = 13;
+        BuildOriginalLayout();
+        Track(_modules);
         _modules.SelectionChanged += (_, _) => { ShowSelection(); UpdateActions(); };
+        Closing += (_, args) =>
+        {
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingOwner = Owner as Window; }
+            if (_confirming) { foreach (Window child in OwnedWindows.ToArray()) { child.Close(); } }
+        };
+        Closed += (_, _) =>
+        {
+            _preferences.Save(new(_layout.ColumnDefinitions[0].Width.Value));
+            Window? owner = _closingOwner; _closingOwner = null;
+            if (owner is not null) { Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
         UpdateActions();
     }
 
-    public override Task InitializeAsync() => RunAsync("Submodules", async token =>
-    {
-        IReadOnlyList<GitSubmoduleRemovalSelection> entries = await Repository.GetSubmoduleRemovalSelectionsAsync(token);
-        await ReadDetailsAsync(entries, token);
-        _modules.ItemsSource = entries;
-        // Never substitute another module when a requested selection vanished.
-        _modules.SelectedItem = _initialSelection is null ? entries.FirstOrDefault() : entries.SingleOrDefault(item =>
-            item.Name == _initialSelection.Name && item.Path == _initialSelection.Path && item.IndexHead == _initialSelection.ExpectedHead);
-        ShowSelection();
-        Status.Text = T("Submodules");
-    });
+    private string Original(string key, string source) => Translations.Translate("FormSubmodules", key, "Text", source);
+    private static TextBox Detail(string name) => new() { Name = name, IsReadOnly = true, Height = 25, MinWidth = 0 };
+    private GitSubmoduleSnapshot? Selected => _modules.SelectedItem as GitSubmoduleSnapshot;
 
-    private async Task RemoveAsync()
+    public override async Task InitializeAsync()
     {
-        if (IsBusy || _confirming || _modules.SelectedItem is not GitSubmoduleRemovalSelection selected) { return; }
-        _confirming = true; UpdateActions();
-        try
+        GitSubmoduleSnapshot? selected = Selected;
+        await RunAsync("Submodules", async token =>
         {
-            SubmoduleRemovalConfirmation confirmation = new(Translations, selected) { RequestedThemeVariant = ActualThemeVariant };
-            if (!await confirmation.ShowDialog<bool>(this) || !IsVisible) { return; }
-            await RunAsync(Original("RemoveSubmodule", "Remove"), async token =>
-            {
-                await Repository.RemoveSubmoduleAsync(selected, token);
-                MarkRepositoryChanged();
-                // Query indexed registrations, so the intentionally retained last .gitmodules file does not resurrect the row.
-                IReadOnlyList<GitSubmoduleRemovalSelection> entries = await Repository.GetSubmoduleRemovalSelectionsAsync(token);
-                await ReadDetailsAsync(entries, token);
-                _modules.ItemsSource = entries;
-                _modules.SelectedItem = null; ShowSelection();
-                Status.Text = T("Submodules");
-            });
-        }
-        finally { _confirming = false; UpdateActions(); }
+            IReadOnlyList<GitSubmoduleSnapshot> entries = await Repository.GetSubmoduleSnapshotsAsync(token);
+            _modules.ItemsSource = entries;
+            _modules.SelectedItem = !_loaded
+                ? _initialSelection is null ? entries.FirstOrDefault() : entries.SingleOrDefault(item =>
+                    item.Name == _initialSelection.Name && item.Path == _initialSelection.Path && item.IndexHead == _initialSelection.ExpectedHead)
+                : entries.SingleOrDefault(item => item.Name == selected?.Name && item.Path == selected?.Path);
+            _loaded = _ready = true; ShowSelection(); Status.Text = "";
+        });
+        if (IsVisible && _ready) { _modules.Focus(); }
     }
 
-    protected override void UpdateActions() => _remove.IsEnabled = !IsBusy && !_confirming && _modules.SelectedItem is GitSubmoduleRemovalSelection;
-    private string Original(string key, string source) => Translations.Translate("FormSubmodules", key, "Text", source);
-    private static TextBox Detail(string name) => new() { Name = name, IsReadOnly = true, Height = 25 };
+    private async Task ReloadAsync(GitSubmoduleSnapshot? selected, CancellationToken token, string? addedPath = null)
+    {
+        IReadOnlyList<GitSubmoduleSnapshot> entries = await Repository.GetSubmoduleSnapshotsAsync(token);
+        _modules.ItemsSource = entries;
+        _modules.SelectedItem = addedPath is not null ? entries.SingleOrDefault(item => item.Path == addedPath)
+            : selected is null ? null : entries.SingleOrDefault(item => item.Name == selected.Name && item.Path == selected.Path);
+        _ready = true; ShowSelection(); Status.Text = "";
+    }
+
     private void ShowSelection()
     {
-        GitSubmoduleRemovalSelection? item = _modules.SelectedItem as GitSubmoduleRemovalSelection;
+        GitSubmoduleSnapshot? item = Selected;
         _name.Text = item?.Name; _remote.Text = item?.Url; _path.Text = item?.Path;
-        _commit.Text = item is null ? null : _details.TryGetValue(item.Path, out var details) ? details.Module.Head ?? item.IndexHead : item.IndexHead;
-        _branch.Text = item is not null && _details.TryGetValue(item.Path, out var branch) ? branch.Branch : null;
-        _state.Text = item is null ? "" : OriginalStatus(item);
+        _commit.Text = item?.Commit; _branch.Text = item?.Branch; _state.Text = item?.Status;
+        ToolTip.SetTip(_state, item?.ValidationError);
     }
 
-    private string OriginalStatus(GitSubmoduleRemovalSelection item)
+    protected override void UpdateActions()
     {
-        // These are literal dynamic GitSubmoduleInfo.Status values in Windows, without XLF entries.
-        if (!item.IsInitialized) { return "Not initialized"; }
-        return _details.TryGetValue(item.Path, out var details) && details.Module.Head == item.IndexHead ? "Up-to-date" : "Modified";
-    }
-
-    private async Task ReadDetailsAsync(IReadOnlyList<GitSubmoduleRemovalSelection> entries, CancellationToken token)
-    {
-        _details.Clear();
-        IReadOnlyList<GitSubmodule> modules = await Repository.GetSubmodulesAsync(token);
-        foreach (GitSubmoduleRemovalSelection item in entries)
-        {
-            GitSubmodule? module = modules.SingleOrDefault(module => module.Name == item.Name && module.Path == item.Path && module.ExpectedHead == item.IndexHead);
-            if (module is null) { continue; }
-            string? branch = null;
-            if (module.IsInitialized && module.Head is not null)
-            {
-                GitResult result = await new GitRunner().RunAsync(System.IO.Path.Combine(Repository.Path, module.Path),
-                    ["--no-optional-locks", "describe", "--all", "--always", module.Head], token);
-                if (result.Success)
-                {
-                    branch = result.StandardOutput.TrimEnd('\r', '\n');
-                    // git submodule status (and the Windows Branch column) omits the tags/ qualifier.
-                    if (branch.StartsWith("tags/", StringComparison.Ordinal)) { branch = branch[5..]; }
-                }
-            }
-            _details.Add(item.Path, (module, branch));
-        }
+        bool enabled = _ready && !IsBusy && !_confirming;
+        _remove.IsEnabled = enabled && Selected?.CanRemove == true;
+        _update.IsEnabled = enabled && Selected?.CanUpdate == true;
+        _sync.IsEnabled = enabled && Selected?.CanSync == true;
+        _pull.IsEnabled = enabled && Selected?.CanOpen == true;
+        _add.IsEnabled = enabled && !Repository.IsBare;
+        _modules.IsEnabled = enabled;
     }
 }
 

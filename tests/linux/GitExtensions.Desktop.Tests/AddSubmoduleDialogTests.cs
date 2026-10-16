@@ -332,17 +332,17 @@ public sealed class AddSubmoduleDialogTests
         repository.Items.OfType<MenuItem>().Single(item => Header(item.Header) == "Submodules…").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => main.OwnedWindows.Any(window => window.Title?.StartsWith("Submodules", StringComparison.Ordinal) == true));
         Window panel = main.OwnedWindows.Single(window => window.Title?.StartsWith("Submodules", StringComparison.Ordinal) == true);
-        Button add = panel.GetVisualDescendants().OfType<Button>().Single(button => Header(button.Content) == "Add…"); Click(add);
+        Button add = Field<Button>(panel, "AddSubmodule"); await Until(() => !((RepositoryDialog)panel).IsBusy && add.IsEnabled); Click(add);
         AddSubmoduleDialog dialog = await OwnedAsync<AddSubmoduleDialog>(main); Assert.That(dialog.Owner, Is.SameAs(panel)); Fill(dialog, f.Source.Path, "modules/from-main", Fixture.Topic);
         Click(Add(dialog)); GitProcessDialog process = await FinishedProcessAsync(dialog); Assert.That(process.Outcome?.Success, Is.True, process.Error?.ToString()); Click(Field<Button>(process, "Ok"));
-        await Until(() => !main.IsBusy && !dialog.IsVisible && Field<ListBox>(panel, "SubmodulesList").Items.OfType<GitSubmodule>().Any(module => module.Path == "modules/from-main"));
+        await Until(() => !((RepositoryDialog)panel).IsBusy && !dialog.IsVisible && Field<ListBox>(panel, "RemovalSubmodules").Items.OfType<GitSubmoduleSnapshot>().Any(module => module.Path == "modules/from-main"));
         Assert.That(Field<TextBox>(main, "RepositoryPath").Text, Is.EqualTo(f.Root.Repository.Path));
         Click(add); dialog = await OwnedAsync<AddSubmoduleDialog>(main); Fill(dialog, f.Root.Output("missing-native-source"), "modules/failure", "");
         Click(Add(dialog)); process = await FinishedProcessAsync(dialog); Assert.That(process.Outcome?.Success, Is.False);
         await f.Root.GitAsync("-c", "protocol.file.allow=always", "submodule", "add", "--", f.Other.Path, "modules/external-during-attempt");
         Click(Field<Button>(process, "Ok")); await Until(() => !dialog.IsBusy); Assert.That(dialog.IsVisible, Is.True); Assert.That(dialog.HasRepositoryChanges, Is.True);
-        dialog.Close(); await Until(() => !main.IsBusy && Field<ListBox>(panel, "SubmodulesList").Items.OfType<GitSubmodule>().Count() == 2);
-        Assert.That(Field<ListBox>(panel, "SubmodulesList").Items.OfType<GitSubmodule>().Select(module => module.Path), Is.EquivalentTo(new[] { "modules/from-main", "modules/external-during-attempt" }));
+        dialog.Close(); await Until(() => !((RepositoryDialog)panel).IsBusy && Field<ListBox>(panel, "RemovalSubmodules").Items.OfType<GitSubmoduleSnapshot>().Count() == 2);
+        Assert.That(Field<ListBox>(panel, "RemovalSubmodules").Items.OfType<GitSubmoduleSnapshot>().Select(module => module.Path), Is.EquivalentTo(new[] { "modules/from-main", "modules/external-during-attempt" }));
         Assert.That(main.LastException, Is.Null);
     }
 
