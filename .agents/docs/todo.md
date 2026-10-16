@@ -129,3 +129,11 @@ Aucune famille ouverte n'est retirée du périmètre.
 Les 34 contrôles ciblés de `history-menus-checks-20261016-03` sont passés (0 échec/ignoré) ; la suite complète du code final, le paquet et son installation restent en cours. Aucun push. Les 13 familles restent ouvertes.
 
 Le candidat `62f40c093` n’est pas livré : le parcours X11 a détecté une réouverture de Start à Alt-up. Routage corrigé après le preview Avalonia et 19 contrôles ciblés supplémentaires passés (`history-menus-checks-20261016-04`), dont le cycle complet des modificateurs ; paquet final et validation complète à remplacer par la source corrigée. Les essais natifs 01/02 sont conservés hors acceptation de la navigation (nettoyage SIGTERM, exit -15).
+
+Validation finale des menus : source `879f7bae3`, 874 Desktop, 430 Core et 35 Plugins, soit 1 339 contrôles distincts, zéro échec/ignoré. [Résultats source](../../artifacts/linux/snapshots/879f7bae3/proofs/source-validation.json). Les 19 tests ciblés finaux incluent le relâchement réel de Alt. Les 34 contrôles intermédiaires restent attribués à leur état antérieur.
+
+Le [paquet corrigé](../../artifacts/linux/snapshots/879f7bae3/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) (`7.2.1-linux-alpha`), SHA256 `a6fc0c394d1f4741f9b57408dc574812b1d4a15f233228dc2631640a3e283c4c`, a passé les contrôles d’extraction, installation et lancement isolés. Le [parcours X11 clair/sombre](../../artifacts/linux/snapshots/879f7bae3/proofs/native-menu-navigation-20261016-03.json) du payload exact valide les deux menus, le clic, Ctrl+P, Alt+← avec relâchement et la flèche haut : lignes 2 → 3 → 2 → 1, focus conservé. Nettoyage des seuls processus de test par SIGTERM (-15), sans acceptation de fermeture normale/redémarrage ni audit natif étendu.
+
+La mise à jour hôte attend encore la validation Ubuntu ; le paquet vérifié est prêt. Ne pas la considérer comme installée.
+
+Les options superproject, CI et Scripts restent désactivées avec explication ; les sélecteurs de parents/enfants et la recherche incrémentale Windows restent ouverts. TODO et ADR 0064 actualisés ; les 13 familles de migration restent ouvertes. Aucun push.
