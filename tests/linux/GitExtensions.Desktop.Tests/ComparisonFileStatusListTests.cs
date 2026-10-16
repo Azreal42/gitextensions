@@ -1,5 +1,6 @@
 using GitExtensions.Linux.Desktop.Controls;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,6 +9,9 @@ using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -83,6 +87,7 @@ public sealed class ComparisonFileStatusListTests
         Assert.That(f.View.FilteredEntries.Single().Path, Is.EqualTo(Renamed));
         Assert.That(f.View.FilterHistory, Does.Not.Contain("["));
         Assert.That(f.Dialog.FocusManager.GetFocusedElement(), Is.SameAs(editor));
+        await AssertFilterSurface(f, editor, dark ? "#6e1919" : "#ffc8c8", "invalid");
         Capture(f.Dialog, "comparison-shared-regex-invalid-" + (dark ? "dark" : "light") + ".png");
         await TypeFilter(f, "^never-matches$"); await Until(() => f.View.FilteredEntries.Count == 0 && f.View.FilterError is null); await Idle(f.Dialog);
         Assert.That(f.Dialog.SelectedFile, Is.Null); Assert.That(f.Dialog.SelectedFiles, Is.Empty); Assert.That(Diff(f.Dialog), Is.Empty);
@@ -91,10 +96,13 @@ public sealed class ComparisonFileStatusListTests
         PushProcessTestDriver.Pointer(Field<Button>(f.Dialog, "ComparisonFilesClearFilter"));
         await Until(() => f.View.FilteredEntries.Count == 5); await Idle(f.Dialog);
         Assert.That(f.Dialog.SelectedFile, Is.Null, "Clearing a filter does not invent a file selection.");
+        await AssertFilterSurface(f, editor, dark ? "#323232" : "#ffffff", "neutral");
+        Capture(f.Dialog, "comparison-shared-regex-neutral-" + (dark ? "dark" : "light") + ".png");
         await TypeFilter(f, @"\.cs$"); await Until(() => f.View.FilteredEntries.Count == 2); await Idle(f.Dialog);
         Assert.That(f.View.FilterHistory.First(), Is.EqualTo(@"\.cs$"));
         Assert.That(Field<ComboBox>(f.Dialog, "ComparisonFilesFilter").ItemsSource!.OfType<string>(), Is.EqualTo(f.View.FilterHistory));
         Assert.That(f.Dialog.FocusManager.GetFocusedElement(), Is.SameAs(editor));
+        await AssertFilterSurface(f, editor, dark ? "#076641" : "#c8ffc8", "valid");
         Capture(f.Dialog, "comparison-shared-regex-valid-" + (dark ? "dark" : "light") + ".png");
         Assert.That(f.Dialog.LastError, Is.Null);
     }
@@ -318,6 +326,41 @@ public sealed class ComparisonFileStatusListTests
         Assert.That(f.View.SortMode, Is.EqualTo(FileStatusListSortMode.FileExtension));
         Assert.That(f.Dialog.FocusManager.GetFocusedElement(), Is.SameAs(button), "Keyboard invocation must not reuse a cancelled pointer origin from the earlier tree click.");
         Assert.That(f.Dialog.LastError, Is.Null);
+    }
+
+    private static async Task AssertFilterSurface(Fixture f, TextBox editor, string expected, string phase)
+    {
+        // Inspect the actual rendered editor interior, not ComboBox.Background: Fluent
+        // can paint an opaque TextBox surface over a correctly colored combo.
+        foreach (string state in new[] { "focused", "normal", "pointer-over", "focused-pointer-out" })
+        {
+            if (state == "focused") { PushProcessTestDriver.Pointer(editor); }
+            else if (state == "normal") { PushProcessTestDriver.Pointer(Field<TextBox>(f.Dialog, "ComparisonBaseRevision")); }
+            Control hovered = state is "focused" or "pointer-over" ? editor : Field<TextBox>(f.Dialog, "ComparisonBaseRevision");
+            Point hover = hovered.TranslatePoint(new Point(hovered.Bounds.Width * .6, hovered.Bounds.Height * .6), f.Dialog)!.Value;
+            f.Dialog.MouseMove(hover);
+            if (state == "focused-pointer-out") { PushProcessTestDriver.Pointer(editor); f.Dialog.MouseMove(hover); }
+            await Idle(f.Dialog); Pump(f.Dialog);
+            using Bitmap? frame = f.Dialog.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+            using WriteableBitmap copy = new(frame!.PixelSize, frame.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+            using ILockedFramebuffer pixels = copy.Lock(); frame.CopyPixels(pixels, AlphaFormat.Unpremul);
+            // The trailing interior is free of the empty-field watermark and text ink.
+            Rect local = new(editor.Bounds.Width * .9, 4, editor.Bounds.Width * .08, editor.Bounds.Height - 8);
+            Point topLeft = editor.TranslatePoint(local.TopLeft, f.Dialog)!.Value;
+            Color color = Color.Parse(expected); int matched = 0, sampled = 0;
+            for (int y = (int)topLeft.Y; y < topLeft.Y + local.Height; y++)
+            {
+                for (int x = (int)topLeft.X; x < topLeft.X + local.Width; x++)
+                {
+                    byte[] value = new byte[4]; Marshal.Copy(pixels.Address + y * pixels.RowBytes + x * 4, value, 0, 4); sampled++;
+                    if (value[0] == color.B && value[1] == color.G && value[2] == color.R && value[3] == 255) { matched++; }
+                }
+            }
+            TestContext.WriteLine($"Filter rendered {phase}/{state}/{f.Dialog.ActualThemeVariant}: {matched}/{sampled} pixels are {expected}.");
+            if (matched < sampled * .8) { Capture(f.Dialog, "comparison-filter-palette-failure-" + phase + "-" + state + "-" + f.Dialog.ActualThemeVariant + ".png"); }
+            Assert.That(matched, Is.GreaterThanOrEqualTo(sampled * .8), $"The actual editor surface must render {expected} for {phase}/{state}.");
+            if (state is "focused" or "focused-pointer-out") { Assert.That(f.Dialog.FocusManager!.GetFocusedElement(), Is.SameAs(editor)); }
+        }
     }
 
     private static async Task<MenuFlyout> OpenMode(Fixture f)

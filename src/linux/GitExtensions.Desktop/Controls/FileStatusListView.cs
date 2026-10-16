@@ -286,7 +286,9 @@ public sealed class FileStatusListView : UserControl, IDisposable
     }
     private void FilterPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
-        if (args.Property != ComboBox.TextProperty || _updatingFilter || _disposed) { return; }
+        if (_disposed) { return; }
+        if (args.Property == BackgroundProperty) { ApplyFilterSurfacePalette(); return; }
+        if (args.Property != ComboBox.TextProperty || _updatingFilter) { return; }
         _clearFilter.IsVisible = FilterText.Length > 0;
         CancelPendingFilter(); CancellationTokenSource operation = new(); _pendingFilter = operation;
         _ = DebounceFilterAsync(FilterText, operation);
@@ -556,7 +558,16 @@ public sealed class FileStatusListView : UserControl, IDisposable
         _filterBackgroundBinding?.Dispose(); _filterBackgroundBinding = null;
         if (FilterError is null && !IsFilterActive) { _filterBackgroundBinding = _filter.Bind(BackgroundProperty, new DynamicResourceExtension("ClassicEditorBrush")); }
         else { _filter.Background = Brush.Parse(FilterError is not null ? dark ? "#6e1919" : "#ffc8c8" : dark ? "#076641" : "#c8ffc8"); }
+        ApplyFilterSurfacePalette();
         ToolTip.SetTip(_filter, FilterError ?? T("Filter files using a regular expression..."));
+    }
+    private void ApplyFilterSurfacePalette()
+    {
+        if (_disposed || _filter.Background is not IBrush background) { return; }
+        // Fluent makes the embedded editor transparent on focus/hover and paints
+        // the ComboBox template border beneath it. Override those actual surfaces.
+        foreach (string state in new[] { "", "PointerOver", "Pressed", "Unfocused" })
+        { _filter.Resources["ComboBoxBackground" + state] = background; }
     }
     private void ApplyDiffButtonColors()
     {
