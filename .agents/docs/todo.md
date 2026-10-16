@@ -6,9 +6,9 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `879f7bae3` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 14 N0 absentes, 23 N1 substituts minimaux, 24 N2 partielles, 36 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `a35747a13` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 14 N0 absentes, 21 N1 substituts minimaux, 25 N2 partielles, 37 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
-L’inventaire contient aussi les 70 types Window Avalonia (dont 2 bases abstraites), 26 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
+L’inventaire contient aussi les 72 types Window Avalonia (dont 2 bases abstraites), 26 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
 Écarts concrets à traiter selon cette matrice : fenêtres complètes Remotes/Worktrees/Ajout de sous-module ; éditeurs .gitignore/.gitattributes/.mailmap ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
@@ -24,6 +24,7 @@ L’inventaire contient aussi les 70 types Window Avalonia (dont 2 bases abstrai
 - [x] Suggestions Clone : presse-papiers, MRU, remote de branche/URL push, confirmation d'ouverture ; suggestions locales et chemins littéraux.
 - [x] Historique fichier/blame : renommages, graphe fusion, révisions/images/save, attribution, avatars, navigation, menus et préférences partagées.
 - [x] Branches/tags/checkout : cinq dialogues, tracking, orphan, changements locaux, worktrees, GPG et remotes ; Rename/Compare et endpoints BASE/index/worktree.
+- [x] Suppression distante : dialogue Windows compact et sélecteur multiple partagé, multi-remotes, confirmation non fusionnée et nettoyage local distinct après succès/relecture du suivi ; Abort et reprise partielle vérifiés. ADR 0065.
 - [x] Sélecteur de branche Browse : même menu nom/flèche, 100 branches locales maximum, hors graphe sélectionnable, relecture des refs, Ctrl+. et clic droit ; checkout direct ou dialogue présélectionné. ADR 0034.
 - [x] Checkout : update sous-modules proposé après HEAD modifié, choix mémorisables, dialogue annulable et AutoCompile après succès.
 - [x] Dashboard, catégories/recherche, récents/favoris et réglages natifs ; ouverture annulable et sélection cohérente.
@@ -142,6 +143,16 @@ Validation finale des menus : source `879f7bae3`, 874 Desktop, 430 Core et 35 Pl
 
 Le [paquet corrigé](../../artifacts/linux/snapshots/879f7bae3/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) (`7.2.1-linux-alpha`), SHA256 `a6fc0c394d1f4741f9b57408dc574812b1d4a15f233228dc2631640a3e283c4c`, a passé les contrôles d’extraction, installation et lancement isolés. Le [parcours X11 clair/sombre](../../artifacts/linux/snapshots/879f7bae3/proofs/native-menu-navigation-20261016-03.json) du payload exact valide les deux menus, le clic, Ctrl+P, Alt+← avec relâchement et la flèche haut : lignes 2 → 3 → 2 → 1, focus conservé. Nettoyage des seuls processus de test par SIGTERM (-15), sans acceptation de fermeture normale/redémarrage ni audit natif étendu.
 
-La mise à jour hôte attend encore la validation Ubuntu ; le paquet vérifié est prêt. Ne pas la considérer comme installée.
+La [mise à jour hôte](../../artifacts/linux/snapshots/879f7bae3/proofs/host-installation-verification-20261016-01.json) est terminée : APT exit 0, version `7.2.1-linux-alpha+879f7bae3…` et 346 fichiers comparés au paquet. Aucun redémarrage forcé de l’application utilisateur ; cette installation ne clôt pas l’audit natif étendu.
 
 Les options superproject, CI et Scripts restent désactivées avec explication ; les sélecteurs de parents/enfants et la recherche incrémentale Windows restent ouverts. TODO et ADR 0064 actualisés ; les 13 familles de migration restent ouvertes. Aucun push.
+
+## Suppression de branches distantes
+
+Source `a35747a13` : dialogue dédié et sélecteur à cases, raccordés à la révision et à Branches & tags. Les deux autorisations restent décochées ; les candidats locaux sont relus après OK et proposés seulement pour les remotes réussies. Abort retire les succès connus de la sélection de reprise. Les commandes natives conservent hooks/helpers et sortie réelle.
+
+[Validation finale](../../artifacts/linux/snapshots/a35747a13/proofs/source-validation.json) : **886 Desktop, 445 Core et 35 Plugins**, zéro échec/ignoré, soit 1 366 scénarios distincts ; 53 ciblés, dont les deux régressions de revue. Quatre rendus headless clair/sombre inspectés. Le candidat `e02a8f664` et ses 884 tests Desktop restent conservés mais remplacés avant installation hôte.
+
+[Paquet](../../artifacts/linux/snapshots/a35747a13/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `001303d9f9f686f58239a6c5d26014d45e701cd7c2bc39398b621a01c2ec2301` : construction depuis checkout figé, extraction/installation/lancement isolés vérifiés. **Non installé sur l’hôte** ; celui-ci reste `879f7bae3`. Aucun push.
+
+Restent ouverts : scripts Before/AfterPush, Process par remote Windows, remotes à plusieurs push URLs/serveurs sans atomic, mode multicolonne >350 branches et réutilisation du sélecteur dans tous ses consommateurs. Audit natif étendu non exécuté ; aucune famille globale clôturée, aucun niveau N4 attribué.

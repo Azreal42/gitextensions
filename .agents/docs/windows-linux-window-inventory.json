@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "code_reference_commit": "879f7bae3b8d6a9927e9c43f5edbcb3939d7e336",
-  "source_digest_sha256": "ee5898d62d3722d0c94d2e9b14244a5b50eef7f29aeb1406eb27b9d594ff87c7",
-  "scanned_csharp_files": 1803,
+  "code_reference_commit": "a35747a13d60688f0fce32de296d314ecebdf51f",
+  "source_digest_sha256": "e8bb24022d33eaaa37357dbeb566dd351919630ae64ab43480ae77c1c288f8d3",
+  "scanned_csharp_files": 1810,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,15 +26,15 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 70,
+    "linux_window_types": 72,
     "linux_abstract_bases": 2,
     "linux_dynamic_factories": 26,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 14,
-      "N1": 23,
-      "N2": 24,
-      "N3": 36,
+      "N1": 21,
+      "N2": 25,
+      "N3": 37,
       "NA": 2
     },
     "settings_levels": {
@@ -47,26 +47,28 @@
     "designer_files": 189
   },
   "validation_reference": {
-    "trx": "artifacts/linux/history-menus-full-checks-20261016-02/desktop.trx",
-    "source_sha": "879f7bae3b8d6a9927e9c43f5edbcb3939d7e336",
-    "trx_sha256": "d47f22c15bd4ee881c46e5388d08d572389acc2accbbda8ed404ec144a821ef8",
+    "trx": "artifacts/linux/remote-branch-deletion-full-checks-20261016-02/desktop.trx",
+    "source_sha": "a35747a13d60688f0fce32de296d314ecebdf51f",
+    "trx_sha256": "8954222bd170f5f12982d47baa765f57df03313ad7f2b9003cc35e25dff3d5cc",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "passed": 430,
-        "total": 430,
-        "execution_result": "artifacts/linux/history-menus-full-checks-20261016-01/core-result.json",
-        "meaning": "Executed this turn; component sources and tests unchanged between 62f40c093 and the final source."
+        "source_sha": "a35747a13d60688f0fce32de296d314ecebdf51f",
+        "passed": 445,
+        "total": 445,
+        "execution_result": "artifacts/linux/remote-branch-deletion-core-full-20261016-03/core-result.json",
+        "meaning": "Actual complete apphost execution; changed source hashes verified against this commit."
       },
       "plugins": {
+        "source_sha": "a35747a13d60688f0fce32de296d314ecebdf51f",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/history-menus-full-checks-20261016-01/plugins-result.json",
-        "meaning": "Executed this turn; component sources and tests unchanged between 62f40c093 and the final source."
+        "execution_result": "artifacts/linux/remote-branch-deletion-full-checks-20261016-02/plugins-result.json",
+        "meaning": "Actual complete execution after the tracking changes, against the same component source."
       }
     },
     "current_linux_code_equivalent": true,
-    "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Aucun test applicatif réexécuté pour ce recensement documentaire."
+    "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
     {
@@ -1908,7 +1910,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 193,
+          "line": 181,
           "kind": "window"
         },
         {
@@ -2582,6 +2584,12 @@
           "test_class": "ReferenceMenuTests",
           "passed_in_reference_run": 4,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
         }
       ],
       "adr": [
@@ -2610,47 +2618,56 @@
       "category": "windows",
       "feature": "Suppression de branches distantes",
       "group": "references",
-      "level": "N1",
-      "implemented": "Suppression distante dans Push, mode Multiple (Delete Remote Branch). DeleteReferenceAsync refuse explicitement la suppression directe.",
-      "remaining": "Pas de dialogue dédié de sélection/suppression distante, ni suppression des branches locales de tracking correspondantes.",
-      "visual": "generique",
+      "level": "N3",
+      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts.",
+      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs push URLs refusés explicitement.",
+      "visual": "rapproche",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.PushDialog",
-          "label": "PushDialog",
-          "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 21,
+          "id": "GitExtensions.Linux.Desktop.DeleteRemoteBranchDialog",
+          "label": "DeleteRemoteBranchDialog",
+          "source": "src/linux/GitExtensions.Desktop/DeleteRemoteBranchDialog.cs",
+          "line": 13,
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.DeleteReferenceAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 174,
+          "id": "GitExtensions.Linux.Desktop.GitProcessDialog",
+          "label": "GitProcessDialog",
+          "source": "src/linux/GitExtensions.Desktop/GitProcessDialog.cs",
+          "line": 28,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DeleteBranchDialog",
+          "label": "DeleteBranchDialog",
+          "source": "src/linux/GitExtensions.Desktop/DeleteBranchDialog.cs",
+          "line": 9,
           "kind": "window"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
-          "test_class": "CommitAndPushWorkflowTests",
-          "passed_in_reference_run": 9,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
+          "test_class": "ReferenceDialogTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PushDialogTests.cs",
-          "test_class": "PushDialogTests",
-          "passed_in_reference_run": 25,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
+          "test_class": "ReferenceMenuTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PushProcessDialogTests.cs",
-          "test_class": "PushProcessDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/workflows/references/0065-remote-branch-deletion.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.FormDeleteTag",
@@ -6511,6 +6528,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareDialogTests.cs",
           "test_class": "RenameCompareDialogTests",
           "passed_in_reference_run": 14,
@@ -6693,6 +6716,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReflogDialogTests.cs",
           "test_class": "ReflogDialogTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -6881,6 +6910,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReflogDialogTests.cs",
           "test_class": "ReflogDialogTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -7432,59 +7467,37 @@
       "category": "windows",
       "feature": "Sélecteur partagé de branches multiples",
       "group": "references",
-      "level": "N1",
-      "implemented": "Sélections multiples dans certains dialogues spécialisés.",
-      "remaining": "Pas de sélecteur partagé équivalent ; vérifier chaque consommateur Windows.",
-      "visual": "integre",
+      "level": "N2",
+      "implemented": "Sélecteur partagé à cases, texte de branches séparées par espaces et icône originale, utilisé dans la suppression distante ; OK/Escape conservent les coches comme Windows.",
+      "remaining": "Réutilisation dans tous les consommateurs Windows, mode multicolonne au-delà de 350 branches et audit natif exhaustif restant.",
+      "visual": "rapproche",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.DeleteBranchDialog",
-          "label": "DeleteBranchDialog",
-          "source": "src/linux/GitExtensions.Desktop/DeleteBranchDialog.cs",
-          "line": 9,
+          "id": "GitExtensions.Linux.Desktop.SelectMultipleBranchesDialog",
+          "label": "SelectMultipleBranchesDialog",
+          "source": "src/linux/GitExtensions.Desktop/SelectMultipleBranchesDialog.cs",
+          "line": 10,
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.PushDialog",
-          "label": "PushDialog",
-          "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 21,
-          "kind": "window"
+          "id": "GitExtensions.Linux.Desktop.Controls.BranchSelectionComboBox",
+          "label": "BranchSelectionComboBox",
+          "source": "src/linux/GitExtensions.Desktop/Controls/BranchSelectionComboBox.cs",
+          "line": 8,
+          "kind": "component"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
-          "test_class": "CommitAndPushWorkflowTests",
-          "passed_in_reference_run": 9,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PushDialogTests.cs",
-          "test_class": "PushDialogTests",
-          "passed_in_reference_run": 25,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PushProcessDialogTests.cs",
-          "test_class": "PushProcessDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
-          "test_class": "ReferenceDialogTests",
-          "passed_in_reference_run": 14,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
-          "test_class": "ReferenceMenuTests",
-          "passed_in_reference_run": 4,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/workflows/references/0065-remote-branch-deletion.md"
+      ]
     },
     {
       "id": "GitUI.HelperDialogs.FormStatus",
@@ -8002,6 +8015,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReflogDialogTests.cs",
           "test_class": "ReflogDialogTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
+          "test_class": "RemoteBranchDeletionDialogTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -8694,9 +8713,33 @@
           "level": "N3"
         },
         {
-          "id": "GitUI.HelperDialogs.FormSelectMultipleBranches",
-          "name": "FormSelectMultipleBranches",
-          "level": "N1"
+          "id": "GitUI.CommandsDialogs.FormDeleteRemoteBranch",
+          "name": "FormDeleteRemoteBranch",
+          "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.DeleteRemoteBranchDialog",
+      "name": "DeleteRemoteBranchDialog",
+      "source": "src/linux/GitExtensions.Desktop/DeleteRemoteBranchDialog.cs",
+      "line": 13,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/DeleteRemoteBranchDialog.cs",
+          "line": 13
+        }
+      ],
+      "bases": [
+        "RepositoryDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormDeleteRemoteBranch",
+          "name": "FormDeleteRemoteBranch",
+          "level": "N3"
         }
       ],
       "note": ""
@@ -9023,6 +9066,11 @@
           "level": "N2"
         },
         {
+          "id": "GitUI.CommandsDialogs.FormDeleteRemoteBranch",
+          "name": "FormDeleteRemoteBranch",
+          "level": "N3"
+        },
+        {
           "id": "GitUI.CommandsDialogs.FormPull",
           "name": "FormPull",
           "level": "N2"
@@ -9306,11 +9354,6 @@
         {
           "id": "GitUI.CommandsDialogs.FormCheckoutRevision",
           "name": "FormCheckoutRevision",
-          "level": "N1"
-        },
-        {
-          "id": "GitUI.CommandsDialogs.FormDeleteRemoteBranch",
-          "name": "FormDeleteRemoteBranch",
           "level": "N1"
         },
         {
@@ -9706,19 +9749,9 @@
       "abstract": false,
       "windows": [
         {
-          "id": "GitUI.CommandsDialogs.FormDeleteRemoteBranch",
-          "name": "FormDeleteRemoteBranch",
-          "level": "N1"
-        },
-        {
           "id": "GitUI.CommandsDialogs.FormPush",
           "name": "FormPush",
           "level": "N2"
-        },
-        {
-          "id": "GitUI.HelperDialogs.FormSelectMultipleBranches",
-          "name": "FormSelectMultipleBranches",
-          "level": "N1"
         }
       ],
       "note": ""
@@ -10118,6 +10151,30 @@
         {
           "id": "GitUI.HelperDialogs.FormChooseCommit",
           "name": "FormChooseCommit",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.SelectMultipleBranchesDialog",
+      "name": "SelectMultipleBranchesDialog",
+      "source": "src/linux/GitExtensions.Desktop/SelectMultipleBranchesDialog.cs",
+      "line": 10,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/SelectMultipleBranchesDialog.cs",
+          "line": 10
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.HelperDialogs.FormSelectMultipleBranches",
+          "name": "FormSelectMultipleBranches",
           "level": "N2"
         }
       ],

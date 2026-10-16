@@ -229,3 +229,15 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Un test voisin certifie abusivement l’interface d’un plugin | Lier le vrai scénario et son type de preuve : tests UI Desktop ou moteur Plugins. Un test de moteur ne valide pas sa fenêtre. |
 | Une résolution de conflit fichier est assimilée à celle d’un sous-module | Le resolver refuse Base/Ours/Theirs d’un gitlink 160000 ; le staging manuel reste possible, mais FormMergeSubmodule demeure sans équivalent d’assistant. |
 | Le contrôle d’un CSV LF/CRLF échoue immédiatement après génération | Générer les CSV avec un terminateur LF explicite pour que le contenu relu soit identique sur Linux. |
+
+## Suppression distante
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Nettoyer des branches locales après un échec d’une autre remote | Conserver chaque résultat atomique et ne proposer que les branches locales des remotes réussies ; elles gardent un dialogue de suppression distinct. |
+| Supprimer une autre branche ou un serveur changé après confirmation | Inverser un refspec de branche unique ; revalider destination, configuration et hash, puis utiliser un lease explicite. Ne pas deviner les mappings ambigus. |
+| L’annulation ressemble à un rollback distant | Après réception serveur, le résultat peut être inconnu. Conserver sorties/état partiels et demander une relecture des références. |
+| Fermer le propriétaire termine le process mais laisse son propriétaire ouvert | Avalonia peut interroger les enfants avant le propriétaire ; garder la demande de fermeture et la rejouer après drainage. |
+| Faux échecs Askpass/Rebase en lançant les tests Core par DLL | Ces scénarios relancent Environment.ProcessPath comme enfant ; lancer l’apphost compilé ou dotnet run, jamais dotnet Tests.dll pour la suite complète. |
+| Le nettoyage local réutilise une liste antérieure au bouton OK | Relire les branches/configurations actuelles des seules remotes réussies ; une branche reconfigurée ou recréée sans tracking ne doit pas rester sélectionnée. |
+| Un premier retry après Abort échoue sur une branche déjà supprimée | Recharger aussi la sélection après annulation du seul Process, en retirant les succès prouvés ; aucune continuation vers le nettoyage local. |

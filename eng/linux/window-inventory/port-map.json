@@ -396,18 +396,21 @@
     "GitUI.CommandsDialogs.FormDeleteRemoteBranch": {
       "feature": "Suppression de branches distantes",
       "group": "references",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "PushDialog",
-        "MainWindow@DeleteReferenceAsync"
+        "DeleteRemoteBranchDialog",
+        "GitProcessDialog",
+        "DeleteBranchDialog"
       ],
-      "implemented": "Suppression distante dans Push, mode Multiple (Delete Remote Branch). DeleteReferenceAsync refuse explicitement la suppression directe.",
-      "remaining": "Pas de dialogue dédié de sélection/suppression distante, ni suppression des branches locales de tracking correspondantes.",
-      "visual": "generique",
+      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts.",
+      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs push URLs refusés explicitement.",
+      "visual": "rapproche",
       "tests": [
-        "PushDialogTests"
+        "RemoteBranchDeletionDialogTests"
       ],
-      "adr": []
+      "adr": [
+        "0065"
+      ]
     },
     "GitUI.CommandsDialogs.FormRenameBranch": {
       "feature": "Renommage de branche",
@@ -484,19 +487,20 @@
     "GitUI.HelperDialogs.FormSelectMultipleBranches": {
       "feature": "Sélecteur partagé de branches multiples",
       "group": "references",
-      "level": "N1",
+      "level": "N2",
       "linux": [
-        "DeleteBranchDialog",
-        "PushDialog"
+        "SelectMultipleBranchesDialog",
+        "BranchSelectionComboBox"
       ],
-      "implemented": "Sélections multiples dans certains dialogues spécialisés.",
-      "remaining": "Pas de sélecteur partagé équivalent ; vérifier chaque consommateur Windows.",
-      "visual": "integre",
+      "implemented": "Sélecteur partagé à cases, texte de branches séparées par espaces et icône originale, utilisé dans la suppression distante ; OK/Escape conservent les coches comme Windows.",
+      "remaining": "Réutilisation dans tous les consommateurs Windows, mode multicolonne au-delà de 350 branches et audit natif exhaustif restant.",
+      "visual": "rapproche",
       "tests": [
-        "ReferenceDialogTests",
-        "PushDialogTests"
+        "RemoteBranchDeletionDialogTests"
       ],
-      "adr": []
+      "adr": [
+        "0065"
+      ]
     },
     "GitUI.CommandsDialogs.FormCommit": {
       "feature": "Préparation et création de commit",
