@@ -8,6 +8,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class HistoryFilterDialog : Window
 {
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
+    private bool _closed;
     private readonly Dictionary<string, (CheckBox Enabled, TextBox Input)> _textFields = [];
     private readonly CheckBox _sinceEnabled = new();
     private readonly CheckBox _untilEnabled = new();
@@ -76,7 +77,12 @@ public sealed class HistoryFilterDialog : Window
         root.Children.Add(buttons);
         root.Children.Add(fields);
         Content = root;
-        Opened += (_, _) => _sinceEnabled.Focus();
+        Opened += (_, _) =>
+        {
+            _sinceEnabled.Focus();
+            ModalWindowActivation.AfterMapping(this, () => !_closed);
+        };
+        Closed += (_, _) => _closed = true;
     }
 
     public GitLogQuery ReadQuery() => new()
