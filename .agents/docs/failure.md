@@ -352,3 +352,13 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Confondre relation modale et propriété IsEffectivelyEnabled headless | Vérifier owner et tâche modale dans ce moteur ; l’activation/désactivation OS relève du test natif. |
 | Réouverture supposée sélectionner HEAD | Browse conserve le commit sélectionné ; préparer explicitement la cible de la fixture. |
 | Sélecteur vert mais premier Échap du dialogue métier perdu | La vraie frappe, après chargement complet, est l’oracle : le candidat 10d889d9b est refusé. Partager l’activation Loaded dans le socle RepositoryDialog, sans refocaliser de contrôle et sans activer un propriétaire d’une autre modale. |
+
+## Rattachement des tags annotés
+
+| Piège | Règle retenue |
+| --- | --- |
+| Un tag annoté existe dans le sélecteur mais manque à la grille | Séparer le hash brut de la cible d’affichage et partager l’expression native Windows ; ne pas remplacer l’identité utilisée pour la revalidation. |
+| Les badges changent mais le tooltip garde les anciens tags | Actualiser le tooltip au même point de présentation, y compris sans aucune référence restante. |
+| Une capture réécrite fait croire que le runtime testé a changé | Capturer explicitement DLL/PDB/SO/XLF, deps/runtimeconfig et helpers ; lister captures/traces comme sorties. Garder le lot brut et sa comparaison fausse, sans réécrire son résultat. |
+
+- Clic droit sur une révision : sélectionner un élément ne lui donne pas automatiquement le focus Avalonia. Deux Échap après Copy peuvent laisser les flèches sans effet ; observation native a62 conservée, correction et preuve de non-régression encore requises. Ne pas masquer ce défaut par un clic/Ctrl+1 dans le harnais.

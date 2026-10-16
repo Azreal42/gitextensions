@@ -1,12 +1,12 @@
 {
-  "source_sha": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
-  "trx": "artifacts/linux/quick-reference-desktop-checks-20261016-07-full/desktop.trx",
-  "trx_sha256": "d5fe99f4585cd703265f700accf9cddc2fd1cf56b30d48650c4a4d52ba41fc09",
+  "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
+  "trx": "artifacts/linux/annotated-reference-desktop-checks-20261016-02-full/desktop.trx",
+  "trx_sha256": "bc813162211ddbcda1068f46003b34063db506b78f3cb3d0ed7fdf41f493e9c5",
   "meaning": "Frozen results of actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "1140",
-    "executed": "1140",
-    "passed": "1140",
+    "total": "1145",
+    "executed": "1145",
+    "passed": "1145",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -24,6 +24,9 @@
   "classes": {
     "AddSubmoduleDialogTests": {
       "Passed": 17
+    },
+    "AnnotatedReferencePresentationTests": {
+      "Passed": 5
     },
     "AskpassModesWindowTests": {
       "Passed": 12
@@ -409,26 +412,24 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "10d889d9b8102169c2478aeb068e41fdfda5178a",
-      "code_equivalent_to": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
+      "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
       "passed": 554,
       "total": 554,
-      "execution_result": "artifacts/linux/quick-reference-core-checks-20261016-02-full/full-result.json",
-      "source_hashes_verified": 200,
+      "execution_result": "artifacts/linux/annotated-reference-core-checks-20261016-01-full/full-result.json",
+      "source_hashes_verified": 201,
       "runtime_hashes_verified": 8,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete execution on 10d889d9b; subsequent Desktop activation and documentation changes leave these components unchanged. Not rerun on the final candidate; recorded source/runtime inputs independently reverified."
+      "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
     },
     "plugins": {
-      "source_sha": "10d889d9b8102169c2478aeb068e41fdfda5178a",
-      "code_equivalent_to": "f2c42762f3c5b98e1a3b8fd8873028cf6cc63d7b",
+      "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/quick-reference-plugins-checks-20261016-01/plugins-result.json",
-      "source_hashes_verified": 153,
+      "execution_result": "artifacts/linux/annotated-reference-plugins-checks-20261016-01/plugins-result.json",
+      "source_hashes_verified": 154,
       "runtime_hashes_verified": 10,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete execution on 10d889d9b; subsequent Desktop activation and documentation changes leave these components unchanged. Not rerun on the final candidate; recorded source/runtime inputs independently reverified."
+      "meaning": "Actual fresh complete execution on this candidate; independently verified before/after/current source/runtime inputs and Git blobs."
     }
   }
 }

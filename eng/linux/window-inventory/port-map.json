@@ -81,14 +81,15 @@
       "linux": [
         "MainWindow"
       ],
-      "implemented": "Grille/graphe, sélection, panneaux, menus et focus ; lectures annulables et disposition classique.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Rattachement des tags annotés aux badges, graphe et Copy > Tags encore incorrect : distinguer l’identité brute du tag et son commit cible.",
+      "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus après fermeture du sous-menu Copy encore défectueux en natif. Browse reste N2.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
         "BrowserSelectionTests",
         "HistoryMenuParityTests",
-        "FilePaneParityTests"
+        "FilePaneParityTests",
+        "AnnotatedReferencePresentationTests"
       ],
       "adr": [
         "0031",
@@ -96,7 +97,8 @@
         "0061",
         "0062",
         "0063",
-        "0064"
+        "0064",
+        "0075"
       ]
     },
     "GitUI.CommandsDialogs.FormLog": {
