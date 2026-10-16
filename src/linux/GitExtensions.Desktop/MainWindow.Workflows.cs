@@ -305,24 +305,17 @@ public sealed partial class MainWindow
         await ShowRepositoryDialogAsync(new CompareRevisionsDialog(_repository, from, compare));
     }
 
-    private async Task AddRemoteAsync()
+    private Task ManageRemotesAsync(string? remote = null, bool create = false)
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Add remote", ("Name", "origin"), ("URL", ""));
-        if (values is not null) { await RunAsync("Add remote", r => r.AddRemoteAsync(values[0], values[1], Token)); }
+        if (_repository is null || _busy) { return Task.CompletedTask; }
+        RemotesDialog dialog = new(_repository, preselectRemote: remote);
+        if (create) { dialog.Opened += async (_, _) => { await dialog.InitializeAsync(); dialog.StartNewRemote(); }; }
+        return ShowRepositoryDialogAsync(dialog, initializeOnOpen: !create);
     }
 
-    private async Task EditRemoteAsync()
-    {
-        GitRemote remote = SelectedRemote();
-        string[]? values = await Dialogs.PromptAsync(this, "Edit remote URL", ("URL", remote.FetchUrls.FirstOrDefault() ?? ""));
-        if (values is not null) { await RunAsync("Edit remote", r => r.SetRemoteUrlAsync(remote.Name, values[0], cancellationToken: Token)); }
-    }
-
-    private async Task RemoveRemoteAsync()
-    {
-        GitRemote remote = SelectedRemote();
-        if (await Dialogs.ConfirmAsync(this, "Remove remote", $"Remove {remote.Name} and its tracking refs?")) { await RunAsync("Remove remote", r => r.RemoveRemoteAsync(remote.Name, Token)); }
-    }
+    private Task AddRemoteAsync() => ManageRemotesAsync(create: true);
+    private Task EditRemoteAsync() => ManageRemotesAsync(SelectedRemote().Name);
+    private Task RemoveRemoteAsync() => ManageRemotesAsync(SelectedRemote().Name);
 
     private Task PushAsync() => ShowPushAsync(quick: false);
     private Task QuickPushAsync() => ShowPushAsync(quick: true);
@@ -626,11 +619,11 @@ public sealed partial class MainWindow
 
     private Window WorkflowOwner => _workflowViews.Values.Select(TopLevel.GetTopLevel).OfType<Window>().FirstOrDefault(window => window != this && window.IsVisible) ?? this;
 
-    private async Task ShowRepositoryDialogAsync(RepositoryDialog dialog)
+    private async Task ShowRepositoryDialogAsync(RepositoryDialog dialog, bool initializeOnOpen = true)
     {
         Window owner = WorkflowOwner;
         dialog.RequestedThemeVariant ??= owner.ActualThemeVariant;
-        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+        if (initializeOnOpen) { dialog.Opened += async (_, _) => await dialog.InitializeAsync(); }
         try
         {
             await RunAsync(dialog.Title ?? "Open dialog", async _ =>

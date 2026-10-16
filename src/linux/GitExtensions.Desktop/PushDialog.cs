@@ -212,7 +212,8 @@ public sealed class PushDialog : RepositoryDialog
             else if (local?.Upstream?.StartsWith(RemoteName + "/", StringComparison.Ordinal) == true) { SetText(_destination, local.Upstream[(RemoteName.Length + 1)..]); }
             else { SetText(_destination, (Config("remote." + RemoteName + ".prefix") ?? "") + source); }
             GitRemote? remote = _remotes.FirstOrDefault(remote => remote.Name == RemoteName);
-            SetText(_url, remote?.PushUrls.FirstOrDefault() ?? remote?.FetchUrls.FirstOrDefault() ?? "");
+            string? pushUrl = Config("remote." + RemoteName + ".pushurl");
+            SetText(_url, string.IsNullOrEmpty(pushUrl) ? remote?.FetchUrls.FirstOrDefault() ?? "" : pushUrl);
         }
         else { SetText(_destination, source); }
     }
@@ -490,7 +491,7 @@ public sealed class PushDialog : RepositoryDialog
 
     private Task ManageRemotesAsync() => RunAsync("Manage remotes", async token =>
     {
-        PushRemoteDialog remote = new(Repository) { RequestedThemeVariant = ActualThemeVariant };
+        RemotesDialog remote = new(Repository, preselectRemote: RemoteName) { RequestedThemeVariant = ActualThemeVariant };
         remote.Opened += async (_, _) => await remote.InitializeAsync(token);
         using CancellationTokenRegistration registration = token.Register(() => Dispatcher.UIThread.Post(remote.Close));
         await remote.ShowDialog(this);
@@ -622,53 +623,4 @@ public sealed class PushDialog : RepositoryDialog
         _push.IsEnabled = idle && !string.IsNullOrWhiteSpace(Destination) && branchValid && tagValid && (Mode != GitPushMode.Multiple || _rows.Any(row => row.Push.IsChecked == true || row.Force.IsChecked == true || row.Delete.IsChecked == true));
     }
     private sealed record BranchRow(string? Source, TextBox Destination, CheckBox Push, CheckBox Force, CheckBox Delete);
-}
-
-// The push form's Manage remotes action shares Git's existing remote operations.
-// Host-specific credentials and the original Windows Pageant UI are not substituted here.
-internal sealed class PushRemoteDialog : RepositoryDialog
-{
-    private readonly ComboBox _remotes = ReferenceDialogControls.Choice("PushManagedRemote");
-    private readonly TextBox _name = ReferenceDialogControls.Text("PushManagedRemoteName");
-    private readonly TextBox _fetch = ReferenceDialogControls.Text("PushManagedFetchUrl");
-    private readonly TextBox _push = ReferenceDialogControls.Text("PushManagedPushUrl");
-    private IReadOnlyList<GitRemote> _values = [];
-    internal PushRemoteDialog(GitRepository repository) : base(repository, "Manage remotes")
-    {
-        Width = 600; SizeToContent = SizeToContent.Height;
-        Grid fields = ReferenceDialogControls.Fields();
-        ReferenceDialogControls.Field(fields, T("Remote"), _remotes); ReferenceDialogControls.Field(fields, T("Name"), _name);
-        ReferenceDialogControls.Field(fields, T("URL"), _fetch); ReferenceDialogControls.Field(fields, T("Push URL"), _push);
-        Root.Children.Add(new StackPanel { Margin = new Thickness(10), Children = { fields } });
-        Button close = new() { Content = T("Close"), IsCancel = true }; close.Click += (_, _) => Close();
-        StackPanel buttons = ExportDialogControls.Buttons(Action("PushAddRemote", "Add", () => SaveAsync(true)), Action("PushSaveRemote", "Save", () => SaveAsync(false)), Action("PushRemoveRemote", "Remove", RemoveAsync), close);
-        DockPanel.SetDock(buttons, Dock.Bottom); Root.Children.Insert(0, buttons);
-        Track(_remotes, _name, _fetch, _push);
-        _remotes.SelectionChanged += (_, _) => { if (_values.FirstOrDefault(value => value.Name == _remotes.SelectedItem as string) is { } remote) { _name.Text = remote.Name; _fetch.Text = remote.FetchUrls.FirstOrDefault(); _push.Text = remote.PushUrls.FirstOrDefault(); } };
-    }
-    public override Task InitializeAsync() => InitializeAsync(default);
-    internal Task InitializeAsync(CancellationToken token) => RunAsync("Manage remotes", RefreshAsync, cancellationToken: token);
-    private async Task RefreshAsync(CancellationToken token) { _values = await Repository.GetRemotesAsync(token); _remotes.ItemsSource = _values.Select(value => value.Name).ToArray(); _remotes.SelectedIndex = _values.Count > 0 ? 0 : -1; }
-    private Task SaveAsync(bool add) => RunAsync("Manage remotes", async token =>
-    {
-        string name = _name.Text ?? "";
-        GitRemote? original = add ? null : _values.FirstOrDefault(remote => remote.Name == _remotes.SelectedItem as string);
-        if (add) { await Repository.AddRemoteAsync(_name.Text ?? "", _fetch.Text ?? "", token); }
-        else
-        {
-            string selected = _remotes.SelectedItem as string ?? "";
-            if (selected != name) { await Repository.RunAsync(["remote", "rename", "--", selected, name], token); MarkRepositoryChanged(); }
-            await Repository.SetRemoteUrlAsync(name, _fetch.Text ?? "", cancellationToken: token);
-        }
-        MarkRepositoryChanged();
-        if (!string.IsNullOrEmpty(_push.Text) && _push.Text != _fetch.Text) { await Repository.SetRemoteUrlAsync(name, _push.Text, push: true, cancellationToken: token); }
-        else if (original is { } existing && existing.PushUrls.SequenceEqual(existing.FetchUrls) is false)
-        { await Repository.UnsetConfigAsync("remote." + name + ".pushurl", cancellationToken: token); }
-        await RefreshAsync(token);
-    });
-    private async Task RemoveAsync()
-    {
-        if (_remotes.SelectedItem is not string remote || !await Dialogs.ConfirmAsync(this, T("Remove remote"), remote)) { return; }
-        await RunAsync("Remove remote", async token => { await Repository.RemoveRemoteAsync(remote, token); MarkRepositoryChanged(); await RefreshAsync(token); });
-    }
 }

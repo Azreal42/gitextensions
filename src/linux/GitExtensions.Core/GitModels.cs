@@ -25,6 +25,7 @@ public sealed record GitCommit(string Hash, IReadOnlyList<string> Parents, strin
 
 public sealed record GitReference(string Name, string Hash, string? Upstream, bool IsCurrent, string? SymbolicTarget = null)
 {
+    public string? RemoteColor { get; init; }
     public bool IsBranch => Name.StartsWith("refs/heads/", StringComparison.Ordinal);
     public bool IsRemote => Name.StartsWith("refs/remotes/", StringComparison.Ordinal);
     public bool IsTag => Name.StartsWith("refs/tags/", StringComparison.Ordinal);

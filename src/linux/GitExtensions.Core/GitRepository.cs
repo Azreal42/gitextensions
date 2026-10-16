@@ -50,11 +50,29 @@ public sealed partial class GitRepository
     public async Task<IReadOnlyList<GitReference>> GetReferencesAsync(CancellationToken cancellationToken = default)
     {
         GitResult result = await ExecuteAsync(["for-each-ref", "--format=%(refname)%00%(objectname)%00%(upstream:short)%00%(HEAD)%00%(symref)"], cancellationToken).ConfigureAwait(false);
-        return result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line =>
+        GitReference[] references = result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line =>
         {
             string[] fields = line.Split('\0');
             return new GitReference(fields[0], fields[1], EmptyToNull(fields[2]), fields[3] == "*", EmptyToNull(fields[4]));
         }).ToArray();
+        if (!references.Any(reference => reference.IsRemote)) { return references; }
+        IReadOnlyList<KeyValuePair<string, string>> configuration = await GetConfigAsync("^remote\\.", cancellationToken: cancellationToken).ConfigureAwait(false);
+        Dictionary<string, string?> colors = new(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> setting in configuration)
+        {
+            int separator = setting.Key.LastIndexOf('.');
+            if (separator <= 7) { continue; }
+            string remote = setting.Key[7..separator];
+            colors.TryAdd(remote, null);
+            if (setting.Key[(separator + 1)..] == "color") { colors[remote] = EmptyToNull(setting.Value); }
+        }
+        // A remote name can itself contain '/'. An uncolored nested remote still
+        // owns its refs and must not inherit a shorter remote's custom color.
+        (string Prefix, string? Color)[] remotes = colors.OrderByDescending(pair => pair.Key.Length)
+            .Select(pair => ("refs/remotes/" + pair.Key + "/", pair.Value)).ToArray();
+        return references.Select(reference => reference.IsRemote
+            ? reference with { RemoteColor = remotes.FirstOrDefault(remote => reference.Name.StartsWith(remote.Prefix, StringComparison.Ordinal)).Color }
+            : reference).ToArray();
     }
 
     public async Task<string> GetDiffAsync(string? path = null, bool staged = false, string? revision = null, CancellationToken cancellationToken = default)
@@ -262,7 +280,12 @@ public sealed partial class GitRepository
             (push ? urls.Push : urls.Fetch).Add(item.Value);
         }
 
-        return remotes.Select(item => new GitRemote(item.Key, item.Value.Fetch, item.Value.Push.Count > 0 ? item.Value.Push : item.Value.Fetch)).ToArray();
+        return remotes.Select(item =>
+        {
+            IReadOnlyList<string> fetch = RemoteSettingsList(item.Value.Fetch);
+            IReadOnlyList<string> push = RemoteSettingsList(item.Value.Push);
+            return new GitRemote(item.Key, fetch, push.Count > 0 ? push : fetch);
+        }).ToArray();
     }
 
     public Task<GitResult> AddRemoteAsync(string name, string url, CancellationToken cancellationToken = default)

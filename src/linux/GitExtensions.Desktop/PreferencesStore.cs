@@ -9,6 +9,7 @@ public sealed record DesktopPreferences
     public int HistoryLimit { get; init; } = 300;
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";
+    public bool AlwaysShowAdvancedOptions { get; init; }
     public Dictionary<string, Dictionary<string, string?>> PluginSettings { get; init; } = [];
 }
 

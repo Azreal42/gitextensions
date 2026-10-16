@@ -20,11 +20,13 @@ internal sealed class DesktopSettingsDialog : Window
         ComboBox theme = new() { Name = "SettingsTheme", ItemsSource = new[] { "Light", "Dark", "System" }, SelectedItem = initial.Theme, MinWidth = 150 };
         NumericUpDown history = new() { Name = "SettingsHistoryLimit", Minimum = 1, Maximum = 5000, Value = Math.Clamp(initial.HistoryLimit, 1, 5000), FormatString = "0", Width = 150 };
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
+        CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap };
         StackPanel fields = new() { Margin = new Thickness(12), Spacing = 10 };
         Field("Theme", theme); Field("Number of commits to load", history);
         fields.Children.Add(normalise); Field("Replacement symbol", symbol);
+        fields.Children.Add(advanced);
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); };
@@ -37,7 +39,7 @@ internal sealed class DesktopSettingsDialog : Window
         {
             if (history.Value is null || history.Value < 1 || history.Value > 5000 || (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text)))
             { notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); return; }
-            Result = initial with { Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value, AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_" };
+            Result = initial with { Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value, AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true };
             Close(true);
         };
         fields.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6, Children = { save, cancel } });

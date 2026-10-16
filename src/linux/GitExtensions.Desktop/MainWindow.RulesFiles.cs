@@ -14,8 +14,12 @@ public sealed partial class MainWindow
             item.Click += async (_, _) => { if (_repository is not null && !_repository.IsBare && !_busy) { await OpenRulesFileAsync(kind); } };
             return item;
         }
+        MenuItem remotes = OriginalMenuItems.Create(_translations, "FormBrowse", "manageRemoteRepositoriesToolStripMenuItem1", "Remo&te repositories...", "Remotes.png");
+        remotes.Tag = false; _actionMenus.Add(remotes);
+        remotes.Click += async (_, _) => await ManageRemotesAsync();
         return new MenuItem { Header = T("Repository"), ItemsSource = new object[]
         {
+            remotes,
             MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")),
             MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), new Separator(),
             Rule("editgitignoreToolStripMenuItem1", "Edit .git&ignore", GitRulesFileKind.Ignore, "EditGitIgnore.png"),

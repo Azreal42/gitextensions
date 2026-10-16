@@ -223,12 +223,14 @@ public partial class PushDialogTests
     {
         await using Fixture f = await Fixture.CreateAsync(); PushDialog dialog = await f.ShowAsync();
         PointerClick(Field<Button>(dialog, "PushManageRemotes"));
-        await Until(() => dialog.OwnedWindows.OfType<PushRemoteDialog>().Any(child => !child.IsBusy));
-        PushRemoteDialog remotes = dialog.OwnedWindows.OfType<PushRemoteDialog>().Single();
-        Field<TextBox>(remotes, "PushManagedRemoteName").Text = "alternate";
-        Field<TextBox>(remotes, "PushManagedFetchUrl").Text = f.Remote("zeta");
-        Field<TextBox>(remotes, "PushManagedPushUrl").Text = f.Remote("alpha");
-        PointerClick(Field<Button>(remotes, "PushAddRemote")); await Until(() => !remotes.IsBusy);
+        await Until(() => dialog.OwnedWindows.OfType<RemotesDialog>().Any(child => !child.IsBusy));
+        RemotesDialog remotes = dialog.OwnedWindows.OfType<RemotesDialog>().Single();
+        PointerClick(Field<Button>(remotes, "NewRemote"));
+        Field<TextBox>(remotes, "RemoteSettingsName").Text = "alternate";
+        Field<ComboBox>(remotes, "RemoteSettingsUrl").Text = f.Remote("zeta");
+        Field<CheckBox>(remotes, "SeparateRemotePushUrl").IsChecked = true;
+        Field<ComboBox>(remotes, "RemoteSettingsPushUrl").Text = f.Remote("alpha");
+        PointerClick(Field<Button>(remotes, "SaveRemoteSettings")); await PushProcessTestDriver.UntilAsync(remotes, () => !remotes.IsBusy);
         Assert.That(remotes.LastError, Is.Null); Assert.That(remotes.HasRepositoryChanges, Is.True);
         remotes.Close(); await Until(() => !dialog.IsBusy);
         Assert.That(dialog.HasRepositoryChanges, Is.True);
@@ -236,7 +238,8 @@ public partial class PushDialogTests
         Assert.That(Field<AutoCompleteBox>(dialog, "PushDestination").Text, Is.EqualTo(f.Remote("alpha")));
         Assert.That(await f.GitText("config", "remote.alternate.url"), Is.EqualTo(f.Remote("zeta")));
         Assert.That(await f.GitText("config", "remote.alternate.pushurl"), Is.EqualTo(f.Remote("alpha")));
-        Task push = dialog.ExecuteAsync(dialog); await Answer(dialog, "PushNewBranchConfirmation", 1); await PushProcessTestDriver.CompleteAsync(push, dialog);
+        // Saving the remote now fetches its refs, so this destination is already known to the push form.
+        Task push = dialog.ExecuteAsync(dialog); await PushProcessTestDriver.CompleteAsync(push, dialog);
         Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
         Assert.That(await f.RemoteRef("alpha", "main"), Is.EqualTo(f.Initial));
         Assert.That(await f.GitText("config", "branch.main.remote"), Is.EqualTo("zeta"));

@@ -179,10 +179,10 @@ public sealed class PullLayoutTests
     {
         await using Fixture f = await Fixture.CreateAsync(); PullDialog dialog = await f.OpenAsync(GitPullAction.Fetch);
         Click(dialog, "PullManageRemotes");
-        await Until(() => dialog.OwnedWindows.OfType<PushRemoteDialog>().Any(window => !window.IsBusy));
-        PushRemoteDialog manager = dialog.OwnedWindows.OfType<PushRemoteDialog>().Single();
-        Field<TextBox>(manager, "PushManagedRemoteName").Text = "upstream";
-        Click(manager, "PushSaveRemote"); await Until(() => !manager.IsBusy);
+        await Until(() => dialog.OwnedWindows.OfType<RemotesDialog>().Any(window => !window.IsBusy));
+        RemotesDialog manager = dialog.OwnedWindows.OfType<RemotesDialog>().Single();
+        Field<TextBox>(manager, "RemoteSettingsName").Text = "upstream";
+        Click(manager, "SaveRemoteSettings"); await PushProcessTestDriver.UntilAsync(manager, () => !manager.IsBusy);
         Assert.That(manager.LastError, Is.Null); manager.Close(); await Until(() => !dialog.IsBusy);
         Assert.That(Field<ComboBox>(dialog, "PullRemote").Text, Is.EqualTo("upstream"));
         Assert.That(Field<ComboBox>(dialog, "PullUrl").Text, Is.EqualTo(f.Server.Path));

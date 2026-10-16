@@ -18,7 +18,7 @@ public sealed partial class PullDialog
 
     private Task ManageRemotesAsync() => RunAsync("Manage remotes", async token =>
     {
-        PushRemoteDialog dialog = new(Repository);
+        RemotesDialog dialog = new(Repository, preselectRemote: All ? null : _remote.Text);
         dialog.Opened += async (_, _) => await dialog.InitializeAsync(token);
         await ShowOwnedAsync<object?>(this, dialog, token);
         if (!dialog.HasRepositoryChanges) { return; }

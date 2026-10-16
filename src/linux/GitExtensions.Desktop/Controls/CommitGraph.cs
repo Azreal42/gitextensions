@@ -233,10 +233,13 @@ public sealed class CommitGraph : Control
     private double X(int lane) => LeftInset + (lane + 0.5) * LaneWidth;
 
     internal static Color ReferenceColor(GitReference reference, bool dark)
-        => Color.Parse(reference.IsBranch ? dark ? "#7FE28A" : "#008000"
+    {
+        if (reference.IsRemote && reference.RemoteColor is { Length: > 0 } configured && Color.TryParse(configured, out Color color)) { return color; }
+        return Color.Parse(reference.IsBranch ? dark ? "#7FE28A" : "#008000"
             : reference.IsRemote ? dark ? "#fd9797" : "#8b0009"
             : reference.IsTag ? dark ? "#40BAF7" : "#00008b"
             : dark ? "#cfb3b3" : "#808080");
+    }
 
     private void ShowCommitTooltip(object? sender, PointerEventArgs args)
     {

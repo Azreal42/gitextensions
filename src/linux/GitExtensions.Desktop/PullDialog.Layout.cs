@@ -181,18 +181,5 @@ public sealed partial class PullDialog
         Width = Math.Max(MinWidth, Width + delta);
     }
 
-    private void ConfigureCompactChoices()
-    {
-        Classes.Add("original-pull");
-        foreach (string name in new[] { "OuterEllipse", "CheckOuterEllipse", "CheckGlyph" })
-        {
-            double size = name == "CheckGlyph" ? 5 : 13;
-            Styles.Add(new Style(selector => selector.OfType<Window>().Class("original-pull").Descendant().OfType<RadioButton>().Template().OfType<Avalonia.Controls.Shapes.Ellipse>().Name(name))
-            { Setters = { new Setter(WidthProperty, size), new Setter(HeightProperty, size), new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Center) } });
-        }
-        Styles.Add(new Style(selector => selector.OfType<Window>().Class("original-pull").Descendant().OfType<CheckBox>().Template().OfType<Border>().Name("NormalRectangle"))
-        { Setters = { new Setter(WidthProperty, 13d), new Setter(HeightProperty, 13d), new Setter(CornerRadiusProperty, new CornerRadius(2)), new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Center) } });
-        Styles.Add(new Style(selector => selector.OfType<Window>().Class("original-pull").Descendant().OfType<CheckBox>().Template().OfType<Viewbox>())
-        { Setters = { new Setter(WidthProperty, 13d), new Setter(HeightProperty, 13d), new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Center) } });
-    }
+    private void ConfigureCompactChoices() => ClassicChoiceAppearance.Apply(this, "original-pull");
 }

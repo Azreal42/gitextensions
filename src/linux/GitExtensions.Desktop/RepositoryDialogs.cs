@@ -47,6 +47,7 @@ public abstract class RepositoryDialog : Window
     protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
+    protected void ReportError(Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
 
     /// <summary>Keep multiline command output accessible without displacing a dialog's recovery controls.</summary>
     protected void ConstrainStatusHeight(string name, double maxHeight)
@@ -74,19 +75,19 @@ public abstract class RepositoryDialog : Window
         button.Click += async (_, _) =>
         {
             try { await action(); }
-            catch (Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
+            catch (Exception exception) { ReportError(exception); }
         };
         return button;
     }
 
-    protected async Task RunAsync(string label, Func<CancellationToken, Task> action, bool changes = false, CancellationToken cancellationToken = default)
+    protected async Task RunAsync(string label, Func<CancellationToken, Task> action, bool changes = false, CancellationToken cancellationToken = default, bool disableInputs = true)
     {
         if (IsBusy) { return; }
         IsBusy = true;
         LastError = null;
         LastException = null;
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token, cancellationToken);
-        foreach (Control input in _inputs) { input.IsEnabled = false; }
+        if (disableInputs) { foreach (Control input in _inputs) { input.IsEnabled = false; } }
         Status.Text = T(label) + "…";
         try
         {
@@ -94,13 +95,13 @@ public abstract class RepositoryDialog : Window
             HasRepositoryChanges |= changes;
         }
         catch (OperationCanceledException) { LastError = T("Operation cancelled"); Status.Text = LastError; }
-        catch (Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
+        catch (Exception exception) { ReportError(exception); }
         finally
         {
             _operation.Dispose();
             _operation = null;
             IsBusy = false;
-            foreach (Control input in _inputs) { input.IsEnabled = true; }
+            if (disableInputs) { foreach (Control input in _inputs) { input.IsEnabled = true; } }
             UpdateActions();
             if (_closeWhenIdle) { _closeWhenIdle = false; Close(); }
             else if (_pendingDiffReload is Func<Task> reload && !_lifetime.IsCancellationRequested)
