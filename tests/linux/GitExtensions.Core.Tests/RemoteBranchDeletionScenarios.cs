@@ -10,6 +10,7 @@ internal static class RemoteBranchDeletionScenarios
     [
         ("remote branch deletion preview excludes symbolic/orphan refs and resolves the longest remote prefix", PreviewAsync),
         ("remote branch deletion uses actual remote/merge tracking and inverses renamed fetch mappings", TrackingAndMappingsAsync),
+        ("remote branch cleanup rereads tracking after deletion and excludes reconfigured recreated and deleted local branches", CurrentTrackingAfterDeletionAsync),
         ("remote branch deletion excludes ambiguous excluded non-branch and unmapped fetch destinations", InvalidMappingsAsync),
         ("remote branch deletion previews merged state and requires explicit unmerged confirmation", UnmergedAsync),
         ("remote branch deletion deletes literal branches across remotes while retaining local branches and checkout", MultipleRemotesAsync),
@@ -78,6 +79,38 @@ internal static class RemoteBranchDeletionScenarios
         await f.Local.SetConfigAsync("remote." + Nested + ".fetch", "+refs/heads/exact:refs/remotes/" + Nested + "/exact");
         Check((await f.Local.GetRemoteBranchDeletionPreviewAsync()).All(branch => branch.Remote != Nested),
             "An existing stale remote ref without a corresponding configured fetch mapping is omitted rather than guessed.");
+    }
+
+    private static async Task CurrentTrackingAfterDeletionAsync()
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        await f.PublishAsync(Nested, Literal);
+        foreach (string branch in new[] { "still-follows", "reconfigured-remote", "reconfigured-merge", "recreated", "removed" })
+        {
+            await f.Local.CreateBranchAsync(branch, checkout: false);
+            await f.Local.SetConfigAsync("branch." + branch + ".remote", Nested);
+            await f.Local.SetConfigAsync("branch." + branch + ".merge", "refs/heads/" + Literal);
+        }
+        GitRemoteBranchDeletionPreview selected = Select(await f.Local.GetRemoteBranchDeletionPreviewAsync(), Nested, Literal);
+        Check((await f.Local.GetRemoteBranchTrackingLocalBranchesAsync([selected])).SequenceEqual(selected.TrackingLocalBranches),
+            "The cleanup API and preview share the exact remote/merge tracking rules.");
+        Check((await f.Local.DeleteRemoteBranchesAsync(new([selected]))).Success && !await HasRefAsync(f.Local, selected.Reference.Name),
+            "The actual guarded push deletes its local remote-tracking reference before cleanup is considered.");
+        await f.Local.SetConfigAsync("branch.reconfigured-remote.remote", "origin");
+        await f.Local.SetConfigAsync("branch.reconfigured-merge.merge", "refs/heads/main");
+        await f.Local.DeleteBranchesAsync(new(["recreated", "removed"]));
+        await f.Local.CreateBranchAsync("recreated", checkout: false);
+        await f.Local.CreateBranchAsync("new-follower", checkout: false);
+        await f.Local.SetConfigAsync("branch.new-follower.remote", Nested);
+        await f.Local.SetConfigAsync("branch.new-follower.merge", "refs/heads/" + Literal);
+        IReadOnlyList<string> current = await f.Local.GetRemoteBranchTrackingLocalBranchesAsync([selected, selected]);
+        Check(current.SequenceEqual(["new-follower", "still-follows"]),
+            "Cleanup reads live configuration after deletion, excluding reconfigured or recreated names and including only current followers once.");
+        Check(!await HasRefAsync(f.Local, selected.Reference.Name) && await HasRefAsync(f.Local, "refs/heads/recreated"),
+            "Tracking discovery neither requires nor recreates a deleted remote ref, and never deletes local candidates.");
+        Check((await f.Local.GetRemoteBranchTrackingLocalBranchesAsync([])).Count == 0, "An empty successful selection yields no local candidates.");
+        using CancellationTokenSource cancelled = new(); cancelled.Cancel();
+        await ExpectAsync<OperationCanceledException>(() => f.Local.GetRemoteBranchTrackingLocalBranchesAsync([selected], cancelled.Token));
     }
 
     private static async Task UnmergedAsync()

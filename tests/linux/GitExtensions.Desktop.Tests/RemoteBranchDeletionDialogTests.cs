@@ -233,6 +233,116 @@ public sealed class RemoteBranchDeletionDialogTests
     }
 
     [AvaloniaTest]
+    public async Task LocalCleanupRechecksTrackingAfterTheCompletedProcessInsteadOfDeletingRetargetedOrRecreatedNames()
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        await f.Repository.CreateBranchAsync("topic", checkout: false);
+        await f.Repository.CreateBranchAsync("other", checkout: false);
+        string server = await f.CreateRemoteAsync();
+        await TrackAsync(f, "still-tracking", "origin", "topic");
+        await TrackAsync(f, "retargeted", "origin", "topic");
+        await TrackAsync(f, "recreated", "origin", "topic");
+        new ProcessDialogPreferencesStore().Save(new(false));
+        DeleteRemoteBranchDialog dialog = await ShowAsync(f, "origin/topic");
+        try
+        {
+            Field<CheckBox>(dialog, "DeleteRemoteBranches").IsChecked = true;
+            Field<CheckBox>(dialog, "DeleteLocalTrackingBranches").IsChecked = true;
+            Assert.That(dialog.SelectedBranches.Single().TrackingLocalBranches,
+                Is.EquivalentTo(new[] { "still-tracking", "retargeted", "recreated" }));
+            Pointer(dialog, "DeleteSelectedRemoteBranches");
+            await Until(() => dialog.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+            GitProcessDialog process = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+            Assert.That(process.Outcome!.Success, Is.True);
+            Assert.That(Field<CheckBox>(process, "KeepDialogOpen").IsChecked, Is.True);
+            Assert.That(dialog.IsBusy, Is.True);
+            Assert.That(dialog.OwnedWindows.OfType<DeleteBranchDialog>(), Is.Empty);
+            Assert.That(await RemoteRefAsync(server, "topic"), Is.Null);
+
+            // This can be an external Git operation while the user reads the process output.
+            await f.GitAsync("config", "branch.retargeted.merge", "refs/heads/other");
+            await f.Repository.DeleteBranchesAsync(new(["recreated"]));
+            await f.Repository.CreateBranchAsync("recreated", checkout: false);
+            Assert.That((await f.Repository.GetReferencesAsync()).Single(reference => reference.Name == "refs/heads/recreated").Upstream,
+                Is.Null.Or.Empty, "The replacement branch has no tracking relationship with the deleted remote branch.");
+
+            Pointer(process, "Ok");
+            await UntilProcessAsync(dialog, () => dialog.OwnedWindows.OfType<DeleteBranchDialog>().Any(local => !local.IsBusy));
+            DeleteBranchDialog cleanup = dialog.OwnedWindows.OfType<DeleteBranchDialog>().Single();
+            Assert.That(cleanup.ReadOptions().Names, Is.EqualTo(new[] { "still-tracking" }),
+                "A successful remote deletion cannot authorize deletion of a name whose tracking was subsequently changed or removed.");
+            Pointer(cleanup, "CancelDeleteBranches");
+            await Idle(dialog);
+            Assert.That(dialog.IsVisible, Is.False);
+            Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
+            Assert.That((await f.Repository.GetReferencesAsync()).Where(reference => reference.IsBranch).Select(reference => reference.ShortName),
+                Is.SupersetOf(new[] { "still-tracking", "retargeted", "recreated" }));
+        }
+        finally { await CloseAsync(dialog); }
+    }
+
+    [AvaloniaTest]
+    public async Task AbortingTheSecondRemoteKeepsOnlyItsBranchSelectedAndRetryDoesNotRepeatTheSuccessfulDeletion()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("An executable private pre-push hook requires Linux."); return; }
+        using Fixture f = await Fixture.CreateAsync();
+        await f.Repository.CreateBranchAsync("topic", checkout: false);
+        string origin = await f.CreateRemoteAsync(), zeta = await AddRemoteAsync(f, "zeta");
+        await TrackAsync(f, "origin-local-to-keep", "origin", "topic");
+        await TrackAsync(f, "zeta-local-to-keep", "zeta", "topic");
+        string marker = f.Output("second-delete-started"), release = f.Output("second-delete-release");
+        await WriteHookAsync(f, f.Repository.Path, "pre-push", "if test \"$1\" = zeta && test ! -f " + ShellQuote(release) + "; then\n"
+            + " printf started > " + ShellQuote(marker) + "\n while test ! -f " + ShellQuote(release) + "; do sleep 0.02; done\nfi\n", "partial-cancel-hooks");
+        new ProcessDialogPreferencesStore().Save(new(false));
+        DeleteRemoteBranchDialog dialog = await ShowAsync(f);
+        try
+        {
+            dialog.SelectionText = "origin/topic zeta/topic";
+            Field<CheckBox>(dialog, "DeleteRemoteBranches").IsChecked = true;
+            Field<CheckBox>(dialog, "DeleteLocalTrackingBranches").IsChecked = true;
+            Pointer(dialog, "DeleteSelectedRemoteBranches");
+            await Until(() => System.IO.File.Exists(marker));
+            Assert.That(await RemoteRefAsync(origin, "topic"), Is.Null, "The first server transaction has already succeeded.");
+            Assert.That(await RemoteRefAsync(zeta, "topic"), Is.Not.Null, "The second transaction is still held before its native push.");
+            GitProcessDialog process = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+            Assert.That(process.IsRunning, Is.True);
+            Pointer(process, "Abort");
+            await Until(() => !dialog.IsBusy && !process.IsRunning && !process.IsVisible);
+            Assert.That(dialog.IsVisible, Is.True, "Aborting the process keeps the branch selection window available for a retry.");
+            Assert.That(dialog.LastProcess!.WasCancelled, Is.True);
+            Assert.That(dialog.LastProcess.OwnerCloseRequested, Is.False);
+            Assert.That(dialog.LastDeletion!.Cancelled, Is.True);
+            Assert.That(dialog.LastDeletion.Batches.Select(batch => batch.Status), Is.EqualTo(new[]
+                { GitRemoteBranchDeletionBatchStatus.Succeeded, GitRemoteBranchDeletionBatchStatus.Cancelled }));
+            Assert.That(dialog.SelectionText, Is.EqualTo("zeta/topic"));
+            Assert.That(dialog.SelectedBranches.Select(branch => branch.Reference.ShortName), Is.EqualTo(new[] { "zeta/topic" }));
+            Assert.That(dialog.OwnedWindows, Is.Empty, "Cancellation must not offer local cleanup for an earlier successful batch.");
+            Assert.That((await f.Repository.GetReferencesAsync()).Where(reference => reference.IsBranch).Select(reference => reference.ShortName),
+                Is.SupersetOf(new[] { "origin-local-to-keep", "zeta-local-to-keep" }));
+
+            await System.IO.File.WriteAllTextAsync(release, "release\n");
+            System.IO.File.Delete(Path.Combine(f.Output("partial-cancel-hooks"), "pre-push"));
+            new ProcessDialogPreferencesStore().Save(new(true));
+            Field<CheckBox>(dialog, "DeleteLocalTrackingBranches").IsChecked = false;
+            Assert.That(Field<Button>(dialog, "DeleteSelectedRemoteBranches").IsEnabled, Is.True);
+            Pointer(dialog, "DeleteSelectedRemoteBranches");
+            await Idle(dialog);
+            Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
+            Assert.That(dialog.LastProcess!.Success, Is.True);
+            Assert.That(dialog.LastDeletion!.Success, Is.True);
+            Assert.That(dialog.LastDeletion.Batches.Select(batch => batch.Remote), Is.EqualTo(new[] { "zeta" }));
+            Assert.That(dialog.IsVisible, Is.False);
+            Assert.That(await RemoteRefAsync(origin, "topic"), Is.Null);
+            Assert.That(await RemoteRefAsync(zeta, "topic"), Is.Null);
+        }
+        finally
+        {
+            await System.IO.File.WriteAllTextAsync(release, "release\n");
+            await CloseAsync(dialog);
+        }
+    }
+
+    [AvaloniaTest]
     public async Task PartiallyRejectedDeletionOffersCleanupOnlyForSuccessfulRemoteAndKeepsTheFailureSelected()
     {
         if (!OperatingSystem.IsLinux()) { Assert.Ignore("An executable private server hook requires Linux."); return; }

@@ -7,11 +7,35 @@ public sealed partial class GitRepository
     public Task<IReadOnlyList<GitRemoteBranchDeletionPreview>> GetRemoteBranchDeletionPreviewAsync(CancellationToken cancellationToken = default)
         => WithMutationAsync(ReadRemoteBranchDeletionPreviewAsync, cancellationToken);
 
+    /// <summary>Read the current local tracking candidates, including after Git has removed the remote-tracking refs.
+    /// The confirmed remote/branch identities are retained, but cached local names are never reused.</summary>
+    public Task<IReadOnlyList<string>> GetRemoteBranchTrackingLocalBranchesAsync(IReadOnlyList<GitRemoteBranchDeletionPreview> branches,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(branches);
+        cancellationToken.ThrowIfCancellationRequested();
+        (string Remote, string DestinationRef)[] targets = branches.Select(branch =>
+        {
+            ArgumentNullException.ThrowIfNull(branch);
+            ValidateValue(branch.Remote); ValidateValue(branch.BranchName);
+            return (branch.Remote, branch.DestinationRef);
+        }).Distinct().ToArray();
+        if (targets.Length == 0) { return Task.FromResult<IReadOnlyList<string>>([]); }
+        return WithMutationAsync<IReadOnlyList<string>>(async token =>
+        {
+            IReadOnlyList<GitReference> references = await GetReferencesAsync(token).ConfigureAwait(false);
+            IReadOnlyList<KeyValuePair<string, string>> configuration = await GetConfigAsync("^branch\\..*\\.(remote|merge)$", cancellationToken: token).ConfigureAwait(false);
+            Dictionary<(string Remote, string DestinationRef), string[]> tracking = RemoteBranchTrackingLocalBranches(references, configuration);
+            return targets.SelectMany(target => tracking.GetValueOrDefault(target) ?? []).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        }, cancellationToken);
+    }
+
     private async Task<IReadOnlyList<GitRemoteBranchDeletionPreview>> ReadRemoteBranchDeletionPreviewAsync(CancellationToken token)
     {
         IReadOnlyList<GitReference> references = await GetReferencesAsync(token).ConfigureAwait(false);
         GitRemote[] remotes = (await GetRemotesAsync(token).ConfigureAwait(false)).OrderByDescending(remote => remote.Name.Length).ToArray();
         IReadOnlyList<KeyValuePair<string, string>> configuration = await GetConfigAsync("^(branch\\..*\\.(remote|merge)|remote\\..*\\.(fetch|pushurl))$", cancellationToken: token).ConfigureAwait(false);
+        Dictionary<(string Remote, string DestinationRef), string[]> localTracking = RemoteBranchTrackingLocalBranches(references, configuration);
         HashSet<string> merged = new(StringComparer.Ordinal);
         if (await HasHeadAsync(token).ConfigureAwait(false))
         {
@@ -30,16 +54,42 @@ public sealed partial class GitRepository
             if (destinations.Length != 1 || !destinations[0].StartsWith("refs/heads/", StringComparison.Ordinal)
                 || fetchMappings.Any(mapping => mapping.StartsWith('^') && ReferencePatternMatches(mapping[1..], destinations[0]))) { continue; }
             string destination = destinations[0], branch = destination["refs/heads/".Length..];
-            string[] tracking = references.Where(local => local.IsBranch && local.SymbolicTarget is null)
-                .Where(local => configuration.LastOrDefault(item => item.Key == "branch." + local.ShortName + ".remote").Value == remote.Name
-                    && configuration.Any(item => item.Key == "branch." + local.ShortName + ".merge" && item.Value == destination))
-                .Select(local => local.ShortName).Order(StringComparer.Ordinal).ToArray();
+            string[] tracking = localTracking.GetValueOrDefault((remote.Name, destination)) ?? [];
             string[] pushUrls = configuration.Where(item => item.Key == "remote." + remote.Name + ".pushurl").Select(item => item.Value).ToArray();
             // Native Git uses only the first fetch URL when no pushurl is configured.
             if (pushUrls.Length == 0) { pushUrls = remote.FetchUrls.Take(1).ToArray(); }
             branches.Add(new(reference, remote.Name, branch, merged.Contains(reference.Name), tracking) { ExpectedPushUrls = pushUrls });
         }
         return branches.OrderBy(branch => branch.Reference.Name, StringComparer.Ordinal).ToArray();
+    }
+
+    private static Dictionary<(string Remote, string DestinationRef), string[]> RemoteBranchTrackingLocalBranches(
+        IReadOnlyList<GitReference> references, IReadOnlyList<KeyValuePair<string, string>> configuration)
+    {
+        Dictionary<string, string> remotes = new(StringComparer.Ordinal);
+        Dictionary<string, HashSet<string>> merges = new(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> setting in configuration.Where(setting => setting.Key.StartsWith("branch.", StringComparison.Ordinal)))
+        {
+            if (setting.Key.EndsWith(".remote", StringComparison.Ordinal)) { remotes[setting.Key[7..^7]] = setting.Value; }
+            else if (setting.Key.EndsWith(".merge", StringComparison.Ordinal))
+            {
+                string branch = setting.Key[7..^6];
+                if (!merges.TryGetValue(branch, out HashSet<string>? destinations)) { merges[branch] = destinations = new(StringComparer.Ordinal); }
+                destinations.Add(setting.Value);
+            }
+        }
+        Dictionary<(string Remote, string DestinationRef), List<string>> tracking = [];
+        foreach (GitReference local in references.Where(local => local.IsBranch && local.SymbolicTarget is null))
+        {
+            if (!remotes.TryGetValue(local.ShortName, out string? remote) || !merges.TryGetValue(local.ShortName, out HashSet<string>? destinations)) { continue; }
+            foreach (string destination in destinations)
+            {
+                (string, string) target = (remote, destination);
+                if (!tracking.TryGetValue(target, out List<string>? locals)) { tracking[target] = locals = []; }
+                locals.Add(local.ShortName);
+            }
+        }
+        return tracking.ToDictionary(pair => pair.Key, pair => pair.Value.Order(StringComparer.Ordinal).ToArray());
     }
 
     /// <summary>Validate the entire selection, then delete each remote's branches atomically using confirmed object leases.

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Threading;
 using GitExtensions.Linux.Desktop.Controls;
@@ -46,6 +47,7 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
         StackPanel footer = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(9, 7), Children = { _delete } };
         Border footerRow = ClassicChrome.Border(footer, new Thickness(0, 1, 0, 0), new Thickness(0));
+        footerRow.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicMenuBrush"));
         DockPanel.SetDock(footerRow, Dock.Bottom); Root.Children.Add(footerRow);
         Grid fields = new() { Name = "DeleteRemoteBranchFields", ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"),
             Margin = new Thickness(9) };
@@ -131,13 +133,17 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
                 if (LastDeletion?.Batches.Any(batch => batch.Status != GitRemoteBranchDeletionBatchStatus.NotAttempted) == true) { MarkRepositoryChanged(); }
             }
             if (LastProcess.WorkflowStopRequested || LastProcess.OwnerCloseRequested || LastProcess.WasCancelled || token.IsCancellationRequested || !IsVisible)
-            { throw new OperationCanceledException(token); }
+            {
+                // Abort stops continuation, but a still-open owner must not retry already successful remotes.
+                if (!token.IsCancellationRequested && IsVisible) { await RefreshRemainingAsync(selected, token); }
+                throw new OperationCanceledException(token);
+            }
             if (LastProcess.CompletionError is Exception completionError) { throw new InvalidOperationException(completionError.Message, completionError); }
             if (deleteTracking && LastDeletion is not null)
             {
-                string[] local = LastDeletion.Batches.Where(batch => batch.Success).SelectMany(batch => batch.Branches)
-                    .SelectMany(branch => branch.TrackingLocalBranches).Distinct(StringComparer.Ordinal).ToArray();
-                if (local.Length > 0)
+                GitRemoteBranchDeletionPreview[] deleted = LastDeletion.Batches.Where(batch => batch.Success).SelectMany(batch => batch.Branches).ToArray();
+                IReadOnlyList<string> local = deleted.Length == 0 ? [] : await Repository.GetRemoteBranchTrackingLocalBranchesAsync(deleted, token);
+                if (local.Count > 0)
                 {
                     DeleteBranchDialog tracking = new(Repository, local) { RequestedThemeVariant = ActualThemeVariant };
                     tracking.Opened += async (_, _) => await tracking.InitializeAsync();
@@ -150,11 +156,7 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
             if (LastProcess.Error is not null || LastDeletion?.Success != true)
             {
                 // Keep failed branches available, while dropping successful ones from the retry selection.
-                string[] failed = LastDeletion?.Batches.Where(batch => !batch.Success).SelectMany(batch => batch.Branches).Select(branch => branch.Reference.Name).ToArray()
-                    ?? selected.Select(branch => branch.Reference.Name).ToArray();
-                _preview = await Repository.GetRemoteBranchDeletionPreviewAsync(token);
-                _branches.Choices = _preview.Select(branch => branch.Reference).ToArray();
-                SelectionText = string.Join(' ', _preview.Where(branch => failed.Contains(branch.Reference.Name, StringComparer.Ordinal)).Select(branch => branch.Reference.ShortName));
+                await RefreshRemainingAsync(selected, token);
                 if (LastProcess.Error is Exception error) { throw new InvalidOperationException(error.Message, error); }
                 string failures = string.Join("\n", LastDeletion?.Batches.Where(batch => !batch.Success).Select(batch => batch.Remote + ": " + batch.ErrorMessage) ?? []);
                 throw new InvalidOperationException(failures.Length > 0 ? failures : LastProcess.Result?.StandardError ?? T("Remote branch deletion failed."));
@@ -162,5 +164,19 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
             Close();
         });
         _statusRow.IsVisible = LastError is not null;
+        if (LastError is not null && LastDeletion?.Cancelled == true)
+        {
+            Status.Text = LastError + "\n" + string.Join('\n', LastDeletion.Batches.Where(batch => batch.Status == GitRemoteBranchDeletionBatchStatus.Cancelled)
+                .Select(batch => batch.Remote + ": " + T("Deletion was cancelled; refresh remote references to check the remote outcome.")));
+        }
+    }
+
+    private async Task RefreshRemainingAsync(GitRemoteBranchDeletionPreview[] selected, CancellationToken token)
+    {
+        string[] remaining = LastDeletion?.Batches.Where(batch => !batch.Success).SelectMany(batch => batch.Branches).Select(branch => branch.Reference.Name).ToArray()
+            ?? selected.Select(branch => branch.Reference.Name).ToArray();
+        _preview = await Repository.GetRemoteBranchDeletionPreviewAsync(token);
+        _branches.Choices = _preview.Select(branch => branch.Reference).ToArray();
+        SelectionText = string.Join(' ', _preview.Where(branch => remaining.Contains(branch.Reference.Name, StringComparer.Ordinal)).Select(branch => branch.Reference.ShortName));
     }
 }
