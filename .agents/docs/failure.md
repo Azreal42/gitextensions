@@ -292,3 +292,16 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Un vieux message de branches ou « Add submodule… » persiste après la fin | Effacer l’erreur lors d’un retry de la même source, et afficher l’état réellement terminé quand Process est fermé sans OK. |
 | Une seconde valeur de tracking validée pendant Save disparaît sans erreur | Le Reload final hors file prenait IsBusy avant l’écriture suivante. Réserver le Reload dans la même file avant RunAsync, y compris les validations provoquées par la perte de focus. Conserver le rafraîchissement Initialize de Windows, même sans champ modifié. |
 | Le test Save lit une seule des deux clés après !IsBusy | IsBusy peut être faux entre deux écritures en file. Attendre la ligne complète attendue, puis vérifier la configuration native ; aucun clic Save supplémentaire. |
+
+
+## Gestion des sous-modules — résolus
+
+| Observation | Cause / suite |
+| --- | --- |
+| Update/Sync changent aussi le module voisin | Le panneau générique appelait les API globales. Capturer et revalider le snapshot ; Update récursif sélectionné, Sync sélectionné sans récursion. |
+| Branch diffère de Windows ou un module inactif semble modifié | Le seul describe --all --always et la présence de .git ne reproduisent pas submodule status. Reprendre le vrai statut natif par chemin littéral ; inactif affiche l’index, fichier sale seul reste Up-to-date. |
+| Un vrai tag nommé tags/release apparaît comme release | La normalisation du résultat describe --all ne convient plus à une annotation native status. Conserver toute l’annotation sans retirer un préfixe de nom littéral. |
+| Conflit de gitlink absent ou faux commit zéro | La lecture de retrait exige un stage0 et la regex Windows perd certaines lignes. Fournir un relevé dédié tolérant U, sans autoriser Remove ni inventer un SHA. |
+| Fermeture suspendue pendant relecture, ou Browse reste ouvert après drainage | CancellationToken.None dans le post-refresh ignorait Close ; propager le token extérieur et rejouer la fermeture propriétaire après drainage. Abort Process seul laisse relire les effets partiels. |
+| Browse ignore une tentative Remove dont la restauration IO échoue | Marquer conservativement la tentative autorisée avant publication ; toujours demander la relecture parent. No ne marque aucun changement. |
+| Ctrl+C diffère pour un dépôt à un seul module | AutoHeader WinForms ajoute les en-têtes lorsque toutes les lignes sont sélectionnées. Garder valeurs complètes et règles TAB/CRLF natives, avec largeurs/défilement communs aux entêtes et cellules. |

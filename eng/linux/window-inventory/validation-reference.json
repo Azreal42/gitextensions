@@ -1,12 +1,12 @@
 {
-  "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
-  "trx": "artifacts/linux/add-submodule-desktop-checks-20261016-13-final-full/desktop.trx",
-  "trx_sha256": "ce32782303a4a14ea0bbd91d9c1ce6615c36f069af306a680cc0e535afa1af5c",
-  "meaning": "Frozen results from an actual complete execution; this does not certify complete window parity.",
+  "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
+  "trx": "artifacts/linux/submodules-desktop-checks-20261016-06-final-full/desktop.trx",
+  "trx_sha256": "49915e630a9b96590c601c6edd842fed846a4d37969bc17dfd92fc1de0581f3b",
+  "meaning": "Frozen results of actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "984",
-    "executed": "984",
-    "passed": "984",
+    "total": "997",
+    "executed": "997",
+    "passed": "997",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -346,6 +346,9 @@
     "SubmoduleRemovalDialogTests": {
       "Passed": 8
     },
+    "SubmodulesDialogTests": {
+      "Passed": 13
+    },
     "TranslationCatalogTests": {
       "Passed": 11
     },
@@ -382,22 +385,22 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
-      "passed": 514,
-      "total": 514,
-      "execution_result": "artifacts/linux/submodule-add-core-20261016-02/full-result.json",
-      "source_hashes_verified": 187,
+      "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
+      "passed": 530,
+      "total": 530,
+      "execution_result": "artifacts/linux/submodule-management-core-20261016-03/full-result.json",
+      "source_hashes_verified": 191,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete component execution earlier in this tranche; all recorded inputs verified against the final source SHA. Not rerun for the subsequent Desktop-only tracking fix."
+      "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
     },
     "plugins": {
-      "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
+      "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/submodule-add-plugins-checks-20261016-01/plugins-result.json",
-      "source_hashes_verified": 145,
+      "execution_result": "artifacts/linux/submodule-manager-plugins-checks-20261016-02/plugins-result.json",
+      "source_hashes_verified": 148,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete component execution earlier in this tranche; all recorded inputs verified against the final source SHA. Not rerun for the subsequent Desktop-only tracking fix."
+      "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
     }
   }
 }

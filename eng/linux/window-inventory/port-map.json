@@ -1155,22 +1155,29 @@
     "GitUI.CommandsDialogs.FormSubmodules": {
       "feature": "Gestion des sous-modules",
       "group": "repositories",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "MainWindow@ShowWorkflowAsync",
         "SubmoduleRemovalDialog",
-        "SubmoduleUpdateDialog"
+        "MainWindow@ManageSubmodulesAsync"
       ],
-      "implemented": "Liste, ajout dédié, mise à jour/sync globales, ouverture et retrait conservant les données.",
-      "remaining": "Gestion complète et détails Windows, séparateur persistant et Pull du module sélectionné absents. Update/Sync du workflow générique ciblent tous les modules malgré la sélection ; Sync ajoute --recursive contrairement à la commande Windows. Reprendre les commandes sur le seul module sélectionné.",
-      "visual": "integre",
+      "implemented": "Gestionnaire Windows dédié et partagé avec Remove : grille Name/Status, six détails readonly, Pull24px, Add, Synchronize/Update/Remove et séparateur absolu persistant. Snapshots revalidés, Update récursif sélectionné, Sync sélectionné non récursif, vrai Pull du module avec runner conservé, Add/Remove communs ; statuts/descriptions natifs, conflits sans SHA inventé, sélection et effets partiels conservés, fermeture drainée. Grille redimensionnable et copie AutoHeader WinForms.",
+      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Assistant de conflit gitlink distinct FormMergeSubmodule non porté. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
+      "visual": "rapproche",
       "tests": [
+        "SubmodulesDialogTests",
         "SubmoduleRemovalDialogTests",
-        "CheckoutSubmoduleTests"
+        "AddSubmoduleDialogTests"
       ],
       "adr": [
-        "0019",
-        "0041"
+        "0041",
+        "0070"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs de gestion des sous-modules",
+          "source": "tests/linux/GitExtensions.Core.Tests/SubmoduleManagementScenarios.cs",
+          "line": 1
+        }
       ]
     },
     "GitUI.CommandsDialogs.SubmodulesDialog.FormAddSubmodule": {

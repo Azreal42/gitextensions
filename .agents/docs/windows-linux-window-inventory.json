@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "5b372bee14a916f70a959b24a19ca6ab6b317762",
-  "source_digest_sha256": "f817c0300bb702368e88184a14aad412a9f965b589fec8e71fd36ee915772b07",
-  "scanned_csharp_files": 1855,
+  "code_reference_commit": "aca93bcead051ee9e65822c09beeae003d0da74c",
+  "source_digest_sha256": "da59cd7c59bc9f947da6d1cd8cf6e78672136e105439e0c1654e42d765b82a14",
+  "scanned_csharp_files": 1863,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -32,9 +32,9 @@
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 10,
-      "N1": 17,
+      "N1": 16,
       "N2": 25,
-      "N3": 45,
+      "N3": 46,
       "NA": 2
     },
     "settings_levels": {
@@ -50,28 +50,28 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/add-submodule-desktop-checks-20261016-13-final-full/desktop.trx",
-    "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
-    "trx_sha256": "ce32782303a4a14ea0bbd91d9c1ce6615c36f069af306a680cc0e535afa1af5c",
+    "trx": "artifacts/linux/submodules-desktop-checks-20261016-06-final-full/desktop.trx",
+    "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
+    "trx_sha256": "49915e630a9b96590c601c6edd842fed846a4d37969bc17dfd92fc1de0581f3b",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
-        "passed": 514,
-        "total": 514,
-        "execution_result": "artifacts/linux/submodule-add-core-20261016-02/full-result.json",
-        "source_hashes_verified": 187,
+        "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
+        "passed": 530,
+        "total": 530,
+        "execution_result": "artifacts/linux/submodule-management-core-20261016-03/full-result.json",
+        "source_hashes_verified": 191,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete component execution earlier in this tranche; all recorded inputs verified against the final source SHA. Not rerun for the subsequent Desktop-only tracking fix."
+        "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
       },
       "plugins": {
-        "source_sha": "5b372bee14a916f70a959b24a19ca6ab6b317762",
+        "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/submodule-add-plugins-checks-20261016-01/plugins-result.json",
-        "source_hashes_verified": 145,
+        "execution_result": "artifacts/linux/submodule-manager-plugins-checks-20261016-02/plugins-result.json",
+        "source_hashes_verified": 148,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete component execution earlier in this tranche; all recorded inputs verified against the final source SHA. Not rerun for the subsequent Desktop-only tracking fix."
+        "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
       }
     },
     "current_linux_code_equivalent": true,
@@ -3499,6 +3499,12 @@
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
+          "test_class": "SubmodulesDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
         }
       ],
       "adr": [
@@ -4278,18 +4284,18 @@
       "category": "windows",
       "feature": "Gestion des sous-modules",
       "group": "repositories",
-      "level": "N1",
-      "implemented": "Liste, ajout dédié, mise à jour/sync globales, ouverture et retrait conservant les données.",
-      "remaining": "Gestion complète et détails Windows, séparateur persistant et Pull du module sélectionné absents. Update/Sync du workflow générique ciblent tous les modules malgré la sélection ; Sync ajoute --recursive contrairement à la commande Windows. Reprendre les commandes sur le seul module sélectionné.",
-      "visual": "integre",
-      "linux": [
+      "level": "N3",
+      "implemented": "Gestionnaire Windows dédié et partagé avec Remove : grille Name/Status, six détails readonly, Pull24px, Add, Synchronize/Update/Remove et séparateur absolu persistant. Snapshots revalidés, Update récursif sélectionné, Sync sélectionné non récursif, vrai Pull du module avec runner conservé, Add/Remove communs ; statuts/descriptions natifs, conflits sans SHA inventé, sélection et effets partiels conservés, fermeture drainée. Grille redimensionnable et copie AutoHeader WinForms.",
+      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Assistant de conflit gitlink distinct FormMergeSubmodule non porté. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
+      "visual": "rapproche",
+      "extra_evidence": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.ShowWorkflowAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 403,
-          "kind": "window"
-        },
+          "label": "Scénarios natifs de gestion des sous-modules",
+          "source": "tests/linux/GitExtensions.Core.Tests/SubmoduleManagementScenarios.cs",
+          "line": 1
+        }
+      ],
+      "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.SubmoduleRemovalDialog",
           "label": "SubmoduleRemovalDialog",
@@ -4298,24 +4304,18 @@
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.SubmoduleUpdateDialog",
-          "label": "SubmoduleUpdateDialog",
-          "source": "src/linux/GitExtensions.Desktop/SubmoduleUpdateDialog.cs",
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ManageSubmodulesAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.SubmoduleRemoval.cs",
           "line": 9,
           "kind": "window"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CheckoutSubmoduleTests.cs",
-          "test_class": "CheckoutSubmoduleTests",
-          "passed_in_reference_run": 12,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PullAdvancedDialogTests.cs",
-          "test_class": "PullAdvancedDialogTests",
-          "passed_in_reference_run": 15,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AddSubmoduleDialogTests.cs",
+          "test_class": "AddSubmoduleDialogTests",
+          "passed_in_reference_run": 17,
           "results_present": true
         },
         {
@@ -4323,11 +4323,17 @@
           "test_class": "SubmoduleRemovalDialogTests",
           "passed_in_reference_run": 8,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
+          "test_class": "SubmodulesDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/submodules/0019-checkout-update.md",
-        ".agents/docs/adr/workflows/submodules/0041-remove-registration.md"
+        ".agents/docs/adr/workflows/submodules/0041-remove-registration.md",
+        ".agents/docs/adr/workflows/submodules/0070-submodule-manager.md"
       ]
     },
     {
@@ -5765,7 +5771,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 476,
+          "line": 488,
           "kind": "window"
         }
       ],
@@ -6847,6 +6853,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
+          "test_class": "SubmodulesDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/UndoBisectWorkflowTests.cs",
           "test_class": "UndoBisectWorkflowTests",
           "passed_in_reference_run": 19,
@@ -7065,6 +7077,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
+          "test_class": "SubmodulesDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -7289,6 +7307,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
+          "test_class": "SubmodulesDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -8424,6 +8448,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
+          "test_class": "SubmodulesDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -9840,7 +9870,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSubmodules",
           "name": "FormSubmodules",
-          "level": "N1"
+          "level": "N3"
         },
         {
           "id": "GitUI.CommandsDialogs.SearchWindow`1",
@@ -10806,11 +10836,11 @@
       "id": "GitExtensions.Linux.Desktop.SubmoduleRemovalConfirmation",
       "name": "SubmoduleRemovalConfirmation",
       "source": "src/linux/GitExtensions.Desktop/SubmoduleRemovalDialog.cs",
-      "line": 145,
+      "line": 119,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/SubmoduleRemovalDialog.cs",
-          "line": 145
+          "line": 119
         }
       ],
       "bases": [
@@ -10827,6 +10857,14 @@
       "line": 11,
       "sources": [
         {
+          "path": "src/linux/GitExtensions.Desktop/SubmoduleRemovalDialog.Actions.cs",
+          "line": 6
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/SubmoduleRemovalDialog.Layout.cs",
+          "line": 12
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/SubmoduleRemovalDialog.cs",
           "line": 11
         }
@@ -10839,7 +10877,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSubmodules",
           "name": "FormSubmodules",
-          "level": "N1"
+          "level": "N3"
         }
       ],
       "note": "Retrait sûr ; sous-workflow de FormSubmodules."
@@ -10864,11 +10902,6 @@
           "id": "GitUI.CommandsDialogs.FormCheckoutBranch",
           "name": "FormCheckoutBranch",
           "level": "N3"
-        },
-        {
-          "id": "GitUI.CommandsDialogs.FormSubmodules",
-          "name": "FormSubmodules",
-          "level": "N1"
         }
       ],
       "note": "Mise à jour des sous-modules ; sous-workflow de FormSubmodules/Checkout/Pull."
@@ -11021,7 +11054,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 420,
+      "line": 421,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -11031,7 +11064,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
-      "line": 126,
+      "line": 120,
       "method": "ConfirmSubmoduleBuildOnUiAsync",
       "text": "new() { Title = T(\"Auto compile submodules\"), Width = 560, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner }",
       "platform": "linux",
