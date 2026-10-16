@@ -354,7 +354,7 @@ def row_md(r):
     elif r['tests']:proof.append('Tests source associés ; exécution non rattachée')
     else:proof.append('Code seul / absence constatée')
     if r.get('in_progress'):
-        proof += ['Non exécuté : '+link(x['test_class'],x['source']) for x in r['in_progress']['tests']]
+        proof += ['Hors suite de référence : '+link(x['test_class'],x['source']) for x in r['in_progress']['tests']]
     for ref in r.get('extra_evidence',[]): proof.append(link(ref['label'],ref['source'],ref['line']))
     if r['adr']: proof.append('ADR '+', '.join(link(Path(p).name[:4],p) for p in r['adr']))
     return '| '+original+' | '+equivalent+' | **'+r['level']+'** / '+r['visual']+' | '+esc(r['implemented'])+'<br>**Reste :** '+esc(r['remaining'])+' | '+'<br>'.join(proof)+' |'

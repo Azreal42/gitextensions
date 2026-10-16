@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "676a14e2ba34f00c52ec8df9a018474e94501de7",
-  "source_digest_sha256": "1d142e941aa99c0319ee6766ed2d2c00dd8e698229f113bb7ae01f197281836c",
-  "scanned_csharp_files": 1882,
+  "code_reference_commit": "954a1412d67e5bde3a00c2effd3e64a870582cf7",
+  "source_digest_sha256": "ac94d7da872c0716cba26932d5d67ef8030366db97421b7b7e2082621902ced7",
+  "scanned_csharp_files": 1889,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,7 +26,7 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 79,
+    "linux_window_types": 80,
     "linux_abstract_bases": 2,
     "linux_dynamic_factories": 31,
     "windows_dynamic_hosts": 2,
@@ -47,7 +47,7 @@
     "designer_files": 189,
     "installer_source_dialogs": 13,
     "installer_library_dialogs": 9,
-    "in_progress_screens": 0
+    "in_progress_screens": 1
   },
   "validation_reference": {
     "trx": "artifacts/linux/goto-commit-desktop-checks-20261016-08-full/desktop.trx",
@@ -78,7 +78,7 @@
         "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
       }
     },
-    "current_linux_code_equivalent": true,
+    "current_linux_code_equivalent": false,
     "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
@@ -843,7 +843,7 @@
           "id": "GitExtensions.Linux.Desktop.BisectDialog",
           "label": "BisectDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 193,
+          "line": 195,
           "kind": "window"
         },
         {
@@ -1043,14 +1043,14 @@
       "group": "navigation",
       "level": "N3",
       "implemented": "Dialogue Windows à trois champs expression/tag/branche locale, ancrages et focus cyclique ; listes natives séparées, bornées à 1 000 et sans verrou de mutation. SuggestAppend insensible à la casse, choix explicites au clavier/souris, aide originale et proposition de presse-papiers non intrusive. Go fige les sources, résout un vrai commit (tags annotés inclus) ; fermeture et changements de contexte annulent/drainent les acteurs. Activation native avant la première frappe ; retour de focus explicite après Échap/croix, navigation ciblée et Back/Forward sans recharger la grille, erreurs distinctes de révision invalide et de commit filtré, filtres conservés.",
-      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector reste une fenêtre distincte à porter.",
+      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector est une fenêtre distincte, évaluée séparément dans cette matrice.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.GoToCommitDialog",
           "label": "GoToCommitDialog",
           "source": "src/linux/GitExtensions.Desktop/GoToCommitDialog.cs",
-          "line": 13,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -1983,7 +1983,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 181,
+          "line": 182,
           "kind": "window"
         },
         {
@@ -2660,6 +2660,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
           "test_class": "ReferenceDialogTests",
           "passed_in_reference_run": 14,
@@ -2733,6 +2739,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
           "test_class": "ReferenceDialogTests",
           "passed_in_reference_run": 14,
@@ -2791,6 +2803,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
           "test_class": "ReferenceDialogTests",
@@ -4016,6 +4034,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareDialogTests.cs",
           "test_class": "RenameCompareDialogTests",
           "passed_in_reference_run": 14,
@@ -4319,7 +4343,7 @@
           "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
           "label": "SparseCheckoutDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 380,
+          "line": 382,
           "kind": "window"
         }
       ],
@@ -6939,6 +6963,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
           "test_class": "RecoverLostObjectsDialogTests",
           "passed_in_reference_run": 17,
@@ -7176,6 +7206,12 @@
           "test_class": "PushDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -7418,6 +7454,12 @@
           "test_class": "PushDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -7785,7 +7827,7 @@
           "id": "GitExtensions.Linux.Desktop.NoteDialog",
           "label": "NoteDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 125,
+          "line": 127,
           "kind": "window"
         }
       ],
@@ -8208,7 +8250,7 @@
       "group": "navigation",
       "level": "N1",
       "implemented": "Menus et combos de branches/références dans des workflows précis.",
-      "remaining": "Sélecteur rapide autonome réutilisable et toutes ses interactions non portés.",
+      "remaining": "Le sélecteur autonome est en cours de validation ci-dessous ; le substitut de référence ne couvre pas ses interactions ni le raccord des scripts.",
       "visual": "integre",
       "linux": [
         {
@@ -8282,7 +8324,43 @@
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [],
+      "in_progress": {
+        "description": "Sélecteur Windows sans bordure et parcours F2/Suppr intégrés : zéro/une/plusieurs références, groupes, tri, choix typés et gardes de contexte. Compilation et 138 scénarios Desktop ciblés réussis sur le code de 954a1412d, dont 31 nouveaux. Le candidat précédent 10d889d9b a été refusé en natif : premier Échap consommé par le dialogue métier. La correction d’activation partagée attend son contrôle natif et la suite Desktop complète ; N1 conservé. Raccord des scripts non porté.",
+        "linux": [
+          {
+            "id": "GitExtensions.Linux.Desktop.QuickGitRefSelectorDialog",
+            "label": "QuickGitRefSelectorDialog",
+            "source": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
+            "line": 18,
+            "kind": "window"
+          },
+          {
+            "id": "GitExtensions.Linux.Desktop.MainWindow",
+            "label": "MainWindow.ExecuteQuickReferenceActionAsync",
+            "source": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
+            "line": 12,
+            "kind": "window"
+          }
+        ],
+        "tests": [
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/QuickGitRefSelectorDialogTests.cs",
+            "test_class": "QuickGitRefSelectorDialogTests",
+            "passed_in_reference_run": 0,
+            "results_present": false
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+            "test_class": "QuickReferenceWorkflowTests",
+            "passed_in_reference_run": 0,
+            "results_present": false
+          }
+        ],
+        "adr": [
+          "0074"
+        ]
+      }
     },
     {
       "id": "GitUI.UserControls.RevisionGrid.FormQuickItemSelector",
@@ -8577,6 +8655,12 @@
           "test_class": "PushDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/QuickReferenceWorkflowTests.cs",
+          "test_class": "QuickReferenceWorkflowTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RecoverLostObjectsDialogTests.cs",
@@ -8973,11 +9057,11 @@
       "id": "GitExtensions.Linux.Desktop.BisectDialog",
       "name": "BisectDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 193,
+      "line": 195,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 193
+          "line": 195
         }
       ],
       "bases": [
@@ -9843,11 +9927,11 @@
       "id": "GitExtensions.Linux.Desktop.GoToCommitDialog",
       "name": "GoToCommitDialog",
       "source": "src/linux/GitExtensions.Desktop/GoToCommitDialog.cs",
-      "line": 13,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/GoToCommitDialog.cs",
-          "line": 13
+          "line": 12
         }
       ],
       "bases": [
@@ -10012,6 +10096,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Pull.cs",
           "line": 12
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
+          "line": 8
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.RangeDiff.cs",
@@ -10322,11 +10410,11 @@
       "id": "GitExtensions.Linux.Desktop.NoteDialog",
       "name": "NoteDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 125,
+      "line": 127,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 125
+          "line": 127
         }
       ],
       "bases": [
@@ -10505,6 +10593,30 @@
           "id": "GitUI.CommandsDialogs.FormPush",
           "name": "FormPush",
           "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.QuickGitRefSelectorDialog",
+      "name": "QuickGitRefSelectorDialog",
+      "source": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
+      "line": 18,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/QuickGitRefSelectorDialog.cs",
+          "line": 18
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
+          "name": "FormQuickGitRefSelector",
+          "level": "en cours, N1 conservé"
         }
       ],
       "note": ""
@@ -10983,11 +11095,11 @@
       "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
       "name": "SparseCheckoutDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 380,
+      "line": 382,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 380
+          "line": 382
         }
       ],
       "bases": [
@@ -11529,7 +11641,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 285,
+      "line": 287,
       "method": "ConfirmRangeAsync",
       "text": "new() { Name = \"BisectRangeConfirmation\", Title = Title, Width = 470, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -11539,7 +11651,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 335,
+      "line": 337,
       "method": "ShowNativeErrorAsync",
       "text": "new() { Name = \"BisectNativeError\", Title = T(\"Error\"), Width = 520, MaxHeight = 540, SizeToContent = SizeToContent.Height,",
       "platform": "linux",

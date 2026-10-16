@@ -142,7 +142,7 @@
         "MainWindow@NavigateRevisionHistoryAsync"
       ],
       "implemented": "Dialogue Windows à trois champs expression/tag/branche locale, ancrages et focus cyclique ; listes natives séparées, bornées à 1 000 et sans verrou de mutation. SuggestAppend insensible à la casse, choix explicites au clavier/souris, aide originale et proposition de presse-papiers non intrusive. Go fige les sources, résout un vrai commit (tags annotés inclus) ; fermeture et changements de contexte annulent/drainent les acteurs. Activation native avant la première frappe ; retour de focus explicite après Échap/croix, navigation ciblée et Back/Forward sans recharger la grille, erreurs distinctes de révision invalide et de commit filtré, filtres conservés.",
-      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector reste une fenêtre distincte à porter.",
+      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector est une fenêtre distincte, évaluée séparément dans cette matrice.",
       "visual": "rapproche",
       "tests": [
         "GoToCommitDialogTests",
@@ -162,13 +162,27 @@
         "CheckoutBranchDialog"
       ],
       "implemented": "Menus et combos de branches/références dans des workflows précis.",
-      "remaining": "Sélecteur rapide autonome réutilisable et toutes ses interactions non portés.",
+      "remaining": "Le sélecteur autonome est en cours de validation ci-dessous ; le substitut de référence ne couvre pas ses interactions ni le raccord des scripts.",
       "visual": "integre",
       "tests": [
         "BranchMenuTests",
         "BranchHistoryFilterTests"
       ],
-      "adr": []
+      "adr": [],
+      "in_progress": {
+        "description": "Sélecteur Windows sans bordure et parcours F2/Suppr intégrés : zéro/une/plusieurs références, groupes, tri, choix typés et gardes de contexte. Compilation et 138 scénarios Desktop ciblés réussis sur le code de 954a1412d, dont 31 nouveaux. Le candidat précédent 10d889d9b a été refusé en natif : premier Échap consommé par le dialogue métier. La correction d’activation partagée attend son contrôle natif et la suite Desktop complète ; N1 conservé. Raccord des scripts non porté.",
+        "linux": [
+          "QuickGitRefSelectorDialog",
+          "MainWindow@ExecuteQuickReferenceActionAsync"
+        ],
+        "tests": [
+          "QuickGitRefSelectorDialogTests",
+          "QuickReferenceWorkflowTests"
+        ],
+        "adr": [
+          "0074"
+        ]
+      }
     },
     "GitUI.UserControls.RevisionGrid.FormQuickStringSelector": {
       "feature": "Choix rapide de texte utilisé par les scripts",

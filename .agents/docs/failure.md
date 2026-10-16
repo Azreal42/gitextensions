@@ -227,6 +227,7 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | FormSettings semble porté alors que ses pages manquent | Évaluer séparément chaque page et les six paramètres CI, sans compter les bases techniques. |
 | Un prompt ou un lien externe devient une fenêtre « complète » | Distinguer N1 substitut minimal, N2 partiel, N3 fonctionnel ciblé et N4 parité entièrement auditée. Aucun N4 attribué au recensement du 16 octobre. |
 | Un test voisin certifie abusivement l’interface d’un plugin | Lier le vrai scénario et son type de preuve : tests UI Desktop ou moteur Plugins. Un test de moteur ne valide pas sa fenêtre. |
+| Tests ciblés déjà passés affichés « Non exécuté » | Distinguer « hors suite complète de référence » et « jamais exécuté » ; préciser la source et le périmètre dans les travaux en cours sans relever leur niveau. |
 | Une résolution de conflit fichier est assimilée à celle d’un sous-module | Ne pas appliquer Base/Ours/Theirs de fichier à un gitlink 160000 ; diriger vers l’assistant dédié SubmoduleConflictDialog et le dépôt enfant (ADR 0071). |
 | Le contrôle d’un CSV LF/CRLF échoue immédiatement après génération | Générer les CSV avec un terminateur LF explicite pour que le contenu relu soit identique sur Linux. |
 
@@ -340,3 +341,14 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Headless vert, mais fermer la modale par la croix renvoie vers Start sous Openbox | Restaurer explicitement le focus de la grille après retour et drainage du dialogue, uniquement si le contexte reste valide ; conserver la preuve native rouge puis rejouer le paquet corrigé avec un vrai gestionnaire de fenêtres. |
 | Première touche consommée pour activer une modale déjà visible | Mapper la fenêtre et focaliser son champ logique ne prouvent pas l’activation OS. Activer au passage Loaded, après rendu et avant input, sans refaire le choix du champ ; vérifier la toute première frappe sous un vrai gestionnaire de fenêtres. |
 | PID masqué dans le bac à sable pris pour un acteur arrêté | Observer les PID/start-times dans le même environnement que le lancement ; attendre le vrai résultat avant toute relance. |
+
+## Sélecteur rapide de références — en cours
+
+| Piège | Règle retenue |
+| --- | --- |
+| Déduire le peeling des tags depuis le seul caractère `*` | Comparer au format Windows exécuté par le Git installé ; ne pas forcer une profondeur supposée. Conserver aussi le hash brut pour identifier le choix. |
+| Suppr sur une HEAD distante isolée perd son choix | Conserver le nom initial et expliquer l’absence de mapping supprimable, sans relâcher les gardes Core. |
+| Événement de relâchement envoyé au TopLevel déjà fermé | Le sélecteur ferme synchroniquement ; le pilote headless cesse d’adresser ce TopLevel détruit. Garder les vrais gestes et le hit-test strict. |
+| Confondre relation modale et propriété IsEffectivelyEnabled headless | Vérifier owner et tâche modale dans ce moteur ; l’activation/désactivation OS relève du test natif. |
+| Réouverture supposée sélectionner HEAD | Browse conserve le commit sélectionné ; préparer explicitement la cible de la fixture. |
+| Sélecteur vert mais premier Échap du dialogue métier perdu | La vraie frappe, après chargement complet, est l’oracle : le candidat 10d889d9b est refusé. Partager l’activation Loaded dans le socle RepositoryDialog, sans refocaliser de contrôle et sans activer un propriétaire d’une autre modale. |
