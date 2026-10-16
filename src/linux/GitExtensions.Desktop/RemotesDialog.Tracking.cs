@@ -201,7 +201,16 @@ public sealed partial class RemotesDialog
     private async Task SaveTrackingAsync()
     {
         await FlushTrackingAsync();
-        if (LastError is not null) { return; }
-        await RunAsync("Remote repositories", token => ReloadAsync(_selected?.Name, _trackingSelected?.LocalBranch, token));
+        // Reserve the reload before it can move focus and queue another validation.
+        Task previous = _trackingWrites;
+        TaskCompletionSource completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _trackingWrites = completed.Task;
+        try
+        {
+            await previous;
+            if (LastError is not null) { return; }
+            await RunAsync("Remote repositories", token => ReloadAsync(_selected?.Name, _trackingSelected?.LocalBranch, token));
+        }
+        finally { completed.TrySetResult(); }
     }
 }
