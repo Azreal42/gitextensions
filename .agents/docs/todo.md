@@ -6,14 +6,16 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `aca93bcea` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 16 N1 substituts minimaux, 25 N2 partielles, 46 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `be0ab8417` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 16 N1 substituts minimaux, 25 N2 partielles, 47 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
-L’inventaire contient aussi les 77 types Window Avalonia (dont 2 bases abstraites), 30 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
+L’inventaire contient aussi les 78 types Window Avalonia (dont 2 bases abstraites), 30 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
 
-Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; boutons Yes/No de l’askpass natif (la version Linux demande encore une saisie). Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; boutons Yes/No de l’askpass natif (la version Linux demande encore une saisie). Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Assistant de conflit de sous-module : quatre révisions Windows, Browse indépendant, checkout commun contenant les deux côtés, un seul staging vérifié ; routage partagé et fermeture drainée. ADR 0071 ; audit GUI natif étendu ouvert.
 
 - [x] Gestionnaire de sous-modules : grille/détails Windows, séparateur persistant, Update/Sync sur la sélection, Pull réel du module, Add/Remove partagés, statuts natifs et annulation drainée. ADR 0070 ; audit natif exhaustif ouvert.
 
@@ -233,4 +235,15 @@ Source `aca93bcea` : FormSubmodules dédié dans le type partagé SubmoduleRemov
 
 [Candidat Debian](../../artifacts/linux/snapshots/aca93bcea/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `32b1ee859746bac134701a2c0577265b474f23742c75ab52c67a7264bd3ef304` : checkout figé, extraction/installation/lancement isolés vérifiés. Remplace `5b372bee1` et le candidat intermédiaire `ff928ff26` avant installation hôte ; le nouveau paquet et ces candidats n’ont pas été installés sur la machine. Aucune application utilisateur arrêtée, aucun push.
 
-FormSubmodules passe N1 → N3 ciblé testé. FormMergeSubmodule reste N0 : assistant Base/Ours/Theirs d’un gitlink à porter. Restent aussi l’audit GUI natif étendu, DPI/accessibilité et l’ensemble des gestes de grille Windows. Les 13 familles restent ouvertes, aucun N4.
+FormSubmodules passe N1 → N3 ciblé testé. Assistant de conflit distinct : ADR 0071. Restent aussi l’audit GUI natif étendu, DPI/accessibilité et l’ensemble des gestes de grille Windows. Les 13 familles restent ouvertes, aucun N4.
+
+
+## Conflits de sous-modules — 16 octobre 2026
+
+Source `be0ab8417` : FormMergeSubmodule dédié, Base/Local/Remote de l’index et Current du vrai enfant ; Open Browse indépendant, Checkout Branch commun filtré et Stage Current natif vérifié. Pull/Stash/Cherry-pick/Apply Patch et resolver partagent le routage. Aucun double staging, commit ou Continue implicite. ADR 0071.
+
+[Validation complète](../../artifacts/linux/snapshots/be0ab8417/proofs/source-validation.json) : **1020 Desktop, 547 Core, 35 Plugins**, soit 1602 scénarios distincts, zéro échec/ignoré ; 23 nouveaux UI, 17 Core et 106 ciblés UI. Sources/runtime figés et reliés au commit. [Rendus](../../artifacts/linux/snapshots/be0ab8417/proofs/headless-visual-review.json) clair/sombre/français inspectés ; audit GUI natif exhaustif non exécuté.
+
+[Candidat Debian](../../artifacts/linux/snapshots/be0ab8417/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `3b52343fd6de69e8279c082ec8100c789b809cab65edd7284196f1beaa193c37` : installation et démarrage isolés vérifiés. Remplace `aca93bcea` avant installation hôte ; nouveau candidat non installé sur la machine, aucune application utilisateur arrêtée et aucun push.
+
+FormMergeSubmodule passe N0 → N3 ciblé testé. Restent traductions longues, DPI/accessibilité et audit GUI natif des variantes ; une branche/sélection modifiée requiert une nouvelle lecture, les effets natifs partiels restent visibles. Les 13 familles et l’audit final restent ouverts, aucun N4. Prochain écart : choix Yes/No natif askpass.

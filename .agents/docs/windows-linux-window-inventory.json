@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "aca93bcead051ee9e65822c09beeae003d0da74c",
-  "source_digest_sha256": "da59cd7c59bc9f947da6d1cd8cf6e78672136e105439e0c1654e42d765b82a14",
-  "scanned_csharp_files": 1863,
+  "code_reference_commit": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+  "source_digest_sha256": "0411f30d48d789420ec18925852c7297bc5c3ece70d64588995b8ad23cbdc448",
+  "scanned_csharp_files": 1874,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,15 +26,15 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 77,
+    "linux_window_types": 78,
     "linux_abstract_bases": 2,
     "linux_dynamic_factories": 30,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N0": 10,
+      "N0": 9,
       "N1": 16,
       "N2": 25,
-      "N3": 46,
+      "N3": 47,
       "NA": 2
     },
     "settings_levels": {
@@ -50,26 +50,26 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/submodules-desktop-checks-20261016-06-final-full/desktop.trx",
-    "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
-    "trx_sha256": "49915e630a9b96590c601c6edd842fed846a4d37969bc17dfd92fc1de0581f3b",
+    "trx": "artifacts/linux/submodule-conflict-desktop-checks-20261016-04-full/desktop.trx",
+    "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+    "trx_sha256": "5e6cbeebcf898b04a8d36df66f0db490b31f7709596b2d08ff1b321758d64681",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
-        "passed": 530,
-        "total": 530,
-        "execution_result": "artifacts/linux/submodule-management-core-20261016-03/full-result.json",
-        "source_hashes_verified": 191,
+        "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+        "passed": 547,
+        "total": 547,
+        "execution_result": "artifacts/linux/submodule-conflict-core-20261016-01/full-result.json",
+        "source_hashes_verified": 195,
         "runtime_inputs_unchanged": true,
         "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
       },
       "plugins": {
-        "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
+        "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/submodule-manager-plugins-checks-20261016-02/plugins-result.json",
-        "source_hashes_verified": 148,
+        "execution_result": "artifacts/linux/submodule-conflict-plugins-checks-20261016-01/plugins-result.json",
+        "source_hashes_verified": 151,
         "runtime_inputs_unchanged": true,
         "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
       }
@@ -1550,7 +1550,7 @@
           "id": "GitExtensions.Linux.Desktop.PatchConflictDialog",
           "label": "PatchConflictDialog",
           "source": "src/linux/GitExtensions.Desktop/ApplyPatchDialog.cs",
-          "line": 319,
+          "line": 326,
           "kind": "window"
         }
       ],
@@ -1559,6 +1559,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CherryPickDialogTests.cs",
           "test_class": "CherryPickDialogTests",
           "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
           "results_present": true
         },
         {
@@ -1575,7 +1581,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/exports/0009-patches-and-recovery.md"
+        ".agents/docs/adr/workflows/exports/0009-patches-and-recovery.md",
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
       ]
     },
     {
@@ -1827,7 +1834,7 @@
       "feature": "Checkout de branche",
       "group": "references",
       "level": "N3",
-      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules.",
+      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules. Mode contraint de résolution gitlink : branches contenant les deux côtés, revalidation et succès complet distinct du résultat natif.",
       "remaining": "Parité complète de toutes les combinaisons et de leur rendu non certifiée.",
       "visual": "rapproche",
       "linux": [
@@ -1907,12 +1914,19 @@
           "test_class": "ResetRevertDialogTests",
           "passed_in_reference_run": 12,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/references/0012-reference-dialogs.md",
         ".agents/docs/adr/workflows/submodules/0019-checkout-update.md",
-        ".agents/docs/adr/workflows/references/0034-current-branch-menu.md"
+        ".agents/docs/adr/workflows/references/0034-current-branch-menu.md",
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
       ]
     },
     {
@@ -2007,7 +2021,7 @@
           "id": "GitExtensions.Linux.Desktop.CherryPickRevisionPicker",
           "label": "CherryPickRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/CherryPickDialog.cs",
-          "line": 324,
+          "line": 335,
           "kind": "window"
         }
       ],
@@ -2023,11 +2037,18 @@
           "test_class": "CherryPickRecoveryDialogTests",
           "passed_in_reference_run": 0,
           "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/history/0040-cherry-pick.md",
-        ".agents/docs/adr/workflows/history/0045-durable-recovery.md"
+        ".agents/docs/adr/workflows/history/0045-durable-recovery.md",
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
       ]
     },
     {
@@ -3352,11 +3373,17 @@
           "id": "GitExtensions.Linux.Desktop.ResolveConflictsDialog",
           "label": "ResolveConflictsDialog",
           "source": "src/linux/GitExtensions.Desktop/ResolveConflictsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/MergeBranchDialogTests.cs",
           "test_class": "MergeBranchDialogTests",
@@ -3390,24 +3417,99 @@
       "category": "windows",
       "feature": "Résolution d’un conflit de sous-module",
       "group": "repositories",
-      "level": "N0",
-      "implemented": "Pas d’assistant dédié. Le resolver générique refuse Base/Ours/Theirs pour un gitlink ; le staging manuel d’une révision choisie ailleurs reste possible.",
-      "remaining": "Comparer les révisions du sous-module, choisir/merger un commit et stager le gitlink : workflow dédié à porter.",
-      "visual": "absent",
-      "evidence_sources": [
-        "src/linux/GitExtensions.Core/GitRepository.Conflicts.cs:38"
-      ],
+      "level": "N3",
+      "implemented": "Assistant Windows dédié Base/Local/Remote/Current, Refresh et boutons/icônes originaux ; Browse dans un processus indépendant. Vraie racine enfant, stages/index et identités revalidés, Current arbitraire accepté après lecture. Checkout partagé sur intersection Local/Remote avec ref/hash revalidés, unique choix ou mode distant ; staging parent seulement après succès complet. Un seul add littéral vérifié stage0, sans commit/Continue. Routage partagé Pull/Stash/Cherry-pick/Apply Patch/resolver, erreurs et effets partiels conservés, fermeture annulable et drainée.",
+      "remaining": "Audit GUI natif complet, DPI/accessibilité et variantes de traductions longues restent ouverts. Libellés longs tronqués avec tooltip dans la disposition fixe. Après annulation d’un workflow imbriqué ayant déjà changé le checkout, fermer/reprendre le sélecteur pour relire sa sélection. Mutation externe après dernier guard détectée par vérification du résultat, sans rollback automatique ni promesse de transaction globale.",
+      "visual": "rapproche",
       "extra_evidence": [
         {
-          "label": "Garde gitlink du resolver",
-          "source": "src/linux/GitExtensions.Core/GitRepository.Conflicts.cs",
-          "line": 38,
-          "kind": "source"
+          "label": "Scénarios natifs de conflits gitlink",
+          "source": "tests/linux/GitExtensions.Core.Tests/SubmoduleConflictScenarios.cs",
+          "line": 1
         }
       ],
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.SubmoduleConflictDialog",
+          "label": "SubmoduleConflictDialog",
+          "source": "src/linux/GitExtensions.Desktop/SubmoduleConflictDialog.cs",
+          "line": 7,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConflictedPathDialog",
+          "label": "ConflictedPathDialog.ShowAsync",
+          "source": "src/linux/GitExtensions.Desktop/ConflictedPathDialog.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
+          "label": "CheckoutBranchDialog",
+          "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
+          "line": 11,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchMenuTests.cs",
+          "test_class": "BranchMenuTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchNameNormalizationTests.cs",
+          "test_class": "BranchNameNormalizationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CheckoutSubmoduleTests.cs",
+          "test_class": "CheckoutSubmoduleTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
+          "test_class": "DialogAccessKeyTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
+          "test_class": "ReferenceDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
+          "test_class": "ReferenceMenuTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ResetRevertDialogTests.cs",
+          "test_class": "ResetRevertDialogTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.FormPull",
@@ -3455,6 +3557,12 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
           "results_present": true
         },
@@ -3511,7 +3619,8 @@
         ".agents/docs/adr/workflows/remotes/0032-pull-fetch-menu.md",
         ".agents/docs/adr/workflows/remotes/0039-pull-options.md",
         ".agents/docs/adr/workflows/remotes/0054-owned-pull-process.md",
-        ".agents/docs/adr/workflows/remotes/0059-pull-window-appearance.md"
+        ".agents/docs/adr/workflows/remotes/0059-pull-window-appearance.md",
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
       ]
     },
     {
@@ -3983,19 +4092,25 @@
       "feature": "Résolution des conflits d’index",
       "group": "operations",
       "level": "N3",
-      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations.",
-      "remaining": "Assistant de sous-module et toutes les variantes d’outils/encodages/conflits encore à auditer.",
+      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations. Assistant gitlink partagé depuis bouton, doubleclic ou Entrée, avec relecture après retour.",
+      "remaining": "Toutes les variantes d’outils, encodages, conflits et fermetures restent à auditer en GUI natif.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.ResolveConflictsDialog",
           "label": "ResolveConflictsDialog",
           "source": "src/linux/GitExtensions.Desktop/ResolveConflictsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/MergeBranchDialogTests.cs",
           "test_class": "MergeBranchDialogTests",
@@ -4004,7 +4119,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/merges/0043-merge-and-conflicts.md"
+        ".agents/docs/adr/workflows/merges/0043-merge-and-conflicts.md",
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
       ]
     },
     {
@@ -4232,7 +4348,7 @@
           "id": "GitExtensions.Linux.Desktop.StashDropConfirmation",
           "label": "StashDropConfirmation",
           "source": "src/linux/GitExtensions.Desktop/StashDialog.cs",
-          "line": 365,
+          "line": 375,
           "kind": "window"
         },
         {
@@ -4244,6 +4360,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FilePaneParityTests.cs",
           "test_class": "FilePaneParityTests",
@@ -4259,7 +4381,8 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/stashes/0033-stash-menu-and-dialog.md",
-        ".agents/docs/adr/workflows/stashes/0035-file-actions.md"
+        ".agents/docs/adr/workflows/stashes/0035-file-actions.md",
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
       ]
     },
     {
@@ -4286,7 +4409,7 @@
       "group": "repositories",
       "level": "N3",
       "implemented": "Gestionnaire Windows dédié et partagé avec Remove : grille Name/Status, six détails readonly, Pull24px, Add, Synchronize/Update/Remove et séparateur absolu persistant. Snapshots revalidés, Update récursif sélectionné, Sync sélectionné non récursif, vrai Pull du module avec runner conservé, Add/Remove communs ; statuts/descriptions natifs, conflits sans SHA inventé, sélection et effets partiels conservés, fermeture drainée. Grille redimensionnable et copie AutoHeader WinForms.",
-      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Assistant de conflit gitlink distinct FormMergeSubmodule non porté. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
+      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -4440,6 +4563,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportDialogTests.cs",
           "test_class": "ExportDialogTests",
@@ -5687,6 +5816,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ViewerHostReadingTests.cs",
           "test_class": "ViewerHostReadingTests",
           "passed_in_reference_run": 9,
@@ -6727,6 +6862,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportDialogTests.cs",
           "test_class": "ExportDialogTests",
           "passed_in_reference_run": 13,
@@ -6850,6 +6991,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6954,6 +7101,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportDialogTests.cs",
           "test_class": "ExportDialogTests",
           "passed_in_reference_run": 13,
@@ -7077,6 +7230,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -7184,6 +7343,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportDialogTests.cs",
           "test_class": "ExportDialogTests",
           "passed_in_reference_run": 13,
@@ -7310,6 +7475,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
           "test_class": "SubmodulesDialogTests",
           "passed_in_reference_run": 13,
@@ -7397,7 +7568,7 @@
           "id": "GitExtensions.Linux.Desktop.CherryPickRevisionPicker",
           "label": "CherryPickRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/CherryPickDialog.cs",
-          "line": 324,
+          "line": 335,
           "kind": "window"
         },
         {
@@ -8074,6 +8245,12 @@
           "test_class": "ResetRevertDialogTests",
           "passed_in_reference_run": 12,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": []
@@ -8325,6 +8502,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
+          "test_class": "ConflictRoutingTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportDialogTests.cs",
           "test_class": "ExportDialogTests",
           "passed_in_reference_run": 13,
@@ -8448,6 +8631,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -8811,6 +9000,11 @@
           "level": "N3"
         },
         {
+          "id": "GitUI.CommandsDialogs.FormMergeSubmodule",
+          "name": "FormMergeSubmodule",
+          "level": "N3"
+        },
+        {
           "id": "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector",
           "name": "FormQuickGitRefSelector",
           "level": "N1"
@@ -8875,11 +9069,11 @@
       "id": "GitExtensions.Linux.Desktop.CherryPickRevisionPicker",
       "name": "CherryPickRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/CherryPickDialog.cs",
-      "line": 324,
+      "line": 335,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/CherryPickDialog.cs",
-          "line": 324
+          "line": 335
         }
       ],
       "bases": [
@@ -10079,11 +10273,11 @@
       "id": "GitExtensions.Linux.Desktop.PatchConflictDialog",
       "name": "PatchConflictDialog",
       "source": "src/linux/GitExtensions.Desktop/ApplyPatchDialog.cs",
-      "line": 319,
+      "line": 326,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ApplyPatchDialog.cs",
-          "line": 319
+          "line": 326
         }
       ],
       "bases": [
@@ -10576,11 +10770,11 @@
       "id": "GitExtensions.Linux.Desktop.ResolveConflictsDialog",
       "name": "ResolveConflictsDialog",
       "source": "src/linux/GitExtensions.Desktop/ResolveConflictsDialog.cs",
-      "line": 11,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ResolveConflictsDialog.cs",
-          "line": 11
+          "line": 12
         }
       ],
       "bases": [
@@ -10788,11 +10982,11 @@
       "id": "GitExtensions.Linux.Desktop.StashDropConfirmation",
       "name": "StashDropConfirmation",
       "source": "src/linux/GitExtensions.Desktop/StashDialog.cs",
-      "line": 365,
+      "line": 375,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/StashDialog.cs",
-          "line": 365
+          "line": 375
         }
       ],
       "bases": [
@@ -10827,6 +11021,34 @@
         {
           "id": "GitExtensions.Plugins.GitStatistics.FormGitStatistics",
           "name": "FormGitStatistics",
+          "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.SubmoduleConflictDialog",
+      "name": "SubmoduleConflictDialog",
+      "source": "src/linux/GitExtensions.Desktop/SubmoduleConflictDialog.cs",
+      "line": 7,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/SubmoduleConflictDialog.Layout.cs",
+          "line": 9
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/SubmoduleConflictDialog.cs",
+          "line": 7
+        }
+      ],
+      "bases": [
+        "RepositoryDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormMergeSubmodule",
+          "name": "FormMergeSubmodule",
           "level": "N3"
         }
       ],

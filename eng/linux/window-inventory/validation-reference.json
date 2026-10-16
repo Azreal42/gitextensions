@@ -1,12 +1,12 @@
 {
-  "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
-  "trx": "artifacts/linux/submodules-desktop-checks-20261016-06-final-full/desktop.trx",
-  "trx_sha256": "49915e630a9b96590c601c6edd842fed846a4d37969bc17dfd92fc1de0581f3b",
+  "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+  "trx": "artifacts/linux/submodule-conflict-desktop-checks-20261016-04-full/desktop.trx",
+  "trx_sha256": "5e6cbeebcf898b04a8d36df66f0db490b31f7709596b2d08ff1b321758d64681",
   "meaning": "Frozen results of actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "997",
-    "executed": "997",
-    "passed": "997",
+    "total": "1020",
+    "executed": "1020",
+    "passed": "1020",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -120,6 +120,9 @@
     },
     "CompactNavigationTreeTests": {
       "Passed": 4
+    },
+    "ConflictRoutingTests": {
+      "Passed": 9
     },
     "DashboardTests": {
       "Passed": 6
@@ -343,6 +346,9 @@
     "StatisticsDialogTests": {
       "Passed": 4
     },
+    "SubmoduleConflictDialogTests": {
+      "Passed": 14
+    },
     "SubmoduleRemovalDialogTests": {
       "Passed": 8
     },
@@ -385,20 +391,20 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
-      "passed": 530,
-      "total": 530,
-      "execution_result": "artifacts/linux/submodule-management-core-20261016-03/full-result.json",
-      "source_hashes_verified": 191,
+      "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+      "passed": 547,
+      "total": 547,
+      "execution_result": "artifacts/linux/submodule-conflict-core-20261016-01/full-result.json",
+      "source_hashes_verified": 195,
       "runtime_inputs_unchanged": true,
       "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
     },
     "plugins": {
-      "source_sha": "aca93bcead051ee9e65822c09beeae003d0da74c",
+      "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/submodule-manager-plugins-checks-20261016-02/plugins-result.json",
-      "source_hashes_verified": 148,
+      "execution_result": "artifacts/linux/submodule-conflict-plugins-checks-20261016-01/plugins-result.json",
+      "source_hashes_verified": 151,
       "runtime_inputs_unchanged": true,
       "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
     }

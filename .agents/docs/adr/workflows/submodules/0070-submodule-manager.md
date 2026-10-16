@@ -14,4 +14,4 @@ La copie de grille garde les valeurs complètes : TAB interne remplacé par espa
 
 Repères : SubmoduleRemovalDialog.*, SubmoduleDialogPreferencesStore, MainWindow.SubmoduleRemoval/Workflows, GitRepository.Submodules.*, GitSubmoduleSnapshot. Références Windows : FormSubmodules, GitModule.GetSubmodulesInfo, Commands.SubmoduleUpdate/Sync ; règles de copie DataGridView WinForms 10.
 
-Validation : SubmodulesDialogTests, SubmoduleRemovalDialogTests et SubmoduleManagementScenarios ; suites complètes et paquet liés au SHA dans le TODO. Trois tailles dans les deux thèmes couvertes en headless ; échantillons inspectés. Aucun N4 ; assistant de conflit de gitlink encore absent.
+Validation : SubmodulesDialogTests, SubmoduleRemovalDialogTests et SubmoduleManagementScenarios ; suites complètes et paquet liés au SHA dans le TODO. Trois tailles dans les deux thèmes couvertes en headless ; échantillons inspectés. Aucun N4 ; assistant de conflit de gitlink distinct : ADR 0071.

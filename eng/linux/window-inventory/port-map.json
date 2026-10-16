@@ -368,18 +368,20 @@
         "CheckoutSubmodulePrompt",
         "SubmoduleUpdateDialog"
       ],
-      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules.",
+      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules. Mode contraint de résolution gitlink : branches contenant les deux côtés, revalidation et succès complet distinct du résultat natif.",
       "remaining": "Parité complète de toutes les combinaisons et de leur rendu non certifiée.",
       "visual": "rapproche",
       "tests": [
         "ReferenceDialogTests",
         "BranchMenuTests",
-        "CheckoutSubmoduleTests"
+        "CheckoutSubmoduleTests",
+        "SubmoduleConflictDialogTests"
       ],
       "adr": [
         "0012",
         "0019",
-        "0034"
+        "0034",
+        "0071"
       ]
     },
     "GitUI.CommandsDialogs.FormCheckoutRevision": {
@@ -627,14 +629,16 @@
       "linux": [
         "ResolveConflictsDialog"
       ],
-      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations.",
-      "remaining": "Assistant de sous-module et toutes les variantes d’outils/encodages/conflits encore à auditer.",
+      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations. Assistant gitlink partagé depuis bouton, doubleclic ou Entrée, avec relecture après retour.",
+      "remaining": "Toutes les variantes d’outils, encodages, conflits et fermetures restent à auditer en GUI natif.",
       "visual": "rapproche",
       "tests": [
-        "MergeBranchDialogTests"
+        "MergeBranchDialogTests",
+        "ConflictRoutingTests"
       ],
       "adr": [
-        "0043"
+        "0043",
+        "0071"
       ]
     },
     "GitUI.CommandsDialogs.FormRebase": {
@@ -672,11 +676,13 @@
       "visual": "rapproche",
       "tests": [
         "CherryPickDialogTests",
-        "CherryPickRecoveryDialogTests"
+        "CherryPickRecoveryDialogTests",
+        "ConflictRoutingTests"
       ],
       "adr": [
         "0040",
-        "0045"
+        "0045",
+        "0071"
       ]
     },
     "GitUI.CommandsDialogs.FormRevertCommit": {
@@ -746,13 +752,15 @@
         "PullAdvancedDialogTests",
         "PullLayoutTests",
         "PullMenuTests",
-        "PullProcessDialogTests"
+        "PullProcessDialogTests",
+        "ConflictRoutingTests"
       ],
       "adr": [
         "0032",
         "0039",
         "0054",
-        "0059"
+        "0059",
+        "0071"
       ]
     },
     "GitUI.CommandsDialogs.FormPush": {
@@ -818,11 +826,13 @@
       "remaining": "Audit de toutes les combinaisons et du rendu natif complet restant.",
       "visual": "rapproche",
       "tests": [
-        "StashMenuTests"
+        "StashMenuTests",
+        "ConflictRoutingTests"
       ],
       "adr": [
         "0033",
-        "0035"
+        "0035",
+        "0071"
       ]
     },
     "GitUI.CommandsDialogs.FormReflog": {
@@ -1094,10 +1104,12 @@
       "remaining": "Audit natif complet des formats/erreurs/reprises encore requis.",
       "visual": "adapte",
       "tests": [
-        "ExportDialogTests"
+        "ExportDialogTests",
+        "ConflictRoutingTests"
       ],
       "adr": [
-        "0009"
+        "0009",
+        "0071"
       ]
     },
     "GitUI.CommandsDialogs.FormCleanupRepository": {
@@ -1161,7 +1173,7 @@
         "MainWindow@ManageSubmodulesAsync"
       ],
       "implemented": "Gestionnaire Windows dédié et partagé avec Remove : grille Name/Status, six détails readonly, Pull24px, Add, Synchronize/Update/Remove et séparateur absolu persistant. Snapshots revalidés, Update récursif sélectionné, Sync sélectionné non récursif, vrai Pull du module avec runner conservé, Add/Remove communs ; statuts/descriptions natifs, conflits sans SHA inventé, sélection et effets partiels conservés, fermeture drainée. Grille redimensionnable et copie AutoHeader WinForms.",
-      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Assistant de conflit gitlink distinct FormMergeSubmodule non porté. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
+      "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
       "visual": "rapproche",
       "tests": [
         "SubmodulesDialogTests",
@@ -1208,22 +1220,27 @@
     "GitUI.CommandsDialogs.FormMergeSubmodule": {
       "feature": "Résolution d’un conflit de sous-module",
       "group": "repositories",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas d’assistant dédié. Le resolver générique refuse Base/Ours/Theirs pour un gitlink ; le staging manuel d’une révision choisie ailleurs reste possible.",
-      "remaining": "Comparer les révisions du sous-module, choisir/merger un commit et stager le gitlink : workflow dédié à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": [],
-      "evidence_sources": [
-        "src/linux/GitExtensions.Core/GitRepository.Conflicts.cs:38"
+      "level": "N3",
+      "linux": [
+        "SubmoduleConflictDialog",
+        "ConflictedPathDialog@ShowAsync",
+        "CheckoutBranchDialog"
+      ],
+      "implemented": "Assistant Windows dédié Base/Local/Remote/Current, Refresh et boutons/icônes originaux ; Browse dans un processus indépendant. Vraie racine enfant, stages/index et identités revalidés, Current arbitraire accepté après lecture. Checkout partagé sur intersection Local/Remote avec ref/hash revalidés, unique choix ou mode distant ; staging parent seulement après succès complet. Un seul add littéral vérifié stage0, sans commit/Continue. Routage partagé Pull/Stash/Cherry-pick/Apply Patch/resolver, erreurs et effets partiels conservés, fermeture annulable et drainée.",
+      "remaining": "Audit GUI natif complet, DPI/accessibilité et variantes de traductions longues restent ouverts. Libellés longs tronqués avec tooltip dans la disposition fixe. Après annulation d’un workflow imbriqué ayant déjà changé le checkout, fermer/reprendre le sélecteur pour relire sa sélection. Mutation externe après dernier guard détectée par vérification du résultat, sans rollback automatique ni promesse de transaction globale.",
+      "visual": "rapproche",
+      "tests": [
+        "SubmoduleConflictDialogTests",
+        "ConflictRoutingTests"
+      ],
+      "adr": [
+        "0071"
       ],
       "extra_evidence": [
         {
-          "label": "Garde gitlink du resolver",
-          "source": "src/linux/GitExtensions.Core/GitRepository.Conflicts.cs",
-          "line": 38,
-          "kind": "source"
+          "label": "Scénarios natifs de conflits gitlink",
+          "source": "tests/linux/GitExtensions.Core.Tests/SubmoduleConflictScenarios.cs",
+          "line": 1
         }
       ]
     },

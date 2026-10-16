@@ -305,3 +305,14 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Fermeture suspendue pendant relecture, ou Browse reste ouvert après drainage | CancellationToken.None dans le post-refresh ignorait Close ; propager le token extérieur et rejouer la fermeture propriétaire après drainage. Abort Process seul laisse relire les effets partiels. |
 | Browse ignore une tentative Remove dont la restauration IO échoue | Marquer conservativement la tentative autorisée avant publication ; toujours demander la relecture parent. No ne marque aucun changement. |
 | Ctrl+C diffère pour un dépôt à un seul module | AutoHeader WinForms ajoute les en-têtes lorsque toutes les lignes sont sélectionnées. Garder valeurs complètes et règles TAB/CRLF natives, avec largeurs/défilement communs aux entêtes et cellules. |
+
+
+## Conflits de sous-modules — résolus
+
+| Observation | Cause / suite |
+| --- | --- |
+| Current prend le HEAD parent, ou Stage Current supprime le gitlink absent | Git découvre le parent depuis un dossier vide ; add d’un chemin absent résout par suppression. Exiger un vrai dépôt enfant distinct, sans dépendre de .gitmodules. Delete reste un choix explicite séparé. |
+| Add/add ne propose pas de branche, ou une branche ne contient qu’un côté | Windows active sur Base/Remote mais filtre Local/Remote. Exiger Local ET Remote, puis l’intersection de deux contains et la ref/hash annoncée encore valide. |
+| Un checkout natif réussi puis annulé stage quand même le parent | LastResult est rempli avant les prompts imbriqués. Attendre Succeeded après tout le workflow et relire Current ; Cancel ne stage rien. |
+| Pull, Stash ou Apply Patch traitent un gitlink comme un fichier | Constructeurs directs de PatchConflictDialog. Routage partagé selon les stages réels, gardes moteur et refresh du parent après retour ; aucun double add ni commit/Continue implicite. |
+| Close reste bloqué après un add ou un hook déjà exécuté | Les vérifications postmutation doivent garder le token annulable et drainer les acteurs. Conserver les effets natifs, jamais fabriquer une réussite ni restaurer silencieusement l’index. |

@@ -274,7 +274,7 @@ def md():
     '## Écarts prioritaires révélés par le relevé','',
     '- Paramètres : pages absentes ou dispersées, notamment raccourcis configurables, scripts/événements, langue, fontes, outils et intégrations CI.',
     '- Sous-modules : '+MAP['entries']['GitUI.CommandsDialogs.FormSubmodules']['remaining'],
-    '- Assistant de conflit de sous-module, sélecteurs de scripts et fenêtres de PR/hébergement absents ; éditeurs de règles désormais présents sur un périmètre ciblé testé.','- Journal Git partiel : métadonnées disponibles, sorties/cache/stacks/export Windows absents.','- Menus View/Navigate : le périmètre récent est testé, mais recherche incrémentale et sélection interactive des parents/enfants restent ouverts.','',
+    '- Sélecteurs de scripts et fenêtres de PR/hébergement absents ; éditeurs de règles présents sur un périmètre ciblé testé.','- Journal Git partiel : métadonnées disponibles, sorties/cache/stacks/export Windows absents.','- Menus View/Navigate : le périmètre récent est testé, mais recherche incrémentale et sélection interactive des parents/enfants restent ouverts.','',
     '## Fenêtres Windows et équivalents Linux','']
     if report['checkout_changes']:
         point=out.index('## Écarts prioritaires révélés par le relevé')
