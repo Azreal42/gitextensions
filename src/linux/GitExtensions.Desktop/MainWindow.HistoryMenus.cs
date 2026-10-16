@@ -159,6 +159,15 @@ public sealed partial class MainWindow
         }
     }
 
+    private async void HistoryAltKeyDown(object? sender, KeyEventArgs args)
+    {
+        // Let the owner's AccessKeyHandler observe the chord in its preview
+        // handler first. Handling it at the window tunnel suppresses that
+        // bookkeeping and Alt-up subsequently opens the main menu.
+        if (!_busy && !args.Handled && args.KeyModifiers == KeyModifiers.Alt)
+        { await HandleHistoryMenuShortcutAsync(args); }
+    }
+
     private Task MoveHistoryRelativeAsync(bool parent, bool last = false)
     {
         SelectRelativeCommit(parent, last);

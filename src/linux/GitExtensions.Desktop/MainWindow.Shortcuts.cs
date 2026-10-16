@@ -19,7 +19,7 @@ public sealed partial class MainWindow
         if (focusedDiff?.HandleReadingShortcut(e) == true) { return; }
         if (focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
         if (await HandleFilePaneShortcutAsync(e)) { return; }
-        if ((_commits.IsKeyboardFocusWithin || _workingRevision?.IsKeyboardFocusWithin == true || _indexRevision?.IsKeyboardFocusWithin == true) && await HandleHistoryMenuShortcutAsync(e)) { return; }
+        if (e.KeyModifiers != KeyModifiers.Alt && (_commits.IsKeyboardFocusWithin || _workingRevision?.IsKeyboardFocusWithin == true || _indexRevision?.IsKeyboardFocusWithin == true) && await HandleHistoryMenuShortcutAsync(e)) { return; }
         Func<Task>? action = (e.Key, e.KeyModifiers) switch
         {
             (Key.F5, KeyModifiers.None) => RefreshAsync,

@@ -170,6 +170,32 @@ public sealed class HistoryMenuParityTests
     }
 
     [AvaloniaTest]
+    public async Task RealAltKeyReleaseAfterNavigationKeepsGridFocusAndPlainAltStillOpensTheMenu()
+    {
+        using Fixture f = await Fixture.CreateAsync("base\n", "base\n", true);
+        ListBox list = History(f.Window); GitCommit head = (GitCommit)list.SelectedItem!;
+        GitCommit parent = list.Items.OfType<GitCommit>().Single(c => c.Hash == head.Parents[0]);
+        list.SelectedItem = parent; list.Focus(); await Idle(f.Window);
+        Menu menu = f.Window.GetVisualDescendants().OfType<Menu>().Single();
+        async Task Chord(PhysicalKey key)
+        {
+            f.Window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, "Alt");
+            f.Window.KeyPressQwerty(key, RawInputModifiers.Alt); f.Window.KeyReleaseQwerty(key, RawInputModifiers.Alt);
+            f.Window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, "Alt"); await Idle(f.Window);
+            Assert.That(menu.IsOpen, Is.False); Assert.That(list.IsKeyboardFocusWithin, Is.True);
+        }
+        await Chord(PhysicalKey.ArrowLeft); Assert.That(list.SelectedItem, Is.EqualTo(head));
+        await Chord(PhysicalKey.ArrowRight); Assert.That(list.SelectedItem, Is.EqualTo(parent));
+        int before = list.SelectedIndex;
+        f.Window.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None); f.Window.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None); await Idle(f.Window);
+        Assert.That(list.SelectedIndex, Is.EqualTo(before - 1));
+        f.Window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, "Alt");
+        f.Window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, "Alt"); Pump(f.Window);
+        Assert.That(menu.IsOpen, Is.True, "Plain Alt retains the standard access-key behavior.");
+        menu.Close();
+    }
+
+    [AvaloniaTest]
     public async Task ToolbarVisibilityDoesNotBringHiddenItemsBackThroughOverflow()
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n");

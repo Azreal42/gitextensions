@@ -148,6 +148,9 @@ public sealed partial class MainWindow : Window
             }
         };
         Content = BuildLayout();
+        _commits.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        _workingRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        _indexRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         ApplyHistoryViewPresentation();
         ApplyTheme(_preferences.Theme);
         Opened += async (_, _) =>

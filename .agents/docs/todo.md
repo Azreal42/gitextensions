@@ -127,3 +127,5 @@ Aucune famille ouverte n'est retirée du périmètre.
 - [ ] Fournisseurs CI, labels superproject et barre Scripts : entrées présentes mais désactivées et expliquées. Recherche incrémentale et sélecteur de parents/enfants Windows restent à porter.
 
 Les 34 contrôles ciblés de `history-menus-checks-20261016-03` sont passés (0 échec/ignoré) ; la suite complète du code final, le paquet et son installation restent en cours. Aucun push. Les 13 familles restent ouvertes.
+
+Le candidat `62f40c093` n’est pas livré : le parcours X11 a détecté une réouverture de Start à Alt-up. Routage corrigé après le preview Avalonia et 19 contrôles ciblés supplémentaires passés (`history-menus-checks-20261016-04`), dont le cycle complet des modificateurs ; paquet final et validation complète à remplacer par la source corrigée. Les essais natifs 01/02 sont conservés hors acceptation de la navigation (nettoyage SIGTERM, exit -15).

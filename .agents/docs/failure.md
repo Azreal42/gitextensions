@@ -217,3 +217,4 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Retour arrière impossible après la première navigation | Enregistrer aussi la sélection initiale après la fin du chargement de l’historique. |
 | Un élément masqué revient dans le débordement | Appliquer le même prédicat de visibilité aux hôtes inline et aux éléments du popup ; garder IsVisible propre aux commandes conditionnelles. |
 | Un tri ou une option de label perd le focus | Les options visuelles actualisent les contrôles existants. Seules les options nécessitant de nouvelles données relisent Git. |
+| Alt+flèche navigue puis sélectionne Start au relâchement | Le handler du tunnel de la fenêtre marquait la touche traitée avant le preview AccessKeyHandler, qui ignorait alors le chord. Traiter les gestes Alt dans le tunnel enfant ; vérifier aussi les événements des modificateurs et le rendu X11 réel. |

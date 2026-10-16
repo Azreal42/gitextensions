@@ -12,7 +12,9 @@ Navigate reprend les révisions artificielles/HEAD, commit courant, saisie de r�
 
 View reprend les sections Branches, Commits, Grid labels, Grid info, Columns, Sorting et Settings persistence. Les changements de labels/colonnes/corps/dates relatives/graphe mettent à jour les contrôles existants sans rebinder la grille ; les relations sont calculées une fois par sélection/historique. Les lectures de dates de committer et de notes sont groupées par 200 révisions. Les filtres de stashes/checkpoints et tris utilisent les options Git natives. Les entrées Toolbars commandent les groupes et éléments de la barre compacte, y compris leur présence dans le débordement. Ctrl+E révèle un champ masqué avant de le focaliser.
 
-`HistoryViewPreferencesStore` sauvegarde atomiquement les défauts dans le profil XDG avec Save current view settings as default. Les modifications restent en session avant cet enregistrement explicite. Les fonctions de lecture annulable par panneau de l’ADR 0063 restent inchangées.
+`HistoryViewPreferencesStore` sauvegarde atomiquement les défauts dans le profil XDG avec Save current view settings as default. Les modifications restent en session avant cet enregistrement explicite. Les gestes Alt sont traités dans le tunnel de la grille, après le preview du propriétaire : le gestionnaire officiel [AccessKeyHandler Avalonia 11.3.22](https://github.com/AvaloniaUI/Avalonia/blob/11.3.22/src/Avalonia.Base/Input/AccessKeyHandler.cs) doit voir la touche du raccourci pour supprimer l’ouverture du menu au relâchement de Alt. Un test envoie séparément Alt-down, flèche-down/up et Alt-up ; Alt seul conserve son comportement normal.
+
+Les fonctions de lecture annulable par panneau de l’ADR 0063 restent inchangées.
 
 ## Limites et validation
 
