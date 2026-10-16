@@ -157,6 +157,60 @@ public sealed class GoToCommitDialogTests
     }
 
     [AvaloniaTest]
+    public Task EscapeCancellationKeepsTheGridSelectionNavigationAndFocusForRealArrowKeysAndKeyboardReopening()
+        => AssertMainWindowCancellationAsync(closeWindow: false);
+
+    [AvaloniaTest]
+    public Task WindowCloseCancellationKeepsTheGridSelectionNavigationAndFocusForRealArrowKeysAndKeyboardReopening()
+        => AssertMainWindowCancellationAsync(closeWindow: true);
+
+    private static async Task AssertMainWindowCancellationAsync(bool closeWindow)
+    {
+        using Fixture f = await Fixture.CreateAsync(); MainWindow window = await f.Browse(); ListBox history = History(window);
+        Pointer((Control)history.ContainerFromIndex(0)!);
+        await Until(() => history.IsKeyboardFocusWithin && ((GitCommit)history.SelectedItem!).Hash == f.Last);
+        object? source = history.ItemsSource; object query = Read<object>(window, "_historyQuery");
+        for (int cycle = 0; cycle < 2; cycle++)
+        {
+            string[] navigation = Read<List<string>>(window, "_revisionNavigation").ToArray();
+            int navigationIndex = Read<int>(window, "_revisionNavigationIndex");
+            Press(window, PhysicalKey.G, RawInputModifiers.Control | RawInputModifiers.Shift);
+            GoToCommitDialog dialog = await Child<GoToCommitDialog>(window);
+            try
+            {
+                await dialog.InitializeAsync(); Assert.That(Field<TextBox>(dialog, "textboxCommitExpression").IsFocused, Is.True);
+                Edit(dialog, Field<TextBox>(dialog, "textboxCommitExpression"), "HEAD^");
+                if (closeWindow) { dialog.Close(); }
+                else { Press(dialog, PhysicalKey.Escape); }
+                await dialog.Completion;
+                await Until(() => !IsGoToCommitReadPending(window)); Pump(window);
+                Assert.That(dialog.IsVisible || dialog.WasAccepted, Is.False);
+                Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(Read<object>(window, "_historyQuery"), Is.SameAs(query));
+                Assert.That(((GitCommit)history.SelectedItem!).Hash, Is.EqualTo(f.Last));
+                Assert.That(Read<List<string>>(window, "_revisionNavigation"), Is.EqualTo(navigation));
+                Assert.That(Read<int>(window, "_revisionNavigationIndex"), Is.EqualTo(navigationIndex));
+                Assert.That(history.IsKeyboardFocusWithin, Is.True, "Cancel must return keyboard focus to the grid without another click or Focus().");
+                Assert.That(window.LastException, Is.Null);
+                Press(window, PhysicalKey.ArrowDown);
+                await Until(() => ((GitCommit)history.SelectedItem!).Hash == f.First);
+                Assert.That(history.IsKeyboardFocusWithin, Is.True);
+                Press(window, PhysicalKey.ArrowUp);
+                await Until(() => ((GitCommit)history.SelectedItem!).Hash == f.Last);
+                Assert.That(history.IsKeyboardFocusWithin, Is.True);
+            }
+            finally { dialog.Close(); await dialog.Completion; }
+            // The next iteration reopens with Ctrl+Shift+G without any intervening pointer/focus action.
+        }
+        Assert.That(window.OwnedWindows.Any(child => child.IsVisible), Is.False);
+    }
+
+    private static bool IsGoToCommitReadPending(MainWindow window)
+    {
+        object read = Read<object>(window, "_goToCommitRead");
+        return read.GetType().GetField("Current", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(read) is not null;
+    }
+
+    [AvaloniaTest]
     public async Task RepositoryReplacementClosesAndCancelsTheOldDialogBeforeItCanApplyAnySelection()
     {
         using Fixture f = await Fixture.CreateAsync(); using RootFixture other = await RootFixture.CreateAsync(); MainWindow window = await f.Browse();

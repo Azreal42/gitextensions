@@ -42,7 +42,8 @@ public sealed partial class MainWindow
             dialog.Close(); await dialog.Completion;
             if (_goToCommitRead.Current == read) { _goToCommitRead.Current = null; }
         }
-        if (read.IsCancellationRequested || _repository != repository || _lifetime.IsCancellationRequested || !dialog.WasAccepted) { return; }
+        if (read.IsCancellationRequested || _repository != repository || _lifetime.IsCancellationRequested) { return; }
+        if (!dialog.WasAccepted) { _commits.Focus(); return; }
         if (dialog.SelectedCommitHash is not string hash)
         {
             LastException = dialog.ResolutionError;
