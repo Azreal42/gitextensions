@@ -375,15 +375,5 @@ public sealed class CloneDialog : StartupRepositoryDialog
 
     protected override void UpdateActions() => _recursive.IsEnabled = !IsBusy && _bare.IsChecked != true && _branch.Text != _noCheckout;
 
-    private static string RepositoryName(string source)
-    {
-        string path = source.TrimEnd('/');
-        if (!Path.IsPathFullyQualified(path) && Uri.TryCreate(path, UriKind.Absolute, out Uri? uri) && uri.Scheme is "http" or "https" or "ssh" or "git" or "file" or "ftp" or "ftps")
-        { path = System.Net.WebUtility.UrlDecode(uri.AbsolutePath).TrimEnd('/'); }
-        else if (!Path.IsPathFullyQualified(path) && path.IndexOf(':') is int colon && colon > 0 && !path[..colon].Contains('/'))
-        { path = System.Net.WebUtility.UrlDecode(path[(colon + 1)..]); }
-        int split = path.LastIndexOf('/');
-        string name = path[(split + 1)..];
-        return name.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
-    }
+    private static string RepositoryName(string source) => RepositorySourceControls.RepositoryName(source);
 }

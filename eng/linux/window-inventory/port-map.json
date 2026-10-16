@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "levels": {
     "N0": "Absent : aucun équivalent utilisateur de cette fenêtre/page",
     "N1": "Substitut minimal : prompt, lien externe ou écran très simplifié",
@@ -1180,11 +1180,21 @@
         "MainWindow@AddSubmoduleAsync",
         "Dialogs@PromptAsync"
       ],
-      "implemented": "Saisie URL et chemin, ajout réel par Git.",
-      "remaining": "Dialogue complet et ensemble des options/suggestions Windows absents.",
+      "implemented": "Dernière version validée : saisie URL et chemin par prompt, ajout réel par Git.",
+      "remaining": "Valider le dialogue dédié en cours, ses options/suggestions, le rendu, les commandes réelles et l’annulation ; la présence du code ne vaut pas portage fonctionnel testé.",
       "visual": "generique",
       "tests": [],
-      "adr": []
+      "adr": [],
+      "in_progress": {
+        "description": "Dialogue AddSubmoduleDialog dédié et moteur Git natif écrits dans le checkout. Compilation, scénarios Core et tests Desktop non exécutés ; N1 conservé pour la dernière version validée.",
+        "linux": [
+          "AddSubmoduleDialog",
+          "MainWindow@AddSubmoduleAsync"
+        ],
+        "tests": [
+          "AddSubmoduleDialogTests"
+        ]
+      }
     },
     "GitUI.CommandsDialogs.FormMergeSubmodule": {
       "feature": "Résolution d’un conflit de sous-module",
@@ -2294,6 +2304,118 @@
       "visual": "absent",
       "tests": [],
       "adr": []
+    }
+  },
+  "installer_entries": {
+    "GitEx_WelcomeDlg": {
+      "feature": "Accueil de l’installation",
+      "level": "NA",
+      "linux": "Ouverture du paquet dans l’installateur système, ou commande APT/DPKG ; aucun accueil Avalonia dédié."
+    },
+    "GitEx_InstallDirDlg": {
+      "feature": "Choix du dossier d’installation",
+      "level": "NA",
+      "linux": "Chemin du paquet Debian fixé par le packaging ; aucun sélecteur de destination équivalent."
+    },
+    "GitEx_CustomizeDlg": {
+      "feature": "Sélection des composants",
+      "level": "NA",
+      "linux": "Payload du paquet Debian ; pas de sélection de composants MSI ni d’extension shell Windows."
+    },
+    "GitEx_TelemetryDlg": {
+      "feature": "Consentement à la télémétrie à l’installation",
+      "level": "NA",
+      "linux": "Pas de page dans l’installateur Debian ; entrée de consentement dans Help, collecte Linux non implémentée."
+    },
+    "GitEx_VerifyReadyDlg": {
+      "feature": "Confirmation avant installation ou maintenance",
+      "level": "NA",
+      "linux": "Confirmation et résumé gérés par l’installateur système/APT, sans copie du dialogue MSI."
+    },
+    "GitEx_ProgressDlg": {
+      "feature": "Progression de l’installation",
+      "level": "NA",
+      "linux": "Progression et logs du gestionnaire de paquets/APT/DPKG."
+    },
+    "GitEx_ExitDialog": {
+      "feature": "Installation terminée",
+      "level": "NA",
+      "linux": "Résultat du gestionnaire de paquets ; lancement via le raccourci .desktop."
+    },
+    "GitEx_MaintenanceWelcomeDlg": {
+      "feature": "Accueil de la maintenance",
+      "level": "NA",
+      "linux": "Mise à jour/réinstallation/suppression par le gestionnaire de paquets ; aucun assistant dédié."
+    },
+    "GitEx_MaintenanceTypeDlg": {
+      "feature": "Modifier, réparer ou supprimer",
+      "level": "NA",
+      "linux": "Mise à jour/réinstallation/suppression APT/DPKG ; pas de choix des composants MSI."
+    },
+    "GitEx_CancelDlg": {
+      "feature": "Confirmation d’annulation",
+      "level": "NA",
+      "linux": "Annulation et gestion de l’état partiel déléguées au gestionnaire de paquets."
+    },
+    "GitEx_ErrorDlg": {
+      "feature": "Erreur de l’installateur",
+      "level": "NA",
+      "linux": "Erreur et logs du gestionnaire de paquets ; pas de fenêtre Avalonia correspondante."
+    },
+    "GitEx_FatalError": {
+      "feature": "Échec fatal de l’installation",
+      "level": "NA",
+      "linux": "Échec et logs du gestionnaire de paquets ; pas de fenêtre Avalonia correspondante."
+    },
+    "GitEx_UserExit": {
+      "feature": "Installation interrompue par l’utilisateur",
+      "level": "NA",
+      "linux": "Résultat et état du gestionnaire de paquets après annulation."
+    },
+    "BrowseDlg": {
+      "feature": "Sélection du dossier MSI, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Aucun dialogue : chemin d’installation du paquet Debian fixe."
+    },
+    "InvalidDirDlg": {
+      "feature": "Destination MSI invalide, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Aucun dialogue de choix de dossier ; les erreurs de chemin relèvent du gestionnaire de paquets."
+    },
+    "FilesInUse": {
+      "feature": "Fichiers verrouillés, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Aucun équivalent applicatif dédié ; les règles Linux et le gestionnaire de paquets s’appliquent."
+    },
+    "MsiRMFilesInUse": {
+      "feature": "Applications à fermer, Windows Restart Manager",
+      "level": "NA",
+      "linux": "Aucun Restart Manager Windows reproduit ; pas de fermeture automatique de l’application par le portage."
+    },
+    "PrepareDlg": {
+      "feature": "Préparation de l’installation, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Préparation et vérification du paquet par l’installateur système/APT/DPKG."
+    },
+    "ResumeDlg": {
+      "feature": "Reprise d’installation, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Récupération de l’état du paquet par APT/DPKG ; aucun dialogue de reprise MSI reproduit."
+    },
+    "CancelDlg": {
+      "feature": "Annulation standard MSI, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Annulation gérée par l’installateur système/APT/DPKG, sans confirmation MSI dédiée."
+    },
+    "OutOfDiskDlg": {
+      "feature": "Espace disque insuffisant, bibliothèque WiX",
+      "level": "NA",
+      "linux": "Vérification de l’espace et erreur du gestionnaire de paquets ; pas de dialogue applicatif."
+    },
+    "OutOfRbDiskDlg": {
+      "feature": "Espace insuffisant pour le rollback MSI, bibliothèque WiX",
+      "level": "NA",
+      "linux": "État et récupération du paquet gérés par APT/DPKG ; pas de rollback MSI reproduit."
     }
   }
 }

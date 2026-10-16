@@ -473,8 +473,12 @@ public sealed partial class GitRepository
         return result;
     }
 
-    public Task<GitResult> AddSubmoduleAsync(string source, string path, CancellationToken cancellationToken = default)
-        => MutateAsync(["submodule", "add", "--", ValidateValue(source), ValidatePath(path)], cancellationToken);
+    public async Task<GitResult> AddSubmoduleAsync(string source, string path, CancellationToken cancellationToken = default)
+    {
+        GitResult result = await AddSubmoduleAsync(new GitSubmoduleAddOptions(source, path), cancellationToken).ConfigureAwait(false);
+        if (!result.Success) { throw new GitCommandException(["submodule", "add", "--", source, path], result); }
+        return result;
+    }
 
     public Task<GitResult> UpdateSubmodulesAsync(bool recursive = true, CancellationToken cancellationToken = default)
         => MutateAsync(recursive ? ["submodule", "update", "--init", "--recursive"] : ["submodule", "update", "--init"], cancellationToken);

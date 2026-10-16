@@ -65,6 +65,8 @@ public sealed partial class RemotesDialog : RepositoryDialog
         _url.GotFocus += (_, _) => FillUrlSuggestions(_url, push: false);
         _pushUrl.GotFocus += (_, _) => FillUrlSuggestions(_pushUrl, push: true);
         ConfigureTracking();
+        IDisposable urlCompletion = RepositorySourceControls.CompleteHistory(_url, Root), pushCompletion = RepositorySourceControls.CompleteHistory(_pushUrl, Root);
+        Closed += (_, _) => { urlCompletion.Dispose(); pushCompletion.Dispose(); };
         _tabs.SelectionChanged += (_, args) =>
         {
             if (!ReferenceEquals(args.Source, _tabs) || !_ready) { return; }
@@ -80,11 +82,7 @@ public sealed partial class RemotesDialog : RepositoryDialog
 
     private string C(string item, string source, string property = "Text") => Translations.Translate("FormRemotes", item, property, source);
     private AccessText Caption(string item, string source) => new() { Text = Translations.TranslateAccessKeys("FormRemotes", item, "Text", source) };
-    private static ComboBox EditableChoice(string name) => new()
-    {
-        Name = name, IsEditable = true, IsTextSearchEnabled = false, Height = 24, MinWidth = 80, Padding = new Thickness(4, 2),
-        HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch
-    };
+    private static ComboBox EditableChoice(string name) => RepositorySourceControls.EditableChoice(name);
 
     private Button DialogButton(string name, string originalName, string caption, Func<Task> action, string? icon = null)
     {

@@ -388,8 +388,8 @@ public sealed partial class MainWindow
 
     private async Task AddSubmoduleAsync()
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Add submodule", ("URL", ""), ("Repository-relative path", ""));
-        if (values is not null) { await RunAsync("Add submodule", r => r.AddSubmoduleAsync(values[0], values[1], Token)); }
+        if (_repository is not GitRepository repository || _busy) { return; }
+        await ShowRepositoryDialogAsync(new AddSubmoduleDialog(repository));
     }
 
     private Task OpenSubmoduleAsync() => _submodules.SelectedItem is GitSubmodule module && _repository is not null ? OpenRepositoryAsync(Path.Combine(_repository.Path, module.Path)) : Task.CompletedTask;

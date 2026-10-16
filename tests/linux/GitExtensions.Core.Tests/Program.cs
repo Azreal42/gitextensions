@@ -144,6 +144,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. BranchFilterScenarios.All,
     .. StashScenarios.All,
     .. SubmoduleRemovalScenarios.All,
+    .. SubmoduleAddScenarios.All,
     .. CherryPickScenarios.All,
     .. MergeConflictScenarios.All,
     .. ResetRevertScenarios.All,
@@ -181,6 +182,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }
 if (args.Contains("--remote-settings-only", StringComparer.Ordinal)) { tests = RemoteSettingsScenarios.All.ToArray(); }
 if (args.Contains("--worktrees-only", StringComparer.Ordinal)) { tests = WorktreeScenarios.All.ToArray(); }
+if (args.Contains("--submodule-add-only", StringComparer.Ordinal)) { tests = SubmoduleAddScenarios.All.ToArray(); }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
 
 int failures = 0;
