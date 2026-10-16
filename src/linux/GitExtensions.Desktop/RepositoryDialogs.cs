@@ -35,6 +35,8 @@ public abstract class RepositoryDialog : Window
             if (IsBusy) { args.Cancel = true; _closeWhenIdle = true; _operation?.Cancel(); }
         };
         Closed += (_, _) => _lifetime.Cancel();
+        Opened += (_, _) => ModalWindowActivation.AfterMapping(this,
+            () => !_lifetime.IsCancellationRequested && !_closeWhenIdle);
         KeyDown += (_, args) => { if (args.Key == Key.Escape) { args.Handled = true; Close(); } };
     }
 

@@ -4,7 +4,6 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Threading;
 using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
@@ -76,12 +75,7 @@ public sealed class GoToCommitDialog : Window
         Opened += (_, _) =>
         {
             _expression.Focus();
-            // A modal mapped inside the caller's key event can leave its disabled owner active on X11.
-            // Activate after rendering, before input, so the first character is not consumed by activation.
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (!_closed && IsVisible && IsEffectivelyEnabled && !OwnedWindows.Any(window => window.IsVisible)) { Activate(); }
-            }, DispatcherPriority.Loaded);
+            ModalWindowActivation.AfterMapping(this, () => !_closed);
         };
         Closing += (_, _) => { _closed = true; _lifetime.Cancel(); };
         KeyDown += (_, args) => { if (!args.Handled && args.Key == Key.Escape) { args.Handled = true; Close(); } };

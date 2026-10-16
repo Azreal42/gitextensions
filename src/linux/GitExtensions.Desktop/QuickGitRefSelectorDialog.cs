@@ -87,10 +87,7 @@ internal sealed class QuickGitRefSelectorDialog : Window
             }
             UpdateMetrics(); _references.Focus();
             // The logical focus is already set. Activation after mapping must not reset a later choice or focus.
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (!_closed && IsVisible && IsEffectivelyEnabled && !OwnedWindows.Any(window => window.IsVisible)) { Activate(); }
-            }, DispatcherPriority.Loaded);
+            ModalWindowActivation.AfterMapping(this, () => !_closed);
         };
         Closed += (_, _) => _closed = true;
         KeyDown += (_, args) =>
