@@ -736,7 +736,7 @@
       "level": "N2",
       "linux": [
         "PushDialog",
-        "PushRemoteDialog",
+        "RemotesDialog",
         "GitProcessDialog"
       ],
       "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet.",
@@ -755,20 +755,29 @@
     "GitUI.CommandsDialogs.FormRemotes": {
       "feature": "Configuration des remotes",
       "group": "network",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "MainWindow@ShowWorkflowAsync",
-        "MainWindow@AddRemoteAsync",
-        "MainWindow@EditRemoteAsync",
-        "PushRemoteDialog"
+        "RemotesDialog"
       ],
-      "implemented": "Liste, ajout, modification d’URL et suppression ; sous-dialogue de remote pour Push.",
-      "remaining": "Fenêtre complète Remotes, URLs multiples/push, couleurs, SSH et tous les réglages ne sont pas reproduits.",
-      "visual": "generique",
+      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites.",
+      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation.",
+      "visual": "rapproche",
       "tests": [
-        "PushDialogTests"
+        "RemotesDialogTests",
+        "RemoteReferenceColorTests",
+        "PushDialogTests",
+        "PullLayoutTests"
       ],
-      "adr": []
+      "adr": [
+        "0067"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Git natifs Remotes",
+          "source": "tests/linux/GitExtensions.Core.Tests/RemoteSettingsScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.FormStash": {
       "feature": "Gestion des stashes",
@@ -1855,11 +1864,15 @@
       "linux": [
         "DesktopSettingsDialog"
       ],
-      "implemented": "Normalisation automatique du nom des branches et symbole de remplacement.",
+      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes.",
       "remaining": "Page avancée absente : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options à porter.",
       "visual": "integre",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "RemotesDialogTests"
+      ],
+      "adr": [
+        "0067"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage": {
       "feature": "Polices des vues",

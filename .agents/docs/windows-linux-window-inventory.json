@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "code_reference_commit": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
-  "source_digest_sha256": "1f36f29b9a6b73dac9220bf4a3e15a6387931458e80a1d54432d0f7dda0c68a6",
-  "scanned_csharp_files": 1823,
+  "code_reference_commit": "bc33a887110375f5c76a327590ef85bd36d95807",
+  "source_digest_sha256": "b7b25f6c75aec34b974444ffadf8b86fca926808857912e2e0b716b065b1ddde",
+  "scanned_csharp_files": 1835,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -28,13 +28,13 @@
     "settings_support_classes": 4,
     "linux_window_types": 74,
     "linux_abstract_bases": 2,
-    "linux_dynamic_factories": 27,
+    "linux_dynamic_factories": 29,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 10,
-      "N1": 21,
+      "N1": 20,
       "N2": 25,
-      "N3": 41,
+      "N3": 42,
       "NA": 2
     },
     "settings_levels": {
@@ -47,26 +47,26 @@
     "designer_files": 189
   },
   "validation_reference": {
-    "trx": "artifacts/linux/ignore-layout-remote-guard-full-checks-20261016-01/desktop.trx",
-    "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
-    "trx_sha256": "248115d707225ce6bcc3fa25ab0d371af29d99ef3eb68e2b1fd58600aaaaa3eb",
+    "trx": "artifacts/linux/remotes-dialog-full-checks-20261016-01/desktop.trx",
+    "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
+    "trx_sha256": "a87bd51bec07623d0d7ddd825bca8b9f7d8d229a9a4532d17d3843d880570acb",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
-        "passed": 463,
-        "total": 463,
-        "execution_result": "artifacts/linux/remote-branch-deletion-p1-20261016-01/green-full-result.json",
-        "source_hashes_verified": 104,
+        "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
+        "passed": 483,
+        "total": 483,
+        "execution_result": "artifacts/linux/remote-settings-core-20261016-05/full-result.json",
+        "source_hashes_verified": 152,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete apphost execution; component source inputs verified against this commit."
+        "meaning": "Actual complete apphost execution; component sources verified against this commit."
       },
       "plugins": {
-        "source_sha": "2e9ab5db25ffb4848e3aec256dec3aa96ac97d2e",
+        "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/ignore-layout-remote-guard-full-checks-20261016-01/plugins-result.json",
-        "meaning": "Actual complete execution after the Core correction."
+        "execution_result": "artifacts/linux/remotes-dialog-full-checks-20261016-01/plugins-result.json",
+        "meaning": "Actual complete execution on the final Core source."
       }
     },
     "current_linux_code_equivalent": true,
@@ -834,7 +834,7 @@
           "id": "GitExtensions.Linux.Desktop.BisectDialog",
           "label": "BisectDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 185,
+          "line": 186,
           "kind": "window"
         },
         {
@@ -3488,6 +3488,12 @@
           "test_class": "PushProcessDialogTests",
           "passed_in_reference_run": 0,
           "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
       "adr": [
@@ -3532,10 +3538,10 @@
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.PushRemoteDialog",
-          "label": "PushRemoteDialog",
-          "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 629,
+          "id": "GitExtensions.Linux.Desktop.RemotesDialog",
+          "label": "RemotesDialog",
+          "source": "src/linux/GitExtensions.Desktop/RemotesDialog.cs",
+          "line": 15,
           "kind": "window"
         },
         {
@@ -3570,6 +3576,12 @@
           "test_class": "PushProcessDialogTests",
           "passed_in_reference_run": 0,
           "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
       "adr": [
@@ -3756,37 +3768,23 @@
       "category": "windows",
       "feature": "Configuration des remotes",
       "group": "network",
-      "level": "N1",
-      "implemented": "Liste, ajout, modification d’URL et suppression ; sous-dialogue de remote pour Push.",
-      "remaining": "Fenêtre complète Remotes, URLs multiples/push, couleurs, SSH et tous les réglages ne sont pas reproduits.",
-      "visual": "generique",
+      "level": "N3",
+      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites.",
+      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Git natifs Remotes",
+          "source": "tests/linux/GitExtensions.Core.Tests/RemoteSettingsScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.ShowWorkflowAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
-          "kind": "window"
-        },
-        {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.AddRemoteAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 308,
-          "kind": "window"
-        },
-        {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.EditRemoteAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 314,
-          "kind": "window"
-        },
-        {
-          "id": "GitExtensions.Linux.Desktop.PushRemoteDialog",
-          "label": "PushRemoteDialog",
-          "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 629,
+          "id": "GitExtensions.Linux.Desktop.RemotesDialog",
+          "label": "RemotesDialog",
+          "source": "src/linux/GitExtensions.Desktop/RemotesDialog.cs",
+          "line": 15,
           "kind": "window"
         }
       ],
@@ -3802,9 +3800,23 @@
           "test_class": "PushDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteReferenceColorTests.cs",
+          "test_class": "RemoteReferenceColorTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/workflows/remotes/0067-remote-settings.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.FormRenameBranch",
@@ -4106,6 +4118,12 @@
           "test_class": "NativeDiffViewerSettingsDialogTests",
           "passed_in_reference_run": 4,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
       "adr": [
@@ -4139,7 +4157,7 @@
           "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
           "label": "SparseCheckoutDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 372,
+          "line": 373,
           "kind": "window"
         }
       ],
@@ -4752,7 +4770,7 @@
       "feature": "Paramètres avancés",
       "group": "settings-pages",
       "level": "N1",
-      "implemented": "Normalisation automatique du nom des branches et symbole de remplacement.",
+      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes.",
       "remaining": "Page avancée absente : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options à porter.",
       "visual": "integre",
       "linux": [
@@ -4770,9 +4788,17 @@
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/workflows/remotes/0067-remote-settings.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
@@ -4894,6 +4920,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryDialogTests.cs",
           "test_class": "FileHistoryDialogTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
           "results_present": true
         }
       ],
@@ -5082,6 +5114,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
           "results_present": true
         }
       ],
@@ -5418,6 +5456,12 @@
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
       "adr": []
@@ -5608,6 +5652,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ResetRevertDialogTests.cs",
           "test_class": "ResetRevertDialogTests",
           "passed_in_reference_run": 12,
@@ -5698,7 +5748,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 491,
+          "line": 484,
           "kind": "window"
         }
       ],
@@ -6193,7 +6243,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddSubmoduleAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 404,
+          "line": 397,
           "kind": "window"
         },
         {
@@ -6238,7 +6288,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddWorktreeAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 390,
+          "line": 383,
           "kind": "window"
         },
         {
@@ -6290,7 +6340,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.RemoveWorktreeAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 398,
+          "line": 391,
           "kind": "window"
         }
       ],
@@ -6653,6 +6703,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareDialogTests.cs",
           "test_class": "RenameCompareDialogTests",
           "passed_in_reference_run": 14,
@@ -6847,6 +6903,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
           "results_present": true
         },
         {
@@ -7047,6 +7109,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemoteBranchDeletionDialogTests.cs",
           "test_class": "RemoteBranchDeletionDialogTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
           "results_present": true
         },
         {
@@ -7355,7 +7423,7 @@
           "id": "GitExtensions.Linux.Desktop.NoteDialog",
           "label": "NoteDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 117,
+          "line": 118,
           "kind": "window"
         }
       ],
@@ -8161,6 +8229,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareDialogTests.cs",
           "test_class": "RenameCompareDialogTests",
           "passed_in_reference_run": 14,
@@ -8447,11 +8521,11 @@
       "id": "GitExtensions.Linux.Desktop.BisectDialog",
       "name": "BisectDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 185,
+      "line": 186,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 185
+          "line": 186
         }
       ],
       "bases": [
@@ -9547,11 +9621,6 @@
           "level": "N2"
         },
         {
-          "id": "GitUI.CommandsDialogs.FormRemotes",
-          "name": "FormRemotes",
-          "level": "N1"
-        },
-        {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
           "level": "N1"
@@ -9744,11 +9813,11 @@
       "id": "GitExtensions.Linux.Desktop.NoteDialog",
       "name": "NoteDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 117,
+      "line": 118,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 117
+          "line": 118
         }
       ],
       "bases": [
@@ -9932,35 +10001,6 @@
       "note": ""
     },
     {
-      "id": "GitExtensions.Linux.Desktop.PushRemoteDialog",
-      "name": "PushRemoteDialog",
-      "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 629,
-      "sources": [
-        {
-          "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 629
-        }
-      ],
-      "bases": [
-        "RepositoryDialog"
-      ],
-      "abstract": false,
-      "windows": [
-        {
-          "id": "GitUI.CommandsDialogs.FormPush",
-          "name": "FormPush",
-          "level": "N2"
-        },
-        {
-          "id": "GitUI.CommandsDialogs.FormRemotes",
-          "name": "FormRemotes",
-          "level": "N1"
-        }
-      ],
-      "note": ""
-    },
-    {
       "id": "GitExtensions.Linux.Desktop.RebaseAddFilesDialog",
       "name": "RebaseAddFilesDialog",
       "source": "src/linux/GitExtensions.Desktop/RebaseAddFilesDialog.cs",
@@ -10104,6 +10144,47 @@
         {
           "id": "GitUI.CommandsDialogs.FormReflog",
           "name": "FormReflog",
+          "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.RemotesDialog",
+      "name": "RemotesDialog",
+      "source": "src/linux/GitExtensions.Desktop/RemotesDialog.cs",
+      "line": 15,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/RemotesDialog.Color.cs",
+          "line": 10
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/RemotesDialog.Layout.cs",
+          "line": 13
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/RemotesDialog.Tracking.cs",
+          "line": 10
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/RemotesDialog.cs",
+          "line": 15
+        }
+      ],
+      "bases": [
+        "RepositoryDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormPush",
+          "name": "FormPush",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.FormRemotes",
+          "name": "FormRemotes",
           "level": "N3"
         }
       ],
@@ -10393,11 +10474,11 @@
       "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
       "name": "SparseCheckoutDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 372,
+      "line": 373,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 372
+          "line": 373
         }
       ],
       "bases": [
@@ -10794,7 +10875,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 516,
+      "line": 517,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",
@@ -10852,9 +10933,29 @@
     },
     {
       "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.RemotesDialog",
+      "path": "src/linux/GitExtensions.Desktop/RemotesDialog.Color.cs",
+      "line": 28,
+      "method": "ChooseColorAsync",
+      "text": "new()",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.RemotesDialog",
+      "path": "src/linux/GitExtensions.Desktop/RemotesDialog.cs",
+      "line": 273,
+      "method": "ConfirmDeleteAsync",
+      "text": "new() { Name = \"DeleteRemoteConfirmation\", Title = T(\"Delete remote\"), Width = 460, SizeToContent = SizeToContent.Height,",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 277,
+      "line": 278,
       "method": "ConfirmRangeAsync",
       "text": "new() { Name = \"BisectRangeConfirmation\", Title = Title, Width = 470, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -10864,7 +10965,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 327,
+      "line": 328,
       "method": "ShowNativeErrorAsync",
       "text": "new() { Name = \"BisectNativeError\", Title = T(\"Error\"), Width = 520, MaxHeight = 540, SizeToContent = SizeToContent.Height,",
       "platform": "linux",

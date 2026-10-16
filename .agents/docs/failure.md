@@ -256,3 +256,15 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Cadre des motifs traversant le texte, compteur trop haut | Utiliser le cadre à légende contraint partagé avec Pull ; le StackPanel mesurait le contenu sans borne. Tester les vrais viewports et les rectangles du Designer en plusieurs tailles. |
 | Menu vide au premier clic / Close appelé deux fois | Peupler le ContextMenu avant Opening ; rendre la fermeture après drainage idempotente. |
 | Cancel ferme quand même à l’action suivante | Consommer la demande de fermeture différée avant Close ; restaurer le choix de codec si le rechargement est refusé. |
+
+## Remotes — résolus
+
+| Piège | Règle retenue |
+| --- | --- |
+| Remotes team et team.foo déplacés ensemble | Identifier exactement la sous-section Git ; un préfixe de clé n’est pas un nom de remote. |
+| Copies de config privées devenues lisibles pendant Save | Créer copies et locks en 0600 avant toute écriture ; restaurer le mode cible à publication. |
+| Tracking hérité vidé fait échouer Git natif | Git 2.53 segfault sur branch.remote vide avec upstream ; refuser cet effacement avant mutation. Le merge hérité est aussi une liste non masquable localement. |
+| Save perdu pendant Validated, champs/snapshots périmés | Sérialiser les écritures sans désactiver l’éditeur ; conserver drafts et erreurs distinctes, renouveler tous les guards seulement sur la révision publiée, recharger les refs après Fetch. |
+| Premier Alt sans focus, changement d’onglet vide | Donner un focus réel aux listes et rétablir une cible visible après changement de page ; Label.Target porte les touches d’accès. |
+| Couleur ou bouton Save réagissent un événement trop tard | Observer TextProperty immédiatement ; garder le véritable geste utilisateur dans les tests. |
+| Effets attendus artificiellement par le harnais | Comparer au Git réel : ordre des includes, remote imbriqué existant, upstream futur et refs déjà fetchées. Relâcher Enter sur le propriétaire revenu après fermeture du prompt. |

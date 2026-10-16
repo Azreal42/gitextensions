@@ -6,13 +6,15 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `2e9ab5db2` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 21 N1 substituts minimaux, 25 N2 partielles, 41 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `bc33a8871` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 20 N1 substituts minimaux, 25 N2 partielles, 42 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
-L’inventaire contient aussi les 74 types Window Avalonia (dont 2 bases abstraites), 27 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
+L’inventaire contient aussi les 74 types Window Avalonia (dont 2 bases abstraites), 29 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
-Écarts concrets à traiter selon cette matrice : fenêtres complètes Remotes/Worktrees/Ajout de sous-module ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : fenêtres complètes Worktrees/Ajout de sous-module ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Remotes : deux onglets Windows, gestion active/inactive et tracking, fenêtre partagée Browse/Pull/Push ; conserver toutes les valeurs Git, Fetch après Save et couleurs réellement utilisées. ADR 0067.
 
 - [x] Éditeurs de règles et assistant ignore/exclude : aides, dispositions et motifs Windows, viewer partagé modifiable, recherche/remplacement, sauvegarde/dirty-close et aperçu Git annulable. Portage ciblé testé ; ADR 0066.
 - [x] Fork et sous-modules clonés ; build portable .NET 10, C4, arbre ADR et suivi des échecs en place.
@@ -57,7 +59,7 @@ L’inventaire contient aussi les 74 types Window Avalonia (dont 2 bases abstrai
 - [x] Commit & Push : commit unique, succès distant et conservation du commit après rejet/Cancel vérifiés en natif. ADR 0046.
 - [x] Build/tests Linux locaux automatisés ; `.deb` amd64 construit, installé par DPKG isolé et lancé sous Xvfb.
 
-Dernier paquet local vérifié et livré : source `d144dcf69`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/d144dcf69/proofs/delivery-verification-v2.json) contient source complète, checksum et contrôles : 916 tests (270 Core, 35 Plugins, 611 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, 25 étapes de packaging, installation/lancement isolés, APT simulé et repaquetage identique. Les 22 parcours natifs clair/sombre du payload exact couvrent les sous-périmètres Merge/Reset/Revert, reprise Cherry-pick et Commit & Push décrits ci-dessus. La reprise couvre un redémarrage normal ; la résolution Cherry-pick utilise la fixture Git, pas le resolver UI. Les essais rejetés et anomalies du harnais restent conservés hors acceptation. Aucun push de ce lot.
+Livraison historique : source `d144dcf69`, `gitextensions_7.2.1~linux-alpha_amd64.deb` (application `7.2.1-linux-alpha`, macOS prévu plus tard). Le [manifeste de livraison](../../artifacts/linux/snapshots/d144dcf69/proofs/delivery-verification-v2.json) contient source complète, checksum et contrôles : 916 tests (270 Core, 35 Plugins, 611 Desktop), zéro échec/ignoré, six projets Release sans diagnostic, 25 étapes de packaging, installation/lancement isolés, APT simulé et repaquetage identique. Les 22 parcours natifs clair/sombre du payload exact couvrent les sous-périmètres Merge/Reset/Revert, reprise Cherry-pick et Commit & Push décrits ci-dessus. La reprise couvre un redémarrage normal ; la résolution Cherry-pick utilise la fixture Git, pas le resolver UI. Les essais rejetés et anomalies du harnais restent conservés hors acceptation. Aucun push de ce lot.
 
 Installation hôte du 15 octobre : candidat `aae27bff4`, application `7.2.1-linux-alpha`, installé à la demande de l’utilisateur en remplacement de `8.0.0~linux.1`. [Version et 346 fichiers installés vérifiés](../../artifacts/linux/snapshots/aae27bff4/proofs/host-installation-verification-20261015-01.json). Retours utilisateur attendus ; les audits natifs encore ouverts restent à faire.
 
@@ -178,4 +180,15 @@ La suppression distante relit toutes les destinations effectives via Git, y comp
 
 [Candidat Debian](../../artifacts/linux/snapshots/2e9ab5db2/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `c11277c5d7557a90f9c2a5dd4f141b4fe7f9fdc8b6c03c9142108e69083f9269` : source figée, extraction/installation/lancement isolés vérifiés. Il remplace le candidat `e5775072e` avant installation hôte ; l’hôte reste `879f7bae3`. Aucun push.
 
-Prochain écran complet : Remotes (deux onglets, actifs/inactifs, URL/push/prefix/couleur et tracking), encore N1. Conserver toutes les entrées multivaleurs/inconnues et les mécanismes Git/OpenSSH ; les événements de scripts restent dans leur famille ouverte. Les 13 familles et l’audit de parité finale restent ouverts ; aucun N4.
+Remotes est repris dans le lot suivant. Les 13 familles et l’audit de parité finale restent ouverts ; aucun N4.
+
+
+## Fenêtre Remotes et tracking — 16 octobre 2026
+
+Source `bc33a8871` : même fenêtre à deux onglets dans Repository/Pull/Push, disposition et icônes Windows, contrôles compacts partagés. URL multiples et clés opaques conservées ; activation, rename et tracking suivent Git réel. Les erreurs de configuration héritée sont explicites ; aucun nouvel entrepôt d’identifiants SSH. ADR 0067.
+
+[Validation complète](../../artifacts/linux/snapshots/bc33a8871/proofs/source-validation.json) : **947 Desktop, 483 Core, 35 Plugins**, soit 1465 scénarios distincts, zéro échec/ignoré. 49 nouveaux scénarios ; premiers essais conservés hors acceptation. [Rendus headless](../../artifacts/linux/snapshots/bc33a8871/proofs/headless-visual-review.json) ; audit natif exhaustif restant.
+
+[Candidat Debian](../../artifacts/linux/snapshots/bc33a8871/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `bf9b22c756fba1d3347ee237879bbec91dca6a30a1fe8a9624e84b13bf784e1d` : source figée, extraction/installation/lancement isolés vérifiés. Il remplace `2e9ab5db2` avant installation hôte. Runtime hôte vérifié : toujours `879f7bae3` ; aucune application arrêtée. Aucun push.
+
+Reste pour Remotes : redimensionnement des colonnes/copie de cellules de tracking, événements de scripts et audit natif exhaustif. Prochaines fenêtres : gestion/création de Worktrees, encore N1 ; puis ajout de sous-module. Les 13 familles restent ouvertes et aucun N4 n’est annoncé.
