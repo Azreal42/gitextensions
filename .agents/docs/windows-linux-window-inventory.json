@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "189c18a6ca049fab004d25702c2a3b3785c273ed",
-  "source_digest_sha256": "a95c41cfb839f97c90c60482500dcc93c532afc75c12b7c62e77fc0320ea2bf1",
-  "scanned_csharp_files": 1899,
+  "code_reference_commit": "7a515c3b8197b5265940ac396618302f0063a85c",
+  "source_digest_sha256": "9037d7ce39dc5666bbba1b02211571b2481324a2d58463b74889e345e9148e2a",
+  "scanned_csharp_files": 1901,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -47,17 +47,17 @@
     "designer_files": 189,
     "installer_source_dialogs": 13,
     "installer_library_dialogs": 9,
-    "in_progress_screens": 1
+    "in_progress_screens": 2
   },
   "validation_reference": {
-    "trx": "artifacts/linux/dialog-input-desktop-checks-20261016-02-full/desktop.trx",
-    "source_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
-    "trx_sha256": "f4df0772ca402890ed93d1274b5e99b09b188a712c0b61a6ea5f964f2e6d4180",
+    "trx": "artifacts/linux/main-owner-focus-desktop-checks-20261016-02-full/desktop.trx",
+    "source_sha": "7a515c3b8197b5265940ac396618302f0063a85c",
+    "trx_sha256": "a3285917ec8e09cfe633d211976c11e152cae2996aa3582f273695ed3ffcd816",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
         "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-        "candidate_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
+        "candidate_sha": "7a515c3b8197b5265940ac396618302f0063a85c",
         "passed": 554,
         "total": 554,
         "execution_result": "artifacts/linux/annotated-reference-core-checks-20261016-01-full/full-result.json",
@@ -65,11 +65,11 @@
         "runtime_hashes_verified": 8,
         "runtime_inputs_unchanged": true,
         "reexecuted_on_candidate": false,
-        "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on189."
+        "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on7a."
       },
       "plugins": {
         "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-        "candidate_sha": "189c18a6ca049fab004d25702c2a3b3785c273ed",
+        "candidate_sha": "7a515c3b8197b5265940ac396618302f0063a85c",
         "passed": 35,
         "total": 35,
         "execution_result": "artifacts/linux/annotated-reference-plugins-checks-20261016-01/plugins-result.json",
@@ -77,7 +77,7 @@
         "runtime_hashes_verified": 10,
         "runtime_inputs_unchanged": true,
         "reexecuted_on_candidate": false,
-        "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on189."
+        "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on7a."
       }
     },
     "current_linux_code_equivalent": true,
@@ -1094,6 +1094,12 @@
           "test_class": "HistoryMenuParityTests",
           "passed_in_reference_run": 7,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
         }
       ],
       "adr": [
@@ -1795,8 +1801,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus au navigateur après annulation d’un dialogue encore défectueux en natif. Browse reste N2.",
+      "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations. Retour clavier après les six fermetures Create, Rename dynamique, Compare et F5 vérifié sur le paquet7a ; champ de recherche conservé pendant F5.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Le filtre historique lancé depuis View/Ctrl+I reste inactif en natif ; première Échap et retour non vérifiés. Browse reste N2.",
       "visual": "rapproche",
       "linux": [
         {
@@ -1839,6 +1845,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
           "test_class": "RevisionContextFocusTests",
           "passed_in_reference_run": 11,
@@ -1860,25 +1872,9 @@
         ".agents/docs/adr/ui/0064-original-history-menus.md",
         ".agents/docs/adr/workflows/references/0075-reference-display-targets.md",
         ".agents/docs/adr/ui/0076-revision-context-focus.md",
-        ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md"
-      ],
-      "in_progress": {
-        "description": "Source 189c18a6c : focus de la ligne au clic droit, champ restauré après lecture Git et trois saisies partagées. Desktop complet 1190/1190 ; Core 554 et Plugins 35 réellement exécutés sur a62 et réutilisés par entrées inchangées. Trois groupes natifs verts, dont première frappe après chargement retardé ; après Cancel, les flèches vont à Start. Candidat global non accepté, correction MainWindow isolée en cours. Browse reste N2.",
-        "linux": [
-          {
-            "id": "GitExtensions.Linux.Desktop.MainWindow",
-            "label": "MainWindow.RunAsync",
-            "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-            "line": 477,
-            "kind": "window"
-          }
-        ],
-        "tests": [],
-        "adr": [
-          "0076",
-          "0077"
-        ]
-      }
+        ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md",
+        ".agents/docs/adr/ui/0079-main-operation-focus.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.FormCheckoutBranch",
@@ -2029,7 +2025,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 184,
+          "line": 181,
           "kind": "window"
         },
         {
@@ -2487,6 +2483,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowSelectionTests.cs",
           "test_class": "MainWindowSelectionTests",
           "passed_in_reference_run": 4,
@@ -2567,6 +2569,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
           "test_class": "CreateBranchInitializationFocusTests",
           "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -2909,7 +2917,7 @@
       "group": "files",
       "level": "N2",
       "implemented": "Comparaisons de révisions, endpoints HEAD/index/worktree et diff texte/image.",
-      "remaining": "Pas de reproduction complète de la fenêtre FormDiff et de tous ses modes/menus.",
+      "remaining": "Pas de reproduction complète de la fenêtre FormDiff et de tous ses modes/menus. Saisie du filtre Compare perd des caractères : context-focus-compare devient c pendant une relecture redondante du fichier (preuve native7a).",
       "visual": "integre",
       "linux": [
         {
@@ -2928,6 +2936,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowSelectionTests.cs",
           "test_class": "MainWindowSelectionTests",
@@ -2974,7 +2988,58 @@
       "adr": [
         ".agents/docs/adr/workflows/references/0016-revision-comparisons.md",
         ".agents/docs/adr/workflows/files/diffs/0023-multiple-revisions.md"
-      ]
+      ],
+      "in_progress": {
+        "description": "Défaut natif confirmé sur7a : filtre→remplacement ItemsSource→relecture sélectionnée→désactivation du champ. Correctif isolé en préparation ; aucun nouveau résultat intégré. Le retour aux commits après fermeture est vert et distinct de cette perte de saisie.",
+        "linux": [
+          {
+            "id": "GitExtensions.Linux.Desktop.CompareRevisionsDialog",
+            "label": "CompareRevisionsDialog",
+            "source": "src/linux/GitExtensions.Desktop/CompareRevisionsDialog.cs",
+            "line": 17,
+            "kind": "window"
+          }
+        ],
+        "tests": [
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+            "test_class": "MainWindowBusyFocusTests",
+            "passed_in_reference_run": 19,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowSelectionTests.cs",
+            "test_class": "MainWindowSelectionTests",
+            "passed_in_reference_run": 4,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/RebaseDialogTests.cs",
+            "test_class": "RebaseDialogTests",
+            "passed_in_reference_run": 19,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareDialogTests.cs",
+            "test_class": "RenameCompareDialogTests",
+            "passed_in_reference_run": 14,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareMenuTests.cs",
+            "test_class": "RenameCompareMenuTests",
+            "passed_in_reference_run": 5,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/ViewerHostReadingTests.cs",
+            "test_class": "ViewerHostReadingTests",
+            "passed_in_reference_run": 9,
+            "results_present": true
+          }
+        ],
+        "adr": []
+      }
     },
     {
       "id": "GitUI.CommandsDialogs.FormEditor",
@@ -4090,6 +4155,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BranchNameNormalizationTests.cs",
           "test_class": "BranchNameNormalizationTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -7819,6 +7890,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowSelectionTests.cs",
           "test_class": "MainWindowSelectionTests",
           "passed_in_reference_run": 4,
@@ -8537,7 +8614,7 @@
       "group": "navigation",
       "level": "N3",
       "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git.",
-      "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée.",
+      "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée. Sur le paquet7a, View→Ctrl+I ferme le popup mais le filtre reste inactif ; première Échap et retour non exécutés.",
       "visual": "adapte",
       "linux": [
         {
@@ -8559,6 +8636,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
           "test_class": "DialogAccessKeyTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+          "test_class": "MainWindowBusyFocusTests",
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -8588,7 +8671,60 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/history/0042-branch-filter-combo.md"
-      ]
+      ],
+      "in_progress": {
+        "description": "Source7a : contrôle initial et fermeture préalable du popup couverts par Desktop1209/1209 dont MainWindowBusyFocus19. Le replay natif constate Filter revisions visible mais Browse encore actif ; arrêt de secours app-15 avant la première Échap. Activation native à corriger, aucune acceptation globale.",
+        "linux": [
+          {
+            "id": "GitExtensions.Linux.Desktop.HistoryFilterDialog",
+            "label": "HistoryFilterDialog",
+            "source": "src/linux/GitExtensions.Desktop/HistoryFilterDialog.cs",
+            "line": 8,
+            "kind": "window"
+          }
+        ],
+        "tests": [
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/BranchHistoryFilterTests.cs",
+            "test_class": "BranchHistoryFilterTests",
+            "passed_in_reference_run": 11,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
+            "test_class": "MainWindowBusyFocusTests",
+            "passed_in_reference_run": 19,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowSelectionTests.cs",
+            "test_class": "MainWindowSelectionTests",
+            "passed_in_reference_run": 4,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
+            "test_class": "ReferenceMenuTests",
+            "passed_in_reference_run": 4,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/RenameCompareMenuTests.cs",
+            "test_class": "RenameCompareMenuTests",
+            "passed_in_reference_run": 5,
+            "results_present": true
+          },
+          {
+            "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryDialogTests.cs",
+            "test_class": "RepositoryDialogTests",
+            "passed_in_reference_run": 5,
+            "results_present": true
+          }
+        ],
+        "adr": [
+          "0079"
+        ]
+      }
     },
     {
       "id": "JenkinsIntegration.Settings.JenkinsSettingsUserControl",
@@ -10183,6 +10319,10 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.FileStatus.cs",
+          "line": 6
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.FocusRestoration.cs",
           "line": 6
         },
         {

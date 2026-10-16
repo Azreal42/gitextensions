@@ -90,8 +90,8 @@
       "linux": [
         "MainWindow"
       ],
-      "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Retour de focus au navigateur après annulation d’un dialogue encore défectueux en natif. Browse reste N2.",
+      "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé au refresh, identité brute conservée pour les mutations. Retour clavier après les six fermetures Create, Rename dynamique, Compare et F5 vérifié sur le paquet7a ; champ de recherche conservé pendant F5.",
+      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Le filtre historique lancé depuis View/Ctrl+I reste inactif en natif ; première Échap et retour non vérifiés. Browse reste N2.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -100,7 +100,8 @@
         "FilePaneParityTests",
         "AnnotatedReferencePresentationTests",
         "RevisionContextFocusTests",
-        "CreateBranchInitializationFocusTests"
+        "CreateBranchInitializationFocusTests",
+        "MainWindowBusyFocusTests"
       ],
       "adr": [
         "0031",
@@ -111,19 +112,9 @@
         "0064",
         "0075",
         "0076",
-        "0077"
-      ],
-      "in_progress": {
-        "description": "Source 189c18a6c : focus de la ligne au clic droit, champ restauré après lecture Git et trois saisies partagées. Desktop complet 1190/1190 ; Core 554 et Plugins 35 réellement exécutés sur a62 et réutilisés par entrées inchangées. Trois groupes natifs verts, dont première frappe après chargement retardé ; après Cancel, les flèches vont à Start. Candidat global non accepté, correction MainWindow isolée en cours. Browse reste N2.",
-        "linux": [
-          "MainWindow@RunAsync"
-        ],
-        "tests": [],
-        "adr": [
-          "0076",
-          "0077"
-        ]
-      }
+        "0077",
+        "0079"
+      ]
     },
     "GitUI.CommandsDialogs.FormLog": {
       "feature": "Historique et diff dans une fenêtre dédiée",
@@ -148,7 +139,7 @@
         "HistoryFilterDialog"
       ],
       "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git.",
-      "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée.",
+      "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée. Sur le paquet7a, View→Ctrl+I ferme le popup mais le filtre reste inactif ; première Échap et retour non exécutés.",
       "visual": "adapte",
       "tests": [
         "BranchHistoryFilterTests",
@@ -156,7 +147,19 @@
       ],
       "adr": [
         "0042"
-      ]
+      ],
+      "in_progress": {
+        "description": "Source7a : contrôle initial et fermeture préalable du popup couverts par Desktop1209/1209 dont MainWindowBusyFocus19. Le replay natif constate Filter revisions visible mais Browse encore actif ; arrêt de secours app-15 avant la première Échap. Activation native à corriger, aucune acceptation globale.",
+        "linux": [
+          "HistoryFilterDialog"
+        ],
+        "tests": [
+          "MainWindowBusyFocusTests"
+        ],
+        "adr": [
+          "0079"
+        ]
+      }
     },
     "GitUI.CommandsDialogs.BrowseDialog.FormGoToCommit": {
       "feature": "Aller à un commit",
@@ -925,7 +928,7 @@
         "MainWindow"
       ],
       "implemented": "Comparaisons de révisions, endpoints HEAD/index/worktree et diff texte/image.",
-      "remaining": "Pas de reproduction complète de la fenêtre FormDiff et de tous ses modes/menus.",
+      "remaining": "Pas de reproduction complète de la fenêtre FormDiff et de tous ses modes/menus. Saisie du filtre Compare perd des caractères : context-focus-compare devient c pendant une relecture redondante du fichier (preuve native7a).",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
@@ -935,7 +938,15 @@
       "adr": [
         "0016",
         "0023"
-      ]
+      ],
+      "in_progress": {
+        "description": "Défaut natif confirmé sur7a : filtre→remplacement ItemsSource→relecture sélectionnée→désactivation du champ. Correctif isolé en préparation ; aucun nouveau résultat intégré. Le retour aux commits après fermeture est vert et distinct de cette perte de saisie.",
+        "linux": [
+          "CompareRevisionsDialog"
+        ],
+        "tests": [],
+        "adr": []
+      }
     },
     "GitUI.HelperDialogs.FormCommitDiff": {
       "feature": "Diff d’un commit autonome",

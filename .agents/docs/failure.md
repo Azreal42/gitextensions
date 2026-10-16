@@ -9,6 +9,8 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
+| Compare perd la saisie rapide du filtre | Remplacer ItemsSource réémet SelectionChanged puis RunAsync désactive le champ. Garder la lecture ciblée indépendante, identifier la demande et ne publier que la sélection courante ; rouge natif7a conservé. |
+| Filtre historique visible mais inactif | Focaliser un contrôle à Opened ne garantit pas l’activation X11. Réutiliser ModalWindowActivation.AfterMapping déjà partagé par les dialogues de dépôt et GoTo ; le replay7a expire avant la première Échap, sans preuve de son traitement. |
 | Notes reflog personnalisées ambiguës | `%gs` n'est pas recodé par Git ; la relecture du sujet du commit couvre le cas standard, pas toutes les notes libres. |
 | Avertissements IBus lors du lancement hôte | `Destroy` absent de `org.freedesktop.IBus.Service` dans le journal Avalonia. Effet sur la saisie et lien avec une fermeture non établis ; ne pas déduire un crash de ces seuls avertissements. [Journal](../../artifacts/linux/snapshots/aae27bff4/proofs/host-desktop-launch-20261015-01.log). |
 | Lecture de branches Clone laisse des descendants actifs derrière un relais | Interrompre le relais avant de capturer ses enfants peut perdre l’ancre de descendants aux pipes intermédiaires. Capture avant signaux vérifiée par trois régressions avant/après et un Abort Clone natif clair sur `aae27bff4` ; reprise de la requête de branches et autres variantes encore requises. SID seul reste insuffisant ; nettoyage de l’ancien essai distinct de la réussite produit. |
@@ -373,3 +375,12 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | --- | --- |
 | Le picker ferme le propriétaire avant lecture du token CTS | Capturer le token avant l’appel ; ignorer les réponses tardives et exposer leur drainage. L’API native n’accepte pas d’annulation, son arrêt reste à auditer. |
 | Échap intercepté partout dans SimplePrompt | Garder le handler sur txtUserInput comme Windows ; Échap sur OK ne ferme pas la fenêtre. |
+
+## Retour clavier après opération Browse
+
+| Piège | Règle retenue |
+| --- | --- |
+| Réutiliser un conteneur de commit retiré par F5 | Garder dépôt/hash, puis résoudre la nouvelle ligne seulement si elle reste sélectionnée. |
+| Le popup possède le focus au lancement, pas la grille | Transmettre explicitement l’origine pour les actions directes, dynamiques, partagées et leurs raccourcis. Ne pas restaurer à chaque Closed. |
+| Le bookmark survit à la première opération et contamine la suivante | Consommer l’origine à la capture ; nettoyer par identité sans réinstaller un ancien scope. |
+| Le filtre reste ouvert après Échap malgré un popup déjà fermé | Tracer la destination réelle de la touche. Ici le focus restait au propriétaire ; donner au filtre son premier contrôle interactif. La seule fermeture préalable du popup ne suffisait pas. |

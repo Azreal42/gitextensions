@@ -1,12 +1,12 @@
 # TODO
 
-Mise à jour : 16 octobre 2026. Les validations ci-dessous restent liées à leur source et à leur périmètre.
+Mise à jour : 17 octobre 2026. Les validations ci-dessous restent liées à leur source et à leur périmètre.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `189c18a6c` ; suite Desktop complète de référence `189c18a6c` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `7a515c3b8` ; suite Desktop complète de référence `7a515c3b8` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstraites), 31 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -90,7 +90,8 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 
 ## Prochains écarts concrets
 
-- Focus Browse : retour après Cancel et F5, actions directes et sous-menus ; correctif commun en développement isolé. Première frappe et Copy/Échap sont vérifiés séparément ; Browse reste N2.
+- Focus : retours Create/Rename/Compare et F5 vérifiés sur7a ; Filter revisions ouvert depuis View/Ctrl+I reste inactif en natif. Réutiliser l’activation modale partagée, puis vérifier première Échap et flèches sans clic de réparation. Browse reste N2.
+- Compare : garder le filtre éditable pendant la lecture ciblée, éviter la relecture du fichier identique et rejeter les résultats périmés. Le natif7a reçoit seulement c sur context-focus-compare ; correctif isolé en cours.
 - Scripts : relier les trois saisies N1 au contexte actif, au lanceur, aux événements, menus et raccourcis ; prendre en compte le drainage du picker natif. ADR 0057/0078.
 - Préférences : pages absentes de raccourcis, scripts/événements, langue, fontes et outils ; réglages distribués et tri/priorités Windows, dont repli GitDefault sans --date-order.
 - Navigation : recherche incrémentale, choix interactif des parents/enfants, CI/superproject et véritables fournisseurs PR/hébergement.
@@ -103,15 +104,15 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 
 La matrice donne les autres écarts écran par écran ; aucune famille n’est retirée du périmètre.
 
-## Lectures des dialogues et saisies scripts — périmètre testé, retour clavier ouvert
+## Dernière validation — source7a, deux écarts natifs ouverts
 
-`189c18a6c` conserve le champ focalisé après lecture Git et partage la base QuickItem entre références et chaînes. [ADR 0077](adr/ui/dialogs/0077-async-input-focus.md), [ADR 0078](adr/workflows/scripts/0078-script-input-dialogs.md). Les trois nouvelles saisies restent N1 : aucun caller, moteur ni menu scripts raccordé. Les 13 familles restent ouvertes, aucun N4.
+`7a515c3b8` conserve l’origine du focus après opération, retrouve la ligne par hash après F5 et ferme le popup avant les commandes reconnues. [ADR 0079](adr/ui/0079-main-operation-focus.md). La base de lecture des dialogues et les trois saisies scripts sont décrites dans [0077](adr/ui/dialogs/0077-async-input-focus.md)/[0078](adr/workflows/scripts/0078-script-input-dialogs.md) ; les saisies restent N1 sans caller/lanceur intégré.
 
-[Validation](../../artifacts/linux/snapshots/189c18a6c/proofs/source-validation.json) : Desktop complet **1190/1190**, 132 classes, zéro échec/ignoré, dont 45 nouveaux cas. Core **554/554** et Plugins **35/35** exécutés sur a62 sont réutilisés après contrôle des 227 sources de composants et des runtimes inchangés : 1779 scénarios couverts, dont 1190 exécutés dans cette tranche. Développements isolés : focus 68/68 puis 22/22 sur fichiers finaux ; saisies 54/54. Rouges init lente, CTS après fermeture et Échap depuis OK conservés.
+[Validation](../../artifacts/linux/snapshots/7a515c3b8/proofs/source-validation.json) : Desktop complet **1209/1209**, 133 classes, zéro échec/ignoré, dont 19 nouveaux cas. Core **554/554** et Plugins **35/35** exécutés sur a62 sont réutilisés après contrôle des composants et runtimes inchangés : 1798 scénarios couverts, dont 1209 exécutés dans cette tranche. Développement isolé final98/98 ; rouges et diagnostics antérieurs conservés.
 
-[Natif sur le paquet exact](../../artifacts/linux/snapshots/189c18a6c/proofs/native-parent-verification.json) : trois groupes verts, dont première frappe m puis marker après lecture Git retardée. Après Cancel de Create branch, Up/Down prennent encore le menu Start : preuve conservée, candidat global non accepté et correction MainWindow en cours. Le succès headless ne clôt pas cet écart.
+[Natif du paquet exact](../../artifacts/linux/snapshots/7a515c3b8/proofs/native-parent-verification.json) : six fermetures Create avec première frappe, picker imbriqué, Rename dynamique, retours Compare, F5 et Ctrl+R passent. Deux limites empêchent l’acceptation globale : Compare perd la saisie rapide du filtre ; Filter revisions reste inactif depuis View/Ctrl+I. La première Échap du filtre n’a pas été envoyée ; app-15/WM0/driver1 après timeout, drainage374PID vérifié. Aucun succès de fermeture normale globale revendiqué.
 
-[Debian construit, extrait et installé en isolation](../../artifacts/linux/snapshots/189c18a6c/proofs/package-runtime-verification.json), SHA256 `9edcd0af73eec7e23c752a1da2d26c7c8be89dd86907ede136c2a6d3845d46a4`. Aucun nouveau paquet installé sur l’hôte ni push. Le picker natif sans token et son drainage BrowseCompletion restent à auditer sous les OS visés.
+[Debian construit, extrait et installé en isolation](../../artifacts/linux/snapshots/7a515c3b8/proofs/package-runtime-verification.json), SHA256 `c3877790c2f23b12ac0d8380f5c0db68882b11944774687d321f291de6e81c00`. Aucun nouveau paquet installé sur l’hôte ni push. Picker natif sans token, Wayland et audit global restent ouverts ; les treize familles restent ouvertes, aucun N4.
 
 ## Livraison et preuves
 
