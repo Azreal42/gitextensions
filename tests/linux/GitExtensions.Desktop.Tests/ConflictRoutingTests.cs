@@ -245,15 +245,7 @@ public sealed class ConflictRoutingTests
     private static void Pump(TopLevel window)
     { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
 
-    private static void Pointer(Control control)
-    {
-        TopLevel top = TopLevel.GetTopLevel(control)!;
-        Pump(top);
-        Point center = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), top)!.Value;
-        Assert.That(control.IsEffectivelyVisible && control.IsEffectivelyEnabled && new Rect(default, top.ClientSize).Contains(center), Is.True, control.Name);
-        Assert.That((top.InputHitTest(center) as Visual)?.GetSelfAndVisualAncestors().Contains(control), Is.True, control.Name);
-        top.MouseMove(center); top.MouseDown(center, MouseButton.Left); top.MouseUp(center, MouseButton.Left); Pump(top);
-    }
+    private static void Pointer(Control control) => PushProcessTestDriver.Pointer(control);
 
     private static async Task Until(Func<bool> condition)
     {
