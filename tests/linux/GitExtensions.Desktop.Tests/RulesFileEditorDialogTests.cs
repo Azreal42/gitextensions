@@ -509,6 +509,89 @@ public sealed class RulesFileEditorDialogTests
     }
 
     [AvaloniaTest]
+    public async Task PatternAssistantKeepsWindowsFramesPreviewCounterAndScrollingAtOriginalMinimumAndExpandedSizesInBothThemes()
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        string directory = "preview-geometry/" + new string('a', 80) + "/" + new string('b', 80);
+        Directory.CreateDirectory(f.PathInRepository(directory));
+        string[] paths = Enumerable.Range(0, 40).Select(index => directory + "/entry-" + index.ToString("D2", CultureInfo.InvariantCulture)
+            + "-" + new string('p', 160) + ".geometry").ToArray();
+        foreach (string path in paths) { await File.WriteAllTextAsync(f.PathInRepository(path), "preview only\n"); }
+        string[] patterns = ["*.geometry", .. Enumerable.Range(0, 25).Select(index => "unused-pattern-" + index.ToString(CultureInfo.InvariantCulture)
+            + "-" + new string('x', 300))];
+        AddToGitIgnoreDialog dialog = await ShowAppendAsync(f.Repository, patterns: patterns);
+        try
+        {
+            TextBox input = Field<TextBox>(dialog, "IgnorePatterns");
+            ListBox preview = Field<ListBox>(dialog, "IgnorePatternPreview");
+            Assert.That(Preview(dialog), Is.EquivalentTo(paths));
+            Assert.That(Field<TextBlock>(dialog, "IgnorePatternCount").Text, Is.EqualTo("40 file(s) matched"));
+            Assert.That(dialog.MinWidth, Is.EqualTo(460)); Assert.That(dialog.MinHeight, Is.EqualTo(280));
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                dialog.RequestedThemeVariant = theme;
+                foreach (Size size in new[] { new Size(599, 341), new Size(460, 280), new Size(900, 520) })
+                {
+                    dialog.Width = size.Width; dialog.Height = size.Height; Pump(dialog);
+                    AssertPatternAssistantGeometry(dialog, empty: false);
+                    ScrollViewer inputScroll = input.GetVisualDescendants().OfType<ScrollViewer>().Single();
+                    ScrollViewer previewScroll = preview.GetVisualDescendants().OfType<ScrollViewer>().Single();
+                    Assert.That(inputScroll.AllowAutoHide, Is.False, "The original multiline editor keeps its vertical scrollbar visible.");
+                    Assert.That(previewScroll.AllowAutoHide, Is.False, "The preview scrollbar must remain accessible when its contents overflow.");
+                    Assert.That(inputScroll.Extent.Height, Is.GreaterThan(inputScroll.Viewport.Height), "All pattern lines need an internal vertical viewport.");
+                    Assert.That(previewScroll.Extent.Height, Is.GreaterThan(previewScroll.Viewport.Height), "Preview paths must scroll inside the frame, above the counter.");
+                    Assert.That(input.TextWrapping, Is.EqualTo(Avalonia.Media.TextWrapping.NoWrap));
+                    Assert.That(preview.GetVisualDescendants().OfType<TextBlock>().Where(text => text.Text?.EndsWith(".geometry", StringComparison.Ordinal) == true)
+                        .All(text => text.TextWrapping == Avalonia.Media.TextWrapping.NoWrap), Is.True, "Long original paths remain single rows within the bounded preview.");
+                    inputScroll.Offset = new Vector(0, inputScroll.Extent.Height - inputScroll.Viewport.Height);
+                    previewScroll.Offset = new Vector(0, previewScroll.Extent.Height - previewScroll.Viewport.Height);
+                    Pump(dialog);
+                    Assert.That(inputScroll.Offset.Y, Is.GreaterThan(0)); Assert.That(previewScroll.Offset.Y, Is.GreaterThan(0));
+                    foreach (ScrollBar scrollbar in input.GetVisualDescendants().Concat(preview.GetVisualDescendants()).OfType<ScrollBar>().Where(bar => bar.IsEffectivelyVisible))
+                    {
+                        Control owner = scrollbar.GetVisualAncestors().Contains(input) ? input : preview;
+                        Rect bounds = new(scrollbar.TranslatePoint(default, dialog)!.Value, scrollbar.Bounds.Size);
+                        Assert.That(new Rect(owner.TranslatePoint(default, dialog)!.Value, owner.Bounds.Size).Contains(bounds), Is.True,
+                            "Scrollbars must fit in their editor or preview without covering the counter or footer.");
+                    }
+                    AssertPatternAssistantGeometry(dialog, empty: false);
+                    Capture(dialog, "add-ignore-windows-geometry-scrolled-" + theme + "-" + size.Width + "x" + size.Height + ".png");
+                    inputScroll.Offset = default; previewScroll.Offset = default; Pump(dialog);
+                    Assert.That(dialog.CurrentPatterns, Is.EqualTo(patterns)); Assert.That(Preview(dialog), Is.EquivalentTo(paths));
+                }
+            }
+            const string noMatchPattern = "nothing-matches-preview-geometry-*";
+            input.Text = noMatchPattern;
+            // TextBox dispatches TextChanged after the property assignment. An
+            // idle flag alone can therefore still describe the previous preview.
+            await Until(() => dialog.CurrentPatterns.SequenceEqual([noMatchPattern]) && !dialog.IsPreviewLoading
+                && preview.IsEnabled && Preview(dialog).Length == 0
+                && Field<TextBlock>(dialog, "IgnorePatternCount").Text == "0 file(s) matched"
+                && Field<StackPanel>(dialog, "NoIgnorePatternMatches").IsVisible,
+                () => "Requested pattern=" + noMatchPattern + "; current patterns=" + string.Join(" | ", dialog.CurrentPatterns.Take(2))
+                    + "; loading=" + dialog.IsPreviewLoading + "; preview count=" + Preview(dialog).Length
+                    + "; count label=" + Field<TextBlock>(dialog, "IgnorePatternCount").Text
+                    + "; empty state visible=" + Field<StackPanel>(dialog, "NoIgnorePatternMatches").IsVisible);
+            Assert.That(input.Text, Is.EqualTo(noMatchPattern)); Assert.That(dialog.CurrentPatterns, Is.EqualTo(new[] { noMatchPattern }));
+            Assert.That(Preview(dialog), Is.Empty);
+            Assert.That(Field<TextBlock>(dialog, "IgnorePatternCount").Text, Is.EqualTo("0 file(s) matched"));
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                dialog.RequestedThemeVariant = theme;
+                foreach (Size size in new[] { new Size(599, 341), new Size(460, 280), new Size(900, 520) })
+                {
+                    dialog.Width = size.Width; dialog.Height = size.Height; Pump(dialog);
+                    AssertPatternAssistantGeometry(dialog, empty: true);
+                    Capture(dialog, "add-ignore-windows-geometry-empty-" + theme + "-" + size.Width + "x" + size.Height + ".png");
+                }
+            }
+            Assert.That(dialog.HasRepositoryChanges, Is.False);
+            Assert.That(File.Exists(f.PathInRepository(".gitignore")), Is.False, "Rendering and scrolling the assistant must remain a preview.");
+        }
+        finally { await CloseAsync(dialog); }
+    }
+
+    [AvaloniaTest]
     public async Task EmptyPatternsAndNoMatchesRenderTheirOwnStateAndCancelOrEmptyIgnoreNeverWrites()
     {
         using Fixture f = await Fixture.CreateAsync();
@@ -723,6 +806,47 @@ public sealed class RulesFileEditorDialogTests
             Assert.That(origin.X, Is.GreaterThanOrEqualTo(-.5), control.Name); Assert.That(origin.Y, Is.GreaterThanOrEqualTo(-.5), control.Name);
             Assert.That(origin.X + control.Bounds.Width, Is.LessThanOrEqualTo(window.ClientSize.Width + .5), control.Name);
             Assert.That(origin.Y + control.Bounds.Height, Is.LessThanOrEqualTo(window.ClientSize.Height + .5), control.Name);
+        }
+    }
+    private static void AssertPatternAssistantGeometry(AddToGitIgnoreDialog dialog, bool empty)
+    {
+        Pump(dialog);
+        double width = dialog.ClientSize.Width, height = dialog.ClientSize.Height;
+        Grid patternsGroup = Field<Grid>(dialog, "IgnorePatternsGroup"), previewGroup = Field<Grid>(dialog, "IgnorePreviewGroup");
+        Border patternsFrame = Field<Border>(dialog, "IgnorePatternsGroupFrame"), previewFrame = Field<Border>(dialog, "IgnorePreviewGroupFrame");
+        Border patternsCaption = Field<Border>(dialog, "IgnorePatternsGroupCaption"), previewCaption = Field<Border>(dialog, "IgnorePreviewGroupCaption");
+        TextBox input = Field<TextBox>(dialog, "IgnorePatterns"); ListBox preview = Field<ListBox>(dialog, "IgnorePatternPreview");
+        TextBlock count = Field<TextBlock>(dialog, "IgnorePatternCount"); StackPanel noMatches = Field<StackPanel>(dialog, "NoIgnorePatternMatches");
+        Button ignore = Field<Button>(dialog, "AppendIgnorePatterns"), cancel = Field<Button>(dialog, "CancelIgnorePatterns");
+        Rect inputBounds = Bounds(input), previewBounds = Bounds(preview), countBounds = Bounds(count);
+        AssertRect(Bounds(patternsGroup), new Rect(0, 0, width, 93), "The Windows pattern group stays 93 px high.");
+        AssertRect(inputBounds, new Rect(12, 19, width - 24, 71), "The entire multiline editor must fit below its caption and above its frame's bottom.");
+        AssertRect(Bounds(previewGroup), new Rect(0, 93, width, height - 137), "Preview occupies the remaining area above the 44 px footer.");
+        AssertRect(previewBounds, new Rect(12, 115, width - 24, height - 182), "The preview viewport grows while the pattern area remains fixed.");
+        Assert.That(Bounds(patternsFrame).Contains(inputBounds), Is.True, "Pattern content must not escape its frame.");
+        Assert.That(Bounds(previewFrame).Contains(previewBounds), Is.True, "Preview paths must stay inside their frame.");
+        Assert.That(inputBounds.Top, Is.GreaterThanOrEqualTo(Bounds(patternsCaption).Bottom), "The editor must not overlap the frame legend.");
+        Assert.That(previewBounds.Top, Is.GreaterThanOrEqualTo(Bounds(previewCaption).Bottom), "Preview paths must not overlap their legend.");
+        Assert.That(countBounds.Right, Is.EqualTo(width - 12).Within(.5));
+        Assert.That(countBounds.Top, Is.EqualTo(height - 67).Within(.5)); Assert.That(countBounds.Height, Is.EqualTo(19).Within(.5));
+        Assert.That(countBounds.Top, Is.EqualTo(previewBounds.Bottom).Within(.5), "The counter remains below the scrolling preview.");
+        Assert.That(countBounds.Bottom, Is.EqualTo(height - 48).Within(.5), "The counter stays at the frame's bottom right after a resize.");
+        Assert.That(Bounds(previewGroup).Bottom, Is.EqualTo(height - 44).Within(.5));
+        Assert.That(Bounds(ignore).Top, Is.EqualTo(height - 37).Within(.5)); Assert.That(Bounds(cancel).Top, Is.EqualTo(height - 37).Within(.5));
+        AssertInside(dialog, patternsGroup, previewGroup, input, preview, count, ignore, cancel);
+        Assert.That(noMatches.IsEffectivelyVisible, Is.EqualTo(empty));
+        if (empty)
+        {
+            Rect message = Bounds(noMatches);
+            Assert.That(previewBounds.Contains(message), Is.True, "The empty state belongs inside the preview viewport.");
+            Assert.That(message.Center.X, Is.EqualTo(previewBounds.Center.X).Within(.5));
+            Assert.That(message.Center.Y, Is.EqualTo(previewBounds.Center.Y).Within(.5), "The empty state must be centered in Preview, clear of the counter and footer.");
+        }
+        Rect Bounds(Control control) => new(control.TranslatePoint(default, dialog)!.Value, control.Bounds.Size);
+        static void AssertRect(Rect actual, Rect expected, string message)
+        {
+            Assert.That(actual.X, Is.EqualTo(expected.X).Within(.5), message); Assert.That(actual.Y, Is.EqualTo(expected.Y).Within(.5), message);
+            Assert.That(actual.Width, Is.EqualTo(expected.Width).Within(.5), message); Assert.That(actual.Height, Is.EqualTo(expected.Height).Within(.5), message);
         }
     }
     private static async Task CloseAsync(Window window)

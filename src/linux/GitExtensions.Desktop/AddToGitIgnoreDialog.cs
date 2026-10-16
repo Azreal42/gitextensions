@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -13,7 +14,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class AddToGitIgnoreDialog : RepositoryDialog
 {
     private readonly bool _localExclude;
-    private readonly TextBox _patterns = new() { Name = "IgnorePatterns", AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, MinHeight = 65 };
+    private readonly TextBox _patterns = new() { Name = "IgnorePatterns", AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, MinHeight = 0 };
     private readonly ListBox _preview = new() { Name = "IgnorePatternPreview" };
     private readonly TextBlock _count = new() { Name = "IgnorePatternCount", HorizontalAlignment = HorizontalAlignment.Right };
     private readonly StackPanel _noMatches;
@@ -38,9 +39,14 @@ public sealed class AddToGitIgnoreDialog : RepositoryDialog
         StackPanel footer = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 22, Margin = new Thickness(12, 7, 22, 12), Children = { _ignore, cancel } };
         DockPanel.SetDock(footer, Dock.Bottom); Root.Children.Add(footer);
         Grid groups = new() { RowDefinitions = new RowDefinitions("93,*") };
-        groups.Children.Add(ExportDialogControls.Group(C("groupFilePattern", "Enter a file pattern to ignore:"), _patterns));
+        ScrollViewer.SetAllowAutoHide(_patterns, false);
+        ScrollViewer.SetVerticalScrollBarVisibility(_patterns, ScrollBarVisibility.Visible);
+        ScrollViewer.SetHorizontalScrollBarVisibility(_patterns, ScrollBarVisibility.Hidden);
+        ScrollViewer.SetAllowAutoHide(_preview, false);
+        ScrollViewer.SetHorizontalScrollBarVisibility(_preview, ScrollBarVisibility.Disabled);
+        groups.Children.Add(ClassicChrome.Group("IgnorePatternsGroup", C("groupFilePattern", "Enter a file pattern to ignore:"), _patterns, new Thickness(11, 11, 11, 2)));
         DockPanel preview = new();
-        _count.Margin = new Thickness(0, 3, 0, 0); DockPanel.SetDock(_count, Dock.Bottom); preview.Children.Add(_count);
+        _count.Height = 19; DockPanel.SetDock(_count, Dock.Bottom); preview.Children.Add(_count);
         _preview.ItemTemplate = new FuncDataTemplate<string>((path, _) => new TextBlock { Text = ExportDialogControls.DisplayPath(path ?? ""), TextWrapping = TextWrapping.NoWrap });
         _preview.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>()) { Setters =
             { new Setter(MinHeightProperty, 15d), new Setter(HeightProperty, 15d), new Setter(PaddingProperty, new Thickness(3, 0)) } });
@@ -48,7 +54,8 @@ public sealed class AddToGitIgnoreDialog : RepositoryDialog
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsVisible = false,
             Children = { OriginalMenuItems.Icon("Unmerged.png"), new TextBlock { Text = C("label2", "No existing files match that pattern.") } } };
         preview.Children.Add(new Grid { Children = { _preview, _noMatches } });
-        Border previewGroup = ExportDialogControls.Group(C("groupBox1", "Preview"), preview); Grid.SetRow(previewGroup, 1); groups.Children.Add(previewGroup); Root.Children.Add(groups);
+        Grid previewGroup = ClassicChrome.Group("IgnorePreviewGroup", C("groupBox1", "Preview"), preview, new Thickness(11, 14, 11, 3));
+        Grid.SetRow(previewGroup, 1); groups.Children.Add(previewGroup); Root.Children.Add(groups);
         Track(_patterns);
         _patterns.TextChanged += (_, _) => { if (!_initializing && _snapshot is not null) { QueuePreview(); } };
         Closing += (_, args) =>

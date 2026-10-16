@@ -121,14 +121,7 @@ public sealed partial class PullDialog
     }
 
     private static Grid PullGroup(string name, string caption, Control body)
-    {
-        Grid group = new() { Name = name };
-        Border frame = ClassicChrome.Border(body, new Thickness(1), new Thickness(6, 9, 6, 6));
-        frame.Margin = new Thickness(0, 7, 0, 0); group.Children.Add(frame);
-        Border legend = new() { Child = new TextBlock { Text = caption }, Padding = new Thickness(2, 0), Margin = new Thickness(7, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-        legend.Bind(BackgroundProperty, new DynamicResourceExtension("ClassicWindowBrush")); group.Children.Add(legend);
-        return group;
-    }
+        => ClassicChrome.Group(name, caption, body);
 
     private static Control PullIconLabel(string icon, Control label)
     {
