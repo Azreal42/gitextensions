@@ -1,12 +1,12 @@
 {
-  "source_sha": "7a515c3b8197b5265940ac396618302f0063a85c",
-  "trx": "artifacts/linux/main-owner-focus-desktop-checks-20261016-02-full/desktop.trx",
-  "trx_sha256": "a3285917ec8e09cfe633d211976c11e152cae2996aa3582f273695ed3ffcd816",
-  "meaning": "Actual complete Desktop execution; Core/Plugins reused from unchanged a62 inputs. Native result is recorded separately and remains scoped; no complete Windows parity acceptance.",
+  "source_sha": "2e3bba7267dc6c448f9842cac528d558572693c0",
+  "trx": "artifacts/linux/selection-input-desktop-checks-20261017-02-full/desktop.trx",
+  "trx_sha256": "07e0ca83c9659efadea1b0826ffe9a9b6bf6108885577a05ffb6ebf5e80b0f3a",
+  "meaning": "Actual complete Desktop execution; fresh Core/Plugins execution SHA explicit and unchanged candidate component trees verified. Native scope separate; no complete Windows parity acceptance.",
   "counters": {
-    "total": "1209",
-    "executed": "1209",
-    "passed": "1209",
+    "total": "1241",
+    "executed": "1241",
+    "passed": "1241",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -129,6 +129,9 @@
     },
     "CompactNavigationTreeTests": {
       "Passed": 4
+    },
+    "ComparisonSelectionTests": {
+      "Passed": 11
     },
     "ConflictRoutingTests": {
       "Passed": 9
@@ -370,6 +373,9 @@
     "ScriptInputDialogTests": {
       "Passed": 23
     },
+    "ScriptPreparationDispatcherTests": {
+      "Passed": 21
+    },
     "ScriptsPreferencesStoreTests": {
       "Passed": 8
     },
@@ -424,28 +430,30 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-      "candidate_sha": "7a515c3b8197b5265940ac396618302f0063a85c",
-      "passed": 554,
-      "total": 554,
-      "execution_result": "artifacts/linux/annotated-reference-core-checks-20261016-01-full/full-result.json",
+      "source_sha": "84d94785da393e42104b0633ea20490a60d22665",
+      "candidate_sha": "2e3bba7267dc6c448f9842cac528d558572693c0",
+      "passed": 556,
+      "total": 556,
+      "execution_result": "artifacts/linux/script-preparation-core-checks-20261017-01-full/full-result.json",
       "source_hashes_verified": 201,
       "runtime_hashes_verified": 8,
       "runtime_inputs_unchanged": true,
       "reexecuted_on_candidate": false,
-      "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on7a."
+      "fresh_execution_this_tranche": true,
+      "meaning": "Actual fresh execution after Core token change; later candidate UI-only commits preserve all component trees and original test-bin runtime bytes. Execution SHA remains explicit."
     },
     "plugins": {
-      "source_sha": "a62aa7133d5f2a65d86a20f62ee00584e9f0bbed",
-      "candidate_sha": "7a515c3b8197b5265940ac396618302f0063a85c",
+      "source_sha": "84997d82746422584c91b1c71b8f3468a66d2026",
+      "candidate_sha": "2e3bba7267dc6c448f9842cac528d558572693c0",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/annotated-reference-plugins-checks-20261016-01/plugins-result.json",
+      "execution_result": "artifacts/linux/script-preparation-plugins-checks-20261017-01/plugins-result.json",
       "source_hashes_verified": 154,
       "runtime_hashes_verified": 10,
       "runtime_inputs_unchanged": true,
       "reexecuted_on_candidate": false,
-      "meaning": "Actual execution on a62 reused by independently verified unchanged component source trees, recorded inputs and original test-bin runtimes; not a fresh execution on7a."
+      "fresh_execution_this_tranche": true,
+      "meaning": "Actual fresh execution after Core token change; later candidate UI-only commits preserve all component trees and original test-bin runtime bytes. Execution SHA remains explicit."
     }
   }
 }

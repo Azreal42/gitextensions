@@ -1,6 +1,6 @@
 # ADR 0078 · Saisies des scripts
 
-Statut : infrastructure UI N1 et pont de préparation typée ; 25 cas Core et94 Desktop passent dans le clone combiné, dont21 nouveaux cas du pont. Validation complète intégrée à venir ; aucun caller/lanceur raccordé, aucune famille globale clôturée.
+Statut : infrastructure UI N1 et pont de préparation typée ; 25 cas Core et94 Desktop passent dans le clone combiné, dont21 nouveaux cas du pont. Inclus dans Desktop 1241/1241 sur `2e3bba726` ; aucun caller/lanceur raccordé, aucune famille globale clôturée.
 
 Besoin : reprendre FormQuickStringSelector, FormFilePrompt et SimplePrompt sans perdre la saisie ni confondre sélection et acceptation.
 
@@ -14,4 +14,4 @@ Repères : QuickStringSelectorDialog, FilePromptDialog, SimplePromptDialog, Quic
 
 ScriptPreparationDispatcher fige le contexte et les identités des références avant la première demande. Chaque demande revient au thread UI, y compris après une continuation Core ; la confirmation distingue Yes, No et fermeture. Le nom seul ne suffit pas à identifier une référence : recouper nom/type avec les métadonnées capturées. Fermeture du propriétaire ou token annulent la session ; attendre BrowseCompletion avant de rendre un résultat, sans prétendre fermer le picker natif.
 
-Suite : raccorder le contexte actif et le lanceur, les préférences, menus et événements, puis valider le transport des arguments ([ADR 0057](../../extensions/scripts/0057-pure-script-preparation.md)). Ces fenêtres ne rendent pas les scripts exécutables. Audit natif du picker, Wayland, DPI et accessibilité restent ouverts. Les 23 cas dédiés sont inclus dans les 1190 tests Desktop exécutés sur la source intégrée ; cela ne valide pas le moteur de scripts.
+Suite : raccorder le contexte actif et le lanceur, les préférences, menus et événements, puis valider le transport des arguments ([ADR 0057](../../extensions/scripts/0057-pure-script-preparation.md)). Ces fenêtres ne rendent pas les scripts exécutables. Audit natif du picker, Wayland, DPI et accessibilité restent ouverts. Les 23 cas de saisies et 21 cas de préparation sont inclus dans les 1241 tests Desktop de `2e3bba726` ; cela ne rend pas les scripts exécutables.

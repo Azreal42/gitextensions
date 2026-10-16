@@ -6,7 +6,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `7a515c3b8` ; suite Desktop complète de référence `7a515c3b8` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `2e3bba726` ; suite Desktop complète de référence `2e3bba726` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstraites), 31 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -90,9 +90,9 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 
 ## Prochains écarts concrets
 
-- Focus : retours Create/Rename/Compare et F5 vérifiés sur7a ; Filter revisions ouvert depuis View/Ctrl+I reste inactif en natif. Réutiliser l’activation modale partagée, puis vérifier première Échap et flèches sans clic de réparation. Browse reste N2.
-- Compare : lectures ciblées intégrées après53/53 isolés et rouge original c conservé ; validation complète/native du candidat combiné à effectuer. Filtre éditable, même sélection réutilisée, résultats périmés rejetés et fermeture drainée. ADR 0016.
-- Scripts : pont de préparation typée intégré après25 Core/94 Desktop isolés ; suite complète suivante requise. Relier le contexte actif, le lanceur, les événements, menus et raccourcis ; conserver argv avant Quote et attendre le picker natif. Les trois saisies restent N1. ADR 0057/0078.
+- Focus : parcours ciblés verts sur `2e3bba726` ; étendre les variantes de panneaux, thèmes, traductions et plateformes sans transférer automatiquement cette acceptation. Browse reste N2.
+- Compare : réutiliser FileStatusList pour les modes, filtre regex, menus et densité Windows ; lectures ciblées/fermetures vérifiées. FormDiff reste N2. ADR 0016.
+- Scripts : pont de préparation typée inclus dans la suite complète de `2e3bba726`. Relier le contexte actif, le lanceur, les événements, menus et raccourcis ; conserver argv avant Quote et attendre le picker natif. Les trois saisies restent N1. ADR 0057/0078.
 - Préférences : pages absentes de raccourcis, scripts/événements, langue, fontes et outils ; réglages distribués et tri/priorités Windows, dont repli GitDefault sans --date-order.
 - Navigation : recherche incrémentale, choix interactif des parents/enfants, CI/superproject et véritables fournisseurs PR/hébergement.
 - Réseau : scripts Before/After, Process par remote pour suppression distante, variantes multi-URL/atomic, destination locale Fetch/source URL, fermeture native des propriétaires et sortie continue.
@@ -104,15 +104,15 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 
 La matrice donne les autres écarts écran par écran ; aucune famille n’est retirée du périmètre.
 
-## Dernière validation — source7a, deux écarts natifs ouverts
+## Dernière validation — saisies et retours clavier ciblés
 
-`7a515c3b8` conserve l’origine du focus après opération, retrouve la ligne par hash après F5 et ferme le popup avant les commandes reconnues. [ADR 0079](adr/ui/0079-main-operation-focus.md). La base de lecture des dialogues et les trois saisies scripts sont décrites dans [0077](adr/ui/dialogs/0077-async-input-focus.md)/[0078](adr/workflows/scripts/0078-script-input-dialogs.md) ; les saisies restent N1 sans caller/lanceur intégré.
+`2e3bba726` conserve la saisie Compare pendant les lectures ciblées, réutilise l’activation partagée du filtre historique et prépare les demandes scripts via les dialogues existants. [ADR 0016](adr/workflows/references/0016-revision-comparisons.md), [0079](adr/ui/0079-main-operation-focus.md), [0078](adr/workflows/scripts/0078-script-input-dialogs.md). Scripts : aucune route de lancement/menu/événement ; les trois saisies restent N1.
 
-[Validation](../../artifacts/linux/snapshots/7a515c3b8/proofs/source-validation.json) : Desktop complet **1209/1209**, 133 classes, zéro échec/ignoré, dont 19 nouveaux cas. Core **554/554** et Plugins **35/35** exécutés sur a62 sont réutilisés après contrôle des composants et runtimes inchangés : 1798 scénarios couverts, dont 1209 exécutés dans cette tranche. Développement isolé final98/98 ; rouges et diagnostics antérieurs conservés.
+[Validation](../../artifacts/linux/snapshots/2e3bba726/proofs/source-validation.json) : Desktop complet **1241/1241**, 135 classes ; Core **556/556** et Plugins **35/35** réexécutés dans cette tranche sur `84d94785d` et `84997d827`, puis composants et runtimes vérifiés inchangés pour `2e3bba726`. **1832 scénarios exécutés**, zéro échec/ignoré ; 32 nouveaux cas Desktop et 2 Core. Ciblés isolés et rouges originaux, dont Compare limité à c, conservés séparément.
 
-[Natif du paquet exact](../../artifacts/linux/snapshots/7a515c3b8/proofs/native-parent-verification.json) : six fermetures Create avec première frappe, picker imbriqué, Rename dynamique, retours Compare, F5 et Ctrl+R passent. Deux limites empêchent l’acceptation globale : Compare perd la saisie rapide du filtre ; Filter revisions reste inactif depuis View/Ctrl+I. La première Échap du filtre n’a pas été envoyée ; app-15/WM0/driver1 après timeout, drainage374PID vérifié. Aucun succès de fermeture normale globale revendiqué.
+[Natif du paquet exact](../../artifacts/linux/snapshots/2e3bba726/proofs/native-parent-verification.json) : filtre actif avant la première Échap puis Haut/Bas ; six fermetures Create avec première frappe, picker imbriqué, autre champ/F5, Rename dynamique, texte Compare complet et retours F5/Ctrl+R sans réparation. Fermeture finale normale et drainage contrôlés. Acceptation limitée à cette matrice X11/Openbox claire ; aucune parité globale ou validation Wayland/DPI/accessibilité.
 
-[Debian construit, extrait et installé en isolation](../../artifacts/linux/snapshots/7a515c3b8/proofs/package-runtime-verification.json), SHA256 `c3877790c2f23b12ac0d8380f5c0db68882b11944774687d321f291de6e81c00`. Aucun nouveau paquet installé sur l’hôte ni push. Picker natif sans token, Wayland et audit global restent ouverts ; les treize familles restent ouvertes, aucun N4.
+[Debian construit, extrait et installé en isolation](../../artifacts/linux/snapshots/2e3bba726/proofs/package-runtime-verification.json), SHA256 `a707f616ce46afaacc4c6c49440ea1b4208b867794a1a0346da106c4b0f0017b`. Aucun nouveau paquet installé sur l’hôte ni push. Picker natif scripts et lanceur restent ouverts ; treize familles ouvertes, aucun N4.
 
 ## Livraison et preuves
 

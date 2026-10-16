@@ -1,6 +1,6 @@
 # ADR 0079 · Retour clavier après une opération Browse
 
-Statut : intégré sur7a ; 98 ciblés isolés puis Desktop1209/1209 dont19 nouveaux cas. Retours natifs Create/Rename/Compare et F5 vérifiés ; activation du filtre historique complétée après34 cas isolés ; nouvelle validation intégrée/native à venir, candidat global non accepté.
+Statut : intégré ; Desktop 1241/1241 puis matrice native ciblée sur `2e3bba726`. Filtre actif, première Échap et premières flèches vérifiés ; aucune parité globale certifiée.
 
 Besoin : après F5 ou la fermeture d’un dialogue lancé depuis un commit, les premières flèches naviguent depuis ce commit. Un autre champ ou sous-dialogue choisi pendant l’attente garde sa saisie.
 
@@ -10,6 +10,6 @@ Repères Windows : RevisionGridControl.PerformRefreshRevisions conserve Selected
 
 Repères Linux : MainWindow.FocusRestoration, RunAsync, RevisionAction et entrées dynamiques des références ; MainWindowBusyFocusTests. Première frappe dans le dialogue, retour modal, vrai F5 et restauration après désactivation sont des contrats distincts. Le natif exige les premières touches sans clic de réparation.
 
-Les raccourcis ferment le popup avant une commande reconnue. HistoryFilterDialog focalise son premier contrôle interactif à Opened, comme l’ordre Tab Windows ; sans cela, Échap restait routé au propriétaire. La fermeture préalable du menu ne suffisait pas à elle seule : diagnostics conservés. Le natif7a révèle un second niveau : le contrôle est focalisé logiquement mais Filter revisions n’est pas actif auprès du gestionnaire de fenêtres. La première Échap n’a pas été envoyée après cette attente expirée ; le filtre réutilise désormais ModalWindowActivation.AfterMapping avec garde Closed/visibilité/enfant ; nouvelle validation native requise.
+Les raccourcis ferment le popup avant une commande reconnue. HistoryFilterDialog focalise son premier contrôle interactif à Opened, comme l’ordre Tab Windows ; sans cela, Échap restait routé au propriétaire. La fermeture préalable du menu ne suffisait pas à elle seule : diagnostics conservés. Le natif7a révèle un second niveau : le contrôle est focalisé logiquement mais Filter revisions n’est pas actif auprès du gestionnaire de fenêtres. La première Échap n’a pas été envoyée après cette attente expirée ; le filtre réutilise désormais ModalWindowActivation.AfterMapping avec garde Closed/visibilité/enfant ; validation native sur `2e3bba726` réussie sur ce parcours, sans clic de réparation.
 
 Limite : les lignes de commits remplacées sont retrouvées par hash ; un autre contrôle détaché n’est pas recréé par nom. Cette restauration n’atteste pas le focus de toutes les panes.
