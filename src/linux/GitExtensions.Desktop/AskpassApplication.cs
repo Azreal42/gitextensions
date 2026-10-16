@@ -9,7 +9,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed class AskpassApplication : Application
 {
-    private static string _prompt = "";
+    private static AskpassRequest? _request;
     private AskpassWindow? _window;
 
     public override void Initialize()
@@ -24,8 +24,8 @@ public sealed class AskpassApplication : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            _window = new AskpassWindow(_prompt);
-            _window.Closed += (_, _) => desktop.Shutdown(_window.Response is null ? 1 : 0);
+            _window = new AskpassWindow(_request ?? throw new InvalidOperationException("Missing askpass request."));
+            _window.Closed += (_, _) => desktop.Shutdown(AskpassProtocol.GetExitCode(_window.Request, _window.Result));
             desktop.MainWindow = _window;
         }
 
@@ -34,12 +34,9 @@ public sealed class AskpassApplication : Application
 
     internal static int Run(string[] arguments)
     {
-        if (arguments.Length != 1)
-        {
-            return 1;
-        }
-
-        _prompt = arguments[0];
+        AskpassRequest? request = CreateRequest(arguments, Environment.GetEnvironmentVariable("SSH_ASKPASS_PROMPT"));
+        if (request is null) { return 1; }
+        _request = request;
         ApplyUiCulture();
         TextWriter output = Console.Out;
         // Framework startup and diagnostics must never enter the askpass protocol on stdout.
@@ -48,8 +45,8 @@ public sealed class AskpassApplication : Application
         {
             AppBuilder builder = AppBuilder.Configure<AskpassApplication>().UsePlatformDetect().WithInterFont();
             int code = builder.StartWithClassicDesktopLifetime([]);
-            string? response = (builder.Instance as AskpassApplication)?._window?.Response;
-            return code == 0 ? WriteResponse(response, output) : 1;
+            AskpassResult result = (builder.Instance as AskpassApplication)?._window?.Result ?? default;
+            return code == 0 ? WriteResult(request, result, output) : 1;
         }
         catch
         {
@@ -59,23 +56,25 @@ public sealed class AskpassApplication : Application
         }
         finally
         {
-            _prompt = "";
+            _request = null;
             Console.SetOut(output);
         }
     }
 
-    internal static int WriteResponse(string? response, TextWriter output)
-    {
-        if (response is null || !AskpassWindow.IsSingleLine(response))
-        {
-            return 1;
-        }
+    internal static AskpassRequest? CreateRequest(string[] arguments, string? hint)
+        => arguments.Length > 1 ? null : AskpassRequest.Create(arguments.Length == 0 ? "Enter your OpenSSH passphrase:" : arguments[0], hint);
 
+    internal static int WriteResult(AskpassRequest request, AskpassResult result, TextWriter output)
+    {
+        if (!AskpassProtocol.TryGetOutput(request, result, out string response, out bool appendNewline)) { return 1; }
         output.Write(response);
-        output.Write('\n');
+        if (appendNewline) { output.Write('\n'); }
         output.Flush();
         return 0;
     }
+
+    internal static int WriteResponse(string? response, TextWriter output)
+        => WriteResult(new("", AskpassPromptKind.Secret), new(AskpassDecision.Submit, response), output);
 
     internal static ThemeVariant ReadPreferredTheme()
     {

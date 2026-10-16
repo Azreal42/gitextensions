@@ -93,6 +93,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("cancellation terminates Git and descendants", CancellationAsync),
     ("askpass isolates response streams and preserves explicit helpers", AskpassAsync),
     .. AskpassInformationScenarios.All,
+    .. AskpassModesScenarios.All,
     ("ZIP and TAR exports preserve committed bytes, literal paths and revision filters", ArchiveExportsAsync),
     ("mailbox exports retain root, inclusive range and individual selection semantics", FormatPatchExportsAsync),
     ("raw patch options apply, check, reverse, stage and fix whitespace", DiffPatchFilesAsync),
@@ -187,6 +188,8 @@ if (args.Contains("--worktrees-only", StringComparer.Ordinal)) { tests = Worktre
 if (args.Contains("--submodule-add-only", StringComparer.Ordinal)) { tests = SubmoduleAddScenarios.All.ToArray(); }
 if (args.Contains("--submodule-management-only", StringComparer.Ordinal)) { tests = SubmoduleManagementScenarios.All.ToArray(); }
 if (args.Contains("--submodule-conflict-only", StringComparer.Ordinal)) { tests = SubmoduleConflictScenarios.All.ToArray(); }
+if (args.Contains("--askpass-modes-only", StringComparer.Ordinal))
+{ tests = [("askpass isolates response streams and preserves explicit helpers", AskpassAsync), .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All]; }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
 
 int failures = 0;

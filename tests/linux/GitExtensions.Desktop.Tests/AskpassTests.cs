@@ -70,6 +70,8 @@ public class AskpassTests
             ("Username for 'https://example.invalid': ", false),
             ("Password for 'https://example.invalid': ", true),
             ("Enter passphrase for key '/fake/key': ", true),
+            ("Username@fixture.invalid's password: ", true),
+            ("Bad passphrase, try again for /tmp/key-(yes/no): ", true),
             ("Unknown authentication request", true)
         })
         {
@@ -81,8 +83,8 @@ public class AskpassTests
                 Assert.That(input.PasswordChar != '\0', Is.EqualTo(masked), prompt);
                 Assert.That(input.RevealPassword, Is.False);
                 Assert.That(input.AcceptsReturn || input.AcceptsTab, Is.False);
-                Assert.That(Field<TextBlock>(window, "AskpassPrompt").Text, Is.EqualTo(prompt));
-                Assert.That(window.Width, Is.EqualTo(450));
+                Assert.That(Field<SelectableTextBlock>(window, "AskpassPrompt").Text, Is.EqualTo(prompt));
+                Assert.That(window.Width, Is.EqualTo(360));
                 Assert.That(input.Bounds.Height, Is.InRange(24, 32));
             }
             finally { window.Close(); }
