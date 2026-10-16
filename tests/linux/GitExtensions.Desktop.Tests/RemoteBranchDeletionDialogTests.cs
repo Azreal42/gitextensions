@@ -409,6 +409,100 @@ public sealed class RemoteBranchDeletionDialogTests
     }
 
     [AvaloniaTest]
+    public async Task MultipleFallbackPushUrlsAreRefusedBeforeAnyPushAndCannotOfferLocalCleanup()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("A private executable push observer requires Linux."); return; }
+        using Fixture f = await Fixture.CreateAsync();
+        await f.Repository.CreateBranchAsync("topic", checkout: false);
+        string first = await f.CreateRemoteAsync(), second = f.Output("second-fallback.git");
+        await f.GitAsync("clone", "--bare", f.Repository.Path, second);
+        await f.GitAsync("config", "--add", "remote.origin.url", second);
+        await TrackAsync(f, "local-tracking-to-keep", "origin", "topic");
+        string attempted = f.Output("fallback-push-attempted");
+        await WriteHookAsync(f, f.Repository.Path, "pre-push", "printf invoked >> " + ShellQuote(attempted) + "\nexit 0\n", "fallback-observer-hooks");
+        string? firstBefore = await RemoteRefAsync(first, "topic"), secondBefore = await RemoteRefAsync(second, "topic");
+        string localBefore = await f.Repository.ResolveRevisionAsync("refs/heads/local-tracking-to-keep");
+        Assert.That((await f.GitAsync("remote", "get-url", "--push", "--all", "origin")).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries),
+            Is.EqualTo(new[] { first, second }), "Native Git will push to both remote.url values when no pushurl is set.");
+        new ProcessDialogPreferencesStore().Save(new(false));
+        DeleteRemoteBranchDialog dialog = await ShowAsync(f, "origin/topic");
+        try
+        {
+            Assert.That(dialog.SelectedBranches.Single().ExpectedPushUrls, Is.EqualTo(new[] { first, second }));
+            Field<CheckBox>(dialog, "DeleteRemoteBranches").IsChecked = true;
+            CheckBox tracking = Field<CheckBox>(dialog, "DeleteLocalTrackingBranches");
+            Assert.That(tracking.IsEnabled, Is.True); tracking.IsChecked = true;
+            Pointer(dialog, "DeleteSelectedRemoteBranches");
+            await Until(() => dialog.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+            GitProcessDialog process = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+            Assert.That(process.Outcome!.Success, Is.False);
+            Assert.That(process.Outcome.Error, Is.Not.Null);
+            Assert.That(process.Outcome.Result, Is.Null, "Validation failed before starting any native push transaction.");
+            Assert.That(Field<TextBlock>(process, "ProcessNotice").Text, Does.Contain("push").IgnoreCase.And.Contain("origin"));
+            Assert.That(File.Exists(attempted), Is.False, "Neither server may be contacted by a push before the whole selection is validated.");
+            Pointer(process, "Ok"); await Idle(dialog);
+            Assert.That(dialog.IsVisible, Is.True);
+            Assert.That(dialog.LastError, Does.Contain("push").IgnoreCase.And.Contain("origin"));
+            Assert.That(dialog.LastDeletion, Is.Null);
+            Assert.That(dialog.SelectionText, Is.EqualTo("origin/topic"));
+            Assert.That(dialog.SelectedBranches.Select(branch => branch.Reference.ShortName), Is.EqualTo(new[] { "origin/topic" }));
+            Assert.That(dialog.OwnedWindows, Is.Empty, "A rejected multi-destination push cannot authorize deletion of local tracking branches.");
+            Assert.That(dialog.HasRepositoryChanges, Is.False);
+            Assert.That(await RemoteRefAsync(first, "topic"), Is.EqualTo(firstBefore));
+            Assert.That(await RemoteRefAsync(second, "topic"), Is.EqualTo(secondBefore));
+            Assert.That(await f.Repository.ResolveRevisionAsync("refs/heads/local-tracking-to-keep"), Is.EqualTo(localBefore));
+            Assert.That(File.Exists(attempted), Is.False);
+        }
+        finally { await CloseAsync(dialog); }
+    }
+
+    [AvaloniaTest]
+    public async Task PushInsteadOfChangedAfterTheWindowOpenedRefusesTheNewDestinationWithoutAnyPushOrLocalCleanup()
+    {
+        if (!OperatingSystem.IsLinux()) { Assert.Ignore("A private executable push observer requires Linux."); return; }
+        using Fixture f = await Fixture.CreateAsync();
+        await f.Repository.CreateBranchAsync("topic", checkout: false);
+        string first = await f.CreateRemoteAsync(), second = f.Output("rewritten-push.git");
+        await f.GitAsync("clone", "--bare", f.Repository.Path, second);
+        await TrackAsync(f, "rewrite-tracking-to-keep", "origin", "topic");
+        string attempted = f.Output("rewritten-push-attempted");
+        await WriteHookAsync(f, f.Repository.Path, "pre-push", "printf invoked >> " + ShellQuote(attempted) + "\nexit 0\n", "rewrite-observer-hooks");
+        string? firstBefore = await RemoteRefAsync(first, "topic"), secondBefore = await RemoteRefAsync(second, "topic");
+        new ProcessDialogPreferencesStore().Save(new(false));
+        DeleteRemoteBranchDialog dialog = await ShowAsync(f, "origin/topic");
+        try
+        {
+            Assert.That(dialog.SelectedBranches.Single().ExpectedPushUrls, Is.EqualTo(new[] { first }));
+            Field<CheckBox>(dialog, "DeleteRemoteBranches").IsChecked = true;
+            Field<CheckBox>(dialog, "DeleteLocalTrackingBranches").IsChecked = true;
+            await f.GitAsync("config", "url." + second + ".pushInsteadOf", first);
+            Assert.That((await f.GitAsync("config", "--get", "remote.origin.url")).StandardOutput.TrimEnd('\r', '\n'), Is.EqualTo(first),
+                "The raw URL is unchanged; the guard must re-read Git's effective push destination.");
+            Assert.That((await f.GitAsync("remote", "get-url", "--push", "--all", "origin")).StandardOutput.TrimEnd('\r', '\n'), Is.EqualTo(second));
+            Pointer(dialog, "DeleteSelectedRemoteBranches");
+            await Until(() => dialog.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
+            GitProcessDialog process = dialog.OwnedWindows.OfType<GitProcessDialog>().Single();
+            Assert.That(process.Outcome!.Error, Is.Not.Null);
+            Assert.That(process.Outcome.Success, Is.False);
+            Assert.That(process.Outcome.Result, Is.Null);
+            Assert.That(Field<TextBlock>(process, "ProcessNotice").Text, Does.Contain("destination").IgnoreCase.And.Contain("changed").And.Contain("origin"));
+            Pointer(process, "Ok"); await Idle(dialog);
+            Assert.That(dialog.IsVisible, Is.True);
+            Assert.That(dialog.LastError, Does.Contain("destination").IgnoreCase.And.Contain("changed"));
+            Assert.That(dialog.LastDeletion, Is.Null);
+            Assert.That(dialog.SelectionText, Is.EqualTo("origin/topic"));
+            Assert.That(dialog.SelectedBranches.Single().ExpectedPushUrls, Is.EqualTo(new[] { second }), "The retained selection must be refreshed after reporting the changed destination.");
+            Assert.That(dialog.OwnedWindows, Is.Empty);
+            Assert.That(dialog.HasRepositoryChanges, Is.False);
+            Assert.That(await RemoteRefAsync(first, "topic"), Is.EqualTo(firstBefore));
+            Assert.That(await RemoteRefAsync(second, "topic"), Is.EqualTo(secondBefore));
+            Assert.That((await f.Repository.GetReferencesAsync()).Any(reference => reference.Name == "refs/heads/rewrite-tracking-to-keep"), Is.True);
+            Assert.That(File.Exists(attempted), Is.False, "A URL rewrite mismatch must be rejected before the client even executes pre-push.");
+        }
+        finally { await CloseAsync(dialog); }
+    }
+
+    [AvaloniaTest]
     public Task ClosingTheProcessOwnerDuringANativeHookDrainsItsActorsAndNeverOpensLocalCleanup()
         => ClosingDuringNativeHookAsync(closeOuterOwner: false);
 

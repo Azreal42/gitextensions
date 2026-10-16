@@ -34,7 +34,7 @@ public sealed partial class GitRepository
     {
         IReadOnlyList<GitReference> references = await GetReferencesAsync(token).ConfigureAwait(false);
         GitRemote[] remotes = (await GetRemotesAsync(token).ConfigureAwait(false)).OrderByDescending(remote => remote.Name.Length).ToArray();
-        IReadOnlyList<KeyValuePair<string, string>> configuration = await GetConfigAsync("^(branch\\..*\\.(remote|merge)|remote\\..*\\.(fetch|pushurl))$", cancellationToken: token).ConfigureAwait(false);
+        IReadOnlyList<KeyValuePair<string, string>> configuration = await GetConfigAsync("^(branch\\..*\\.(remote|merge)|remote\\..*\\.fetch)$", cancellationToken: token).ConfigureAwait(false);
         Dictionary<(string Remote, string DestinationRef), string[]> localTracking = RemoteBranchTrackingLocalBranches(references, configuration);
         HashSet<string> merged = new(StringComparer.Ordinal);
         if (await HasHeadAsync(token).ConfigureAwait(false))
@@ -44,6 +44,7 @@ public sealed partial class GitRepository
         }
 
         List<GitRemoteBranchDeletionPreview> branches = [];
+        Dictionary<string, string[]> resolvedPushUrls = new(StringComparer.Ordinal);
         foreach (GitReference reference in references.Where(reference => reference.IsRemote && reference.SymbolicTarget is null))
         {
             GitRemote? remote = remotes.FirstOrDefault(remote => reference.Name.StartsWith("refs/remotes/" + remote.Name + "/", StringComparison.Ordinal));
@@ -55,9 +56,14 @@ public sealed partial class GitRepository
                 || fetchMappings.Any(mapping => mapping.StartsWith('^') && ReferencePatternMatches(mapping[1..], destinations[0]))) { continue; }
             string destination = destinations[0], branch = destination["refs/heads/".Length..];
             string[] tracking = localTracking.GetValueOrDefault((remote.Name, destination)) ?? [];
-            string[] pushUrls = configuration.Where(item => item.Key == "remote." + remote.Name + ".pushurl").Select(item => item.Value).ToArray();
-            // Native Git uses only the first fetch URL when no pushurl is configured.
-            if (pushUrls.Length == 0) { pushUrls = remote.FetchUrls.Take(1).ToArray(); }
+            if (!resolvedPushUrls.TryGetValue(remote.Name, out string[]? pushUrls))
+            {
+                // Git pushes to all fallback URLs, not just the first fetch URL. Let Git also
+                // apply insteadOf/pushInsteadOf so confirmation covers the actual destinations.
+                GitResult result = await ExecuteAsync(["remote", "get-url", "--push", "--all", "--", remote.Name], token).ConfigureAwait(false);
+                pushUrls = result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                resolvedPushUrls.Add(remote.Name, pushUrls);
+            }
             branches.Add(new(reference, remote.Name, branch, merged.Contains(reference.Name), tracking) { ExpectedPushUrls = pushUrls });
         }
         return branches.OrderBy(branch => branch.Reference.Name, StringComparer.Ordinal).ToArray();

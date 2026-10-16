@@ -18,6 +18,8 @@ internal static class RemoteBranchDeletionScenarios
         ("remote branch deletion leases atomically refuse server branches advanced after preview", LeaseAsync),
         ("remote branch deletion returns partial per-remote failures and retains native rejecting hooks", PartialFailureAsync),
         ("remote branch deletion honors the configured push URL and refuses multiple push destinations", PushUrlsAsync),
+        ("remote branch deletion refuses every batch before pushing when native Git has multiple fallback destinations", MultipleFetchUrlsAsync),
+        ("remote branch deletion resolves native URL rewrites and refuses changed effective destinations", PushUrlRewriteAsync),
         ("remote branch deletion requires atomic support and never falls back to partial deletion", AtomicSupportAsync),
         ("remote branch deletion cancellation retains streamed output and terminates its live hook descendants", CancellationAsync),
         ("remote branch deletion retains successful batches when a later remote is cancelled", PartialCancellationAsync),
@@ -230,8 +232,66 @@ internal static class RemoteBranchDeletionScenarios
             "Ambiguous multi-push destinations are refused across the entire selection before any earlier remote can mutate.");
         await f.Local.UnsetConfigAsync("remote.origin.pushurl");
         await f.Local.RunAsync(["config", "--add", "remote.origin.url", f.Second.Path]);
-        GitRemoteBranchDeletionPreview firstOnly = Select(await f.Local.GetRemoteBranchDeletionPreviewAsync(), "origin", "main");
-        Check(firstOnly.ExpectedPushUrls.SequenceEqual([f.First.Path]), "Multiple fetch URLs retain Git's actual first-URL-only push behavior.");
+        GitRemoteBranchDeletionPreview multiple = Select(await f.Local.GetRemoteBranchDeletionPreviewAsync(), "origin", "main");
+        Check(multiple.ExpectedPushUrls.SequenceEqual([f.First.Path, f.Second.Path]), "Without pushurl, every configured URL is a native push destination.");
+        await f.PublishAsync("origin", "explicit/only-second");
+        await f.Local.SetRemoteUrlAsync("origin", f.Second.Path, push: true);
+        GitRemoteBranchDeletionPreview explicitOnly = Select(await f.Local.GetRemoteBranchDeletionPreviewAsync(), "origin", "explicit/only-second");
+        Check(explicitOnly.ExpectedPushUrls.SequenceEqual([f.Second.Path]), "An explicit single pushurl replaces the whole fallback URL list.");
+        Check((await f.Local.DeleteRemoteBranchesAsync(new([explicitOnly]))).Success
+            && await HasRefAsync(f.First, explicitOnly.DestinationRef) && !await HasRefAsync(f.Second, explicitOnly.DestinationRef),
+            "An explicit push URL still permits guarded deletion only on its own server when there are multiple fetch URLs.");
+    }
+
+    private static async Task MultipleFetchUrlsAsync()
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        await f.Local.SetConfigAsync("url." + f.Second.Path + ".insteadOf", "codex-secondary:");
+        await f.Local.RunAsync(["config", "--add", "remote.origin.url", "codex-secondary:"]);
+        const string branch = "fallback/été";
+        await f.Local.RunAsync(["push", "--porcelain", "--", "origin", "HEAD:refs/heads/" + branch]);
+        Check(await RefAsync(f.First, "refs/heads/" + branch) == f.Initial && await RefAsync(f.Second, "refs/heads/" + branch) == f.Initial,
+            "A real native Git push reaches both local bare servers through remote.url fallback without any pushurl.");
+        await f.PublishAsync(Nested, "simple-first");
+        IReadOnlyList<GitRemoteBranchDeletionPreview> preview = await f.Local.GetRemoteBranchDeletionPreviewAsync();
+        Check(Select(preview, "origin", branch).ExpectedPushUrls.SequenceEqual([f.First.Path, f.Second.Path]),
+            "The preview preserves every native fallback destination after insteadOf expansion.");
+        string marker = Path.Combine(f.Seed.Root, "unexpected-multiple-url-push");
+        await f.InstallHookAsync(f.Local, "pre-push", "echo called > " + Quote(marker) + "\nexit 0\n");
+        string localBefore = await LocalStateAsync(f.Local);
+        Pipes pipes = new();
+        await ExpectAsync<InvalidOperationException>(() => f.Local.DeleteRemoteBranchesAsync(new([
+            Select(preview, Nested, "simple-first"), Select(preview, "origin", branch)]), outputReceived: pipes.Receive));
+        Check(!File.Exists(marker) && pipes.Output.Length == 0 && pipes.Error.Length == 0
+            && await HasRefAsync(f.Second, "refs/heads/simple-first")
+            && await HasRefAsync(f.First, "refs/heads/" + branch) && await HasRefAsync(f.Second, "refs/heads/" + branch)
+            && localBefore == await LocalStateAsync(f.Local),
+            "A later multi-URL remote refuses the entire composite selection before even the first single-destination remote starts a push.");
+    }
+
+    private static async Task PushUrlRewriteAsync()
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        await f.PublishAsync("origin", "rewrite/target"); await f.PublishAsync(Nested, "rewrite/target");
+        await f.PublishAsync(Nested, "simple-before-rewrite");
+        IReadOnlyList<GitRemoteBranchDeletionPreview> preview = await f.Local.GetRemoteBranchDeletionPreviewAsync();
+        GitRemoteBranchDeletionPreview selected = Select(preview, "origin", "rewrite/target");
+        await f.Local.SetConfigAsync("url." + f.Second.Path + ".pushInsteadOf", f.First.Path);
+        Check((await f.Local.GetRemotesAsync()).Single(remote => remote.Name == "origin").FetchUrls.SequenceEqual([f.First.Path]),
+            "Changing pushInsteadOf leaves the raw remote URL unchanged.");
+        string marker = Path.Combine(f.Seed.Root, "unexpected-rewritten-url-push");
+        await f.InstallHookAsync(f.Local, "pre-push", "echo called > " + Quote(marker) + "\nexit 0\n");
+        Pipes pipes = new();
+        await ExpectAsync<InvalidOperationException>(() => f.Local.DeleteRemoteBranchesAsync(new([
+            Select(preview, Nested, "simple-before-rewrite"), selected]), outputReceived: pipes.Receive));
+        Check(!File.Exists(marker) && pipes.Output.Length == 0 && pipes.Error.Length == 0
+            && await HasRefAsync(f.Second, "refs/heads/simple-before-rewrite")
+            && await HasRefAsync(f.First, selected.DestinationRef) && await HasRefAsync(f.Second, selected.DestinationRef),
+            "An effective destination changed after confirmation is rejected before any selected batch can push to either server.");
+        GitRemoteBranchDeletionPreview rewritten = Select(await f.Local.GetRemoteBranchDeletionPreviewAsync(), "origin", "rewrite/target");
+        Check(rewritten.ExpectedPushUrls.SequenceEqual([f.Second.Path]), "A refreshed preview reports the destination resolved by native Git's pushInsteadOf rule.");
+        Check((await f.Local.DeleteRemoteBranchesAsync(new([rewritten]))).Success && await HasRefAsync(f.First, selected.DestinationRef)
+            && !await HasRefAsync(f.Second, selected.DestinationRef), "After renewed confirmation, guarded deletion follows only the resolved native push destination.");
     }
 
     private static async Task AtomicSupportAsync()
