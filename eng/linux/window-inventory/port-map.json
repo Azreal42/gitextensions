@@ -135,19 +135,22 @@
     "GitUI.CommandsDialogs.BrowseDialog.FormGoToCommit": {
       "feature": "Aller à un commit",
       "group": "navigation",
-      "level": "N1",
+      "level": "N3",
       "linux": [
+        "GoToCommitDialog",
         "MainWindow@GoToRevisionAsync",
-        "Dialogs@PromptAsync"
+        "MainWindow@NavigateRevisionHistoryAsync"
       ],
-      "implemented": "Saisie d’une révision, résolution Git et sélection si visible.",
-      "remaining": "Dialogue Windows à trois champs (expression, tag, branche locale), suggestions, lecture du presse-papiers, focus/clavier, aide et erreurs distinctes à porter. Comme Windows, un commit absent de la grille filtrée requiert de retirer le filtre ; Linux affiche encore un statut au lieu du dialogue d’avertissement.",
-      "visual": "generique",
+      "implemented": "Dialogue Windows à trois champs expression/tag/branche locale, ancrages et focus cyclique ; listes natives séparées, bornées à 1 000 et sans verrou de mutation. SuggestAppend insensible à la casse, choix explicites au clavier/souris, aide originale et proposition de presse-papiers non intrusive. Go fige les sources, résout un vrai commit (tags annotés inclus) ; fermeture et changements de contexte annulent/drainent les acteurs. Activation native avant la première frappe ; retour de focus explicite après Échap/croix, navigation ciblée et Back/Forward sans recharger la grille, erreurs distinctes de révision invalide et de commit filtré, filtres conservés.",
+      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector reste une fenêtre distincte à porter.",
+      "visual": "rapproche",
       "tests": [
+        "GoToCommitDialogTests",
+        "GoToCommitFocusTests",
         "HistoryMenuParityTests"
       ],
       "adr": [
-        "0064"
+        "0073"
       ]
     },
     "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector": {

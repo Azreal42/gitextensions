@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
-  "source_digest_sha256": "92697b2e0fb924ddbc4082a9edfd5cc0ead89232f482b859674d070ed393b34a",
-  "scanned_csharp_files": 1878,
+  "code_reference_commit": "676a14e2ba34f00c52ec8df9a018474e94501de7",
+  "source_digest_sha256": "1d142e941aa99c0319ee6766ed2d2c00dd8e698229f113bb7ae01f197281836c",
+  "scanned_csharp_files": 1882,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,15 +26,15 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 78,
+    "linux_window_types": 79,
     "linux_abstract_bases": 2,
-    "linux_dynamic_factories": 30,
+    "linux_dynamic_factories": 31,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 9,
-      "N1": 16,
+      "N1": 15,
       "N2": 25,
-      "N3": 47,
+      "N3": 48,
       "NA": 2
     },
     "settings_levels": {
@@ -50,31 +50,32 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/askpass-modes-desktop-checks-20261016-05-full/desktop.trx",
-    "source_sha": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
-    "trx_sha256": "5b410e1c1f5f598c276a173da6d872d4225f30f1cf0d75a8fc2c774cde023533",
+    "trx": "artifacts/linux/goto-commit-desktop-checks-20261016-08-full/desktop.trx",
+    "source_sha": "676a14e2ba34f00c52ec8df9a018474e94501de7",
+    "trx_sha256": "40c569da3e4699c4c1024627f84d963c25979c77dffe8c48229d4fccf0d97708",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+        "source_sha": "cbfa41a8855b4db96997f21d94463ec8c00b865d",
+        "code_equivalent_to": "676a14e2ba34f00c52ec8df9a018474e94501de7",
         "passed": 550,
         "total": 550,
-        "execution_result": "artifacts/linux/askpass-modes-core-20261016-02/full-result.json",
-        "source_hashes_verified": 197,
+        "execution_result": "artifacts/linux/goto-commit-core-20261016-02/full-result.json",
+        "source_hashes_verified": 198,
+        "runtime_hashes_verified": 8,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete execution in this tranche; recorded inputs verified against final source SHA."
+        "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
       },
       "plugins": {
-        "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
-        "code_equivalent_to": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+        "source_sha": "cbfa41a8855b4db96997f21d94463ec8c00b865d",
+        "code_equivalent_to": "676a14e2ba34f00c52ec8df9a018474e94501de7",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/submodule-conflict-plugins-checks-20261016-01/plugins-result.json",
-        "source_hashes_verified": 151,
-        "runtime_hashes_reverified": 10,
+        "execution_result": "artifacts/linux/goto-commit-plugins-checks-20261016-01/plugins-result.json",
+        "source_hashes_verified": 152,
+        "runtime_hashes_verified": 10,
         "runtime_inputs_unchanged": true,
-        "reused_prior_execution": true,
-        "meaning": "Not rerun for Desktop changes: every recorded source and runtime input from the prior execution reverified unchanged, and source blobs verified against the new SHA."
+        "meaning": "Actual complete execution in this tranche; Desktop-only focus fix does not change these component sources or runtimes. All recorded inputs reverified against final source SHA."
       }
     },
     "current_linux_code_equivalent": true,
@@ -1040,27 +1041,46 @@
       "category": "windows",
       "feature": "Aller à un commit",
       "group": "navigation",
-      "level": "N1",
-      "implemented": "Saisie d’une révision, résolution Git et sélection si visible.",
-      "remaining": "Dialogue Windows à trois champs (expression, tag, branche locale), suggestions, lecture du presse-papiers, focus/clavier, aide et erreurs distinctes à porter. Comme Windows, un commit absent de la grille filtrée requiert de retirer le filtre ; Linux affiche encore un statut au lieu du dialogue d’avertissement.",
-      "visual": "generique",
+      "level": "N3",
+      "implemented": "Dialogue Windows à trois champs expression/tag/branche locale, ancrages et focus cyclique ; listes natives séparées, bornées à 1 000 et sans verrou de mutation. SuggestAppend insensible à la casse, choix explicites au clavier/souris, aide originale et proposition de presse-papiers non intrusive. Go fige les sources, résout un vrai commit (tags annotés inclus) ; fermeture et changements de contexte annulent/drainent les acteurs. Activation native avant la première frappe ; retour de focus explicite après Échap/croix, navigation ciblée et Back/Forward sans recharger la grille, erreurs distinctes de révision invalide et de commit filtré, filtres conservés.",
+      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector reste une fenêtre distincte à porter.",
+      "visual": "rapproche",
       "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.GoToCommitDialog",
+          "label": "GoToCommitDialog",
+          "source": "src/linux/GitExtensions.Desktop/GoToCommitDialog.cs",
+          "line": 13,
+          "kind": "window"
+        },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.GoToRevisionAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
-          "line": 26,
+          "line": 30,
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.Dialogs",
-          "label": "Dialogs.PromptAsync",
-          "source": "src/linux/GitExtensions.Desktop/Dialogs.cs",
-          "line": 24,
-          "kind": "component"
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.NavigateRevisionHistoryAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
+          "line": 111,
+          "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GoToCommitDialogTests.cs",
+          "test_class": "GoToCommitDialogTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GoToCommitFocusTests.cs",
+          "test_class": "GoToCommitFocusTests",
+          "passed_in_reference_run": 16,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistoryMenuParityTests.cs",
           "test_class": "HistoryMenuParityTests",
@@ -1069,7 +1089,7 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/ui/0064-original-history-menus.md"
+        ".agents/docs/adr/workflows/history/0073-go-to-commit.md"
       ]
     },
     {
@@ -9820,6 +9840,30 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.GoToCommitDialog",
+      "name": "GoToCommitDialog",
+      "source": "src/linux/GitExtensions.Desktop/GoToCommitDialog.cs",
+      "line": 13,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/GoToCommitDialog.cs",
+          "line": 13
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.BrowseDialog.FormGoToCommit",
+          "name": "FormGoToCommit",
+          "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.GourceDialog",
       "name": "GourceDialog",
       "source": "src/linux/GitExtensions.Desktop/GourceDialog.cs",
@@ -9991,7 +10035,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
-          "line": 5
+          "line": 8
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.RulesFiles.cs",
@@ -10048,7 +10092,7 @@
         {
           "id": "GitUI.CommandsDialogs.BrowseDialog.FormGoToCommit",
           "name": "FormGoToCommit",
-          "level": "N1"
+          "level": "N3"
         },
         {
           "id": "GitUI.CommandsDialogs.BrowseDialog.FormOpenDirectory",
@@ -11328,6 +11372,16 @@
       "line": 75,
       "method": "ConfirmHistoryRebaseAsync",
       "text": "new()",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.MainWindow",
+      "path": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
+      "line": 67,
+      "method": "ShowGoToCommitErrorAsync",
+      "text": "new() { Name = \"GoToCommitError\", Title = _translations.Translate(\"MessageBoxes\", \"_cannotFindRevisionCaption\", \"Text\", \"Cannot find revision\"),",
       "platform": "linux",
       "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
     },
@@ -15603,9 +15657,9 @@
   "group_levels": {
     "navigation": {
       "N0": 1,
-      "N1": 3,
+      "N1": 2,
       "N2": 2,
-      "N3": 1
+      "N3": 2
     },
     "repositories": {
       "N2": 3,

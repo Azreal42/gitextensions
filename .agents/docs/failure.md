@@ -227,7 +227,7 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | FormSettings semble porté alors que ses pages manquent | Évaluer séparément chaque page et les six paramètres CI, sans compter les bases techniques. |
 | Un prompt ou un lien externe devient une fenêtre « complète » | Distinguer N1 substitut minimal, N2 partiel, N3 fonctionnel ciblé et N4 parité entièrement auditée. Aucun N4 attribué au recensement du 16 octobre. |
 | Un test voisin certifie abusivement l’interface d’un plugin | Lier le vrai scénario et son type de preuve : tests UI Desktop ou moteur Plugins. Un test de moteur ne valide pas sa fenêtre. |
-| Une résolution de conflit fichier est assimilée à celle d’un sous-module | Le resolver refuse Base/Ours/Theirs d’un gitlink 160000 ; le staging manuel reste possible, mais FormMergeSubmodule demeure sans équivalent d’assistant. |
+| Une résolution de conflit fichier est assimilée à celle d’un sous-module | Ne pas appliquer Base/Ours/Theirs de fichier à un gitlink 160000 ; diriger vers l’assistant dédié SubmoduleConflictDialog et le dépôt enfant (ADR 0071). |
 | Le contrôle d’un CSV LF/CRLF échoue immédiatement après génération | Générer les CSV avec un terminateur LF explicite pour que le contenu relu soit identique sur Linux. |
 
 ## Suppression distante
@@ -327,3 +327,16 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Empreinte vide + Entrée déclenche le Yes par défaut | Intercepter Entrée dans le champ et ne soumettre qu’une ligne non vide ; OpenSSH valide l’empreinte exacte, MD5 compris. |
 | Fixture helper absente malgré un DISPLAY privé | Les clés d’environnement nulles sont encore des overrides explicites pour le runner. Les omettre réellement pour tester le fallback ; restaurer les variables isolées. |
 | Clic de test après un état d’erreur et avant publication du rendu | Réutiliser le pilote partagé qui stabilise les frames puis garde le hit-test strict ; ne jamais remplacer le clic par RaiseEvent. |
+
+## Aller à un commit — résolus
+
+| Piège | Règle retenue |
+| --- | --- |
+| Deux listes indépendantes se bloquent malgré --no-optional-locks | Éviter RunAsync, qui prend le verrou applicatif des mutations ; utiliser les lectures natives bornées. |
+| Le champ affiche B tandis que Go valide A | Figer les trois sources dès validation ; refuser aussi une proposition tardive du presse-papiers. |
+| Vrai clic sur la flèche provoquant une récursion fatale | Attendre la fin de PopupOpened avant de remplacer le popup natif ; garder les contrôles de fermeture et restituer saisie/sélection. |
+| Annulation manquée en rouvrant le même chemin | Annuler la séquence explicite au changement de contexte, indépendamment du texte ou de l’identité du chemin ; vérifier le token avant application. |
+| Un popup partagé reste plafonné après agrandissement | Garder le plafond MRU pour les chemins ; les références GoTo suivent la largeur réelle du champ. |
+| Headless vert, mais fermer la modale par la croix renvoie vers Start sous Openbox | Restaurer explicitement le focus de la grille après retour et drainage du dialogue, uniquement si le contexte reste valide ; conserver la preuve native rouge puis rejouer le paquet corrigé avec un vrai gestionnaire de fenêtres. |
+| Première touche consommée pour activer une modale déjà visible | Mapper la fenêtre et focaliser son champ logique ne prouvent pas l’activation OS. Activer au passage Loaded, après rendu et avant input, sans refaire le choix du champ ; vérifier la toute première frappe sous un vrai gestionnaire de fenêtres. |
+| PID masqué dans le bac à sable pris pour un acteur arrêté | Observer les PID/start-times dans le même environnement que le lancement ; attendre le vrai résultat avant toute relance. |
