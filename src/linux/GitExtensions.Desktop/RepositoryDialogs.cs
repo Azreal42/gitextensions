@@ -92,6 +92,9 @@ public abstract class RepositoryDialog : Window
     protected async Task RunAsync(string label, Func<CancellationToken, Task> action, bool changes = false, CancellationToken cancellationToken = default, bool disableInputs = true)
     {
         if (IsBusy) { return; }
+        Control? previousInput = disableInputs ? FocusManager?.GetFocusedElement() as Control : null;
+        if (previousInput is not null && (TopLevel.GetTopLevel(previousInput) != this
+            || !_inputs.Any(input => input.IsKeyboardFocusWithin))) { previousInput = null; }
         IsBusy = true;
         LastError = null;
         LastException = null;
@@ -113,12 +116,30 @@ public abstract class RepositoryDialog : Window
             if (disableInputs) { foreach (Control input in _inputs) { input.IsEnabled = true; } }
             UpdateActions();
             if (_closeWhenIdle) { _closeWhenIdle = false; Close(); }
-            else if (_pendingDiffReload is Func<Task> reload && !_lifetime.IsCancellationRequested)
+            else
             {
-                _pendingDiffReload = null;
-                await reload();
+                if (_pendingDiffReload is Func<Task> reload && !_lifetime.IsCancellationRequested)
+                {
+                    _pendingDiffReload = null;
+                    await reload();
+                }
+                RestoreInputFocus(previousInput);
             }
         }
+    }
+
+    private void RestoreInputFocus(Control? input)
+    {
+        // Disabling the focused input clears keyboard focus. Restore it only if
+        // the operation has not closed this window or focused a recovery view.
+        if (input is null || _lifetime.IsCancellationRequested || _closeWhenIdle || IsBusy
+            || !IsVisible || !IsEffectivelyEnabled || !input.Focusable
+            || !input.IsEffectivelyEnabled || !input.IsEffectivelyVisible || TopLevel.GetTopLevel(input) != this
+            || OwnedWindows.Any(child => child.IsVisible)) { return; }
+        if (FocusManager?.GetFocusedElement() is Control current && current is not Window
+            && current.Focusable && current.IsEffectivelyEnabled && current.IsEffectivelyVisible
+            && TopLevel.GetTopLevel(current) is { IsVisible: true }) { return; }
+        input.Focus();
     }
 
     protected virtual void UpdateActions() { }
