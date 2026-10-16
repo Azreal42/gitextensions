@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
-  "source_digest_sha256": "0411f30d48d789420ec18925852c7297bc5c3ece70d64588995b8ad23cbdc448",
-  "scanned_csharp_files": 1874,
+  "code_reference_commit": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+  "source_digest_sha256": "92697b2e0fb924ddbc4082a9edfd5cc0ead89232f482b859674d070ed393b34a",
+  "scanned_csharp_files": 1878,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,28 +50,31 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/submodule-conflict-desktop-checks-20261016-04-full/desktop.trx",
-    "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
-    "trx_sha256": "5e6cbeebcf898b04a8d36df66f0db490b31f7709596b2d08ff1b321758d64681",
+    "trx": "artifacts/linux/askpass-modes-desktop-checks-20261016-05-full/desktop.trx",
+    "source_sha": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+    "trx_sha256": "5b410e1c1f5f598c276a173da6d872d4225f30f1cf0d75a8fc2c774cde023533",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
-        "passed": 547,
-        "total": 547,
-        "execution_result": "artifacts/linux/submodule-conflict-core-20261016-01/full-result.json",
-        "source_hashes_verified": 195,
+        "source_sha": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+        "passed": 550,
+        "total": 550,
+        "execution_result": "artifacts/linux/askpass-modes-core-20261016-02/full-result.json",
+        "source_hashes_verified": 197,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
+        "meaning": "Actual complete execution in this tranche; recorded inputs verified against final source SHA."
       },
       "plugins": {
         "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+        "code_equivalent_to": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
         "passed": 35,
         "total": 35,
         "execution_result": "artifacts/linux/submodule-conflict-plugins-checks-20261016-01/plugins-result.json",
         "source_hashes_verified": 151,
+        "runtime_hashes_reverified": 10,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
+        "reused_prior_execution": true,
+        "meaning": "Not rerun for Desktop changes: every recorded source and runtime input from the prior execution reverified unchanged, and source blobs verified against the new SHA."
       }
     },
     "current_linux_code_equivalent": true,
@@ -1039,7 +1042,7 @@
       "group": "navigation",
       "level": "N1",
       "implemented": "Saisie d’une révision, résolution Git et sélection si visible.",
-      "remaining": "Pas du sélecteur historique complet ; pas d’extension automatique d’un historique filtré.",
+      "remaining": "Dialogue Windows à trois champs (expression, tag, branche locale), suggestions, lecture du presse-papiers, focus/clavier, aide et erreurs distinctes à porter. Comme Windows, un commit absent de la grille filtrée requiert de retirer le filtre ; Linux affiche encore un statut au lieu du dialogue d’avertissement.",
       "visual": "generique",
       "linux": [
         {
@@ -6232,11 +6235,17 @@
           "id": "GitExtensions.Linux.Desktop.AskpassWindow",
           "label": "AskpassWindow",
           "source": "src/linux/GitExtensions.Desktop/AskpassWindow.cs",
-          "line": 10,
+          "line": 12,
           "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AskpassModesWindowTests.cs",
+          "test_class": "AskpassModesWindowTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AskpassTests.cs",
           "test_class": "AskpassTests",
@@ -8733,22 +8742,41 @@
       "source": "src/native/GitExtSshAskPass/SshAskPass.rc",
       "line": 41,
       "category": "native",
-      "feature": "Saisie SSH askpass",
+      "feature": "Authentification Git/SSH askpass",
       "group": "platform",
       "level": "N3",
+      "implemented": "Fenêtre Windows compacte : titre original, prompt littéral sélectionnable, OK/Cancel ou Yes/No, thème commun et boutons traduits. Saisie masquée par défaut ; confirmations d’hôte avec empreinte exacte, hints OpenSSH confirm/none distincts, Enter/Escape/fermeture typés et réponses stdout/statuts natifs. Helpers explicites prioritaires, annulation drainée et aucune persistance de secret.",
+      "remaining": "Audit global Wayland, DPI/accessibilité, invites localisées et matériel FIDO réel non exécuté. Classification de texte nécessaire pour les questions sans hint ; prompts inconnus masqués. Nouveaux libellés Fingerprint/Use fingerprint en repli anglais du catalogue. Aucune certification de toutes les variantes natives.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs helper/hints/précédence/annulation",
+          "source": "tests/linux/GitExtensions.Core.Tests/AskpassModesScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.AskpassWindow",
           "label": "AskpassWindow",
           "source": "src/linux/GitExtensions.Desktop/AskpassWindow.cs",
-          "line": 10,
+          "line": 12,
           "kind": "window"
         }
       ],
-      "implemented": "Invite Git/SSH éphémère, mot de passe/identifiant, sans stockage de secret.",
-      "remaining": "Le choix Yes/No du helper Windows est remplacé par une saisie masquée, sans boutons Yes/No dédiés. Comparer toutes les autres invites et modes d’échec sur les bureaux Linux supportés.",
-      "visual": "adapte",
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AskpassModesWindowTests.cs",
+          "test_class": "AskpassModesWindowTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AskpassProtocolTests.cs",
+          "test_class": "AskpassProtocolTests",
+          "passed_in_reference_run": 46,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AskpassTests.cs",
           "test_class": "AskpassTests",
@@ -8757,7 +8785,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/platform/authentication/0006-native-askpass.md"
+        ".agents/docs/adr/platform/authentication/0006-native-askpass.md",
+        ".agents/docs/adr/platform/authentication/0072-askpass-decisions.md"
       ]
     }
   ],
@@ -8895,11 +8924,11 @@
       "id": "GitExtensions.Linux.Desktop.AskpassWindow",
       "name": "AskpassWindow",
       "source": "src/linux/GitExtensions.Desktop/AskpassWindow.cs",
-      "line": 10,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/AskpassWindow.cs",
-          "line": 10
+          "line": 12
         }
       ],
       "bases": [
@@ -15570,5 +15599,77 @@
       "level": "NA",
       "linux": "Récupération de l’état du paquet par APT/DPKG ; aucun dialogue de reprise MSI reproduit."
     }
-  ]
+  ],
+  "group_levels": {
+    "navigation": {
+      "N0": 1,
+      "N1": 3,
+      "N2": 2,
+      "N3": 1
+    },
+    "repositories": {
+      "N2": 3,
+      "N3": 8
+    },
+    "references": {
+      "N1": 1,
+      "N2": 1,
+      "N3": 7
+    },
+    "operations": {
+      "N1": 1,
+      "N2": 3,
+      "N3": 10
+    },
+    "network": {
+      "N2": 2,
+      "N3": 1
+    },
+    "files": {
+      "N1": 1,
+      "N2": 4,
+      "N3": 12
+    },
+    "maintenance": {
+      "N2": 1,
+      "N3": 1
+    },
+    "helpers": {
+      "N0": 2,
+      "N1": 1,
+      "N2": 4
+    },
+    "settings": {
+      "N0": 1,
+      "N1": 3
+    },
+    "hosting": {
+      "N0": 3,
+      "N1": 1
+    },
+    "information": {
+      "N0": 1,
+      "N1": 5,
+      "N2": 2,
+      "N3": 1
+    },
+    "platform": {
+      "N3": 1,
+      "NA": 2
+    },
+    "plugins": {
+      "N0": 1,
+      "N2": 3,
+      "N3": 5
+    },
+    "settings-pages": {
+      "N0": 10,
+      "N1": 9,
+      "N2": 6,
+      "NA": 1
+    },
+    "ci-settings": {
+      "N0": 6
+    }
+  }
 }

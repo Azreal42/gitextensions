@@ -1,12 +1,12 @@
 {
-  "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
-  "trx": "artifacts/linux/submodule-conflict-desktop-checks-20261016-04-full/desktop.trx",
-  "trx_sha256": "5e6cbeebcf898b04a8d36df66f0db490b31f7709596b2d08ff1b321758d64681",
+  "source_sha": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+  "trx": "artifacts/linux/askpass-modes-desktop-checks-20261016-05-full/desktop.trx",
+  "trx_sha256": "5b410e1c1f5f598c276a173da6d872d4225f30f1cf0d75a8fc2c774cde023533",
   "meaning": "Frozen results of actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "1020",
-    "executed": "1020",
-    "passed": "1020",
+    "total": "1078",
+    "executed": "1078",
+    "passed": "1078",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -24,6 +24,12 @@
   "classes": {
     "AddSubmoduleDialogTests": {
       "Passed": 17
+    },
+    "AskpassModesWindowTests": {
+      "Passed": 12
+    },
+    "AskpassProtocolTests": {
+      "Passed": 46
     },
     "AskpassTests": {
       "Passed": 11
@@ -391,22 +397,25 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
-      "passed": 547,
-      "total": 547,
-      "execution_result": "artifacts/linux/submodule-conflict-core-20261016-01/full-result.json",
-      "source_hashes_verified": 195,
+      "source_sha": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
+      "passed": 550,
+      "total": 550,
+      "execution_result": "artifacts/linux/askpass-modes-core-20261016-02/full-result.json",
+      "source_hashes_verified": 197,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
+      "meaning": "Actual complete execution in this tranche; recorded inputs verified against final source SHA."
     },
     "plugins": {
       "source_sha": "be0ab84170e55ceedb291e7c2d7e7621795b73ed",
+      "code_equivalent_to": "7cebbcc1a6e49e7a7e88d6217959f00700335d51",
       "passed": 35,
       "total": 35,
       "execution_result": "artifacts/linux/submodule-conflict-plugins-checks-20261016-01/plugins-result.json",
       "source_hashes_verified": 151,
+      "runtime_hashes_reverified": 10,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete execution in this tranche; all recorded inputs verified against final source SHA."
+      "reused_prior_execution": true,
+      "meaning": "Not rerun for Desktop changes: every recorded source and runtime input from the prior execution reverified unchanged, and source blobs verified against the new SHA."
     }
   }
 }

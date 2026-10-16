@@ -1,10 +1,12 @@
 # Inventaire Windows → Linux et niveau de portage
 
-Référence du code : `be0ab84170e55ceedb291e7c2d7e7621795b73ed`. Recensement du 16 octobre 2026 ; 1874 fichiers C# du checkout analysés avec Roslyn (suivis et non ignorés), configurations Release et Debug des sources Windows et Linux. Aucune syntaxe en erreur.
+Référence du code : `7cebbcc1a6e49e7a7e88d6217959f00700335d51`. Recensement du 16 octobre 2026 ; 1878 fichiers C# du checkout analysés avec Roslyn (suivis et non ignorés), configurations Release et Debug des sources Windows et Linux. Aucune syntaxe en erreur.
 
 Le périmètre couvre les classes de fenêtres WinForms de `src/app` et `src/plugins`, leurs bases héritées et parties Designer, la ressource C++ askpass, les pages de paramètres et les constructions de fenêtres sans classe dédiée. Les boîtes système sont recensées par site dans le CSV annexe. L’installateur Windows et ses références WiX sont listés séparément, avec leur adaptation au paquet Debian. Les exécutables externes, les tests/démos et les popups internes de bibliothèques tierces ne sont pas comptés comme des fenêtres applicatives portées.
 
 **Recensement exhaustif des types et ressources de fenêtres de ce périmètre ; évaluation par écran, pas audit de chaque bouton ni de toutes les valeurs possibles d’un dialogue.** Une adaptation dans Browse ou un prompt générique n’est pas comptée comme une fenêtre Windows intégralement portée. `N3` ne signifie pas 100 % et aucune entrée n’est `N4`. Les 13 familles de migration du TODO restent ouvertes.
+
+Accès direct : [fenêtres et dialogues](#fenêtres-windows-et-équivalents-linux), [pages de paramètres](#chaque-page-de-paramètres-windows), [fenêtres Linux](#inventaire-inverse-de-toutes-les-fenêtres-avalonia), [installateur](#installateur-windows-et-équivalent-debian), [CSV filtrable](windows-linux-window-inventory.csv).
 
 ## Bilan
 
@@ -15,7 +17,27 @@ Le périmètre couvre les classes de fenêtres WinForms de `src/app` et `src/plu
 
 À part : **103 types WinForms** dont 5 bases de support ; **78 types Window Avalonia** dont 2 bases abstraites, et **30 fabriques de fenêtres Linux**. Les 4 bases de pages de paramètres et 2 hôtes WinForms techniques sont exclus des comptes métier.
 
-Ces comptes mesurent des écrans, pas une part du travail : une boîte de titre et Browse pèsent chacun une ligne. Aucun pourcentage global de completion n’est déduit de ces nombres.
+Ces comptes mesurent des écrans, pas une part du travail : une boîte de titre et Browse pèsent chacun une ligne. Aucun pourcentage global de complétion n’est déduit de ces nombres.
+
+### Répartition par famille
+
+| Famille | Total | N0 | N1 | N2 | N3 | N4 | NA |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Navigation et historique | 7 | 1 | 3 | 2 | 1 | 0 | 0 |
+| Dépôts, worktrees et sous-modules | 11 | 0 | 0 | 3 | 8 | 0 | 0 |
+| Branches, tags et références | 9 | 0 | 1 | 1 | 7 | 0 | 0 |
+| Commit et opérations sur l’historique | 14 | 0 | 1 | 3 | 10 | 0 | 0 |
+| Remotes et réseau | 3 | 0 | 0 | 2 | 1 | 0 | 0 |
+| Fichiers, lecteurs et exports | 17 | 0 | 1 | 4 | 12 | 0 | 0 |
+| Maintenance | 2 | 0 | 0 | 1 | 1 | 0 | 0 |
+| Sélecteurs, prompts et processus | 7 | 2 | 1 | 4 | 0 | 0 | 0 |
+| Fenêtres des paramètres | 4 | 1 | 3 | 0 | 0 | 0 | 0 |
+| Hébergement et CI | 4 | 3 | 1 | 0 | 0 | 0 | 0 |
+| Aide, diagnostic et informations | 9 | 1 | 5 | 2 | 1 | 0 | 0 |
+| Adaptations de plateforme | 3 | 0 | 0 | 0 | 1 | 0 | 2 |
+| Fenêtres des plugins | 9 | 1 | 0 | 3 | 5 | 0 | 0 |
+| Pages de paramètres | 26 | 10 | 9 | 6 | 0 | 0 | 1 |
+| Pages de paramètres CI | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 
 ## Lecture des niveaux
 
@@ -29,7 +51,7 @@ Ces comptes mesurent des écrans, pas une part du travail : une boîte de titre 
 
 Aspect : `rapproche` = disposition/éléments Windows repris sur un périmètre ; `adapte` = interface native différente ; `integre` = fonction dans un autre écran/menu ; `generique` = prompt/UI commune ; `externe` = CLI/navigateur/éditeur ; `systeme` = dialogue du bureau ou adaptation OS. Aucune de ces mentions n’atteste une parité visuelle intégrale.
 
-Validation : les liens de tests signalent des scénarios associés présents dans la suite de référence **1020/1020 Desktop**, source `be0ab8417`. Ils ne valent pas audit de toute la fenêtre. Les scénarios Plugins explicitement liés sont rattachés à leur lot de référence ; un test du moteur ne valide pas son interface. Les ADR précisent les périmètres natifs acceptés et encore ouverts ; les preuves anciennes ne sont pas transférées à une nouvelle source. Les dialogues recensés `N0` restent absents même si leur moteur ou un contrôle voisin existe.
+Validation : les liens de tests signalent des scénarios associés présents dans la suite de référence **1078/1078 Desktop**, source `7cebbcc1a`. Ils ne valent pas audit de toute la fenêtre. Les scénarios Plugins explicitement liés sont rattachés à leur lot de référence ; un test du moteur ne valide pas son interface. Les ADR précisent les périmètres natifs acceptés et encore ouverts ; les preuves anciennes ne sont pas transférées à une nouvelle source. Les dialogues recensés `N0` restent absents même si leur moteur ou un contrôle voisin existe.
 
 ## Écarts prioritaires révélés par le relevé
 
@@ -46,7 +68,7 @@ Validation : les liens de tests signalent des scénarios associés présents dan
 | Fenêtre Windows / usage | Équivalent Linux | Niveau / aspect | Présent et écarts restants | Preuves |
 | --- | --- | --- | --- | --- |
 | [FormBrowse](../../src/app/GitUI/CommandsDialogs/FormBrowse.cs#L41)<br>Navigation principale, historique, menus, fichiers | [MainWindow](../../src/linux/GitExtensions.Desktop/MainWindow.cs#L15) | **N2** / rapproche | Grille/graphe, sélection, panneaux, menus et focus ; lectures annulables et disposition classique.<br>**Reste :** Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. | [BrowserSelectionTests](../../tests/linux/GitExtensions.Desktop.Tests/BrowserSelectionTests.cs)<br>[FilePaneParityTests](../../tests/linux/GitExtensions.Desktop.Tests/FilePaneParityTests.cs)<br>+2 classes (JSON)<br>ADR [0031](../../.agents/docs/adr/desktop/browse/0031-windows-photo-reference.md), [0058](../../.agents/docs/adr/desktop/browse/0058-revision-context-menu.md), [0061](../../.agents/docs/adr/ui/0061-compact-navigation-tree.md), [0062](../../.agents/docs/adr/ui/0062-classic-file-panes.md), [0063](../../.agents/docs/adr/ui/0063-scoped-browser-selection-reads.md), [0064](../../.agents/docs/adr/ui/0064-original-history-menus.md) |
-| [FormGoToCommit](../../src/app/GitUI/CommandsDialogs/BrowseDialog/FormGoToCommit.cs#L7)<br>Aller à un commit | [MainWindow.GoToRevisionAsync](../../src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs#L26)<br>[Dialogs.PromptAsync](../../src/linux/GitExtensions.Desktop/Dialogs.cs#L24) | **N1** / generique | Saisie d’une révision, résolution Git et sélection si visible.<br>**Reste :** Pas du sélecteur historique complet ; pas d’extension automatique d’un historique filtré. | [HistoryMenuParityTests](../../tests/linux/GitExtensions.Desktop.Tests/HistoryMenuParityTests.cs)<br>ADR [0064](../../.agents/docs/adr/ui/0064-original-history-menus.md) |
+| [FormGoToCommit](../../src/app/GitUI/CommandsDialogs/BrowseDialog/FormGoToCommit.cs#L7)<br>Aller à un commit | [MainWindow.GoToRevisionAsync](../../src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs#L26)<br>[Dialogs.PromptAsync](../../src/linux/GitExtensions.Desktop/Dialogs.cs#L24) | **N1** / generique | Saisie d’une révision, résolution Git et sélection si visible.<br>**Reste :** Dialogue Windows à trois champs (expression, tag, branche locale), suggestions, lecture du presse-papiers, focus/clavier, aide et erreurs distinctes à porter. Comme Windows, un commit absent de la grille filtrée requiert de retirer le filtre ; Linux affiche encore un statut au lieu du dialogue d’avertissement. | [HistoryMenuParityTests](../../tests/linux/GitExtensions.Desktop.Tests/HistoryMenuParityTests.cs)<br>ADR [0064](../../.agents/docs/adr/ui/0064-original-history-menus.md) |
 | [FormLog](../../src/app/GitUI/CommandsDialogs/FormLog.cs#L5)<br>Historique et diff dans une fenêtre dédiée | [MainWindow](../../src/linux/GitExtensions.Desktop/MainWindow.cs#L15) | **N2** / integre | Historique et diffs disponibles dans Browse.<br>**Reste :** Pas de fenêtre Log autonome ; comparer les variantes, menus et transitions propres à FormLog. | [MainWindowClassicTests](../../tests/linux/GitExtensions.Desktop.Tests/MainWindowClassicTests.cs) |
 | [FormQuickGitRefSelector](../../src/app/GitUI/UserControls/RevisionGrid/FormQuickGitRefSelector.cs#L6)<br>Sélection rapide de référence | [MainWindow.BranchSuggestionButton](../../src/linux/GitExtensions.Desktop/MainWindow.BranchFilter.cs#L199)<br>[CheckoutBranchDialog](../../src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs#L11) | **N1** / integre | Menus et combos de branches/références dans des workflows précis.<br>**Reste :** Sélecteur rapide autonome réutilisable et toutes ses interactions non portés. | [BranchHistoryFilterTests](../../tests/linux/GitExtensions.Desktop.Tests/BranchHistoryFilterTests.cs)<br>[BranchMenuTests](../../tests/linux/GitExtensions.Desktop.Tests/BranchMenuTests.cs)<br>+7 classes (JSON) |
 | [FormQuickStringSelector](../../src/app/GitUI/UserControls/RevisionGrid/FormQuickStringSelector.cs#L5)<br>Choix rapide de texte utilisé par les scripts | — | **N0** / absent | Aucun équivalent de ce sélecteur de scripts.<br>**Reste :** Fenêtre, filtrage et branchement du moteur de scripts à porter. | Code seul / absence constatée |
@@ -189,7 +211,7 @@ Validation : les liens de tests signalent des scénarios associés présents dan
 | --- | --- | --- | --- | --- |
 | [FormFixHome](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Pages/FormFixHome.cs#L6)<br>Correction du HOME Windows | — | **NA** / systeme | Linux utilise le HOME/XDG de la session.<br>**Reste :** Assistant spécifique à la configuration Windows ; sans reproduction directe prévue sur Linux. | Code seul / absence constatée |
 | [FormPuttyError](../../src/app/GitUI/FormPuttyError.cs#L8)<br>Diagnostic PuTTY/Plink | [GitProcessDialog](../../src/linux/GitExtensions.Desktop/GitProcessDialog.cs#L28) | **NA** / systeme | Git/OpenSSH du système et sortie d’erreur du processus.<br>**Reste :** PuTTY/Plink est spécifique au workflow Windows ; pas d’assistant PuTTY Linux prévu. | Code seul / absence constatée |
-| [IDD_ASK_PASSWORD](../../src/native/GitExtSshAskPass/SshAskPass.rc#L41)<br>Saisie SSH askpass | [AskpassWindow](../../src/linux/GitExtensions.Desktop/AskpassWindow.cs#L10) | **N3** / adapte | Invite Git/SSH éphémère, mot de passe/identifiant, sans stockage de secret.<br>**Reste :** Le choix Yes/No du helper Windows est remplacé par une saisie masquée, sans boutons Yes/No dédiés. Comparer toutes les autres invites et modes d’échec sur les bureaux Linux supportés. | [AskpassTests](../../tests/linux/GitExtensions.Desktop.Tests/AskpassTests.cs)<br>ADR [0006](../../.agents/docs/adr/platform/authentication/0006-native-askpass.md) |
+| [IDD_ASK_PASSWORD](../../src/native/GitExtSshAskPass/SshAskPass.rc#L41)<br>Authentification Git/SSH askpass | [AskpassWindow](../../src/linux/GitExtensions.Desktop/AskpassWindow.cs#L12) | **N3** / rapproche | Fenêtre Windows compacte : titre original, prompt littéral sélectionnable, OK/Cancel ou Yes/No, thème commun et boutons traduits. Saisie masquée par défaut ; confirmations d’hôte avec empreinte exacte, hints OpenSSH confirm/none distincts, Enter/Escape/fermeture typés et réponses stdout/statuts natifs. Helpers explicites prioritaires, annulation drainée et aucune persistance de secret.<br>**Reste :** Audit global Wayland, DPI/accessibilité, invites localisées et matériel FIDO réel non exécuté. Classification de texte nécessaire pour les questions sans hint ; prompts inconnus masqués. Nouveaux libellés Fingerprint/Use fingerprint en repli anglais du catalogue. Aucune certification de toutes les variantes natives. | [AskpassModesWindowTests](../../tests/linux/GitExtensions.Desktop.Tests/AskpassModesWindowTests.cs)<br>[AskpassProtocolTests](../../tests/linux/GitExtensions.Desktop.Tests/AskpassProtocolTests.cs)<br>+1 classes (JSON)<br>[Scénarios natifs helper/hints/précédence/annulation](../../tests/linux/GitExtensions.Core.Tests/AskpassModesScenarios.cs#L1)<br>ADR [0006](../../.agents/docs/adr/platform/authentication/0006-native-askpass.md), [0072](../../.agents/docs/adr/platform/authentication/0072-askpass-decisions.md) |
 
 ### Fenêtres des plugins
 
@@ -237,7 +259,7 @@ Validation : les liens de tests signalent des scénarios associés présents dan
 | [ScriptsSettingsPage](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Pages/ScriptsSettingsPage.cs#L16)<br>Scripts et événements | — | **N0** / absent | Modèles/préparation et préférences du Core seulement.<br>**Reste :** Page d’édition, exécution, événements et branchement UI non portés. | Code seul / absence constatée |
 | [ShellExtensionSettingsPage](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Pages/ShellExtensionSettingsPage.cs#L7)<br>Extension de l’Explorateur Windows | [gitextensions.desktop](../../setup/linux/gitextensions.desktop#L1) | **NA** / integre | Launcher desktop Linux livré.<br>**Reste :** Paramètres Explorer spécifiques Windows ; intégration gestionnaire de fichiers Linux distincte. | Code seul / absence constatée |
 | [SortingSettingsPage](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Pages/SortingSettingsPage.cs#L9)<br>Règles de tri | [MainWindow.ViewHistoryCommands](../../src/linux/GitExtensions.Desktop/MainWindow.HistoryMenus.cs#L41) | **N1** / integre | Tris d’historique par topologie/date/auteur dans View.<br>**Reste :** Page absente : ordre/priorités des branches et remotes ; le repli GitDefault Windows sans option reste à aligner (Linux ajoute --date-order). | Code seul / absence constatée<br>[Options de tri Git Linux](../../src/linux/GitExtensions.Core/GitLogQuery.cs#L58)<br>[Options de tri Git Windows](../../src/app/GitCommands/RevisionReader.cs#L392) |
-| [SshSettingsPage](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Pages/SshSettingsPage.cs#L8)<br>Configuration SSH/PuTTY | [GitProcessDialog](../../src/linux/GitExtensions.Desktop/GitProcessDialog.cs#L28)<br>[AskpassWindow](../../src/linux/GitExtensions.Desktop/AskpassWindow.cs#L10) | **N1** / integre | Git/OpenSSH, helpers et askpass système.<br>**Reste :** Page de choix/configuration SSH et gestion guidée des outils absente ; PuTTY spécifique Windows. | [AskpassTests](../../tests/linux/GitExtensions.Desktop.Tests/AskpassTests.cs) |
+| [SshSettingsPage](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Pages/SshSettingsPage.cs#L8)<br>Configuration SSH/PuTTY | [GitProcessDialog](../../src/linux/GitExtensions.Desktop/GitProcessDialog.cs#L28)<br>[AskpassWindow](../../src/linux/GitExtensions.Desktop/AskpassWindow.cs#L12) | **N1** / integre | Git/OpenSSH, helpers et askpass système.<br>**Reste :** Page de choix/configuration SSH et gestion guidée des outils absente ; PuTTY spécifique Windows. | [AskpassModesWindowTests](../../tests/linux/GitExtensions.Desktop.Tests/AskpassModesWindowTests.cs)<br>[AskpassTests](../../tests/linux/GitExtensions.Desktop.Tests/AskpassTests.cs) |
 | [PluginSettingsPage](../../src/app/GitUI/CommandsDialogs/SettingsDialog/Plugins/PluginSettingsPage.cs#L10)<br>Paramètres génériques des plugins | [PluginDialog](../../src/linux/GitExtensions.Desktop/PluginDialog.cs#L13)<br>[MainWindow.ShowPluginAsync](../../src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs#L32) | **N2** / integre | Paramètres persistants des huit plugins et services BackgroundFetch/AutoCompile.<br>**Reste :** Pas de page intégrée pour tous les plugins Windows ; providers CI absents. | Code seul / absence constatée |
 | [JenkinsSettingsUserControl](../../src/plugins/BuildServerIntegration/JenkinsIntegration/Settings/JenkinsSettingsUserControl.cs#L11)<br>Paramètres CI : Jenkins | — | **N0** / absent | Pas de fournisseur Jenkins porté.<br>**Reste :** Page de paramètres, authentification et fournisseur CI à porter. | Code seul / absence constatée |
 | [TeamCitySettingsUserControl](../../src/plugins/BuildServerIntegration/TeamCityIntegration/Settings/TeamCitySettingsUserControl.cs#L14)<br>Paramètres CI : TeamCity | — | **N0** / absent | Pas de fournisseur TeamCity porté.<br>**Reste :** Page de paramètres, authentification et fournisseur CI à porter. | Code seul / absence constatée |
@@ -267,7 +289,7 @@ Cette vue empêche de perdre les variantes Linux et les confirmations sans class
 | [AddToGitIgnoreDialog](../../src/linux/GitExtensions.Desktop/AddToGitIgnoreDialog.cs#L14) | FormAddToGitIgnore (N3) |
 | [ApplyPatchDialog](../../src/linux/GitExtensions.Desktop/ApplyPatchDialog.cs#L12) | FormApplyPatch (N3), FormViewPatch (N2) |
 | [ArchiveDialog](../../src/linux/GitExtensions.Desktop/ArchiveDialog.cs#L10) | FormArchive (N3) |
-| [AskpassWindow](../../src/linux/GitExtensions.Desktop/AskpassWindow.cs#L10) | SshSettingsPage (N1), IDD_ASK_PASSWORD (N3); Équivalent de la ressource C++ native SSH askpass. |
+| [AskpassWindow](../../src/linux/GitExtensions.Desktop/AskpassWindow.cs#L12) | SshSettingsPage (N1), IDD_ASK_PASSWORD (N3); Équivalent de la ressource C++ native SSH askpass. |
 | [BisectDialog](../../src/linux/GitExtensions.Desktop/RepositoryDialogs.cs#L193) | FormBisect (N3) |
 | [BlameDialog](../../src/linux/GitExtensions.Desktop/BlameDialog.cs#L11) | FormBlame (N3), AppearanceSettingsPage (N1), BlameViewerSettingsPage (N2) |
 | [CheckoutBranchDialog](../../src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs#L11) | FormCheckoutBranch (N3), FormMergeSubmodule (N3), FormQuickGitRefSelector (N1) |
@@ -431,4 +453,4 @@ Le [CSV des 366 sites système/confirmations](windows-linux-system-dialog-sites.
 - [Générateur et commande de contrôle](../../eng/linux/window-inventory/README.md).
 - [Suivi de migration](todo.md).
 
-Réconciliation : 189 fichiers Designer classés (fenêtre, page, contrôle/ressource), héritage transitif, classes partielles fusionnées, ressource askpass C++ ajoutée. Le générateur échoue si un nouveau type Windows/page n’a pas d’évaluation ou si un équivalent Linux/membre référencé disparaît. Le digest des 1874 fichiers et la référence Git sont dans le JSON.
+Réconciliation : 189 fichiers Designer classés (fenêtre, page, contrôle/ressource), héritage transitif, classes partielles fusionnées, ressource askpass C++ ajoutée. Le générateur échoue si un nouveau type Windows/page n’a pas d’évaluation ou si un équivalent Linux/membre référencé disparaît. Le digest des 1878 fichiers et la référence Git sont dans le JSON.

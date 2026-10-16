@@ -316,3 +316,14 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Un checkout natif réussi puis annulé stage quand même le parent | LastResult est rempli avant les prompts imbriqués. Attendre Succeeded après tout le workflow et relire Current ; Cancel ne stage rien. |
 | Pull, Stash ou Apply Patch traitent un gitlink comme un fichier | Constructeurs directs de PatchConflictDialog. Routage partagé selon les stages réels, gardes moteur et refresh du parent après retour ; aucun double add ni commit/Continue implicite. |
 | Close reste bloqué après un add ou un hook déjà exécuté | Les vérifications postmutation doivent garder le token annulable et drainer les acteurs. Conserver les effets natifs, jamais fabriquer une réussite ni restaurer silencieusement l’index. |
+
+
+## Askpass — modes natifs
+
+| Piège | Intention conservée |
+| --- | --- |
+| `confirm` avec stdout vide et exit 0 autorise l’usage d’une clé | No/Cancel/fermeture échoue ; une notification `none` n’est pas une demande d’autorisation. |
+| `(yes/no)` dans une URL/clé, ou nom SSH commençant par Username | Reconnaître les vrais formats Git/SSH et retries de passphrase avant les marqueurs de question ; inconnu reste masqué. |
+| Empreinte vide + Entrée déclenche le Yes par défaut | Intercepter Entrée dans le champ et ne soumettre qu’une ligne non vide ; OpenSSH valide l’empreinte exacte, MD5 compris. |
+| Fixture helper absente malgré un DISPLAY privé | Les clés d’environnement nulles sont encore des overrides explicites pour le runner. Les omettre réellement pour tester le fallback ; restaurer les variables isolées. |
+| Clic de test après un état d’erreur et avant publication du rendu | Réutiliser le pilote partagé qui stabilise les frames puis garde le hit-test strict ; ne jamais remplacer le clic par RaiseEvent. |

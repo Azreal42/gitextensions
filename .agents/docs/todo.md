@@ -6,14 +6,16 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `be0ab8417` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 16 N1 substituts minimaux, 25 N2 partielles, 47 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `7cebbcc1a` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 9 N0 absentes, 16 N1 substituts minimaux, 25 N2 partielles, 47 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 78 types Window Avalonia (dont 2 bases abstraites), 30 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
 
-Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; boutons Yes/No de l’askpass natif (la version Linux demande encore une saisie). Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Askpass : saisie/Yes-No/empreinte, autorisation de clé et notification distinctes ; protocole natif, fermeture sûre et vrai helper vérifiés. ADR 0072 ; audit global ouvert.
 
 - [x] Assistant de conflit de sous-module : quatre révisions Windows, Browse indépendant, checkout commun contenant les deux côtés, un seul staging vérifié ; routage partagé et fermeture drainée. ADR 0071 ; audit GUI natif étendu ouvert.
 
@@ -246,4 +248,17 @@ Source `be0ab8417` : FormMergeSubmodule dédié, Base/Local/Remote de l’index 
 
 [Candidat Debian](../../artifacts/linux/snapshots/be0ab8417/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `3b52343fd6de69e8279c082ec8100c789b809cab65edd7284196f1beaa193c37` : installation et démarrage isolés vérifiés. Remplace `aca93bcea` avant installation hôte ; nouveau candidat non installé sur la machine, aucune application utilisateur arrêtée et aucun push.
 
-FormMergeSubmodule passe N0 → N3 ciblé testé. Restent traductions longues, DPI/accessibilité et audit GUI natif des variantes ; une branche/sélection modifiée requiert une nouvelle lecture, les effets natifs partiels restent visibles. Les 13 familles et l’audit final restent ouverts, aucun N4. Prochain écart : choix Yes/No natif askpass.
+FormMergeSubmodule passe N0 → N3 ciblé testé. Restent traductions longues, DPI/accessibilité et audit GUI natif des variantes ; une branche/sélection modifiée requiert une nouvelle lecture, les effets natifs partiels restent visibles. Les 13 familles et l’audit final restent ouverts, aucun N4. Choix Yes/No natif askpass : tranche suivante, ADR 0072.
+
+
+## Questions et notifications askpass — 16 octobre 2026
+
+Source `7cebbcc1a` : six modes, disposition compacte Windows, prompt sélectionnable, empreinte visible et Enter sans approbation implicite ; réponses exactes et statuts distincts pour Yes/No, Cancel et notification. Helpers utilisateur prioritaires, annulation drainée ; aucun changement de GitRunner. ADR 0072.
+
+[Validation](../../artifacts/linux/snapshots/7cebbcc1a/proofs/source-validation.json) : **1078 Desktop + 550 Core exécutés**, zéro échec/ignoré ; 78 ciblés UI, 8 Core. Les **35 Plugins antérieurs** sont réutilisés après vérification des 151 sources et 10 fichiers runtime inchangés : 1663 scénarios distincts couverts, dont 1628 exécutés dans cette tranche. Le full02 interrompu après un échec de clic est conservé sans acceptation ; le full05 final utilise le pilote strict partagé et un superviseur avec code de sortie réel.
+
+[13 rendus](../../artifacts/linux/snapshots/7cebbcc1a/proofs/headless-visual-review.json) inspectés. [14 parcours du helper du paquet exact](../../artifacts/linux/snapshots/7cebbcc1a/proofs/native-askpass-package/results.json) et [12 cas de permission de l’OpenSSH installé](../../artifacts/linux/snapshots/7cebbcc1a/proofs/openssh-permission-oracle.json) vérifiés en isolation ; stdout/statuts, absence de processus restants et payload inchangé contrôlés. Pas d’audit Wayland, matériel FIDO, DPI/accessibilité ni SSH distant réel ; nouveaux libellés d’empreinte en repli anglais.
+
+[Candidat Debian](../../artifacts/linux/snapshots/7cebbcc1a/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `2503c6cabbbe5177c79114b3460c0b2aceb989086f88f4a811d93cfb081cc531` : cinq étapes de construction/extraction/installation isolée réussies. Non installé sur l’hôte, aucun push. Les 13 familles restent ouvertes, aucun N4 ; niveau askpass N3 ciblé étendu, page SSH toujours N1.
+
+Suite en préparation dans un checkout isolé : dialogue Go to commit à trois champs, annulation des lectures et avertissement de commit filtré. Non intégré à cette référence ; FormGoToCommit conserve N1.

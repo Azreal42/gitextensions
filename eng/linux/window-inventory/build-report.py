@@ -132,6 +132,13 @@ ADR={}
 for p in (DOCS/'adr').rglob('*.md'):
     number=p.name.split('-')[0]
     ADR.setdefault(number,[]).append(str(p.relative_to(ROOT)))
+
+def progress_review(review):
+    progress=review.get('in_progress')
+    if not progress: return None
+    targets=[target(x) for x in progress['linux']]
+    return dict(progress,linux=targets,tests=evidence({'name':'work in progress'},progress,targets))
+
 rows=[]
 for t in sorted(WINDOWS+SETTINGS,key=lambda t:t['id']):
     review=MAP['entries'][t['id']]
@@ -145,9 +152,7 @@ for t in sorted(WINDOWS+SETTINGS,key=lambda t:t['id']):
         adr+=ADR[number]
     for ref in review.get('extra_evidence',[]):
         assert (ROOT/ref['source']).is_file() and 1<=ref['line']<=len((ROOT/ref['source']).read_text(encoding='utf-8-sig').splitlines()),ref
-    progress=review.get('in_progress')
-    if progress:
-        progress=dict(progress,linux=[target(x) for x in progress['linux']],tests=evidence(t,progress,[target(x) for x in progress['linux']]))
+    progress=progress_review(review)
     rows.append(dict(**plain(t),category='settings' if t in SETTINGS else 'windows',**{k:v for k,v in review.items() if k not in ('linux','tests','adr','in_progress')},linux=targets,tests=tests,adr=adr,**({'in_progress':progress} if progress else {})))
 # C++ askpass is an actual source-owned dialog, outside the C# inheritance tree.
 NATIVE=[]
@@ -155,9 +160,22 @@ for path in sorted(ROOT.glob('src/native/**/*.rc')):
     for i,line in enumerate(path.read_text(encoding='utf-8-sig',errors='strict').splitlines(),1):
         m=re.match(r'\s*(\w+)\s+DIALOG(?:EX)?\s',line)
         if m:
-            assert m.group(1)=='IDD_ASK_PASSWORD', ('New native dialog needs review',path,i)
-            NATIVE.append(dict(id='native:'+m.group(1),name=m.group(1),source=str(path.relative_to(ROOT)),line=i,category='native',feature='Saisie SSH askpass',group='platform',level='N3',linux=[target('AskpassWindow')],implemented='Invite Git/SSH éphémère, mot de passe/identifiant, sans stockage de secret.',remaining='Le choix Yes/No du helper Windows est remplacé par une saisie masquée, sans boutons Yes/No dédiés. Comparer toutes les autres invites et modes d’échec sur les bureaux Linux supportés.',visual='adapte',tests=[dict(source='tests/linux/GitExtensions.Desktop.Tests/AskpassTests.cs',test_class='AskpassTests',passed_in_reference_run=EXECUTED.get('AskpassTests',[]).count('Passed'),results_present=bool(EXECUTED.get('AskpassTests')))],adr=ADR['0006']))
-assert len(NATIVE)==1, 'Expected the separately reviewed native askpass resource'
+            native_id='native:'+m.group(1)
+            assert native_id in MAP['native_entries'], ('New native dialog needs review',path,i)
+            review=MAP['native_entries'][native_id]
+            assert review['level'] in MAP['levels'],native_id
+            targets=[target(x) for x in review['linux']]
+            tests=evidence({'name':m.group(1)},review,targets)
+            if review['level']=='N3': assert targets and any(x['results_present'] for x in tests), ('N3 without executed targeted evidence',native_id)
+            adr=[]
+            for number in review.get('adr',[]):
+                assert len(ADR.get(number,[]))==1,('Unknown ADR',number)
+                adr+=ADR[number]
+            for ref in review.get('extra_evidence',[]):
+                assert (ROOT/ref['source']).is_file() and 1<=ref['line']<=len((ROOT/ref['source']).read_text(encoding='utf-8-sig').splitlines()),ref
+            progress=progress_review(review)
+            NATIVE.append(dict(id=native_id,name=m.group(1),source=str(path.relative_to(ROOT)),line=i,category='native',**{k:v for k,v in review.items() if k not in ('linux','tests','adr','in_progress')},linux=targets,tests=tests,adr=adr,**({'in_progress':progress} if progress else {})))
+assert {r['id'] for r in NATIVE}==MAP['native_entries'].keys(), 'Obsolete native dialog review'
 rows += NATIVE
 # Reverse view: account for every Linux Window, including helper-only additions.
 EXTRAS={
@@ -254,6 +272,9 @@ report['schema_version']=2
 report['checkout_changes']=[dict(source=p,status='untracked' if p in untracked else 'tracked change') for p in sorted(set(changed+untracked))]
 report['installer_dialogs']=INSTALLER
 report['counts'].update(installer_source_dialogs=len(installer_definitions),installer_library_dialogs=len(installer_ids-installer_definitions.keys()),in_progress_screens=sum(bool(r.get('in_progress')) for r in rows))
+GROUPS={'navigation':'Navigation et historique','repositories':'Dépôts, worktrees et sous-modules','references':'Branches, tags et références','operations':'Commit et opérations sur l’historique','network':'Remotes et réseau','files':'Fichiers, lecteurs et exports','maintenance':'Maintenance','helpers':'Sélecteurs, prompts et processus','settings':'Fenêtres des paramètres','hosting':'Hébergement et CI','information':'Aide, diagnostic et informations','platform':'Adaptations de plateforme','plugins':'Fenêtres des plugins','settings-pages':'Pages de paramètres','ci-settings':'Pages de paramètres CI'}
+assert {r['group'] for r in rows if r['level']!='BASE'} <= GROUPS.keys(), 'Unclassified screen group'
+report['group_levels']={group:dict(sorted(collections.Counter(r['level'] for r in rows if r['group']==group and r['level']!='BASE').items())) for group in GROUPS}
 
 def link(label,path,line=None): return '['+label.replace('|','/')+'](../../'+path+('#L'+str(line) if line else '')+')'
 def esc(s):return str(s).replace('|','/').replace('\n',' ')
@@ -263,10 +284,16 @@ def md():
     out=['# Inventaire Windows → Linux et niveau de portage','',f"Référence du code : `{anchor}`. Recensement du 16 octobre 2026 ; {len(source_paths)} fichiers C# du checkout analysés avec Roslyn (suivis et non ignorés), configurations Release et Debug des sources Windows et Linux. Aucune syntaxe en erreur.",'',
     'Le périmètre couvre les classes de fenêtres WinForms de `src/app` et `src/plugins`, leurs bases héritées et parties Designer, la ressource C++ askpass, les pages de paramètres et les constructions de fenêtres sans classe dédiée. Les boîtes système sont recensées par site dans le CSV annexe. L’installateur Windows et ses références WiX sont listés séparément, avec leur adaptation au paquet Debian. Les exécutables externes, les tests/démos et les popups internes de bibliothèques tierces ne sont pas comptés comme des fenêtres applicatives portées.', '',
     '**Recensement exhaustif des types et ressources de fenêtres de ce périmètre ; évaluation par écran, pas audit de chaque bouton ni de toutes les valeurs possibles d’un dialogue.** Une adaptation dans Browse ou un prompt générique n’est pas comptée comme une fenêtre Windows intégralement portée. `N3` ne signifie pas 100 % et aucune entrée n’est `N4`. Les 13 familles de migration du TODO restent ouvertes.','',
+    'Accès direct : [fenêtres et dialogues](#fenêtres-windows-et-équivalents-linux), [pages de paramètres](#chaque-page-de-paramètres-windows), [fenêtres Linux](#inventaire-inverse-de-toutes-les-fenêtres-avalonia), [installateur](#installateur-windows-et-équivalent-debian), [CSV filtrable](windows-linux-window-inventory.csv).','',
     '## Bilan','', '| Périmètre | Total | N0 absent | N1 minimal | N2 partiel | N3 ciblé testé | N4 iso audité | Spécifique Windows |','| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |']
     for label,counter in [('Fenêtres/dialogues métier, C# et askpass C++',WINDOW_COUNT),('Pages de paramètres, y compris CI',PAGE_COUNT)]:out.append('| '+label+' | '+str(sum(counter.values()))+' | '+' | '.join(str(counter[x]) for x in ('N0','N1','N2','N3','N4','NA'))+' |')
     out+=['',f"À part : **{len(WINDOWS)} types WinForms** dont {report['counts']['windows_support_classes']} bases de support ; **{len(LINUX)} types Window Avalonia** dont {report['counts']['linux_abstract_bases']} bases abstraites, et **{report['counts']['linux_dynamic_factories']} fabriques de fenêtres Linux**. Les {report['counts']['settings_support_classes']} bases de pages de paramètres et {report['counts']['windows_dynamic_hosts']} hôtes WinForms techniques sont exclus des comptes métier.",'',
-    'Ces comptes mesurent des écrans, pas une part du travail : une boîte de titre et Browse pèsent chacun une ligne. Aucun pourcentage global de completion n’est déduit de ces nombres.','',
+    'Ces comptes mesurent des écrans, pas une part du travail : une boîte de titre et Browse pèsent chacun une ligne. Aucun pourcentage global de complétion n’est déduit de ces nombres.','',
+    '### Répartition par famille','', '| Famille | Total | N0 | N1 | N2 | N3 | N4 | NA |','| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |']
+    for group,label in GROUPS.items():
+        counter=collections.Counter(report['group_levels'][group])
+        out.append('| '+label+' | '+str(sum(counter.values()))+' | '+' | '.join(str(counter[x]) for x in ('N0','N1','N2','N3','N4','NA'))+' |')
+    out += ['',
     '## Lecture des niveaux','']
     out += ['- **'+key+'** — '+value+'.' for key,value in MAP['levels'].items()]
     out+=['','Aspect : `rapproche` = disposition/éléments Windows repris sur un périmètre ; `adapte` = interface native différente ; `integre` = fonction dans un autre écran/menu ; `generique` = prompt/UI commune ; `externe` = CLI/navigateur/éditeur ; `systeme` = dialogue du bureau ou adaptation OS. Aucune de ces mentions n’atteste une parité visuelle intégrale.','',
@@ -276,13 +303,13 @@ def md():
     '- Sous-modules : '+MAP['entries']['GitUI.CommandsDialogs.FormSubmodules']['remaining'],
     '- Sélecteurs de scripts et fenêtres de PR/hébergement absents ; éditeurs de règles présents sur un périmètre ciblé testé.','- Journal Git partiel : métadonnées disponibles, sorties/cache/stacks/export Windows absents.','- Menus View/Navigate : le périmètre récent est testé, mais recherche incrémentale et sélection interactive des parents/enfants restent ouverts.','',
     '## Fenêtres Windows et équivalents Linux','']
-    if report['checkout_changes']:
+    if report['checkout_changes'] or not VALIDATION_CODE_EQUIVALENT or report['counts']['in_progress_screens']:
         point=out.index('## Écarts prioritaires révélés par le relevé')
-        out[point:point]=['## Travail non encore validé','',f"Le checkout contient **{len(report['checkout_changes'])} fichiers applicatifs ou de tests modifiés/non suivis** depuis le commit de référence. Les {REFERENCE['counters']['passed']} tests Desktop cités ont été exécutés sur `{REFERENCE['source_sha'][:9]}` ; ils n’ont pas été réexécutés sur ces changements. Les niveaux restent ceux de la dernière évaluation et ne sont pas relevés pour du code simplement écrit.",'']
+        changes=f"Le checkout contient **{len(report['checkout_changes'])} fichiers applicatifs ou de tests modifiés/non suivis** depuis le commit de référence." if report['checkout_changes'] else 'Le code Linux courant contient des changements déjà commités ou des travaux encore en évaluation ; un checkout propre ne suffit pas à les valider.'
+        out[point:point]=['## Travail non encore validé','',changes+f" Les {REFERENCE['counters']['passed']} tests Desktop cités ont été exécutés sur `{REFERENCE['source_sha'][:9]}` ; ils n’attestent pas les changements ultérieurs. Les niveaux restent ceux de la dernière évaluation et ne sont pas relevés pour du code simplement écrit.",'']
         for r in rows:
             if r.get('in_progress'):out[point+4:point+4]=['- **'+r['name']+'** : '+r['in_progress']['description'],'']
-    groups={'navigation':'Navigation et historique','repositories':'Dépôts, worktrees et sous-modules','references':'Branches, tags et références','operations':'Commit et opérations sur l’historique','network':'Remotes et réseau','files':'Fichiers, lecteurs et exports','maintenance':'Maintenance','helpers':'Sélecteurs, prompts et processus','settings':'Fenêtres des paramètres','hosting':'Hébergement et CI','information':'Aide, diagnostic et informations','platform':'Adaptations de plateforme','plugins':'Fenêtres des plugins'}
-    for group,label in groups.items():
+    for group,label in GROUPS.items():
         subset=[r for r in rows if r['category'] in ('windows','native') and r['level']!='BASE' and r['group']==group]
         if not subset:continue
         out+=['### '+label,'','| Fenêtre Windows / usage | Équivalent Linux | Niveau / aspect | Présent et écarts restants | Preuves |','| --- | --- | --- | --- | --- |']

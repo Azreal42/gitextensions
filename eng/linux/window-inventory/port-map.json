@@ -141,7 +141,7 @@
         "Dialogs@PromptAsync"
       ],
       "implemented": "Saisie d’une révision, résolution Git et sélection si visible.",
-      "remaining": "Pas du sélecteur historique complet ; pas d’extension automatique d’un historique filtré.",
+      "remaining": "Dialogue Windows à trois champs (expression, tag, branche locale), suggestions, lecture du presse-papiers, focus/clavier, aide et erreurs distinctes à porter. Comme Windows, un commit absent de la grille filtrée requiert de retirer le filtre ; Linux affiche encore un statut au lieu du dialogue d’avertissement.",
       "visual": "generique",
       "tests": [
         "HistoryMenuParityTests"
@@ -2442,6 +2442,35 @@
       "feature": "Espace insuffisant pour le rollback MSI, bibliothèque WiX",
       "level": "NA",
       "linux": "État et récupération du paquet gérés par APT/DPKG ; pas de rollback MSI reproduit."
+    }
+  },
+  "native_entries": {
+    "native:IDD_ASK_PASSWORD": {
+      "feature": "Authentification Git/SSH askpass",
+      "group": "platform",
+      "level": "N3",
+      "implemented": "Fenêtre Windows compacte : titre original, prompt littéral sélectionnable, OK/Cancel ou Yes/No, thème commun et boutons traduits. Saisie masquée par défaut ; confirmations d’hôte avec empreinte exacte, hints OpenSSH confirm/none distincts, Enter/Escape/fermeture typés et réponses stdout/statuts natifs. Helpers explicites prioritaires, annulation drainée et aucune persistance de secret.",
+      "remaining": "Audit global Wayland, DPI/accessibilité, invites localisées et matériel FIDO réel non exécuté. Classification de texte nécessaire pour les questions sans hint ; prompts inconnus masqués. Nouveaux libellés Fingerprint/Use fingerprint en repli anglais du catalogue. Aucune certification de toutes les variantes natives.",
+      "visual": "rapproche",
+      "linux": [
+        "AskpassWindow"
+      ],
+      "tests": [
+        "AskpassTests",
+        "AskpassProtocolTests",
+        "AskpassModesWindowTests"
+      ],
+      "adr": [
+        "0006",
+        "0072"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs helper/hints/précédence/annulation",
+          "source": "tests/linux/GitExtensions.Core.Tests/AskpassModesScenarios.cs",
+          "line": 1
+        }
+      ]
     }
   }
 }
