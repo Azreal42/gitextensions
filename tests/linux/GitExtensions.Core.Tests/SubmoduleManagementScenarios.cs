@@ -35,9 +35,14 @@ internal static class SubmoduleManagementScenarios
         await f.Module("one").RunAsync(["reset", "--hard", "HEAD"]); await f.Module("one").CheckoutAsync(f.OldHead, detached: true);
         one = await f.Selected("one");
         Check(one.Status == "Modified" && one.Commit == f.OldHead && one.IndexHead == f.NewHead && !one.IsUpToDate, "A different checkout commit is Modified.");
-        await f.Module("one").RunAsync(["tag", "-a", "annotated", "-m", "Annotated", f.OldHead]);
-        one = await f.Selected("one"); native = (await f.Native("submodule", "status", "--", "one")).StandardOutput;
-        Check(one.Branch == "annotated" && native.EndsWith(" (annotated)\n", StringComparison.Ordinal), "An annotated tag takes native precedence over the fallback branch description.");
+        foreach (string tag in new[] { "annotated", "tags/release", "tags/ReLeAsE/Été" })
+        {
+            await f.Module("one").RunAsync(["tag", "-a", tag, "-m", "Annotated", f.OldHead]);
+            one = await f.Selected("one"); native = (await f.Native("submodule", "status", "--", "one")).StandardOutput;
+            Check(one.Branch == tag && native.EndsWith(" (" + one.Branch + ")\n", StringComparison.Ordinal),
+                "An annotated tag takes native precedence and its complete name, casing and slashes match the native status annotation.");
+            await f.Module("one").RunAsync(["tag", "-d", tag]);
+        }
     }
 
     private static async Task InactiveAsync()

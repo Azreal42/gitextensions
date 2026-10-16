@@ -105,7 +105,6 @@ public sealed partial class GitRepository
         if (suffix.Length > 0 && !(suffix.StartsWith(" (", StringComparison.Ordinal) && suffix.EndsWith(')')))
         { throw new InvalidOperationException("Git returned an invalid submodule description."); }
         string branch = suffix.Length > 0 ? suffix[2..^1] : "";
-        if (branch.StartsWith("tags/", StringComparison.Ordinal)) { branch = branch[5..]; }
         return (output[0], hash.All(character => character == '0') ? null : hash, branch);
     }
     private static string SubmoduleIndexSignature(IEnumerable<RemovalIndexEntry> entries)
