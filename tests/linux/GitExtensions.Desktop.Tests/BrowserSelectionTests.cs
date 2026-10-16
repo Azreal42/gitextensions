@@ -142,6 +142,36 @@ public sealed class BrowserSelectionTests
     }
 
     [AvaloniaTest]
+    public async Task NoMatchingFilesKeepsTheAutoSelectedEmptyRevisionGroupAndClearsItsPreview()
+    {
+        using Fixture f = await CreateAsync(); MainWindow main = f.Window;
+        FileStatusListView files = Find<FileStatusListView>(main, "RevisionFileStatusList");
+        DiffView viewer = Find<DiffView>(main, "CommitDiff");
+        TreeViewItem group = files.Tree.Items.OfType<TreeViewItem>().Single(item => item.Tag is GitRevisionDiffGroup);
+        Assert.That(group.Items, Is.Not.Empty);
+        Control header = group.GetVisualDescendants().OfType<Control>().Single(control => control.Name == "PART_Header"
+            && ReferenceEquals(control.GetVisualAncestors().OfType<TreeViewItem>().FirstOrDefault(), group));
+        PushProcessTestDriver.Pointer(header); await Idle(main);
+        Assert.That(files.Tree.SelectedItem, Is.SameAs(group));
+        Assert.That(viewer.Text, Does.Contain("Select a file"), "A nonempty revision group retains its existing prompt.");
+        Assert.That(viewer.DocumentIdentity, Is.Not.Null);
+
+        ComboBox filter = Find<ComboBox>(main, "RevisionFilesFilter");
+        TextBox editor = filter.GetVisualDescendants().OfType<TextBox>().Single();
+        PushProcessTestDriver.Pointer(editor); main.KeyTextInput("no_matching_file");
+        await Until(() => files.FilteredEntries.Count == 0); await Idle(main);
+        TreeViewItem empty = files.Tree.Items.OfType<TreeViewItem>().Single();
+        Assert.That(empty.Tag, Is.SameAs(group.Tag));
+        Assert.That(((GitRevisionDiffGroup)empty.Tag!).Kind, Is.Not.EqualTo(GitRevisionDiffGroupKind.RangeDiff));
+        Assert.That(empty.Items, Is.Empty);
+        Assert.That(files.Tree.SelectedItem, Is.SameAs(empty), "Keep the Windows singleton-root auto-selection.");
+        Assert.That(editor.Text, Is.EqualTo("no_matching_file"));
+        Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(editor));
+        Assert.That(viewer.Text, Is.Empty);
+        Assert.That(viewer.DocumentIdentity, Is.Null);
+    }
+
+    [AvaloniaTest]
     public async Task WorkingFileReadsKeepFocusAndCannotStageThePreviousFilesPatchWhileLoading()
     {
         using Fixture f = await CreateAsync(); MainWindow main = f.Window;

@@ -292,6 +292,10 @@ public sealed partial class MainWindow
     private async Task ShowRevisionDiffItemAsync(GitRepository repository, TreeViewItem item, CancellationToken? cancellationToken = null)
     {
         if (_commitContent is null) { return; }
+        if (item.Tag is GitRevisionDiffGroup { Kind: not GitRevisionDiffGroupKind.RangeDiff } && item.Items.Count == 0)
+        {
+            ClearRevisionPreview(); return;
+        }
         CancellationToken token = cancellationToken ?? Token;
         DiffView viewer = _commitContent.TextView;
         GitComparisonDiffOptions options = _revisionViewerOptions;
