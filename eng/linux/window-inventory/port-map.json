@@ -291,30 +291,55 @@
     "GitUI.CommandsDialogs.WorktreeDialog.FormCreateWorktree": {
       "feature": "Création d’un worktree",
       "group": "repositories",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "MainWindow@AddWorktreeAsync",
-        "Dialogs@PromptAsync"
+        "CreateWorktreeDialog",
+        "MainWindow@CreateWorktreeAsync"
       ],
-      "implemented": "Chemin, révision et nouvelle branche transmis à Git.",
-      "remaining": "Dialogue dédié, liste des choix et ensemble des options Windows absents.",
-      "visual": "generique",
-      "tests": [],
-      "adr": []
+      "implemented": "Dialogue Windows dédié : branches locales hors courante, branche nouvelle au commit courant avec -b, dossier proposé depuis le principal, normalisation et complétion partagées, Process natif et conservation des effets partiels ; proposition de switch après fermeture.",
+      "remaining": "Audit GUI natif exhaustif et toutes les variantes de complétion/accessibilité encore ouverts. Le défaut Windows de chemins relatifs respecte la configuration explicite et peut activer une extension Git incompatible avec les anciennes versions.",
+      "visual": "rapproche",
+      "tests": [
+        "WorktreeDialogTests",
+        "WorktreeNavigationTests"
+      ],
+      "adr": [
+        "0068"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs Git Worktrees",
+          "source": "tests/linux/GitExtensions.Core.Tests/WorktreeScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.WorktreeDialog.FormManageWorktree": {
       "feature": "Gestion des worktrees",
       "group": "repositories",
-      "level": "N1",
+      "level": "N3",
       "linux": [
-        "MainWindow@ShowWorkflowAsync",
-        "MainWindow@RemoveWorktreeAsync"
+        "WorktreeDialog",
+        "MainWindow@ManageWorktreesAsync",
+        "WorktreeDialogControls@ConfirmOpenAsync"
       ],
-      "implemented": "Liste, ouverture, ajout, suppression et prune dans le workflow Worktrees.",
-      "remaining": "Fenêtre de gestion originale, verrouillages et variantes avancées à porter/comparer.",
-      "visual": "integre",
-      "tests": [],
-      "adr": []
+      "implemented": "Grille Windows compacte Path/Type/Branch/SHA-1, colonnes AllCells redimensionnables, copie de ligne, absents barrés, Create/Open/Delete/Prune, confirmation de switch persistante ; actions communes Repository/raccourci/arbre/barre et switch hors modal. Snapshots et gardes main/current/alias ; dirty/submodules protégés par Git, double-force verrouillé uniquement après deux consentements.",
+      "remaining": "Audit GUI natif exhaustif et ensemble des gestes/raccourcis/copie de cellules du DataGridView encore ouverts. La suppression native Git avec force explicite remplace volontairement l’effacement récursif Windows ; elle ne supprime pas silencieusement des fichiers hors consentement.",
+      "visual": "rapproche",
+      "tests": [
+        "WorktreeDialogTests",
+        "WorktreeNavigationTests"
+      ],
+      "adr": [
+        "0068"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs Git Worktrees",
+          "source": "tests/linux/GitExtensions.Core.Tests/WorktreeScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.FormCreateBranch": {
       "feature": "Création de branche",

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "code_reference_commit": "bc33a887110375f5c76a327590ef85bd36d95807",
-  "source_digest_sha256": "b7b25f6c75aec34b974444ffadf8b86fca926808857912e2e0b716b065b1ddde",
-  "scanned_csharp_files": 1835,
+  "code_reference_commit": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
+  "source_digest_sha256": "dce125f329e60054bea7ffce8496a1019f24db5af884278dfcf5d8cb7a98de2a",
+  "scanned_csharp_files": 1846,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,15 +26,15 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 74,
+    "linux_window_types": 76,
     "linux_abstract_bases": 2,
-    "linux_dynamic_factories": 29,
+    "linux_dynamic_factories": 30,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 10,
-      "N1": 20,
+      "N1": 18,
       "N2": 25,
-      "N3": 42,
+      "N3": 44,
       "NA": 2
     },
     "settings_levels": {
@@ -47,25 +47,25 @@
     "designer_files": 189
   },
   "validation_reference": {
-    "trx": "artifacts/linux/remotes-dialog-full-checks-20261016-01/desktop.trx",
-    "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
-    "trx_sha256": "a87bd51bec07623d0d7ddd825bca8b9f7d8d229a9a4532d17d3843d880570acb",
+    "trx": "artifacts/linux/worktree-desktop-checks-20261016-full01/desktop.trx",
+    "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
+    "trx_sha256": "4726880cfe46a11cc82e648d5732a2fccf3f2bab61671175f2e40db5bd125c62",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
-        "passed": 483,
-        "total": 483,
-        "execution_result": "artifacts/linux/remote-settings-core-20261016-05/full-result.json",
-        "source_hashes_verified": 152,
+        "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
+        "passed": 498,
+        "total": 498,
+        "execution_result": "artifacts/linux/worktrees-core-20261016-04/full-result.json",
+        "source_hashes_verified": 156,
         "runtime_inputs_unchanged": true,
-        "meaning": "Actual complete apphost execution; component sources verified against this commit."
+        "meaning": "Actual complete apphost execution on the final, consent-guarded Worktrees source."
       },
       "plugins": {
-        "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
+        "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/remotes-dialog-full-checks-20261016-01/plugins-result.json",
+        "execution_result": "artifacts/linux/worktree-plugins-checks-20261016-01/result.json",
         "meaning": "Actual complete execution on the final Core source."
       }
     },
@@ -834,7 +834,7 @@
           "id": "GitExtensions.Linux.Desktop.BisectDialog",
           "label": "BisectDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 186,
+          "line": 193,
           "kind": "window"
         },
         {
@@ -4084,7 +4084,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         }
       ],
@@ -4157,7 +4157,7 @@
           "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
           "label": "SparseCheckoutDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 373,
+          "line": 380,
           "kind": "window"
         }
       ],
@@ -4270,7 +4270,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         },
         {
@@ -5703,7 +5703,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         }
       ],
@@ -5741,14 +5741,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 484,
+          "line": 476,
           "kind": "window"
         }
       ],
@@ -5876,7 +5876,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 283,
+          "line": 284,
           "kind": "window"
         }
       ],
@@ -6243,7 +6243,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddSubmoduleAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 397,
+          "line": 389,
           "kind": "window"
         },
         {
@@ -6279,28 +6279,50 @@
       "category": "windows",
       "feature": "Création d’un worktree",
       "group": "repositories",
-      "level": "N1",
-      "implemented": "Chemin, révision et nouvelle branche transmis à Git.",
-      "remaining": "Dialogue dédié, liste des choix et ensemble des options Windows absents.",
-      "visual": "generique",
+      "level": "N3",
+      "implemented": "Dialogue Windows dédié : branches locales hors courante, branche nouvelle au commit courant avec -b, dossier proposé depuis le principal, normalisation et complétion partagées, Process natif et conservation des effets partiels ; proposition de switch après fermeture.",
+      "remaining": "Audit GUI natif exhaustif et toutes les variantes de complétion/accessibilité encore ouverts. Le défaut Windows de chemins relatifs respecte la configuration explicite et peut activer une extension Git incompatible avec les anciennes versions.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs Git Worktrees",
+          "source": "tests/linux/GitExtensions.Core.Tests/WorktreeScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.AddWorktreeAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 383,
+          "id": "GitExtensions.Linux.Desktop.CreateWorktreeDialog",
+          "label": "CreateWorktreeDialog",
+          "source": "src/linux/GitExtensions.Desktop/CreateWorktreeDialog.cs",
+          "line": 11,
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.Dialogs",
-          "label": "Dialogs.PromptAsync",
-          "source": "src/linux/GitExtensions.Desktop/Dialogs.cs",
-          "line": 24,
-          "kind": "component"
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.CreateWorktreeAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Worktrees.cs",
+          "line": 32,
+          "kind": "window"
         }
       ],
-      "tests": [],
-      "adr": []
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeDialogTests.cs",
+          "test_class": "WorktreeDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeNavigationTests.cs",
+          "test_class": "WorktreeNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/worktrees/0068-manage-and-create-worktrees.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.WorktreeDialog.FormManageWorktree",
@@ -6324,28 +6346,57 @@
       "category": "windows",
       "feature": "Gestion des worktrees",
       "group": "repositories",
-      "level": "N1",
-      "implemented": "Liste, ouverture, ajout, suppression et prune dans le workflow Worktrees.",
-      "remaining": "Fenêtre de gestion originale, verrouillages et variantes avancées à porter/comparer.",
-      "visual": "integre",
+      "level": "N3",
+      "implemented": "Grille Windows compacte Path/Type/Branch/SHA-1, colonnes AllCells redimensionnables, copie de ligne, absents barrés, Create/Open/Delete/Prune, confirmation de switch persistante ; actions communes Repository/raccourci/arbre/barre et switch hors modal. Snapshots et gardes main/current/alias ; dirty/submodules protégés par Git, double-force verrouillé uniquement après deux consentements.",
+      "remaining": "Audit GUI natif exhaustif et ensemble des gestes/raccourcis/copie de cellules du DataGridView encore ouverts. La suppression native Git avec force explicite remplace volontairement l’effacement récursif Windows ; elle ne supprime pas silencieusement des fichiers hors consentement.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios natifs Git Worktrees",
+          "source": "tests/linux/GitExtensions.Core.Tests/WorktreeScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.ShowWorkflowAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "id": "GitExtensions.Linux.Desktop.WorktreeDialog",
+          "label": "WorktreeDialog",
+          "source": "src/linux/GitExtensions.Desktop/WorktreeDialog.cs",
+          "line": 13,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.RemoveWorktreeAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 391,
+          "label": "MainWindow.ManageWorktreesAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Worktrees.cs",
+          "line": 22,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.WorktreeDialogControls",
+          "label": "WorktreeDialogControls.ConfirmOpenAsync",
+          "source": "src/linux/GitExtensions.Desktop/WorktreeDialogControls.cs",
+          "line": 23,
+          "kind": "component"
         }
       ],
-      "tests": [],
-      "adr": []
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeDialogTests.cs",
+          "test_class": "WorktreeDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeNavigationTests.cs",
+          "test_class": "WorktreeNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/workflows/worktrees/0068-manage-and-create-worktrees.md"
+      ]
     },
     {
       "id": "GitUI.Editor.FormGoToLine",
@@ -6761,6 +6812,18 @@
           "test_class": "UndoBisectWorkflowTests",
           "passed_in_reference_run": 19,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeDialogTests.cs",
+          "test_class": "WorktreeDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeNavigationTests.cs",
+          "test_class": "WorktreeNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
         }
       ],
       "adr": []
@@ -6963,6 +7026,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/UndoBisectWorkflowTests.cs",
           "test_class": "UndoBisectWorkflowTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeDialogTests.cs",
+          "test_class": "WorktreeDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeNavigationTests.cs",
+          "test_class": "WorktreeNavigationTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         }
       ],
@@ -7169,6 +7244,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/UndoBisectWorkflowTests.cs",
           "test_class": "UndoBisectWorkflowTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeDialogTests.cs",
+          "test_class": "WorktreeDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeNavigationTests.cs",
+          "test_class": "WorktreeNavigationTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         }
       ],
@@ -7423,7 +7510,7 @@
           "id": "GitExtensions.Linux.Desktop.NoteDialog",
           "label": "NoteDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 118,
+          "line": 125,
           "kind": "window"
         }
       ],
@@ -8287,6 +8374,18 @@
           "test_class": "UndoBisectWorkflowTests",
           "passed_in_reference_run": 19,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeDialogTests.cs",
+          "test_class": "WorktreeDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/WorktreeNavigationTests.cs",
+          "test_class": "WorktreeNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
         }
       ],
       "adr": []
@@ -8521,11 +8620,11 @@
       "id": "GitExtensions.Linux.Desktop.BisectDialog",
       "name": "BisectDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 186,
+      "line": 193,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 186
+          "line": 193
         }
       ],
       "bases": [
@@ -8907,6 +9006,30 @@
         {
           "id": "GitUI.CommandsDialogs.FormCreateTag",
           "name": "FormCreateTag",
+          "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.CreateWorktreeDialog",
+      "name": "CreateWorktreeDialog",
+      "source": "src/linux/GitExtensions.Desktop/CreateWorktreeDialog.cs",
+      "line": 11,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CreateWorktreeDialog.cs",
+          "line": 11
+        }
+      ],
+      "bases": [
+        "RepositoryDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.WorktreeDialog.FormCreateWorktree",
+          "name": "FormCreateWorktree",
           "level": "N3"
         }
       ],
@@ -9561,6 +9684,10 @@
           "line": 10
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.Worktrees.cs",
+          "line": 12
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.cs",
           "line": 15
         }
@@ -9683,12 +9810,12 @@
         {
           "id": "GitUI.CommandsDialogs.WorktreeDialog.FormCreateWorktree",
           "name": "FormCreateWorktree",
-          "level": "N1"
+          "level": "N3"
         },
         {
           "id": "GitUI.CommandsDialogs.WorktreeDialog.FormManageWorktree",
           "name": "FormManageWorktree",
-          "level": "N1"
+          "level": "N3"
         },
         {
           "id": "GitUI.HelperDialogs.FormCommitDiff",
@@ -9813,11 +9940,11 @@
       "id": "GitExtensions.Linux.Desktop.NoteDialog",
       "name": "NoteDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 118,
+      "line": 125,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 118
+          "line": 125
         }
       ],
       "bases": [
@@ -10474,11 +10601,11 @@
       "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
       "name": "SparseCheckoutDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 373,
+      "line": 380,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 373
+          "line": 380
         }
       ],
       "bases": [
@@ -10678,6 +10805,30 @@
       "abstract": false,
       "windows": [],
       "note": "Confirmation Undo ; variante du menu de FormBrowse."
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.WorktreeDialog",
+      "name": "WorktreeDialog",
+      "source": "src/linux/GitExtensions.Desktop/WorktreeDialog.cs",
+      "line": 13,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/WorktreeDialog.cs",
+          "line": 13
+        }
+      ],
+      "bases": [
+        "RepositoryDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.WorktreeDialog.FormManageWorktree",
+          "name": "FormManageWorktree",
+          "level": "N3"
+        }
+      ],
+      "note": ""
     }
   ],
   "dynamic_factories": [
@@ -10785,7 +10936,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 418,
+      "line": 420,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -10955,7 +11106,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 278,
+      "line": 285,
       "method": "ConfirmRangeAsync",
       "text": "new() { Name = \"BisectRangeConfirmation\", Title = Title, Width = 470, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -10965,7 +11116,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 328,
+      "line": 335,
       "method": "ShowNativeErrorAsync",
       "text": "new() { Name = \"BisectNativeError\", Title = T(\"Error\"), Width = 520, MaxHeight = 540, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -10988,6 +11139,16 @@
       "line": 208,
       "method": "AskSaveAsync",
       "text": "new() { Name = \"SaveRulesFileQuestion\", Title = T(\"Save changes?\"), Width = 420,",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.WorktreeDialogControls",
+      "path": "src/linux/GitExtensions.Desktop/WorktreeDialogControls.cs",
+      "line": 109,
+      "method": "Prompt",
+      "text": "new()",
       "platform": "linux",
       "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
     }

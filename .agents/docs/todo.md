@@ -6,13 +6,15 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `bc33a8871` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 20 N1 substituts minimaux, 25 N2 partielles, 42 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code `5be2a8aa4` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 10 N0 absentes, 18 N1 substituts minimaux, 25 N2 partielles, 44 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
-L’inventaire contient aussi les 74 types Window Avalonia (dont 2 bases abstraites), 29 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
+L’inventaire contient aussi les 76 types Window Avalonia (dont 2 bases abstraites), 30 fabriques Linux sans classe dédiée et 365 sites de boîtes système/confirmations Windows. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
-Écarts concrets à traiter selon cette matrice : fenêtres complètes Worktrees/Ajout de sous-module ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : fenêtre complète d’ajout de sous-module ; assistant de conflit de sous-module (Base/Ours/Theirs d’un gitlink refusés par le resolver générique) ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git. Les réglages de tri/priorités et le repli GitDefault Windows sans option restent également à aligner. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Worktrees : fenêtres Windows de gestion/création, grille compacte, chemins/branches, actions Repository/arbre/barre, switch après modal, Git natif et consentements de suppression. Portage ciblé testé ; ADR 0068.
 
 - [x] Remotes : deux onglets Windows, gestion active/inactive et tracking, fenêtre partagée Browse/Pull/Push ; conserver toutes les valeurs Git, Fetch après Save et couleurs réellement utilisées. ADR 0067.
 
@@ -191,4 +193,15 @@ Source `bc33a8871` : même fenêtre à deux onglets dans Repository/Pull/Push, d
 
 [Candidat Debian](../../artifacts/linux/snapshots/bc33a8871/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `bf9b22c756fba1d3347ee237879bbec91dca6a30a1fe8a9624e84b13bf784e1d` : source figée, extraction/installation/lancement isolés vérifiés. Il remplace `2e9ab5db2` avant installation hôte. Runtime hôte vérifié : toujours `879f7bae3` ; aucune application arrêtée. Aucun push.
 
-Reste pour Remotes : redimensionnement des colonnes/copie de cellules de tracking, événements de scripts et audit natif exhaustif. Prochaines fenêtres : gestion/création de Worktrees, encore N1 ; puis ajout de sous-module. Les 13 familles restent ouvertes et aucun N4 n’est annoncé.
+Reste pour Remotes : redimensionnement des colonnes/copie de cellules de tracking, événements de scripts et audit natif exhaustif. Worktrees est repris dans le lot suivant ; ajout de sous-module encore à porter. Les 13 familles restent ouvertes et aucun N4 n’est annoncé.
+
+
+## Worktrees — 16 octobre 2026
+
+Source `5be2a8aa4` : gestion et création dédiées, dispositions/icônes Windows, grille compacte et colonnes redimensionnables. Repository, raccourci, arbre et barre partagent les actions ; le switch attend la fermeture du modal. Supprimer passe par Git avec refus principal/courant/alias, force explicite et deux consentements pour un verrou. Annulation/hooks conservent leurs effets réels. ADR 0068.
+
+[Validation complète](../../artifacts/linux/snapshots/5be2a8aa4/proofs/source-validation.json) : **965 Desktop, 498 Core, 35 Plugins**, soit 1498 scénarios distincts, zéro échec/ignoré. 18 nouveaux scénarios UI et 15 Core ; 34 ciblés UI et 15 Core. Les essais diagnostiques et Core03 sont hors acceptation finale. [Rendus headless](../../artifacts/linux/snapshots/5be2a8aa4/proofs/headless-visual-review.json), cinq vues inspectées ; audit natif exhaustif restant.
+
+[Candidat Debian](../../artifacts/linux/snapshots/5be2a8aa4/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) `7.2.1-linux-alpha`, SHA256 `1eb7e00390dbb0701e57495f92486edfe0d97f6cd3c9809d995d195b4e1fbe8d` : checkout figé, extraction/installation/lancement isolés vérifiés. Remplace `bc33a8871` avant installation hôte. L’hôte reste `879f7bae3` ; aucune application arrêtée. Aucun push.
+
+Les deux écrans Worktrees passent N1 → N3 ciblé testé. Restent l’audit GUI natif et l’ensemble des gestes/claviers/copies de cellules du DataGridView. Prochaine fenêtre : ajout de sous-module. Les 13 familles restent ouvertes ; aucun N4.

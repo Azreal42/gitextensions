@@ -268,3 +268,14 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Premier Alt sans focus, changement d’onglet vide | Donner un focus réel aux listes et rétablir une cible visible après changement de page ; Label.Target porte les touches d’accès. |
 | Couleur ou bouton Save réagissent un événement trop tard | Observer TextProperty immédiatement ; garder le véritable geste utilisateur dans les tests. |
 | Effets attendus artificiellement par le harnais | Comparer au Git réel : ordre des includes, remote imbriqué existant, upstream futur et refs déjà fetchées. Relâcher Enter sur le propriétaire revenu après fermeture du prompt. |
+
+
+## Worktrees — résolus
+
+| Observation | Cause / suite |
+| --- | --- |
+| Switch accepté mais Browse reste sur le dépôt initial | Le modal garde MainWindow busy ; retourner le chemin, fermer puis basculer après ce scope. |
+| Double-force autorisé après une lecture status propre | Cette lecture ne protège pas une écriture concurrente ; un verrou exige aussi le consentement Discard avant tout remove natif. |
+| Menu worktree construit busy reste désactivé lors d’Open(control) | Avalonia ne passe pas par Opening dans ce chemin ; recalculer aussi dans Opened, avec les mêmes gardes. |
+| Colonnes de données dérivent de 1 px chacune | Un Grid de ligne arrangé sur la largeur avec gouttière redistribue les pixels ; borner sa largeur à la somme exacte des colonnes comme le header. |
+| Abort test clique OK après fermeture du Process | Abort ferme après drainage ; acquitter uniquement un modal encore visible, puis vérifier les acteurs et l’état Git réel. |

@@ -1,12 +1,12 @@
 {
-  "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
-  "trx": "artifacts/linux/remotes-dialog-full-checks-20261016-01/desktop.trx",
-  "trx_sha256": "a87bd51bec07623d0d7ddd825bca8b9f7d8d229a9a4532d17d3843d880570acb",
+  "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
+  "trx": "artifacts/linux/worktree-desktop-checks-20261016-full01/desktop.trx",
+  "trx_sha256": "4726880cfe46a11cc82e648d5732a2fccf3f2bab61671175f2e40db5bd125c62",
   "meaning": "Frozen results from an actual complete execution; this does not certify complete window parity.",
   "counters": {
-    "total": "947",
-    "executed": "947",
-    "passed": "947",
+    "total": "965",
+    "executed": "965",
+    "passed": "965",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -366,23 +366,29 @@
     },
     "WindowsBrowseReferenceTests": {
       "Passed": 8
+    },
+    "WorktreeDialogTests": {
+      "Passed": 14
+    },
+    "WorktreeNavigationTests": {
+      "Passed": 4
     }
   },
   "additional_suites": {
     "core": {
-      "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
-      "passed": 483,
-      "total": 483,
-      "execution_result": "artifacts/linux/remote-settings-core-20261016-05/full-result.json",
-      "source_hashes_verified": 152,
+      "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
+      "passed": 498,
+      "total": 498,
+      "execution_result": "artifacts/linux/worktrees-core-20261016-04/full-result.json",
+      "source_hashes_verified": 156,
       "runtime_inputs_unchanged": true,
-      "meaning": "Actual complete apphost execution; component sources verified against this commit."
+      "meaning": "Actual complete apphost execution on the final, consent-guarded Worktrees source."
     },
     "plugins": {
-      "source_sha": "bc33a887110375f5c76a327590ef85bd36d95807",
+      "source_sha": "5be2a8aa4327d08ab5b9211def248d61fb5b68ee",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/remotes-dialog-full-checks-20261016-01/plugins-result.json",
+      "execution_result": "artifacts/linux/worktree-plugins-checks-20261016-01/result.json",
       "meaning": "Actual complete execution on the final Core source."
     }
   }
