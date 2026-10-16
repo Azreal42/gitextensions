@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
+using AvaloniaEdit.Document;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using GitExtensions.Linux.Desktop.Localization;
@@ -13,7 +14,7 @@ public sealed record DiffViewerSearchMatch(int Offset, int Length, bool LoopedAr
 internal enum DiffViewerSearchMarkerKind { Region, Occurrence, Highlight }
 internal sealed record DiffViewerSearchMarker(int Offset, int Length, DiffViewerSearchMarkerKind Kind);
 
-/// <summary>Read-only FileViewer search. All positions refer to the displayed text, in UTF-16 units.</summary>
+/// <summary>Shared FileViewer find/replace. All positions refer to displayed UTF-16 text.</summary>
 public sealed class DiffViewerSearch : IDisposable
 {
     private readonly DiffView _view;
@@ -26,6 +27,8 @@ public sealed class DiffViewerSearch : IDisposable
     private Window? _notification;
     private string _query = "";
     private string _selectedText = "";
+    private string _replacement = "";
+    private bool _lastSearchBackward;
     private bool _matchCase;
     private bool _matchWholeWord;
     private bool _suspended;
@@ -36,6 +39,8 @@ public sealed class DiffViewerSearch : IDisposable
     public Func<Task>? OpenDiffToolRequested { get; set; }
     public Task PendingOperation { get; private set; } = Task.CompletedTask;
     public string Query { get => _query; set { value ??= ""; if (_query == value) { return; } _query = value; Notify(); } }
+    public string Replacement { get => _replacement; set { value ??= ""; if (_replacement == value) { return; } _replacement = value; Notify(); } }
+    public bool CanReplace => IsAvailable && !_view.IsReadOnly;
     public bool MatchCase { get => _matchCase; set { if (_matchCase == value) { return; } _matchCase = value; Notify(); } }
     public bool MatchWholeWordOnly { get => _matchWholeWord; set { if (_matchWholeWord == value) { return; } _matchWholeWord = value; Notify(); } }
     public DiffViewerSearchMatch? ScanRegion { get; private set; }
@@ -53,11 +58,12 @@ public sealed class DiffViewerSearch : IDisposable
         _caretOutsideSelection = _view.Editor.TextArea.AllowCaretOutsideSelection();
         UpdateColors();
         _view.Editor.TextArea.SelectionChanged += SelectionChanged;
+        _view.Editor.Document.Changed += DocumentChanged;
         _view.DetachedFromVisualTree += Detached;
         _view.AttachedToVisualTree += Attached;
     }
 
-    public void ShowFind()
+    public void ShowFind(bool replaceMode = false)
     {
         if (!IsAvailable || TopLevel.GetTopLevel(_view) is not Window { IsVisible: true } owner) { return; }
         ClearScanRegion();
@@ -78,6 +84,7 @@ public sealed class DiffViewerSearch : IDisposable
         }
         if (!ReferenceEquals(owner, _owner)) { ReleaseDialog(); _owner = owner; _owner.Closed += OwnerClosed; }
         _dialog ??= new(this, _translations);
+        _dialog.ReplaceMode = replaceMode && CanReplace;
         _dialog.RequestedThemeVariant = _view.ActualThemeVariant;
         _dialog.Refresh();
         if (!_dialog.IsVisible) { _dialog.Show(owner); }
@@ -93,6 +100,7 @@ public sealed class DiffViewerSearch : IDisposable
     public DiffViewerSearchMatch? FindNext(bool searchBackward = false, bool viaF3 = true)
     {
         if (!IsAvailable || Query.Length == 0) { return null; }
+        _lastSearchBackward = searchBackward;
         string text = _view.Text;
         int caret = _view.Editor.CaretOffset;
         if (viaF3 && ScanRegion is { } scan && (caret < scan.Offset || caret > scan.Offset + scan.Length)) { ClearScanRegion(); }
@@ -117,6 +125,46 @@ public sealed class DiffViewerSearch : IDisposable
         _view.Editor.CaretOffset = result.Offset + result.Length;
         _view.Editor.ScrollToLine(_view.Editor.Document.GetLineByOffset(result.Offset).LineNumber);
         return result;
+    }
+
+    public DiffViewerSearchMatch? ReplaceNext()
+    {
+        if (!CanReplace || Query.Length == 0) { return null; }
+        int start = _view.SelectionStart;
+        if (_view.SelectionLength == Query.Length && FindIn(_view.Text, start, start + Query.Length, false) == start
+            && (ScanRegion is not { } region || start >= region.Offset && start + Query.Length <= region.Offset + region.Length))
+        {
+            _view.Editor.Document.Replace(start, Query.Length, Replacement);
+            _view.Select(start + Replacement.Length, 0);
+        }
+        return FindNext(_lastSearchBackward, viaF3: false);
+    }
+
+    public int ReplaceAll()
+    {
+        if (!CanReplace || Query.Length == 0) { return 0; }
+        List<int> matches = [];
+        int offset = ScanRegion?.Offset ?? 0;
+        int end = ScanRegion is { } region ? region.Offset + region.Length : _view.Text.Length;
+        while (offset <= end)
+        {
+            int match = FindIn(_view.Text, offset, end, false);
+            if (match < 0) { break; }
+            matches.Add(match);
+            offset = match + Query.Length;
+        }
+        if (matches.Count == 0) { return 0; }
+        // Match the original undo group, and search the old snapshot only so a
+        // replacement containing the query cannot replace itself indefinitely.
+        TextDocument document = _view.Editor.Document;
+        document.BeginUpdate();
+        try
+        {
+            for (int index = matches.Count - 1; index >= 0; index--) { document.Replace(matches[index], Query.Length, Replacement); }
+        }
+        finally { document.EndUpdate(); }
+        _view.Select(matches[^1] + (matches.Count - 1) * (Replacement.Length - Query.Length) + Replacement.Length, 0);
+        return matches.Count;
     }
 
     private int FindIn(string text, int begin, int end, bool backwards)
@@ -172,6 +220,7 @@ public sealed class DiffViewerSearch : IDisposable
     {
         if (args.Handled || !IsAvailable) { return false; }
         if (args.Key == Key.F && args.KeyModifiers == KeyModifiers.Control) { args.Handled = true; ShowFind(); return true; }
+        if (args.Key == Key.H && args.KeyModifiers == KeyModifiers.Control && CanReplace) { args.Handled = true; ShowFind(replaceMode: true); return true; }
         if (args.Key == Key.F3 && args.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
         {
             args.Handled = true;
@@ -184,6 +233,23 @@ public sealed class DiffViewerSearch : IDisposable
     }
 
     internal void FindFromDialog(bool backwards) => PendingOperation = FindFromCommandAsync(backwards, viaF3: false);
+    internal void ReplaceFromDialog() => PendingOperation = ReplaceFromCommandAsync();
+    private async Task ReplaceFromCommandAsync()
+    {
+        DiffViewerSearchMatch? match = ReplaceNext();
+        if (match is null && CanReplace && _dialog is { IsVisible: true } dialog)
+        { await ShowMessageAsync(dialog, Query.Length == 0 ? T("_noSearchString", "No string specified to look for!") : T("_textNotFoundString", "Text not found"), " "); }
+    }
+    internal void ReplaceAllFromDialog() => PendingOperation = ReplaceAllFromCommandAsync();
+    private async Task ReplaceAllFromCommandAsync()
+    {
+        if (!CanReplace || _dialog is not { IsVisible: true } dialog) { return; }
+        int count = ReplaceAll();
+        string message = count == 0 ? T("_noOccurrencesFoundString", "No occurrences found.")
+            : string.Format(System.Globalization.CultureInfo.CurrentCulture, T("_replacedOccurrencesString", "Replaced {0} occurrences."), count);
+        await ShowMessageAsync(dialog, message, _translations.Translate("Information"));
+        if (count > 0 && dialog.IsVisible) { dialog.HideForReuse(); }
+    }
     internal void ShowNotFound(Window owner) => PendingOperation = ShowMessageAsync(owner, T("_textNotFoundString2", "Search text not found."), T("_notFoundString", "Not found"));
     private async Task FindFromCommandAsync(bool backwards, bool viaF3)
     {
@@ -248,6 +314,26 @@ public sealed class DiffViewerSearch : IDisposable
         if (changed) { ScanRegion = null; _selectedText = ""; _occurrences.Clear(); _highlights.Clear(); }
         _suspended = false; RebuildOccurrences(); Notify();
     }
+    private void DocumentChanged(object? sender, DocumentChangeEventArgs args)
+    {
+        if (_view.IsReadOnly || _view.IsUpdatingText || ScanRegion is not { } region) { return; }
+        int start = MapOffset(region.Offset, afterInsertion: false);
+        int end = MapOffset(region.Offset + region.Length, afterInsertion: true);
+        ScanRegion = new(start, Math.Max(0, end - start));
+        int MapOffset(int position, bool afterInsertion)
+        {
+            if (position < args.Offset || position == args.Offset && !afterInsertion) { return position; }
+            if (position >= args.Offset + args.RemovalLength) { return position + args.InsertionLength - args.RemovalLength; }
+            return args.Offset + (afterInsertion ? args.InsertionLength : 0);
+        }
+    }
+    internal void DocumentEdited()
+    {
+        if (_disposed) { return; }
+        _selectedText = ""; _occurrences.Clear(); _highlights.Clear();
+        RebuildOccurrences(); Notify();
+    }
+    internal void EditabilityChanged() => Notify();
     internal void ThemeChanged()
     {
         UpdateColors();
@@ -305,6 +391,7 @@ public sealed class DiffViewerSearch : IDisposable
         if (_disposed) { return; }
         Suspend(); _disposed = true; OpenDiffToolRequested = null;
         _view.Editor.TextArea.SelectionChanged -= SelectionChanged;
+        _view.Editor.Document.Changed -= DocumentChanged;
         _view.DetachedFromVisualTree -= Detached;
         _view.AttachedToVisualTree -= Attached;
         _caretOutsideSelection.Dispose();

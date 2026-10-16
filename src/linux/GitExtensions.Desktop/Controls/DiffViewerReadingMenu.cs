@@ -55,8 +55,11 @@ public sealed class DiffViewerReadingMenu : IDisposable
         MenuItem goTo = Item("GoToLine", "goToLineToolStripMenuItem", "&Go to line");
         goTo.InputGesture = new(Key.G, KeyModifiers.Control);
         goTo.Click += (_, _) => Start(ShowGoToLineAsync);
-        _items.Add((copy, null)); _items.Add((find, null)); _items.Add((goTo, null)); Refresh();
-        return [copy, patch, current, previous, new Separator(), find, goTo];
+        MenuItem replace = Item("Replace", "replaceToolStripMenuItem", "&Replace...");
+        replace.InputGesture = new(Key.H, KeyModifiers.Control);
+        replace.Click += (_, _) => _view.Search.ShowFind(replaceMode: true);
+        _items.Add((copy, null)); _items.Add((find, null)); _items.Add((replace, null)); _items.Add((goTo, null)); Refresh();
+        return [copy, patch, current, previous, new Separator(), find, replace, goTo];
     }
 
     public ComboBox CreateEncodingSelector()
@@ -225,7 +228,12 @@ public sealed class DiffViewerReadingMenu : IDisposable
         foreach ((MenuItem item, GitDiffCopyOperation? copy) in _items)
         {
             if (copy is not null) { item.IsVisible = _view.CanCopyPatch; item.IsEnabled = _view.Text.Length > 0; }
-            else { item.IsEnabled = item.Name switch { "DiffViewerCopy" => _view.SelectionLength > 0, "DiffViewerFind" => _view.Search.IsAvailable, _ => _view.MaxFileLine > 0 }; }
+            else
+            {
+                if (item.Name == "DiffViewerReplace") { item.IsVisible = !_view.IsReadOnly; }
+                item.IsEnabled = item.Name switch { "DiffViewerCopy" => _view.SelectionLength > 0, "DiffViewerFind" => _view.Search.IsAvailable,
+                    "DiffViewerReplace" => _view.Search.CanReplace, _ => _view.MaxFileLine > 0 };
+            }
         }
         _updatingEncoding = true;
         try

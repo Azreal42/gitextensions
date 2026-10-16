@@ -102,7 +102,7 @@ public abstract class RepositoryDialog : Window
             IsBusy = false;
             foreach (Control input in _inputs) { input.IsEnabled = true; }
             UpdateActions();
-            if (_closeWhenIdle) { Close(); }
+            if (_closeWhenIdle) { _closeWhenIdle = false; Close(); }
             else if (_pendingDiffReload is Func<Task> reload && !_lifetime.IsCancellationRequested)
             {
                 _pendingDiffReload = null;

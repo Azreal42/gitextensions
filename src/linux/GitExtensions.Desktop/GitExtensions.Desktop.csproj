@@ -19,6 +19,7 @@
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../app/GitUI/Resources/ChangeLog.md" Link="Assets/ChangeLog.md" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Help/*.png" Link="Assets/Help/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="../../app/GitUI/CommandsDialogs/FormGitIgnore.resx;../../app/GitUI/CommandsDialogs/FormGitAttributes.resx;../../app/GitUI/CommandsDialogs/FormMailMap.resx" Link="Assets/RulesHelp/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/difftastic.ico" Link="Assets/Icons/difftastic.ico" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Backgrounds/DashboardBackground*.png" Link="Assets/Backgrounds/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../../setup/assets/Logo/GitExtensionsLogoWide.png" Link="Assets/GitExtensionsLogoWide.png" />

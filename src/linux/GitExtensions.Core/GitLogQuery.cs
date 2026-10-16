@@ -62,7 +62,7 @@ public sealed partial class GitRepository
         }
 
         List<string> arguments = ["log", "--encoding=UTF-8", query.Sort switch { GitLogSort.AuthorDate => "--author-date-order", GitLogSort.Date => "--date-order", _ => "--topo-order" }, "-z", "--date=iso-strict", "--no-ext-diff", "--no-textconv",
-            "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b", $"--max-count={query.Count.ToString(CultureInfo.InvariantCulture)}"];
+            "--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%s%x00%b", $"--max-count={query.Count.ToString(CultureInfo.InvariantCulture)}"];
         if (query.Skip > 0)
         {
             arguments.Add($"--skip={query.Skip.ToString(CultureInfo.InvariantCulture)}");

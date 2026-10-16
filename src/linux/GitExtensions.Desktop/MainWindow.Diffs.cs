@@ -104,6 +104,7 @@ public sealed partial class MainWindow
         omit.Click += async (_, _) => await ChangeRevisionDiffPreferencesAsync(
             _revisionDiffPreferences with { OmitUninterestingDiff = omit.IsChecked });
         _revisionFilesView = new FileStatusListView(_revisionFiles) { Name = "RevisionFileStatusList", GroupByRevision = true };
+        ConfigureRulesFileList(_revisionFilesView, worktreeContext: false);
         ConfigureFileContextMenu(_revisionFiles, isFileTree: false);
         _revisionFilesView.SettingsMenu.Items.Add(allParents);
         _revisionFilesView.SettingsMenu.Items.Add(omit);

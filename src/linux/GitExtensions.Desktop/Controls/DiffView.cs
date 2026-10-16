@@ -34,6 +34,9 @@ public sealed class DiffView : UserControl, IDisposable
     private readonly List<DiffLine> _lines = [];
     private DiffPalette _palette = DiffPalette.Light;
     private bool _updatingText;
+    private bool _synchronizingEdit;
+    private string _savedText = "";
+    private bool _modified;
     private bool _isPatch;
     private int _numberColumns = 1;
     private readonly List<int> _changeOffsets = [];
@@ -71,6 +74,8 @@ public sealed class DiffView : UserControl, IDisposable
     public event EventHandler? ComparisonOptionsChanged;
     public event EventHandler? DisplayOptionsChanged;
     public event EventHandler? FileEncodingChanged;
+    public event EventHandler? TextChanged;
+    public event EventHandler? ModifiedChanged;
 
     public DiffView(TextBox source, DiffViewerPreferencesStore? preferencesStore = null)
     {
@@ -112,6 +117,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.TextArea.TextView.LineTransformers.Add(new DiffForeground(this));
         _editor.TextArea.SelectionChanged += SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged += SynchronizeSelection;
+        _editor.TextChanged += EditorTextChanged;
         _nonprinting = new(_editor);
         Search = new(this);
         ReadingMenu = new(this);
@@ -131,9 +137,44 @@ public sealed class DiffView : UserControl, IDisposable
         Content = new Grid { Children = { _editor, overlay } };
         ApplyPalette();
         UpdateText();
+        AcceptChanges();
     }
 
     public string Text => _editor.Text;
+    /// <summary>Editing is available for a plain file; diff documents remain read-only.</summary>
+    public bool IsReadOnly
+    {
+        get => _editor.IsReadOnly;
+        set
+        {
+            if (!value && Mode != DiffViewMode.PlainText) { throw new InvalidOperationException("Only a plain-text file can be edited."); }
+            _editor.IsReadOnly = value;
+            ReadingMenu.Refresh();
+            Search.EditabilityChanged();
+        }
+    }
+    public bool IsModified => Text != _savedText;
+    /// <summary>Loads a new file snapshot. Presentation changes never use this path.</summary>
+    public void LoadText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (Mode != DiffViewMode.PlainText) { throw new InvalidOperationException("Only a plain-text file can be loaded for editing."); }
+        _source.Text = text;
+        CompletePlainTextDocumentLoad();
+        Search.DocumentUpdated(changed: true);
+        _editor.Document.UndoStack.ClearAll();
+        AcceptChanges();
+        Select(0, 0);
+        SetScrollOffset(default);
+    }
+    /// <summary>Marks the saved version without discarding the user's undo history.</summary>
+    public void AcceptChanges()
+    {
+        _savedText = Text;
+        _editor.IsModified = false;
+        UpdateModified();
+    }
+    public bool FocusEditor() => _editor.TextArea.Focus();
     public string? SyntaxPath
     {
         get => _syntaxPath;
@@ -184,7 +225,15 @@ public sealed class DiffView : UserControl, IDisposable
             return anchor.New ?? anchor.Old ?? anchor.Row;
         }
     }
-    public DiffViewMode Mode { get => GetValue(ModeProperty); set => SetValue(ModeProperty, value); }
+    public DiffViewMode Mode
+    {
+        get => GetValue(ModeProperty);
+        set
+        {
+            if (_editor is not null && !IsReadOnly && value != DiffViewMode.PlainText) { throw new InvalidOperationException("An editable file must remain plain text."); }
+            SetValue(ModeProperty, value);
+        }
+    }
     public DiffViewMode EffectiveMode { get; private set; } = DiffViewMode.Unified;
     public bool CanStagePatch => _documentReady && EffectiveMode == DiffViewMode.Unified && _isPatch && _equivalentDisplay
         && (_document is null || _document.CanStageEquivalent && _document.IsLosslessPatch && _document.EffectiveAppearance == GitDiffAppearance.Patch);
@@ -253,7 +302,7 @@ public sealed class DiffView : UserControl, IDisposable
     public bool GoToNextChange() => NavigateChange(forward: true);
     public bool GoToPreviousChange() => NavigateChange(forward: false);
     public bool HandleReadingShortcut(KeyEventArgs args) => ComparisonMenu.HandleKeyDown(args)
-        || _editor.TextArea.IsKeyboardFocusWithin && RenderingMenu.HandleKeyDown(args) || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args);
+        || IsReadOnly && _editor.TextArea.IsKeyboardFocusWithin && RenderingMenu.HandleKeyDown(args) || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args);
     public IReadOnlyList<object> CreateContextMenuItems(string? comparisonPrefix = null)
     {
         IReadOnlyList<object> reading = ReadingMenu.CreateContextMenuItems();
@@ -310,8 +359,14 @@ public sealed class DiffView : UserControl, IDisposable
         {
 
         }
+        if (change.Property == IsEffectivelyEnabledProperty)
+        {
+            ReadingMenu?.Refresh();
+            Search?.EditabilityChanged();
+        }
         if (change.Property == ModeProperty)
         {
+            if (Mode != DiffViewMode.PlainText && !_editor.IsReadOnly) { IsReadOnly = true; }
             if (Mode == DiffViewMode.PlainText) { _document = null; UpdateText(); }
             ParseLines();
             BuildInlineSpans();
@@ -335,7 +390,34 @@ public sealed class DiffView : UserControl, IDisposable
 
     private void SourceChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
-        if (args.Property == TextBox.TextProperty && !_settingDocument) { _document = null; _documentReady = true; UpdateText(); }
+        if (args.Property == TextBox.TextProperty && !_settingDocument && !_synchronizingEdit) { _document = null; _documentReady = true; UpdateText(); }
+    }
+
+    private void EditorTextChanged(object? sender, EventArgs args)
+    {
+        if (_updatingText || IsReadOnly || _disposed) { return; }
+        // Keep the shared FileViewer source current without assigning Editor.Text:
+        // that setter replaces the document and loses undo, selection and caret.
+        _synchronizingEdit = true;
+        try { _source.Text = _editor.Text; }
+        finally { _synchronizingEdit = false; }
+        _document = null;
+        _documentReady = true;
+        ParseLines();
+        _numbers.InvalidateMeasure();
+        _numbers.InvalidateVisual();
+        Search.DocumentEdited();
+        ReadingMenu.Refresh();
+        UpdateModified();
+        TextChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void UpdateModified()
+    {
+        bool modified = IsModified;
+        if (_modified == modified) { return; }
+        _modified = modified;
+        ModifiedChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void UpdateText()
@@ -354,7 +436,9 @@ public sealed class DiffView : UserControl, IDisposable
         _updatingText = true;
         try
         {
-            _editor.Text = colored.Text;
+            // Reloading a palette, syntax or identical source is presentation only.
+            // In particular an editable FileViewer must keep its undo stack intact.
+            if (_editor.Text != colored.Text) { _editor.Text = colored.Text; }
             ParseLines();
             BuildInlineSpans();
             UpdateAppearanceContext();
@@ -775,6 +859,7 @@ public sealed class DiffView : UserControl, IDisposable
         ReadingMenu.Dispose();
         _editor.TextArea.SelectionChanged -= SynchronizeSelection;
         _editor.TextArea.Caret.PositionChanged -= SynchronizeSelection;
+        _editor.TextChanged -= EditorTextChanged;
     }
 
     private IBrush? LineBackground(DiffLineKind kind) => kind switch

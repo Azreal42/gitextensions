@@ -285,7 +285,7 @@ public sealed partial class MainWindow
         ItemsSource = new[]
         {
             MenuGroup("Start", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), _favoritesMenu, _recentMenu, MenuAction("Dashboard", CloseRepositoryAsync), MenuAction("Refresh dashboard", RefreshDashboardAsync), MenuAction("Recent repositories settings", RecentRepositorySettingsAsync), MenuAction("Close", CloseRepositoryAsync)),
-            MenuGroup("Repository", MenuAction("Commit…", () => ShowWorkflowAsync("Changes")), MenuAction("Stash…", () => ShowWorkflowAsync("Stashes")), MenuAction("Worktrees…", () => ShowWorkflowAsync("Worktrees")), MenuAction("Submodules…", () => ShowWorkflowAsync("Submodules")), BuildGitMaintenanceMenu(), MenuAction("Maintenance…", () => ShowWorkflowAsync("Repository"))),
+            BuildRepositoryMenu(),
             BuildHistoryNavigateMenu(),
             BuildHistoryViewMenu(),
             BuildCommandsMenu(),

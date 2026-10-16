@@ -13,6 +13,7 @@ public sealed partial class MainWindow
     private Control BuildWorkingFilesView()
     {
         _changesFilesView = new FileStatusListView(_changes) { Name = "WorkingFileStatusList" };
+        ConfigureRulesFileList(_changesFilesView, worktreeContext: true);
         _changesFilesView.DisplayChanged += async (_, _) =>
         {
             if (_refreshing || _busy) { return; }

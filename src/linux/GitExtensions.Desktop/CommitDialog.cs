@@ -18,7 +18,7 @@ namespace GitExtensions.Linux.Desktop;
 public enum TargetedCommitKind { Normal, Fixup, Squash, Amend }
 
 /// <summary>The FormCommit layout and workflows, using the existing Git backend and translation catalogue.</summary>
-public sealed class CommitDialog : Window
+public sealed partial class CommitDialog : Window
 {
     private readonly GitRepository _repository;
     private readonly TargetedCommitKind _initialKind;
@@ -133,6 +133,8 @@ public sealed class CommitDialog : Window
         FileStatusListPreferencesStore fileListPreferences = new(Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!);
         _unstagedView = new FileStatusListView(_unstaged, FileHeader, fileListPreferences) { Name = "UnstagedFileStatusList" };
         _stagedView = new FileStatusListView(_staged, FileHeader, fileListPreferences) { Name = "StagedFileStatusList" };
+        ConfigureRulesFileList(_unstagedView);
+        ConfigureRulesFileList(_stagedView);
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
         _sign.ItemsSource = new[] { T("Git default GPG signing"), T("Do not sign commit"), T("Sign with default GPG"), T("Sign with specific GPG") };
