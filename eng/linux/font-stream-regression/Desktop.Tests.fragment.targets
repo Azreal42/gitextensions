@@ -1,0 +1,24 @@
+<Project>
+  <!-- Import from Desktop.Tests.csproj; no runtime or executable reference in the testhost. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FontStreamRegression.csproj" ReferenceOutputAssembly="false" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProbeContract.cs" Link="FontStreamProbe/ProbeContract.cs" />
+  </ItemGroup>
+  <Target Name="CopyFontStreamProbe" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)FontStreamRegression.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)" BuildInParallel="false">
+      <Output TaskParameter="TargetOutputs" ItemName="_FontStreamProbeTarget" />
+    </MSBuild>
+    <Error Condition="'@(_FontStreamProbeTarget->Count())' != '1'" Text="The current probe project must return exactly one target output: @(_FontStreamProbeTarget)" />
+    <PropertyGroup>
+      <_FontStreamProbeDirectory>@(_FontStreamProbeTarget->'%(RootDir)%(Directory)')</_FontStreamProbeDirectory>
+    </PropertyGroup>
+    <Message Importance="High" Text="Font-stream probe current target: @(_FontStreamProbeTarget); copy source: $(_FontStreamProbeDirectory)" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)font-stream-probe-copy-source.txt" Lines="@(_FontStreamProbeTarget->'%(FullPath)');$(_FontStreamProbeDirectory)" Overwrite="true" Encoding="UTF-8" />
+    <Error Condition="!Exists('$(_FontStreamProbeDirectory)FontStreamRegression.dll')" Text="The current build must produce the complete font-stream probe before copying it: $(_FontStreamProbeDirectory)" />
+    <ItemGroup>
+      <_FontStreamProbeFiles Include="$(_FontStreamProbeDirectory)**/*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(TargetDir)font-stream-probe" />
+    <Copy SourceFiles="@(_FontStreamProbeFiles)" DestinationFiles="@(_FontStreamProbeFiles->'$(TargetDir)font-stream-probe/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

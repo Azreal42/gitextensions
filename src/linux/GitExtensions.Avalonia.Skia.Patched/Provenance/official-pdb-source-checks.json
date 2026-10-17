@@ -1,0 +1,348 @@
+{
+  "status": "EXACT_DLL_PDB_SOURCELINK_54_DOCUMENTS_VERIFIED_STATIC",
+  "official_commit": "627ae9ef921621e27e7aa58df2796fbadb50af88",
+  "dll_codeview_guid": "f23e1e64-40b8-4dfd-8419-9d35e9019bf4",
+  "pdb_guid": "f23e1e64-40b8-4dfd-8419-9d35e9019bf4",
+  "guid_matches": true,
+  "pdb_actual_sha256": "111973f482d1714d4937ed9b39fe64e2f495883d57f29b81204aea3c9ded2cd5",
+  "deterministic_pdb_content_hash_with_id_zeroed": "641e3ef2b840fdad04199d35e9019bf415efb3bae7af8f1ce7bb9b527baf8d11",
+  "matches_dll_pdb_checksum": true,
+  "sourcelink": {
+    "documents": {
+      "/_/*": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/627ae9ef921621e27e7aa58df2796fbadb50af88/*",
+      "/_/external/Avalonia.Controls.DataGrid/*": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia.Controls.DataGrid/85a0b32ef6d963c1d67619ca3e2f6da0bc43ac9a/*",
+      "/_/external/Numerge/*": "https://raw.githubusercontent.com/kekekeks/Numerge/9738c6121fdd143c78d3e25686a7e4e13c00f586/*",
+      "/_/external/XamlX/*": "https://raw.githubusercontent.com/kekekeks/XamlX/86f5a26fadb745e95169c3c805ebd9fd7c9b44d2/*"
+    }
+  },
+  "document_count": 54,
+  "exact_raw": 0,
+  "crlf_checkout_only": 54,
+  "documents": [
+    {
+      "path": "src/Skia/Avalonia.Skia/CombinedGeometryImpl.cs",
+      "git_sha256": "7f0c04681449c9c72b42db32238d8c35b2cb404f428c223c8eb4d7c4458bb238",
+      "pdb_sha256": "5b78c4ef325c92d1c7ce4db3fde9ecf50d8a2fd67cc828e11f25717e517b94b7",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/DrawingContextImpl.Effects.cs",
+      "git_sha256": "57b81420dac1ce44ec7cb7ae77b99cc95687feae8e92d16cfa9c9dce8966e476",
+      "pdb_sha256": "9e2c3e500b9ae4709ef90c28a09d7bc8296ee84c0728162333bc0365ad5883e3",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/DrawingContextImpl.cs",
+      "git_sha256": "242d4e14eff75df1e77e58327261484734b51513142687f87eed45db422c91d5",
+      "pdb_sha256": "2b18774cfb25ffa425097086562cd7166a933f5a09024aad9a55980ad054fe6d",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/EllipseGeometryImpl.cs",
+      "git_sha256": "67aaedfec80f98578db7f1cbea6bb343a3b8c7b93b4dda63a40e22700e8ee30c",
+      "pdb_sha256": "7e6a990d929d6d53d2ac3965b1bf090614e7d4b916dca2e7ca2425abd08da977",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/FontManagerImpl.cs",
+      "git_sha256": "7646818e12efac6e8b712502079b0a3eb801dfa635d7392c50c2c0669c8b5e51",
+      "pdb_sha256": "70c79dc382407edbfdb655af267a1d3d2e8e0cd6a0a14594d453633d1d94619d",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/FramebufferRenderTarget.cs",
+      "git_sha256": "b7fd95f4885a768d13b442c157ff130400a1de055f8081a2da318a0c53fd874a",
+      "pdb_sha256": "c1a4b949df3b1db2fcc1221040bd5913df6cb9a7cd9c3763acd9807e9ccb20a6",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/GeometryGroupImpl.cs",
+      "git_sha256": "5947650c127b8d4a73fdb66eca3b85a5c25671e1e6afeff6a616c620d5090550",
+      "pdb_sha256": "b0c07ca88a3115222dd262d34859e2f4afd5fa1ab9122a060d285060f2260571",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/GeometryImpl.cs",
+      "git_sha256": "006387a58e29c71726fac9eab64e76aab6352a49ad4181302d24fbe13aa57902",
+      "pdb_sha256": "522204a9d124195b08d05bcc68d154f8cf50ef2fd6ed02ac306f5607808c7fda",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/GlyphRunImpl.cs",
+      "git_sha256": "1ed8e3e38df7d3d3e96593e92c33b0d7aa7e8f7549bda51cdc40f5d51e07d5a1",
+      "pdb_sha256": "005e7c582c8d0b7920b58881ee3300d72f44d8dc14f773e691640c02d61fbc4e",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/GlyphTypefaceImpl.cs",
+      "git_sha256": "412e97a8e6d4e8b97bd4a670c76ffaf635475a4bb2580ff975fd0c2a96b2e0e1",
+      "pdb_sha256": "879715267a1c205fdc8247e4f63dfd18fd621e6ca384efe4c7ba8edfc9577106",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/ISkiaGpu.cs",
+      "git_sha256": "a66cd2005b28c2fac881326169b0a63327f5c7e8b9afd3fa8dfe0bf55d277580",
+      "pdb_sha256": "c11cdd72f1eaac2d1329cb300a1cbf38010914987d37b4a1e5fc8a42171c0e87",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/ISkiaGpuRenderSession.cs",
+      "git_sha256": "d8fb548c97a546664777b64895964f37a300dfd3236b1f0b18742acf7de11afb",
+      "pdb_sha256": "3accc266a9426fd940e7dec7d7b904087cf78814eaeea932ff0386c9a496d832",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/ISkiaGpuRenderTarget.cs",
+      "git_sha256": "0bc0fdd1e589417cc5c928f81278df582f61381852fde103d1f7e0bcfa5b7b2f",
+      "pdb_sha256": "22875a5794632109290c85a5f558e7200300eb3724b3f98125f6977f326b81ae",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/Metal/SkiaMetalApi.cs",
+      "git_sha256": "bb7aadfee22c151cf5be17ee501f723420f12823c2884f903c17b6e84d27825b",
+      "pdb_sha256": "ce362f72346ec8d80fddbdd5d2d1e0f410013faa0d9207ac20f13de051cf06bc",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/Metal/SkiaMetalExternalObjectsFeature.cs",
+      "git_sha256": "b09f8ad673147541713fbc88a3a5b7909de9c57a60346fa695f0a05575089c23",
+      "pdb_sha256": "bd500fb9cf49332198b8ee117c0efe0cc1be749c102a78bfd09ceb475343a02a",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/Metal/SkiaMetalGpu.cs",
+      "git_sha256": "56f5efa6f48e8df76752d6d58b356fbc1033c8953b179bcea820836a0e067012",
+      "pdb_sha256": "a49384864f0acc0e9a263197fc3a56a505fd04835f59144c787864c02b4c166b",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/FboSkiaSurface.cs",
+      "git_sha256": "276e52f94fa043b0dbbdaf05afadc90f4a5905d05b70a3fb3ea2ef0d0a38ebfa",
+      "pdb_sha256": "a6ed85a301f0b67d41271884b82c8ee0d78c94a7a41d429a3b8123008ab88868",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlRenderTarget.cs",
+      "git_sha256": "1910e3ec4157b0fed4fb0bcfe44d35e73eb18bc6096887f4c4356f06e9764d74",
+      "pdb_sha256": "fcfb34cea18acfae155a50d8aa115ab7035d13785c4df9fdfd759b4d4056c367",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlSkiaExternalObjectsFeature.cs",
+      "git_sha256": "1b4a80b7aeda41eb6791276e4758741147f01c164ba3a23b9fa6a268b844c13a",
+      "pdb_sha256": "53baab26e948fa699158d088c6355638feb46af2de4121cea2af49c34bea64f3",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlSkiaGpu.cs",
+      "git_sha256": "01ef2e311ee11d45eef56f9fe2e6e27af0793e2e0fe1beef29cf6bd08a097ec6",
+      "pdb_sha256": "f91091738fea3b58f5943e9212146e2cc839a0d59dd974d182712baa0dde0490",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlSkiaSharedTextureForComposition.cs",
+      "git_sha256": "ec94df1c1f743087c8e144fd0565c702a55fec1b25b8b85610fef9145bca49fd",
+      "pdb_sha256": "5d5985190fef565cb509af62fd85964cb791c88e8b7d9da28fd3fa79ad545b1e",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/IGlSkiaSpecificOptionsFeature.cs",
+      "git_sha256": "ced37c663898618783b80b6b1b434ed059b7026710ad5db0b7c61e0d93975642",
+      "pdb_sha256": "6dae0b580a55dbd9ebfbaac4d3fb05a5c46a230b2e123bc9d31c19c5cf5d6104",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/SkiaGpuRenderTarget.cs",
+      "git_sha256": "494772407d55510a4c2d3aeb2491cb16bf367686c34268dd7c2d64767cc8b39c",
+      "pdb_sha256": "3bdfdfc6e79555a8bcead4314831f77d61fef890db55f81a26d627e850e80862",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/Vulkan/VulkanSkiaExternalObjectsFeature.cs",
+      "git_sha256": "52551950f5ab7f2b9011ca05921f059d445a10bb98cc717c9c261bae5f801739",
+      "pdb_sha256": "515d690c1e00bf1f4eb235c427d768de52a5647a78443ff0a109d8a4f1653abc",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/Vulkan/VulkanSkiaGpu.cs",
+      "git_sha256": "28ecd0b9be3e050668f2b63efc9f31763a63547b3fa1a1b96443515807334dcc",
+      "pdb_sha256": "d6485196e5c784d810905f825f76014777c3484ebb5b4d100a57904a16a6de5c",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Gpu/Vulkan/VulkanSkiaRenderTarget.cs",
+      "git_sha256": "952a2472b82cd889893622dee28843b96fe8e21a3c3b76334f0553be4c7a80fa",
+      "pdb_sha256": "b93e03dfbb4b8bb4ae594b561aec4fb558e314853118637ac91b50ba85aae482",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Helpers/DrawingContextHelper.cs",
+      "git_sha256": "6b28703476a20b27e5a8dd17d1badf0c1d7f53f010054fcaa872f06d739b2c98",
+      "pdb_sha256": "ff7e4d786a7e8870e527fa411be9f2a1bd508e280ac6b6b3d11612137b309014",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Helpers/ImageSavingHelper.cs",
+      "git_sha256": "76795ad6e708d125fdb2e408dfe8dc93232cd03bd3a9e16717e54abe598cc207",
+      "pdb_sha256": "19a930a89345055aa817309b25b1ac39cbb169fc4ee3b8ea616636c3a9da7be1",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Helpers/PenHelper.cs",
+      "git_sha256": "9ab71a089d7691222c75f18663650526d413859abf79faa4bb306460c94343a8",
+      "pdb_sha256": "7f3ebe3d5cddbfb68ae5e7de4378449aa04d03882bf46e6770d9123a0d71bc8e",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Helpers/PixelFormatHelper.cs",
+      "git_sha256": "d8210f0e89acb2005c36c0ca178087011475cb2e767d781ee23d5be57765e845",
+      "pdb_sha256": "6eb789d213858b4af3d0ef6042c1f5032bbceec10e4ac09c1fac8ed9a7b2da90",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/Helpers/SKPathHelper.cs",
+      "git_sha256": "cd9c23f7cc02cfd9089163af5fe53f04baae14c36b9c21eb6856b6a1b43a53b6",
+      "pdb_sha256": "a8a75e768fdbed486cd8a08582e8733e78d2650510832dcd9fdd1a1747b68e2b",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/IDrawableBitmapImpl.cs",
+      "git_sha256": "609ab21bea7130881f0dee6278ced28980ccddd5264e06d5ddd54602a0e47d42",
+      "pdb_sha256": "9a18ba9a97c2f501d95aba2755bfe17ff515118be6b67660db5ccd7ca403f2fb",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/ISkiaSharpApiLeaseFeature.cs",
+      "git_sha256": "45839a9eb35e5c14d6d04194a5d965ef0bf846be19ba33fe198b3e9a32f8083f",
+      "pdb_sha256": "9a5b12613d2ba653326523948c76b476f866d2ba3e541f4e2652d7307c0202cf",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/ImmutableBitmap.cs",
+      "git_sha256": "934e289ef65e9f63e5cd3120d3ca039bd00b4ba6b5a73a66d07477e26d6635b1",
+      "pdb_sha256": "5848ae8d42320348e60e3aed098e106c63b057f9a78a59876e6a60661e653db3",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/LineGeometryImpl.cs",
+      "git_sha256": "1fbe2dda98b01efde4708cb6ec68a3dc37848591dea8c8f4ed0c124f90da8c3e",
+      "pdb_sha256": "12a326384465e843aa7566e5544e08e723e4a36657932c764ef14e4d55023a1b",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/PictureRenderTarget.cs",
+      "git_sha256": "90138d42ad155865e03f6d6b31205e37652f51f9d090353221f43cf86ad64bc6",
+      "pdb_sha256": "e70d65bb18ff8a306f338b7eab610679ec711b0ece4417cf9305fa4179821f17",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/PlatformRenderInterface.cs",
+      "git_sha256": "23c39acfd7a89911b447e278f056cdc36bb711345a092db324f1075e10c5921a",
+      "pdb_sha256": "e899c08cf00563029f3d82321cdd92e0115a944cb4e7a1e11ba2b1e2706f025a",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/RectangleGeometryImpl.cs",
+      "git_sha256": "d6e085172fe02072bfc9f048499a5c28c37c9f034f95bc0bdca6f8c0ba676f57",
+      "pdb_sha256": "7b6d6124b62cab9970c2604fc741e02e9ed2c53805b63113d133756fe4f9311e",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/RenderTargetBitmapImpl.cs",
+      "git_sha256": "196e247444394c86442e8cd4d81310e33cee179368b1e562229a3cbacceaa654",
+      "pdb_sha256": "1197337e36192d6d3d50163c682a07cb8c410646a16843fe9a5c897cf5fa35be",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SKCacheBase.cs",
+      "git_sha256": "e282dff689ae2a089c539b25c18507e38d51bf23547e8a8ccb1c6ecdc9a6b33d",
+      "pdb_sha256": "88ed28c84be66c70cc1a26f9db0f0b64ec126da536cbac0e6918c4d30bf6152e",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SKPaintCache.cs",
+      "git_sha256": "e036acdeeec8fbe5f5bb8328f55087351fcbf342071263c5413945ca494ccab3",
+      "pdb_sha256": "23b2f8b37826c44d4d98b6bfb660a8773175890754cf289115dd9e04873b31c6",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SKRoundRectCache.cs",
+      "git_sha256": "147de2d55bb2ee86017604ab86570d9a09debda245d72de48639193549e322b5",
+      "pdb_sha256": "85b6578e60abbc0c745c3013881160f7762789818568ed7f2391ba3f5816186b",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SKTextBlobBuilderCache.cs",
+      "git_sha256": "ebb3a717413f11d7b6eaa2766eba61585e9bc438fdc87238c129d4357071cbc9",
+      "pdb_sha256": "1da07c2d9ec14703edd67918be906816517b5bd177f53e125ec8b9943947deb4",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SkiaApplicationExtensions.cs",
+      "git_sha256": "56dc6eef5301690187cb9f6aba19bc2a28adb7defd9ff1a6bf2524a5a9090de8",
+      "pdb_sha256": "0d09953ccb43c29d780a4581a51c60cbc84c14eec77e910f9c3f0dbc250c029e",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SkiaBackendContext.cs",
+      "git_sha256": "e18b72493ebedb8db78ea49bf034493747346e57e3596ebb5363d94302f9c19b",
+      "pdb_sha256": "e6469840a0400af11c1d527b2c2b273ff13db90b9f53bf26d5d598ba853c655a",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SkiaOptions.cs",
+      "git_sha256": "e306a06b5764ee94c99163d8dc2828b2ecb89fa99d584af7d16eb288360df8f1",
+      "pdb_sha256": "b8ebb3ddc943a18c633fcc76860764e4748bcf8cb524df6c78665a3b8fece8b1",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SkiaPlatform.cs",
+      "git_sha256": "fcb23a59467f711de5d4ba72ad2058ff9b00b171a4ac04dd4afca68c87c3ceac",
+      "pdb_sha256": "106d04706881f001eb9c67bdd39fdfb6a5be33f202d9b413e7164020ef55a3c0",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SkiaRegionImpl.cs",
+      "git_sha256": "fb399e875cd89a166ff389cce05f4d2993224b56939290226366384efbdf63d5",
+      "pdb_sha256": "1580a591fd5035f09a567c5d08baa3cf753c060d56e33e0225913e0c78c05f4c",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SkiaSharpExtensions.cs",
+      "git_sha256": "f836c4438ffe5a06d90d2bfc00fc14741bc3100af8ebd6e74a4628d9c654be09",
+      "pdb_sha256": "c51521a8de80975749c6197cfe9daf6ef3c19fee9191be0b441a96f0ed9b1678",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/StreamGeometryImpl.cs",
+      "git_sha256": "5810127ae37ac5b151391ca71ca0bf49195128740a480b10be01595d4bb82d55",
+      "pdb_sha256": "61dfdb03b680164cede5acec19d21acf93d554c8a5943d19dbe04ed4c7b70305",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/SurfaceRenderTarget.cs",
+      "git_sha256": "d986202f746750a587981601e6a73da774f900833f5539b64bd10c355c8dec02",
+      "pdb_sha256": "cc9a3632d21464001c567ae3e37c351e0ea044f6d3bd371a3f47d74d9904cf8c",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/TextShaperImpl.cs",
+      "git_sha256": "08f9f87872435fc5788fcb3c044d4b5d24782b3f6fce139ca47970216529e044",
+      "pdb_sha256": "ff83f7bbd3eaf05fa470cbb61ed0dad466031fad5f3c304a5bab4481bd79e964",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/TransformedGeometryImpl.cs",
+      "git_sha256": "53c9745cef5243107093d2e87746ba126c53e67780e0e2b543645715a6117ce5",
+      "pdb_sha256": "64f14a6e6862beb3cfab8f9f6514294a441a26abeca91fded438d63b4a2bf99c",
+      "match": "LF-to-CRLF-only"
+    },
+    {
+      "path": "src/Skia/Avalonia.Skia/WriteableBitmapImpl.cs",
+      "git_sha256": "4e33c62667a0e446cfd8c061fde55d79c8e5b0d3dca9484d14691ee2f5415dea",
+      "pdb_sha256": "4466999eb927ea8504a8f92224596aaf02cc9f1da3f53879de06fc493ecf1f15",
+      "match": "LF-to-CRLF-only"
+    }
+  ],
+  "note": "Original build checkout used CRLF for54documents; vendored preimages remain official Git blob bytes(LF). Only EOL conversion explains every PDBdocumentchecksum. No sourcecode change or assembly execution used."
+}

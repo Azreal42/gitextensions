@@ -44,6 +44,21 @@
           "Avalonia": "11.3.22"
         }
       },
+      "Avalonia.Skia": {
+        "type": "Direct",
+        "requested": "[11.3.22, 11.3.22]",
+        "resolved": "11.3.22",
+        "contentHash": "ZbnfFCr2f1l3RD1E/Tn5tJDRFIDm9ICY/PzG4lhuShd6mDg+0y5wRCytCYOSM79KhlboU/f0O7J1Mw7s83Sy3A==",
+        "dependencies": {
+          "Avalonia": "11.3.22",
+          "HarfBuzzSharp": "8.3.1.1",
+          "HarfBuzzSharp.NativeAssets.Linux": "8.3.1.1",
+          "HarfBuzzSharp.NativeAssets.WebAssembly": "8.3.1.1",
+          "SkiaSharp": "2.88.9",
+          "SkiaSharp.NativeAssets.Linux": "2.88.9",
+          "SkiaSharp.NativeAssets.WebAssembly": "2.88.9"
+        }
+      },
       "Avalonia.Themes.Fluent": {
         "type": "Direct",
         "requested": "[11.3.22, )",
@@ -93,20 +108,6 @@
         "type": "Transitive",
         "resolved": "11.3.22",
         "contentHash": "Ll5YswLkNW0WZm7RkvGS+8B9vH4/x77IsnCqlBvmXOgiQd0J5bpJQFYo1NDVyRLadp4e8Yqg1WP2xEc6IK94HQ=="
-      },
-      "Avalonia.Skia": {
-        "type": "Transitive",
-        "resolved": "11.3.22",
-        "contentHash": "ZbnfFCr2f1l3RD1E/Tn5tJDRFIDm9ICY/PzG4lhuShd6mDg+0y5wRCytCYOSM79KhlboU/f0O7J1Mw7s83Sy3A==",
-        "dependencies": {
-          "Avalonia": "11.3.22",
-          "HarfBuzzSharp": "8.3.1.1",
-          "HarfBuzzSharp.NativeAssets.Linux": "8.3.1.1",
-          "HarfBuzzSharp.NativeAssets.WebAssembly": "8.3.1.1",
-          "SkiaSharp": "2.88.9",
-          "SkiaSharp.NativeAssets.Linux": "2.88.9",
-          "SkiaSharp.NativeAssets.WebAssembly": "2.88.9"
-        }
       },
       "Avalonia.Win32": {
         "type": "Transitive",
@@ -202,6 +203,18 @@
         "type": "Transitive",
         "resolved": "2.6.0",
         "contentHash": "XE8a+11nZg0LRaf+RGABEWaHIf8yGd5w8v/Ra1iWxMBmAVzwuKbW7G21mS0U7w7sh1lYcgckInWGgnz4qyET8A=="
+      },
+      "gitextensions.avalonia.skia.patched": {
+        "type": "Project",
+        "dependencies": {
+          "Avalonia": "[11.3.22, 11.3.22]",
+          "HarfBuzzSharp": "[8.3.1.1, 8.3.1.1]",
+          "HarfBuzzSharp.NativeAssets.Linux": "[8.3.1.1, 8.3.1.1]",
+          "HarfBuzzSharp.NativeAssets.WebAssembly": "[8.3.1.1, 8.3.1.1]",
+          "SkiaSharp": "[2.88.9, 2.88.9]",
+          "SkiaSharp.NativeAssets.Linux": "[2.88.9, 2.88.9]",
+          "SkiaSharp.NativeAssets.WebAssembly": "[2.88.9, 2.88.9]"
+        }
       },
       "gitextensions.core": {
         "type": "Project"

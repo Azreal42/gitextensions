@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/linux/GitExtensions.Avalonia.Skia.Patched/GitExtensions.Avalonia.Skia.Patched.csproj" />
     <Project Path="src/linux/GitExtensions.Core/GitExtensions.Core.csproj" />
     <Project Path="src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj" />
     <Project Path="src/linux/GitExtensions.Plugins/GitExtensions.Plugins.csproj" />
@@ -8,5 +9,8 @@
     <Project Path="tests/linux/GitExtensions.Core.Tests/GitExtensions.Core.Tests.csproj" />
     <Project Path="tests/linux/GitExtensions.Desktop.Tests/GitExtensions.Desktop.Tests.csproj" />
     <Project Path="tests/linux/GitExtensions.Plugins.Tests/GitExtensions.Plugins.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="eng/linux/font-stream-regression/FontStreamRegression.csproj" />
   </Folder>
 </Solution>

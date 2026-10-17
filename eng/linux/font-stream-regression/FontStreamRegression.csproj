@@ -1,0 +1,29 @@
+<Project TreatAsLocalProperty="TargetFramework;AssemblyName;RootNamespace;ManagePackageVersionsCentrally">
+  <PropertyGroup>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <OutputType>Exe</OutputType>
+    <UseAppHost>false</UseAppHost>
+    <AssemblyName>FontStreamRegression</AssemblyName>
+    <RootNamespace>GitExtensions.FontStreamRegression</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <Deterministic>true</Deterministic>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" Version="[11.3.22]" />
+    <PackageReference Include="Avalonia.Skia" Version="[11.3.22]" ExcludeAssets="compile;runtime" />
+    <ProjectReference Include="../../../src/linux/GitExtensions.Avalonia.Skia.Patched/GitExtensions.Avalonia.Skia.Patched.csproj" GlobalPropertiesToRemove="Version;AssemblyVersion;FileVersion;InformationalVersion;PackageId;PackageVersion;SourceRevisionId;RepositoryCommit;Authors;Company;Product;Copyright;PackageLicenseExpression;RepositoryUrl" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

@@ -1,0 +1,82 @@
+{
+  "method": "Static PE/ECMA335 bytes only; no CLR/reflection/native module executed",
+  "file": "Avalonia.Skia/11.3.22/lib/net8.0/Avalonia.Skia.dll",
+  "sha256": "fd7a05ee6d5c46571b455c9cdb7a38325f58a5a7a49c9cb1283d4fbcc63ad31e",
+  "assembly_name": "Avalonia.Skia",
+  "assembly_version": "11.3.22.0",
+  "culture": "",
+  "public_key_token": "c8d484a7012f9a8b",
+  "full_public_key_sha256": "34d062cd8b0bbdf600f86c7857ec9c1a776bea9be9b94665ef9b6a939de4f518",
+  "reference_assemblies": [
+    {
+      "name": "System.Runtime",
+      "version": "8.0.0.0",
+      "public_key_or_token": "b03f5f7f11d50a3a"
+    },
+    {
+      "name": "Avalonia.Controls",
+      "version": "11.3.22.0",
+      "public_key_or_token": "c8d484a7012f9a8b"
+    },
+    {
+      "name": "Avalonia.Base",
+      "version": "11.3.22.0",
+      "public_key_or_token": "c8d484a7012f9a8b"
+    },
+    {
+      "name": "SkiaSharp",
+      "version": "2.88.0.0",
+      "public_key_or_token": "0738eb9f132ed756"
+    },
+    {
+      "name": "System.Collections",
+      "version": "8.0.0.0",
+      "public_key_or_token": "b03f5f7f11d50a3a"
+    },
+    {
+      "name": "HarfBuzzSharp",
+      "version": "1.0.0.0",
+      "public_key_or_token": "0738eb9f132ed756"
+    },
+    {
+      "name": "Avalonia.OpenGL",
+      "version": "11.3.22.0",
+      "public_key_or_token": "c8d484a7012f9a8b"
+    },
+    {
+      "name": "Avalonia.Metal",
+      "version": "11.3.22.0",
+      "public_key_or_token": "c8d484a7012f9a8b"
+    },
+    {
+      "name": "Avalonia.Vulkan",
+      "version": "11.3.22.0",
+      "public_key_or_token": "c8d484a7012f9a8b"
+    },
+    {
+      "name": "System.Collections.Concurrent",
+      "version": "8.0.0.0",
+      "public_key_or_token": "b03f5f7f11d50a3a"
+    },
+    {
+      "name": "System.Threading",
+      "version": "8.0.0.0",
+      "public_key_or_token": "b03f5f7f11d50a3a"
+    },
+    {
+      "name": "System.Linq",
+      "version": "8.0.0.0",
+      "public_key_or_token": "b03f5f7f11d50a3a"
+    },
+    {
+      "name": "System.Memory",
+      "version": "8.0.0.0",
+      "public_key_or_token": "cc7b13ffcd2ddd51"
+    },
+    {
+      "name": "System.Runtime.InteropServices",
+      "version": "8.0.0.0",
+      "public_key_or_token": "b03f5f7f11d50a3a"
+    }
+  ]
+}

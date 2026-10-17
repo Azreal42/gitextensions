@@ -113,6 +113,11 @@ install -m 0644 "$repo_root/LICENSE.md" "$stage/usr/share/doc/gitextensions/copy
 python3 "$repo_root/eng/linux/collect-package-notices.py" \
     "$publish_dir/GitExtensions.deps.json" "$NUGET_PACKAGES" \
     "$stage/usr/share/doc/gitextensions/third-party"
+# This source-built backend is a project reference, not a NuGet license entry.
+local_skia_notices="$stage/usr/share/doc/gitextensions/third-party/GitExtensions.Avalonia.Skia.Patched"
+install -d "$local_skia_notices"
+install -m 0644 "$repo_root/src/linux/GitExtensions.Avalonia.Skia.Patched/LICENSE.txt" "$local_skia_notices/LICENSE.txt"
+install -m 0644 "$repo_root/src/linux/GitExtensions.Avalonia.Skia.Patched/NOTICE.md" "$local_skia_notices/NOTICE.md"
 gzip -n -9 -c "$repo_root/setup/linux/gitextensions.1" > "$stage/usr/share/man/man1/gitextensions.1.gz"
 for size in 16 24 32 48 64 128 256 512; do
     icon_dir="$stage/usr/share/icons/hicolor/${size}x${size}/apps"

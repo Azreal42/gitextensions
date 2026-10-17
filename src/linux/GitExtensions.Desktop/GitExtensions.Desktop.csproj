@@ -10,6 +10,9 @@
     <Content Include="gitextensions-askpass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="../GitExtensions.Core/GitExtensions.Core.csproj" />
     <ProjectReference Include="../GitExtensions.Plugins/GitExtensions.Plugins.csproj" />
+    <ProjectReference Include="../GitExtensions.Avalonia.Skia.Patched/GitExtensions.Avalonia.Skia.Patched.csproj" GlobalPropertiesToRemove="Version;AssemblyVersion;FileVersion;InformationalVersion;PackageId;PackageVersion;SourceRevisionId;RepositoryCommit;Authors;Company;Product;Copyright;PackageLicenseExpression;RepositoryUrl" />
+    <PackageVersion Include="Avalonia.Skia" Version="[11.3.22]" />
+    <PackageReference Include="Avalonia.Skia" ExcludeAssets="compile;runtime" />
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />

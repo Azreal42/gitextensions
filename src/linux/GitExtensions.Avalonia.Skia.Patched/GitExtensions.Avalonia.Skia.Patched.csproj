@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="TargetFramework;AssemblyName;RootNamespace;Version;AssemblyVersion;FileVersion;InformationalVersion;PackageId;PackageVersion;SourceRevisionId;RepositoryCommit;Authors;Company;Product;Copyright;PackageLicenseExpression;RepositoryUrl;SignAssembly;PublicSign;AssemblyOriginatorKeyFile">
+  <Import Project="Provenance/AvaloniaPublicKey.props" />
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Avalonia.Skia</AssemblyName>
+    <RootNamespace>Avalonia.Skia</RootNamespace>
+    <PackageId>GitExtensions.Avalonia.Skia.Patched</PackageId>
+    <Version>11.3.22</Version>
+    <PackageVersion>11.3.22</PackageVersion>
+    <AssemblyVersion>11.3.22.0</AssemblyVersion>
+    <FileVersion>11.3.22.0</FileVersion>
+    <InformationalVersion>11.3.22+gitextensions.asset-lifetime.1.627ae9ef921621e27e7aa58df2796fbadb50af88</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <SourceRevisionId>627ae9ef921621e27e7aa58df2796fbadb50af88</SourceRevisionId>
+    <RepositoryCommit>627ae9ef921621e27e7aa58df2796fbadb50af88</RepositoryCommit>
+    <RepositoryUrl>https://github.com/AvaloniaUI/Avalonia</RepositoryUrl>
+    <Authors>Avalonia Team; Git Extensions maintainers (lifetime correction)</Authors>
+    <Company>AvaloniaUI</Company>
+    <Product>Avalonia.Skia — Git Extensions lifetime correction</Product>
+    <Copyright>Copyright AvaloniaUI OÜ and contributors</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign>true</PublicSign>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)avalonia-public.snk</AssemblyOriginatorKeyFile>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <EmbedAllSources>true</EmbedAllSources>
+    <PathMap>$(MSBuildProjectDirectory)=/_/gitextensions/Avalonia.Skia.Patched</PathMap>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsPublishable>false</IsPublishable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="[11.3.22]" ExcludeAssets="compile" GeneratePathProperty="true" />
+    <PackageReference Include="SkiaSharp" Version="[2.88.9]" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="[2.88.9]" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="[2.88.9]" />
+    <PackageReference Include="HarfBuzzSharp" Version="[8.3.1.1]" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="[8.3.1.1]" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.WebAssembly" Version="[8.3.1.1]" />
+    <EmbeddedResource Include="Upstream/Assets/NoiseAsset_256X256_PNG.png" LogicalName="Avalonia.Skia.Assets.NoiseAsset_256X256_PNG.png" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute" />
+  </ItemGroup>
+  <Import Project="Provenance/OfficialInternalsVisibleTo.props" />
+  <!-- The package reference assemblies intentionally prohibit backend implementations.
+       Compile this friend assembly against the same package's unmodified runtime assemblies. -->
+  <Target Name="SelectPatchedSkiaAvaloniaLibraries" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(PkgAvalonia)' == ''" Text="Restore must provide PkgAvalonia for the pinned Avalonia package." />
+    <PropertyGroup>
+      <_PatchedSkiaAvaloniaLibDirectory>$([System.IO.Path]::GetFullPath('$(PkgAvalonia)/lib/net8.0'))/</_PatchedSkiaAvaloniaLibDirectory>
+      <_PatchedSkiaAvaloniaRefDirectory>$([System.IO.Path]::GetFullPath('$(PkgAvalonia)/ref/net8.0'))/</_PatchedSkiaAvaloniaRefDirectory>
+    </PropertyGroup>
+    <ItemGroup>
+      <_PatchedSkiaAvaloniaLibrary Include="$(_PatchedSkiaAvaloniaLibDirectory)*.dll" />
+      <Reference Include="@(_PatchedSkiaAvaloniaLibrary)" Private="false" />
+    </ItemGroup>
+    <Error Condition="'@(_PatchedSkiaAvaloniaLibrary)' == ''" Text="The pinned Avalonia package must contain its official lib/net8.0 assemblies." />
+  </Target>
+  <Target Name="VerifyPatchedSkiaAvaloniaLibraries" AfterTargets="ResolveAssemblyReferences" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_PatchedSkiaMissingAvaloniaLibrary Include="@(_PatchedSkiaAvaloniaLibrary->'%(FullPath)')" />
+      <_PatchedSkiaMissingAvaloniaLibrary Remove="@(ReferencePath->'%(FullPath)')" />
+      <_PatchedSkiaForbiddenAvaloniaReference Include="@(ReferencePath)" Condition="$([System.String]::Copy('%(ReferencePath.FullPath)').StartsWith('$(_PatchedSkiaAvaloniaRefDirectory)'))" />
+    </ItemGroup>
+    <Error Condition="'@(_PatchedSkiaMissingAvaloniaLibrary)' != ''" Text="Official Avalonia runtime assemblies were not resolved for compilation: @(_PatchedSkiaMissingAvaloniaLibrary)" />
+    <Error Condition="'@(_PatchedSkiaForbiddenAvaloniaReference)' != ''" Text="The patched backend cannot compile against Avalonia ref/net8.0 assemblies: @(_PatchedSkiaForbiddenAvaloniaReference)" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)patched-skia-compile-references.txt" Lines="@(ReferencePath->'%(FullPath)')" Overwrite="true" Encoding="UTF-8" />
+  </Target>
+  <Target Name="ValidatePatchedSkiaIdentity" BeforeTargets="CoreCompile">
+    <Error Condition="'$(TargetFramework)' != 'net8.0' or '$(AssemblyName)' != 'Avalonia.Skia' or '$(AssemblyVersion)' != '11.3.22.0'" Text="The patched backend must retain the verified net8.0 Avalonia.Skia11.3.22.0 identity." />
+    <Error Condition="'$(SignAssembly)' != 'true' or '$(PublicSign)' != 'true'" Text="The patched backend requires the verified public-key identity; it is not an official vendor package signature." />
+  </Target>
+</Project>

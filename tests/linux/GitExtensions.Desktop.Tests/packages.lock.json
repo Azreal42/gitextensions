@@ -12,6 +12,21 @@
           "NUnit": "3.13.0"
         }
       },
+      "Avalonia.Skia": {
+        "type": "Direct",
+        "requested": "[11.3.22, 11.3.22]",
+        "resolved": "11.3.22",
+        "contentHash": "ZbnfFCr2f1l3RD1E/Tn5tJDRFIDm9ICY/PzG4lhuShd6mDg+0y5wRCytCYOSM79KhlboU/f0O7J1Mw7s83Sy3A==",
+        "dependencies": {
+          "Avalonia": "11.3.22",
+          "HarfBuzzSharp": "8.3.1.1",
+          "HarfBuzzSharp.NativeAssets.Linux": "8.3.1.1",
+          "HarfBuzzSharp.NativeAssets.WebAssembly": "8.3.1.1",
+          "SkiaSharp": "2.88.9",
+          "SkiaSharp.NativeAssets.Linux": "2.88.9",
+          "SkiaSharp.NativeAssets.WebAssembly": "2.88.9"
+        }
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.13.0, )",
@@ -77,20 +92,6 @@
         "type": "Transitive",
         "resolved": "11.3.22",
         "contentHash": "Ll5YswLkNW0WZm7RkvGS+8B9vH4/x77IsnCqlBvmXOgiQd0J5bpJQFYo1NDVyRLadp4e8Yqg1WP2xEc6IK94HQ=="
-      },
-      "Avalonia.Skia": {
-        "type": "Transitive",
-        "resolved": "11.3.22",
-        "contentHash": "ZbnfFCr2f1l3RD1E/Tn5tJDRFIDm9ICY/PzG4lhuShd6mDg+0y5wRCytCYOSM79KhlboU/f0O7J1Mw7s83Sy3A==",
-        "dependencies": {
-          "Avalonia": "11.3.22",
-          "HarfBuzzSharp": "8.3.1.1",
-          "HarfBuzzSharp.NativeAssets.Linux": "8.3.1.1",
-          "HarfBuzzSharp.NativeAssets.WebAssembly": "8.3.1.1",
-          "SkiaSharp": "2.88.9",
-          "SkiaSharp.NativeAssets.Linux": "2.88.9",
-          "SkiaSharp.NativeAssets.WebAssembly": "2.88.9"
-        }
       },
       "Avalonia.Win32": {
         "type": "Transitive",
@@ -265,10 +266,24 @@
           "Avalonia.AvaloniaEdit": "[11.4.1, )",
           "Avalonia.Desktop": "[11.3.22, )",
           "Avalonia.Fonts.Inter": "[11.3.22, )",
+          "Avalonia.Skia": "[11.3.22, 11.3.22]",
           "Avalonia.Themes.Fluent": "[11.3.22, )",
+          "GitExtensions.Avalonia.Skia.Patched": "[11.3.22, )",
           "GitExtensions.Core": "[7.2.1-linux-alpha, )",
           "GitExtensions.Plugins": "[7.2.1-linux-alpha, )",
           "SmartFormat": "[3.6.0, )"
+        }
+      },
+      "gitextensions.avalonia.skia.patched": {
+        "type": "Project",
+        "dependencies": {
+          "Avalonia": "[11.3.22, 11.3.22]",
+          "HarfBuzzSharp": "[8.3.1.1, 8.3.1.1]",
+          "HarfBuzzSharp.NativeAssets.Linux": "[8.3.1.1, 8.3.1.1]",
+          "HarfBuzzSharp.NativeAssets.WebAssembly": "[8.3.1.1, 8.3.1.1]",
+          "SkiaSharp": "[2.88.9, 2.88.9]",
+          "SkiaSharp.NativeAssets.Linux": "[2.88.9, 2.88.9]",
+          "SkiaSharp.NativeAssets.WebAssembly": "[2.88.9, 2.88.9]"
         }
       },
       "gitextensions.core": {

@@ -1,0 +1,456 @@
+{
+  "schema": 1,
+  "upstream_repository": "https://github.com/AvaloniaUI/Avalonia",
+  "upstream_commit": "627ae9ef921621e27e7aa58df2796fbadb50af88",
+  "upstream_package": "Avalonia.Skia11.3.22",
+  "upstream_package_tfm": "net8.0",
+  "upstream_blob_files": [
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Assets/NoiseAsset_256X256_PNG.png",
+      "local_path": "Upstream/Assets/NoiseAsset_256X256_PNG.png",
+      "git_blob_sha": "41de173d9014b38f8290acf270c490b37fc79a60",
+      "upstream_sha256": "4f2aa94a2e345a32dae689176b86c644bef87081ff9daef8c77417731862031b",
+      "bytes": 3241
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Avalonia.Skia.csproj",
+      "local_path": "Provenance/Upstream.Avalonia.Skia.csproj.original",
+      "git_blob_sha": "f30056c8d96d7a08e0dcd44b4ed20024cd442f62",
+      "upstream_sha256": "805971c926439aa4c4dde8f97f22b0c2c6a5fd534c34089d7e8100274b70a616",
+      "bytes": 1262
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/CombinedGeometryImpl.cs",
+      "local_path": "Upstream/CombinedGeometryImpl.cs",
+      "git_blob_sha": "3ba4738ce651903fa70820f3d2dce5e68411620e",
+      "upstream_sha256": "7f0c04681449c9c72b42db32238d8c35b2cb404f428c223c8eb4d7c4458bb238",
+      "bytes": 2287
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/DrawingContextImpl.Effects.cs",
+      "local_path": "Upstream/DrawingContextImpl.Effects.cs",
+      "git_blob_sha": "b661ad467d228ca7b8ca3f043cf46263c7ffc513",
+      "upstream_sha256": "57b81420dac1ce44ec7cb7ae77b99cc95687feae8e92d16cfa9c9dce8966e476",
+      "bytes": 1498
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/DrawingContextImpl.cs",
+      "local_path": "Upstream/DrawingContextImpl.cs",
+      "git_blob_sha": "6a2ec35a85530263da4d386bcd7a3f890b1cbd29",
+      "upstream_sha256": "242d4e14eff75df1e77e58327261484734b51513142687f87eed45db422c91d5",
+      "bytes": 61071
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/EllipseGeometryImpl.cs",
+      "local_path": "Upstream/EllipseGeometryImpl.cs",
+      "git_blob_sha": "64976d4eeabf7abb2a3a0b27516cdad3c006fa29",
+      "upstream_sha256": "67aaedfec80f98578db7f1cbea6bb343a3b8c7b93b4dda63a40e22700e8ee30c",
+      "bytes": 587
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/FontManagerImpl.cs",
+      "local_path": "Upstream/FontManagerImpl.cs",
+      "git_blob_sha": "42ff452fdf3d979e5c0b12ba10e77d7baab88f24",
+      "upstream_sha256": "7646818e12efac6e8b712502079b0a3eb801dfa635d7392c50c2c0669c8b5e51",
+      "bytes": 6635
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/FramebufferRenderTarget.cs",
+      "local_path": "Upstream/FramebufferRenderTarget.cs",
+      "git_blob_sha": "f23e0588014fc95c926b9284319e1e920d7700de",
+      "upstream_sha256": "b7fd95f4885a768d13b442c157ff130400a1de055f8081a2da318a0c53fd874a",
+      "bytes": 9559
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/GeometryGroupImpl.cs",
+      "local_path": "Upstream/GeometryGroupImpl.cs",
+      "git_blob_sha": "200247095f14fe588e66dfefc65778cf728cc0cc",
+      "upstream_sha256": "5947650c127b8d4a73fdb66eca3b85a5c25671e1e6afeff6a616c620d5090550",
+      "bytes": 1861
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/GeometryImpl.cs",
+      "local_path": "Upstream/GeometryImpl.cs",
+      "git_blob_sha": "7412ed72a74e8ea8ba13141491cd524140b30c8f",
+      "upstream_sha256": "006387a58e29c71726fac9eab64e76aab6352a49ad4181302d24fbe13aa57902",
+      "bytes": 6741
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/GlyphRunImpl.cs",
+      "local_path": "Upstream/GlyphRunImpl.cs",
+      "git_blob_sha": "0cc069308ff3030bb31123cb44beb00a00a8bdb3",
+      "upstream_sha256": "1ed8e3e38df7d3d3e96593e92c33b0d7aa7e8f7549bda51cdc40f5d51e07d5a1",
+      "bytes": 5783
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/GlyphTypefaceImpl.cs",
+      "local_path": "Upstream/GlyphTypefaceImpl.cs",
+      "git_blob_sha": "703496a834340769bfaf54128045880e4d94c7ad",
+      "upstream_sha256": "412e97a8e6d4e8b97bd4a670c76ffaf635475a4bb2580ff975fd0c2a96b2e0e1",
+      "bytes": 12315
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/ISkiaGpu.cs",
+      "local_path": "Upstream/Gpu/ISkiaGpu.cs",
+      "git_blob_sha": "85a2cbdd22bf8b3ddac842cb40ef243b0ad3a0f1",
+      "upstream_sha256": "a66cd2005b28c2fac881326169b0a63327f5c7e8b9afd3fa8dfe0bf55d277580",
+      "bytes": 1369
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/ISkiaGpuRenderSession.cs",
+      "local_path": "Upstream/Gpu/ISkiaGpuRenderSession.cs",
+      "git_blob_sha": "5faa6a41ec4911c6865e0828d50a9665355d12d1",
+      "upstream_sha256": "d8fb548c97a546664777b64895964f37a300dfd3236b1f0b18742acf7de11afb",
+      "bytes": 643
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/ISkiaGpuRenderTarget.cs",
+      "local_path": "Upstream/Gpu/ISkiaGpuRenderTarget.cs",
+      "git_blob_sha": "f8be7dc66f07d262117e5fec54619da8a2c8f73e",
+      "upstream_sha256": "0bc0fdd1e589417cc5c928f81278df582f61381852fde103d1f7e0bcfa5b7b2f",
+      "bytes": 667
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/Metal/SkiaMetalApi.cs",
+      "local_path": "Upstream/Gpu/Metal/SkiaMetalApi.cs",
+      "git_blob_sha": "befbdbe617e2ebd1ada0e894815dbe5faa25bb7d",
+      "upstream_sha256": "bb7aadfee22c151cf5be17ee501f723420f12823c2884f903c17b6e84d27825b",
+      "bytes": 5719
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/Metal/SkiaMetalExternalObjectsFeature.cs",
+      "local_path": "Upstream/Gpu/Metal/SkiaMetalExternalObjectsFeature.cs",
+      "git_blob_sha": "2fd8e68459a45d2aba84a7315816846239138d0d",
+      "upstream_sha256": "b09f8ad673147541713fbc88a3a5b7909de9c57a60346fa695f0a05575089c23",
+      "bytes": 3631
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/Metal/SkiaMetalGpu.cs",
+      "local_path": "Upstream/Gpu/Metal/SkiaMetalGpu.cs",
+      "git_blob_sha": "1681b14fc5c2bd0719ebdd4dfa854c7cb1d2ba12",
+      "upstream_sha256": "56f5efa6f48e8df76752d6d58b356fbc1033c8953b179bcea820836a0e067012",
+      "bytes": 4805
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/FboSkiaSurface.cs",
+      "local_path": "Upstream/Gpu/OpenGl/FboSkiaSurface.cs",
+      "git_blob_sha": "d9027e24d7459f4695974f4df8feb615895821b7",
+      "upstream_sha256": "276e52f94fa043b0dbbdaf05afadc90f4a5905d05b70a3fb3ea2ef0d0a38ebfa",
+      "bytes": 6119
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlRenderTarget.cs",
+      "local_path": "Upstream/Gpu/OpenGl/GlRenderTarget.cs",
+      "git_blob_sha": "56ce4a71945860506fa2f669e4185a1b1e157e04",
+      "upstream_sha256": "1910e3ec4157b0fed4fb0bcfe44d35e73eb18bc6096887f4c4356f06e9764d74",
+      "bytes": 4594
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlSkiaExternalObjectsFeature.cs",
+      "local_path": "Upstream/Gpu/OpenGl/GlSkiaExternalObjectsFeature.cs",
+      "git_blob_sha": "1f42617ce4681a9d355527d9e204476a507e19df",
+      "upstream_sha256": "1b4a80b7aeda41eb6791276e4758741147f01c164ba3a23b9fa6a268b844c13a",
+      "bytes": 10160
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlSkiaGpu.cs",
+      "local_path": "Upstream/Gpu/OpenGl/GlSkiaGpu.cs",
+      "git_blob_sha": "7336e7672b9d5b060b4d469a869b5dcae081cc9c",
+      "upstream_sha256": "01ef2e311ee11d45eef56f9fe2e6e27af0793e2e0fe1beef29cf6bd08a097ec6",
+      "bytes": 7529
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/GlSkiaSharedTextureForComposition.cs",
+      "local_path": "Upstream/Gpu/OpenGl/GlSkiaSharedTextureForComposition.cs",
+      "git_blob_sha": "2d532545004c7a0aa88719c3bef274930e71809e",
+      "upstream_sha256": "ec94df1c1f743087c8e144fd0565c702a55fec1b25b8b85610fef9145bca49fd",
+      "bytes": 1085
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/OpenGl/IGlSkiaSpecificOptionsFeature.cs",
+      "local_path": "Upstream/Gpu/OpenGl/IGlSkiaSpecificOptionsFeature.cs",
+      "git_blob_sha": "8737c8f34e2659b92db8ccda8f59095155926e50",
+      "upstream_sha256": "ced37c663898618783b80b6b1b434ed059b7026710ad5db0b7c61e0d93975642",
+      "bytes": 166
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/SkiaGpuRenderTarget.cs",
+      "local_path": "Upstream/Gpu/SkiaGpuRenderTarget.cs",
+      "git_blob_sha": "8d231a57849fda73d0b6c2df26bc778267380153",
+      "upstream_sha256": "494772407d55510a4c2d3aeb2491cb16bf367686c34268dd7c2d64767cc8b39c",
+      "bytes": 2081
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/Vulkan/VulkanSkiaExternalObjectsFeature.cs",
+      "local_path": "Upstream/Gpu/Vulkan/VulkanSkiaExternalObjectsFeature.cs",
+      "git_blob_sha": "d0b3c28d8e81133786e41d5dc3d5b8726ee471cf",
+      "upstream_sha256": "52551950f5ab7f2b9011ca05921f059d445a10bb98cc717c9c261bae5f801739",
+      "bytes": 5119
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/Vulkan/VulkanSkiaGpu.cs",
+      "local_path": "Upstream/Gpu/Vulkan/VulkanSkiaGpu.cs",
+      "git_blob_sha": "a862424e51576603f60ba5a149ce90bc17f8dc5c",
+      "upstream_sha256": "28ecd0b9be3e050668f2b63efc9f31763a63547b3fa1a1b96443515807334dcc",
+      "bytes": 3171
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Gpu/Vulkan/VulkanSkiaRenderTarget.cs",
+      "local_path": "Upstream/Gpu/Vulkan/VulkanSkiaRenderTarget.cs",
+      "git_blob_sha": "b761d21b4e0093de505b6a78d828eaf7da13efe9",
+      "upstream_sha256": "952a2472b82cd889893622dee28843b96fe8e21a3c3b76334f0553be4c7a80fa",
+      "bytes": 3640
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Helpers/DrawingContextHelper.cs",
+      "local_path": "Upstream/Helpers/DrawingContextHelper.cs",
+      "git_blob_sha": "fb9ccf78e63b077274dc24ecfb2cc9bb17b7117e",
+      "upstream_sha256": "6b28703476a20b27e5a8dd17d1badf0c1d7f53f010054fcaa872f06d739b2c98",
+      "bytes": 3291
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Helpers/ImageSavingHelper.cs",
+      "local_path": "Upstream/Helpers/ImageSavingHelper.cs",
+      "git_blob_sha": "6adfc01951727a933789aaf0979bc92700bc3711",
+      "upstream_sha256": "76795ad6e708d125fdb2e408dfe8dc93232cd03bd3a9e16717e54abe598cc207",
+      "bytes": 2703
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Helpers/PenHelper.cs",
+      "local_path": "Upstream/Helpers/PenHelper.cs",
+      "git_blob_sha": "2f7b6d771d3b9ccffaa66a27bde4c58f1607a25c",
+      "upstream_sha256": "9ab71a089d7691222c75f18663650526d413859abf79faa4bb306460c94343a8",
+      "bytes": 989
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Helpers/PixelFormatHelper.cs",
+      "local_path": "Upstream/Helpers/PixelFormatHelper.cs",
+      "git_blob_sha": "84a1972e0137d7e450811126b77f3b5871776a1b",
+      "upstream_sha256": "d8210f0e89acb2005c36c0ca178087011475cb2e767d781ee23d5be57765e845",
+      "bytes": 866
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/Helpers/SKPathHelper.cs",
+      "local_path": "Upstream/Helpers/SKPathHelper.cs",
+      "git_blob_sha": "e4584cc858d097873c862988ed14981a4b114d16",
+      "upstream_sha256": "cd9c23f7cc02cfd9089163af5fe53f04baae14c36b9c21eb6856b6a1b43a53b6",
+      "bytes": 2329
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/IDrawableBitmapImpl.cs",
+      "local_path": "Upstream/IDrawableBitmapImpl.cs",
+      "git_blob_sha": "be751021d5fedbbe18d4e48f555cf23df4d27dcf",
+      "upstream_sha256": "609ab21bea7130881f0dee6278ced28980ccddd5264e06d5ddd54602a0e47d42",
+      "bytes": 676
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/ISkiaSharpApiLeaseFeature.cs",
+      "local_path": "Upstream/ISkiaSharpApiLeaseFeature.cs",
+      "git_blob_sha": "1e56ee520b050bd8b36fc884459a4cb6ad3ab364",
+      "upstream_sha256": "45839a9eb35e5c14d6d04194a5d965ef0bf846be19ba33fe198b3e9a32f8083f",
+      "bytes": 604
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/ImmutableBitmap.cs",
+      "local_path": "Upstream/ImmutableBitmap.cs",
+      "git_blob_sha": "1879fa6f14bb2541f0eb5a27c82d524f035a390a",
+      "upstream_sha256": "934e289ef65e9f63e5cd3120d3ca039bd00b4ba6b5a73a66d07477e26d6635b1",
+      "bytes": 7299
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/LineGeometryImpl.cs",
+      "local_path": "Upstream/LineGeometryImpl.cs",
+      "git_blob_sha": "2ac0a2e18c66a6475cc5bc1756f5992c277ee4ef",
+      "upstream_sha256": "1fbe2dda98b01efde4708cb6ec68a3dc37848591dea8c8f4ed0c124f90da8c3e",
+      "bytes": 783
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/PictureRenderTarget.cs",
+      "local_path": "Upstream/PictureRenderTarget.cs",
+      "git_blob_sha": "bc8c145dfa7db2277d85d97a702e15eb77a13716",
+      "upstream_sha256": "90138d42ad155865e03f6d6b31205e37652f51f9d090353221f43cf86ad64bc6",
+      "bytes": 1588
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/PlatformRenderInterface.cs",
+      "local_path": "Upstream/PlatformRenderInterface.cs",
+      "git_blob_sha": "05dbd684ef1b13e0fff449d20c09175f7584c38b",
+      "upstream_sha256": "23c39acfd7a89911b447e278f056cdc36bb711345a092db324f1075e10c5921a",
+      "bytes": 7842
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/RectangleGeometryImpl.cs",
+      "local_path": "Upstream/RectangleGeometryImpl.cs",
+      "git_blob_sha": "2d127e07c9dbae20639c02ce667f26ad7913e4b8",
+      "upstream_sha256": "d6e085172fe02072bfc9f048499a5c28c37c9f034f95bc0bdca6f8c0ba676f57",
+      "bytes": 594
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/RenderTargetBitmapImpl.cs",
+      "local_path": "Upstream/RenderTargetBitmapImpl.cs",
+      "git_blob_sha": "32b7340993297a88bb34d366b6ec5be7186cf8de",
+      "upstream_sha256": "196e247444394c86442e8cd4d81310e33cee179368b1e562229a3cbacceaa654",
+      "bytes": 1055
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SKCacheBase.cs",
+      "local_path": "Upstream/SKCacheBase.cs",
+      "git_blob_sha": "e1e78cd08137dcbe88b56c17088df0a3016401d3",
+      "upstream_sha256": "e282dff689ae2a089c539b25c18507e38d51bf23547e8a8ccb1c6ecdc9a6b33d",
+      "bytes": 1868
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SKPaintCache.cs",
+      "local_path": "Upstream/SKPaintCache.cs",
+      "git_blob_sha": "82c4dd23c7ffac32d182dd52fe5882d7a24bf2a8",
+      "upstream_sha256": "e036acdeeec8fbe5f5bb8328f55087351fcbf342071263c5413945ca494ccab3",
+      "bytes": 741
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SKRoundRectCache.cs",
+      "local_path": "Upstream/SKRoundRectCache.cs",
+      "git_blob_sha": "b84c61303d70d54f279be5bb9acc9571dad7d4eb",
+      "upstream_sha256": "147de2d55bb2ee86017604ab86570d9a09debda245d72de48639193549e322b5",
+      "bytes": 3492
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SKTextBlobBuilderCache.cs",
+      "local_path": "Upstream/SKTextBlobBuilderCache.cs",
+      "git_blob_sha": "8c010ecb0590e16ccf58ee25d94ed8bfb98fb186",
+      "upstream_sha256": "ebb3a717413f11d7b6eaa2766eba61585e9bc438fdc87238c129d4357071cbc9",
+      "bytes": 272
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SkiaApplicationExtensions.cs",
+      "local_path": "Upstream/SkiaApplicationExtensions.cs",
+      "git_blob_sha": "3e4fd7b385af669026966d09d54e5e569d51d79c",
+      "upstream_sha256": "56dc6eef5301690187cb9f6aba19bc2a28adb7defd9ff1a6bf2524a5a9090de8",
+      "bytes": 707
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SkiaBackendContext.cs",
+      "local_path": "Upstream/SkiaBackendContext.cs",
+      "git_blob_sha": "db50c1e424efd620c9aea7f93742c6a0ac454490",
+      "upstream_sha256": "e18b72493ebedb8db78ea49bf034493747346e57e3596ebb5363d94302f9c19b",
+      "bytes": 2677
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SkiaOptions.cs",
+      "local_path": "Upstream/SkiaOptions.cs",
+      "git_blob_sha": "84ad547d6c5503406c495261b9f2f9d6a0527300",
+      "upstream_sha256": "e306a06b5764ee94c99163d8dc2828b2ecb89fa99d584af7d16eb288360df8f1",
+      "bytes": 900
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SkiaPlatform.cs",
+      "local_path": "Upstream/SkiaPlatform.cs",
+      "git_blob_sha": "27f2631db80da78d5f406b62e2a49126612e9b99",
+      "upstream_sha256": "fcb23a59467f711de5d4ba72ad2058ff9b00b171a4ac04dd4afca68c87c3ceac",
+      "bytes": 950
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SkiaRegionImpl.cs",
+      "local_path": "Upstream/SkiaRegionImpl.cs",
+      "git_blob_sha": "24bd3c7569a55ae4f128c4f9bf60abe16839a031",
+      "upstream_sha256": "fb399e875cd89a166ff389cce05f4d2993224b56939290226366384efbdf63d5",
+      "bytes": 1547
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SkiaSharpExtensions.cs",
+      "local_path": "Upstream/SkiaSharpExtensions.cs",
+      "git_blob_sha": "d94cc4aaf738da4231d5b62dd231fba79ef01fa9",
+      "upstream_sha256": "f836c4438ffe5a06d90d2bfc00fc14741bc3100af8ebd6e74a4628d9c654be09",
+      "bytes": 11341
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/StreamGeometryImpl.cs",
+      "local_path": "Upstream/StreamGeometryImpl.cs",
+      "git_blob_sha": "940a1c72479cb4fb08f7c4375adcb01953158b8c",
+      "upstream_sha256": "5810127ae37ac5b151391ca71ca0bf49195128740a480b10be01595d4bb82d55",
+      "bytes": 10677
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/SurfaceRenderTarget.cs",
+      "local_path": "Upstream/SurfaceRenderTarget.cs",
+      "git_blob_sha": "27e36d99b33bd2307760908fe2a8e59c778f26a5",
+      "upstream_sha256": "d986202f746750a587981601e6a73da774f900833f5539b64bd10c355c8dec02",
+      "bytes": 7972
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/TextShaperImpl.cs",
+      "local_path": "Upstream/TextShaperImpl.cs",
+      "git_blob_sha": "8b78877b82d0520c1bda320536ab79b5a5fa044a",
+      "upstream_sha256": "08f9f87872435fc5788fcb3c044d4b5d24782b3f6fce139ca47970216529e044",
+      "bytes": 7231
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/TransformedGeometryImpl.cs",
+      "local_path": "Upstream/TransformedGeometryImpl.cs",
+      "git_blob_sha": "5720174c4defef4f4439dc47ad1fa7fe8981b3c1",
+      "upstream_sha256": "53c9745cef5243107093d2e87746ba126c53e67780e0e2b543645715a6117ce5",
+      "bytes": 1726
+    },
+    {
+      "upstream_path": "src/Skia/Avalonia.Skia/WriteableBitmapImpl.cs",
+      "local_path": "Upstream/WriteableBitmapImpl.cs",
+      "git_blob_sha": "313c7e06de051e3a8252e128c4ed424dab097d8c",
+      "upstream_sha256": "4e33c62667a0e446cfd8c061fde55d79c8e5b0d3dca9484d14691ee2f5415dea",
+      "bytes": 8292
+    }
+  ],
+  "csharp_files": 54,
+  "upstream_csharp_lines": 7328,
+  "upstream_total_bytes": 264350,
+  "single_source_change": {
+    "path": "Upstream/GlyphTypefaceImpl.cs",
+    "preimage_sha256": "412e97a8e6d4e8b97bd4a670c76ffaf635475a4bb2580ff975fd0c2a96b2e0e1",
+    "modified_sha256": "6cb69c686dd72473e9222ece42d108703f3d62a0f72e9535ebc4a90fbc8017a5",
+    "patch": "Provenance/using-asset.patch",
+    "patch_sha256": "da3eaff32f46b8c0452dd076f03b6e70a805fecfc31c21c88981834f501766f3",
+    "description": "Only var\u2192using var for SKTypeface.OpenStream asset lifetime. Historical copy/read behavior otherwise retained."
+  },
+  "public_signing_key": {
+    "path": "avalonia-public.snk",
+    "bytes": 160,
+    "sha256": "34d062cd8b0bbdf600f86c7857ec9c1a776bea9be9b94665ef9b6a939de4f518",
+    "origin": "Full public key from official assembly, identical to upstream build/AvaloniaPublicKey.props",
+    "private_key_included": false
+  },
+  "license": {
+    "path": "LICENSE.txt",
+    "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b",
+    "expression": "MIT"
+  },
+  "source_package_proof": {
+    "snupkg_url": "https://www.nuget.org/api/v2/symbolpackage/Avalonia.Skia/11.3.22",
+    "snupkg_sha256": "58c492817a08252305db84744d11f167072af4467dfaf8a1cb9753cbeed79739",
+    "portable_pdb_document_verification": "Provenance/official-pdb-source-checks.json",
+    "note": "All54 Git LF source files match official PDBDocument checksums after LF\u2192CRLF only. No web-tag cache body used."
+  },
+  "supporting_upstream_files": [
+    {
+      "upstream_path": "build/AvaloniaPublicKey.props",
+      "local_path": "Provenance/AvaloniaPublicKey.props",
+      "commit": "627ae9ef921621e27e7aa58df2796fbadb50af88",
+      "sha256": "16c2ef7444a49877714207879cd7ee26a3148babd9cfeda0318583970732e3fb",
+      "git_blob_sha": "89215635c0047dba2d9e4a58e42e0aefbd9b1d4a"
+    },
+    {
+      "upstream_path": "licence.md",
+      "local_path": "LICENSE.txt",
+      "commit": "627ae9ef921621e27e7aa58df2796fbadb50af88",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b",
+      "git_blob_sha": "41951805ac6a5cdb91373db7725fbaa9c004d912"
+    }
+  ],
+  "reconstruction": {
+    "target_framework": "net8.0",
+    "assembly_name": "Avalonia.Skia",
+    "assembly_version": "11.3.22.0",
+    "public_key_token": "c8d484a7012f9a8b",
+    "package_id": "GitExtensions.Avalonia.Skia.Patched",
+    "signing": "PublicSign with the exact published public key; no private key and no claim of vendor NuGet signature",
+    "informational_version": "11.3.22+gitextensions.asset-lifetime.1.627ae9ef921621e27e7aa58df2796fbadb50af88",
+    "build_status": "Not restored or built; binary identity/ABI and unique asset resolution remain actual build gates."
+  }
+}

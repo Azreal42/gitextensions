@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../../../src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj" />
+    <ProjectReference Include="../../../src/linux/GitExtensions.Avalonia.Skia.Patched/GitExtensions.Avalonia.Skia.Patched.csproj" GlobalPropertiesToRemove="Version;AssemblyVersion;FileVersion;InformationalVersion;PackageId;PackageVersion;SourceRevisionId;RepositoryCommit;Authors;Company;Product;Copyright;PackageLicenseExpression;RepositoryUrl" />
+    <PackageVersion Include="Avalonia.Skia" Version="[11.3.22]" />
+    <PackageReference Include="Avalonia.Skia" ExcludeAssets="compile;runtime" />
     <PackageReference Include="Avalonia.Headless.NUnit" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NUnit" />
@@ -8,4 +11,5 @@
     <EmbeddedResource Include="../Fixtures/difftastic-0.71.0-compact.ansi.txt" LogicalName="Difftastic071Compact" />
     <EmbeddedResource Include="../Fixtures/difftastic-0.71.0-plain-ambiguity.txt" LogicalName="Difftastic071Plain" />
   </ItemGroup>
+  <Import Project="../../../eng/linux/font-stream-regression/Desktop.Tests.fragment.targets" />
 </Project>
