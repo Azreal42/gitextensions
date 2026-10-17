@@ -134,8 +134,8 @@ public class FileHistoryDialogTests
                 using WriteableBitmap frame = Capture(dialog, "classic-file-history-" + theme + ".png");
                 Assert.That(BlueGlyphPixels(frame, dialog, content.TextView.Editor.TextArea.TextView), Is.GreaterThan(4), "The file syntax must be colored in the rendered editor.");
             }
-            Field<CheckBox>(dialog, "FileHistoryFollow").IsChecked = false;
-            Click(dialog, "LoadFileHistory"); await Idle(dialog);
+            Option(dialog, "followFileHistoryToolStripMenuItem").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+            await Idle(dialog);
             Assert.That(dialog.History.Count, Is.EqualTo(2), "Disabling --follow must stop before the old filename.");
             tabs.SelectedIndex = 3; await Idle(dialog);
             BlameView blame = Field<BlameView>(dialog, "FileHistoryBlame");
@@ -171,11 +171,10 @@ public class FileHistoryDialogTests
         }
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "unrelated.txt"), "unrelated\n");
         await Git(fixture, "add", "--", "unrelated.txt"); await Git(fixture, "commit", "-m", "Actual HEAD does not touch file");
+        new FileHistoryPreferencesStore().Save(new() { FollowRenames = false, FullHistory = true });
         FileHistoryDialog dialog = new(repository, "file.txt"); dialog.Show();
         try
         {
-            Field<CheckBox>(dialog, "FileHistoryFollow").IsChecked = false;
-            Field<CheckBox>(dialog, "FileHistoryFull").IsChecked = true;
             await dialog.InitializeAsync();
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             GitCommit merged = dialog.History.Single(entry => entry.Commit.Subject == "Merge file branches").Commit;
@@ -268,6 +267,9 @@ public class FileHistoryDialogTests
     { GitResult result = await fixture.Git.RunAsync(fixture.Repository, ["--literal-pathspecs", .. arguments]); Assert.That(result.Success, Is.True, result.StandardError); }
     internal static T Field<T>(Window window, string name) where T : Control
         => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
+    internal static MenuItem Option(FileHistoryDialog window, string name)
+        => new[] { Field<ListBox>(window, "FileHistoryRevisions").ContextMenu!, Field<Button>(window, "ShowFullHistory").ContextMenu! }
+            .SelectMany(menu => menu.Items.OfType<MenuItem>()).Single(item => item.Name == name);
     internal static void Click(Window window, string name)
     { Button button = Field<Button>(window, name); Assert.That(button.IsEnabled, Is.True, name); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
     internal static async Task Idle(RepositoryDialog dialog)

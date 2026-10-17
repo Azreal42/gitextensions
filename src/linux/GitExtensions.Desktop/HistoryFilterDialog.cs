@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using GitExtensions.Linux.Desktop.Localization;
 
@@ -26,8 +27,11 @@ public sealed class HistoryFilterDialog : Window
 
     public string RememberedBranchFilter => _textFields["BranchFilter"].Input.Text?.Trim() ?? "";
     public bool IsBranchFilterEnabled => _textFields["BranchFilter"].Enabled.IsChecked == true;
+    public bool FullHistorySetting => _fullHistory.IsChecked == true;
+    public bool SimplifyMergesSetting => _simplifyMerges.IsChecked == true;
 
-    public HistoryFilterDialog(GitLogQuery query, string? rememberedBranchFilter = null, bool? branchFilterEnabled = null)
+    public HistoryFilterDialog(GitLogQuery query, string? rememberedBranchFilter = null, bool? branchFilterEnabled = null,
+        FileHistoryPreferences? fileHistoryPreferences = null)
     {
         Title = L("$this", "Filter revisions");
         Width = 520;
@@ -54,8 +58,10 @@ public sealed class HistoryFilterDialog : Window
         AddOption(fields, _firstParent, "OnlyFirstParentCheck", "Only first parent", query.FirstParent);
         AddOption(fields, _hideMerges, "HideMergeCommitsCheck", "Hide merge commits", query.HideMergeCommits);
         AddOption(fields, _decorated, "SimplifyByDecorationCheck", "Simplify by decoration", query.SimplifyByDecoration);
-        AddOption(fields, _fullHistory, "FullHistoryCheck", "Full history", query.FullHistory);
-        AddOption(fields, _simplifyMerges, "SimplifyMergesCheck", "Simplify merges", query.SimplifyMerges);
+        AddOption(fields, _fullHistory, "FullHistoryCheck", "Full &history", fileHistoryPreferences?.FullHistory ?? query.FullHistory);
+        AddOption(fields, _simplifyMerges, "SimplifyMergesCheck", "Simplify mer&ges", fileHistoryPreferences?.SimplifyMerges ?? query.SimplifyMerges);
+        _simplifyMerges.IsEnabled = _fullHistory.IsChecked == true;
+        _fullHistory.IsCheckedChanged += (_, _) => _simplifyMerges.IsEnabled = _fullHistory.IsChecked == true;
         _currentBranch.IsCheckedChanged += (_, _) => _textFields["BranchFilter"].Input.IsEnabled = _currentBranch.IsChecked != true && _textFields["BranchFilter"].Enabled.IsChecked == true;
         _textFields["BranchFilter"].Input.IsEnabled &= _currentBranch.IsChecked != true;
 
@@ -150,7 +156,7 @@ public sealed class HistoryFilterDialog : Window
 
     private void AddOption(Grid grid, CheckBox check, string item, string label, bool value)
     {
-        check.Content = L(item, label);
+        check.Content = new AccessText { Text = _translations.TranslateAccessKeys("FormRevisionFilter", item, "Text", label) };
         check.IsChecked = value;
         int row = grid.RowDefinitions.Count;
         grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));

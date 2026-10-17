@@ -32,12 +32,27 @@ public sealed record GitLogQuery(
     public bool IncludeStashes { get; init; } = true;
     public bool IncludeSessionRefs { get; init; } = true;
     public GitLogSort Sort { get; init; } = GitLogSort.GitDefault;
+    /// <summary>Windows graph filters which can hide parents; branch/date/reflog/first-parent alone do not.</summary>
+    public bool HasRevisionFilter => Author is not null || Committer is not null || Message is not null
+        || DiffContent is not null || !string.IsNullOrWhiteSpace(Path) || HideMergeCommits || SimplifyByDecoration;
+    internal GitLogQuery ForRevisionGraph() => this with
+    {
+        FullHistory = HasRevisionFilter && FullHistory,
+        SimplifyMerges = HasRevisionFilter && FullHistory && SimplifyMerges
+    };
 }
 
 public sealed partial class GitRepository
 {
     public Task<IReadOnlyList<GitCommit>> GetLogAsync(GitLogQuery query, CancellationToken cancellationToken = default)
         => GetLogCoreAsync(query, paths: null, rewriteParents: false, cancellationToken);
+
+    /// <summary>Browse's Windows graph parent rewriting, distinct from the raw log reader.</summary>
+    public Task<IReadOnlyList<GitCommit>> GetRevisionGraphAsync(GitLogQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return GetLogCoreAsync(query.ForRevisionGraph(), paths: null, rewriteParents: query.HasRevisionFilter, cancellationToken);
+    }
 
     private async Task<IReadOnlyList<GitCommit>> GetLogCoreAsync(GitLogQuery query, IReadOnlyList<string>? paths,
         bool rewriteParents, CancellationToken cancellationToken)

@@ -8,6 +8,7 @@ using Avalonia.Styling;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
+using GitExtensions.Linux.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -196,17 +197,9 @@ public sealed partial class MainWindow
         if (!text) { button.Width = 24; }
         return button;
     }
-    private static readonly Geometry ToolbarDropdownGeometry = Geometry.Parse("M 0,0 L 6,0 L 3,3 Z");
+    private static readonly Geometry ToolbarDropdownGeometry = ClassicToolbarAppearance.DropdownGeometry;
     private static PathIcon ToolbarDropdownArrow(TemplatedControl owner, string name)
-    {
-        PathIcon arrow = new()
-        {
-            Name = name, Data = ToolbarDropdownGeometry, Width = 6, Height = 3,
-            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
-        };
-        arrow.Bind(PathIcon.ForegroundProperty, new Binding(nameof(TemplatedControl.Foreground)) { Source = owner });
-        return arrow;
-    }
+        => ClassicToolbarAppearance.DropdownArrow(owner, name);
     private static Grid ToolbarField(string label, Control input, Control? trailing = null)
     {
         Grid field = new() { ColumnDefinitions = new ColumnDefinitions(trailing is null ? "Auto,Auto" : "Auto,Auto,Auto"), Height = 24 };

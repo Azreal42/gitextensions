@@ -16,10 +16,13 @@ public sealed partial class MainWindow
     private async Task FilterHistoryAsync()
     {
         if (_repository is null || _busy) { return; }
-        HistoryFilterDialog dialog = new(_historyQuery, _acceptedBranchFilter, _historyBranchScope == HistoryBranchScope.Filtered)
+        HistoryFilterDialog dialog = new(_historyQuery, _acceptedBranchFilter, _historyBranchScope == HistoryBranchScope.Filtered,
+            _fileHistoryPreferencesStore.Load())
         { RequestedThemeVariant = ActualThemeVariant };
         GitLogQuery? query = await dialog.ShowDialog<GitLogQuery?>(this);
         if (query is null) { return; }
+        _fileHistoryPreferencesStore.Save(_fileHistoryPreferencesStore.Load() with
+        { FullHistory = dialog.FullHistorySetting, SimplifyMerges = dialog.SimplifyMergesSetting });
         _historyView = _historyView with { ShowReflog = query.Reflog };
         await ApplyBranchFilterAsync(query, dialog.RememberedBranchFilter, dialog.IsBranchFilterEnabled);
     }

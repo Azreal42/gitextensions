@@ -434,7 +434,10 @@ public class BranchHistoryFilterTests
         Assert.That(query.Revision, Is.EqualTo("HEAD")); Assert.That(Field<TextBox>(dialog, "BranchFilter").Text, Is.EqualTo("feature"));
         dialog.Close(); await Idle(main); await Scope(main, "Filtered");
         Assert.That(Branch(main).Text, Is.EqualTo("feature"));
-        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(query with { Revision = null, BranchFilter = "feature", All = true })).Select(commit => commit.Hash)));
+        // A branch/reflog-only filter retains these preferences but Windows does
+        // not emit their traversal flags without FilterInfo.HasRevisionFilter.
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(query with
+        { Revision = null, BranchFilter = "feature", All = true, FullHistory = false, SimplifyMerges = false })).Select(commit => commit.Hash)));
     }
 
     [AvaloniaTest]

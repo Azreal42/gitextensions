@@ -8,6 +8,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Styling;
 using GitExtensions.Desktop.Controls;
+using GitExtensions.Linux.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -17,10 +18,9 @@ public sealed class FileHistoryDialog : RepositoryDialog
     private readonly TextBox _revision = new() { Name = "FileHistoryRevision" };
     private readonly TextBlock _sourceNotice = new() { Name = "FileHistorySourceNotice", IsVisible = false, Margin = new Avalonia.Thickness(9, 0, 9, 4), TextWrapping = TextWrapping.Wrap };
     public GitCompareRevision InitialSource { get; private set; } = new();
-    private readonly CheckBox _follow = new() { Name = "FileHistoryFollow", IsChecked = true };
-    private readonly CheckBox _exact = new() { Name = "FileHistoryExact" };
-    private readonly CheckBox _full = new() { Name = "FileHistoryFull" };
-    private readonly CheckBox _simplify = new() { Name = "FileHistorySimplify" };
+    private readonly MenuItem _follow, _exact, _full, _simplify;
+    private readonly FileHistoryPreferencesStore _historyPreferencesStore = new();
+    private FileHistoryPreferences _historyPreferences = new();
     private readonly CommitGraph _graph = new() { Name = "FileHistoryGraph", Width = 180 };
     private readonly ListBox _revisions = new() { Name = "FileHistoryRevisions", SelectionMode = SelectionMode.Multiple };
     private readonly TabControl _tabs = new() { Name = "FileHistoryTabs" };
@@ -76,14 +76,31 @@ public sealed class FileHistoryDialog : RepositoryDialog
         _commit.CommandRequested += async (command, argument) => await InformationCommandAsync(command, argument);
         Width = 1100; Height = 760; MinWidth = 740; MinHeight = 480;
         _file.Text = path; _revision.Text = revision;
-        _follow.Content = T("Detect and follow renames"); _exact.Content = T("Exact renames and copies only");
-        _full.Content = T("Show full history"); _simplify.Content = T("Simplify merges");
+        _historyPreferences = _historyPreferencesStore.Load();
+        _follow = HistoryOption("followFileHistoryToolStripMenuItem", "Detect and follow renames", p => p with { FollowRenames = !p.FollowRenames });
+        _exact = HistoryOption("followFileHistoryRenamesToolStripMenuItem", "Detect and follow - exact renames and copies only", p => p with { ExactRenames = !p.ExactRenames });
+        _full = HistoryOption("showFullHistoryToolStripMenuItem", "Show full history", p => p with { FullHistory = !p.FullHistory });
+        _simplify = HistoryOption("simplifyMergesToolStripMenuItem", "Simplify merges", p => p with { SimplifyMerges = !p.SimplifyMerges });
+        ContextMenu historyMenu = new() { Name = "FileHistoryContextMenu", ItemsSource = new[] { _follow, _exact } };
+        historyMenu.Opening += (_, _) => { _historyPreferences = _historyPreferencesStore.Load(); UpdateActions(); };
+        _revisions.ContextMenu = historyMenu;
         Grid paths = new() { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,240,Auto"), Margin = new Avalonia.Thickness(6, 4) };
         Control[] fields = [new TextBlock { Text = T("File") + ":", VerticalAlignment = VerticalAlignment.Center }, _file,
             new TextBlock { Text = T("Revision") + ":", VerticalAlignment = VerticalAlignment.Center }, _revision, Action("LoadFileHistory", "Load", InitializeAsync)];
         for (int index = 0; index < fields.Length; index++) { Grid.SetColumn(fields[index], index); fields[index].Margin = new Avalonia.Thickness(3, 0); paths.Children.Add(fields[index]); }
         Button blameOptions = _blame.CreateOptionsButton();
-        StackPanel options = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Avalonia.Thickness(9, 2), Children = { _follow, _exact, _full, _simplify, blameOptions } };
+        Button historyOptions = new() { Name = "ShowFullHistory", Width = 29, Height = 24, MinHeight = 24, Padding = new Avalonia.Thickness(2, 0), BorderThickness = default };
+        historyOptions.Styles.Add(new Style(selector => selector.OfType<Button>())
+        { Setters = { new Setter(BackgroundProperty, Brushes.Transparent) } });
+        Grid historyOptionsContent = new() { ColumnDefinitions = new ColumnDefinitions("16,3,6"), VerticalAlignment = VerticalAlignment.Center };
+        historyOptionsContent.Children.Add(HistoryIcon("FileHistory.png"));
+        var arrow = ClassicToolbarAppearance.DropdownArrow(historyOptions, "FileHistoryOptionsDropdownArrow");
+        Grid.SetColumn(arrow, 2); historyOptionsContent.Children.Add(arrow); historyOptions.Content = historyOptionsContent;
+        ToolTip.SetTip(historyOptions, Translations.Translate("FormFileHistory", "ShowFullHistory", "ToolTipText", "Show Full History"));
+        ContextMenu traversalMenu = new() { Name = "FileHistoryTraversalOptions", ItemsSource = new[] { _full, _simplify } };
+        traversalMenu.Opening += (_, _) => { _historyPreferences = _historyPreferencesStore.Load(); UpdateActions(); };
+        historyOptions.ContextMenu = traversalMenu; historyOptions.Click += (_, _) => traversalMenu.Open(historyOptions);
+        StackPanel options = new() { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Avalonia.Thickness(9, 2), Children = { historyOptions, blameOptions } };
         DockPanel.SetDock(paths, Dock.Top); Root.Children.Add(paths); DockPanel.SetDock(options, Dock.Top); Root.Children.Add(options);
         DockPanel.SetDock(_sourceNotice, Dock.Top); Root.Children.Add(_sourceNotice);
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Avalonia.Thickness(6, 4), Children =
@@ -144,7 +161,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
         {
             if (_tabs.SelectedIndex == 3 && !IsBusy && !_loading) { await LoadSelectionAsync(); }
         };
-        Track(_file, _revision, _follow, _exact, _full, _simplify, blameOptions, _revisions, _tabs);
+        Track(_file, _revision, _follow, _exact, _full, _simplify, historyOptions, blameOptions, _revisions, _tabs);
+        UpdateActions();
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
         {
             if (_tabs.SelectedIndex == 1) { await RequestDiffReloadAsync(LoadSelectionAsync); }
@@ -172,10 +190,11 @@ public sealed class FileHistoryDialog : RepositoryDialog
         _loading = true;
         try
         {
+            _historyPreferences = _historyPreferencesStore.Load(); UpdateActions();
             string path = _file.Text ?? "";
             string? selected = _loadedHistoryPath == path ? SelectedEntry?.Commit.Hash : null;
             _history = await Repository.GetFileHistoryAsync(path, _revision.Text ?? "HEAD",
-                new(_follow.IsChecked == true, _exact.IsChecked == true, _full.IsChecked == true, _simplify.IsChecked == true, _limit), token);
+                new(_historyPreferences.FollowRenames, _historyPreferences.ExactRenames, _historyPreferences.FullHistory, _historyPreferences.SimplifyMerges, _limit), token);
             if (_loadedHistoryPath != path) { _informationNavigation.Clear(); _informationNavigationIndex = -1; }
             _loadedHistoryPath = path;
             _graph.Commits = _history.Select(entry => entry.Commit).ToArray();
@@ -190,6 +209,44 @@ public sealed class FileHistoryDialog : RepositoryDialog
         }
         finally { _loading = false; }
     });
+
+    private MenuItem HistoryOption(string name, string text, Func<FileHistoryPreferences, FileHistoryPreferences> change)
+    {
+        MenuItem item = OriginalMenuItems.Create(Translations, "FormFileHistory", name, text);
+        item.ToggleType = MenuItemToggleType.CheckBox;
+        item.Click += async (_, _) =>
+        {
+            if (IsBusy || !item.IsEnabled || _informationClosing) { return; }
+            try
+            {
+                FileHistoryPreferences next = change(_historyPreferencesStore.Load());
+                _historyPreferencesStore.Save(next); _historyPreferences = next; UpdateActions();
+                await InitializeAsync();
+            }
+            catch (Exception error) { ReportError(error); }
+            finally
+            {
+                UpdateActions();
+                // The popup closes while Git is awaited. Restore the actual
+                // grid only once that read and the menu's focus return finish.
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (_informationClosing || IsBusy || !IsVisible || !IsActive || OwnedWindows.Any(window => window.IsVisible)) { return; }
+                    if (_revisions.ContainerFromIndex(_revisions.SelectedIndex) is Control row) { row.Focus(); }
+                    else { _revisions.Focus(); }
+                });
+            }
+        };
+        return item;
+    }
+
+    protected override void UpdateActions()
+    {
+        _follow.IsChecked = _historyPreferences.FollowRenames; _follow.IsEnabled = !IsBusy;
+        _exact.IsChecked = _historyPreferences.ExactRenames; _exact.IsEnabled = !IsBusy && _historyPreferences.FollowRenames;
+        _full.IsChecked = _historyPreferences.FullHistory; _full.IsEnabled = !IsBusy;
+        _simplify.IsChecked = _historyPreferences.SimplifyMerges; _simplify.IsEnabled = !IsBusy && _historyPreferences.FullHistory;
+    }
     private Task LoadSelectionAsync()
     {
         if (_informationClosing) { return Task.CompletedTask; }
@@ -392,12 +449,16 @@ public sealed class FileHistoryDialog : RepositoryDialog
     }
     private Control TabHeader(string label, string iconName)
     {
-        using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + iconName));
-        Bitmap bitmap = new(stream); _tabIcons.Add(bitmap);
         return new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Children =
         {
-            new Image { Source = bitmap, Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center },
+            HistoryIcon(iconName),
             new TextBlock { Text = T(label), VerticalAlignment = VerticalAlignment.Center }
         } };
+    }
+    private Image HistoryIcon(string name)
+    {
+        using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + name));
+        Bitmap bitmap = new(stream); _tabIcons.Add(bitmap);
+        return new Image { Source = bitmap, Tag = name, Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
     }
 }

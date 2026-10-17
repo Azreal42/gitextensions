@@ -20,6 +20,10 @@ public sealed record GitFileBlame(string Path, string? Revision, IReadOnlyList<G
 
 public sealed partial class GitRepository
 {
+    /// <summary>
+    /// The dedicated dialog's direct, revision-bounded history reader. Browse uses the separate
+    /// two-pass GetFileHistoryGraphAsync reader; matching rename options does not merge those contracts.
+    /// </summary>
     public async Task<IReadOnlyList<GitFileHistoryEntry>> GetFileHistoryAsync(string path, string revision = "HEAD",
         GitFileHistoryOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -29,9 +33,19 @@ public sealed partial class GitRepository
         string target = await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         List<string> arguments = ["--literal-pathspecs", "log", "--encoding=UTF-8", "--topo-order", "--parents", "-z", "--name-status", "--no-ext-diff", "--no-textconv",
             "--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%s%x00%b", "--max-count=" + options.Count.ToString(CultureInfo.InvariantCulture)];
-        if (options.FollowRenames) { arguments.Add("--follow"); }
-        arguments.Add(options.ExactRenames ? "--find-renames=100%" : "--find-renames");
-        if (options.ExactRenames) { arguments.AddRange(["--find-copies=100%", "--find-copies-harder"]); }
+        if (options.FollowRenames)
+        {
+            arguments.Add("--follow");
+            arguments.AddRange(options.ExactRenames
+                ? ["--find-renames=100%", "--find-copies=100%"]
+                : ["--find-renames", "--find-copies"]);
+        }
+        else
+        {
+            // Retain the ordinary name-status rename presentation. The stored Exact preference
+            // is inert without Follow, just as in the Windows file-history discovery options.
+            arguments.Add("--find-renames");
+        }
         if (options.FullHistory) { arguments.Add("--full-history"); }
         if (options.FullHistory && options.SimplifyMerges) { arguments.Add("--simplify-merges"); }
         arguments.AddRange([target, "--", path]);

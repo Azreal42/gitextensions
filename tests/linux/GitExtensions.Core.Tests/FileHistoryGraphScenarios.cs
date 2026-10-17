@@ -20,6 +20,10 @@ internal static class FileHistoryGraphScenarios
         ("Browse graph cancellation drains the actual rename-discovery reader", () => CancellationAsync(discovery: true)),
         ("Browse graph cancellation drains the actual graph reader", () => CancellationAsync(discovery: false)),
         ("Browse orphan HEAD retains other reference histories without inventing a HEAD-followed path map", OrphanHeadAsync),
+        ("dedicated direct history ignores Exact completely when Follow is disabled", LegacyNoFollowAsync),
+        ("dedicated direct history uses native Windows thresholds for exact and edited renames", LegacyRenamesAsync),
+        ("dedicated direct history follows native exact and edited copy ancestry without extra copy search", LegacyCopiesAsync),
+        ("dedicated history native argv makes Exact conditional on Follow and never requests copies-harder", LegacyArgumentsAsync),
     ];
     private static void Check(bool condition, string message) { if (!condition) { throw new InvalidOperationException(message); } }
     private static async Task<GitResult> Git(GitRepository repo, params string[] args)
@@ -186,6 +190,112 @@ internal static class FileHistoryGraphScenarios
         Check(branch.Commits.Select(c => c.Hash).SequenceEqual([f.Tip, f.Rename]), "An explicit valid branch must survive an orphan checkout.");
         GitFileHistoryGraph current = await f.Repo.GetFileHistoryGraphAsync(new(All: false, Path: f.Path));
         Check(current.Commits.Count == 0 && before == Snapshot(f.Repo.Path), "Only the genuinely absent current HEAD has an empty history; reads must not change orphan/index bytes.");
+    }
+    private static string LegacySignature(IReadOnlyList<GitFileHistoryEntry> entries)
+        => System.Text.Json.JsonSerializer.Serialize(entries);
+
+    private static async Task LegacyNoFollowAsync()
+    {
+        using Fixture f = await Create(editAtRename: true); f.Owner.Write(f.Path, "dirty live contents must stay untouched\n");
+        string before = Snapshot(f.Repo.Path);
+        IReadOnlyList<GitFileHistoryEntry> ordinary = await f.Repo.GetFileHistoryAsync(f.Path, options: new(FollowRenames: false));
+        IReadOnlyList<GitFileHistoryEntry> retainedExact = await f.Repo.GetFileHistoryAsync(f.Path, options: new(FollowRenames: false, ExactRenames: true));
+        Check(LegacySignature(ordinary) == LegacySignature(retainedExact) && ordinary.Select(entry => entry.Commit.Hash).SequenceEqual([f.Tip, f.Rename]),
+            "Exact must not affect direct-reader commits, parent rewrites, statuses or paths while Follow is disabled.");
+        Check(before == Snapshot(f.Repo.Path), "Reading either no-follow option combination changed index, working files, refs or objects.");
+    }
+
+    private static async Task<string[]> LegacyNativeHashesAsync(GitRepository repository, string path, bool exact)
+    {
+        string[] thresholds = exact ? ["--find-renames=100%", "--find-copies=100%"] : ["--find-renames", "--find-copies"];
+        return (await Git(repository, ["log", "--topo-order", "--parents", "--format=%H", "--follow", .. thresholds, "HEAD", "--", path]))
+            .StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    private static async Task LegacyRenamesAsync()
+    {
+        foreach (bool edited in new[] { false, true })
+        {
+            using Fixture f = await Create("literal old [*] λ.txt", "literal new [*] λ.txt", edited);
+            string before = Snapshot(f.Repo.Path);
+            foreach (bool exact in new[] { false, true })
+            {
+                IReadOnlyList<GitFileHistoryEntry> history = await f.Repo.GetFileHistoryAsync(f.Path, options: new(ExactRenames: exact));
+                string[] native = await LegacyNativeHashesAsync(f.Repo, f.Path, exact);
+                Check(history.Select(entry => entry.Commit.Hash).SequenceEqual(native), "Direct rename ancestry differs from the native Windows -M/-C command.");
+                Check(history.Any(entry => entry.Commit.Hash == f.Root) == (!edited || !exact), "Only the exact threshold must stop at an edited rename.");
+                if (!edited || !exact)
+                {
+                    GitFileHistoryEntry renamed = history.Single(entry => entry.Commit.Hash == f.Rename);
+                    Check(renamed.Path == f.Path && renamed.PreviousPath == f.OldPath && history.Single(entry => entry.Commit.Hash == f.Root).Path == f.OldPath,
+                        "The direct reader must retain real literal rename source names rather than the current working path.");
+                }
+            }
+            Check(before == Snapshot(f.Repo.Path), "Rename option/native oracle reads modified repository bytes.");
+        }
+    }
+
+    private static async Task LegacyCopiesAsync()
+    {
+        const string source = "copy source [*] λ.txt", destination = "copy destination [*] λ.txt";
+        foreach (bool edited in new[] { false, true })
+        {
+            using RepositoryFixture f = await RepositoryFixture.CreateAsync(seed: false);
+            string contents = string.Join('\n', Enumerable.Range(0, 60).Select(index => "stable source line " + index)) + "\n";
+            f.Write(source, contents); string root = await Commit(f, "Original copy source", 2001);
+            f.Write(destination, contents + (edited ? "copied file edited during creation\n" : ""));
+            // The copy source participates in this diff. No copies-harder search of unchanged files is needed.
+            f.Write(source, contents + "source changed independently\n"); string copy = await Commit(f, "Copy and change source", 2002);
+            File.AppendAllText(f.File(destination), "later destination change\n"); string tip = await Commit(f, "Update copied file", 2003);
+            string before = Snapshot(f.Repository.Path);
+            foreach (bool exact in new[] { false, true })
+            {
+                IReadOnlyList<GitFileHistoryEntry> history = await f.Repository.GetFileHistoryAsync(destination, options: new(ExactRenames: exact));
+                Check(history.Select(entry => entry.Commit.Hash).SequenceEqual(await LegacyNativeHashesAsync(f.Repository, destination, exact)),
+                    "Copy ancestry differs from the actual native Windows threshold command.");
+                Check(history.First().Commit.Hash == tip && history.Any(entry => entry.Commit.Hash == root) == (!edited || !exact),
+                    "Copy fixture must actually cross an exact copy, and only normal similarity may cross an edited copy.");
+                if (!edited || !exact)
+                {
+                    GitFileHistoryEntry copied = history.Single(entry => entry.Commit.Hash == copy);
+                    Check(copied.Status is 'C' or 'R' && copied.PreviousPath == source && history.Single(entry => entry.Commit.Hash == root).Path == source,
+                        "The actual copied ancestor/name must reach the dedicated viewer, not an unrelated or live blob.");
+                }
+            }
+            IReadOnlyList<GitFileHistoryEntry> off = await f.Repository.GetFileHistoryAsync(destination, options: new(FollowRenames: false));
+            IReadOnlyList<GitFileHistoryEntry> offExact = await f.Repository.GetFileHistoryAsync(destination, options: new(FollowRenames: false, ExactRenames: true));
+            Check(LegacySignature(off) == LegacySignature(offExact) && !off.Any(entry => entry.Commit.Hash == root), "A retained Exact setting cannot enable copy following when Follow is disabled.");
+            Check(before == Snapshot(f.Repository.Path), "Copy reader or oracle modified source/index/objects/refs.");
+        }
+    }
+
+    private static async Task LegacyArgumentsAsync()
+    {
+        if (!OperatingSystem.IsLinux()) { return; }
+        using Fixture f = await Create(editAtRename: true);
+        string trace = Path.Combine(f.Owner.Root, "legacy-arguments"), wrapper = Path.Combine(f.Owner.Root, "record-legacy-git");
+        File.WriteAllText(wrapper, "#!/bin/sh\nprintf 'RECORD\\0' >> " + Quote(trace) + "\nprintf '%s\\0' \"$@\" >> " + Quote(trace) + "\nexec /usr/bin/git \"$@\"\n");
+        File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        GitRepository recording = new(f.Repo.Path, new GitRunner(wrapper)); string before = Snapshot(f.Repo.Path);
+        foreach (bool follow in new[] { false, true })
+        {
+            foreach (bool exact in new[] { false, true })
+            {
+                File.WriteAllText(trace, "");
+                await recording.GetFileHistoryAsync(f.Path, options: new(FollowRenames: follow, ExactRenames: exact));
+                string[][] commands = File.ReadAllText(trace).Split("RECORD\0", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(command => command.Split('\0', StringSplitOptions.RemoveEmptyEntries)).ToArray();
+                string[] log = commands.Single(command => command.Contains("log", StringComparer.Ordinal));
+                Check(!commands.Any(command => command.Contains("--find-copies-harder", StringComparer.Ordinal)), "The dedicated reader must never extend Windows copy search with copies-harder.");
+                Check(log.Contains("--follow", StringComparer.Ordinal) == follow && log.Contains("--literal-pathspecs", StringComparer.Ordinal)
+                    && log[(Array.IndexOf(log, "--") + 1)..].SequenceEqual([f.Path]), "Follow is explicit and paths remain one literal argv.");
+                string[] detection = log.Where(arg => arg.StartsWith("--find-", StringComparison.Ordinal)).ToArray();
+                string[] expected = !follow ? ["--find-renames"] : exact
+                    ? ["--find-renames=100%", "--find-copies=100%"] : ["--find-renames", "--find-copies"];
+                Check(detection.SequenceEqual(expected), "Exact is conditional on Follow and both rename/copy thresholds must match Windows.");
+            }
+        }
+        Check(before == Snapshot(f.Repo.Path), "Recording and reading native history mutated repository bytes.");
     }
     private static async Task CancellationAsync(bool discovery)
     {

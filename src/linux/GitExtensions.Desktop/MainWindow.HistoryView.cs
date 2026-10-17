@@ -15,12 +15,16 @@ public sealed partial class MainWindow
     private IReadOnlyList<GitCommit>? _relationshipSource;
     private string? _relationshipRevision;
 
-    private GitLogQuery ConfigureHistoryViewQuery(GitLogQuery query) => query with
+    private GitLogQuery ConfigureHistoryViewQuery(GitLogQuery query)
     {
-        IncludeStashes = _historyView.ShowStashes,
-        IncludeLatestStashInBranchFilter = _historyView.ShowStashes,
-        IncludeSessionRefs = _historyView.ShowSessionCheckpoints, Sort = _historyView.Sort
-    };
+        _fileHistoryPreferences = _fileHistoryPreferencesStore.Load();
+        return _fileHistoryPreferences.ConfigureQuery(query with
+        {
+            IncludeStashes = _historyView.ShowStashes,
+            IncludeLatestStashInBranchFilter = _historyView.ShowStashes,
+            IncludeSessionRefs = _historyView.ShowSessionCheckpoints, Sort = _historyView.Sort
+        });
+    }
 
     private GitReference[] HistoryViewReferences(IEnumerable<GitReference> references) => references.Where(r =>
         (!r.IsRemote || _historyView.ShowRemoteBranches) && (!r.IsTag || _historyView.ShowTags)

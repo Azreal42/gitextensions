@@ -20,12 +20,14 @@ internal sealed class DesktopSettingsDialog : Window
     internal static string ReferenceOrderLabel(GitRefsSortOrder order) => order == GitRefsSortOrder.Ascending ? "A ↓ Z" : "Z ↑ A";
     public DesktopPreferences Result { get; private set; }
     public GitLogSort HistorySortResult { get; private set; }
+    public FileHistoryPreferences FileHistoryResult { get; private set; }
     public bool OpenGitConfiguration { get; private set; }
 
     public DesktopSettingsDialog(DesktopPreferences initial, TranslationCatalog translations, bool canConfigureGit,
-        GitLogSort historySort = GitLogSort.GitDefault)
+        GitLogSort historySort = GitLogSort.GitDefault, FileHistoryPreferences? fileHistoryPreferences = null)
     {
         Result = initial; HistorySortResult = historySort;
+        FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
         Width = 640; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -34,12 +36,16 @@ internal sealed class DesktopSettingsDialog : Window
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
         CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
         CheckBox fileHistory = new() { Name = "SettingsUseBrowseForFileHistory", Content = translations.Translate("Show file history in the main window"), IsChecked = initial.UseBrowseForFileHistory };
+        CheckBox follow = new() { Name = "chkFollowRenamesInFileHistory", Content = new TextBlock { Text = translations.Translate("GeneralSettingsPage", "chkFollowRenamesInFileHistory", "Text", "Follow renames in file history"), TextWrapping = TextWrapping.Wrap }, IsChecked = FileHistoryResult.FollowRenames };
+        CheckBox exact = new() { Name = "chkFollowRenamesInFileHistoryExact", Content = new TextBlock { Text = translations.Translate("GeneralSettingsPage", "chkFollowRenamesInFileHistoryExact", "Text", "Follow exact renames and copies only"), TextWrapping = TextWrapping.Wrap }, IsChecked = FileHistoryResult.ExactRenames };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
         StackPanel fields = new() { Margin = new Thickness(12), Spacing = 10 };
         GeneralField("Theme", theme); GeneralField("Number of commits to load", history);
         fields.Children.Add(normalise); GeneralField("Replacement symbol", symbol); fields.Children.Add(advanced);
         fields.Children.Add(fileHistory);
+        Grid fileHistoryOptions = new() { ColumnDefinitions = new ColumnDefinitions("*,*") };
+        fileHistoryOptions.Children.Add(follow); Grid.SetColumn(exact, 1); fileHistoryOptions.Children.Add(exact); fields.Children.Add(fileHistoryOptions);
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); }; fields.Children.Add(configuration);
@@ -83,6 +89,7 @@ internal sealed class DesktopSettingsDialog : Window
                 PrioritizedBranchNames = branches.Text ?? "", PrioritizedRemoteNames = remotes.Text ?? ""
             };
             HistorySortResult = (GitLogSort)revisions.SelectedItem!;
+            FileHistoryResult = FileHistoryResult with { FollowRenames = follow.IsChecked == true, ExactRenames = exact.IsChecked == true };
             Close(true);
         };
         DockPanel root = new() { LastChildFill = true };

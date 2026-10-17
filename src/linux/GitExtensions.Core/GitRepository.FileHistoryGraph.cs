@@ -40,7 +40,7 @@ public sealed partial class GitRepository
             string output = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
             ReadFollowedNames(output, paths, seen, names, cancellationToken);
         }
-        IReadOnlyList<GitCommit> commits = await GetLogCoreAsync(query, paths, rewriteParents: true, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<GitCommit> commits = await GetLogCoreAsync(query.ForRevisionGraph(), paths, rewriteParents: true, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         return new(commits, paths.AsReadOnly(), new ReadOnlyDictionary<string, string>(names));
     }

@@ -9,6 +9,8 @@ public sealed partial class MainWindow
     private readonly BrowseRequest _browseRequest;
     private bool _browseSelectionApplied;
     private GitFileHistoryGraph? _browseFileHistory;
+    private readonly FileHistoryPreferencesStore _fileHistoryPreferencesStore = new();
+    private FileHistoryPreferences _fileHistoryPreferences = new();
     private string? _explicitFileHistoryDiffPath, _explicitFileHistoryTreePath;
     private string? _fileHistoryTrackedFilter;
     private GitCompareRevision? _fileTreeSource;
@@ -52,11 +54,12 @@ public sealed partial class MainWindow
     {
         // Current branch is empty until its first commit; other refs remain readable in All/filtered scopes.
         if (unborn && (query.Revision == "HEAD" || query.BranchFilter?.Trim() == "HEAD")) { return new([], null); }
-        if (string.IsNullOrEmpty(query.Path)) { return new(await repository.GetLogAsync(query, token), null); }
+        if (string.IsNullOrEmpty(query.Path)) { return new(await repository.GetRevisionGraphAsync(query, token), null); }
         bool directory = _browseRequest.PathFilter is { } filter && filter.Path == query.Path
             ? filter.Kind == BrowsePathKind.Directory
             : query.Path.EndsWith('/') || Directory.Exists(Path.Combine(repository.Path, query.Path));
-        GitFileHistoryGraph graph = await repository.GetFileHistoryGraphAsync(query, new(IsDirectory: directory), token);
+        GitFileHistoryGraph graph = await repository.GetFileHistoryGraphAsync(query,
+            new(_fileHistoryPreferences.FollowRenames, _fileHistoryPreferences.ExactRenames, directory), token);
         return new(graph.Commits, graph);
     }
 

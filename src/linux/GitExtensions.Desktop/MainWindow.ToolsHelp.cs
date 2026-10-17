@@ -133,13 +133,20 @@ public sealed partial class MainWindow
     private async Task ShowSettingsAsync()
     {
         if (_busy) { return; }
-        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null, _historyView.Sort);
+        FileHistoryPreferences fileHistory = _fileHistoryPreferencesStore.Load();
+        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null, _historyView.Sort, fileHistory);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
         DesktopPreferences preferences = dialog.Result;
         _preferencesStore.Save(preferences);
         bool reload = preferences.HistoryLimit != _preferences.HistoryLimit || dialog.HistorySortResult != _historyView.Sort;
+        if (dialog.FileHistoryResult.FollowRenames != fileHistory.FollowRenames || dialog.FileHistoryResult.ExactRenames != fileHistory.ExactRenames)
+        {
+            _fileHistoryPreferencesStore.Save(_fileHistoryPreferencesStore.Load() with
+            { FollowRenames = dialog.FileHistoryResult.FollowRenames, ExactRenames = dialog.FileHistoryResult.ExactRenames });
+            reload |= _historyQuery.Path is not null;
+        }
         bool referencesChanged = preferences.ReferenceSorting != _preferences.ReferenceSorting
             || preferences.PrioritizedBranchNames != _preferences.PrioritizedBranchNames
             || preferences.PrioritizedRemoteNames != _preferences.PrioritizedRemoteNames;
