@@ -14,6 +14,8 @@ public sealed record GitFileBlameLine(GitBlameLine Line, string OriginalPath, st
 public sealed record GitFileBlame(string Path, string? Revision, IReadOnlyList<GitFileBlameLine> Lines, byte[] Bytes)
 {
     public string FileEncodingName { get; init; } = "utf-8";
+    /// <summary>Typed endpoint for comparison readers; null retains the legacy Revision/null contract.</summary>
+    public GitCompareRevision? Source { get; init; }
 }
 
 public sealed partial class GitRepository
@@ -125,6 +127,12 @@ public sealed partial class GitRepository
         else { bytes = await GetFileBytesAsync(path, target, cancellationToken).ConfigureAwait(false); }
         Encoding encoding = GitFileEncodingCodec.GetEncoding(fileEncodingName ?? await GetFileEncodingNameAsync(cancellationToken).ConfigureAwait(false));
         string output = await ReadFileBlameOutputAsync(path, target, options, encoding, cancellationToken).ConfigureAwait(false);
+        return ParseFileBlame(path, target, output, bytes, encoding, cancellationToken);
+    }
+
+    private static GitFileBlame ParseFileBlame(string path, string? target, string output, byte[] bytes,
+        Encoding encoding, CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
         IReadOnlyList<GitBlameLine> parsed = GitOutputParser.ParseBlame(output);
         List<GitFileBlameLine> lines = [];

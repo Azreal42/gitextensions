@@ -17,7 +17,7 @@ public sealed partial class MainWindow
     private Task _fileMenuRefreshCompletion = Task.CompletedTask;
     private FileMenuOperations? _fileMenuOperations;
     private FileMenuAdditionalOperations? _fileMenuAdditionalOperations;
-    private sealed record BrowseFileMenuIdentity(bool IsFileTree, string? Revision, GitRevisionDiffGroup[] Groups);
+    private sealed record BrowseFileMenuIdentity(bool IsFileTree, GitCompareRevision? Source, GitRevisionDiffGroup[] Groups);
 
     private FileMenuSelection? GetFileMenuSelection(bool isFileTree)
     {
@@ -31,10 +31,17 @@ public sealed partial class MainWindow
         if (isFileTree)
         {
             if (_fileTreeRevision is not string revision) { return null; }
-            string? parent = _history.FirstOrDefault(commit => commit.Hash == revision)?.Parents.FirstOrDefault();
-            leaves = tags.OfType<string>().Select(path => new FileMenuLeaf(new(path, ' '), parent is null ? null : new(parent), new(revision),
+            GitCompareRevision source = _fileTreeSource ?? new(revision);
+            GitCompareRevision? parent = source.Kind switch
+            {
+                GitCompareRevisionKind.Index when _historyGraph.CurrentHead is string head => new(head),
+                GitCompareRevisionKind.WorkingTree => new("", GitCompareRevisionKind.Index),
+                GitCompareRevisionKind.Commit when _history.FirstOrDefault(commit => commit.Hash == revision)?.Parents.FirstOrDefault() is string hash => new(hash),
+                _ => null
+            };
+            leaves = tags.OfType<string>().Select(path => new FileMenuLeaf(new(path, ' '), parent, source,
                 IsSubmodule: _fileTreeEntries.GetValueOrDefault(path)?.IsSubmodule == true, FirstIsParent: parent is not null)).ToArray();
-            identity = new(true, revision, []);
+            identity = new(true, source, []);
         }
         else
         {
@@ -42,12 +49,16 @@ public sealed partial class MainWindow
             leaves = selected.Select(item =>
             {
                 GitComparisonFileMetadata? metadata = _fileMenuMetadata.GetValueOrDefault(item.Group)?.FirstOrDefault(value => value.File == item.File);
-                return new FileMenuLeaf(item.File, item.Group.BaseRevision is null ? null : new(item.Group.BaseRevision), new(item.Group.Revision),
-                    item.Group.BaseRevision is null ? null : new(new(item.Group.BaseRevision), new(item.Group.Revision), item.Group.Files, []),
+                GitComparison? comparison = _revisionComparisons.GetValueOrDefault(item.Group);
+                GitCompareRevision? first = comparison?.Base ?? (item.Group.BaseRevision is null ? null : new(item.Group.BaseRevision));
+                GitCompareRevision second = comparison?.Compare ?? new(item.Group.Revision);
+                return new FileMenuLeaf(item.File, first, second,
+                    comparison ?? (first is null ? null : new(first, second, item.Group.Files, [])),
                     metadata?.Staged switch { GitFileStagedStatus.Index => FileMenuStage.Index, GitFileStagedStatus.WorkTree => FileMenuStage.WorkingTree, GitFileStagedStatus.Unknown => FileMenuStage.Unknown, _ => FileMenuStage.None },
                     IsTracked: metadata?.IsTracked == true, IsSubmodule: metadata?.IsSubmodule == true,
                     IsSkipWorktree: metadata?.IsSkipWorktree == true, IsAssumeUnchanged: metadata?.IsAssumeUnchanged == true,
-                    FirstIsParent: item.Group.BaseRevision is string firstRevision && _history.FirstOrDefault(commit => commit.Hash == item.Group.Revision)?.Parents.Contains(firstRevision) == true);
+                    FirstIsParent: comparison is not null ? comparison.Compare.Kind is GitCompareRevisionKind.Index or GitCompareRevisionKind.WorkingTree
+                        : item.Group.BaseRevision is string firstRevision && _history.FirstOrDefault(commit => commit.Hash == item.Group.Revision)?.Parents.Contains(firstRevision) == true);
             }).ToArray();
             GitRevisionDiffGroup[] groups = selected.Select(item => item.Group).Concat(nodes.Select(item => item.Tag).OfType<GitRevisionDiffGroup>()).Distinct().ToArray();
             identity = new(false, null, groups);
@@ -64,22 +75,27 @@ public sealed partial class MainWindow
         if (nodes.Length == 1 && nodes[0].Items.Count > 0 && folder is null) { folder = ""; copy = ["."]; }
         bool displayOnly = identity.Groups.Any(group => group.Kind is GitRevisionDiffGroupKind.RangeDiff or GitRevisionDiffGroupKind.Combined);
         FileMenuLeaf? focused = view.FocusedSelectedTag is RevisionDiffFileSelection selectedLeaf
-            ? leaves.FirstOrDefault(leaf => leaf.File == selectedLeaf.File && leaf.Second.Revision == selectedLeaf.Group.Revision && leaf.First?.Revision == selectedLeaf.Group.BaseRevision)
+            ? leaves.FirstOrDefault(leaf => leaf.File == selectedLeaf.File && (leaf.Comparison is { } pair
+                ? _revisionComparisons.GetValueOrDefault(selectedLeaf.Group) == pair
+                    || pair.Compare.Revision == selectedLeaf.Group.Revision && pair.Base.Revision == selectedLeaf.Group.BaseRevision
+                : leaf.Second.Revision == selectedLeaf.Group.Revision && leaf.First?.Revision == selectedLeaf.Group.BaseRevision))
             : view.FocusedSelectedTag is string focusedPath && isFileTree ? leaves.FirstOrDefault(leaf => leaf.File.Path == focusedPath)
             : leaves.FirstOrDefault();
         return new(repository, leaves, copy, folder, isFileTree, displayOnly, identity, focused);
     }
 
     private async Task<IReadOnlyDictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>>> ReadFileMenuMetadataAsync(
-        GitRepository repository, IReadOnlyList<GitRevisionDiffGroup> groups, CancellationToken token)
+        GitRepository repository, IReadOnlyList<GitRevisionDiffGroup> groups, CancellationToken token,
+        IReadOnlyDictionary<GitRevisionDiffGroup, GitComparison>? comparisons = null)
     {
         Dictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>> metadata = new(ReferenceEqualityComparer.Instance);
         if (_fileMenuAdditionalOperations is not null) { await _fileMenuAdditionalOperations.RefreshAsync(repository, token); }
         foreach (GitRevisionDiffGroup group in groups)
         {
             if (group.Kind is GitRevisionDiffGroupKind.RangeDiff or GitRevisionDiffGroupKind.Combined || group.Files.Count == 0) { continue; }
-            GitComparison comparison = new(new(group.BaseRevision ?? group.Revision), new(group.Revision), group.Files, []);
-            metadata.Add(group, await repository.GetComparisonFileMetadataAsync(comparison, null, token));
+            GitComparison comparison = comparisons?.GetValueOrDefault(group) ?? new(new(group.BaseRevision ?? group.Revision), new(group.Revision), group.Files, []);
+            GitCompareRevision? parent = comparisons is not null && comparison.Compare.Kind == GitCompareRevisionKind.Index ? comparison.Base : null;
+            metadata.Add(group, await repository.GetComparisonFileMetadataAsync(comparison, parent, token));
         }
         token.ThrowIfCancellationRequested(); return metadata;
     }
@@ -88,7 +104,7 @@ public sealed partial class MainWindow
     {
         if (_lifetime.IsCancellationRequested || !IsVisible || !ReferenceEquals(_repository, selection.Repository)
             || selection.HostIdentity is not BrowseFileMenuIdentity identity) { return false; }
-        return identity.IsFileTree ? _fileTreeRevision == identity.Revision
+        return identity.IsFileTree ? (_fileTreeSource ?? (_fileTreeRevision is string revision ? new(revision) : null)) == identity.Source
             : identity.Groups.All(group => _revisionDiffGroups.Any(current => ReferenceEquals(current, group)));
     }
 
@@ -213,11 +229,14 @@ public sealed partial class MainWindow
     { _historyQuery = _historyQuery with { Path = selection.Folder ?? selection.Paths.Single(), Skip = 0 }; return RefreshAsync(); }
     private async Task ShowSelectionInFileTreeAsync(FileMenuSelection selection)
     {
-        string[] revisions = selection.Leaves.Select(leaf => leaf.Second).Where(side => side.Kind == GitCompareRevisionKind.Commit).Select(side => side.Revision).Distinct(StringComparer.Ordinal).ToArray();
+        GitCompareRevision[] revisions = selection.Leaves.Select(leaf => leaf.Second).Distinct().ToArray();
         if (revisions.Length != 1) { throw new InvalidOperationException(T("Select files from one revision.")); }
-        IReadOnlyList<GitTreeEntry> entries = await selection.Repository.GetTreeAsync(revisions[0], cancellationToken: _lifetime.Token);
-        if (!IsCurrentFileMenuSelection(selection)) { return; }
-        SetFileTreePaths(selection.Repository, revisions[0], entries);
+        await ReadBrowserAsync(_treeRead, "File tree", async (repository, token) =>
+        {
+            if (!IsCurrentFileMenuSelection(selection)) { return; }
+            await LoadComparisonFileTreeAsync(repository, revisions[0], token);
+        });
+        if (!IsCurrentFileMenuSelection(selection) || _fileTreeRepository != selection.Repository || _fileTreeSource != revisions[0]) { return; }
         SelectDetailsTab("FileTreeTab");
         if (selection.Folder is { Length: > 0 } folder)
         {
@@ -234,7 +253,7 @@ public sealed partial class MainWindow
         Dispatcher.UIThread.Post(() =>
         {
             if (_lifetime.IsCancellationRequested || !IsVisible || !IsEffectivelyEnabled || _busy
-                || !ReferenceEquals(_repository, selection.Repository) || _fileTreeRevision != revisions[0]
+                || !ReferenceEquals(_repository, selection.Repository) || _fileTreeSource != revisions[0]
                 || (_tabs.SelectedItem as TabItem)?.Name != "FileTreeTab" || OwnedWindows.Any(window => window.IsVisible)
                 || target is null || _tree.SelectedItems?.Contains(target) != true) { return; }
             _tree.UpdateLayout();

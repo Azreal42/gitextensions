@@ -77,8 +77,8 @@ internal sealed class FileMenuOperations
                 if (selection.Leaves.Select(leaf => leaf.Second).Distinct().Count() != 1) { throw new InvalidOperationException("Select files from one revision for file history."); }
                 await RunAsync("File history", selection, async token =>
                 {
-                    FileHistoryDialog dialog = new(selection.Repository, selection.Folder ?? history.File.Path, history.Second) { RequestedThemeVariant = Owner.ActualThemeVariant };
-                    dialog.Opened += async (_, _) => await dialog.InitializeAsync(); await dialog.ShowDialog(Owner); token.ThrowIfCancellationRequested();
+                    await FileHistoryWorkflow.OpenAsync(Owner, selection.Repository, selection.Folder ?? history.File.Path,
+                        selection.Folder is not null, history.Second, token, _launch);
                 }, false); return;
             case FileMenuCommand.Blame:
                 FileMenuLeaf blame = selection.Leaves.Single();
@@ -86,9 +86,9 @@ internal sealed class FileMenuOperations
                 {
                     if (blame.Second.Kind != GitCompareRevisionKind.Commit)
                     {
-                        FileHistoryDialog historyDialog = new(selection.Repository, blame.File.Path, blame.Second, initialBlame: true) { RequestedThemeVariant = Owner.ActualThemeVariant };
-                        historyDialog.Opened += async (_, _) => await historyDialog.InitializeAsync();
-                        await historyDialog.ShowDialog(Owner); token.ThrowIfCancellationRequested(); return;
+                        await FileHistoryWorkflow.OpenAsync(Owner, selection.Repository, blame.File.Path, false,
+                            blame.Second, token, _launch, initialBlame: true);
+                        return;
                     }
                     var reading = ReadingPosition(blame);
                     BlameDialog dialog = new(selection.Repository, blame.File.Path, blame.Second.Kind == GitCompareRevisionKind.WorkingTree ? null : blame.Second.Revision,

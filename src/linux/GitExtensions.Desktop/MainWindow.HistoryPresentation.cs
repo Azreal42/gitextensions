@@ -35,6 +35,7 @@ public sealed partial class MainWindow
         _historyGraph.SelectionFocused = _commits.IsKeyboardFocusWithin;
         _historyGraph.AuthoredEmail = _authoredEmail;
         foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(control => control.Name == "RevisionHistoryRow")) { UpdateHistoryRow(row); }
+        UpdateArtificialHistorySelectionAppearance();
     }
 
     private void UpdateHistoryRow(Control row)
@@ -69,6 +70,7 @@ public sealed partial class MainWindow
             action.Click += async (_, _) =>
             {
                 if (_busy || _repository is null || _repository.IsBare) { return; }
+                if (IsFileHistoryBrowse) { await SelectArtificialHistoryRevisionAsync(staged); return; }
                 SelectDetailsTab("ChangesTab");
                 GitChange? change = _changesFilesView?.Entries.Select(entry => entry.Tag).OfType<GitChange>().FirstOrDefault(entry => staged ? entry.IsStaged : entry.IsModified || entry.IsUntracked);
                 _refreshing = true;
@@ -81,6 +83,10 @@ public sealed partial class MainWindow
                 if (change is not null) { await LoadSelectedDiffAsync(); }
                 else { ClearWorkingDiff(); }
             };
+            action.GotFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
+            action.LostFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
+            action.ActualThemeVariantChanged += (_, _) => UpdateArtificialHistorySelectionAppearance();
+            action.KeyDown += async (_, args) => await ArtificialHistoryKeyDownAsync(action, staged, args);
             _actionButtons.Add(action);
             if (i == 0) { _workingRevision = action; _workingRevisionState = state; }
             else { _indexRevision = action; _indexRevisionState = state; }

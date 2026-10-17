@@ -29,6 +29,7 @@ public class FileHistoryDialogTests
     public async Task FileTreeActionsOpenOwnedHistoryAndBlameWithTheSelectedLiteralFileAndRevision()
     {
         using Fixture fixture = await Fixture.CreateAsync(Initial, Initial);
+        PreferencesStore preferences = new(); preferences.Save(preferences.Load() with { UseBrowseForFileHistory = false });
         await MakeHistoryAsync(fixture);
         MainWindow window = fixture.Window;
         await window.OpenRepositoryAsync(fixture.Repository);

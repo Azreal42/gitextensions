@@ -19,6 +19,7 @@ public sealed partial class MainWindow
     private readonly RevisionDiffPreferencesStore _revisionDiffPreferencesStore = new();
     private RevisionDiffPreferences _revisionDiffPreferences = new();
     private IReadOnlyList<GitRevisionDiffGroup> _revisionDiffGroups = [];
+    private IReadOnlyDictionary<GitRevisionDiffGroup, GitComparison> _revisionComparisons = new Dictionary<GitRevisionDiffGroup, GitComparison>(ReferenceEqualityComparer.Instance);
     private GitComparisonDiffOptions _revisionViewerOptions = new();
     private MenuItem? _revisionTreatAsText;
     private FileContentView? _commitContent;
@@ -84,6 +85,7 @@ public sealed partial class MainWindow
         {
             if (args.Source == _revisionFiles && !_loadingCommitFiles && _revisionFilesView?.IsUpdating != true && !_refreshing && !_busy)
             {
+                RememberFileHistoryDiffSelection(_revisionFiles.SelectedItem as TreeViewItem);
                 if (_revisionFiles.SelectedItem is TreeViewItem item) { await ReadRevisionDiffAsync(item); }
                 else { ClearRevisionPreview(); }
             }
@@ -115,7 +117,8 @@ public sealed partial class MainWindow
             omit.IsChecked = _revisionDiffPreferences.OmitUninterestingDiff;
         };
         _revisionFilesView.Toolbar.Children.Insert(1, RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
-            _commits.SelectedItem is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask));
+            _selectedArtificialHistoryRevision is { } artificial ? ReadArtificialHistoryRevisionAsync(artificial)
+                : _commits.SelectedItem is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask));
         _revisionFilesView.DisplayChanged += async (_, _) =>
         {
             if (_loadingCommitFiles || _refreshing || _busy || _repository is null) { return; }
@@ -180,7 +183,8 @@ public sealed partial class MainWindow
         if (_busy) { return; }
         _revisionDiffPreferences = preferences;
         _revisionDiffPreferencesStore.Save(preferences);
-        if (_commits.SelectedItem is GitCommit commit)
+        if (_selectedArtificialHistoryRevision is { } artificial) { await ReadArtificialHistoryRevisionAsync(artificial); }
+        else if (_commits.SelectedItem is GitCommit commit)
         {
             await ReadCommitFilesAsync(commit.Hash);
         }
@@ -190,6 +194,7 @@ public sealed partial class MainWindow
     {
         _revisionFilesView?.SetGroups([], preserveSelection: false);
         _revisionDiffGroups = [];
+        _revisionComparisons = new Dictionary<GitRevisionDiffGroup, GitComparison>(ReferenceEqualityComparer.Instance);
         _fileMenuMetadata = new Dictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>>(ReferenceEqualityComparer.Instance);
         if (_commitContent is not null) { _commitContent.TextView.Mode = DiffViewMode.Auto; }
     }
@@ -221,43 +226,8 @@ public sealed partial class MainWindow
         token.ThrowIfCancellationRequested();
         if (!ReferenceEquals(_repository, repository) || RevisionSelectionIdentity != selectionIdentity) { return; }
         _fileMenuMetadata = fileMenuMetadata;
-        _loadingCommitFiles = true;
-        TreeViewItem? selected;
-        try
-        {
-            _revisionDiffGroups = groups;
-            _revisionFilesView!.SetGroups(groups.Select((group, index) => new FileStatusListGroup(group,
-                $"{index}:{group.Kind}:{group.BaseRevision}:{group.Revision}", RevisionDiffGroupHeader(group),
-                group.Files.Select(file => new FileStatusListEntry(new RevisionDiffFileSelection(group, file), file.Path,
-                    file.OriginalPath, file.Status, file.SimilarityPercent, file.DiffStatus)).ToArray(),
-                AlwaysVisible: group.Kind == GitRevisionDiffGroupKind.RangeDiff,
-                IsBaseComparison: group.Kind is GitRevisionDiffGroupKind.BaseToFirst or GitRevisionDiffGroupKind.BaseToSecond,
-                Name: "RevisionDiffGroup_" + group.Kind)
-                {
-                    HeaderFactory = (shown, total) => RevisionDiffGroupHeader(group, shown, total),
-                    ExpandSmallDiff = group.Kind is GitRevisionDiffGroupKind.Parent or GitRevisionDiffGroupKind.Comparison
-                }).ToArray(), preserveSelection: false);
-            TreeViewItem[] roots = _revisionFiles.Items.OfType<TreeViewItem>().ToArray();
-            TreeViewItem[] fileItems = FileStatusTreeItems(_revisionFiles).Where(item => item.Tag is RevisionDiffFileSelection).ToArray();
-            TreeViewItem? Resolve(object? tag) => tag switch
-            {
-                RevisionDiffFileSelection old => fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate
-                    && candidate.Group.Kind == old.Group.Kind && candidate.Group.BaseRevision == old.Group.BaseRevision
-                    && candidate.Group.Revision == old.Group.Revision && candidate.File.Path == old.File.Path)
-                    ?? fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate && candidate.File.Path == old.File.Path),
-                GitRevisionDiffGroup old => roots.FirstOrDefault(item => item.Tag is GitRevisionDiffGroup candidate
-                    && candidate.Kind == old.Kind && candidate.BaseRevision == old.BaseRevision),
-                _ => null
-            };
-            object[] tags = previous is object[] many ? many : previous is null ? [] : [previous];
-            TreeViewItem[] restored = tags.Select(Resolve).OfType<TreeViewItem>().Distinct().ToArray();
-            selected = restored.FirstOrDefault() ?? fileItems.FirstOrDefault() ?? roots.FirstOrDefault();
-            if (selected is not null)
-            {
-                _revisionFilesView.SelectTags(restored.Length > 0 ? restored.Select(item => item.Tag!) : [selected.Tag!]);
-            }
-        }
-        finally { _loadingCommitFiles = false; }
+        _revisionComparisons = new Dictionary<GitRevisionDiffGroup, GitComparison>(ReferenceEqualityComparer.Instance);
+        TreeViewItem? selected = SetRevisionFileGroups(groups, previous);
         _loadedDiffSelection = selectionIdentity;
         if (selected is not null)
         {
@@ -275,10 +245,60 @@ public sealed partial class MainWindow
         }
     }
 
+    private TreeViewItem? SetRevisionFileGroups(IReadOnlyList<GitRevisionDiffGroup> groups, object? previous)
+    {
+        _loadingCommitFiles = true;
+        TreeViewItem? selected;
+        try
+        {
+            _revisionDiffGroups = groups;
+            _revisionFilesView!.SetGroups(groups.Select((group, index) => new FileStatusListGroup(group,
+                $"{index}:{group.Kind}:{group.BaseRevision}:{group.Revision}", RevisionDiffGroupHeader(group),
+                group.Files.Select(file => new FileStatusListEntry(new RevisionDiffFileSelection(group, file), file.Path,
+                    file.OriginalPath, file.Status, file.SimilarityPercent, file.DiffStatus)).ToArray(),
+                AlwaysVisible: group.Kind == GitRevisionDiffGroupKind.RangeDiff,
+                IsBaseComparison: group.Kind is GitRevisionDiffGroupKind.BaseToFirst or GitRevisionDiffGroupKind.BaseToSecond,
+                Name: "RevisionDiffGroup_" + group.Kind)
+                {
+                    HeaderFactory = (shown, total) => RevisionDiffGroupHeader(group, shown, total),
+                    ExpandSmallDiff = group.Kind is GitRevisionDiffGroupKind.Parent or GitRevisionDiffGroupKind.Comparison
+                }).ToArray(), preserveSelection: false);
+            TreeViewItem[] roots = _revisionFiles.Items.OfType<TreeViewItem>().ToArray();
+            TreeViewItem[] nodes = FileStatusTreeItems(_revisionFiles).ToArray();
+            TreeViewItem[] fileItems = nodes.Where(item => item.Tag is RevisionDiffFileSelection).ToArray();
+            TreeViewItem? Resolve(object? tag) => tag switch
+            {
+                RevisionDiffFileSelection old => fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate
+                    && candidate.Group.Kind == old.Group.Kind && candidate.Group.BaseRevision == old.Group.BaseRevision
+                    && candidate.Group.Revision == old.Group.Revision && candidate.File.Path == old.File.Path)
+                    ?? fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate && candidate.File.Path == old.File.Path),
+                GitRevisionDiffGroup old => roots.FirstOrDefault(item => item.Tag is GitRevisionDiffGroup candidate
+                    && candidate.Kind == old.Kind && candidate.BaseRevision == old.BaseRevision),
+                _ => null
+            };
+            object[] tags = previous is object[] many ? many : previous is null ? [] : [previous];
+            TreeViewItem[] restored = tags.Select(Resolve).OfType<TreeViewItem>().Distinct().ToArray();
+            TreeViewItem? historySelection = FileHistoryDiffSelection(nodes, groups.FirstOrDefault());
+            selected = historySelection ?? restored.FirstOrDefault() ?? fileItems.FirstOrDefault() ?? roots.FirstOrDefault();
+            if (selected is not null)
+            {
+                _revisionFilesView.SelectTags(historySelection is null && restored.Length > 0 ? restored.Select(item => item.Tag!) : [selected.Tag!]);
+            }
+        }
+        finally { _loadingCommitFiles = false; }
+        return selected;
+    }
+
     private Control RevisionDiffGroupHeader(GitRevisionDiffGroup group, int? shown = null, int? total = null)
     {
         string shortRevision = group.BaseRevision is null ? group.Revision[..Math.Min(9, group.Revision.Length)]
             : group.BaseRevision[..Math.Min(9, group.BaseRevision.Length)];
+        if (_revisionComparisons.TryGetValue(group, out GitComparison? comparison))
+        {
+            shortRevision = comparison.Base.Kind switch
+            { GitCompareRevisionKind.Index => T("Commit index"), GitCompareRevisionKind.WorkingTree => T("Working directory"),
+                GitCompareRevisionKind.EmptyTree => T("Empty tree"), _ => shortRevision };
+        }
         Control header = group.Kind switch
         {
             GitRevisionDiffGroupKind.Combined => IconLabel("Combined diff", "DiffC.png"),
@@ -355,19 +375,40 @@ public sealed partial class MainWindow
             else
             {
                 mode = DiffViewMode.Unified;
-                GitRevisionChanges changes = new(selection.Group.Revision, selection.Group.BaseRevision, selection.Group.Files);
-                GitRevisionFile file = selection.File;
-                string? imageRevision = file.IsDeleted ? changes.BaseRevision : changes.Revision;
-                if (!options.TreatAllFilesAsText && FileContentView.IsImagePath(file.Path) && imageRevision is not null
-                    && (await repository.GetTreeAsync(imageRevision, file.Path, token)).FirstOrDefault(entry => entry.Path == file.Path)?.IsSubmodule is not true)
+                if (_revisionComparisons.TryGetValue(selection.Group, out GitComparison? comparison))
                 {
-                    byte[] bytes = await repository.GetFileBytesAsync(file.Path, imageRevision, token);
-                    publish = () => _commitContent.ShowImageOrHex(file.Path, bytes);
+                    identity = string.Join("\0", repository.Path, selection.File.Path, comparison.Base.Kind, comparison.Base.Revision,
+                        comparison.Compare.Kind, comparison.Compare.Revision, selection.File.OriginalPath);
+                    bool submodule = _fileMenuMetadata.GetValueOrDefault(selection.Group)?.Any(metadata => metadata.File == selection.File && metadata.IsSubmodule) == true;
+                    if (!options.TreatAllFilesAsText && !submodule && FileContentView.IsImagePath(selection.File.Path))
+                    {
+                        GitCompareRevision side = selection.File.IsDeleted ? comparison.Base : comparison.Compare;
+                        string name = selection.File.IsDeleted ? selection.File.OriginalPath ?? selection.File.Path : selection.File.Path;
+                        byte[] bytes = await repository.GetComparisonFileBytesAsync(side, name, token);
+                        publish = () => _commitContent.ShowImageOrHex(name, bytes);
+                    }
+                    else
+                    {
+                        GitDiffDocument document = await repository.GetComparisonFileDiffDocumentAsync(comparison, selection.File, options, display, token);
+                        publish = () => viewer.ShowDocument(document);
+                    }
                 }
                 else
                 {
-                    GitDiffDocument document = await repository.GetRevisionFileDiffDocumentAsync(changes, file, options, display, token);
-                    publish = () => viewer.ShowDocument(document);
+                    GitRevisionChanges changes = new(selection.Group.Revision, selection.Group.BaseRevision, selection.Group.Files);
+                    GitRevisionFile file = selection.File;
+                    string? imageRevision = file.IsDeleted ? changes.BaseRevision : changes.Revision;
+                    if (!options.TreatAllFilesAsText && FileContentView.IsImagePath(file.Path) && imageRevision is not null
+                        && (await repository.GetTreeAsync(imageRevision, file.Path, token)).FirstOrDefault(entry => entry.Path == file.Path)?.IsSubmodule is not true)
+                    {
+                        byte[] bytes = await repository.GetFileBytesAsync(file.Path, imageRevision, token);
+                        publish = () => _commitContent.ShowImageOrHex(file.Path, bytes);
+                    }
+                    else
+                    {
+                        GitDiffDocument document = await repository.GetRevisionFileDiffDocumentAsync(changes, file, options, display, token);
+                        publish = () => viewer.ShowDocument(document);
+                    }
                 }
             }
         }

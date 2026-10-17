@@ -137,7 +137,9 @@ public sealed class BlameView : UserControl, IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         bool sameFile = _blame?.Path == blame.Path && _displayedRepositoryPath == _repositoryPath;
         int target = Math.Clamp(initialLine ?? (sameFile ? CurrentFileLine : 1), 1, Math.Max(1, blame.Lines.Count));
-        string identity = string.Join('\0', _repositoryPath, blame.Path, blame.Revision, "blame");
+        string? revisionIdentity = blame.Source is { Kind: not GitCompareRevisionKind.Commit } source
+            ? "source:" + source.Kind : blame.Revision;
+        string identity = string.Join('\0', _repositoryPath, blame.Path, revisionIdentity, "blame");
         bool sameIdentity = TextView.DocumentIdentity == identity;
         CancelAvatarLoading();
         ClearHover(); _contextLine = null;

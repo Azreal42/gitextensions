@@ -418,9 +418,11 @@ public sealed partial class MainWindow
     {
         CancellationToken token = cancellationToken ?? Token;
         string revision = _fileTreeRevision ?? CurrentRevision;
-        GitTreeEntry? entry = _fileTreeEntries.GetValueOrDefault(path)
-            ?? (await repository.GetTreeAsync(revision, path, token)).FirstOrDefault(item => item.Path == path);
-        byte[]? bytes = entry?.IsSubmodule == true ? null : await repository.GetFileBytesAsync(path, revision, token);
+        GitCompareRevision source = _fileTreeSource ?? new(revision);
+        GitComparisonTreeEntry? entry = _fileTreeEntries.GetValueOrDefault(path)
+            ?? (await repository.GetComparisonTreeAsync(source, token)).FirstOrDefault(item => item.Path == path);
+        if (await TryLoadFileHistoryInlineBlameAsync(repository, path, source, token, entry?.IsSubmodule == true)) { return; }
+        byte[]? bytes = entry?.IsSubmodule == true ? null : await repository.GetComparisonFileBytesAsync(source, path, token);
         string encoding = await repository.GetFileEncodingNameAsync(token);
         token.ThrowIfCancellationRequested();
         if (_fileContent is null) { return; }
@@ -431,7 +433,7 @@ public sealed partial class MainWindow
         _fileContent.TextView.Mode = DiffViewMode.PlainText;
         if (entry?.IsSubmodule == true)
         {
-            _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash}";
+            _fileView.Text = $"Submodule: {path}\nCommit: {entry.Hash ?? T("Unknown")}";
             _fileContent.TextView.CompletePlainTextDocumentLoad();
         }
         else { _fileContent.ShowFile(path, bytes!, encoding); }
@@ -450,9 +452,10 @@ public sealed partial class MainWindow
 
     private Task FileHistoryAsync() => RunAsync("File history", async r =>
     {
-        FileHistoryDialog dialog = new(r, _filePath.Text ?? "", CurrentRevision);
-        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
-        await dialog.ShowDialog(WorkflowOwner);
+        string path = _fileTreeView?.SelectedFolderPath ?? _filePath.Text ?? "";
+        if (path.Length == 0) { throw new InvalidOperationException(T("Select a file or folder first.")); }
+        await FileHistoryWorkflow.OpenAsync(WorkflowOwner, r, path, _fileTreeView?.SelectedFolderPath is not null,
+            _selectedArtificialHistoryRevision ?? new(CurrentRevision), Token, info => ExternalLauncher(info));
     }, refresh: false);
 
     private Task SearchAsync() => ShowFileGrepDialogAsync();

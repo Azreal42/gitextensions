@@ -33,11 +33,13 @@ internal sealed class DesktopSettingsDialog : Window
         NumericUpDown history = new() { Name = "SettingsHistoryLimit", Minimum = 1, Maximum = 5000, Value = Math.Clamp(initial.HistoryLimit, 1, 5000), FormatString = "0", Width = 150 };
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
         CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
+        CheckBox fileHistory = new() { Name = "SettingsUseBrowseForFileHistory", Content = translations.Translate("Show file history in the main window"), IsChecked = initial.UseBrowseForFileHistory };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
         StackPanel fields = new() { Margin = new Thickness(12), Spacing = 10 };
         GeneralField("Theme", theme); GeneralField("Number of commits to load", history);
         fields.Children.Add(normalise); GeneralField("Replacement symbol", symbol); fields.Children.Add(advanced);
+        fields.Children.Add(fileHistory);
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); }; fields.Children.Add(configuration);
@@ -76,6 +78,7 @@ internal sealed class DesktopSettingsDialog : Window
             {
                 Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
                 AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
+                UseBrowseForFileHistory = fileHistory.IsChecked == true,
                 ReferenceSorting = new((GitRefsSortBy)references.SelectedItem!, (GitRefsSortOrder)order.SelectedItem!),
                 PrioritizedBranchNames = branches.Text ?? "", PrioritizedRemoteNames = remotes.Text ?? ""
             };

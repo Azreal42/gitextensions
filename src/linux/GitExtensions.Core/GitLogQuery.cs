@@ -36,7 +36,11 @@ public sealed record GitLogQuery(
 
 public sealed partial class GitRepository
 {
-    public async Task<IReadOnlyList<GitCommit>> GetLogAsync(GitLogQuery query, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<GitCommit>> GetLogAsync(GitLogQuery query, CancellationToken cancellationToken = default)
+        => GetLogCoreAsync(query, paths: null, rewriteParents: false, cancellationToken);
+
+    private async Task<IReadOnlyList<GitCommit>> GetLogCoreAsync(GitLogQuery query, IReadOnlyList<string>? paths,
+        bool rewriteParents, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Count);
@@ -57,7 +61,8 @@ public sealed partial class GitRepository
         bool emptyBranchFilterShowsAll = query.Revision is null && branchFilterArguments is not null && !hasBranchFilter;
 
         if (query.Revision is null && !hasBranchFilter && !emptyBranchFilterShowsAll && !query.All && !query.Reflog
-            && !await HasHeadAsync(cancellationToken).ConfigureAwait(false))
+            && !(paths is null ? await HasHeadAsync(cancellationToken).ConfigureAwait(false)
+                : await ReadFileHistoryHeadAsync(cancellationToken).ConfigureAwait(false) is not null))
         {
             return [];
         }
@@ -73,6 +78,7 @@ public sealed partial class GitRepository
             _ => throw new ArgumentOutOfRangeException(nameof(query), "Unknown history sort order.")
         };
         if (sort is not null) { arguments.Add(sort); }
+        if (rewriteParents) { arguments.Add("--parents"); }
         if (query.Skip > 0)
         {
             arguments.Add($"--skip={query.Skip.ToString(CultureInfo.InvariantCulture)}");
@@ -99,7 +105,9 @@ public sealed partial class GitRepository
         AddFlag("--simplify-merges", query.SimplifyMerges);
         if (query.Revision is not null)
         {
-            arguments.Add(await ResolveRevisionAsync(query.Revision, cancellationToken).ConfigureAwait(false));
+            arguments.Add(paths is null ? await ResolveRevisionAsync(query.Revision, cancellationToken).ConfigureAwait(false)
+                : (await ExecuteAsync(["--no-optional-locks", "rev-parse", "--verify", "--end-of-options", ValidateValue(query.Revision) + "^{commit}"],
+                    cancellationToken).ConfigureAwait(false)).StandardOutput.TrimEnd('\r', '\n'));
         }
         else if (hasBranchFilter)
         {
@@ -114,11 +122,16 @@ public sealed partial class GitRepository
         }
 
         arguments.Add("--");
-        if (query.Path is not null)
+        if (paths is not null)
+        {
+            arguments.AddRange(paths.Select(ValidatePath));
+        }
+        else if (query.Path is not null)
         {
             arguments.Add(ValidatePath(query.Path));
         }
 
+        if (paths is not null) { arguments.InsertRange(0, ["--no-optional-locks", "--literal-pathspecs"]); }
         string output = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
         if (hasBranchFilter) { ValidateBranchFilteredLogOutput(output); }
         return GitOutputParser.ParseLog(output);

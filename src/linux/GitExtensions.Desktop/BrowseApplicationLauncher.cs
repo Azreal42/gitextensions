@@ -16,6 +16,42 @@ internal static class BrowseApplicationLauncher
         return Task.CompletedTask;
     }
 
+    internal static Task OpenAsync(BrowseRequest request, CancellationToken token, string? applicationDirectory = null)
+    {
+        token.ThrowIfCancellationRequested();
+        using Process process = Process.Start(CreateStartInfo(request, applicationDirectory))
+            ?? throw new InvalidOperationException("The Git Extensions browser process could not be started.");
+        return Task.CompletedTask;
+    }
+
+    internal static ProcessStartInfo CreateStartInfo(BrowseRequest request, string? applicationDirectory = null)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        string repositoryPath = request.RepositoryPath ?? throw new ArgumentException("Browse requires an absolute repository path.", nameof(request));
+        ProcessStartInfo info = CreateStartInfo(repositoryPath, applicationDirectory);
+        // The legacy overload retains its one literal repository argument for existing independent Browse callers.
+        info.ArgumentList.RemoveAt(info.ArgumentList.Count - 1); info.ArgumentList.Add("browse"); info.ArgumentList.Add(repositoryPath);
+        if (request.PathFilter is { } filter)
+        {
+            if (filter.Path.Contains('\0')) { throw new ArgumentException("A Browse path cannot contain NUL.", nameof(request)); }
+            info.ArgumentList.Add("--pathFilter=" + filter.Path);
+            if (filter.Kind is { } kind)
+            {
+                if (!Enum.IsDefined(kind)) { throw new ArgumentException("Unknown Browse path kind.", nameof(request)); }
+                info.ArgumentList.Add("-pathfilter-kind=" + (kind == BrowsePathKind.Directory ? "directory" : "file"));
+            }
+        }
+        if (request.FirstRevision is not null && request.SelectedRevision is null)
+        { throw new ArgumentException("The first selected Browse revision requires the last selected revision.", nameof(request)); }
+        if (request.SelectedRevision is { } selected)
+        {
+            string commit = DesktopStartupArguments.FormatBrowseRevision(selected);
+            if (request.FirstRevision is { } first) { commit += "," + DesktopStartupArguments.FormatBrowseRevision(first); }
+            info.ArgumentList.Add("-commit=" + commit);
+        }
+        return info;
+    }
+
     internal static ProcessStartInfo CreateStartInfo(string repositoryPath, string? applicationDirectory = null)
     {
         if (!Path.IsPathFullyQualified(repositoryPath)) { throw new ArgumentException("Browse requires an absolute repository path.", nameof(repositoryPath)); }

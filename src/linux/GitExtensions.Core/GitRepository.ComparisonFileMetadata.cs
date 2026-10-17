@@ -58,6 +58,7 @@ public sealed partial class GitRepository
     private async Task<HashSet<string>> ComparisonGitlinksAsync(GitCompareRevision revision,
         IReadOnlyList<ComparisonIndexEntry> index, IEnumerable<string> paths, string? emptyTree, CancellationToken token)
     {
+        if (revision.Kind == GitCompareRevisionKind.EmptyTree) { return new(StringComparer.Ordinal); }
         if (revision.Kind != GitCompareRevisionKind.Commit)
         { return index.Where(entry => entry.Mode == "160000").Select(entry => entry.Path).ToHashSet(StringComparer.Ordinal); }
         HashSet<string> gitlinks = new(StringComparer.Ordinal);

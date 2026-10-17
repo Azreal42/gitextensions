@@ -13,7 +13,7 @@ public sealed partial class MainWindow
     private FileGrepSettings _fileGrepSettings = new(ShowSearchBox: false);
     private Control? _fileGrepBar;
     private string[] _allFileTreePaths = [];
-    private IReadOnlyDictionary<string, GitTreeEntry> _fileTreeEntries = new Dictionary<string, GitTreeEntry>();
+    private IReadOnlyDictionary<string, GitComparisonTreeEntry> _fileTreeEntries = new Dictionary<string, GitComparisonTreeEntry>();
     private GitRepository? _fileTreeRepository;
     private string? _fileTreeRevision;
     private GitGrepResult? _fileGrepResult;
@@ -69,7 +69,8 @@ public sealed partial class MainWindow
 
     private Control BuildGrepFileContent()
     {
-        Control content = BuildFileContent(); _fileContent!.Name = "CommitFileContent";
+        BuildFileContent(); _fileContent!.Name = "CommitFileContent";
+        Control content = BuildFileHistoryBlameContent(_fileContent);
         _fileContent.TextView.FileEncodingChanged += (_, _) =>
         { if (_renderingGrepFiles == 0 && _fileGrepSettings.ShowSearchBox && _fileGrepSettings.Expression.Length > 0) { _ = SearchFileGrepAsync(); } };
         return content;
@@ -102,14 +103,20 @@ public sealed partial class MainWindow
     }
 
     private void SetFileTreePaths(GitRepository repository, string revision, IReadOnlyList<GitTreeEntry> entries)
+        => SetComparisonFileTreePaths(repository, new(revision), entries.Select(entry =>
+            new GitComparisonTreeEntry(entry.Path, entry.Mode, entry.Hash, [])).ToArray());
+
+    private void SetComparisonFileTreePaths(GitRepository repository, GitCompareRevision source, IReadOnlyList<GitComparisonTreeEntry> entries)
     {
+        string revision = source.Kind == GitCompareRevisionKind.Commit ? source.Revision : source.Kind.ToString();
         _fileTreeEntries = entries.ToDictionary(entry => entry.Path, StringComparer.Ordinal);
         string[] paths = entries.Select(entry => entry.Path).ToArray();
-        bool changed = _fileTreeRepository?.Path != repository.Path || _fileTreeRevision != revision;
+        bool changed = _fileTreeRepository?.Path != repository.Path || _fileTreeRevision != revision
+            || source.Kind is GitCompareRevisionKind.Index or GitCompareRevisionKind.WorkingTree;
         if (changed) { CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null; }
-        _fileTreeRepository = repository; _fileTreeRevision = revision; _allFileTreePaths = paths;
+        _fileTreeRepository = repository; _fileTreeRevision = revision; _fileTreeSource = source; _allFileTreePaths = paths;
         _settingGrepTree = true;
-        try { UpdateFileTreeEntries(paths); }
+        try { UpdateFileTreeEntries(paths); SelectFileHistoryTreeFallback(); }
         finally { _settingGrepTree = false; }
         if (_fileGrepSettings.ShowSearchBox && _fileGrepSettings.Expression.Length > 0)
         { Dispatcher.UIThread.Post(async () => await SearchFileGrepAsync()); }
@@ -121,6 +128,7 @@ public sealed partial class MainWindow
     private void ShowSelectedTreeFolder()
     {
         _treeFileRead.Cancel();
+        CancelFileHistoryInlineBlame();
         _filePath.Text = null; ClearFileGrepViewer();
         if (_fileTreeView?.SelectedFolderDescription is not string text || _fileContent is null) { return; }
         _fileContent.TextView.Mode = DiffViewMode.PlainText; _fileView.Text = text;
@@ -148,6 +156,7 @@ public sealed partial class MainWindow
 
     private void ClearFileGrepViewer()
     {
+        CancelFileHistoryInlineBlame();
         _fileContent?.ClearImage(); _fileView.Text = null;
         if (_fileContent is not null)
         {
@@ -161,6 +170,7 @@ public sealed partial class MainWindow
     private async Task SearchFileGrepAsync(bool delay = false)
     {
         if (_lifetime.IsCancellationRequested || _repository is not GitRepository repository || _fileTreeRevision is not string revision) { return; }
+        using WindowWork work = TrackWindowWork();
         FileGrepSettings settings = _fileGrepSettings;
         if (!settings.ShowSearchBox || settings.Expression.Length == 0) { ClearFileGrep(); return; }
         CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;
@@ -171,7 +181,10 @@ public sealed partial class MainWindow
         try
         {
             if (delay) { await Task.Delay(200, token); }
-            GitGrepResult result = await repository.GrepAsync(new(settings.Expression, Revision: revision, IgnoreCase: !settings.MatchCase,
+            GitCompareRevision source = _fileTreeSource ?? new(revision);
+            GitGrepResult result = await repository.GrepAsync(new(settings.Expression,
+                Revision: source.Kind == GitCompareRevisionKind.Commit ? source.Revision : null,
+                Cached: source.Kind == GitCompareRevisionKind.Index, IgnoreCase: !settings.MatchCase,
                 MatchWholeWord: settings.MatchWholeWord, UserArguments: settings.UserArguments, EncodingName: _fileContent?.TextView.FileEncodingName), token);
             token.ThrowIfCancellationRequested();
             if (version != _fileGrepVersion || _repository != repository || _fileTreeRevision != revision) { return; }
@@ -214,7 +227,9 @@ public sealed partial class MainWindow
 
     private async Task ShowGrepFileAsync(string path)
     {
-        if (_repository is not GitRepository repository || _fileGrepResult is not GitGrepResult result || _fileContent is null) { return; }
+        if (_lifetime.IsCancellationRequested || _repository is not GitRepository repository || _fileGrepResult is not GitGrepResult result || _fileContent is null) { return; }
+        using WindowWork work = TrackWindowWork();
+        CancelFileHistoryInlineBlame();
         GitGrepMatch? hit = result.Matches.FirstOrDefault(match => !match.IsContext && match.Path == path);
         GitGrepBinaryMatch? binary = result.BinaryMatches.FirstOrDefault(match => match.Path == path);
         if (hit is null && binary is null || hit?.HasLosslessPath == false || binary?.HasLosslessPath == false)

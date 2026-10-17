@@ -27,7 +27,7 @@ public sealed partial class GitRepository
 
         GitComparison comparison = await GetComparisonAsync(first, second, cancellationToken).ConfigureAwait(false);
         GitComparisonGroup ordinary = new(GitRevisionDiffGroupKind.Comparison, comparison);
-        if (!showDiffForAllParents || capturedHead is null) { return [ordinary]; }
+        if (!showDiffForAllParents || capturedHead is null || first.Kind == GitCompareRevisionKind.EmptyTree || second.Kind == GitCompareRevisionKind.EmptyTree) { return [ordinary]; }
 
         string head = await ResolveRevisionAsync(capturedHead, cancellationToken).ConfigureAwait(false);
         string firstTip = first.Kind == GitCompareRevisionKind.Commit ? first.Revision : head;

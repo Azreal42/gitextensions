@@ -98,6 +98,10 @@ public sealed partial class MainWindow
             await _backgroundFetch.UnregisterAsync();
             _repository = null;
             _comparisonBase = null;
+            _selectedArtificialHistoryRevision = null;
+            _browseFileHistory = null;
+            _browseInitialComparison = null;
+            _explicitFileHistoryDiffPath = null; _explicitFileHistoryTreePath = null;
             _referenceSelectionOverride = null;
             _refreshing = true;
             try
@@ -110,7 +114,7 @@ public sealed partial class MainWindow
                 _fileTreeView?.SetGroups([], preserveSelection: false);
                 CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;
                 _fileTreeRepository = null; _fileTreeRevision = null; _allFileTreePaths = [];
-                _fileTreeEntries = new Dictionary<string, GitTreeEntry>(); ClearFileGrepViewer();
+                _fileTreeEntries = new Dictionary<string, GitComparisonTreeEntry>(); _fileTreeSource = null; ClearFileGrepViewer();
                 _navigation.ItemsSource = null;
                 ClearRevisionDiff();
                 _navigationRevisionFilter = null; ResetBranchFilter();

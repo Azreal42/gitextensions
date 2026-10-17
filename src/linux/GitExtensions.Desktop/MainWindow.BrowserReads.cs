@@ -23,12 +23,16 @@ public sealed partial class MainWindow
     private Window? _closingCommitInfoOwner;
     internal Task CommitInformationCompletion => _commitInfo.Completion;
     private string? _loadedDiffSelection;
-    private string RevisionSelectionIdentity => string.Join('\0', SelectedRevisionDiffCommits().Select(commit => commit.Hash));
+    private string RevisionSelectionIdentity => _browseInitialComparison is { } pair
+        ? string.Join('\0', pair.First.Kind, pair.First.Revision, pair.Selected.Kind, pair.Selected.Revision)
+        : _selectedArtificialHistoryRevision is { } artificial ? artificial.Kind + ":" + artificial.Revision
+        : string.Join('\0', SelectedRevisionDiffCommits().Select(commit => commit.Hash));
 
     private void CancelRevisionReads()
     {
         foreach (BrowserRead read in new[] { _revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _signatureRead, _quickReferenceRead, _commitInformationRead }) { read.Cancel(); }
         _commitInfo.Cancel(); _commitInfoLoadTask = null;
+        CancelFileHistoryInlineBlame(showNormal: false);
         _loadedDiffSelection = null;
     }
 
@@ -37,12 +41,14 @@ public sealed partial class MainWindow
         if (_revisionRead.Current is not null || _revisionDiffRead.Current is not null) { _loadedDiffSelection = null; }
         foreach (BrowserRead read in BrowserReads) { read.Cancel(); }
         _commitInfo.Cancel(); _commitInfoLoadTask = null;
+        CancelFileHistoryInlineBlame(showNormal: false);
     }
 
     private async Task ReadBrowserAsync(BrowserRead sequence, string label, Func<GitRepository, CancellationToken, Task> action,
         CancellationToken parent = default)
     {
         if (_busy || _repository is not GitRepository repository || _lifetime.IsCancellationRequested) { return; }
+        using WindowWork work = TrackWindowWork();
         sequence.Cancel();
         using CancellationTokenSource read = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token, parent);
         sequence.Current = read; sequence.Pending++;
@@ -78,6 +84,30 @@ public sealed partial class MainWindow
 
     private Task LoadVisibleRevisionPanelAsync()
     {
+        if (UsesArtificialInitialComparison && _browseInitialComparison is { } pair)
+        {
+            Task initialInformation = LoadVisibleCommitInformationAsync();
+            Task initialPanel = (_tabs.SelectedItem as TabItem)?.Name switch
+            {
+                "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadBrowserAsync(_revisionRead, "File diff",
+                    (repository, token) => LoadArtificialHistoryComparisonAsync(repository, pair.First, pair.Selected, token)),
+                "FileTreeTab" => ReadBrowserAsync(_treeRead, "File tree",
+                    (repository, token) => LoadComparisonFileTreeAsync(repository, pair.Selected, token)),
+                _ => Task.CompletedTask
+            };
+            return Task.WhenAll(initialInformation, initialPanel);
+        }
+        if (_selectedArtificialHistoryRevision is { } source)
+        {
+            return (_tabs.SelectedItem as TabItem)?.Name switch
+            {
+                "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadBrowserAsync(_revisionRead, "File diff",
+                    (repository, token) => LoadArtificialHistoryRevisionAsync(repository, source, token)),
+                "FileTreeTab" => ReadBrowserAsync(_treeRead, "File tree",
+                    (repository, token) => LoadComparisonFileTreeAsync(repository, source, token)),
+                _ => Task.CompletedTask
+            };
+        }
         if (_commits.SelectedItem is not GitCommit commit) { return Task.CompletedTask; }
         Task information = LoadVisibleCommitInformationAsync();
         Task panel = (_tabs.SelectedItem as TabItem)?.Name switch
@@ -151,9 +181,14 @@ public sealed partial class MainWindow
         {
             if (_commitInfoCloseReady) { return; }
             if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingCommitInfoOwner = Owner as Window; }
-            _commitInfoClosing = true; _commitInformationRead.Cancel(); _commitInfo.BeginClose();
-            Task pending = _commitInfo.Completion;
+            if (_commitInfoClosing) { args.Cancel = true; return; }
+            _commitInfoClosing = true;
+            _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
+            CancelFileGrep(); _fileGrepNavigation?.Cancel();
+            _commitInfo.BeginClose();
+            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync());
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterCommitInformationAsync(pending); }
+            else { _commitInfoCloseReady = true; }
         };
         Closed += (_, _) =>
         {
@@ -167,7 +202,7 @@ public sealed partial class MainWindow
     {
         try { await pending; }
         catch (OperationCanceledException) { }
-        catch (Exception exception) { AppendOutput("Commit information: " + exception.Message); }
+        catch (Exception exception) { AppendOutput("Closing repository: " + exception.Message); }
         finally
         {
             _commitInfoCloseReady = true;

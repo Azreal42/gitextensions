@@ -12,7 +12,8 @@ public sealed partial class GitRepository
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(files);
         if (!Enum.IsDefined(source.Kind)) { throw new ArgumentOutOfRangeException(nameof(source)); }
-        if (source.Kind == GitCompareRevisionKind.WorkingTree) { throw new ArgumentException("The working tree is not a reset source.", nameof(source)); }
+        if (source.Kind is GitCompareRevisionKind.WorkingTree or GitCompareRevisionKind.EmptyTree)
+        { throw new ArgumentException("Choose a commit or index reset source.", nameof(source)); }
         GitRevisionFile[] selected = files.ToArray();
         if (selected.Length == 0) { throw new ArgumentException("Select files before resetting them.", nameof(files)); }
         foreach (GitRevisionFile file in selected)

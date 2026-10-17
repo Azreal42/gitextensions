@@ -390,8 +390,7 @@ public sealed partial class MainWindow
         if (_browserBody is not null)
         {
             bool visible = _browserBody.ColumnDefinitions[0].Width.Value > 0;
-            _browserBody.ColumnDefinitions[0].Width = visible ? new GridLength(0) : new GridLength(NavigationWidth);
-            if (_navigationPanel is not null) { _navigationPanel.IsVisible = !visible; }
+            SetNavigationVisible(!visible);
         }
         return Task.CompletedTask;
     }

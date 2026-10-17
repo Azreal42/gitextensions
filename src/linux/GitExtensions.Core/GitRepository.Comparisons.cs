@@ -6,6 +6,25 @@ namespace GitExtensions.Linux;
 
 public sealed partial class GitRepository
 {
+    /// <summary>The actual parent pair for Browse's artificial rows, including a genuinely unborn index.</summary>
+    public async Task<GitComparison> GetArtificialRevisionComparisonAsync(GitCompareRevision source,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (source.Kind is not (GitCompareRevisionKind.Index or GitCompareRevisionKind.WorkingTree))
+        { throw new ArgumentException("Choose the index or working-tree endpoint.", nameof(source)); }
+        await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+        GitCompareRevision parent;
+        if (source.Kind == GitCompareRevisionKind.WorkingTree) { parent = new("", GitCompareRevisionKind.Index); }
+        else
+        {
+            string? head = await ReadFileHistoryHeadAsync(cancellationToken).ConfigureAwait(false);
+            parent = head is null ? new("", GitCompareRevisionKind.EmptyTree) : new(head);
+        }
+        return await GetComparisonAsync(parent, source, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<GitComparison> GetComparisonAsync(GitCompareRevision from, GitCompareRevision to, CancellationToken cancellationToken = default)
     {
         GitCompareRevision first = await ResolveComparisonRevisionAsync(from, cancellationToken).ConfigureAwait(false);
@@ -16,14 +35,14 @@ public sealed partial class GitRepository
             GitRevisionChanges changes = await GetRevisionChangesAsync(second.Revision, first.Revision, cancellationToken).ConfigureAwait(false);
             return new(first, second, changes.Files, []);
         }
-        List<string> arguments = ["diff", "--name-status", "-z", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
+        List<string> arguments = ["--no-optional-locks", "--literal-pathspecs", "diff", "--name-status", "-z", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
         AddComparisonRevisions(arguments, first, second);
         arguments.Add("--");
         List<GitRevisionFile> files = [.. GitRevisionFileParser.ParseNameStatus((await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput)];
         List<string> untracked = [];
         if (first.Kind == GitCompareRevisionKind.WorkingTree || second.Kind == GitCompareRevisionKind.WorkingTree)
         {
-            string[] paths = (await ExecuteAsync(["ls-files", "--others", "--exclude-standard", "-z"], cancellationToken).ConfigureAwait(false)).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            string[] paths = (await ExecuteAsync(["--no-optional-locks", "ls-files", "--others", "--exclude-standard", "-z"], cancellationToken).ConfigureAwait(false)).StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries);
             foreach (string path in paths.Where(path => !files.Any(file => file.Path == path || file.OriginalPath == path)))
             {
                 files.Add(new(path, second.Kind == GitCompareRevisionKind.WorkingTree ? 'A' : 'D'));
@@ -38,6 +57,7 @@ public sealed partial class GitRepository
         ArgumentNullException.ThrowIfNull(from);
         ArgumentNullException.ThrowIfNull(to);
         if (!Enum.IsDefined(from.Kind) || !Enum.IsDefined(to.Kind)) { throw new ArgumentOutOfRangeException(nameof(from)); }
+        if (from.Kind == GitCompareRevisionKind.EmptyTree || to.Kind == GitCompareRevisionKind.EmptyTree) { return null; }
         GitStatus status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
         string? first = from.Kind == GitCompareRevisionKind.Commit ? await ResolveRevisionAsync(from.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
         string? second = to.Kind == GitCompareRevisionKind.Commit ? await ResolveRevisionAsync(to.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
@@ -51,6 +71,7 @@ public sealed partial class GitRepository
         ArgumentNullException.ThrowIfNull(from);
         ArgumentNullException.ThrowIfNull(to);
         if (!Enum.IsDefined(from.Kind) || !Enum.IsDefined(to.Kind)) { throw new ArgumentOutOfRangeException(nameof(from)); }
+        if (from.Kind == GitCompareRevisionKind.EmptyTree || to.Kind == GitCompareRevisionKind.EmptyTree) { return null; }
         GitStatus status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
         if (status.Head is null && (from.Kind != GitCompareRevisionKind.Commit || to.Kind != GitCompareRevisionKind.Commit)) { return null; }
         string first = await ResolveRevisionAsync(from.Kind == GitCompareRevisionKind.Commit ? from.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
@@ -88,7 +109,7 @@ public sealed partial class GitRepository
         GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, cancellationToken).ConfigureAwait(false);
         GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, cancellationToken).ConfigureAwait(false);
         if (first == second) { return new([]); }
-        List<string> arguments = ["--literal-pathspecs", "diff", "--no-color", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
+        List<string> arguments = ["--no-optional-locks", "--literal-pathspecs", "diff", "--no-color", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv"];
         AddComparisonOptions(arguments, options);
         AddComparisonRevisions(arguments, first, second);
         arguments.Add("--");
@@ -101,6 +122,7 @@ public sealed partial class GitRepository
     {
         GitCompareRevision selected = await ResolveComparisonRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         path = ValidatePath(path);
+        if (selected.Kind == GitCompareRevisionKind.EmptyTree) { return []; }
         if (selected.Kind == GitCompareRevisionKind.Commit)
         {
             GitTreeEntry? entry = (await GetTreeAsync(selected.Revision, path, cancellationToken).ConfigureAwait(false)).FirstOrDefault(entry => entry.Path == path);
@@ -173,6 +195,14 @@ public sealed partial class GitRepository
     {
         ArgumentNullException.ThrowIfNull(revision);
         if (!Enum.IsDefined(revision.Kind)) { throw new ArgumentOutOfRangeException(nameof(revision)); }
+        token.ThrowIfCancellationRequested();
+        if (revision.Kind == GitCompareRevisionKind.EmptyTree)
+        {
+            // No -w: Git computes the repository-format tree identity without writing an object.
+            string empty = ReadOutputLine((await ExecuteAsync(["--no-optional-locks", "hash-object", "-t", "tree", "--stdin"],
+                token, standardInput: "").ConfigureAwait(false)).StandardOutput);
+            return revision with { Revision = empty };
+        }
         if (revision.Kind == GitCompareRevisionKind.Commit) { return revision with { Revision = await ResolveRevisionAsync(revision.Revision, token).ConfigureAwait(false) }; }
         await EnsureWorktreeAsync(token).ConfigureAwait(false);
         return revision with { Revision = "" };
@@ -180,9 +210,11 @@ public sealed partial class GitRepository
 
     private static void AddComparisonRevisions(List<string> arguments, GitCompareRevision from, GitCompareRevision to)
     {
-        if (from.Kind == GitCompareRevisionKind.Commit && to.Kind == GitCompareRevisionKind.Commit) { arguments.AddRange([from.Revision, to.Revision]); }
-        else if (from.Kind == GitCompareRevisionKind.Commit) { if (to.Kind == GitCompareRevisionKind.Index) { arguments.Add("--cached"); } arguments.Add(from.Revision); }
-        else if (to.Kind == GitCompareRevisionKind.Commit) { arguments.Add("-R"); if (from.Kind == GitCompareRevisionKind.Index) { arguments.Add("--cached"); } arguments.Add(to.Revision); }
+        bool firstTree = from.Kind is GitCompareRevisionKind.Commit or GitCompareRevisionKind.EmptyTree;
+        bool secondTree = to.Kind is GitCompareRevisionKind.Commit or GitCompareRevisionKind.EmptyTree;
+        if (firstTree && secondTree) { arguments.AddRange([from.Revision, to.Revision]); }
+        else if (firstTree) { if (to.Kind == GitCompareRevisionKind.Index) { arguments.Add("--cached"); } arguments.Add(from.Revision); }
+        else if (secondTree) { arguments.Add("-R"); if (from.Kind == GitCompareRevisionKind.Index) { arguments.Add("--cached"); } arguments.Add(to.Revision); }
         else if (from.Kind == GitCompareRevisionKind.WorkingTree) { arguments.Add("-R"); }
     }
 

@@ -35,7 +35,7 @@ internal static class Program
 
         if (!cleanup && args.Contains("--help", StringComparer.Ordinal))
         {
-            Console.WriteLine("Usage: gitextensions [repository-directory] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]");
+            Console.WriteLine("Usage: gitextensions [repository-directory] | browse [repository-directory] [--pathFilter=path] [-commit=selected[,first-selected]] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]");
             return 0;
         }
 
@@ -52,6 +52,7 @@ internal static class Program
         try
         {
             StartupRequest = DesktopStartupDispatcher.PrepareAsync(startup, Environment.CurrentDirectory).GetAwaiter().GetResult();
+            RepositoryPath = StartupRequest.BrowseRequest?.RepositoryPath ?? RepositoryPath;
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
             GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, "gitextensions-askpass");
             GitRunner.AskpassUiCulture = CultureInfo.CurrentUICulture.Name;

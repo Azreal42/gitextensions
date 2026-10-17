@@ -41,7 +41,8 @@ internal static class FileMenuRevisionDescription
         GitCompareRevision[] values = endpoints.Distinct().ToArray();
         if (values.Length > 1) { return translate("<multiple>"); }
         return values.FirstOrDefault() is not { } value ? "" : value.Kind switch
-        { GitCompareRevisionKind.Index => translate("Index"), GitCompareRevisionKind.WorkingTree => translate("Working directory"), _ => value.Revision[..Math.Min(8, value.Revision.Length)] };
+        { GitCompareRevisionKind.Index => translate("Index"), GitCompareRevisionKind.WorkingTree => translate("Working directory"),
+            GitCompareRevisionKind.EmptyTree => translate("Empty tree"), _ => value.Revision[..Math.Min(8, value.Revision.Length)] };
     }
 }
 

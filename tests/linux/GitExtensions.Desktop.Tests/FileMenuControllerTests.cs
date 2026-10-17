@@ -139,6 +139,7 @@ public sealed class FileMenuControllerTests
     public async Task ArtificialBlameExplicitlyUsesHeadHistoryAndNeverPretendsToReadTheIndexOrWorktree(GitCompareRevisionKind kind)
     {
         using Fixture git = await Fixture.CreateAsync();
+        PreferencesStore preferences = new(); preferences.Save(preferences.Load() with { UseBrowseForFileHistory = false });
         string head = await git.Repository.ResolveRevisionAsync("HEAD");
         await File.WriteAllTextAsync(git.File, "different index\n"); await git.Repository.StageAllAsync();
         await File.WriteAllTextAsync(git.File, "different worktree\n");
@@ -165,6 +166,7 @@ public sealed class FileMenuControllerTests
     public async Task ArtificialBlameForANewFileUsesTheNoCommitsStateWithoutInventingAHeadBlob()
     {
         using Fixture git = await Fixture.CreateAsync(); string path = "new[1] λ\tfile\n.txt";
+        PreferencesStore preferences = new(); preferences.Save(preferences.Load() with { UseBrowseForFileHistory = false });
         await File.WriteAllTextAsync(git.PathInRepository(path), "new file\n"); await git.Repository.StageAsync([path]);
         FileMenuLeaf leaf = new(new(path, 'A'), new("HEAD"), new(Kind: GitCompareRevisionKind.Index), Stage: FileMenuStage.Index);
         using Harness f = new(git, [leaf]);
