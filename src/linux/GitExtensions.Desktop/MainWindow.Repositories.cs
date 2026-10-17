@@ -95,6 +95,7 @@ public sealed partial class MainWindow
         if (_busy) { return; }
         await RunAsync("Close repository", async _ =>
         {
+            HideQuickSearch(); _quickSearchArtificialSelection = null; _quickSearchLastCommit = null; _quickSearchReturnTab = null;
             await _backgroundFetch.UnregisterAsync();
             _repository = null;
             _comparisonBase = null;

@@ -33,7 +33,7 @@ public sealed partial class MainWindow
         new("NavigateBackward", "Navigate &backward", () => NavigateRevisionHistoryAsync(-1), "NavigateBackward.png", new(Key.Left, KeyModifiers.Alt), Available: () => _revisionNavigationIndex > 0),
         new("NavigateForward", "Navigate &forward", () => NavigateRevisionHistoryAsync(1), "NavigateForward.png", new(Key.Right, KeyModifiers.Alt), Available: () => _revisionNavigationIndex >= 0 && _revisionNavigationIndex + 1 < _revisionNavigation.Count),
         new("|", ""),
-        new("QuickSearch", "&Quick search", () => { FocusHistoryFilter(); return Task.CompletedTask; }),
+        new("QuickSearch", "&Quick search", ShowQuickSearchHelpAsync),
         new("PrevQuickSearch", "Quick search p&revious", () => SearchRevisionAsync(-1), Gesture: new(Key.Up, KeyModifiers.Alt)),
         new("NextQuickSearch", "Quick search &next", () => SearchRevisionAsync(1), Gesture: new(Key.Down, KeyModifiers.Alt))
     ];
@@ -100,6 +100,7 @@ public sealed partial class MainWindow
             if (prefix == "RevisionView" && command.Name == "SaveAsDefault") { item.Name = "SaveCurrentViewSettingsAsDefault"; }
             if (command.Checked is not null) { item.ToggleType = MenuItemToggleType.CheckBox; }
             if (command.Caption) { item.FontWeight = FontWeight.Bold; }
+            if (command.Name == "QuickSearch") { ToolTip.SetTip(item, QuickSearchHelpText); }
             if (command.UnavailableReason is string reason) { ToolTip.SetTip(item, T(reason)); }
             _historyMenuBindings.Add((item, command));
             return item;

@@ -10,6 +10,11 @@ internal static class ClassicTextContrast
     internal static Color AdaptForeground(Control control, Color foreground)
     {
         Color background = control.TryFindResource("ClassicWindowBrush", control.ActualThemeVariant, out object? value) && value is ISolidColorBrush brush ? brush.Color : Colors.White;
+        return AdaptForeground(background, foreground);
+    }
+
+    internal static Color AdaptForeground(Color background, Color foreground)
+    {
         if (Contrast(background, foreground) >= 4.5) { return foreground; }
         bool lighter = Luminance(foreground) >= Luminance(background);
         Color first = Adjust(lighter);

@@ -161,6 +161,7 @@ public sealed partial class MainWindow : Window
         _commits.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _workingRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _indexRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        InitializeQuickSearch();
         ApplyHistoryViewPresentation();
         ApplyTheme(_preferences.Theme);
         Opened += async (_, _) =>
@@ -357,11 +358,13 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
+        HideQuickSearch();
         _refreshing = true;
         try
         {
             ApplyReferenceSorting(repository);
             bool changedRepository = opening && _repository?.Path != repository.Path;
+            if (changedRepository) { _quickSearchArtificialSelection = null; _quickSearchLastCommit = null; _quickSearchReturnTab = null; }
             GitCompareRevision? artificialSelection = changedRepository ? null : _selectedArtificialHistoryRevision;
             string? selectedPath = changedRepository ? null : SelectedWorkingChange?.Path;
             string? selectedHash = changedRepository ? null : (_commits.SelectedItem as GitCommit)?.Hash;
@@ -468,6 +471,7 @@ public sealed partial class MainWindow : Window
             _worktrees.ItemsSource = worktrees;
             _submodules.ItemsSource = submodules;
             _configuredUserEmail = configuration.LastOrDefault(entry => entry.Key == "user.email").Value;
+            _configuredUserName = configuration.LastOrDefault(entry => entry.Key == "user.name").Value;
             _configuration.ItemsSource = configuration.Select(entry => $"{entry.Key} = {entry.Value}").ToList();
             if (artificialSelection is not null && artificialTree is not null)
             { SetComparisonFileTreePaths(repository, artificialSelection, artificialTree); }

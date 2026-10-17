@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
+using GitExtensions.Linux.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -60,29 +61,14 @@ public sealed partial class MainWindow
             Avalonia.Controls.Shapes.Ellipse node = new() { Width = 7, Height = 7, Fill = Brush.Parse("#d3d3d3") };
             Canvas.SetLeft(node, 4.5); Canvas.SetTop(node, 6.5); graph.Children.Add(node);
             Grid.SetRow(graph, i); rows.Children.Add(graph);
-            Button action = new() { Name = i == 0 ? "WorkingDirectoryRevision" : "IndexRevision", Height = 20, MinHeight = 20,
+            Button action = new RevisionSearchButton { Name = i == 0 ? "WorkingDirectoryRevision" : "IndexRevision", Height = 20, MinHeight = 20,
                 MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(4, 0), Margin = new Thickness(2, 0, 0, 0) };
             action.Content = new TextBlock { Text = T(i == 0 ? "Working directory" : "Commit index"), VerticalAlignment = VerticalAlignment.Center };
             TextBlock state = new() { Text = "✓", Foreground = Brush.Parse("#24c221"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0) };
             StackPanel content = new() { Orientation = Orientation.Horizontal, Height = 20, Children = { action, state } };
             Grid.SetRow(content, i); Grid.SetColumn(content, 1); rows.Children.Add(content);
             bool staged = i == 1;
-            action.Click += async (_, _) =>
-            {
-                if (_busy || _repository is null || _repository.IsBare) { return; }
-                if (IsFileHistoryBrowse) { await SelectArtificialHistoryRevisionAsync(staged); return; }
-                SelectDetailsTab("ChangesTab");
-                GitChange? change = _changesFilesView?.Entries.Select(entry => entry.Tag).OfType<GitChange>().FirstOrDefault(entry => staged ? entry.IsStaged : entry.IsModified || entry.IsUntracked);
-                _refreshing = true;
-                try
-                {
-                    _stagedDiff.IsChecked = staged;
-                    _changesFilesView?.SelectTags(change is null ? [] : [change]);
-                }
-                finally { _refreshing = false; }
-                if (change is not null) { await LoadSelectedDiffAsync(); }
-                else { ClearWorkingDiff(); }
-            };
+            action.Click += async (_, _) => await ActivateArtificialRevisionAsync(staged);
             action.GotFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
             action.LostFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
             action.ActualThemeVariantChanged += (_, _) => UpdateArtificialHistorySelectionAppearance();
@@ -93,6 +79,27 @@ public sealed partial class MainWindow
         }
         rows.Bind(BackgroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ClassicWindowBrush"));
         return rows;
+    }
+
+    private async Task ActivateArtificialRevisionAsync(bool staged)
+    {
+        if (_busy || _repository is null || _repository.IsBare || _commitInfoClosing) { return; }
+        if (!_applyingQuickSearchSelection) { CancelQuickSearchClipboard(); }
+        _quickSearchArtificialSelection = new("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
+        if (IsFileHistoryBrowse) { await SelectArtificialHistoryRevisionAsync(staged); return; }
+        if (_tabs.SelectedItem is TabItem tab && tab.Name != "ChangesTab") { _quickSearchReturnTab = tab; }
+        SelectDetailsTab("ChangesTab");
+        GitChange? change = _changesFilesView?.Entries.Select(entry => entry.Tag).OfType<GitChange>()
+            .FirstOrDefault(entry => staged ? entry.IsStaged : entry.IsModified || entry.IsUntracked);
+        _refreshing = true;
+        try
+        {
+            _stagedDiff.IsChecked = staged;
+            _changesFilesView?.SelectTags(change is null ? [] : [change]);
+        }
+        finally { _refreshing = false; }
+        if (change is not null) { await LoadSelectedDiffAsync(); }
+        else { ClearWorkingDiff(); }
     }
 
     private void UpdateVirtualRevisionRows(GitStatus status)

@@ -110,7 +110,7 @@ public sealed partial class MainWindow
         Grid right = new() { RowDefinitions = new RowDefinitions("53*,4,47*") };
         _revisionPanels = new Grid { Name = "RevisionPanels" };
         _revisionPanels.SizeChanged += (_, _) => LimitCommitInfoWidth();
-        _revisionTable = BuildRevisionTable();
+        _revisionTable = WithQuickSearchNotice(BuildRevisionTable());
         _commitInfoSplitter = new GridSplitter { Name = "CommitInfoSplitter", Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Columns };
         _revisionPanels.Children.Add(_revisionTable);
         _revisionPanels.Children.Add(_commitInfoSplitter);

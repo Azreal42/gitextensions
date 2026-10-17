@@ -183,6 +183,7 @@ public sealed partial class MainWindow
             if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingCommitInfoOwner = Owner as Window; }
             if (_commitInfoClosing) { args.Cancel = true; return; }
             _commitInfoClosing = true;
+            HideQuickSearch();
             _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
             CancelFileGrep(); _fileGrepNavigation?.Cancel();
             _commitInfo.BeginClose();

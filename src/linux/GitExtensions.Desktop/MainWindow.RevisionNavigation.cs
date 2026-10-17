@@ -125,18 +125,9 @@ public sealed partial class MainWindow
 
     private Task SearchRevisionAsync(int direction)
     {
-        string text = _quickHistoryFilter.Text ?? "";
-        GitCommit[] rows = _history.ToArray();
-        if (text.Length == 0 || rows.Length == 0) { FocusHistoryFilter(); return Task.CompletedTask; }
-        int index = Array.FindIndex(rows, commit => commit.Hash == CurrentRevision);
-        for (int step = 1; step <= rows.Length; step++)
-        {
-            GitCommit candidate = rows[((index + direction * step) % rows.Length + rows.Length) % rows.Length];
-            if (candidate.Subject.Contains(text, StringComparison.CurrentCultureIgnoreCase) || candidate.Hash.Contains(text, StringComparison.OrdinalIgnoreCase)
-                || candidate.AuthorName.Contains(text, StringComparison.CurrentCultureIgnoreCase))
-            { SelectVisibleRevision(candidate.Hash); break; }
-        }
-        return Task.CompletedTask;
+        if (!CanQuickSearch) { return Task.CompletedTask; }
+        CancelQuickSearchClipboard();
+        return ApplyQuickSearchAsync(_quickSearch!.Next(direction > 0));
     }
 
     private MenuItem BuildRevisionViewMenu() => BuildHistoryViewMenu(context: true);
