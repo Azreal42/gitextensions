@@ -37,8 +37,12 @@ public sealed partial class GitRepository
             IReadOnlyList<ComparisonIndexEntry> index = info.IsBare ? [] : await ReadComparisonIndexAsync(token).ConfigureAwait(false);
             Dictionary<string, GitIndexFileFlags> flags = info.IsBare ? [] : (await GetIndexFlagsAsync(token).ConfigureAwait(false))
                 .ToDictionary(item => item.Path, StringComparer.Ordinal);
-            HashSet<string> firstLinks = await ComparisonGitlinksAsync(first, index, token).ConfigureAwait(false);
-            HashSet<string> secondLinks = await ComparisonGitlinksAsync(second, index, token).ConfigureAwait(false);
+            // A menu needs modes only for its selected comparison paths, not a
+            // replacement full repository tree on every historical selection.
+            string? emptyTree = first.Kind == GitCompareRevisionKind.Commit || second.Kind == GitCompareRevisionKind.Commit
+                ? ReadOutputLine((await ExecuteAsync(["hash-object", "-t", "tree", "--stdin"], token, standardInput: "").ConfigureAwait(false)).StandardOutput) : null;
+            HashSet<string> firstLinks = await ComparisonGitlinksAsync(first, index, comparison.Files.Select(file => file.OriginalPath ?? file.Path), emptyTree, token).ConfigureAwait(false);
+            HashSet<string> secondLinks = await ComparisonGitlinksAsync(second, index, comparison.Files.Select(file => file.Path), emptyTree, token).ConfigureAwait(false);
             HashSet<string> untracked = comparison.UntrackedPaths.ToHashSet(StringComparer.Ordinal);
             return comparison.Files.Select(file =>
             {
@@ -52,11 +56,41 @@ public sealed partial class GitRepository
     }
 
     private async Task<HashSet<string>> ComparisonGitlinksAsync(GitCompareRevision revision,
-        IReadOnlyList<ComparisonIndexEntry> index, CancellationToken token)
-        => revision.Kind == GitCompareRevisionKind.Commit
-            ? (await GetTreeAsync(revision.Revision, cancellationToken: token).ConfigureAwait(false))
-                .Where(entry => entry.IsSubmodule).Select(entry => entry.Path).ToHashSet(StringComparer.Ordinal)
-            : index.Where(entry => entry.Mode == "160000").Select(entry => entry.Path).ToHashSet(StringComparer.Ordinal);
+        IReadOnlyList<ComparisonIndexEntry> index, IEnumerable<string> paths, string? emptyTree, CancellationToken token)
+    {
+        if (revision.Kind != GitCompareRevisionKind.Commit)
+        { return index.Where(entry => entry.Mode == "160000").Select(entry => entry.Path).ToHashSet(StringComparer.Ordinal); }
+        HashSet<string> gitlinks = new(StringComparer.Ordinal);
+        string[] names = paths.Distinct(StringComparer.Ordinal).ToArray();
+        for (int offset = 0; offset < names.Length;)
+        {
+            // Keep literal argv bounded even for large changesets and long UTF-8
+            // paths. Empty-tree→commit reports the exact mode of each endpoint,
+            // including root commits, unchanged files and deleted/renamed sides.
+            List<string> batch = []; int bytes = 0;
+            while (offset < names.Length && batch.Count < 128)
+            {
+                int size = System.Text.Encoding.UTF8.GetByteCount(names[offset]) + 1;
+                if (batch.Count > 0 && bytes + size > 16 * 1024) { break; }
+                bytes += size; batch.Add(names[offset++]);
+            }
+            string output = (await ExecuteAsync(["--literal-pathspecs", "diff", "--raw", "--no-abbrev", "--no-renames", "--no-relative",
+                "--no-ext-diff", "--no-textconv", "--no-color", "--ignore-submodules=none", "-z", emptyTree!, revision.Revision, "--", .. batch], token).ConfigureAwait(false)).StandardOutput;
+            if (output.Length > 0 && output[^1] != '\0') { throw new FormatException("Incomplete NUL-terminated comparison mode entries."); }
+            string[] fields = output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            if (fields.Length % 2 != 0) { throw new FormatException("Incomplete comparison mode entry."); }
+            for (int entry = 0; entry < fields.Length; entry += 2)
+            {
+                string[] header = fields[entry].Split(' ');
+                if (header is not [":000000", string mode, _, _, "A"])
+                { throw new FormatException("Invalid comparison mode entry."); }
+                // Git's literal directory pathspec still includes descendants.
+                // They are valid records, but only the exact requested path owns its mode.
+                if (mode == "160000" && batch.Contains(fields[entry + 1], StringComparer.Ordinal)) { gitlinks.Add(fields[entry + 1]); }
+            }
+        }
+        return gitlinks;
+    }
 
     private sealed record ComparisonIndexEntry(string Path, string Mode, int Stage);
 

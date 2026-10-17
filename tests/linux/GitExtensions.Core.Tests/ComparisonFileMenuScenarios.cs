@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using GitExtensions.Linux;
 
 internal static class ComparisonFileMenuScenarios
@@ -13,6 +14,7 @@ internal static class ComparisonFileMenuScenarios
         ("file menu stage state requires the supplied Windows parent, never a HEAD guess", StagedParentAsync),
         ("file menu reversed worktree and historical metadata preserves tracking and identity", DirectionsAsync),
         ("file menu snapshots read gitlinks from both trees and the real index", GitlinksAsync),
+        ("historical menu modes use bounded literal paths for root renamed deleted and bare snapshots", BoundedHistoricalModesAsync),
         ("file menu metadata reads committed bare snapshots without requiring an index", BareAsync),
         ("typed Index reset copies exact selected bytes and preserves the complete index", ResetIndexAsync),
         ("typed Index reset keeps or deletes only selected new literal paths", NewFilesAsync),
@@ -98,6 +100,85 @@ internal static class ComparisonFileMenuScenarios
         Check((await r.GetComparisonFileMetadataAsync(indexed, null)).Single().IsSubmodule, "The real index mode retains gitlink metadata.");
         GitComparison renamed = new(new(first), new(second), [new(current, 'R', old)], []);
         Check((await r.GetComparisonFileMetadataAsync(renamed, null)).Single().IsSubmodule, "The first side uses OriginalPath for a renamed gitlink.");
+    }
+
+    private static async Task BoundedHistoricalModesAsync()
+    {
+        if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
+        using RepositoryFixture f = await RepositoryFixture.CreateAsync(seed: false);
+        string old = ":[module]* λ\t\n", renamed = ":[renamed]* λ\t\n", ordinary = ":[plain]* λ\t\n.txt";
+        f.Write(ordinary, "plain root file\n"); f.Write("outside-selection.txt", "unrelated\n");
+        string[] bulk = Enumerable.Range(0, 135).Select(index => "selected/" + index.ToString("D3") + "-" + new string('x', 145) + ".txt").ToArray();
+        foreach (string path in bulk) { f.Write(path, "selected root file\n"); }
+        await Git(f, "add", "--all");
+        string objectFormat = (await Git(f, "rev-parse", "--show-object-format")).StandardOutput.Trim();
+        string unavailableCommit = new('1', objectFormat == "sha256" ? 64 : 40);
+        await Git(f, "update-index", "--add", "--cacheinfo", "160000," + unavailableCommit + "," + old);
+        await Git(f, "update-index", "--add", "--cacheinfo", "160000," + unavailableCommit + ",outside-module");
+        await Git(f, "commit", "-m", "Root with literal gitlinks"); string root = await Head(f);
+        string log = Path.Combine(f.Root, "metadata-argv.jsonl");
+        string script = "#!/usr/bin/python3\nimport json,os,sys\nwith open(" + JsonSerializer.Serialize(log) + ", 'a', encoding='utf-8') as output:\n output.write(json.dumps(sys.argv[1:],ensure_ascii=False)+'\\n')\nos.execv('/usr/bin/git',['git',*sys.argv[1:]])\n";
+        string executable = await Executable(f, "record metadata argv", script);
+        GitRepository reader = new(f.Repository.Path, new GitRunner(executable));
+        GitRevisionFile[] selected = new[] { new GitRevisionFile(old, 'A'), new GitRevisionFile(ordinary, 'A') }.Concat(bulk.Select(path => new GitRevisionFile(path, 'A'))).ToArray();
+        GitComparison sameRoot = new(new(root), new(root), selected, []); byte[] index = IndexBytes(f);
+        IReadOnlyList<GitComparisonFileMetadata> metadata = await reader.GetComparisonFileMetadataAsync(sameRoot, null);
+        Check(metadata.Count == selected.Length && metadata.Single(item => item.File.Path == old).IsSubmodule
+            && metadata.Where(item => item.File.Path != old).All(item => !item.IsSubmodule), "Root modes distinguish an unavailable gitlink object from ordinary blobs without object-type guessing.");
+        Check(IndexBytes(f).SequenceEqual(index), "Root metadata reads leave every index byte intact.");
+        AssertBounded(selected.Select(file => file.Path), "root", requireBatches: true);
+
+        await Git(f, "update-index", "--force-remove", "--", old);
+        await Git(f, "update-index", "--add", "--cacheinfo", "160000," + unavailableCommit + "," + renamed);
+        await Git(f, "--literal-pathspecs", "rm", "--", ordinary); await Git(f, "commit", "-m", "Rename gitlink and delete blob"); string second = await Head(f);
+        GitRevisionFile moved = new(renamed, 'R', old), deleted = new(ordinary, 'D');
+        GitComparison pair = new(new(root), new(second), [moved, deleted], []); File.Delete(log); index = IndexBytes(f);
+        metadata = await reader.GetComparisonFileMetadataAsync(pair, null);
+        Check(metadata[0].IsSubmodule && ReferenceEquals(metadata[0].File, moved) && !metadata[1].IsSubmodule && metadata[1].IsTracked,
+            "Renamed old/new gitlinks and deleted blobs retain their exact file identity and modes.");
+        Check(IndexBytes(f).SequenceEqual(index), "Renamed/deleted metadata cannot refresh the index.");
+        AssertBounded([old, renamed, ordinary], "renamed");
+
+        string bare = Path.Combine(f.Root, "metadata-bare.git"); await Git(f, "clone", "--bare", "--no-hardlinks", f.Repository.Path, bare); File.Delete(log);
+        metadata = await new GitRepository(bare, new GitRunner(executable)).GetComparisonFileMetadataAsync(pair, null);
+        Check(metadata[0].IsSubmodule && !metadata[1].IsSubmodule && metadata.All(item => item.Staged == GitFileStagedStatus.None), "The same literal modes are available in a bare repository.");
+        AssertBounded([old, renamed, ordinary], "bare");
+        Check(!Commands().Any(args => args.Contains("ls-files", StringComparer.Ordinal)), "Bare snapshots never need the working index.");
+
+        await Git(f, "update-index", "--force-remove", "--", renamed);
+        f.Write(renamed + "/child.txt", "ordinary directory child\n");
+        await Git(f, "--literal-pathspecs", "add", "--", renamed + "/child.txt"); await Git(f, "commit", "-m", "Gitlink becomes directory");
+        string directoryCommit = await Head(f); index = IndexBytes(f);
+        foreach (bool reverse in new[] { false, true })
+        {
+            GitRevisionFile module = new(renamed, reverse ? 'A' : 'D'); File.Delete(log);
+            GitComparison transition = new(new(reverse ? directoryCommit : second), new(reverse ? second : directoryCommit), [module], []);
+            metadata = await reader.GetComparisonFileMetadataAsync(transition, null);
+            Check(metadata.Single().IsSubmodule && ReferenceEquals(metadata.Single().File, module),
+                "A gitlink changing into a directory (or back) is classified at its exact path; ordinary descendants are not extra selected records.");
+            AssertBounded([renamed], reverse ? "directory-to-gitlink" : "gitlink-to-directory");
+            Check(IndexBytes(f).SequenceEqual(index), "Directory/gitlink mode reads preserve every current index byte.");
+        }
+
+        string[][] Commands() => File.ReadAllLines(log).Select(line => JsonSerializer.Deserialize<string[]>(line)!).ToArray();
+        void AssertBounded(IEnumerable<string> paths, string phase, bool requireBatches = false)
+        {
+            HashSet<string> expected = paths.ToHashSet(StringComparer.Ordinal); string[][] commands = Commands();
+            string[][] raw = commands.Where(args => args.Contains("--raw", StringComparer.Ordinal)).ToArray();
+            if (Environment.GetEnvironmentVariable("GITEXTENSIONS_EVIDENCE") is string evidence)
+            { Directory.CreateDirectory(evidence); File.WriteAllText(Path.Combine(evidence, "historical-mode-argv-" + phase + ".json"), JsonSerializer.Serialize(commands)); }
+            Console.WriteLine("historical-mode " + phase + ": " + raw.Length + " bounded native requests for " + expected.Count + " literal paths");
+            Check(raw.Length >= (requireBatches ? 4 : 2), "Modes come from both endpoints and large path lists are split.");
+            Check(!commands.Any(args => args.Any(arg => arg is "ls-tree" or "status" or "log")), "A menu mode read is not a complete tree/status/history refresh.");
+            foreach (string[] args in raw)
+            {
+                int separator = Array.IndexOf(args, "--"); string[] literal = args[(separator + 1)..];
+                Check(separator >= 0 && literal.Length is > 0 and <= 128 && literal.All(expected.Contains)
+                    && literal.Sum(path => Encoding.UTF8.GetByteCount(path) + 1) <= 16 * 1024
+                    && args.Contains("--literal-pathspecs", StringComparer.Ordinal) && args.Contains("--no-renames", StringComparer.Ordinal),
+                    "Every raw request is a bounded literal subset of the selected old/new paths, never an unfiltered traversal.");
+            }
+        }
     }
 
     private static async Task BareAsync()

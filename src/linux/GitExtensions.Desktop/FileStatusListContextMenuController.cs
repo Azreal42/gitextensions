@@ -243,6 +243,8 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
     internal Task<bool> HandleShortcutAsync(KeyEventArgs args)
     {
         if (args.Handled || host.IsBusy() || !view.Tree.IsKeyboardFocusWithin) { return Task.FromResult(false); }
+        if (args.Key is Key.Up or Key.Down or Key.Left or Key.Right or Key.Home or Key.End or Key.PageUp or Key.PageDown)
+        { return Task.FromResult(false); }
         static IEnumerable<MenuItem> Descendants(IEnumerable<object> items)
         {
             foreach (MenuItem item in items.OfType<MenuItem>())
