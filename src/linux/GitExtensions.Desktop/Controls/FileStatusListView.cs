@@ -70,6 +70,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         public int End { get; init; }
     }
     private ModeInputFocus? _modeInputFocus;
+    private TreeViewItem? _lastFocusedItem;
 
     public FileStatusListView(TreeView tree, Func<FileStatusListEntry, Control>? fileHeaderFactory = null,
         FileStatusListPreferencesStore? preferencesStore = null, bool fileTreeMode = false)
@@ -146,6 +147,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         ActualThemeVariantChanged += ThemeChanged;
         AttachedToVisualTree += (_, _) => UpdatePathSelectionColors();
         Tree.SelectionChanged += TreeSelectionChanged;
+        Tree.GotFocus += TreeGotFocus;
         UpdateToolbar(); ApplyFilterPalette();
     }
 
@@ -176,6 +178,34 @@ public sealed class FileStatusListView : UserControl, IDisposable
         }
     }
     public IReadOnlyList<object> SelectedTags => SelectedEntries.Select(entry => entry.Tag).ToArray();
+    // Popup focus can leave the tree before a menu captures its selection. Keep
+    // only the last real row; never reuse a detached or no-longer-selected one.
+    internal TreeViewItem? FocusedSelectedItem
+    {
+        get
+        {
+            if (_disposed) { return null; }
+            TreeViewItem? current = (TopLevel.GetTopLevel(Tree)?.FocusManager?.GetFocusedElement() as Visual)?
+                .GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault(_models.ContainsKey);
+            TreeViewItem? row = current ?? _lastFocusedItem;
+            return row is not null && _models.ContainsKey(row) && Tree.SelectedItems?.Contains(row) == true ? row : null;
+        }
+    }
+    public object? FocusedSelectedTag => FocusedSelectedItem is { } item && _models[item].Entry is not null ? item.Tag : null;
+
+    // This bookmark belongs to one explicit action. Rebuilds themselves never
+    // focus, and the resolved row must still be a member of the current selection.
+    internal Func<bool>? CaptureSelectedRowFocus()
+    {
+        if (FocusedSelectedItem is not { } row) { return null; }
+        var identity = Identity(_models[row]);
+        return () => !_disposed && _models.FirstOrDefault(pair => Identity(pair.Value) == identity
+            && Tree.SelectedItems?.Contains(pair.Key) == true).Key?.Focus() == true;
+    }
+
+    private void TreeGotFocus(object? sender, GotFocusEventArgs args)
+        => _lastFocusedItem = (args.Source as Visual)?.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault(_models.ContainsKey);
+
     public string? SelectedFolderPath => Tree.SelectedItems?.Count == 1 && Tree.SelectedItem is TreeViewItem
         { Tag: FileStatusListNodeTag { Kind: FileStatusListNodeKind.Folder } folder } ? folder.Key : null;
     public string? SelectedFolderDescription => SelectedFolderPath is string folder
@@ -374,6 +404,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         FileStatusListModelGroup[] groups = _groups.Select(group => new FileStatusListModelGroup(group.Tag, group.Key, group.Entries, group.AlwaysVisible, group.IsBaseComparison)).ToArray();
         IReadOnlyList<FileStatusListNode> nodes = FileStatusListBuilder.Build(groups, _options, entry => _diffFilter.Matches(entry.DiffStatus) && MatchesName(entry, _predicate), GroupByRevision);
         IsUpdating = true;
+        _lastFocusedItem = null;
         try
         {
             Tree.UnselectAll();
@@ -645,9 +676,10 @@ public sealed class FileStatusListView : UserControl, IDisposable
     };
     public void Dispose()
     {
-        if (_disposed) { return; } _disposed = true; _modeInputFocus = null; CancelPendingFilter();
+        if (_disposed) { return; } _disposed = true; _modeInputFocus = null; _lastFocusedItem = null; CancelPendingFilter();
         _store.Changed -= PreferencesChanged; ActualThemeVariantChanged -= ThemeChanged;
         Tree.SelectionChanged -= TreeSelectionChanged;
+        Tree.GotFocus -= TreeGotFocus;
         _filter.PropertyChanged -= FilterPropertyChanged; _filter.SelectionChanged -= FilterSelectionChanged;
         _filterBackgroundBinding?.Dispose(); _filter.IsDropDownOpen = false;
         _viewMode.Flyout?.Hide();

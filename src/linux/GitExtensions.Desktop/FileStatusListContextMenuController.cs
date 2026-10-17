@@ -214,7 +214,8 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
     private void ApplyViewOption(FileMenuSelection selection, Action apply)
     {
         if (host.IsBusy() || !host.IsCurrent(selection) || TopLevel.GetTopLevel(view) is not Window owner) { return; }
-        TreeViewItem? previous = view.Tree.SelectedItem as TreeViewItem; object? tag = previous?.Tag; string filter = view.FilterText;
+        TreeViewItem? previous = view.FocusedSelectedItem ?? view.Tree.SelectedItem as TreeViewItem; object? tag = previous?.Tag; string filter = view.FilterText;
+        Func<bool>? restoreFocus = view.CaptureSelectedRowFocus();
         apply();
         // A context-menu action replaces the row containers. Resolve the current
         // row only for this action; ordinary rebuilds and filtering never focus.
@@ -225,6 +226,7 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
             IInputElement? focused = owner.FocusManager?.GetFocusedElement();
             if (focused is Visual control && focused is not MenuItem && !view.Tree.IsKeyboardFocusWithin
                 && !ReferenceEquals(focused, previous) && TopLevel.GetTopLevel(control) is { IsVisible: true }) { return; }
+            if (restoreFocus?.Invoke() == true) { return; }
             if (tag is not null) { view.FindItemByTag(tag)?.Focus(); }
         }, DispatcherPriority.Input);
     }

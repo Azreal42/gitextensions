@@ -63,7 +63,7 @@ public sealed partial class CompareRevisionsDialog
         string? folderPath = _filesView.SelectedFolderPath;
         if (nodes.Length == 1 && nodes[0].Items.Count > 0 && folderPath is null) { folderPath = ""; paths = ["."]; }
         if (paths.Length == 0) { paths = leaves.Select(leaf => leaf.File.Path).Distinct(StringComparer.Ordinal).ToArray(); }
-        FileMenuLeaf? focused = (_files.SelectedItem as TreeViewItem)?.Tag is ComparisonFileSelection focusedFile
+        FileMenuLeaf? focused = _filesView.FocusedSelectedTag is ComparisonFileSelection focusedFile
             ? leaves.FirstOrDefault(leaf => ReferenceEquals(leaf.Comparison, focusedFile.Group.Comparison) && leaf.File == focusedFile.File) : leaves.FirstOrDefault();
         return new(Repository, leaves, paths, folderPath, IsDisplayOnly: groups.Any(group => group.Kind is GitRevisionDiffGroupKind.RangeDiff or GitRevisionDiffGroupKind.Combined),
             HostIdentity: new ComparisonMenuIdentity(groups), FocusedLeaf: focused);
@@ -114,6 +114,7 @@ public sealed partial class CompareRevisionsDialog
         {
             if (!ReferenceEquals(args.Source, item)) { return; }
             args.Handled = true;
+            Func<bool>? restoreFocus = _filesView.CaptureSelectedRowFocus();
             try { await action(); }
             catch (Exception error) { ReportError(error); }
             finally
@@ -123,6 +124,7 @@ public sealed partial class CompareRevisionsDialog
                     if (!IsVisible || _selectionClosing || IsBusy) { return; }
                     IInputElement? focused = FocusManager?.GetFocusedElement();
                     if (focused is Visual focusedVisual && focused is not MenuItem && TopLevel.GetTopLevel(focusedVisual) == this && !_files.IsKeyboardFocusWithin) { return; }
+                    if (restoreFocus?.Invoke() == true) { return; }
                     if (_files.SelectedItem is TreeViewItem selected) { selected.Focus(); } else { _files.Focus(); }
                 }, DispatcherPriority.Input);
             }

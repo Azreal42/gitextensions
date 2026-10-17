@@ -14,7 +14,7 @@ internal sealed record RevisionDiffFileSelection(GitRevisionDiffGroup Group, Git
 
 public sealed partial class MainWindow
 {
-    private readonly TreeView _revisionFiles = new() { Name = "RevisionFiles" };
+    private readonly TreeView _revisionFiles = new() { Name = "RevisionFiles", SelectionMode = SelectionMode.Multiple };
     private FileStatusListView? _revisionFilesView;
     private readonly RevisionDiffPreferencesStore _revisionDiffPreferencesStore = new();
     private RevisionDiffPreferences _revisionDiffPreferences = new();
@@ -82,7 +82,7 @@ public sealed partial class MainWindow
         _commitContent.TextView.DisplayOptionsChanged += RequestDiffAppearanceReload;
         _revisionFiles.SelectionChanged += async (_, args) =>
         {
-            if (args.Source == _revisionFiles && !_selectingFileContext && !_loadingCommitFiles && _revisionFilesView?.IsUpdating != true && !_refreshing && !_busy)
+            if (args.Source == _revisionFiles && !_loadingCommitFiles && _revisionFilesView?.IsUpdating != true && !_refreshing && !_busy)
             {
                 if (_revisionFiles.SelectedItem is TreeViewItem item) { await ReadRevisionDiffAsync(item); }
                 else { ClearRevisionPreview(); }
@@ -201,9 +201,15 @@ public sealed partial class MainWindow
         if (_commitContent is not null) { _commitContent.TextView.DocumentIdentity = null; }
     }
 
+    private object? CaptureRevisionFileSelection()
+    {
+        object[] tags = _revisionFiles.SelectedItems?.OfType<TreeViewItem>().Select(item => item.Tag).OfType<object>().ToArray() ?? [];
+        return tags.Length switch { 0 => null, 1 => tags[0], _ => tags };
+    }
+
     private async Task LoadCommitFilesAsync(GitRepository repository, string revision, object? preservedSelection = null, CancellationToken? cancellationToken = null)
     {
-        object? previous = (_revisionFiles.SelectedItem as TreeViewItem)?.Tag ?? preservedSelection;
+        object? previous = CaptureRevisionFileSelection() ?? preservedSelection;
         CancellationToken token = cancellationToken ?? Token;
         string selectionIdentity = RevisionSelectionIdentity;
         _revisionDiffPreferences = _revisionDiffPreferencesStore.Load();
@@ -233,20 +239,22 @@ public sealed partial class MainWindow
                 }).ToArray(), preserveSelection: false);
             TreeViewItem[] roots = _revisionFiles.Items.OfType<TreeViewItem>().ToArray();
             TreeViewItem[] fileItems = FileStatusTreeItems(_revisionFiles).Where(item => item.Tag is RevisionDiffFileSelection).ToArray();
-            selected = previous switch
+            TreeViewItem? Resolve(object? tag) => tag switch
             {
                 RevisionDiffFileSelection old => fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate
                     && candidate.Group.Kind == old.Group.Kind && candidate.Group.BaseRevision == old.Group.BaseRevision
-                    && candidate.File.Path == old.File.Path)
+                    && candidate.Group.Revision == old.Group.Revision && candidate.File.Path == old.File.Path)
                     ?? fileItems.FirstOrDefault(item => item.Tag is RevisionDiffFileSelection candidate && candidate.File.Path == old.File.Path),
                 GitRevisionDiffGroup old => roots.FirstOrDefault(item => item.Tag is GitRevisionDiffGroup candidate
                     && candidate.Kind == old.Kind && candidate.BaseRevision == old.BaseRevision),
                 _ => null
             };
-            selected ??= fileItems.FirstOrDefault() ?? roots.FirstOrDefault();
+            object[] tags = previous is object[] many ? many : previous is null ? [] : [previous];
+            TreeViewItem[] restored = tags.Select(Resolve).OfType<TreeViewItem>().Distinct().ToArray();
+            selected = restored.FirstOrDefault() ?? fileItems.FirstOrDefault() ?? roots.FirstOrDefault();
             if (selected is not null)
             {
-                _revisionFilesView.SelectTags([selected.Tag!]);
+                _revisionFilesView.SelectTags(restored.Length > 0 ? restored.Select(item => item.Tag!) : [selected.Tag!]);
             }
         }
         finally { _loadingCommitFiles = false; }

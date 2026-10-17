@@ -44,7 +44,7 @@ public sealed partial class MainWindow
         ConfigureFileContextMenu(_tree, isFileTree: true);
         _fileTreeView.DisplayChanged += async (_, _) =>
         {
-            if (!_refreshing && !_settingGrepTree && !_busy && !_selectingFileContext)
+            if (!_refreshing && !_settingGrepTree && !_busy)
             {
                 if (SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
                 else { ShowSelectedTreeFolder(); }

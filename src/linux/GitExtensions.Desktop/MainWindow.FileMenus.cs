@@ -11,8 +11,6 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private bool _selectingFileContext;
-    private bool _fileContextNeedsDetails;
     private readonly Dictionary<bool, FileStatusListContextMenuController> _fileMenuControllers = [];
     private IReadOnlyDictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>> _fileMenuMetadata = new Dictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>>(ReferenceEqualityComparer.Instance);
     private GitRepository? _fileMenuRefreshPending;
@@ -65,8 +63,9 @@ public sealed partial class MainWindow
         string? folder = view.SelectedFolderPath;
         if (nodes.Length == 1 && nodes[0].Items.Count > 0 && folder is null) { folder = ""; copy = ["."]; }
         bool displayOnly = identity.Groups.Any(group => group.Kind is GitRevisionDiffGroupKind.RangeDiff or GitRevisionDiffGroupKind.Combined);
-        FileMenuLeaf? focused = tree.SelectedItem is TreeViewItem { Tag: RevisionDiffFileSelection selectedLeaf }
+        FileMenuLeaf? focused = view.FocusedSelectedTag is RevisionDiffFileSelection selectedLeaf
             ? leaves.FirstOrDefault(leaf => leaf.File == selectedLeaf.File && leaf.Second.Revision == selectedLeaf.Group.Revision && leaf.First?.Revision == selectedLeaf.Group.BaseRevision)
+            : view.FocusedSelectedTag is string focusedPath && isFileTree ? leaves.FirstOrDefault(leaf => leaf.File.Path == focusedPath)
             : leaves.FirstOrDefault();
         return new(repository, leaves, copy, folder, isFileTree, displayOnly, identity, focused);
     }
@@ -111,7 +110,25 @@ public sealed partial class MainWindow
         {
             CaptureSelection = () => GetFileMenuSelection(isFileTree), IsCurrent = IsCurrentFileMenuSelection,
             IsBusy = () => _busy || _refreshing,
-            CreateAction = (category, name, label, icon, action, gesture) => OriginalAction(category, name, label, icon, action, gesture),
+            CreateAction = (category, name, label, icon, action, gesture) => OriginalAction(category, name, label, icon, async () =>
+            {
+                GitRepository? repository = _repository;
+                Func<bool>? restoreFocus = view.CaptureSelectedRowFocus();
+                try { await action(); }
+                finally
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (_lifetime.IsCancellationRequested || !IsVisible || !IsEffectivelyEnabled || _busy
+                            || !ReferenceEquals(repository, _repository) || OwnedWindows.Any(window => window.IsVisible)
+                            || !view.IsEffectivelyVisible || !view.IsEffectivelyEnabled) { return; }
+                        IInputElement? focused = FocusManager?.GetFocusedElement();
+                        if (focused is Visual input && focused is not MenuItem && !tree.IsKeyboardFocusWithin
+                            && TopLevel.GetTopLevel(input) is { IsVisible: true }) { return; }
+                        restoreFocus?.Invoke();
+                    }, DispatcherPriority.Input);
+                }
+            }, gesture),
             ExecuteAsync = (command, selection) => ExecuteFileMenuAsync(command, selection, isFileTree),
             Capabilities = new(ShowInFileTree: true, FilterInGrid: true, Grep: true), GrepVisible = () => _fileGrepSettings.ShowSearchBox,
             GetRemembered = () => _repository is { } current ? additional.GetRemembered(current) : null,
@@ -126,28 +143,10 @@ public sealed partial class MainWindow
             if (!args.GetCurrentPoint(tree).Properties.IsRightButtonPressed) { return; }
             TreeViewItem? item = (args.Source as Visual)?.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
             if (item is null) { return; }
-            _selectingFileContext = true;
-            if (!tree.SelectedItems!.Contains(item)) { _fileContextNeedsDetails = true; tree.SelectedItem = item; }
+            if (!tree.SelectedItems!.Contains(item)) { tree.SelectedItem = item; }
             item.Focus();
         }, RoutingStrategies.Tunnel);
-        menu.Opening += (_, _) =>
-        {
-            _selectingFileContext = true;
-            menu.ItemsSource = controller.BuildItems(GetFileMenuSelection(isFileTree));
-        };
-        menu.Closed += (_, _) =>
-        {
-            _selectingFileContext = false;
-            if (!_fileContextNeedsDetails) { return; }
-            _fileContextNeedsDetails = false;
-            Dispatcher.UIThread.Post(async () =>
-            {
-                if (_busy || _refreshing || _lifetime.IsCancellationRequested) { return; }
-                if (isFileTree && SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
-                else if (isFileTree) { ShowSelectedTreeFolder(); }
-                else if (!isFileTree && tree.SelectedItem is TreeViewItem selected) { await ReadRevisionDiffAsync(selected); }
-            });
-        };
+        menu.Opening += (_, _) => menu.ItemsSource = controller.BuildItems(GetFileMenuSelection(isFileTree));
         tree.AddHandler(InputElement.DoubleTappedEvent, async (_, args) =>
         {
             if (GetFileMenuSelection(isFileTree) is { Leaves.Count: 1, Folder: null } selection

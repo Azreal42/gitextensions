@@ -133,7 +133,7 @@ public sealed partial class MainWindow : Window
         };
         _tree.SelectionChanged += async (_, _) =>
         {
-            if (!_refreshing && !_selectingFileContext && !_settingGrepTree && _fileTreeView?.IsUpdating != true)
+            if (!_refreshing && !_settingGrepTree && _fileTreeView?.IsUpdating != true)
             {
                 if (SelectedTreePath is string path) { _filePath.Text = path; await ShowSelectedTreeFileAsync(path); }
                 else { ShowSelectedTreeFolder(); }
@@ -351,7 +351,7 @@ public sealed partial class MainWindow : Window
             string? selectedHash = changedRepository ? null : (_commits.SelectedItem as GitCommit)?.Hash;
             string[] selectedHashOrder = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).Distinct(StringComparer.Ordinal).ToArray();
             HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
-            object? selectedRevisionDiff = changedRepository ? null : (_revisionFiles.SelectedItem as TreeViewItem)?.Tag;
+            object? selectedRevisionDiff = changedRepository ? null : CaptureRevisionFileSelection();
             string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
             GitLogQuery configuredQuery = opening ? new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog } : _historyQuery;
             int historyWindow = opening ? configuredQuery.Count : _historyWindow;
