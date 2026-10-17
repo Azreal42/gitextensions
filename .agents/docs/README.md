@@ -14,4 +14,6 @@ But : proposer les workflows Git Extensions sur un bureau Linux, installables en
 
 - [Historique fichier dans Browse](adr/workflows/files/0085-browse-file-history.md) : processus indépendant par défaut, présélection sans borne, noms suivis depuis HEAD et vrais endpoints ; Blame inline avec publication atomique. [Full02 vérifié](../../artifacts/linux/file-history-browse-20261017/full-02/parent-verification.json), [paquet exact vérifié isolément](../../artifacts/linux/snapshots/1e6cc163a/proofs/package-parent-verification.json), [revue native parent](../../artifacts/linux/snapshots/1e6cc163a/proofs/native-file-history-parent-review.json) ; niveaux inchangés.
 
+- [Réglages partagés d’historique fichier](adr/workflows/files/0086-shared-file-history-settings.md) : quatre préférences et F5 des paires typées ; Git/headless et paquet vérifiés, audit GUI natif ouvert.
+
 Le code, les tests et les scripts sont la source de vérité. Ces notes gardent l'intention et les chemins utiles ; les logs, captures, checksums et preuves historiques restent dans `artifacts/linux/`, avec leur source d'origine.

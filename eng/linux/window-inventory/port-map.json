@@ -91,10 +91,11 @@
         "MainWindow",
         "CommitInformationView",
         "FileHistoryWorkflow",
-        "FileHistoryBlameController"
+        "FileHistoryBlameController",
+        "FileHistoryPreferencesStore"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085.",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Historique Browse : Follow/Exact non exposés complètement ; CLI FirstId artificiel avec révision réelle sélectionnée peut laisser CommitInfo vide après refresh (H ne fournit pas FirstId). Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -119,7 +120,10 @@
         "FileHistoryBrowseTests",
         "ArtificialHistoryRevisionTests",
         "FileHistoryInlineBlameTests",
-        "FileHistoryEmptyTreeMenuTests"
+        "FileHistoryEmptyTreeMenuTests",
+        "FileHistoryPreferencesTests",
+        "FileHistoryTraversalSettingsTests",
+        "FileHistoryInitialComparisonRefreshTests"
       ],
       "adr": [
         "0031",
@@ -136,7 +140,8 @@
         "0081",
         "0083",
         "0084",
-        "0085"
+        "0085",
+        "0086"
       ],
       "extra_evidence": [
         {
@@ -171,19 +176,22 @@
       "group": "navigation",
       "level": "N3",
       "linux": [
-        "HistoryFilterDialog"
+        "HistoryFilterDialog",
+        "FileHistoryPreferencesStore"
       ],
-      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation.",
+      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert.",
       "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée ; audit Wayland/DPI/accessibilité ouvert.",
       "visual": "adapte",
       "tests": [
         "BranchHistoryFilterTests",
         "DialogAccessKeyTests",
-        "MainWindowBusyFocusTests"
+        "MainWindowBusyFocusTests",
+        "FileHistoryTraversalSettingsTests"
       ],
       "adr": [
         "0042",
-        "0079"
+        "0079",
+        "0086"
       ]
     },
     "GitUI.CommandsDialogs.BrowseDialog.FormGoToCommit": {
@@ -1026,10 +1034,11 @@
         "CommitInformationView",
         "MainWindow",
         "FileHistoryWorkflow",
-        "FileHistoryBlameController"
+        "FileHistoryBlameController",
+        "FileHistoryPreferencesStore"
       ],
-      "implemented": "Dialogue dédié conservé : renommages, graphe, image/texte, sauvegarde, liens Blame et CommitInfo partagé (ADR 0083). Son adaptation historique Index/WT avec notice HEAD reste distincte du nouveau Browse. UseBrowseForFileHistory=true lance un Browse indépendant, présélectionne sans borner les ancêtres et garde Diff/navigation de démarrage temporaires. Graphe normal sur les noms suivis depuis HEAD, liste Diff complète/fallback du premier groupe ; endpoints réels Commit/Index/WT/EmptyTree, refresh/grep typés, Blame File tree partagé à publication atomique et fermeture drainée. ADR 0085.",
-      "remaining": "N3 conservé sur le périmètre dédié historique ; le Browse par défaut reste N2. Exposition complète Follow/Exact, CLI FirstId artificiel + refresh CommitInfo et autres menus/filtres/plateformes encore ouverts. Le nom historique donné à H ne suit pas un renommage futur absent de son oracle HEAD ; ne pas confondre Path A et Path B. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) ouverts ; CommitInfo du dialogue dédié non vérifié en natif.",
+      "implemented": "Dialogue dédié conservé : renommages, graphe, image/texte, sauvegarde, liens Blame et CommitInfo partagé (ADR 0083). Son adaptation historique Index/WT avec notice HEAD reste distincte du nouveau Browse. UseBrowseForFileHistory=true lance un Browse indépendant, présélectionne sans borner les ancêtres et garde Diff/navigation de démarrage temporaires. Graphe normal sur les noms suivis depuis HEAD, liste Diff complète/fallback du premier groupe ; endpoints réels Commit/Index/WT/EmptyTree, refresh/grep typés, Blame File tree partagé à publication atomique et fermeture drainée. ADR 0085. Quatre préférences partagées avec Browse : Follow/Exact dans le contexte, Full/Simplify dans le dropdown ; relecture immédiate, valeurs désactivées conservées. ADR0086, vérifications Git/headless, sans certification GUI native complète.",
+      "remaining": "N3 conservé sur le périmètre dédié historique ; le Browse par défaut reste N2. Lecteur dédié direct borné par révision, contexte manipulation/Navigate/View incomplet et autres menus/filtres/plateformes encore ouverts ; audit GUI natif complet ouvert. Le nom historique donné à H ne suit pas un renommage futur absent de son oracle HEAD ; ne pas confondre Path A et Path B. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) ouverts ; CommitInfo du dialogue dédié non vérifié en natif.",
       "visual": "rapproche",
       "tests": [
         "FileHistoryDialogTests",
@@ -1042,13 +1051,17 @@
         "FileHistoryBrowseTests",
         "ArtificialHistoryRevisionTests",
         "FileHistoryInlineBlameTests",
-        "FileHistoryEmptyTreeMenuTests"
+        "FileHistoryEmptyTreeMenuTests",
+        "FileHistoryPreferencesTests",
+        "FileHistoryTraversalSettingsTests",
+        "FileHistoryInitialComparisonRefreshTests"
       ],
       "adr": [
         "0011",
         "0080",
         "0083",
-        "0085"
+        "0085",
+        "0086"
       ],
       "extra_evidence": [
         {
@@ -1642,17 +1655,20 @@
       "linux": [
         "DesktopSettingsDialog",
         "NativeDiffViewerSettingsDialog",
-        "MainWindow@ShowWorkflowAsync"
+        "MainWindow@ShowWorkflowAsync",
+        "FileHistoryPreferencesStore"
       ],
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086.",
       "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
       "visual": "adapte",
       "tests": [
         "ClassicMenuTests",
-        "NativeDiffViewerSettingsDialogTests"
+        "NativeDiffViewerSettingsDialogTests",
+        "FileHistoryPreferencesTests"
       ],
       "adr": [
-        "0060"
+        "0060",
+        "0086"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2254,17 +2270,20 @@
         "CheckoutSubmodulePrompt",
         "GitProcessDialog",
         "FileHistoryDialog",
-        "FileHistoryWorkflow"
+        "FileHistoryWorkflow",
+        "FileHistoryPreferencesStore"
       ],
-      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085.",
-      "remaining": "Page générale absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
+      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085. Follow/Exact exposés côte à côte, OK sauvegarde/recharge et Cancel ne change rien ; réglages partagés ADR0086.",
+      "remaining": "Page générale Windows complète absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
       "visual": "integre",
       "tests": [
         "BrowseStartupTests",
-        "FileHistoryWorkflowTests"
+        "FileHistoryWorkflowTests",
+        "FileHistoryPreferencesTests"
       ],
       "adr": [
-        "0085"
+        "0085",
+        "0086"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigAdvancedSettingsPage": {

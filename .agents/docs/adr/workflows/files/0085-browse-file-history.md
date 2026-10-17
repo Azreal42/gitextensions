@@ -18,7 +18,7 @@ Parcourir l’évolution d’un fichier sans bloquer le Browse d’origine ni ca
 
 `FileHistoryWorkflow`, `BrowseApplicationLauncher`, `DesktopStartupArguments`, `MainWindow.FileHistory/FileHistoryBlame/BrowserReads/Lifetime`, `FileHistoryBlameController`, `GitRepository.FileHistoryGraph/ComparisonTree/ComparisonBlame`, `BlameView`, `FileHistoryDialog`. Tests : `BrowseStartupTests`, `FileHistoryWorkflowTests`, `FileHistoryBrowseTests`, `ArtificialHistoryRevisionTests`, `FileHistoryInlineBlameTests`, `FileHistoryEmptyTreeMenuTests`, `FileHistoryGraphScenarios` et `ComparisonEndpointScenarios`. ADR [0011](0011-history-and-blame.md), [0030](blame/0030-byte-safe-blame-and-reading-position.md), [0083](../../ui/history/0083-shared-commit-information.md). Le code reste la source de vérité.
 
-Deux écarts demeurent : exposition complète des préférences Follow/Exact dans Browse (Core/dialogue dédié les possèdent, nouveau Browse utilise leurs défauts) ; CLI avec révision sélectionnée réelle et FirstId artificiel, dont un refresh peut laisser CommitInfo vide. Cette combinaison CLI ne décrit pas H, qui n’envoie aucun FirstId. Autres menus, filtres, thèmes/locales et plateformes à auditer. FormFileHistory conserve N3 sur son périmètre dédié historique ; Browse reste N2, treize familles ouvertes, aucun N4.
+Les réglages partagés et la correction F5 des paires FirstId artificiel/révision réelle sont décrits dans l’[ADR0086](0086-shared-file-history-settings.md). Le dialogue dédié conserve son lecteur direct borné et son menu contextuel incomplet ; H n’envoie aucun FirstId. Autres menus, filtres, thèmes/locales et plateformes à auditer. FormFileHistory conserve N3 sur son périmètre dédié historique ; Browse reste N2, treize familles ouvertes, aucun N4.
 
 ## Validation
 
