@@ -122,7 +122,14 @@ public class DiffFormatsTests
     }
 
     [AvaloniaTest]
-    public async Task RealRangeDiffUsesBufferNumbersAndNavigatesCommitSummariesInsteadOfInnerHunks()
+    public Task RealRangeDiffUsesBufferNumbersAndNavigatesCommitSummariesInsteadOfInnerHunks()
+        => AssertRealRangeDiffNavigationAsync(DiffViewMode.RangeDiff);
+
+    [AvaloniaTest]
+    public Task RealRangeDiffAutoDetectionUsesBufferNumbersAndNavigatesCommitSummariesInsteadOfInnerHunks()
+        => AssertRealRangeDiffNavigationAsync(DiffViewMode.Auto);
+
+    private static async Task AssertRealRangeDiffNavigationAsync(DiffViewMode mode)
     {
         using Fixture fixture = await Fixture.CreateAsync();
         string basis = await fixture.CommitTreeAsync("initial\n", "Basis");
@@ -137,11 +144,16 @@ public class DiffFormatsTests
         string output = (await fixture.Git("range-diff", "--no-color", basis + ".." + oldTwo, basis + ".." + newTwo)).StandardOutput;
         Assert.That(output, Does.Contain(" ! ").And.Contain(" = "));
         TextBox source = new() { Text = output.Replace("\n", "\r\n", StringComparison.Ordinal) };
-        DiffView view = new(source) { Mode = DiffViewMode.RangeDiff };
+        DiffView view = new(source) { Mode = mode };
         Window window = new() { Width = 900, Height = 400, Content = view };
         try
         {
             window.Show();
+            Assert.That(view.Mode, Is.EqualTo(mode));
+            Assert.That(view.EffectiveMode, Is.EqualTo(DiffViewMode.RangeDiff));
+            Assert.That(view.Document, Is.Null, "Raw range-diff must expose its navigation without a ShowDocument wrapper.");
+            Assert.That(view.Toolbar.NextChange.IsVisible && view.Toolbar.NextChange.IsEnabled, Is.True);
+            Assert.That(view.Toolbar.PreviousChange.IsVisible && view.Toolbar.PreviousChange.IsEnabled, Is.True);
             Assert.That(view.CanStagePatch, Is.False);
             for (int line = 1; line <= view.Editor.Document.LineCount; line++) { Assert.That(view.GetColumnNumbers(line), Is.EqualTo(new int?[] { line })); }
             int lastHeader = source.Text!.LastIndexOf("2: ", StringComparison.Ordinal);
@@ -160,6 +172,7 @@ public class DiffFormatsTests
             Assert.That(view.CaretOffset, Is.EqualTo(lastHeader));
             window.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Alt); window.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Alt);
             Assert.That(view.CaretOffset, Is.Zero);
+            Assert.That(view.CanStagePatch, Is.False);
         }
         finally { window.Close(); }
     }

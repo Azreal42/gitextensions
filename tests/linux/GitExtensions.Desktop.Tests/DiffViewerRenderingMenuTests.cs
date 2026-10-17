@@ -76,7 +76,7 @@ public class DiffViewerRenderingMenuTests
             Assert.That(((AccessText)fixture.Item("NonPrintingMenu").Header!).Text, Is.EqualTo("Affic_her les caractères non-imprimables"));
             Assert.That(((AccessText)fixture.Item("SyntaxHighlightingMenu").Header!).Text, Is.EqualTo("Afficher la coloration synta_xique"));
             Assert.That(ToolTip.GetTip(fixture.NonPrinting), Is.EqualTo("Afficher les caractères non-imprimables"));
-            Assert.That(ToolTip.GetTip(fixture.Syntax), Is.EqualTo("Afficher la coloration syntaxique"));
+            Assert.That(ToolTip.GetTip(fixture.Syntax), Is.EqualTo("Afficher la coloration syntaxique (X)"));
             Dictionary<string, byte[]> originals = new(StringComparer.Ordinal); Dictionary<string, IImage?> light = [], dark = [];
             foreach ((string suffix, string asset, int visible) in Glyphs)
             {

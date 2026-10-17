@@ -180,7 +180,20 @@ public class MainWindowClassicTests
         Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("FileTreeTab"));
         await Until(() => !window.IsBusy);
 
-        SelectChanges(window);
+        Control? beforeChangesFocus = window.FocusManager?.GetFocusedElement() as Control;
+        TestContext.WriteLine("Before the user tab click: focus=" + beforeChangesFocus?.GetType().Name + "/" + beforeChangesFocus?.Name
+            + ", visible=" + beforeChangesFocus?.IsEffectivelyVisible + ", root=" + (beforeChangesFocus?.GetVisualRoot() as Control)?.GetType().Name);
+        TabItem changesTab = Details(window).Items.OfType<TabItem>().Single(tab => tab.Name == "ChangesTab");
+        // A real tab click hands focus away from the old File tree content.
+        // Assigning SelectedItem alone did not model that user focus transfer.
+        PushProcessTestDriver.Pointer(changesTab);
+        await Until(() => !window.IsBusy && Details(window).SelectedItem == changesTab
+            && window.FocusManager?.GetFocusedElement() is Control focused && focused.IsEffectivelyVisible
+            && ReferenceEquals(focused.GetVisualRoot(), window));
+        Assert.That((Details(window).SelectedItem as TabItem)?.Name, Is.EqualTo("ChangesTab"));
+        Control afterChangesFocus = (Control)window.FocusManager!.GetFocusedElement()!;
+        TestContext.WriteLine("Before F5: focus=" + afterChangesFocus.GetType().Name + "/" + afterChangesFocus.Name
+            + ", visible=" + afterChangesFocus.IsEffectivelyVisible + ", root=" + (afterChangesFocus.GetVisualRoot() as Control)?.GetType().Name);
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "new.txt"), "F5 refresh\n");
         Press(window, Key.F5, RawInputModifiers.None);
         await Until(() => !window.IsBusy && FileStatusTestHelpers.Changes(Changes(window)).Any(change => change.Path == "new.txt"));

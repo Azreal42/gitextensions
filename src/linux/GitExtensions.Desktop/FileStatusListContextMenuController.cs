@@ -335,18 +335,21 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
         return true;
     }
 
-    internal Task<bool> HandleShortcutAsync(KeyEventArgs args)
+    internal Task<bool> HandleShortcutAsync(KeyEventArgs args, bool hostOwnsInput = false)
     {
-        if (args.Handled || host.IsBusy() || !view.IsEffectivelyEnabled || !view.Tree.IsKeyboardFocusWithin) { return Task.FromResult(false); }
+        if (args.Handled || host.IsBusy() || !view.IsEffectivelyVisible || !view.IsEffectivelyEnabled
+            || !hostOwnsInput && !view.Tree.IsKeyboardFocusWithin && view.Tree.ContextMenu?.IsOpen != true) { return Task.FromResult(false); }
         HotkeyCommand? hotkey = DesktopHotkeys.Match("BrowseDiff", args);
         FileMenuSelection? selection = host.CaptureSelection();
         if (selection is null || !host.IsCurrent(selection)) { return Task.FromResult(false); }
+        void Accept()
+        { args.Handled = true; view.Tree.ContextMenu?.Close(); }
         if (hotkey?.Name == "SelectFirstGroupChanges")
-        { args.Handled = true; view.SelectFirstGroup(); return Task.FromResult(true); }
+        { Accept(); view.SelectFirstGroup(); return Task.FromResult(true); }
         if (hotkey is not null)
         {
             FileMenuCommand? command = CommandFor(hotkey.Name, selection.IsFileTree);
-            return command is { } value ? ExecuteCommandAsync(value, selection, () => args.Handled = true) : Task.FromResult(false);
+            return command is { } value ? ExecuteCommandAsync(value, selection, Accept) : Task.FromResult(false);
         }
         // These two ordinary menu shortcuts have no Windows BrowseDiff preset.
         FileMenuCommand? fixedCommand = (args.Key, args.KeyModifiers) switch
@@ -355,7 +358,7 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
             (Key.S, KeyModifiers.Control) => FileMenuCommand.SaveAs,
             _ => null
         };
-        return fixedCommand is { } fixedValue ? ExecuteCommandAsync(fixedValue, selection, () => args.Handled = true) : Task.FromResult(false);
+        return fixedCommand is { } fixedValue ? ExecuteCommandAsync(fixedValue, selection, Accept) : Task.FromResult(false);
     }
     private string Describe(IEnumerable<GitCompareRevision> endpoints)
         => FileMenuRevisionDescription.Describe(endpoints, T);

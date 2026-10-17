@@ -35,7 +35,7 @@ public class CommitSelectionFilterTests
         editor.Focus(); dialog.KeyTextInput("^FIRST\\.txt$");
         await Applied(dialog, "^FIRST\\.txt$");
         Assert.That(Selected(dialog), Is.EqualTo(new[] { "first.txt" }));
-        Assert.That(ToolTip.GetTip(filter), Is.EqualTo("Entrer une expression régulière pour sélectionner des fichiers non-indexés."));
+        Assert.That(ToolTip.GetTip(filter), Is.EqualTo("Entrer une expression régulière pour sélectionner des fichiers non-indexés. (Ctrl+F)"));
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
             dialog.RequestedThemeVariant = theme; dialog.UpdateLayout();
@@ -112,7 +112,7 @@ public class CommitSelectionFilterTests
         Assert.That(dialog.LastError, Is.Null);
         filter.Text = "second"; await Applied(dialog, "second");
         Assert.That(Selected(dialog), Is.EqualTo(new[] { "second.txt" }));
-        Assert.That(ToolTip.GetTip(filter), Is.EqualTo("Entrer une expression régulière pour sélectionner des fichiers non-indexés."));
+        Assert.That(ToolTip.GetTip(filter), Is.EqualTo("Entrer une expression régulière pour sélectionner des fichiers non-indexés. (Ctrl+F)"));
     }
 
     [AvaloniaTest]

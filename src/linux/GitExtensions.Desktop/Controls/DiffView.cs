@@ -817,7 +817,10 @@ public sealed class DiffView : UserControl, IDisposable
         AppearanceMenu.SetContext(Mode != DiffViewMode.PlainText
             && EffectiveMode is not (DiffViewMode.Combined or DiffViewMode.RangeDiff)
             && (_isPatch || _document?.EffectiveAppearance == GitDiffAppearance.Difftastic), _difftasticAvailable);
-        bool comparisons = Mode != DiffViewMode.PlainText && (_isPatch || _document is not null);
+        // Explicit diff modes are partial views, as in Windows. Auto also
+        // recognizes raw range-diff headers without requiring a patch document.
+        bool comparisons = Mode != DiffViewMode.PlainText
+            && (Mode != DiffViewMode.Auto || EffectiveMode == DiffViewMode.RangeDiff || _isPatch || _document is not null);
         ComparisonMenu.SetContext(comparisons, comparisons && EffectiveMode != DiffViewMode.Difftastic,
             supportsEolWhitespace: comparisons, isBusy: !_documentReady);
         RenderingMenu.SetContext(true, comparisons, isBusy: !_documentReady);

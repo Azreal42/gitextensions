@@ -156,7 +156,7 @@ public class ViewerWholeFileHostTests
         Assert.That(button.IsEnabled && button.IsEffectivelyVisible, Is.True);
         Assert.That(button.Bounds.Width, Is.EqualTo(24));
         Assert.That(button.Bounds.Height, Is.EqualTo(24));
-        Assert.That(ToolTip.GetTip(button), Is.EqualTo("Show entire file"));
+        Assert.That(ToolTip.GetTip(button), Is.EqualTo("Show entire file (Ctrl+E)"));
         Image buttonIcon = button.GetVisualDescendants().OfType<Image>().Single();
         AssertOriginalIcon(buttonIcon);
         Assert.That(menu.Icon, Is.InstanceOf<Image>());

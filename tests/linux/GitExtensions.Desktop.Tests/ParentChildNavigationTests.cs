@@ -456,10 +456,30 @@ public sealed class ParentChildNavigationTests
                 else
                 {
                     Click(Selected, button: MouseButton.Right); await Until(() => History.ContextMenu!.IsOpen);
-                    menu = History.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionNavigate"); PushProcessTestDriver.Pointer(menu);
+                    menu = History.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionNavigate");
+                    TopLevel root = TopLevel.GetTopLevel(menu)!; Pump(root);
+                    Point center = menu.TranslatePoint(new Point(menu.Bounds.Width / 2, menu.Bounds.Height / 2), root)!.Value;
+                    Assert.That((root.InputHitTest(center) as Visual)?.GetSelfAndVisualAncestors().Contains(menu), Is.True);
+                    // Context submenus open on hover; only the final command
+                    // needs a click. Keep this a real pointer path throughout.
+                    root.MouseMove(center); Pump(root);
                 }
-                await Until(() => menu.IsSubMenuOpen); Pump(main);
-                PushProcessTestDriver.Pointer(menu.Items.OfType<MenuItem>().Single(item => item.Name == (route == "main-menu" ? "Navigate" : "RevisionNavigate") + command));
+                await Until(() => menu.IsSubMenuOpen);
+                MenuItem target = menu.Items.OfType<MenuItem>().Single(item => item.Name == (route == "main-menu" ? "Navigate" : "RevisionNavigate") + command);
+                // IsSubMenuOpen is a logical state. Wait for this actual child
+                // to join its popup's rendered/hit-testable visual tree.
+                await Until(() =>
+                {
+                    Pump(main);
+                    if (target.GetVisualRoot() is not TopLevel root) { return false; }
+                    Pump(root);
+                    Point? center = target.TranslatePoint(new Point(target.Bounds.Width / 2, target.Bounds.Height / 2), root);
+                    return ReferenceEquals(TopLevel.GetTopLevel(target), root) && target.IsEffectivelyVisible && target.IsEffectivelyEnabled
+                        && target.Bounds.Width > 0 && target.Bounds.Height > 0 && center is Point point
+                        && new Rect(default, root.ClientSize).Contains(point)
+                        && (root.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(target) == true;
+                });
+                PushProcessTestDriver.Pointer(target);
             }
             await IdleAsync();
         }

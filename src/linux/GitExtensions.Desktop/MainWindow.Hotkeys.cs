@@ -175,6 +175,8 @@ public sealed partial class MainWindow
     {
         HotkeyCommand? command = DesktopHotkeys.Match(context, args);
         if (command is null || context != "Browse" && _repository is null) { return false; }
+        if (context == "RevisionGrid" && (command.Name is "RenameRef" or "DeleteRef")
+            && FocusManager?.GetFocusedElement() is TextBox or AvaloniaEdit.Editing.TextArea) { return false; }
         Func<Task>? action = context == "Browse" ? BrowseHotkeyAction(command.Name) : RevisionGridHotkeyAction(command.Name);
         if (action is null) { return false; }
         args.Handled = true;

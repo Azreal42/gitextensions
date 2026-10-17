@@ -109,7 +109,11 @@ public sealed class BrowserHotkeysTests
         Set(bindings, "Browse", "FocusFilter", new(Key.F8));
         Set(bindings, "RevisionGrid", "GoToParent", new(Key.F8));
         Set(bindings, "FileViewer", "Find", new(Key.F8));
+        Set(bindings, "RevisionGrid", "RenameRef", new(Key.F9));
         Set(bindings, "RevisionGrid", "GoToChild", new(Key.Up)); Save(bindings);
+        TextBox repositoryPath = f.Window.GetVisualDescendants().OfType<TextBox>().Single(box => box.Watermark == "Repository directory");
+        PushProcessTestDriver.Pointer(repositoryPath); Press(f.Window, PhysicalKey.F9); await Idle(f.Window);
+        Assert.That(f.Window.OwnedWindows.Where(window => window.IsVisible), Is.Empty, "A remapped reference rename must also leave the repository path editor alone.");
         history.Focus(); Press(f.Window, PhysicalKey.F8); Pump(f.Window);
         TextBox filter = Field<TextBox>(f.Window, "RevisionQuickFilter");
         Assert.That(filter.IsKeyboardFocusWithin, Is.True, "The Browse context precedes the fallback grid context.");

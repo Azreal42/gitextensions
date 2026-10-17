@@ -163,6 +163,7 @@ public sealed partial class MainWindow
             item.Focus();
         }, RoutingStrategies.Tunnel);
         menu.Opening += (_, _) => menu.ItemsSource = controller.BuildItems(GetFileMenuSelection(isFileTree));
+        menu.AddHandler(InputElement.KeyDownEvent, async (_, args) => await HandleConfiguredShortcutsAsync(menu, args, allowAlt: true), RoutingStrategies.Tunnel);
         tree.AddHandler(InputElement.DoubleTappedEvent, async (_, args) =>
         {
             if (GetFileMenuSelection(isFileTree) is { Leaves.Count: 1, Folder: null } selection
@@ -265,17 +266,19 @@ public sealed partial class MainWindow
     { UpdateFileGrepSettings(_fileGrepSettings with { ShowSearchBox = !_fileGrepSettings.ShowSearchBox }); FocusDetail("FileTreeTab"); return Task.CompletedTask; }
     private async Task<bool> HandleFilePaneShortcutAsync(KeyEventArgs args)
     {
-        bool tree = _tree.IsKeyboardFocusWithin;
-        bool diff = _revisionFiles.IsKeyboardFocusWithin || _commitContent?.IsKeyboardFocusWithin == true;
+        bool tree = _tree.IsKeyboardFocusWithin || _fileContent?.IsKeyboardFocusWithin == true || _tree.ContextMenu?.IsOpen == true;
+        bool diff = _revisionFiles.IsKeyboardFocusWithin || _commitContent?.IsKeyboardFocusWithin == true || _revisionFiles.ContextMenu?.IsOpen == true;
         if (!tree && !diff || IsFocusedTextEditingKey(args)) { return false; }
         HotkeyCommand? command = DesktopHotkeys.Match("BrowseDiff", args);
         if (diff && command?.Name is "GoToFirstParent" or "GoToLastParent")
         {
+            if (!CanQuickSearch || !HasDirectRevisionParent()) { return false; }
             args.Handled = true;
+            _revisionFiles.ContextMenu?.Close();
             await MoveHistoryRelativeAsync(command.Name == "GoToFirstParent" ? RelativeRevisionCommand.FirstParent : RelativeRevisionCommand.LastParent);
             return true;
         }
         return _fileMenuControllers.TryGetValue(tree, out FileStatusListContextMenuController? controller)
-            && await controller.HandleShortcutAsync(args);
+            && await controller.HandleShortcutAsync(args, hostOwnsInput: true);
     }
 }

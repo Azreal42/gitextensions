@@ -157,10 +157,19 @@ public sealed class BrowseDiffHotkeysTests
     }
 
     [AvaloniaTest]
-    public async Task RealBrowseFileTreeFindFileRemapOpensLocalPickerAndLeavesRepositoryUntouched()
+    public Task RealBrowseFileTreeFindFileRemapOpensLocalPickerAndLeavesRepositoryUntouched()
+        => VerifyRealBrowseFindFileAsync("tree");
+
+    [AvaloniaTest]
+    [TestCase("popup")]
+    [TestCase("viewer")]
+    public Task RealBrowseFilePickerPrecedesBrowseFromItsOwnPopupAndViewer(string source)
+        => VerifyRealBrowseFindFileAsync(source);
+
+    private static async Task VerifyRealBrowseFindFileAsync(string source)
     {
         using Profile profile = new(); using GitFixture git = await GitFixture.CreateAsync();
-        profile.Set("FindFile", new(Key.F10));
+        profile.Set("FindFile", new(Key.F8));
         MainWindow main = new() { Width = 1200, Height = 800 }; main.Show();
         try
         {
@@ -170,15 +179,72 @@ public sealed class BrowseDiffHotkeysTests
             FileStatusListView view = Node<FileStatusListView>(main, "CommitFileStatusList");
             TreeViewItem row = FileStatusTestHelpers.Rows(view.Tree).Single(item => item.Tag is string path && path == "file.txt");
             PushProcessTestDriver.Pointer(Header(row)); await Idle(main);
+            ContextMenu menu = view.Tree.ContextMenu!;
+            Control returnFocus = view.Tree;
+            if (source == "popup")
+            {
+                Pointer(Header(row), MouseButton.Right);
+                await Until(() => menu.IsOpen && menu.Items.OfType<MenuItem>().Any(item => item.Name == "tsmiFindFile"), main);
+                MenuItem find = menu.Items.OfType<MenuItem>().Single(item => item.Name == "tsmiFindFile");
+                await Until(() => TopLevel.GetTopLevel(find) is { IsVisible: true }, main);
+                Assert.That(find.InputGesture, Is.EqualTo(new KeyGesture(Key.F8)));
+            }
+            else if (source == "viewer")
+            {
+                FileContentView content = Node<FileContentView>(main, "CommitFileContent");
+                await Until(() => content.TextView.IsDocumentReady, main);
+                PushProcessTestDriver.Pointer(content.TextView.Editor.TextArea);
+                Assert.That(content.TextView.IsKeyboardFocusWithin, Is.True);
+                returnFocus = content.TextView;
+            }
             string bytes = await File.ReadAllTextAsync(git.File); GitCommandLog.Clear();
-            Press(main, PhysicalKey.F10);
+            TopLevel input = source == "popup" ? TopLevel.GetTopLevel(menu.Items.OfType<MenuItem>().Single(item => item.Name == "tsmiFindFile"))! : main;
+            Press(input, PhysicalKey.F8);
             await Until(() => main.OwnedWindows.OfType<FileListFindDialog>().Any(window => window.IsVisible), main);
             FileListFindDialog picker = main.OwnedWindows.OfType<FileListFindDialog>().Single(window => window.IsVisible);
             Assert.That(Node<TextBox>(picker, "txtSearchBox").IsKeyboardFocusWithin, Is.True);
+            Assert.That(menu.IsOpen, Is.False, "An accepted file command closes only its owning popup before opening the picker.");
             Press(picker, PhysicalKey.Escape); await Idle(main);
-            await Until(() => view.Tree.IsKeyboardFocusWithin && !main.OwnedWindows.Any(window => window.IsVisible), main);
+            await Until(() => returnFocus.IsKeyboardFocusWithin && !main.OwnedWindows.Any(window => window.IsVisible), main);
             Assert.That(GitCommandLog.Snapshot(), Is.Empty);
             Assert.That(await File.ReadAllTextAsync(git.File), Is.EqualTo(bytes)); Assert.That(main.LastException, Is.Null);
+        }
+        finally { main.Close(); await Until(() => !main.IsVisible && main.WindowWorkCompletion.IsCompleted, main); await main.WindowWorkCompletion; }
+    }
+
+    [AvaloniaTest]
+    public async Task UnavailableRootParentBindingsKeepTheFileMenuAndItsSelection()
+    {
+        using Profile profile = new(); using GitFixture git = await GitFixture.CreateAsync();
+        profile.Set("GoToFirstParent", new(Key.F9));
+        profile.Set("GoToLastParent", new(Key.F9, KeyModifiers.Shift));
+        MainWindow main = new() { Width = 1200, Height = 800 }; main.Show();
+        try
+        {
+            await main.OpenRepositoryAsync(git.Repository.Path); await Idle(main);
+            ListBox history = Node<ListBox>(main, "RevisionHistory");
+            GitCommit root = history.Items.OfType<GitCommit>().Single();
+            Assert.That(root.Parents, Is.Empty);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(root)!); await Idle(main);
+            Press(main, PhysicalKey.Digit3, RawInputModifiers.Control);
+            FileStatusListView view = Node<FileStatusListView>(main, "RevisionFileStatusList");
+            await Until(() => view.IsEffectivelyVisible && view.Entries.Count > 0, main);
+            TreeViewItem row = FileStatusTestHelpers.Rows(view.Tree).Single(item => item.Tag is RevisionDiffFileSelection { File.Path: "file.txt" });
+            Pointer(Header(row), MouseButton.Right);
+            ContextMenu menu = view.Tree.ContextMenu!;
+            await Until(() => menu.IsOpen && menu.Items.OfType<MenuItem>().Any(item => TopLevel.GetTopLevel(item) is { IsVisible: true }), main);
+            object? selectedFile = view.Tree.SelectedItem; GitCommandLog.Clear();
+            foreach (RawInputModifiers modifiers in new[] { RawInputModifiers.None, RawInputModifiers.Shift })
+            {
+                TopLevel input = TopLevel.GetTopLevel(menu.Items.OfType<MenuItem>().First())!;
+                Press(input, PhysicalKey.F9, modifiers);
+                Assert.That(menu.IsOpen, Is.True, "An unavailable parent command must not close its file popup.");
+                Assert.That(history.SelectedItem, Is.SameAs(root));
+                Assert.That(view.Tree.SelectedItem, Is.SameAs(selectedFile));
+                Assert.That(main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
+            }
+            Assert.That(GitCommandLog.Snapshot(), Is.Empty); Assert.That(main.LastException, Is.Null);
+            menu.Close();
         }
         finally { main.Close(); await Until(() => !main.IsVisible && main.WindowWorkCompletion.IsCompleted, main); await main.WindowWorkCompletion; }
     }

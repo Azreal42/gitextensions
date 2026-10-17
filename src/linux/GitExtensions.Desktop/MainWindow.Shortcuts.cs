@@ -25,12 +25,13 @@ public sealed partial class MainWindow
         void ClosePopup()
         {
             if (sender is MenuItem menu) { menu.IsSubMenuOpen = false; }
+            if (sender is Avalonia.Controls.ContextMenu popup) { popup.Close(); }
             if (sender is MenuItem or Avalonia.Controls.ContextMenu) { _revisionContext?.Close(); }
         }
         if (await HandleNavigationHotkeyAsync(e)) { return; }
+        if (await HandleFilePaneShortcutAsync(e)) { return; }
         if (await ExecuteConfiguredHotkeyAsync("Browse", e, ClosePopup)) { return; }
         if (!IsFocusedTextEditingKey(e) && await ExecuteConfiguredHotkeyAsync("RevisionGrid", e, ClosePopup)) { return; }
-        if (await HandleFilePaneShortcutAsync(e)) { return; }
 
         // These are framework/application commands outside the configurable
         // Windows contexts. Configured commands above have no legacy fallback.
