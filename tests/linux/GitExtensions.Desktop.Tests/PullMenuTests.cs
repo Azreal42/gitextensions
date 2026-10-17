@@ -215,6 +215,7 @@ public class PullMenuTests
             await f.AdvanceAsync("zeta", "seed.txt", "remote edit\n");
             MainWindow main = await f.ShowAsync(); ExecuteMenu(main, action);
             await AcknowledgeProcessFailure(main);
+            if (action == GitPullAction.Merge) { await DeclineInitialMergeConflictResolution(main); }
             if (action == GitPullAction.Rebase)
             {
                 await Until(() => main.OwnedWindows.OfType<RebaseDialog>().Any(rebase => rebase.State?.HasConflicts == true && !rebase.IsBusy));
@@ -246,6 +247,7 @@ public class PullMenuTests
         string remote = await f.AdvanceAsync("zeta", "seed.txt", "remote edit\n");
         MainWindow main = await f.ShowAsync(); ExecuteMenu(main, GitPullAction.Merge);
         await AcknowledgeProcessFailure(main);
+        await DeclineInitialMergeConflictResolution(main);
         await Until(() => main.OwnedWindows.OfType<PullDialog>().Any());
         PullDialog dialog = main.OwnedWindows.OfType<PullDialog>().Single(); await Until(() => !dialog.IsBusy);
         Click(Field<Button>(dialog, "ResolvePullConflict"));
@@ -558,6 +560,14 @@ public class PullMenuTests
         await Until(() => owner.OwnedWindows.OfType<GitProcessDialog>().Any(process => !process.IsRunning));
         GitProcessDialog process = owner.OwnedWindows.OfType<GitProcessDialog>().Single();
         Assert.That(process.Outcome!.Success, Is.False); Click(Field<Button>(process, "Ok"));
+    }
+    private static async Task DeclineInitialMergeConflictResolution(MainWindow main)
+    {
+        const string message = "There are unresolved conflicts. Resolve them now?";
+        bool IsQuestion(Window window) => window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == message);
+        await Until(() => main.OwnedWindows.Any(IsQuestion));
+        Window question = main.OwnedWindows.Single(IsQuestion);
+        PushProcessTestDriver.Pointer(question.GetVisualDescendants().OfType<Button>().Single(button => button.IsCancel));
     }
     private static async Task Until(Func<bool> predicate)
     {

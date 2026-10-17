@@ -279,8 +279,7 @@ public sealed partial class PullDialog : RepositoryDialog
                         else { await ResolveConflictsDialog.ShowAsync(owner, Repository, token); }
                         scripts.ThrowIfStopped();
                         await CompletePullScriptEventsAsync(owner, token);
-                        Status.Text = T("There are unresolved conflicts.");
-                        return;
+                        throw new GitCommandException(execution.Arguments, result);
                     }
                     else if (!result.Success) { throw new GitCommandException(execution.Arguments, result); }
                     if (_operationName is null) { await FinishPullAsync(owner, token); }

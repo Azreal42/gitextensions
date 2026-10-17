@@ -185,6 +185,35 @@ public sealed class ScriptEventWorkflowTests
             Assert.That(ReadLog(f), Is.EqualTo(new[] { "merge-before", "merge-after" }));
         }
         finally { dialog.Close(); }
+
+        // The Pull consumer has its own recognized-conflict boundary and must retain the native failure.
+        GitResult abortedMerge = await f.Repository.ManageOperationAsync("merge", GitOperationAction.Abort);
+        Assert.That(abortedMerge.Success, Is.True, abortedMerge.StandardError);
+        await f.CreateRemoteAsync(); await TrackMain(f); await AdvanceRemoteAndDiverge(f, conflict: true);
+        Configure(f, (ScriptEvent.BeforePull, "pull-before", ""), (ScriptEvent.BeforeFetch, "fetch-before", ""),
+            (ScriptEvent.AfterFetch, "fetch-after", ""), (ScriptEvent.AfterPull, "pull-after", ""));
+        PullDialog pull = new(f.Repository, GitPullAction.Merge, resolveConflictsAsync: (_, _, _, _) => Task.CompletedTask); pull.Show();
+        try
+        {
+            await pull.InitializeAsync(); Task execution = pull.ExecuteAsync(pull);
+            await Finish(() => execution.IsCompleted, pull); await execution;
+            Assert.That(pull.GitSucceeded || pull.Succeeded || pull.Cancelled, Is.False);
+            GitResult native = pull.LastProcess!.Result!;
+            Assert.That(native.Success, Is.False);
+            Assert.That(pull.LastException, Is.TypeOf<GitCommandException>());
+            GitCommandException failure = (GitCommandException)pull.LastException!;
+            Assert.That(failure.Result, Is.SameAs(native));
+            Assert.That(pull.LastError, Is.EqualTo(failure.Message));
+            Assert.That(Field<TextBox>(pull, "PullOutput").Text, Does.Contain("CONFLICT"));
+            Assert.That((await f.Repository.GetStatusAsync()).Changes.Any(change => change.IsConflict), Is.True);
+            Assert.That(ReadLog(f), Is.EqualTo(new[] { "merge-before", "merge-after", "pull-before", "fetch-before", "fetch-after", "pull-after" }));
+            PushProcessTestDriver.Pointer(Field<Button>(pull, "AbortPullOperation"));
+            await Finish(() => !pull.IsBusy, pull);
+            Assert.That(pull.LastError, Is.Null);
+            Assert.That((await f.Repository.GetStatusAsync()).Changes, Is.Empty);
+            Assert.That(ReadLog(f), Is.EqualTo(new[] { "merge-before", "merge-after", "pull-before", "fetch-before", "fetch-after", "pull-after" }));
+        }
+        finally { pull.Close(); }
     }
 
     [AvaloniaTest]

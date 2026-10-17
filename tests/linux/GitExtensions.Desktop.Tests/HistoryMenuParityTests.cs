@@ -201,7 +201,7 @@ public sealed class HistoryMenuParityTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n");
         MenuItem view = Root(f.Window, "ViewMenu"), toolbars = Item(view, "ViewToolbars");
         MenuItem filters = Item(toolbars, "ViewFilterToolbar");
-        CompactBrowserToolbar toolbar = f.Window.GetVisualDescendants().OfType<CompactBrowserToolbar>().Single();
+        CompactBrowserToolbar toolbar = f.Window.GetVisualDescendants().OfType<CompactBrowserToolbar>().Single(toolbar => toolbar.Name == "RepositoryToolbar");
         view.IsSubMenuOpen = true; toolbars.IsSubMenuOpen = true; filters.IsSubMenuOpen = true; Pump(f.Window);
         MenuItem quick = Item(filters, "ToolbarHistoryToolbarQuickFilter"); Click(quick);
         toolbars.IsSubMenuOpen = false; view.IsSubMenuOpen = false; Pump(f.Window);
