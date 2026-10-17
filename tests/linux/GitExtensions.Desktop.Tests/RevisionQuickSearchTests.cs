@@ -149,7 +149,9 @@ public sealed class RevisionQuickSearchTests
         string prefix = target.Hash[..3];
         string other = commits.First(commit => commit.Hash != target.Hash && !commit.Hash.StartsWith(prefix, StringComparison.Ordinal)).Hash;
         await scope.ClickCommitAsync(other);
-        scope.Type(prefix[..2]); await scope.IdleAsync();
+        // Isolate the SHA-length rule: the first character alone can match
+        // a message, author or reference before the full two-character term fails.
+        scope.Main.KeyTextInput(prefix[..2]); await scope.IdleAsync();
         Assert.That(scope.SelectedHash, Is.EqualTo(other), "Two hex characters are not a SHA search.");
         scope.Type(prefix[2..]); await scope.IdleAsync();
         Assert.That(scope.SelectedHash, Is.EqualTo(target.Hash));

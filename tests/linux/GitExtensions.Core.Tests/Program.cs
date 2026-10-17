@@ -22,7 +22,11 @@ if (args.FirstOrDefault() is "--fake-askpass" or "--fake-user-askpass")
 }
 if (args.FirstOrDefault() == "--fake-slow-askpass")
 {
-    await File.WriteAllTextAsync(Environment.GetEnvironmentVariable("GITEXTENSIONS_FAKE_ASKPASS_PID")!, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    // Publish readiness only after the complete PID has been written and the file closed.
+    string pidFile = Environment.GetEnvironmentVariable("GITEXTENSIONS_FAKE_ASKPASS_PID")!;
+    string temporaryPidFile = pidFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
+    await File.WriteAllTextAsync(temporaryPidFile, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    File.Move(temporaryPidFile, pidFile, overwrite: false);
     await Task.Delay(Timeout.InfiniteTimeSpan);
     return 1;
 }
