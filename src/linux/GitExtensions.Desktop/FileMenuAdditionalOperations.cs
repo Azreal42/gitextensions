@@ -224,7 +224,7 @@ internal sealed class FileMenuAdditionalOperations
                         await child.StashAsync(new GitStashSaveOptions(IncludeUntracked: preferences.IncludeUntracked), token); break;
                     case FileMenuCommand.CommitSubmodule:
                         CommitDialog commit = new(child) { RequestedThemeVariant = Owner.ActualThemeVariant };
-                        commit.Opened += async (_, _) => await commit.InitializeAsync(); await commit.ShowDialog(Owner); break;
+                        await commit.ShowDialog(Owner); break;
                 }
             }
         }, command != FileMenuCommand.OpenSubmodule);

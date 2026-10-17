@@ -245,7 +245,12 @@ public sealed partial class CommitDialog : Window
         {
             if (args.KeyModifiers == KeyModifiers.Control && (args.Key is Key.Enter or Key.S || args.Key == Key.E && _diff.IsKeyboardFocusWithin)) { HandleShortcut(sender, args); }
         }, RoutingStrategies.Tunnel);
-        Opened += async (_, _) => { await InitializeAsync(); _unstaged.Focus(); };
+        Opened += async (_, _) =>
+        {
+            ModalWindowActivation.AfterMapping(this, () => !_lifetime.IsCancellationRequested && !_closeWhenIdle);
+            await InitializeAsync();
+            if (IsVisible && !_lifetime.IsCancellationRequested && !_closeWhenIdle && !OwnedWindows.Any(child => child.IsVisible)) { _unstaged.Focus(); }
+        };
         Activated += async (_, _) =>
         {
             if (_initialized && !_busy && !_confirmationOpen && !_closeWhenIdle && _refreshOnFocus.IsChecked) { await RefreshAsync(); }

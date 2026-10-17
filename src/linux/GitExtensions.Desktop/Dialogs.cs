@@ -22,6 +22,7 @@ internal static class Dialogs
             new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
             new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { accept } }
         } };
+        dialog.Opened += (_, _) => { accept.Focus(); ModalWindowActivation.AfterMapping(dialog, () => dialog.IsVisible); };
         await dialog.ShowDialog(ActiveOwner(owner));
     }
 
@@ -59,7 +60,7 @@ internal static class Dialogs
             Children = { cancel, accept }
         });
         dialog.Content = content;
-        dialog.Opened += (_, _) => inputs.FirstOrDefault()?.Focus();
+        dialog.Opened += (_, _) => { inputs.FirstOrDefault()?.Focus(); ModalWindowActivation.AfterMapping(dialog, () => dialog.IsVisible); };
         return await dialog.ShowDialog<string[]?>(ActiveOwner(owner));
     }
 
@@ -103,6 +104,11 @@ internal static class Dialogs
                 new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, accept } }
             }
+        };
+        dialog.Opened += (_, _) =>
+        {
+            (acceptIsDefault ? accept : cancel).Focus();
+            ModalWindowActivation.AfterMapping(dialog, () => !cancellationToken.IsCancellationRequested);
         };
         using CancellationTokenRegistration close = cancellationToken.Register(() => Dispatcher.UIThread.Post(() => { if (dialog.IsVisible) { dialog.Close(null); } }));
         try
