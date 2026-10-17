@@ -35,7 +35,7 @@ public class MainWindowClassicTests
         TabControl details = Details(window);
         CommitGraph graph = window.GetVisualDescendants().OfType<CommitGraph>().Single();
         GitCommit selected = (GitCommit)history.SelectedItem!;
-        TextBox information = window.GetVisualDescendants().OfType<TextBox>().Single(text => text.IsEffectivelyVisible && text.Text?.Contains(selected.Hash, StringComparison.Ordinal) is true && text.Text.Contains("Author:", StringComparison.Ordinal));
+        CommitInformationView information = window.GetVisualDescendants().OfType<CommitInformationView>().Single(text => text.IsEffectivelyVisible && text.Text.Contains(selected.Hash, StringComparison.Ordinal) && text.Text.Contains("Author:", StringComparison.Ordinal));
 
         Assert.That(menu.Items.OfType<MenuItem>().Select(item => item.Header), Is.EqualTo(new[] { "Start", "Repository", "Navigate", "View", "Commands", "Git hosts", "Plugins", "Tools", "Help" }));
         Assert.That(navigation.Items.OfType<TreeViewItem>().Select(item => ((StackPanel)item.Header!).Children.OfType<TextBlock>().Single().Text), Is.EqualTo(new[] { "Branches", "Remotes", "Tags", "Submodules", "Stashes", "Worktrees" }));

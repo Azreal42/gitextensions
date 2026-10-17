@@ -90,7 +90,12 @@ public class MainWindowDiffShortcutTests
             await Until(() => main.OwnedWindows.OfType<CreateTagDialog>().Any());
             Assert.That(diff.AppearanceMenu.Preferences.Appearance, Is.EqualTo(DiffViewerAppearance.Patch));
         }
-        finally { foreach (Window child in main.OwnedWindows.ToArray()) { child.Close(); } }
+        finally
+        {
+            Window[] children = main.OwnedWindows.ToArray();
+            foreach (Window child in children) { child.Close(); }
+            await Until(() => children.All(child => !child.IsVisible) && !main.OwnedWindows.Any() && !main.IsBusy);
+        }
     }
 
     private static T Find<T>(Window window, string name) where T : Control

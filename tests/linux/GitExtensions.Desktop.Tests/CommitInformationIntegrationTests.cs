@@ -116,6 +116,38 @@ public sealed class CommitInformationIntegrationTests
     }
 
     [AvaloniaTest]
+    public async Task AFailedBrowseMetadataReadRecoversWhenTheNextCommitLoadsSuccessfully()
+    {
+        using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
+        MainWindow main = f.Window; await MainIdle(main); await PlaceBelow(main);
+        PushProcessTestDriver.Pointer(Field<TabItem>(main, "CommitInfoTab")); await MainIdle(main);
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        CommitInformationView information = Field<CommitInformationView>(main, "CommitInformation");
+        GitCommit first = (GitCommit)history.Items[1]!, last = (GitCommit)history.Items[2]!;
+        object source = history.ItemsSource!;
+        using MetadataGate gate = new(f, failMetadata: true); gate.Arm(first.Hash); SetRepository(main, gate.Repository);
+        try
+        {
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!); await MainIdle(main);
+            Assert.That(gate.Started, Is.True, "The failure must come from the targeted metadata command.");
+            Assert.That(main.LastException, Is.TypeOf<GitCommandException>());
+            GitCommandException error = (GitCommandException)main.LastException!;
+            Assert.That(error.Result.ExitCode, Is.EqualTo(73));
+            Assert.That(error.Arguments, Does.Contain("show").And.Contain("--no-notes").And.Contain(first.Hash));
+            Assert.That(information.MessageControl.Text, Does.Contain(first.Subject));
+
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(2)!); await MainIdle(main);
+
+            Assert.That(information.MessageControl.Text, Does.Contain(last.Subject).And.Not.Contain(first.Subject));
+            Assert.That(information.Text, Does.Contain(last.Hash));
+            Assert.That(main.LastException, Is.Null, "A succeeding metadata request clears its own preceding failure.");
+            Assert.That(history.ItemsSource, Is.SameAs(source));
+            Assert.That(history.IsKeyboardFocusWithin, Is.True);
+        }
+        finally { gate.Release(); main.Close(); await Drain(information.Completion); }
+    }
+
+    [AvaloniaTest]
     public async Task BlameMetadataFollowsTheNewlyClickedAttributionWithoutDisablingTheSource()
     {
         using Fixture f = await Fixture.CreateAsync(HistoryHelpers.Initial, HistoryHelpers.Initial);
@@ -263,7 +295,7 @@ public sealed class CommitInformationIntegrationTests
         internal GitRepository Repository { get; }
         internal bool Started => File.Exists(_started) && new FileInfo(_started).Length > 0;
         internal int Pid => int.Parse(File.ReadAllText(_started), System.Globalization.CultureInfo.InvariantCulture);
-        internal MetadataGate(Fixture fixture)
+        internal MetadataGate(Fixture fixture, bool failMetadata = false)
         {
             if (!OperatingSystem.IsLinux()) { Assert.Ignore("Actual Git cancellation gates require Linux procfs."); }
             string root = Path.Combine(Path.GetDirectoryName(fixture.Repository)!, "metadata-gate-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
@@ -276,6 +308,9 @@ public sealed class CommitInformationIntegrationTests
                 target=Path({{JsonSerializer.Serialize(_target)}})
                 if target.exists() and target.read_text() in sys.argv[1:] and 'show' in sys.argv[1:] and '--no-notes' in sys.argv[1:]:
                     Path({{JsonSerializer.Serialize(_started)}}).write_text(str(os.getpid()))
+                    if {{(failMetadata ? "True" : "False")}}:
+                        print('Commit information fixture failure', file=sys.stderr)
+                        sys.exit(73)
                     for _ in range(2000):
                         if Path({{JsonSerializer.Serialize(_release)}}).exists(): break
                         time.sleep(.01)

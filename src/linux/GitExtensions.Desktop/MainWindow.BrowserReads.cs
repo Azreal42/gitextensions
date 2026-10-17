@@ -18,6 +18,7 @@ public sealed partial class MainWindow
     private readonly BrowserRead _workingDiffRead = new(), _signatureRead = new(), _commitInformationRead = new();
     private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _commitInformationRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead, _referenceSortingRead];
     private Task? _commitInfoLoadTask;
+    private Exception? _commitInformationError;
     private bool _commitInfoClosing, _commitInfoCloseReady;
     private Window? _closingCommitInfoOwner;
     internal Task CommitInformationCompletion => _commitInfo.Completion;
@@ -46,13 +47,16 @@ public sealed partial class MainWindow
         using CancellationTokenSource read = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token, parent);
         sequence.Current = read; sequence.Pending++;
         CancellationToken token = read.Token;
-        LastException = null;
+        bool informationRead = sequence == _commitInformationRead;
+        if (!informationRead || ReferenceEquals(LastException, _commitInformationError)) { LastException = null; }
+        if (informationRead) { _commitInformationError = null; }
         try { await action(repository, token); }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception exception)
         {
             if (!token.IsCancellationRequested && _repository == repository)
             {
+                if (informationRead) { _commitInformationError = exception; }
                 LastException = exception;
                 _state.Text = label + " failed — see command output";
                 AppendOutput($"{label}: {exception.Message}");
