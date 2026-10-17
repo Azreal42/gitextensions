@@ -918,8 +918,8 @@
         "CompareRevisionsDialog",
         "MainWindow"
       ],
-      "implemented": "Comparaisons commit/index/worktree et diff texte/image ; lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et lignes de 18 px. Dans Compare, seule une feuille sélectionnée alimente le lecteur ; parents/multi le vident. Première flèche après action de mode et palette locale vérifiées. Source 2ab5db302, périmètre et preuves dans TODO.",
-      "remaining": "Menus métier FormDiff absents ; défaut AllParents divergent et groupes range/base non raccordés ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu, outils externes et gestes de sélection de plage au clavier non certifiés, sans oracle Windows validé ; audits natifs restants. Parité globale non certifiée.",
+      "implemented": "Comparaisons commit/index/worktree, diff texte/image, lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et densité 18 px. Une feuille fichier unique ouvre les vues fichier, parents/multi les vident ; première flèche après action de mode et palettes locales conservées. Groupes ordonnés A→B, Range, BASE→B, BASE→A selon divergence et préférence globale ShowAll ; paire typée par groupe, Range capturé et dédié. BASE/HEAD de topologie figés, index/worktree dynamiques. Préférence Browse/Compare relue au calcul ; actions et fermeture de ce Settings rendent seulement l’origine filtre/liste encore valide avec caret/sélection, sans focus de rebuild. Source b692547e3, périmètre et preuves dans TODO.",
+      "remaining": "Menus métier FormDiff absents ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu/outils, gestes de sélection de plage au clavier sans oracle Windows validé et plateformes étendues encore ouverts. Parité globale non certifiée.",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
@@ -928,7 +928,8 @@
         "ComparisonSelectionTests",
         "ComparisonFileStatusListTests",
         "FileStatusListViewTests",
-        "FileStatusListBuilderTests"
+        "FileStatusListBuilderTests",
+        "ComparisonGroupsDialogTests"
       ],
       "adr": [
         "0016",

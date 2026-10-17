@@ -1,12 +1,12 @@
 {
-  "source_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
-  "trx": "artifacts/linux/comparison-empty-preview-desktop-checks-20261017-02-full/desktop.trx",
-  "trx_sha256": "1b623a175febe745a77514de88a4fe60d30931868c915af5bb3f17e5d852bbe9",
-  "meaning": "Actual complete Desktop execution. Prior Core/Plugins executions reused after verifying unchanged component inputs and runtime bytes. Exact-package native scope is separate; no complete Windows parity acceptance.",
+  "source_sha": "b692547e38c942b6722c4a476a46a5523649b63f",
+  "trx": "artifacts/linux/comparison-groups-desktop-checks-20261017-04-full/desktop.trx",
+  "trx_sha256": "8bb84a7404b38efc8f515ab99e861f30f711c73b4f15eb1b2c08f6f28d0179d9",
+  "meaning": "Actual complete Desktop execution, plus fresh Core and Plugins executions after this tranche Core change. Their original execution SHA differs only by later Desktop changes; component inputs and original test runtimes were verified unchanged on the candidate. Exact-package native scope is separate; no complete Windows parity acceptance.",
   "counters": {
-    "total": "1265",
-    "executed": "1265",
-    "passed": "1265",
+    "total": "1281",
+    "executed": "1281",
+    "passed": "1281",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -132,6 +132,9 @@
     },
     "ComparisonFileStatusListTests": {
       "Passed": 22
+    },
+    "ComparisonGroupsDialogTests": {
+      "Passed": 16
     },
     "ComparisonSelectionTests": {
       "Passed": 12
@@ -433,30 +436,40 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "84d94785da393e42104b0633ea20490a60d22665",
-      "candidate_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
-      "passed": 556,
-      "total": 556,
-      "execution_result": "artifacts/linux/script-preparation-core-checks-20261017-01-full/full-result.json",
-      "source_hashes_verified": 201,
+      "execution_source_sha": "2e79da0c72ca824f25393465341e3b6728355172",
+      "candidate_sha": "b692547e38c942b6722c4a476a46a5523649b63f",
+      "passed": 565,
+      "total": 565,
+      "execution_result": "artifacts/linux/comparison-groups-core-checks-20261017-01-full/full-result.json",
+      "build_result": "artifacts/linux/comparison-groups-core-checks-20261017-01-full/build-result.json",
+      "source_hashes_verified": 213,
       "runtime_hashes_verified": 8,
       "runtime_inputs_unchanged": true,
+      "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": false,
-      "fresh_execution_this_tranche": false,
-      "meaning": "Prior actual component execution reused; all candidate component source inputs and the original test-bin runtime bytes were verified unchanged. No fresh execution of this suite in this tranche."
+      "meaning": "Fresh full execution after Core change; later Desktop-only commits preserve all recorded component sources and original test runtime bytes.",
+      "declared_crlf_checkout_files": [
+        "Directory.Build.targets"
+      ],
+      "source_sha": "2e79da0c72ca824f25393465341e3b6728355172"
     },
     "plugins": {
-      "source_sha": "84997d82746422584c91b1c71b8f3468a66d2026",
-      "candidate_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
+      "execution_source_sha": "2e79da0c72ca824f25393465341e3b6728355172",
+      "candidate_sha": "b692547e38c942b6722c4a476a46a5523649b63f",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/script-preparation-plugins-checks-20261017-01/plugins-result.json",
-      "source_hashes_verified": 154,
+      "execution_result": "artifacts/linux/comparison-groups-plugins-checks-20261017-01/plugins-result.json",
+      "build_result": "artifacts/linux/comparison-groups-plugins-checks-20261017-01/build-result.json",
+      "source_hashes_verified": 184,
       "runtime_hashes_verified": 10,
       "runtime_inputs_unchanged": true,
+      "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": false,
-      "fresh_execution_this_tranche": false,
-      "meaning": "Prior actual component execution reused; all candidate component source inputs and the original test-bin runtime bytes were verified unchanged. No fresh execution of this suite in this tranche."
+      "meaning": "Fresh full execution after Core change; later Desktop-only commits preserve all recorded component sources and original test runtime bytes.",
+      "declared_crlf_checkout_files": [
+        "Directory.Build.targets"
+      ],
+      "source_sha": "2e79da0c72ca824f25393465341e3b6728355172"
     }
   }
 }

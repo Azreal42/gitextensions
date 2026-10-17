@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
-  "source_digest_sha256": "e46c10a0bc0dabb08e12800692680ab4a952e47103fa41bade87175bb084c73d",
-  "scanned_csharp_files": 1906,
+  "code_reference_commit": "b692547e38c942b6722c4a476a46a5523649b63f",
+  "source_digest_sha256": "3e946acc3c04c623a8a101bcc4c0a421a67d3fd004e838b33b431d7ee9095edd",
+  "scanned_csharp_files": 1911,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,36 +50,46 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/comparison-empty-preview-desktop-checks-20261017-02-full/desktop.trx",
-    "source_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
-    "trx_sha256": "1b623a175febe745a77514de88a4fe60d30931868c915af5bb3f17e5d852bbe9",
+    "trx": "artifacts/linux/comparison-groups-desktop-checks-20261017-04-full/desktop.trx",
+    "source_sha": "b692547e38c942b6722c4a476a46a5523649b63f",
+    "trx_sha256": "8bb84a7404b38efc8f515ab99e861f30f711c73b4f15eb1b2c08f6f28d0179d9",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "84d94785da393e42104b0633ea20490a60d22665",
-        "candidate_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
-        "passed": 556,
-        "total": 556,
-        "execution_result": "artifacts/linux/script-preparation-core-checks-20261017-01-full/full-result.json",
-        "source_hashes_verified": 201,
+        "execution_source_sha": "2e79da0c72ca824f25393465341e3b6728355172",
+        "candidate_sha": "b692547e38c942b6722c4a476a46a5523649b63f",
+        "passed": 565,
+        "total": 565,
+        "execution_result": "artifacts/linux/comparison-groups-core-checks-20261017-01-full/full-result.json",
+        "build_result": "artifacts/linux/comparison-groups-core-checks-20261017-01-full/build-result.json",
+        "source_hashes_verified": 213,
         "runtime_hashes_verified": 8,
         "runtime_inputs_unchanged": true,
+        "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": false,
-        "fresh_execution_this_tranche": false,
-        "meaning": "Prior actual component execution reused; all candidate component source inputs and the original test-bin runtime bytes were verified unchanged. No fresh execution of this suite in this tranche."
+        "meaning": "Fresh full execution after Core change; later Desktop-only commits preserve all recorded component sources and original test runtime bytes.",
+        "declared_crlf_checkout_files": [
+          "Directory.Build.targets"
+        ],
+        "source_sha": "2e79da0c72ca824f25393465341e3b6728355172"
       },
       "plugins": {
-        "source_sha": "84997d82746422584c91b1c71b8f3468a66d2026",
-        "candidate_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
+        "execution_source_sha": "2e79da0c72ca824f25393465341e3b6728355172",
+        "candidate_sha": "b692547e38c942b6722c4a476a46a5523649b63f",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/script-preparation-plugins-checks-20261017-01/plugins-result.json",
-        "source_hashes_verified": 154,
+        "execution_result": "artifacts/linux/comparison-groups-plugins-checks-20261017-01/plugins-result.json",
+        "build_result": "artifacts/linux/comparison-groups-plugins-checks-20261017-01/build-result.json",
+        "source_hashes_verified": 184,
         "runtime_hashes_verified": 10,
         "runtime_inputs_unchanged": true,
+        "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": false,
-        "fresh_execution_this_tranche": false,
-        "meaning": "Prior actual component execution reused; all candidate component source inputs and the original test-bin runtime bytes were verified unchanged. No fresh execution of this suite in this tranche."
+        "meaning": "Fresh full execution after Core change; later Desktop-only commits preserve all recorded component sources and original test runtime bytes.",
+        "declared_crlf_checkout_files": [
+          "Directory.Build.targets"
+        ],
+        "source_sha": "2e79da0c72ca824f25393465341e3b6728355172"
       }
     },
     "current_linux_code_equivalent": true,
@@ -2491,6 +2501,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonGroupsDialogTests.cs",
+          "test_class": "ComparisonGroupsDialogTests",
+          "passed_in_reference_run": 16,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonSelectionTests.cs",
           "test_class": "ComparisonSelectionTests",
           "passed_in_reference_run": 12,
@@ -2930,8 +2946,8 @@
       "feature": "Comparaison/diff autonome",
       "group": "files",
       "level": "N2",
-      "implemented": "Comparaisons commit/index/worktree et diff texte/image ; lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et lignes de 18 px. Dans Compare, seule une feuille sélectionnée alimente le lecteur ; parents/multi le vident. Première flèche après action de mode et palette locale vérifiées. Source 2ab5db302, périmètre et preuves dans TODO.",
-      "remaining": "Menus métier FormDiff absents ; défaut AllParents divergent et groupes range/base non raccordés ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu, outils externes et gestes de sélection de plage au clavier non certifiés, sans oracle Windows validé ; audits natifs restants. Parité globale non certifiée.",
+      "implemented": "Comparaisons commit/index/worktree, diff texte/image, lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et densité 18 px. Une feuille fichier unique ouvre les vues fichier, parents/multi les vident ; première flèche après action de mode et palettes locales conservées. Groupes ordonnés A→B, Range, BASE→B, BASE→A selon divergence et préférence globale ShowAll ; paire typée par groupe, Range capturé et dédié. BASE/HEAD de topologie figés, index/worktree dynamiques. Préférence Browse/Compare relue au calcul ; actions et fermeture de ce Settings rendent seulement l’origine filtre/liste encore valide avec caret/sélection, sans focus de rebuild. Source b692547e3, périmètre et preuves dans TODO.",
+      "remaining": "Menus métier FormDiff absents ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu/outils, gestes de sélection de plage au clavier sans oracle Windows validé et plateformes étendues encore ouverts. Parité globale non certifiée.",
       "visual": "integre",
       "linux": [
         {
@@ -2954,6 +2970,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonFileStatusListTests.cs",
           "test_class": "ComparisonFileStatusListTests",
           "passed_in_reference_run": 22,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonGroupsDialogTests.cs",
+          "test_class": "ComparisonGroupsDialogTests",
+          "passed_in_reference_run": 16,
           "results_present": true
         },
         {
@@ -7883,6 +7905,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonGroupsDialogTests.cs",
+          "test_class": "ComparisonGroupsDialogTests",
+          "passed_in_reference_run": 16,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonSelectionTests.cs",
           "test_class": "ComparisonSelectionTests",
           "passed_in_reference_run": 12,
@@ -9581,8 +9609,12 @@
       "line": 17,
       "sources": [
         {
+          "path": "src/linux/GitExtensions.Desktop/CompareRevisionsDialog.Groups.cs",
+          "line": 15
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/CompareRevisionsDialog.Selection.cs",
-          "line": 6
+          "line": 7
         },
         {
           "path": "src/linux/GitExtensions.Desktop/CompareRevisionsDialog.cs",

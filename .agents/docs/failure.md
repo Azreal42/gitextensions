@@ -160,6 +160,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Bouton visible mais clic central traverse au Panel | Un Background null local efface le style et son fond ; ClearValue rend aussi survol/pression au thème. Conserver un seul clic au centre dans le test. |
 | Compteur Click reste nul malgré fermeture | Button.ClickEvent route en Bubble ; écouter la route réelle, sans rejouer le geste. |
 | Modal déjà OwnedWindows mais hit-test encore vide | Stabiliser les frames via les API publiques avant le clic ; conserver visibilité, zone et hit-test stricts. Helper partagé Push/Bisect ; [échecs conservés](../../artifacts/linux/push-process-root-checks-20261014-05/root-failed-full-review-01.json), [validation finale](../../artifacts/linux/push-process-root-checks-20261014-07/root-full-result-review.json). |
+| Fixture RemoteDeletion lit ProcessNotice avant sa matérialisation visuelle | Attendre au plus 20 s, une vraie frame et la notice visible aux deux observations ; conserver les assertions NoPush/refs. [Full refusé conservé](../../artifacts/linux/comparison-groups-desktop-checks-20261017-02-full/parent-failed-full-review.json). |
 | Tests Avalonia bloquent ou teardown masque l'exception | Attente async normale sur dispatcher, BindingPriority.Template pour TemplateBinding ; ne pas modifier l'isolation pour masquer le défaut. |
 | Test d’infobulle exige PopupRoot en headless | Le host réel est OverlayPopupHost ; tester son ouverture, son rattachement, le présentateur et ses pixels sans changer la configuration des popups. Le natif reste une validation distincte. |
 | AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
@@ -395,10 +396,14 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 
 | Piège | Règle retenue |
 | --- | --- |
-| Compare garde un ancien aperçu après choix d’un parent ou d’une multisélection | Contrat Compare uniquement : seule la feuille unique est affichable. Une racine parent ne sélectionne pas implicitement son descendant. |
+| Compare garde un ancien aperçu après choix d’un parent ou d’une multisélection | Contrat Compare uniquement : une feuille fichier unique ouvre les vues fichier ; Range utilise son lecteur dédié. Une racine parent ne sélectionne pas implicitement son descendant. |
 | Browse conserve prompt et identité pour un groupe ordinaire filtré sans enfant | Vider ce groupe ordinaire seulement ; conserver les résumés de dossiers, prompts de groupes non vides et le RangeDiff affichable sans fichiers. |
 | La première flèche ne navigue pas après clic de ligne ou action de mode | Le Border interne ne prend pas le focus ; après l’action de mode ou son popup de modes, reprendre l’origine valide une seule fois. Aucun repli général à chaque popup ou reconstruction ; la saisie garde son éditeur. |
 | Un clic abandonné détourne une action clavier ultérieure | Désarmer l’origine pointeur lorsque le clavier prend la suite ; ne pas réutiliser un geste qui n’a pas produit d’action. |
 | Le survol reprend les couleurs Fluent malgré le thème historique | Ressources locales sur le présentateur réellement peint, dans les deux thèmes. |
+| Un fichier BASE→A est lu avec la paire A→B du formulaire | Chaque groupe transporte sa paire typée ; identité de lecture, blobs, enregistrement et outil fichier suivent le groupe choisi. L’outil de dossier suit la paire effective du formulaire. |
+| Range dérive avec HEAD ou passe pour un fichier | Capturer les vrais commits et lire Range séparément ; ni vues/actions fichier ni filtre de contenu hérité de la liste. |
+| Browse et Compare appliquent des valeurs ShowAll différentes | Préférence globale activée par défaut et relue dans le calcul affiché ; pas de surcharge propre à FormDiff. |
+| Settings perd filtre, caret/sélection ou clavier après Escape | Ce menu Settings rend l’origine filtre/liste encore valide après action ou Closed, y compris Escape. Gardes locales de comparaison, filtre et focus ; aucun retour général à chaque popup ou rebuild. |
 
 Périmètre et preuves : [TODO](todo.md), ADR 0016. Les modes de présentation ne certifient pas les menus métier ni la parité FormDiff.
