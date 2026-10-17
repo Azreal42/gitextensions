@@ -134,6 +134,46 @@ public sealed class FileMenuFocusedSelectionTests
         finally { main.Close(); }
     }
 
+    [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task BrowseShowInFileTreeHandsTheFirstArrowToTheSelectedTargetRow(bool nested)
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        string prefix = nested ? "nested/" : "";
+        if (nested) { Directory.CreateDirectory(f.PathInRepository("nested")); }
+        foreach (string name in new[] { "first.txt", "second.txt" }) { await File.WriteAllTextAsync(f.PathInRepository(prefix + name), name + " before\n"); }
+        await f.Repository.StageAllAsync(); await f.Repository.CommitAsync("Before handoff");
+        foreach (string name in new[] { "first.txt", "second.txt" }) { await File.WriteAllTextAsync(f.PathInRepository(prefix + name), name + " after\n"); }
+        await f.Repository.StageAllAsync(); await f.Repository.CommitAsync("After handoff");
+        MainWindow main = new() { Width = 1440, Height = 900 }; main.Show();
+        try
+        {
+            await main.OpenRepositoryAsync(f.Repository.Path); await Until(() => !main.IsBusy);
+            TabControl tabs = Field<TabControl>(main, "DetailsTabs");
+            tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => tab.Name == "DiffTab");
+            FileStatusListView diff = Field<FileStatusListView>(main, "RevisionFileStatusList");
+            await Until(() => !main.IsBusy && diff.Entries.Count(entry => entry.Path == prefix + "second.txt") == 1); Pump(main);
+            TreeViewItem second = diff.FindItemByTag(diff.Entries.Single(entry => entry.Path == prefix + "second.txt").Tag)!;
+            Pointer(main, Header(second)); await Until(() => !main.IsBusy);
+            byte[] index = await File.ReadAllBytesAsync(f.PathInRepository(".git/index"));
+            Pointer(main, Header(second), MouseButton.Right); ContextMenu menu = diff.Tree.ContextMenu!;
+            Assert.That(menu.IsOpen, Is.True);
+            MenuItem show = menu.Items.OfType<MenuItem>().Single(item => item.Name == "tsmiShowInFileTree");
+            PushProcessTestDriver.Pointer(show);
+            FileStatusListView tree = Field<FileStatusListView>(main, "CommitFileStatusList");
+            await Until(() => !main.IsBusy && !menu.IsOpen && (tabs.SelectedItem as TabItem)?.Name == "FileTreeTab"
+                && tree.SelectedEntries.Count == 1 && tree.SelectedEntries[0].Path == prefix + "second.txt");
+            Pump(main);
+            main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None);
+            await Until(() => !main.IsBusy && tree.SelectedEntries.Count == 1 && tree.SelectedEntries[0].Path == prefix + "first.txt");
+            Assert.That(Field<FileContentView>(main, "CommitFileContent").TextView.Text, Does.Contain("first.txt after"));
+            Assert.That(await File.ReadAllBytesAsync(f.PathInRepository(".git/index")), Is.EqualTo(index));
+            Assert.That(main.LastException, Is.Null);
+        }
+        finally { main.Close(); }
+    }
+
     private static Control Header(TreeViewItem item) => item.GetVisualDescendants().OfType<Control>().Single(control => control.Name == "PART_Header" && control.GetVisualAncestors().OfType<TreeViewItem>().FirstOrDefault() == item);
     private static void Pointer(Window window, Control row, MouseButton button = MouseButton.Left, RawInputModifiers modifiers = RawInputModifiers.None)
     {

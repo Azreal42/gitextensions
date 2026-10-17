@@ -218,7 +218,7 @@ public sealed partial class MainWindow
         IReadOnlyList<GitTreeEntry> entries = await selection.Repository.GetTreeAsync(revisions[0], cancellationToken: _lifetime.Token);
         if (!IsCurrentFileMenuSelection(selection)) { return; }
         SetFileTreePaths(selection.Repository, revisions[0], entries);
-        FocusDetail("FileTreeTab");
+        SelectDetailsTab("FileTreeTab");
         if (selection.Folder is { Length: > 0 } folder)
         {
             IEnumerable<TreeViewItem> Descendants(IEnumerable<TreeViewItem> items)
@@ -227,6 +227,19 @@ public sealed partial class MainWindow
             if (node is not null) { _tree.SelectedItem = node; }
         }
         else { _fileTreeView!.SelectTags(selection.Leaves.Select(leaf => (object)leaf.File.Path)); }
+        TreeViewItem? target = selection.Folder is null && selection.FocusedLeaf is { } focused
+            ? _fileTreeView!.FindItemByTag(focused.File.Path) : _tree.SelectedItem as TreeViewItem;
+        // This action changes hosts: focus its selected target after the popup closes,
+        // rather than restoring the old Diff row or focusing the tree before selection.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_lifetime.IsCancellationRequested || !IsVisible || !IsEffectivelyEnabled || _busy
+                || !ReferenceEquals(_repository, selection.Repository) || _fileTreeRevision != revisions[0]
+                || (_tabs.SelectedItem as TabItem)?.Name != "FileTreeTab" || OwnedWindows.Any(window => window.IsVisible)
+                || target is null || _tree.SelectedItems?.Contains(target) != true) { return; }
+            _tree.UpdateLayout();
+            if (target.IsEffectivelyVisible && target.IsEffectivelyEnabled) { target.Focus(); target.BringIntoView(); }
+        }, DispatcherPriority.Input);
     }
     private async Task OpenFileGrepFromDiffAsync() { FocusDetail("FileTreeTab"); await ShowFileGrepDialogAsync(); }
     private Task ToggleFileGrepAsync()
