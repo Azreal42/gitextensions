@@ -39,6 +39,7 @@ public sealed class CommitGraph : Control
     ];
 
     private IReadOnlyList<GitCommit> _commits = [];
+    private bool _onlyFirstParent;
     private IReadOnlyList<GitReference> _references = [];
     private CommitGraphLayout _layout = CommitGraphLayout.Build([]);
     private Dictionary<string, GitReference[]> _refsByHash = new(StringComparer.Ordinal);
@@ -67,11 +68,25 @@ public sealed class CommitGraph : Control
         set
         {
             _commits = value ?? [];
-            _layout = CommitGraphLayout.Build(_commits);
+            _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent);
             InvalidateMeasure();
             InvalidateVisual();
         }
     }
+
+    internal bool OnlyFirstParent
+    {
+        get => _onlyFirstParent;
+        set
+        {
+            if (_onlyFirstParent == value) { return; }
+            _onlyFirstParent = value;
+            _layout = CommitGraphLayout.Build(_commits, value);
+            InvalidateMeasure(); InvalidateVisual();
+        }
+    }
+
+    internal IReadOnlyList<string> GetChildren(string hash) => _layout.Children.GetValueOrDefault(hash) ?? [];
 
     public IReadOnlyList<GitReference> References
     {

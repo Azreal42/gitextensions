@@ -24,10 +24,10 @@ public sealed partial class MainWindow
         new("GotoCurrentRevision", "Go to c&urrent revision", () => NavigateToRevisionAsync("HEAD"), "GotoCurrentRevision.png", new(Key.C, KeyModifiers.Control | KeyModifiers.Shift)),
         new("GotoCommit", "Go to &commit...", GoToRevisionAsync, "GotoCommit.png", new(Key.G, KeyModifiers.Control | KeyModifiers.Shift)),
         new("|", ""),
-        new("GotoChildCommit", "Go to c&hild commit", () => MoveHistoryRelativeAsync(false), "GoToChildCommit.png", new(Key.N, KeyModifiers.Control), Available: () => _commits.SelectedItem is GitCommit c && _history.Any(child => child.Parents.Contains(c.Hash))),
-        new("GotoParentCommit", "Go to &parent commit", () => MoveHistoryRelativeAsync(true), "GoToParentCommit.png", new(Key.P, KeyModifiers.Control), Available: HasRevisionParent),
-        new("GotoFirstParentCommit", "Go to f&irst parent commit", () => MoveHistoryRelativeAsync(true), "GoToFirstParentCommit.png", new(Key.Left, KeyModifiers.Control), Available: HasRevisionParent),
-        new("GotoLastParentCommit", "Go to &last parent commit", () => MoveHistoryRelativeAsync(true, true), "GoToLastParentCommit.png", new(Key.Right, KeyModifiers.Control), Available: HasRevisionParent),
+        new("GotoChildCommit", "Go to c&hild commit", () => MoveHistoryRelativeAsync(RelativeRevisionCommand.Child), "GoToChildCommit.png", new(Key.N, KeyModifiers.Control), Available: HasRevisionChild),
+        new("GotoParentCommit", "Go to &parent commit", () => MoveHistoryRelativeAsync(RelativeRevisionCommand.Parent), "GoToParentCommit.png", new(Key.P, KeyModifiers.Control), Available: HasRevisionParent),
+        new("GotoFirstParentCommit", "Go to f&irst parent commit", () => MoveHistoryRelativeAsync(RelativeRevisionCommand.FirstParent), "GoToFirstParentCommit.png", new(Key.Left, KeyModifiers.Control), Available: HasDirectRevisionParent),
+        new("GotoLastParentCommit", "Go to &last parent commit", () => MoveHistoryRelativeAsync(RelativeRevisionCommand.LastParent), "GoToLastParentCommit.png", new(Key.Right, KeyModifiers.Control), Available: HasDirectRevisionParent),
         new("GotoMergeBaseCommit", "Go to common &ancestor (merge base)", NavigateToMergeBaseAsync, "GoToMergeBaseCommit.png", new(Key.K, KeyModifiers.Control | KeyModifiers.Shift), Available: () => SelectedComparisonCommits().Length > 0),
         new("|", ""),
         new("NavigateBackward", "Navigate &backward", () => NavigateRevisionHistoryAsync(-1), "NavigateBackward.png", new(Key.Left, KeyModifiers.Alt), Available: () => _revisionNavigationIndex > 0),
@@ -170,14 +170,6 @@ public sealed partial class MainWindow
         // bookkeeping and Alt-up subsequently opens the main menu.
         if (!_busy && !args.Handled && args.KeyModifiers == KeyModifiers.Alt)
         { await HandleHistoryMenuShortcutAsync(args); }
-    }
-
-    private Task MoveHistoryRelativeAsync(bool parent, bool last = false)
-    {
-        SelectRelativeCommit(parent, last);
-        if (_commits.ContainerFromIndex(_commits.SelectedIndex) is Control row) { row.Focus(); }
-        else { _commits.Focus(); }
-        return Task.CompletedTask;
     }
 
     private Task ToggleArtificialRevisionAsync()

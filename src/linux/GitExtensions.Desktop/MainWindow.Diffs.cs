@@ -14,7 +14,7 @@ internal sealed record RevisionDiffFileSelection(GitRevisionDiffGroup Group, Git
 
 public sealed partial class MainWindow
 {
-    private readonly TreeView _revisionFiles = new() { Name = "RevisionFiles", SelectionMode = SelectionMode.Multiple };
+    private readonly TreeView _revisionFiles = new() { Name = "RevisionFiles", SelectionMode = SelectionMode.Multiple, Focusable = true };
     private FileStatusListView? _revisionFilesView;
     private readonly RevisionDiffPreferencesStore _revisionDiffPreferencesStore = new();
     private RevisionDiffPreferences _revisionDiffPreferences = new();
@@ -286,6 +286,7 @@ public sealed partial class MainWindow
             }
         }
         finally { _loadingCommitFiles = false; }
+        RestoreParentChildFileRowFocus();
         return selected;
     }
 

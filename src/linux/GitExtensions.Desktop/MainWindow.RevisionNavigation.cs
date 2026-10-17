@@ -15,8 +15,6 @@ public sealed partial class MainWindow
 
     private MenuItem BuildRevisionNavigateMenu() => BuildHistoryNavigateMenu(context: true);
 
-    private bool HasRevisionParent() => _commits.SelectedItem is GitCommit { Parents.Count: > 0 };
-
     private void RememberRevisionNavigation()
     {
         if (_refreshing || _movingRevisionNavigation || _commits.SelectedItem is not GitCommit commit) { return; }
@@ -62,19 +60,26 @@ public sealed partial class MainWindow
 
     private async Task ShowGoToCommitErrorAsync(string? key, string source)
     {
+        GitRepository? repository = _repository;
+        string selection = RevisionSelectionIdentity;
         string message = key is null ? source : _translations.Translate("MessageBoxes", key, "Text", source);
         _state.Text = message;
         Window error = new() { Name = "GoToCommitError", Title = _translations.Translate("MessageBoxes", "_cannotFindRevisionCaption", "Text", "Cannot find revision"),
             Width = 520, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
         Button accept = new() { Name = "CloseGoToCommitError", Content = T("OK"), IsDefault = true, IsCancel = true, MinWidth = 75 };
         accept.Click += (_, _) => error.Close();
+        error.Opened += (_, _) =>
+        {
+            accept.Focus();
+            ModalWindowActivation.AfterMapping(error, () => error.IsVisible && !_lifetime.IsCancellationRequested && repository == _repository);
+        };
         error.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
         {
             new TextBlock { Name = "GoToCommitErrorMessage", Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
             new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { accept } }
         } };
         await error.ShowDialog(WorkflowOwner);
-        if (!_lifetime.IsCancellationRequested) { _commits.Focus(); }
+        if (repository == _repository && selection == RevisionSelectionIdentity && !_lifetime.IsCancellationRequested) { _commits.Focus(); }
     }
 
     private async Task NavigateToRevisionAsync(string revision)

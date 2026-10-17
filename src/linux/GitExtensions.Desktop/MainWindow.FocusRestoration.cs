@@ -5,7 +5,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private sealed record OperationFocus(GitRepository? Repository, Control? Input, string? CommitHash);
+    private sealed record OperationFocus(GitRepository? Repository, Control? Input, string? CommitHash, bool PreserveUnselectedRow = false);
     private OperationFocus? _revisionActionFocus;
 
     private async Task WithRevisionActionFocusAsync(Func<Task> action)
@@ -53,8 +53,9 @@ public sealed partial class MainWindow
         if (previous.CommitHash is string hash)
         {
             // Refresh replaces commit objects and row containers. Preserve the
-            // current selection and resolve only the origin that is still selected.
-            if (_commits.SelectedItems?.OfType<GitCommit>().Any(commit => commit.Hash == hash) != true) { return; }
+            // current selection. Explicit F5 also preserves an unselected caret
+            // row; other operations resolve only an origin still selected.
+            if (!previous.PreserveUnselectedRow && _commits.SelectedItems?.OfType<GitCommit>().Any(commit => commit.Hash == hash) != true) { return; }
             GitCommit? commit = _commits.Items.OfType<GitCommit>().FirstOrDefault(item => item.Hash == hash);
             if (commit is null || TopLevel.GetTopLevel(_commits) != this) { return; }
             _commits.ScrollIntoView(commit); _commits.UpdateLayout();

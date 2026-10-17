@@ -113,8 +113,10 @@ public sealed partial class MainWindow : Window
         _stashes.ItemTemplate = TextTemplate<GitStash>(stash => $"{stash.Reference}  {stash.Subject}");
         _worktrees.ItemTemplate = TextTemplate<GitWorktree>(worktree => $"{worktree.Path}  [{worktree.Branch ?? "detached"}]{(worktree.LockedReason is null ? "" : "  [locked]")}");
         _submodules.ItemTemplate = TextTemplate<GitSubmodule>(module => $"{module.Path}  {module.Url}  {(module.IsInitialized ? module.Head : "not initialized")}");
-        _commits.SelectionChanged += async (_, _) =>
+        _commits.SelectionChanged += async (_, args) =>
         {
+            ObserveQuickSearchSelection(args);
+            _parentChildNavigation?.RevisionsSelectionChanged();
             if (!_refreshing) { _browseInitialComparison = null; }
             if (!_refreshing && _commits.SelectedItem is GitCommit) { ClearArtificialHistorySelection(); }
             if (!_refreshing) { CancelRevisionReads(); }
@@ -162,6 +164,7 @@ public sealed partial class MainWindow : Window
         _workingRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _indexRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         InitializeQuickSearch();
+        InitializeParentChildNavigation();
         ApplyHistoryViewPresentation();
         ApplyTheme(_preferences.Theme);
         Opened += async (_, _) =>
@@ -347,11 +350,14 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshAsync()
     {
+        OperationFocus? historyFocus = _commits.IsKeyboardFocusWithin ? CaptureOperationFocus() : null;
+        if (historyFocus is not null) { historyFocus = historyFocus with { PreserveUnselectedRow = true }; }
         BranchHistoryFilterComboBox? editing = _historyRevision.IsKeyboardFocusWithin ? _historyRevision
             : _branchFilterOverflow?.IsKeyboardFocusWithin == true ? _branchFilterOverflow : null;
         var bookmark = editing?.CaptureEditorSelection();
         if (_dashboard?.IsVisible == true) { await RefreshDashboardAsync(); }
         else { await RunAsync("Refresh", repository => RefreshDataAsync(repository), refresh: false); }
+        RestoreOperationFocus(historyFocus);
         if (!IsBranchFilterOwnerClosing && editing is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true } && bookmark is { } selection)
         { editing.RestoreEditorSelection(selection); }
     }
@@ -359,6 +365,8 @@ public sealed partial class MainWindow : Window
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
         HideQuickSearch();
+        _parentChildNavigation?.Clear();
+        _parentChildFileFocus = null;
         _refreshing = true;
         try
         {
@@ -379,6 +387,8 @@ public sealed partial class MainWindow : Window
             string[] requiredSelectionHashes = new[] { startupSelection, startupFirst, retainedComparison?.First, retainedComparison?.Selected }.OfType<GitCompareRevision>()
                 .Where(source => source.Kind == GitCompareRevisionKind.Commit).Select(source => source.Revision).Distinct(StringComparer.Ordinal).ToArray();
             string[] selectedHashOrder = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).Distinct(StringComparer.Ordinal).ToArray();
+            string[] selectionRecency = changedRepository ? [] : _historySelectionOrder.ToArray();
+            string? parentChildAnchor = changedRepository ? null : _parentChildLatestCommit;
             HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
             object? selectedRevisionDiff = changedRepository ? null : CaptureRevisionFileSelection();
             string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
@@ -483,6 +493,7 @@ public sealed partial class MainWindow : Window
             if (startupFirst is not null && startupSelection is not null)
             { _browseInitialComparison = new(startupFirst, startupSelection); }
             if (_historyMore is not null) { _historyMore.IsVisible = _historyHasMore; }
+            _historyGraph.OnlyFirstParent = configuredQuery.FirstParent;
             _historyGraph.Commits = _history;
             _historyGraph.References = HistoryViewReferences(references);
             _historyGraph.CurrentHead = status.Head;
@@ -500,6 +511,15 @@ public sealed partial class MainWindow : Window
                 && _historyGraph.OrderedCommits.FirstOrDefault(commit => commit.Hash == startupFirst.Revision) is { } firstCommit
                 && _commits.SelectedItems?.Contains(firstCommit) != true)
             { _commits.SelectedItems?.Add(firstCommit); }
+            if (selectionRecency.Length > 0)
+            {
+                HashSet<string> selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
+                string[] added = _historySelectionOrder.Where(hash => !selectionRecency.Contains(hash, StringComparer.Ordinal)).ToArray();
+                _historySelectionOrder.Clear();
+                _historySelectionOrder.AddRange(selectionRecency.Concat(added).Where(selected.Contains));
+                _quickSearchLastCommit = _historySelectionOrder.LastOrDefault();
+            }
+            if (parentChildAnchor is not null && _history.Any(commit => commit.Hash == parentChildAnchor)) { _parentChildLatestCommit = parentChildAnchor; }
             ClearRevisionDiff();
             _commitContent?.ClearImage(); _diff.Text = null; ClearCommitInformation(); _gpgInfo.Text = null;
             _changesContent?.ClearImage(); _changesDiff.Text = null; _selectedPatch = null; _hunks.ItemsSource = null;

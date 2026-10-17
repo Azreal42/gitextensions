@@ -10,17 +10,20 @@ internal sealed class CommitGraphLayout
     public IReadOnlyList<GraphNode> Nodes { get; }
     public IReadOnlyList<GraphStroke> Strokes { get; }
     public int LaneCount { get; }
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> Children { get; }
 
-    private CommitGraphLayout(IReadOnlyList<GraphNode> nodes, IReadOnlyList<GraphStroke> strokes, int laneCount)
+    private CommitGraphLayout(IReadOnlyList<GraphNode> nodes, IReadOnlyList<GraphStroke> strokes, int laneCount,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> children)
     {
         Nodes = nodes;
         Strokes = strokes;
         LaneCount = laneCount;
+        Children = children;
     }
 
-    public static CommitGraphLayout Build(IReadOnlyList<GitCommit> commits)
+    public static CommitGraphLayout Build(IReadOnlyList<GitCommit> commits, bool onlyFirstParent = false)
     {
-        RevisionGraph graph = new();
+        RevisionGraph graph = new() { OnlyFirstParent = onlyFirstParent };
         Dictionary<string, GitCommit> byId = new(StringComparer.Ordinal);
         foreach (GitCommit commit in commits)
         {
@@ -79,6 +82,14 @@ internal sealed class CommitGraphLayout
             nodes.Add(new(byId[row.Revision.Objectid], nodeLane, nodeColor));
         }
 
-        return new(nodes, strokes, laneCount);
+        // Match RevisionDataGridView.GetRevisionChildren: reverse the graph's
+        // immutable stack, preserving edge insertion order rather than row order.
+        Dictionary<string, IReadOnlyList<string>> children = new(StringComparer.Ordinal);
+        foreach (string hash in byId.Keys)
+        {
+            children[hash] = graph.TryGetNode(hash, out RevisionGraphRevision? node)
+                ? node.Children.Reverse().Select(child => child.Objectid).ToArray() : [];
+        }
+        return new(nodes, strokes, laneCount, children);
     }
 }

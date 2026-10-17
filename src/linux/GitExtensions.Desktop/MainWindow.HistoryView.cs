@@ -56,7 +56,9 @@ public sealed partial class MainWindow
 
     private async Task ChangeHistoryViewAsync(Func<HistoryViewPreferences, HistoryViewPreferences> change, bool reload)
     {
+        bool showArtificial = _historyView.ShowArtificialCommits;
         _historyView = change(_historyView);
+        if (showArtificial != _historyView.ShowArtificialCommits) { _parentChildNavigation?.Clear(); }
         _historyQuery = _historyQuery with { Reflog = _historyView.ShowReflog };
         if (reload && _repository is not null) { await RefreshAsync(); }
         ApplyHistoryViewPresentation(); RefreshHistoryMenuStates();

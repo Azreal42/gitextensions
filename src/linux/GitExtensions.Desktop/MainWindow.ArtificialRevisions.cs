@@ -43,6 +43,7 @@ public sealed partial class MainWindow
     private async Task SelectArtificialHistoryRevisionAsync(bool staged)
     {
         if (!IsFileHistoryBrowse || _busy || _repository is not { IsBare: false } || _lifetime.IsCancellationRequested) { return; }
+        _parentChildNavigation?.RevisionsSelectionChanged();
         GitCompareRevision source = new("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
         CancelRevisionReads();
         _browseInitialComparison = null;

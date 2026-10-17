@@ -87,10 +87,10 @@ public sealed partial class MainWindow
                 case Key.D6: FocusDetail("ConsoleTab"); break;
                 case Key.E: FocusHistoryFilter(); break;
                 case Key.Tab: CycleDetails(1); break;
-                case Key.P: SelectRelativeCommit(parent: true); break;
-                case Key.N: SelectRelativeCommit(parent: false); break;
-                case Key.Left: SelectRelativeCommit(parent: true); break;
-                case Key.Right: SelectRelativeCommit(parent: true, lastParent: true); break;
+                case Key.P: await MoveHistoryRelativeAsync(RelativeRevisionCommand.Parent); break;
+                case Key.N: await MoveHistoryRelativeAsync(RelativeRevisionCommand.Child); break;
+                case Key.Left: await MoveHistoryRelativeAsync(RelativeRevisionCommand.FirstParent); break;
+                case Key.Right: await MoveHistoryRelativeAsync(RelativeRevisionCommand.LastParent); break;
                 default: e.Handled = false; break;
             }
         }
@@ -119,15 +119,6 @@ public sealed partial class MainWindow
         TabItem[] tabs = _tabs.Items.OfType<TabItem>().ToArray();
         int index = Math.Max(0, Array.IndexOf(tabs, _tabs.SelectedItem));
         FocusDetail(tabs[(index + direction + tabs.Length) % tabs.Length].Name!);
-    }
-
-    private void SelectRelativeCommit(bool parent, bool lastParent = false)
-    {
-        if (_commits.SelectedItem is not GitCommit current) { return; }
-        GitCommit? relative = parent
-            ? _history.FirstOrDefault(commit => commit.Hash == (lastParent ? current.Parents.LastOrDefault() : current.Parents.FirstOrDefault()))
-            : _history.FirstOrDefault(commit => commit.Parents.Contains(current.Hash));
-        if (relative is not null) { _commits.SelectedItem = relative; _commits.ScrollIntoView(relative); }
     }
 
     private static KeyGesture? BrowserGesture(string label) => label switch
