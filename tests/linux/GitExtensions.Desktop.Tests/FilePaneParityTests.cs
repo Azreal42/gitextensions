@@ -123,6 +123,7 @@ public sealed class FilePaneParityTests
     public async Task TempFileShortcutOpensTheSelectedHistoricalBytesWithALiteralArgumentAndCleansUpAtClose()
     {
         using Fixture f = await CreateAsync(); MainWindow main = f.Window;
+        PreferencesStore preferences = new(); preferences.Save(preferences.Load() with { UseBrowseForFileHistory = false });
         ListBox history = Find<ListBox>(main, "RevisionHistory");
         history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Nested base"); await Idle(main);
         SelectTab(main, "FileTreeTab"); await Idle(main);

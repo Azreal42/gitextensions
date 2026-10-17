@@ -307,6 +307,7 @@ public sealed class MainWindowBusyFocusTests
         try
         {
             await Until(() => gate.HasStarted); int pid = gate.Pid; main.Close(); await work;
+            await Until(() => !main.IsVisible && main.WindowWorkCompletion.IsCompleted);
             Assert.That(Alive(pid), Is.False); Assert.That(main.IsVisible, Is.False); Assert.That(main.IsBusy, Is.False);
             Assert.That(main.FocusManager!.GetFocusedElement(), Is.Not.SameAs(row));
         }

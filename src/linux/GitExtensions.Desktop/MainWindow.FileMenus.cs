@@ -231,13 +231,13 @@ public sealed partial class MainWindow
     {
         GitCompareRevision[] revisions = selection.Leaves.Select(leaf => leaf.Second).Distinct().ToArray();
         if (revisions.Length != 1) { throw new InvalidOperationException(T("Select files from one revision.")); }
+        SelectDetailsTab("FileTreeTab");
         await ReadBrowserAsync(_treeRead, "File tree", async (repository, token) =>
         {
             if (!IsCurrentFileMenuSelection(selection)) { return; }
             await LoadComparisonFileTreeAsync(repository, revisions[0], token);
         });
         if (!IsCurrentFileMenuSelection(selection) || _fileTreeRepository != selection.Repository || _fileTreeSource != revisions[0]) { return; }
-        SelectDetailsTab("FileTreeTab");
         if (selection.Folder is { Length: > 0 } folder)
         {
             IEnumerable<TreeViewItem> Descendants(IEnumerable<TreeViewItem> items)

@@ -402,7 +402,7 @@ public sealed partial class MainWindow : Window
                 Revision = configuredQuery.Revision,
                 BranchFilter = configuredQuery.BranchFilter
             };
-            var historyRead = await ReadBrowseHistoryAsync(repository, query, Token);
+            var historyRead = await ReadBrowseHistoryAsync(repository, query, status.IsUnborn, Token);
             IReadOnlyList<GitCommit> history = historyRead.Commits;
             // -commit selects a row. Expand from the newest page; it must never become a revision/ancestor filter.
             while (requiredStartupHashes.Any(hash => !history.Take(historyWindow).Any(commit => commit.Hash == hash))
@@ -410,7 +410,7 @@ public sealed partial class MainWindow : Window
             {
                 historyWindow = (int)Math.Min(100000L, (long)historyWindow + configuredQuery.Count);
                 query = query with { Count = historyWindow + 1 };
-                historyRead = await ReadBrowseHistoryAsync(repository, query, Token);
+                historyRead = await ReadBrowseHistoryAsync(repository, query, status.IsUnborn, Token);
                 history = historyRead.Commits;
             }
             IReadOnlyList<GitRemote> remotes = await repository.GetRemotesAsync(Token);

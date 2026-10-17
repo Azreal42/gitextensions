@@ -180,7 +180,7 @@ public sealed class UndoBisectWorkflowTests
     {
         await using Fixture f = await Fixture.Create(); MainWindow main = await f.Main(); string before = f.Materials();
         Task action = Invoke(main, "UndoLastCommitAsync"); await Owned(main, "UndoLastCommitConfirmation"); main.Close();
-        await action.WaitAsync(TimeSpan.FromSeconds(15)); await Until(() => !main.IsBusy);
+        await action.WaitAsync(TimeSpan.FromSeconds(15)); await Until(() => !main.IsVisible && main.WindowWorkCompletion.IsCompleted);
         Assert.That(main.IsVisible, Is.False); Assert.That(f.Materials(), Is.EqualTo(before));
     }
 

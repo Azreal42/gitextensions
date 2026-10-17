@@ -110,6 +110,12 @@ public sealed class FileHistoryBrowseTests
         Assert.That(Find<ListBox>(scope.Window, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash), Does.Contain(selected));
         SelectTab(scope.Window, "FileTreeTab"); await Idle(scope.Window);
         Assert.That(((TreeViewItem)Find<TreeView>(scope.Window, "CommitFileTree").SelectedItem!).Tag, Is.EqualTo("file.txt"));
+        await SetHistoryScopeAsync(scope.Window, "Current");
+        Assert.That(Find<ListBox>(scope.Window, "RevisionHistory").Items, Is.Empty);
+        Assert.That(scope.Window.OwnedWindows, Is.Empty, "The unborn current branch must not open a HEAD warning.");
+        await SetHistoryScopeAsync(scope.Window, "All");
+        Assert.That(Find<ListBox>(scope.Window, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash), Does.Contain(selected));
+        Assert.That(((TreeViewItem)Find<TreeView>(scope.Window, "CommitFileTree").SelectedItem!).Tag, Is.EqualTo("file.txt"));
     }
 
     [AvaloniaTest]
@@ -206,6 +212,12 @@ public sealed class FileHistoryBrowseTests
         .Concat(root.GetVisualDescendants().OfType<T>()).Distinct().Single(control => control.Name == name);
     private static void SelectTab(MainWindow main, string name)
     { Find<TabControl>(main, "DetailsTabs").SelectedItem = main.GetLogicalDescendants().OfType<TabItem>().Single(tab => tab.Name == name); main.UpdateLayout(); }
+    private static async Task SetHistoryScopeAsync(MainWindow main, string scope)
+    {
+        Button button = Find<Button>(main, "BrowseHistoryScope"); PushProcessTestDriver.Pointer(button); Dispatcher.UIThread.RunJobs();
+        MenuItem choice = ((MenuFlyout)button.Flyout!).Items.OfType<MenuItem>().Single(item => item.Name == "HistoryScope" + scope);
+        PushProcessTestDriver.Pointer(choice); await Idle(main);
+    }
     private static async Task Idle(MainWindow main)
     { await Until(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted); main.UpdateLayout(); Assert.That(main.LastException, Is.Null, main.LastException?.ToString()); }
     private static async Task Until(Func<bool> predicate)

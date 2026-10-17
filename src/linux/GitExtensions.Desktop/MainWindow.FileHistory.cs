@@ -48,8 +48,10 @@ public sealed partial class MainWindow
 
     private sealed record BrowseHistoryRead(IReadOnlyList<GitCommit> Commits, GitFileHistoryGraph? Graph);
 
-    private async Task<BrowseHistoryRead> ReadBrowseHistoryAsync(GitRepository repository, GitLogQuery query, CancellationToken token)
+    private async Task<BrowseHistoryRead> ReadBrowseHistoryAsync(GitRepository repository, GitLogQuery query, bool unborn, CancellationToken token)
     {
+        // Current branch is empty until its first commit; other refs remain readable in All/filtered scopes.
+        if (unborn && (query.Revision == "HEAD" || query.BranchFilter?.Trim() == "HEAD")) { return new([], null); }
         if (string.IsNullOrEmpty(query.Path)) { return new(await repository.GetLogAsync(query, token), null); }
         bool directory = _browseRequest.PathFilter is { } filter && filter.Path == query.Path
             ? filter.Kind == BrowsePathKind.Directory
