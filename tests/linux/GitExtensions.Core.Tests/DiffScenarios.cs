@@ -37,13 +37,15 @@ internal static class DiffScenarios
         fixture.Write("feature.txt", "feature\n");
         await fixture.Repository.StageAllAsync();
         await fixture.Repository.CommitAsync("Feature");
+        string featureHead = await fixture.Repository.ResolveRevisionAsync("HEAD");
         await fixture.Repository.RunAsync(["checkout", main]);
         fixture.Write("main.txt", "main\n");
         await fixture.Repository.StageAllAsync();
         await fixture.Repository.CommitAsync("Main");
+        string mainHead = await fixture.Repository.ResolveRevisionAsync("HEAD");
         await fixture.Repository.RunAsync(["merge", "--no-ff", "feature", "-m", "Merge"]);
-        GitCommit commit = (await fixture.Repository.GetLogAsync()).First();
-        Check(commit.Parents.Count == 2, "Real merge parents");
+        GitCommit commit = (await fixture.Repository.GetLogAsync(1, "HEAD")).Single();
+        Check(commit.Parents.Count == 2 && commit.Parents.SequenceEqual([mainHead, featureHead]), "Real merge parents");
         GitRevisionChanges first = await fixture.Repository.GetRevisionChangesAsync(commit.Hash);
         GitRevisionChanges second = await fixture.Repository.GetRevisionChangesAsync(commit.Hash, commit.Parents[1]);
         Check(first.BaseRevision == commit.Parents[0] && first.Files.Single().Path == "feature.txt", "Default first-parent files");

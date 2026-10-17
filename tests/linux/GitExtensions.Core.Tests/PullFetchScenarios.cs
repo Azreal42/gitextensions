@@ -183,7 +183,7 @@ internal static class PullFetchScenarios
         await fixture.Local.SetConfigAsync("pull.ff", "true");
         await fixture.Local.PullMergeAsync(Upstream, "main");
 
-        GitCommit merged = (await fixture.Local.GetLogAsync()).First();
+        GitCommit merged = (await fixture.Local.GetLogAsync(1, "HEAD")).Single();
         Check(merged.Parents.SequenceEqual(new[] { local, remote }), "The explicitly chosen merge overrides pull.rebase=true and creates the two real parents in Git order.");
         Check(File.ReadAllText(fixture.Seed.File("local.txt")) == "Local divergence\n"
             && File.ReadAllText(fixture.Seed.File("remote.txt")) == "Remote divergence\n", "Merge preserves both independently changed files.");
@@ -197,7 +197,7 @@ internal static class PullFetchScenarios
         await fixture.Local.SetConfigAsync("pull.rebase", "false");
         await fixture.Local.PullRebaseAsync();
 
-        GitCommit rebased = (await fixture.Local.GetLogAsync()).First();
+        GitCommit rebased = (await fixture.Local.GetLogAsync(1, "HEAD")).Single();
         Check(rebased.Hash != local && rebased.Parents.SequenceEqual(new[] { remote }) && rebased.Subject == "Local divergence",
             "The explicit rebase uses the configured upstream, rewrites the local commit and places it immediately above the fetched remote commit.");
         Check((await fixture.Local.RunAsync(["rev-list", "--min-parents=2", "HEAD"])).StandardOutput.Length == 0, "No merge commit is introduced into the rebased history.");
@@ -250,7 +250,7 @@ internal static class PullFetchScenarios
 
         static async Task VerifyRebasedAsync(NetworkFixture fixture, Snapshot before, string previousLocal, string remote)
         {
-            GitCommit rebased = (await fixture.Local.GetLogAsync()).First();
+            GitCommit rebased = (await fixture.Local.GetLogAsync(1, "HEAD")).Single();
             Check(rebased.Hash != previousLocal && rebased.Parents.SequenceEqual(new[] { remote }) && rebased.Subject == "Local divergence",
                 "Successful explicit rebase rewrites the local commit directly above its own remote history.");
             Check((await fixture.Local.RunAsync(["rev-list", "--min-parents=2", "HEAD"])).StandardOutput.Length == 0,
@@ -271,7 +271,7 @@ internal static class PullFetchScenarios
         string remote = await AdvanceAsync(fixture.UpstreamWriter, "remote.txt", "Remote fast-forward change");
         await fixture.Local.SetConfigAsync("pull.ff", "false");
         await fixture.Local.PullMergeAsync();
-        GitCommit merged = (await fixture.Local.GetLogAsync()).First();
+        GitCommit merged = (await fixture.Local.GetLogAsync(1, "HEAD")).Single();
         Check(merged.Parents.SequenceEqual(new[] { fixture.Initial, remote }), "Configured pull.ff=false creates a merge commit even when fast-forwarding was possible.");
         Check((await fixture.Local.GetConfigAsync("^pull\\.ff$")).Single().Value == "false", "The explicit merge mode preserves the configured fast-forward policy.");
     }

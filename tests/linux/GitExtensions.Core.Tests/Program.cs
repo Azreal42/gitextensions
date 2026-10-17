@@ -1062,13 +1062,16 @@ static async Task InteractiveEditAsync()
 static async Task MergeConflictAsync()
 {
     using RepositoryFixture fixture = await ConflictingBranchesAsync();
+    string[] parents = [await fixture.Repository.ResolveRevisionAsync("HEAD"), await fixture.Repository.ResolveRevisionAsync("feature")];
     GitCommandException failure = await ExpectAsync<GitCommandException>(() => fixture.Repository.MergeAsync("feature"));
     Assert(failure.Result.ExitCode == 1, "Merge reports failure");
     Assert((await fixture.Repository.GetStatusAsync()).Changes.Single().IsConflict, "Unmerged porcelain");
     fixture.Write("seed.txt", "resolved\n");
     await fixture.Repository.StageAsync(["seed.txt"]);
     await fixture.Repository.ManageOperationAsync("merge", GitOperationAction.Continue);
-    Assert((await fixture.Repository.GetLogAsync())[0].Parents.Count == 2 && (await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Merge continue");
+    GitCommit merge = (await fixture.Repository.GetLogAsync(1, "HEAD")).Single();
+    Assert(merge.Parents.Count == 2 && merge.Parents.SequenceEqual(parents) && (await fixture.Repository.GetStatusAsync()).Changes.Count == 0, "Merge continue");
+    Assert(System.Text.Encoding.UTF8.GetString(await fixture.Repository.GetFileBytesAsync("seed.txt", merge.Hash)) == "resolved\n", "Merge commits the staged resolution");
 }
 
 static async Task MergeAbortAsync()
@@ -1101,9 +1104,12 @@ static async Task SequencerAsync()
     fixture.Write("after-rebase.txt", "after rebase\n");
     await fixture.Repository.StageAllAsync();
     await fixture.Repository.CommitAsync("After rebase");
+    string rebasedFeature = await fixture.Repository.ResolveRevisionAsync("HEAD");
     await fixture.Repository.CheckoutAsync("main");
+    string main = await fixture.Repository.ResolveRevisionAsync("HEAD");
     await fixture.Repository.MergeAsync("feature", noFastForward: true);
-    Assert((await fixture.Repository.GetLogAsync())[0].Parents.Count == 2, "Non fast-forward merge");
+    GitCommit merge = (await fixture.Repository.GetLogAsync(1, "HEAD")).Single();
+    Assert(merge.Parents.Count == 2 && merge.Parents.SequenceEqual([main, rebasedFeature]), "Non fast-forward merge");
 }
 
 static async Task SequencerRecoveryAsync()

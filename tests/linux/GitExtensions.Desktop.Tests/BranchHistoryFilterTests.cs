@@ -107,7 +107,7 @@ public class BranchHistoryFilterTests
             Click(toolbar.OverflowFlyout.Items.OfType<MenuItem>().Single(item => item.Header as string == "Load more"));
         }
         await Idle(main); await Layout(main);
-        Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery(Count: 2) { BranchFilter = "main" })).Select(commit => commit.Hash)));
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery(Count: 2) { BranchFilter = "main" })).Select(commit => commit.Hash)));
         Assert.That(combo.Text, Is.EqualTo("feature")); Assert.That(editor.SelectionStart, Is.EqualTo(3));
     }
 
@@ -145,12 +145,12 @@ public class BranchHistoryFilterTests
             string chosen = (string)combo.SelectedItem!;
             ComboBoxItem selected = (ComboBoxItem)combo.ContainerFromIndex(combo.SelectedIndex)!;
             await AssertSelectedRowWithHistoricalPalette(combo, selected, theme, "inline");
-            Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature" })).Select(commit => commit.Hash)));
+            Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature" })).Select(commit => commit.Hash)));
             Press(main, PhysicalKey.Escape); await Layout(main); Assert.That(combo.IsDropDownOpen, Is.False);
             Assert.That(Hashes(main).Length, Is.EqualTo(2));
             Editor(combo).Focus(); Press(main, PhysicalKey.Enter); await Idle(main);
             Assert.That(combo.Text, Is.EqualTo(chosen));
-            Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)));
+            Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)));
             // Exercise the same item theme when the editable combo itself is
             // hosted by the toolbar's PopupRoot, where the native regression occurred.
             main.Width = 860; await Layout(main);
@@ -166,7 +166,7 @@ public class BranchHistoryFilterTests
             await ClickRowWithHistoricalPalette(selected, main, theme, "overflow");
             Assert.That(Editor(overflow).Text, Is.EqualTo(overflow.Text));
             Assert.That(Editor(overflow).IsFocused, Is.True, "An overflow pointer choice must leave its real editor ready for Enter.");
-            Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)), "Palette/pointer selection must still only edit the draft.");
+            Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = chosen })).Select(commit => commit.Hash)), "Palette/pointer selection must still only edit the draft.");
             toolbar.OverflowFlyout.Hide(); main.Width = 1440; await Layout(main);
         }
         Assert.That(await State(f), Is.EqualTo(before));
@@ -179,7 +179,7 @@ public class BranchHistoryFilterTests
         MainWindow main = f.Window; await Accept(main, "feature"); string[] feature = Hashes(main);
         await Scope(main, "Current"); Assert.That(Branch(main).Text, Is.EqualTo("feature"));
         AssertScopeCaptionFits(main);
-        Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "HEAD", All = false })).Select(commit => commit.Hash)));
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "HEAD", All = false })).Select(commit => commit.Hash)));
         await Scope(main, "All"); Assert.That(Branch(main).Text, Is.EqualTo("feature")); Assert.That(Hashes(main).Length, Is.GreaterThan(feature.Length));
         // Author-only OK while the custom expression is inactive must not erase it.
         Click(Field<Button>(main, "BrowseAdvancedFilter")); await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any());
@@ -195,7 +195,7 @@ public class BranchHistoryFilterTests
         await Scope(main, "Current"); await Accept(main, "  \t  ");
         Assert.That(Branch(main).Text, Is.Empty); Assert.That(ScopeLabel(main), Is.EqualTo("All branches"));
         await Scope(main, "Filtered"); Assert.That(ScopeLabel(main), Is.EqualTo("Filtered branches"));
-        Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "" })).Select(commit => commit.Hash)));
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "" })).Select(commit => commit.Hash)));
         Click(Field<Button>(main, "BrowseAdvancedFilter")); await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any());
         dialog = main.OwnedWindows.OfType<HistoryFilterDialog>().Single();
         Assert.That(Field<CheckBox>(dialog, "BranchFilterCheck").IsChecked, Is.True);
@@ -265,7 +265,7 @@ public class BranchHistoryFilterTests
                 Press(main, PhysicalKey.Enter); await Idle(main);
                 trace.Record("After Enter"); trace.Save();
                 Assert.That(toolbar.OverflowFlyout.IsOpen, Is.False);
-                Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "main" })).Select(commit => commit.Hash)));
+                Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "main" })).Select(commit => commit.Hash)));
                 main.Width = 1440; await Layout(main); Assert.That(Branch(main).Text, Is.EqualTo("main"));
             }
             Assert.That(await State(f), Is.EqualTo(state));
@@ -314,7 +314,7 @@ public class BranchHistoryFilterTests
                     Click(Field<Button>(warning, "BranchFilterWarningOK")); await Until(() => !warning.IsVisible);
                 }
                 await Idle(main); Assert.That(combo.Text, Is.EqualTo("feature main"));
-                Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature main" })).Select(commit => commit.Hash)));
+                Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature main" })).Select(commit => commit.Hash)));
             }
             main.Width = 1440; await Layout(main);
         }
@@ -370,7 +370,7 @@ public class BranchHistoryFilterTests
         Field<TextBox>(dialog, "BranchFilter").Text = "feature..main";
         Click(dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "OK")); await Idle(main);
         Assert.That(Branch(main).Text, Is.EqualTo("feature..main"));
-        Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature..main" })).Select(commit => commit.Hash)));
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "feature..main" })).Select(commit => commit.Hash)));
         string[] good = Hashes(main); Branch(main).Text = "absent..main"; Editor(Branch(main)).Focus(); Press(main, PhysicalKey.Enter);
         await Until(() => !main.IsBusy); Assert.That(main.OwnedWindows, Is.Empty, "Ranges bypass simple-reference warnings in the Windows original.");
         Assert.That(main.LastException, Is.TypeOf<GitCommandException>()); Assert.That(Hashes(main), Is.EqualTo(good));
@@ -379,7 +379,7 @@ public class BranchHistoryFilterTests
         await Until(() => !main.IsBusy); Assert.That(main.LastException, Is.TypeOf<GitCommandException>());
         Assert.That(Hashes(main), Is.EqualTo(good), "Refresh keeps reporting the accepted invalid range; a new draft must not replace it.");
         await Accept(main, "main ^feature");
-        Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "main ^feature" })).Select(commit => commit.Hash)));
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery { BranchFilter = "main ^feature" })).Select(commit => commit.Hash)));
         good = Hashes(main);
         Click(Field<Button>(main, "BrowseAdvancedFilter")); await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any());
         dialog = main.OwnedWindows.OfType<HistoryFilterDialog>().Single(); Field<TextBox>(dialog, "BranchFilter").Text = "absent-simple-ref";
@@ -434,7 +434,7 @@ public class BranchHistoryFilterTests
         Assert.That(query.Revision, Is.EqualTo("HEAD")); Assert.That(Field<TextBox>(dialog, "BranchFilter").Text, Is.EqualTo("feature"));
         dialog.Close(); await Idle(main); await Scope(main, "Filtered");
         Assert.That(Branch(main).Text, Is.EqualTo("feature"));
-        Assert.That(Hashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(query with { Revision = null, BranchFilter = "feature", All = true })).Select(commit => commit.Hash)));
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(query with { Revision = null, BranchFilter = "feature", All = true })).Select(commit => commit.Hash)));
     }
 
     [AvaloniaTest]
@@ -650,6 +650,16 @@ public class BranchHistoryFilterTests
     private static TextBox Editor(ComboBox combo) => combo.GetVisualDescendants().OfType<TextBox>().Single();
     private static T Field<T>(TopLevel owner, string name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static string[] Hashes(MainWindow main) => Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
+    // Windows rows follow RevisionGraph scores; GetLogAsync still supplies its native reader order.
+    private static string[] ReaderHashes(MainWindow main)
+    {
+        CommitGraph graph = main.GetVisualDescendants().OfType<CommitGraph>().Single();
+        string[] reader = graph.Commits.Select(commit => commit.Hash).ToArray();
+        string[] visible = Hashes(main);
+        Assert.That(visible, Is.EquivalentTo(reader), "The graph may reorder rows but must keep every commit returned by the reader.");
+        Assert.That(visible, Is.EqualTo(graph.OrderedCommits.Select(commit => commit.Hash)), "Visible rows must retain the exact Windows graph-score order.");
+        return reader;
+    }
     private static string[] Subjects(MainWindow main) => Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Subject).ToArray();
     private static string? ScopeLabel(MainWindow main) => Field<Button>(main, "BrowseHistoryScope").GetVisualDescendants().OfType<TextBlock>().Single().Text;
     private static void AssertScopeCaptionFits(MainWindow main)

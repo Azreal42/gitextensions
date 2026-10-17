@@ -28,7 +28,7 @@ public sealed class AnnotatedReferencePresentationTests
         using RootFixture f = await RootFixture.CreateAsync(); string first = await f.Repository.ResolveRevisionAsync("HEAD");
         await f.GitAsync("tag", "light", first); await f.GitAsync("tag", "-a", "annotated", "-m", "Annotated", first);
         await f.ChangeAsync("second\n", "Second");
-        IReadOnlyList<GitCommit> commits = await f.Repository.GetLogAsync(10); GitCommit old = commits.Single(c => c.Hash == first), head = commits.First();
+        IReadOnlyList<GitCommit> commits = await f.Repository.GetLogAsync(10, "HEAD"); GitCommit old = commits.Single(c => c.Hash == first), head = commits.First();
         IReadOnlyList<GitReference> references = await f.Repository.GetReferencesAsync();
         Control oldRow = RevisionHistoryRow.Create(old, references), headRow = RevisionHistoryRow.Create(head, references);
         StackPanel panel = new() { Children = { headRow, oldRow } }; Window window = new() { Width = 950, Height = 100, Content = panel }; window.Show();

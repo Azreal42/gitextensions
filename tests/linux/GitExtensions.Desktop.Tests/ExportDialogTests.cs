@@ -296,7 +296,7 @@ public class ExportDialogTests
             Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString());
             Assert.That(dialog.AmState?.IsActive, Is.False);
             Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository.Path, "file.txt")), Is.EqualTo("resolved content\n"));
-            Assert.That((await fixture.Repository.GetLogAsync(1)).Single().Subject, Is.EqualTo("Incoming change"));
+            Assert.That((await fixture.Repository.GetLogAsync(1, "HEAD")).Single().Subject, Is.EqualTo("Incoming change"));
         }
         finally { foreach (Window child in dialog.OwnedWindows.ToArray()) { child.Close(); } dialog.Close(); }
     }

@@ -52,7 +52,7 @@ public class RevisionAdvancedTests
         GitRepository repository = await GitRepository.OpenAsync(fixture.Repository);
         await Git(repository, "checkout", "-b", "other");
         await Git(repository, "commit", "--allow-empty", "-m", "Other branch target", "-m", "Existing body λ");
-        GitCommit target = (await repository.GetLogAsync(1)).Single();
+        GitCommit target = (await repository.GetLogAsync(1, "HEAD")).Single();
         await Git(repository, "checkout", "main");
         string before = await repository.ResolveRevisionAsync("HEAD");
         foreach (TargetedCommitKind kind in new[] { TargetedCommitKind.Fixup, TargetedCommitKind.Squash, TargetedCommitKind.Amend })
@@ -86,7 +86,7 @@ public class RevisionAdvancedTests
         string previousHead = await repository.ResolveRevisionAsync("HEAD");
         const string replacement = "Edited original λ\n\nReplacement body";
         await repository.CommitAsync(new GitCommitOptions(Message: replacement, AllowEmpty: true, AmendRevision: target));
-        GitCommit amend = (await repository.GetLogAsync(1)).Single();
+        GitCommit amend = (await repository.GetLogAsync(1, "HEAD")).Single();
         Assert.That(amend.Parents, Is.EqualTo(new[] { previousHead }));
         Assert.That(amend.Subject, Is.EqualTo("amend! Initial commit"));
         Assert.That(amend.Body.TrimEnd(), Is.EqualTo(replacement));

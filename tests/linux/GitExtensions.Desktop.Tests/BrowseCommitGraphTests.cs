@@ -63,7 +63,7 @@ public sealed class BrowseCommitGraphTests
             window.UpdateLayout();
             ScrollViewer scroll = history.GetVisualDescendants().OfType<ScrollViewer>().First();
             scroll.ScrollChanged += (_, _) => graph.VerticalOffset = scroll.Offset.Y;
-            Assert.That(commits.First().Parents.Count, Is.EqualTo(2));
+            Assert.That(graph.OrderedCommits[0].Parents.Count, Is.EqualTo(2));
             foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
             {
                 window.RequestedThemeVariant = theme; window.Height = 160;
