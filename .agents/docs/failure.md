@@ -479,3 +479,15 @@ Le [natif accepté](../../artifacts/linux/snapshots/b356d5f67/proofs/native-comm
 Conserver Exact/Simplify lorsqu’ils sont inactifs ; dans Browse en deux passes, réserver Full/Simplify au graphe et sous leurs conditions imbriquées. Après F5, repeupler CommitInfo depuis la sélection réelle de la paire retenue, pas seulement depuis le hint startup. [suites complètes vérifiées](../../artifacts/linux/file-history-options-20261017/full-01/parent-verification.json) et [paquet exact vérifié](../../artifacts/linux/snapshots/f4e99bec0/proofs/package-parent-verification.json) ; Git/headless seulement, audit GUI natif ouvert.
 
 La [régression sur l’ancienne source](../../artifacts/linux/file-history-options-20261017/baseline-initial-pair-red/host-verification.json) et les [essais ciblés](../../artifacts/linux/file-history-options-20261017/targeted-parent-review.json) sont conservés séparément du full final. Un Reset vers First artificiel n’est pas une action du menu pour une sélection réelle ; une tâche de métadonnées annulée à la fermeture peut lever OperationCanceledException après drainage.
+
+
+## Recherche incrémentale — ADR0087
+
+| Piège | Intention conservée |
+| --- | --- |
+| `%s` + `%b` n’est pas le message complet | Garder `%B` séparément ; un collage peut traverser le sujet multiligne et le corps. |
+| Un préfixe sélectionne un commit, puis le terme échoue | Garder le dernier résultat, comme Windows ; un négatif atomique se teste par collage. |
+| Presse-papiers tardif ou Espace sur Index/WT | Une action plus récente invalide le collage ; Espace reste du texte sans Click de bouton. |
+| Paire initiale artificielle ou retour au commit déjà sélectionné | Distinguer sélection logique et ListBox ; réduire la paire et restaurer le panneau adapté sans relancer l’historique. |
+
+Les essais ciblés 01/02 ont corrigé des erreurs de compilation (extension clipboard/import et enum de touche) ; 03/04 des erreurs de scénario (préfixes et focus après clic d’onglet). Ils restent archivés séparément du ciblé 05 et des suites complètes. Les résultats et limites sont dans le TODO.

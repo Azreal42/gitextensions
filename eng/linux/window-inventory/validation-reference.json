@@ -1,11 +1,11 @@
 {
-  "source_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
-  "trx": "artifacts/linux/file-history-options-20261017/full-01/desktop.trx",
-  "trx_sha256": "4589d6715c3171115666fef2434dee676b69f0e57544af8e792e1f71ea9851b8",
+  "source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+  "trx": "artifacts/linux/revision-quick-search-20261017/full-01/desktop.trx",
+  "trx_sha256": "a5d43f26f82990231fc01e440b6eca782859dc4517fe5fea295f0e4138e1aa09",
   "counters": {
-    "total": "1492",
-    "executed": "1492",
-    "passed": "1492",
+    "total": "1534",
+    "executed": "1534",
+    "passed": "1534",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -21,507 +21,510 @@
     "pending": "0"
   },
   "classes": {
-    "UndoBisectWorkflowTests": {
-      "Passed": 19
+    "CommitInformationIntegrationTests": {
+      "Passed": 9
     },
     "RemotesDialogTests": {
       "Passed": 25
     },
-    "ComparisonFileMenuTests": {
-      "Passed": 6
-    },
-    "MainWindowBusyFocusTests": {
-      "Passed": 19
-    },
-    "ClassicMenuTests": {
-      "Passed": 9
-    },
-    "AskpassProtocolTests": {
-      "Passed": 46
-    },
-    "GoToCommitDialogTests": {
-      "Passed": 15
-    },
-    "FileMenuFocusedSelectionTests": {
-      "Passed": 10
-    },
-    "CommitInformationPresentationTests": {
-      "Passed": 28
-    },
-    "BrowserSelectionTests": {
-      "Passed": 7
-    },
-    "PushDialogTests": {
-      "Passed": 25
-    },
-    "DiffViewerToolbarOverflowTests": {
-      "Passed": 4
-    },
-    "PullAdvancedDialogTests": {
-      "Passed": 15
-    },
-    "CommitMessageWorkflowTests": {
-      "Passed": 13
-    },
-    "PluginLifecycleTests": {
-      "Passed": 4
-    },
-    "CloneCompletionTests": {
-      "Passed": 6
-    },
-    "GitProcessDialogTests": {
-      "Passed": 15
-    },
-    "NativeDiffViewerSettingsDialogTests": {
-      "Passed": 4
-    },
-    "CommitGraphLayoutTests": {
-      "Passed": 9
-    },
-    "DiffViewerComparisonPreferencesTests": {
-      "Passed": 10
-    },
-    "CheckoutSubmoduleTests": {
-      "Passed": 12
-    },
-    "ExportDialogTests": {
-      "Passed": 13
-    },
-    "RevisionAdvancedTests": {
-      "Passed": 10
-    },
-    "RebaseDialogTests": {
-      "Passed": 19
-    },
-    "GoToCommitFocusTests": {
-      "Passed": 16
-    },
-    "PullProcessDialogTests": {
-      "Passed": 9
-    },
-    "CreateBranchInitializationFocusTests": {
+    "TranslationCatalogTests": {
       "Passed": 11
     },
-    "FileHistoryEmptyTreeMenuTests": {
-      "Passed": 3
-    },
-    "CommitDisplayFilterTests": {
+    "ConflictRoutingTests": {
       "Passed": 9
-    },
-    "ScriptsPreferencesStoreTests": {
-      "Passed": 8
-    },
-    "QuickGitRefSelectorDialogTests": {
-      "Passed": 23
-    },
-    "ComparisonFileStatusListTests": {
-      "Passed": 22
-    },
-    "ScriptInputDialogTests": {
-      "Passed": 23
-    },
-    "RecoverLostObjectsDialogTests": {
-      "Passed": 17
-    },
-    "DiffViewerComparisonMenuTests": {
-      "Passed": 7
-    },
-    "ViewerHostReadingTests": {
-      "Passed": 9
-    },
-    "OriginalCommandHelpTests": {
-      "Passed": 5
-    },
-    "FileHistoryTraversalSettingsTests": {
-      "Passed": 16
-    },
-    "RangeDiffWorkflowTests": {
-      "Passed": 7
-    },
-    "GrepDialogTests": {
-      "Passed": 7
-    },
-    "BrowseStartupTests": {
-      "Passed": 14
-    },
-    "ComparisonGroupsDialogTests": {
-      "Passed": 16
     },
     "RenameCompareDialogTests": {
       "Passed": 14
     },
-    "DiffViewerSearchTests": {
-      "Passed": 16
-    },
-    "DiffPresentationTests": {
-      "Passed": 11
-    },
-    "EditableFileViewTests": {
-      "Passed": 11
-    },
-    "CleanupRepositoryDialogTests": {
-      "Passed": 17
-    },
-    "BranchMenuTests": {
-      "Passed": 11
-    },
-    "MergeBranchDialogTests": {
-      "Passed": 7
-    },
-    "ComparisonSelectionTests": {
-      "Passed": 12
-    },
-    "WorktreeNavigationTests": {
-      "Passed": 4
-    },
-    "HistoryMenuParityTests": {
-      "Passed": 7
-    },
-    "CherryPickDialogTests": {
-      "Passed": 18
-    },
-    "RevisionContextMenuTests": {
-      "Passed": 8
-    },
-    "CleanupCommandLineTests": {
-      "Passed": 15
-    },
-    "ProxyGourceDialogTests": {
-      "Passed": 8
+    "CommitGraphLayoutTests": {
+      "Passed": 9
     },
     "CloneInitDialogTests": {
       "Passed": 7
     },
-    "ViewerRenderingHostTests": {
-      "Passed": 1
+    "ComparisonGroupsDialogTests": {
+      "Passed": 16
     },
-    "ViewerTruncatedPreviewTests": {
-      "Passed": 1
-    },
-    "FileStatusListBuilderTests": {
-      "Passed": 10
-    },
-    "BlameEncodingPositionTests": {
-      "Passed": 8
-    },
-    "StatisticsDialogTests": {
-      "Passed": 4
-    },
-    "PullMenuTests": {
-      "Passed": 20
-    },
-    "CommitDialogTests": {
-      "Passed": 12
-    },
-    "AddSubmoduleDialogTests": {
-      "Passed": 17
-    },
-    "TranslationCatalogTests": {
-      "Passed": 11
-    },
-    "RevisionHistoryRowTests": {
-      "Passed": 6
-    },
-    "AskpassTests": {
-      "Passed": 11
-    },
-    "FileHistoryBrowseTests": {
-      "Passed": 9
-    },
-    "MainWindowDiffShortcutTests": {
-      "Passed": 2
-    },
-    "ClassicStylesTests": {
-      "Passed": 2
-    },
-    "FileMenuControllerTests": {
+    "RecoverLostObjectsDialogTests": {
       "Passed": 17
     },
     "StashMenuTests": {
       "Passed": 19
     },
-    "RevisionDiffGroupTests": {
-      "Passed": 6
-    },
-    "FileMenuAdditionalOperationsTests": {
-      "Passed": 5
-    },
-    "ScriptPreparationDispatcherTests": {
-      "Passed": 21
-    },
-    "ConflictRoutingTests": {
-      "Passed": 9
-    },
-    "PullLayoutTests": {
+    "QuickReferenceWorkflowTests": {
       "Passed": 8
     },
-    "FileHistoryWorkflowTests": {
-      "Passed": 13
-    },
-    "ReferenceSortingSettingsTests": {
-      "Passed": 10
-    },
-    "CloneHistoryTests": {
-      "Passed": 10
-    },
-    "RecentRepositoriesSettingsDialogTests": {
-      "Passed": 9
-    },
-    "BranchNameNormalizationTests": {
-      "Passed": 7
-    },
-    "FileHistoryInitialComparisonRefreshTests": {
-      "Passed": 5
-    },
-    "WindowsBrowseReferenceTests": {
-      "Passed": 8
-    },
-    "DiffFormatsTests": {
-      "Passed": 7
-    },
-    "BrowseLayoutTests": {
-      "Passed": 7
-    },
-    "DiffViewerToolbarTests": {
-      "Passed": 3
-    },
-    "BlameNavigationTests": {
-      "Passed": 4
-    },
-    "FileContentTests": {
-      "Passed": 6
-    },
-    "DiffViewerPreferencesTests": {
-      "Passed": 7
-    },
-    "SubmoduleRemovalDialogTests": {
-      "Passed": 8
-    },
-    "ArtificialHistoryRevisionTests": {
-      "Passed": 7
-    },
-    "WorktreeDialogTests": {
-      "Passed": 14
-    },
-    "BlameDialogTests": {
-      "Passed": 3
-    },
-    "AskpassModesWindowTests": {
-      "Passed": 12
-    },
-    "FindLargeFilesDialogTests": {
-      "Passed": 9
-    },
-    "SubmodulesDialogTests": {
-      "Passed": 13
-    },
-    "ReflogDialogTests": {
+    "GitProcessDialogTests": {
       "Passed": 15
-    },
-    "BranchHistoryFilterTests": {
-      "Passed": 11
     },
     "ResetRevertDialogTests": {
       "Passed": 12
     },
+    "FileHistoryBrowseTests": {
+      "Passed": 9
+    },
     "SubmoduleConflictDialogTests": {
       "Passed": 14
     },
-    "FileStatusListViewTests": {
-      "Passed": 9
+    "CommitInformationPresentationTests": {
+      "Passed": 28
     },
-    "RevisionContextFocusTests": {
-      "Passed": 11
-    },
-    "DialogAccessKeyTests": {
-      "Passed": 4
-    },
-    "ViewerHostLoadFailureTests": {
-      "Passed": 5
-    },
-    "CommitSelectionFilterTests": {
-      "Passed": 6
-    },
-    "DiffViewerNonprintingTests": {
-      "Passed": 6
-    },
-    "RebaseLayoutTests": {
-      "Passed": 4
-    },
-    "QuickReferenceWorkflowTests": {
-      "Passed": 8
-    },
-    "CloneBranchLoadingTests": {
-      "Passed": 6
-    },
-    "GourceAvatarProviderTests": {
-      "Passed": 6
-    },
-    "CommitAndPushWorkflowTests": {
-      "Passed": 9
-    },
-    "AnnotatedReferencePresentationTests": {
-      "Passed": 5
-    },
-    "RebaseJournalRecoveryTests": {
-      "Passed": 9
-    },
-    "RemoteBranchDeletionDialogTests": {
-      "Passed": 14
-    },
-    "InteractiveFileConsoleSocketTests": {
-      "Passed": 4
-    },
-    "ReferenceMenuTests": {
+    "ReferenceSortingNavigationTests": {
       "Passed": 4
     },
     "FileHistoryInlineBlameTests": {
       "Passed": 14
     },
-    "ReferenceSortingNavigationTests": {
-      "Passed": 4
-    },
-    "ClassicRadioPaletteTests": {
-      "Passed": 1
-    },
-    "DiffViewerRenderingPreferencesTests": {
-      "Passed": 8
-    },
-    "CommitInformationViewTests": {
-      "Passed": 7
-    },
-    "FileEncodingViewTests": {
-      "Passed": 6
-    },
-    "DiffViewerAppearanceMenuTests": {
-      "Passed": 4
-    },
-    "RulesFileEditorDialogTests": {
-      "Passed": 19
-    },
-    "MainWindowRebaseTests": {
-      "Passed": 3
-    },
-    "InteractiveFileConsoleTests": {
-      "Passed": 7
-    },
-    "HistorySortDefaultTests": {
-      "Passed": 7
-    },
-    "MainWindowClassicTests": {
-      "Passed": 6
-    },
-    "NativeRebaseEditorTests": {
-      "Passed": 7
-    },
-    "MainWindowSelectionTests": {
-      "Passed": 4
-    },
-    "DiffViewTests": {
-      "Passed": 4
-    },
-    "CommitInformationIntegrationTests": {
-      "Passed": 9
+    "ReflogDialogTests": {
+      "Passed": 15
     },
     "CloneProcessDialogTests": {
       "Passed": 8
     },
-    "DiffViewerReadingTests": {
-      "Passed": 11
-    },
-    "ViewerEscapeHostTests": {
-      "Passed": 3
-    },
-    "RenameCompareMenuTests": {
-      "Passed": 5
-    },
-    "DashboardTests": {
-      "Passed": 6
-    },
-    "FilePaneParityTests": {
+    "HistoryMenuParityTests": {
       "Passed": 7
     },
-    "RemoteReferenceColorTests": {
-      "Passed": 4
+    "CleanupRepositoryDialogTests": {
+      "Passed": 17
     },
-    "BlameAvatarTests": {
-      "Passed": 4
-    },
-    "DiffViewerRenderingMenuTests": {
-      "Passed": 4
-    },
-    "CompactNavigationTreeTests": {
-      "Passed": 4
+    "FileMenuControllerTests": {
+      "Passed": 17
     },
     "ViewerWholeFileHostTests": {
       "Passed": 2
     },
-    "RebaseUnreadableTodoTests": {
-      "Passed": 4
+    "HistorySortDefaultTests": {
+      "Passed": 7
     },
-    "BrowseCommitGraphTests": {
-      "Passed": 2
-    },
-    "ReferenceDialogTests": {
+    "WorktreeDialogTests": {
       "Passed": 14
     },
-    "CommitIndexFlagTests": {
+    "CheckoutSubmoduleTests": {
+      "Passed": 12
+    },
+    "QuickGitRefSelectorDialogTests": {
+      "Passed": 23
+    },
+    "MainWindowRebaseTests": {
+      "Passed": 3
+    },
+    "RemoteBranchDeletionDialogTests": {
+      "Passed": 14
+    },
+    "AskpassTests": {
       "Passed": 11
     },
-    "FileHistoryDialogTests": {
+    "WorktreeNavigationTests": {
+      "Passed": 4
+    },
+    "CommitAndPushWorkflowTests": {
+      "Passed": 9
+    },
+    "RevisionHistoryRowTests": {
+      "Passed": 6
+    },
+    "CloneBranchLoadingTests": {
+      "Passed": 6
+    },
+    "RangeDiffWorkflowTests": {
+      "Passed": 7
+    },
+    "ScriptPreparationDispatcherTests": {
+      "Passed": 21
+    },
+    "GoToCommitFocusTests": {
+      "Passed": 16
+    },
+    "BlameEncodingPositionTests": {
+      "Passed": 8
+    },
+    "DiffViewerToolbarOverflowTests": {
+      "Passed": 4
+    },
+    "FileEncodingViewTests": {
+      "Passed": 6
+    },
+    "RenameCompareMenuTests": {
       "Passed": 5
     },
+    "ScriptInputDialogTests": {
+      "Passed": 23
+    },
+    "DiffViewerReadingTests": {
+      "Passed": 11
+    },
+    "RevisionDiffGroupTests": {
+      "Passed": 6
+    },
+    "CommitMessageWorkflowTests": {
+      "Passed": 13
+    },
+    "CloneCompletionTests": {
+      "Passed": 6
+    },
+    "GourceAvatarProviderTests": {
+      "Passed": 6
+    },
     "DiffViewerNonprintingLongLineTests": {
+      "Passed": 6
+    },
+    "FileContentTests": {
       "Passed": 6
     },
     "BlameOptionsTests": {
       "Passed": 7
     },
-    "RepositoryDialogTests": {
+    "PullLayoutTests": {
+      "Passed": 8
+    },
+    "RebaseDialogTests": {
+      "Passed": 19
+    },
+    "RevisionQuickSearchTests": {
+      "Passed": 42
+    },
+    "ViewerHostLoadFailureTests": {
       "Passed": 5
+    },
+    "CommitDialogTests": {
+      "Passed": 12
+    },
+    "RebaseJournalRecoveryTests": {
+      "Passed": 9
+    },
+    "AnnotatedReferencePresentationTests": {
+      "Passed": 5
+    },
+    "PushDialogTests": {
+      "Passed": 25
+    },
+    "AskpassModesWindowTests": {
+      "Passed": 12
+    },
+    "CreateBranchInitializationFocusTests": {
+      "Passed": 11
+    },
+    "ClassicMenuTests": {
+      "Passed": 9
+    },
+    "GrepDialogTests": {
+      "Passed": 7
+    },
+    "DiffViewTests": {
+      "Passed": 4
+    },
+    "BrowseStartupTests": {
+      "Passed": 14
+    },
+    "FileStatusListViewTests": {
+      "Passed": 9
+    },
+    "GoToCommitDialogTests": {
+      "Passed": 15
+    },
+    "MainWindowBusyFocusTests": {
+      "Passed": 19
+    },
+    "DiffPresentationTests": {
+      "Passed": 11
+    },
+    "UndoBisectWorkflowTests": {
+      "Passed": 19
+    },
+    "FileHistoryTraversalSettingsTests": {
+      "Passed": 16
+    },
+    "CleanupCommandLineTests": {
+      "Passed": 15
+    },
+    "BranchMenuTests": {
+      "Passed": 11
+    },
+    "AskpassProtocolTests": {
+      "Passed": 46
     },
     "MainFileStatusListTests": {
       "Passed": 5
     },
-    "RemotesTrackingValidationTests": {
-      "Passed": 2
+    "EditableFileViewTests": {
+      "Passed": 11
+    },
+    "CherryPickDialogTests": {
+      "Passed": 18
+    },
+    "BlameNavigationTests": {
+      "Passed": 4
+    },
+    "FileHistoryDialogTests": {
+      "Passed": 5
+    },
+    "ComparisonFileStatusListTests": {
+      "Passed": 22
+    },
+    "FileMenuAdditionalOperationsTests": {
+      "Passed": 5
+    },
+    "CloneHistoryTests": {
+      "Passed": 10
+    },
+    "DiffFormatsTests": {
+      "Passed": 7
+    },
+    "ReferenceDialogTests": {
+      "Passed": 14
+    },
+    "MergeBranchDialogTests": {
+      "Passed": 7
+    },
+    "RulesFileEditorDialogTests": {
+      "Passed": 19
+    },
+    "AddSubmoduleDialogTests": {
+      "Passed": 17
+    },
+    "MainWindowSelectionTests": {
+      "Passed": 4
+    },
+    "FileHistoryInitialComparisonRefreshTests": {
+      "Passed": 5
+    },
+    "ViewerHostReadingTests": {
+      "Passed": 9
+    },
+    "ViewerRenderingHostTests": {
+      "Passed": 1
+    },
+    "DiffViewerSearchTests": {
+      "Passed": 16
+    },
+    "ScriptsPreferencesStoreTests": {
+      "Passed": 8
+    },
+    "PullProcessDialogTests": {
+      "Passed": 9
+    },
+    "CommitDisplayFilterTests": {
+      "Passed": 9
+    },
+    "RevisionContextFocusTests": {
+      "Passed": 11
+    },
+    "SubmoduleRemovalDialogTests": {
+      "Passed": 8
+    },
+    "RepositoryDialogTests": {
+      "Passed": 5
+    },
+    "BrowseLayoutTests": {
+      "Passed": 7
+    },
+    "ArtificialHistoryRevisionTests": {
+      "Passed": 7
+    },
+    "DashboardTests": {
+      "Passed": 6
     },
     "FileHistoryPreferencesTests": {
       "Passed": 5
     },
+    "FileHistoryEmptyTreeMenuTests": {
+      "Passed": 3
+    },
+    "RemotesTrackingValidationTests": {
+      "Passed": 2
+    },
+    "SubmodulesDialogTests": {
+      "Passed": 13
+    },
+    "BranchHistoryFilterTests": {
+      "Passed": 11
+    },
+    "ReferenceSortingSettingsTests": {
+      "Passed": 10
+    },
+    "DiffViewerRenderingMenuTests": {
+      "Passed": 4
+    },
+    "MainWindowClassicTests": {
+      "Passed": 6
+    },
+    "InteractiveFileConsoleTests": {
+      "Passed": 7
+    },
+    "CommitIndexFlagTests": {
+      "Passed": 11
+    },
+    "BrowseCommitGraphTests": {
+      "Passed": 2
+    },
+    "DiffViewerPreferencesTests": {
+      "Passed": 7
+    },
+    "DiffViewerAppearanceMenuTests": {
+      "Passed": 4
+    },
+    "RevisionAdvancedTests": {
+      "Passed": 10
+    },
+    "BlameAvatarTests": {
+      "Passed": 4
+    },
+    "ExportDialogTests": {
+      "Passed": 13
+    },
+    "DiffViewerComparisonPreferencesTests": {
+      "Passed": 10
+    },
+    "RebaseUnreadableTodoTests": {
+      "Passed": 4
+    },
+    "PullAdvancedDialogTests": {
+      "Passed": 15
+    },
+    "RevisionContextMenuTests": {
+      "Passed": 8
+    },
+    "DiffViewerRenderingPreferencesTests": {
+      "Passed": 8
+    },
+    "NativeRebaseEditorTests": {
+      "Passed": 7
+    },
+    "ComparisonFileMenuTests": {
+      "Passed": 6
+    },
+    "DiffViewerNonprintingTests": {
+      "Passed": 6
+    },
+    "StatisticsDialogTests": {
+      "Passed": 4
+    },
+    "MainWindowWorkflowTests": {
+      "Passed": 1
+    },
+    "FileStatusListBuilderTests": {
+      "Passed": 10
+    },
+    "RebaseLayoutTests": {
+      "Passed": 4
+    },
+    "PullMenuTests": {
+      "Passed": 20
+    },
+    "DialogAccessKeyTests": {
+      "Passed": 4
+    },
+    "FindLargeFilesDialogTests": {
+      "Passed": 9
+    },
+    "PluginLifecycleTests": {
+      "Passed": 4
+    },
+    "FileHistoryWorkflowTests": {
+      "Passed": 13
+    },
+    "RemoteReferenceColorTests": {
+      "Passed": 4
+    },
+    "CommitSelectionFilterTests": {
+      "Passed": 6
+    },
+    "CommitInformationViewTests": {
+      "Passed": 7
+    },
+    "BrowserSelectionTests": {
+      "Passed": 7
+    },
+    "ClassicStylesTests": {
+      "Passed": 2
+    },
+    "FileMenuFocusedSelectionTests": {
+      "Passed": 10
+    },
+    "ReferenceMenuTests": {
+      "Passed": 4
+    },
+    "ProxyGourceDialogTests": {
+      "Passed": 8
+    },
+    "BranchNameNormalizationTests": {
+      "Passed": 7
+    },
+    "RecentRepositoriesSettingsDialogTests": {
+      "Passed": 9
+    },
+    "WindowsBrowseReferenceTests": {
+      "Passed": 8
+    },
+    "DiffViewerToolbarTests": {
+      "Passed": 3
+    },
     "RebasePlanDialogTests": {
+      "Passed": 1
+    },
+    "ComparisonSelectionTests": {
+      "Passed": 12
+    },
+    "InteractiveFileConsoleSocketTests": {
+      "Passed": 4
+    },
+    "CompactNavigationTreeTests": {
+      "Passed": 4
+    },
+    "FilePaneParityTests": {
+      "Passed": 7
+    },
+    "ViewerEscapeHostTests": {
+      "Passed": 3
+    },
+    "DiffViewerComparisonMenuTests": {
+      "Passed": 7
+    },
+    "BlameDialogTests": {
+      "Passed": 3
+    },
+    "NativeDiffViewerSettingsDialogTests": {
+      "Passed": 4
+    },
+    "MainWindowDiffShortcutTests": {
+      "Passed": 2
+    },
+    "OriginalCommandHelpTests": {
+      "Passed": 5
+    },
+    "ViewerTruncatedPreviewTests": {
+      "Passed": 1
+    },
+    "ClassicRadioPaletteTests": {
       "Passed": 1
     },
     "CommitGraphControlTests": {
       "Passed": 2
-    },
-    "MainWindowWorkflowTests": {
-      "Passed": 1
     }
   },
   "additional_suites": {
     "core": {
-      "source_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
-      "execution_source_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
-      "candidate_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
-      "passed": 661,
-      "total": 661,
-      "execution_result": "artifacts/linux/file-history-options-20261017/full-01/core-result.json",
-      "build_result": "artifacts/linux/file-history-options-20261017/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/file-history-options-20261017/full-01/parent-verification.json",
+      "source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+      "execution_source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+      "candidate_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+      "passed": 669,
+      "total": 669,
+      "execution_result": "artifacts/linux/revision-quick-search-20261017/full-01/core-result.json",
+      "build_result": "artifacts/linux/revision-quick-search-20261017/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/revision-quick-search-20261017/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
-      "execution_source_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
-      "candidate_sha": "f4e99bec0fc503cede9996e9c7238f2338d4c94b",
+      "source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+      "execution_source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+      "candidate_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/file-history-options-20261017/full-01/plugins-result.json",
-      "build_result": "artifacts/linux/file-history-options-20261017/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/file-history-options-20261017/full-01/parent-verification.json",
+      "execution_result": "artifacts/linux/revision-quick-search-20261017/full-01/plugins-result.json",
+      "build_result": "artifacts/linux/revision-quick-search-20261017/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/revision-quick-search-20261017/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true

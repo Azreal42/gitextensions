@@ -17,3 +17,5 @@ But : proposer les workflows Git Extensions sur un bureau Linux, installables en
 - [Réglages partagés d’historique fichier](adr/workflows/files/0086-shared-file-history-settings.md) : quatre préférences et F5 des paires typées ; Git/headless et paquet vérifiés, audit GUI natif ouvert.
 
 Le code, les tests et les scripts sont la source de vérité. Ces notes gardent l'intention et les chemins utiles ; les logs, captures, checksums et preuves historiques restent dans `artifacts/linux/`, avec leur source d'origine.
+
+- [Recherche incrémentale de grille](adr/ui/history/0087-revision-quick-search.md) : contrat Windows, messages complets et destinations typées ; validation et limites dans le TODO.
