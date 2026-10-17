@@ -17,7 +17,7 @@ Retrouver branches et remotes dans l’ordre choisi sous Windows, y compris dans
 
 Valider tous les motifs avant OK et borner le matching ; garder la saisie après erreur. Un nom de remote contenant `/` est séparé avec son vrai nom connu : cette amélioration diffère du découpage Windows au premier `/`.
 
-CommitInfo branches/contained-in, remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Badges et QuickRef conservent leurs comparateurs distincts. Le niveau N2 ne certifie ni ces fonctions, ni toutes les variantes natives, Wayland, DPI/accessibilité ou traductions.
+CommitInfo porte un périmètre partagé avec son comparateur et son filtre Windows distincts (ADR [0083](../../ui/history/0083-shared-commit-information.md)), dont les compléments et variantes restent ouverts. Remotes vides/inactifs et paramètres globaux/locaux/distribués restent à porter. Badges et QuickRef conservent leurs comparateurs distincts. Le niveau N2 ne certifie ni ces fonctions, ni toutes les variantes natives, Wayland, DPI/accessibilité ou traductions.
 
 ## Repères et validation
 

@@ -445,3 +445,18 @@ Logs et essais rejetés : `artifacts/linux/comparison-file-menus-20261017/`, paq
 | Un motif invalide reste caché derrière une première correspondance | Valider tous les motifs avant toute sauvegarde ; erreur lisible et saisie conservée, matching borné et captures nommées ExplicitCapture gardées. |
 
 Preuves et limites : [TODO](todo.md), ADR [0082](adr/preferences/sorting/0082-native-reference-sorting.md). Full01 et ciblés rejetés sont conservés ; aucun audit natif ancien n’est transféré.
+
+
+## CommitInfo — diagnostics et fermeture
+
+| Piège | Règle retenue |
+| --- | --- |
+| Une lecture passive efface le diagnostic d’une autre commande | Attribuer l’erreur à sa lecture ; CommitInfo ne peut effacer que l’instance qu’il a lui-même publiée. Les échecs de filtre, Fetch, références et Undo du full01 EA6 restent conservés ; correctif couvert par le ciblé Root puis le Full02 b356 vert ; ce résultat ne vaut pas validation native. |
+| La fixture restaure XDG ou supprime le dépôt avant la fermeture réelle | Demander Close puis attendre, avec pump/layout/render bornés, fenêtre effectivement fermée et lectures CommitInfo drainées. Une lecture Git bloquée vérifie cette barrière ; le timeout fait échouer la fixture au lieu de valider la fermeture. |
+| `fonts:SystemFonts` absent dans les lots communs 02/03 | Conserver ces rouges sans dispense. Le lot commun 04 vert n’établit pas leur cause exacte ; ne pas généraliser une exécution isolée à la suite complète. |
+
+Le [Full01 EA6 refusé](../../artifacts/linux/commit-information-20261017/full-01/desktop-result.json) conserve ses sept échecs Desktop ; le [Full02 b356](../../artifacts/linux/commit-information-20261017/full-02/parent-verification.json) est vert, avec assertions métier conservées.
+
+Les refus des paquets [01](../../artifacts/linux/snapshots/b356d5f67/proofs/setup-source-reconciliation.json) (modes) et [02](../../artifacts/linux/snapshots/b356d5f67-package02/proofs/package-post-build-source-reconciliation.json) (locks), du premier checker de log et du checker04 restent conservés. Le [checker05](../../artifacts/linux/snapshots/b356d5f67-package03/proofs/log-finalized-parent-verification-05/package-parent-verification.json) détaille la réconciliation sans réécriture des logs et la portée privée du contrôle : les quatre processus protégés antérieurs ont une identité connue, mais leur environnement et leurs FD n’ont pas été audités ; aucun audit global de l’UID.
+
+Le [natif accepté](../../artifacts/linux/snapshots/b356d5f67/proofs/native-commit-information-parent-review.json) couvre Browse anglais/clair/X11 seulement. Le refus003 a précédé toute entrée : il ne compte pas comme un clic réel supplémentaire. AT-SPI est indisponible sur les trois relevés ; aucune certification d’accessibilité, des autres hôtes ou variantes. ADR [0083](adr/ui/history/0083-shared-commit-information.md).
