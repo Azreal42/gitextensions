@@ -4,6 +4,31 @@ public sealed record GitIndexFileFlags(string Path, bool IsAssumeUnchanged, bool
 
 public sealed partial class GitRepository
 {
+    public Task<GitResult> SetSkipWorktreeAsync(IReadOnlyList<string> paths, bool skipWorktree, CancellationToken cancellationToken = default)
+        => SetIndexFileFlagAsync(paths, skipWorktree, skip: true, cancellationToken);
+
+    public Task<GitResult> SetAssumeUnchangedAsync(IReadOnlyList<string> paths, bool assumeUnchanged, CancellationToken cancellationToken = default)
+        => SetIndexFileFlagAsync(paths, assumeUnchanged, skip: false, cancellationToken);
+
+    private Task<GitResult> SetIndexFileFlagAsync(IReadOnlyList<string> paths, bool enabled, bool skip, CancellationToken cancellationToken)
+    {
+        string[] selected = ValidatePaths(paths);
+        return WithMutationAsync(async token =>
+        {
+            await EnsureWorktreeAsync(token).ConfigureAwait(false);
+            Dictionary<string, GitIndexFileFlags> current = (await GetIndexFlagsAsync(token).ConfigureAwait(false))
+                .ToDictionary(item => item.Path, StringComparer.Ordinal);
+            foreach (string path in selected)
+            { if (!current.ContainsKey(path)) { throw new InvalidOperationException("The selected path is not indexed: " + path); } }
+            string[] changed = selected.Where(path => (skip ? current[path].IsSkipWorktree : current[path].IsAssumeUnchanged) != enabled).ToArray();
+            if (changed.Length == 0) { return new GitResult(0, "", ""); }
+            string option = skip ? enabled ? "--skip-worktree" : "--no-skip-worktree"
+                : enabled ? "--assume-unchanged" : "--no-assume-unchanged";
+            return await ExecuteAsync(["update-index", option, "-z", "--stdin"], token,
+                standardInput: string.Join('\0', changed) + '\0').ConfigureAwait(false);
+        }, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<GitIndexFileFlags>> GetIndexFlagsAsync(CancellationToken cancellationToken = default)
     {
         await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);

@@ -560,7 +560,8 @@ public sealed partial class GitRepository
         string? command = arguments.FirstOrDefault();
         bool worktreeRequired = command is "status" or "add" or "rm" or "restore" or "checkout" or "switch" or "commit" or "stash"
             or "merge" or "rebase" or "cherry-pick" or "revert" or "am" or "apply" or "clean" or "sparse-checkout" or "submodule"
-            or "pull" or "mergetool" or "difftool" || command == "reset" && !arguments.Contains("--soft");
+            or "pull" or "mergetool" || command == "difftool" && !arguments.Contains("--no-index")
+            || command == "reset" && !arguments.Contains("--soft");
         if (worktreeRequired)
         {
             await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);

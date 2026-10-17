@@ -133,6 +133,10 @@ public sealed partial class GitRepository
 
     public async Task<GitResult> OpenComparisonDiffToolAsync(GitComparison comparison, GitRevisionFile? file = null,
         bool directory = false, CancellationToken cancellationToken = default)
+        => await OpenComparisonDiffToolAsync(comparison, file, directory, null, cancellationToken).ConfigureAwait(false);
+
+    public async Task<GitResult> OpenComparisonDiffToolAsync(GitComparison comparison, GitRevisionFile? file,
+        bool directory, string? customTool, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(comparison);
         if (directory && comparison.Base.Kind == GitCompareRevisionKind.WorkingTree)
@@ -140,10 +144,19 @@ public sealed partial class GitRepository
         if (!directory && file is null) { throw new ArgumentException("Select a file for the diff tool.", nameof(file)); }
         return await WithMutationAsync(async token =>
         {
-            await EnsureWorktreeAsync(token).ConfigureAwait(false);
+            if (directory || comparison.Base.Kind != GitCompareRevisionKind.Commit || comparison.Compare.Kind != GitCompareRevisionKind.Commit)
+            { await EnsureWorktreeAsync(token).ConfigureAwait(false); }
             GitCompareRevision first = await ResolveComparisonRevisionAsync(comparison.Base, token).ConfigureAwait(false);
             GitCompareRevision second = await ResolveComparisonRevisionAsync(comparison.Compare, token).ConfigureAwait(false);
-            List<string> arguments = ["--literal-pathspecs", "difftool", "--gui", "--no-prompt", "--find-renames"];
+            if (!directory && (await GetInfoAsync(token).ConfigureAwait(false)).IsBare)
+            {
+                string firstPath = ValidatePath(file!.OriginalPath ?? file.Path), secondPath = ValidatePath(file.Path);
+                byte[] before = file.Status == 'A' ? [] : await GetComparisonFileBytesAsync(first, firstPath, token).ConfigureAwait(false);
+                byte[] after = file.Status == 'D' ? [] : await GetComparisonFileBytesAsync(second, secondPath, token).ConfigureAwait(false);
+                return await OpenFileDiffToolCopiesAsync(firstPath, before, secondPath, after, customTool, token).ConfigureAwait(false);
+            }
+            List<string> arguments = ["--literal-pathspecs", "difftool", "--no-prompt", "--find-renames"];
+            AddCustomDiffTool(arguments, customTool);
             if (directory) { arguments.Add("--dir-diff"); }
             AddComparisonRevisions(arguments, first, second);
             arguments.Add("--");
