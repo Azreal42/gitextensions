@@ -491,3 +491,18 @@ La [régression sur l’ancienne source](../../artifacts/linux/file-history-opti
 | Paire initiale artificielle ou retour au commit déjà sélectionné | Distinguer sélection logique et ListBox ; réduire la paire et restaurer le panneau adapté sans relancer l’historique. |
 
 Les essais ciblés 01/02 ont corrigé des erreurs de compilation (extension clipboard/import et enum de touche) ; 03/04 des erreurs de scénario (préfixes et focus après clic d’onglet). Ils restent archivés séparément du ciblé 05 et des suites complètes. Les résultats et limites sont dans le TODO.
+
+
+## Navigation parent/enfant — ADR0088
+
+| Piège | Intention conservée |
+| --- | --- |
+| Revenir au premier parent après visite depuis le second | Deux piles Windows distinctes du retour Alt ; voisins du graphe chargé, pas découverte du dépôt. |
+| Index devance les vrais enfants d’un ancien HEAD | Respecter le point d’insertion Windows dans l’ordre du lecteur, avant le réordonnancement du dessin. |
+| Dernière sélection retirée ou F5 perdent l’ancre | Distinguer dernier clic Navigate et récence QuickSearch ; préserver le clavier sans modifier la multisélection. |
+| Assigner SelectedItem égal à sa valeur dans une mise à jour groupée vide la sélection | Publier explicitement la sélection finale dans le modèle, sans état vide intermédiaire. |
+| Focus liste conservé mais première flèche inactive | La liste stable porte le focus pendant la lecture, puis la nouvelle feuille le reçoit à publication seulement si ce focus appartient toujours à l’opération. |
+| Première Échap ignorée par la cible invisible | Réutiliser l’activation modale commune et son bouton initial. |
+| WT/Index ordinaire perd sa sélection typée à F5 depuis le diff Changes | Conserver la destination typée et le panneau de retour pendant le rebind de la ligne réelle retenue ; ciblé06 rouge puis les deux cas ciblé07 verts, pas une preuve native de F5. |
+
+Les ciblés01–04 conservent les régressions et le scénario négatif invalide à critère blanc ; ciblé06 conserve les deux pertes WT/Index à F5 avant correction. Ciblé07 accepte 121/121 Desktop, Core8/8 et endpoints16/16 ; les six rendus frais ciblé07 sont relus par Root, avec leur rapport distinct de l’exécution et du natif. Le full final et le natif N01 sont des preuves distinctes ; aucune couverture native F5 transférée.

@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "b7967dbcfc4126285cc438e516f6068bab95311d",
-  "source_digest_sha256": "4b02fb9ea2381f9f889dd0e74c5c68da62bdb469771f461a54f1f0392a8bf45c",
-  "scanned_csharp_files": 1984,
+  "code_reference_commit": "749f88339787799ff314448480f79c9b08f85ca3",
+  "source_digest_sha256": "0ebe158e2342842cd3c864adb3cefc500c835bda9e665840a03ac0b428d16df3",
+  "scanned_csharp_files": 1988,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/revision-quick-search-20261017/full-01/desktop.trx",
-    "source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
-    "trx_sha256": "a5d43f26f82990231fc01e440b6eca782859dc4517fe5fea295f0e4138e1aa09",
+    "trx": "artifacts/linux/parent-child-navigation-20261017/full-02/desktop.trx",
+    "source_sha": "749f88339787799ff314448480f79c9b08f85ca3",
+    "trx_sha256": "4985d1c55507835570dede915686a970f099241b004bae0946311c8876cbcba4",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
-        "execution_source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
-        "candidate_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+        "source_sha": "749f88339787799ff314448480f79c9b08f85ca3",
+        "execution_source_sha": "749f88339787799ff314448480f79c9b08f85ca3",
+        "candidate_sha": "749f88339787799ff314448480f79c9b08f85ca3",
         "passed": 669,
         "total": 669,
-        "execution_result": "artifacts/linux/revision-quick-search-20261017/full-01/core-result.json",
-        "build_result": "artifacts/linux/revision-quick-search-20261017/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/revision-quick-search-20261017/full-01/parent-verification.json",
+        "execution_result": "artifacts/linux/parent-child-navigation-20261017/full-02/core-result.json",
+        "build_result": "artifacts/linux/parent-child-navigation-20261017/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/parent-child-navigation-20261017/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
-        "execution_source_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
-        "candidate_sha": "b7967dbcfc4126285cc438e516f6068bab95311d",
+        "source_sha": "749f88339787799ff314448480f79c9b08f85ca3",
+        "execution_source_sha": "749f88339787799ff314448480f79c9b08f85ca3",
+        "candidate_sha": "749f88339787799ff314448480f79c9b08f85ca3",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/revision-quick-search-20261017/full-01/plugins-result.json",
-        "build_result": "artifacts/linux/revision-quick-search-20261017/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/revision-quick-search-20261017/full-01/parent-verification.json",
+        "execution_result": "artifacts/linux/parent-child-navigation-20261017/full-02/plugins-result.json",
+        "build_result": "artifacts/linux/parent-child-navigation-20261017/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/parent-child-navigation-20261017/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -1061,14 +1061,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.GoToRevisionAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
-          "line": 30,
+          "line": 28,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.NavigateRevisionHistoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
-          "line": 111,
+          "line": 116,
           "kind": "window"
         }
       ],
@@ -1145,7 +1145,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 322,
+          "line": 325,
           "kind": "window"
         },
         {
@@ -1855,8 +1855,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO.",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, parcours parent/enfant réversible, voisins filtrés et destinations artificielles à compléter. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2058,6 +2058,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ParentChildNavigationHistoryTests.cs",
+          "test_class": "ParentChildNavigationHistoryTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ParentChildNavigationTests.cs",
+          "test_class": "ParentChildNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextFocusTests.cs",
           "test_class": "RevisionContextFocusTests",
           "passed_in_reference_run": 11,
@@ -2093,7 +2105,8 @@
         ".agents/docs/adr/platform/git/0084-bounded-unix-sockets.md",
         ".agents/docs/adr/workflows/files/0085-browse-file-history.md",
         ".agents/docs/adr/workflows/files/0086-shared-file-history-settings.md",
-        ".agents/docs/adr/ui/history/0087-revision-quick-search.md"
+        ".agents/docs/adr/ui/history/0087-revision-quick-search.md",
+        ".agents/docs/adr/ui/history/0088-parent-child-navigation.md"
       ]
     },
     {
@@ -6852,7 +6865,7 @@
       "group": "settings-pages",
       "level": "N0",
       "implemented": "Raccourcis fixes implémentés dans le code.",
-      "remaining": "Éditeur, profils, collisions et configuration des raccourcis absents.",
+      "remaining": "Éditeur par contexte, avertissement des touches déjà affectées et configuration partagée des raccourcis absents.",
       "visual": "absent",
       "linux": [],
       "tests": [],
@@ -9515,6 +9528,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ParentChildNavigationTests.cs",
+          "test_class": "ParentChildNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
           "test_class": "ReferenceMenuTests",
           "passed_in_reference_run": 4,
@@ -11230,6 +11249,10 @@
           "line": 10
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.ParentChildNavigation.cs",
+          "line": 9
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
           "line": 9
         },
@@ -12696,7 +12719,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.QuickSearch.cs",
-      "line": 249,
+      "line": 269,
       "method": "ShowQuickSearchHelpAsync",
       "text": "new()",
       "platform": "linux",
