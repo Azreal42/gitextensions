@@ -23,3 +23,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [Navigation parent/enfant](adr/ui/history/0088-parent-child-navigation.md) : parcours réversible Windows, voisins du graphe affiché et focus fichier ; validation et limites dans le TODO.
 
 - [Raccourcis configurables](adr/preferences/hotkeys/0089-configurable-hotkeys.md) : catalogue Windows, brouillon et configuration commune au clavier et aux menus ; page Hotkeys N2, validations et limites dans le TODO.
+
+- [Langue](adr/preferences/language/0090-language-selection.md) : choix initial XLF et préférence partagée avec Settings ; redémarrage requis, chooser N2 et limites dans le TODO.

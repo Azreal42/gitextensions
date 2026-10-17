@@ -1633,15 +1633,22 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.FormChooseTranslation": {
       "feature": "Choix de traduction",
       "group": "settings",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Catalogues XLF chargés selon la culture courante.",
-      "remaining": "Fenêtre de choix de langue et préférence utilisateur modifiable non portées.",
-      "visual": "absent",
-      "tests": [
-        "TranslationCatalogTests"
+      "level": "N2",
+      "linux": [
+        "ChooseLanguageDialog",
+        "DesktopLanguage",
+        "LanguageCatalog"
       ],
-      "adr": []
+      "implemented": "Choix initial par noms XLF Windows et drapeaux, activation unique clic/Entrée, préférence Language partagée avant construction des catalogues et fermeture sans choix vers English. Profil interactif valide sans langue, ancien ou nouveau, demande le choix ; helpers et smoke le contournent. Catalogue/bootstrap et erreurs IO, identité retirée et sauvegardes de deux Browse couverts en headless. Suites complètes et paquet exact vérifiés ; natif Light/X11 privé limité à French puis Settings English Cancel/OK/réouverture, ADR0090.",
+      "remaining": "Audit natif étendu des traductions, Enter/fermeture sans choix, helpers, erreurs IO, deux Browse, plateformes et accessibilité. Aucune parité globale certifiée.",
+      "visual": "rapproche",
+      "tests": [
+        "LanguageCatalogTests",
+        "LanguagePreferencesTests"
+      ],
+      "adr": [
+        "0090"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.FormFixHome": {
       "feature": "Correction du HOME Windows",
@@ -1680,19 +1687,21 @@
         "MainWindow@ShowWorkflowAsync",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090.",
       "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
       "visual": "adapte",
       "tests": [
         "ClassicMenuTests",
         "NativeDiffViewerSettingsDialogTests",
         "FileHistoryPreferencesTests",
-        "HotkeysSettingsPageTests"
+        "HotkeysSettingsPageTests",
+        "LanguagePreferencesTests"
       ],
       "adr": [
         "0060",
         "0086",
-        "0089"
+        "0089",
+        "0090"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2154,11 +2163,15 @@
         "BlameDialog",
         "DesktopSettingsDialog"
       ],
-      "implemented": "Dates relatives et avatars dans certaines vues ; réglages d’affichage dispersés.",
-      "remaining": "Page absente : langue, dictionnaire, fournisseurs/cache avatars, chemins et autres choix d’apparence non configurables comme Windows.",
+      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO.",
+      "remaining": "Page Appearance globale absente ; dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; page N1 inchangée.",
       "visual": "integre",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "LanguagePreferencesTests"
+      ],
+      "adr": [
+        "0090"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.BlameViewerSettingsPage": {
       "feature": "Options de Blame",

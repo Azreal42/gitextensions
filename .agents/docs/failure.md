@@ -527,3 +527,14 @@ Les ciblés01–04 conservent les régressions et le scénario négatif invalide
 | Le F5 de fixture part d’un contrôle devenu invisible après changement programmatique d’onglet | Ouvrir Changes avec un vrai clic sur son TabItem puis envoyer F5 depuis son focus réel ; ne pas réparer le focus par appel direct pour masquer une erreur. |
 | Le test du seuil SHA trouve déjà un message au premier caractère | Envoyer le terme de deux caractères en une seule entrée pour isoler le seuil SHA, puis saisir le troisième. Garder la recherche normale après chaque caractère dans les autres scénarios ; aucun rollback de sélection inventé en cas de non-match. |
 | Sous-menu ParentChild : cible détachée dans full01 puis ciblé07 | Le chemin hover puis un seul clic strict sur la commande passe ciblé08 ; la cause exacte de la flake antérieure n’est pas prouvée. Conserver les rouges et ne pas affirmer qu’un clic sur hover ferme le menu dans la source Windows. |
+
+## Langue — bootstrap et préférences récentes
+
+| Piège | Règle retenue |
+| --- | --- |
+| Profil invalide lu avant Avalonia | Laisser le consommateur présenter son diagnostic ; ni sortie fatale précoce ni chooser qui réécrit le profil. |
+| Ancien Browse/Settings écrase une langue récemment enregistrée | Relire latest pour les sauvegardes annexes ; distinguer le brouillon Language de sa valeur à l'ouverture. Pas de CAS interprocessus promis. |
+| Traduction retirée transformée silencieusement en English par un autre changement | Conserver son identité, montrer un placeholder de repli sans fausse sélection ; remplacer seulement après un vrai choix. |
+| Home+Enter depuis une combo sans sélection ne choisit rien | Le scénario doit activer un vrai item ; un clic unique strict remplace ce geste de test, sans setter ni refocus. |
+
+Les [huit régressions initiales](../../artifacts/linux/language-preferences-20261017/worktree-preintegration/regressions-red/language.trx) donnent sept échecs et un succès avant correction. Le [premier broad corrigé](../../artifacts/linux/language-preferences-20261017/worktree-preintegration/corrected-broad/language.trx), 240/241, garde le geste de test invalide ; le [broad final](../../artifacts/linux/language-preferences-20261017/worktree-preintegration/final-candidate-verification.json) passe 241/241 avec les sept régressions corrigées. Le full1711 antérieur aux corrections reste historique ; il ne remplace pas le full final de la source intégrée.

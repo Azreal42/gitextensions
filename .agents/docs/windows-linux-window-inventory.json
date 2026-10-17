@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "89672b5c6370a7752d6db441445d5381eb4d58dd",
-  "source_digest_sha256": "47123c488fbb1d3f5edfd1e81ce3ccfb75da7d3ffaba49354ad9c55233b5c73b",
-  "scanned_csharp_files": 2004,
+  "code_reference_commit": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+  "source_digest_sha256": "4d422b6f7fe496bbd26ac5bf9e7e4421aa3c6b88b32c8af524076d5bcac950f7",
+  "scanned_csharp_files": 2009,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,14 +26,14 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 85,
+    "linux_window_types": 86,
     "linux_abstract_bases": 3,
     "linux_dynamic_factories": 32,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N0": 6,
+      "N0": 5,
       "N1": 16,
-      "N2": 26,
+      "N2": 27,
       "N3": 49,
       "NA": 2
     },
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/configurable-hotkeys-20261017/full-04/desktop.trx",
-    "source_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
-    "trx_sha256": "a451ef31ac6f1b05bef5c9ff29e4fae8ed5e04aa505760bc6bb8f8c618de5462",
+    "trx": "artifacts/linux/language-preferences-20261017/full-01/desktop.trx",
+    "source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+    "trx_sha256": "0556da5a4df619c07ab3413fcfe64423be04854ed637a154aa85baf24891e1a5",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
-        "execution_source_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
-        "candidate_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
+        "source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+        "execution_source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+        "candidate_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
         "passed": 675,
         "total": 675,
-        "execution_result": "artifacts/linux/configurable-hotkeys-20261017/full-04/core-result.json",
-        "build_result": "artifacts/linux/configurable-hotkeys-20261017/full-04/build-result.json",
-        "parent_verification": "artifacts/linux/configurable-hotkeys-20261017/full-04/parent-verification.json",
+        "execution_result": "artifacts/linux/language-preferences-20261017/full-01/core-result.json",
+        "build_result": "artifacts/linux/language-preferences-20261017/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/language-preferences-20261017/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
-        "execution_source_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
-        "candidate_sha": "89672b5c6370a7752d6db441445d5381eb4d58dd",
+        "source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+        "execution_source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+        "candidate_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/configurable-hotkeys-20261017/full-04/plugins-result.json",
-        "build_result": "artifacts/linux/configurable-hotkeys-20261017/full-04/build-result.json",
-        "parent_verification": "artifacts/linux/configurable-hotkeys-20261017/full-04/parent-verification.json",
+        "execution_result": "artifacts/linux/language-preferences-20261017/full-01/plugins-result.json",
+        "build_result": "artifacts/linux/language-preferences-20261017/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/language-preferences-20261017/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -2428,6 +2428,12 @@
           "test_class": "CleanupRepositoryDialogTests",
           "passed_in_reference_run": 17,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
         }
       ],
       "adr": [
@@ -3441,6 +3447,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/NativeRebaseEditorTests.cs",
           "test_class": "NativeRebaseEditorTests",
           "passed_in_reference_run": 7,
@@ -4419,6 +4431,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowRebaseTests.cs",
           "test_class": "MainWindowRebaseTests",
           "passed_in_reference_run": 3,
@@ -4885,7 +4903,7 @@
       "feature": "Paramètres de l’application",
       "group": "settings",
       "level": "N1",
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090.",
       "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
       "visual": "adapte",
       "linux": [
@@ -4968,6 +4986,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/NativeDiffViewerSettingsDialogTests.cs",
           "test_class": "NativeDiffViewerSettingsDialogTests",
           "passed_in_reference_run": 4,
@@ -4995,7 +5019,8 @@
       "adr": [
         ".agents/docs/adr/ui/0060-shared-classic-menus.md",
         ".agents/docs/adr/workflows/files/0086-shared-file-history-settings.md",
-        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md"
+        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
+        ".agents/docs/adr/preferences/language/0090-language-selection.md"
       ]
     },
     {
@@ -5728,6 +5753,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -5803,8 +5834,8 @@
       "feature": "Apparence générale",
       "group": "settings-pages",
       "level": "N1",
-      "implemented": "Dates relatives et avatars dans certaines vues ; réglages d’affichage dispersés.",
-      "remaining": "Page absente : langue, dictionnaire, fournisseurs/cache avatars, chemins et autres choix d’apparence non configurables comme Windows.",
+      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO.",
+      "remaining": "Page Appearance globale absente ; dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; page N1 inchangée.",
       "visual": "integre",
       "linux": [
         {
@@ -5903,6 +5934,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -5921,7 +5958,9 @@
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/preferences/language/0090-language-selection.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.BlameViewerSettingsPage",
@@ -6135,6 +6174,12 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
           "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
           "passed_in_reference_run": 26,
           "results_present": true
         },
@@ -6528,6 +6573,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -6570,20 +6621,50 @@
       "category": "windows",
       "feature": "Choix de traduction",
       "group": "settings",
-      "level": "N0",
-      "implemented": "Catalogues XLF chargés selon la culture courante.",
-      "remaining": "Fenêtre de choix de langue et préférence utilisateur modifiable non portées.",
-      "visual": "absent",
-      "linux": [],
+      "level": "N2",
+      "implemented": "Choix initial par noms XLF Windows et drapeaux, activation unique clic/Entrée, préférence Language partagée avant construction des catalogues et fermeture sans choix vers English. Profil interactif valide sans langue, ancien ou nouveau, demande le choix ; helpers et smoke le contournent. Catalogue/bootstrap et erreurs IO, identité retirée et sauvegardes de deux Browse couverts en headless. Suites complètes et paquet exact vérifiés ; natif Light/X11 privé limité à French puis Settings English Cancel/OK/réouverture, ADR0090.",
+      "remaining": "Audit natif étendu des traductions, Enter/fermeture sans choix, helpers, erreurs IO, deux Browse, plateformes et accessibilité. Aucune parité globale certifiée.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.ChooseLanguageDialog",
+          "label": "ChooseLanguageDialog",
+          "source": "src/linux/GitExtensions.Desktop/ChooseLanguageDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopLanguage",
+          "label": "DesktopLanguage",
+          "source": "src/linux/GitExtensions.Desktop/DesktopLanguage.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Localization.LanguageCatalog",
+          "label": "LanguageCatalog",
+          "source": "src/linux/GitExtensions.Desktop/Localization/LanguageCatalog.cs",
+          "line": 9,
+          "kind": "component"
+        }
+      ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/TranslationCatalogTests.cs",
-          "test_class": "TranslationCatalogTests",
-          "passed_in_reference_run": 11,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguageCatalogTests.cs",
+          "test_class": "LanguageCatalogTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/preferences/language/0090-language-selection.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.FormFixHome",
@@ -6780,6 +6861,12 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
           "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
           "passed_in_reference_run": 26,
           "results_present": true
         },
@@ -7119,6 +7206,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -7416,6 +7509,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -7493,6 +7592,12 @@
           "test_class": "AskpassTests",
           "passed_in_reference_run": 11,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
         }
       ],
       "adr": []
@@ -7535,7 +7640,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowPluginAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
-          "line": 32,
+          "line": 33,
           "kind": "window"
         }
       ],
@@ -10279,6 +10384,12 @@
           "test_class": "AskpassTests",
           "passed_in_reference_run": 11,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
         }
       ],
       "adr": [
@@ -10610,6 +10721,30 @@
         {
           "id": "GitUI.HelperDialogs.FormChooseCommit",
           "name": "FormChooseCommit",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.ChooseLanguageDialog",
+      "name": "ChooseLanguageDialog",
+      "source": "src/linux/GitExtensions.Desktop/ChooseLanguageDialog.cs",
+      "line": 14,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/ChooseLanguageDialog.cs",
+          "line": 14
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.FormChooseTranslation",
+          "name": "FormChooseTranslation",
           "level": "N2"
         }
       ],
@@ -13041,7 +13176,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
-      "line": 120,
+      "line": 121,
       "method": "ConfirmSubmoduleBuildOnUiAsync",
       "text": "new() { Title = T(\"Auto compile submodules\"), Width = 560, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner }",
       "platform": "linux",
@@ -17384,8 +17519,8 @@
       "N2": 4
     },
     "settings": {
-      "N0": 1,
-      "N1": 3
+      "N1": 3,
+      "N2": 1
     },
     "hosting": {
       "N0": 3,
