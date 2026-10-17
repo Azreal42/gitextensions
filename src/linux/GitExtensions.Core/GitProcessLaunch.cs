@@ -11,13 +11,14 @@ namespace GitExtensions.Linux;
 [SupportedOSPlatform("linux")]
 internal sealed class GitProcessLaunch : IDisposable
 {
-    private readonly string _directory, _witness, _controlPath, _executable, _workingDirectory;
+    private readonly LinuxUnixSocketDirectory _directory;
+    private readonly string _witness, _controlPath, _executable, _workingDirectory;
     private readonly Socket _listener = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
     private readonly CancellationTokenSource _controlCancellation = new();
     private int _acknowledged;
-    private GitProcessLaunch(string directory, string executable, string workingDirectory)
+    private GitProcessLaunch(LinuxUnixSocketDirectory directory, string executable, string workingDirectory)
     {
-        _directory = directory; _witness = Path.Combine(directory, "exec-error"); _controlPath = Path.Combine(directory, "control");
+        _directory = directory; _witness = Path.Combine(directory.DirectoryPath, "exec-error"); _controlPath = directory.SocketPath;
         _executable = executable; _workingDirectory = workingDirectory;
     }
 
@@ -26,11 +27,11 @@ internal sealed class GitProcessLaunch : IDisposable
         string original = startInfo.FileName, target = ResolveDirectExecutable(original);
         string parentDirectory = Directory.GetCurrentDirectory(), parentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
         string[] arguments = startInfo.ArgumentList.ToArray();
-        string directory = Directory.CreateTempSubdirectory("gitextensions-exec-").FullName;
-        GitProcessLaunch launch = new(directory, original, startInfo.WorkingDirectory);
+        LinuxUnixSocketDirectory directory = LinuxUnixSocketDirectory.Create("gitextensions-exec-");
+        GitProcessLaunch? launch = null;
         try
         {
-            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            launch = new(directory, original, startInfo.WorkingDirectory);
             launch._listener.Bind(new UnixDomainSocketEndPoint(launch._controlPath));
             File.SetUnixFileMode(launch._controlPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             launch._listener.Listen(1);
@@ -41,7 +42,7 @@ internal sealed class GitProcessLaunch : IDisposable
         }
         catch (Exception failure)
         {
-            try { launch.Dispose(); }
+            try { if (launch is null) { directory.Dispose(); } else { launch.Dispose(); } }
             catch (Exception cleanupFailure) { failure.Data["GitProcessLaunchCleanupFailure"] = cleanupFailure; }
             throw;
         }
@@ -153,7 +154,10 @@ internal sealed class GitProcessLaunch : IDisposable
     }
 
     public void Dispose()
-    { _listener.Dispose(); _controlCancellation.Dispose(); Directory.Delete(_directory, recursive: true); }
+    {
+        try { _listener.Dispose(); }
+        finally { try { _controlCancellation.Dispose(); } finally { _directory.Dispose(); } }
+    }
     [StructLayout(LayoutKind.Sequential)]
     private struct PeerCredentials { internal int Pid; internal uint User, Group; }
     [DllImport("libc", EntryPoint = "getsockopt", SetLastError = true)]

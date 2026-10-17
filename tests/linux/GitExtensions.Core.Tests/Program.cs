@@ -4,6 +4,11 @@ using System.IO.Compression;
 using GitCommands.Git;
 using GitExtensions.Linux;
 
+if (args.Length == 3 && args[0] == "--unix-socket-directory-worker")
+{
+    return await UnixSocketDirectoryScenarios.RunWorkerAsync(args[1], args[2]);
+}
+
 if (args.FirstOrDefault() is "--fake-askpass" or "--fake-user-askpass")
 {
     if (args.Length != 2) { return 1; }
@@ -47,6 +52,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 
 (string Name, Func<Task> Run)[] tests =
 [
+    .. UnixSocketDirectoryScenarios.All,
     .. ComparisonGroupScenarios.All,
     .. ComparisonFileMenuScenarios.All,
     .. FileMenuDiffToolScenarios.All,
@@ -188,6 +194,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("real partial Git patch version copies never reconstruct omitted file content", DiffClipboardScenarios.RealPartialPatchAsync),
 ];
 
+if (args.Contains("--unix-socket-directory-only", StringComparer.Ordinal)) { tests = UnixSocketDirectoryScenarios.All.ToArray(); }
 if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }
 if (args.Contains("--quick-references-only", StringComparer.Ordinal)) { tests = QuickReferenceScenarios.All.ToArray(); }
 if (args.Contains("--commit-information-only", StringComparer.Ordinal)) { tests = CommitInformationScenarios.All.ToArray(); }

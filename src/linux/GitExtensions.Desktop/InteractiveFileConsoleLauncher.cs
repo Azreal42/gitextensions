@@ -39,9 +39,9 @@ public static class InteractiveFileConsoleLauncher
         IReadOnlyList<string> arguments, CancellationToken token, Func<string, IReadOnlyList<string>, Process>? startTerminal = null, string? helperExecutable = null)
     {
         token.ThrowIfCancellationRequested();
-        string directory = Directory.CreateTempSubdirectory("ge-interactive-").FullName;
-        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        string socketPath = Path.Combine(directory, "control"), requestPath = Path.Combine(directory, "request.json");
+        using LinuxUnixSocketDirectory socketDirectory = LinuxUnixSocketDirectory.Create("ge-interactive-");
+        string directory = socketDirectory.DirectoryPath;
+        string socketPath = socketDirectory.SocketPath, requestPath = Path.Combine(directory, "request.json");
         using Socket listener = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         Process? terminal = null;
         Socket? connection = null;
@@ -96,7 +96,7 @@ public static class InteractiveFileConsoleLauncher
             connection?.Dispose();
             if (peerExit is not null) { await peerExit; }
             writer?.Dispose(); peer?.Dispose(); terminal?.Dispose();
-            listener.Dispose(); Directory.Delete(directory, recursive: true);
+            listener.Dispose();
         }
     }
 
