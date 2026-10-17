@@ -406,4 +406,19 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Browse et Compare appliquent des valeurs ShowAll différentes | Préférence globale activée par défaut et relue dans le calcul affiché ; pas de surcharge propre à FormDiff. |
 | Settings perd filtre, caret/sélection ou clavier après Escape | Ce menu Settings rend l’origine filtre/liste encore valide après action ou Closed, y compris Escape. Gardes locales de comparaison, filtre et focus ; aucun retour général à chaque popup ou rebuild. |
 
-Périmètre et preuves : [TODO](todo.md), ADR 0016. Les modes de présentation ne certifient pas les menus métier ni la parité FormDiff.
+Périmètre et preuves : [TODO](todo.md), ADR 0016/0080. Une validation ciblée ne certifie pas toutes les variantes ni la parité FormDiff.
+
+
+## Menus de fichiers et validation
+
+| Piège | Règle retenue |
+| --- | --- |
+| Métadonnées de menu relisant tout l’arbre à chaque commit | Lire les modes Git sur les chemins littéraux concernés ; garder l’assertion de non-rechargement et ignorer les descendants hors sélection exacte lorsqu’un gitlink devient dossier. Les flèches ne construisent pas de menu. |
+| Outil personnalisé refusé ou éditions perdues | Git refuse `--gui` avec `--tool`. Les côtés Commit/Index sont des copies privées ; WT existant reste vivant et éditable. Le code natif 1 de `--no-index` est attendu. |
+| Reset applique chaque source à tous les fichiers | Partitionner par source et refuser un même chemin avec deux sources ; Index→WT conserve tous les octets de l’index. R vise seulement First ; Cancel reçoit la première touche dans la confirmation. |
+| Console bloquée ou résultat terminé transformé en annulation | Acquitter avant Git, attendre les vrais acteurs, sonder l’entrée de façon annulable et conserver le résultat Git déjà obtenu. `Reset chunk` appelle `checkout --patch`. |
+| TMPDIR privé trop long ou Openbox sans thème | Limite produit AF_UNIX ouverte : chemin court requis pour le lanceur actuel. Le banc garde un TMPDIR privé court et le share du thème Openbox ; un démarrage sans dépôt/cadre WM n’est pas un parcours métier réussi. |
+| Suite Core exécutée depuis une copie déplacée ou via sa DLL | Le banc utilise son apphost dans le répertoire bin canonique : recherches de sources relatives et scénarios de relancement en dépendent. Conserver les tentatives rejetées ; ne pas modifier les assertions. |
+| Publish RID modifie les locks d’une suite en cours | Publier dans un checkout isolé ; la restauration RID peut ajouter des cibles aux locks. Conserver les différences, vérifier les identités des dépendances et restaurer seulement les octets générés. Les binaires de test restent figés. |
+
+Logs et essais rejetés : `artifacts/linux/comparison-file-menus-20261017/`, paquet et preuves de livraison dans son snapshot. Les outils Xvfb et D-Bus du banc restent privés ; leur absence du PATH ne constitue pas un défaut produit.

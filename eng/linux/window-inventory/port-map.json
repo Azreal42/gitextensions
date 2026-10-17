@@ -90,8 +90,8 @@
       "linux": [
         "MainWindow"
       ],
-      "implemented": "Grille/graphe, sélection, panneaux et menus ; lectures annulables et disposition classique. Tags légers/annotés/imbriqués rattachés à leur cible native dans badges/graphe/Copy > Tags ; tooltip synchronisé, identité brute conservée pour les mutations. Retours clavier Create/Rename/Compare, F5 et View/Ctrl+I vérifiés sur2e3bba726 ; autre champ conservé pendant F5, première Échap sans réparation.",
-      "remaining": "Menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale restent incomplets ; audit global non clos. Browse reste N2 ; le contrôle natif ciblé ne certifie pas tous les panneaux ou plateformes.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Une valeur TMPDIR trop longue dépasse encore la limite des sockets Unix ; essais natifs selon le TODO.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -101,7 +101,11 @@
         "AnnotatedReferencePresentationTests",
         "RevisionContextFocusTests",
         "CreateBranchInitializationFocusTests",
-        "MainWindowBusyFocusTests"
+        "MainWindowBusyFocusTests",
+        "ComparisonFileMenuTests",
+        "FileMenuControllerTests",
+        "FileMenuAdditionalOperationsTests",
+        "InteractiveFileConsoleTests"
       ],
       "adr": [
         "0031",
@@ -113,7 +117,8 @@
         "0075",
         "0076",
         "0077",
-        "0079"
+        "0079",
+        "0080"
       ]
     },
     "GitUI.CommandsDialogs.FormLog": {
@@ -219,18 +224,20 @@
     "GitUI.CommandsDialogs.SearchWindow`1": {
       "feature": "Recherche incrémentale de fichiers/candidats",
       "group": "navigation",
-      "level": "N1",
+      "level": "N2",
       "linux": [
-        "MainWindow@FindFileInPaneAsync",
-        "Dialogs@PromptAsync"
+        "FileListFindDialog"
       ],
-      "implemented": "Recherche d’un nom puis application d’un filtre de fichiers.",
-      "remaining": "Liste de candidats et recherche incrémentale du SearchWindow générique non portées.",
-      "visual": "generique",
+      "implemented": "Sélecteur de fichiers partagé par les listes Browse/Compare : candidats capturés, recherche littérale à chaque frappe dans les noms actuels et antérieurs, préfixe absolu du dépôt et vingt résultats maximum. Flèches, Entrée et doubleclic choisissent une entrée ; Échap ferme sans appliquer de filtre regex. Le choix sélectionne le fichier existant dans la liste hôte.",
+      "remaining": "Portage limité au consommateur des listes de fichiers : la commande Windows searchfile et son résultat stdout pour Visual Studio ne sont pas raccordés. Placement, géométrie multi-écrans, vingt résultats, traductions longues, fermeture et focus de toutes les variantes demandent encore une validation native ciblée. Niveau N2 ; aucune certification du SearchWindow générique ni promotion N3.",
+      "visual": "rapproche",
       "tests": [
+        "FileMenuControllerTests",
         "FilePaneParityTests"
       ],
-      "adr": []
+      "adr": [
+        "0080"
+      ]
     },
     "GitUI.CommandsDialogs.BrowseDialog.FormOpenDirectory": {
       "feature": "Ouverture d’un dépôt",
@@ -632,16 +639,19 @@
       "linux": [
         "ResetChangesDialog"
       ],
-      "implemented": "Choix des fichiers et cible stash/premier parent ou reset de modifications.",
-      "remaining": "Audit de toutes les variantes du dialogue Windows restant.",
+      "implemented": "Confirmation partagée Reset/ResetAndDelete/Cancel pour fichiers, stash et sous-modules. Cancel reste le choix par défaut et Échap/fermeture annulent. La case de suppression des nouveaux fichiers est forcée selon présence de fichiers existants/nouveaux. Les menus First/Second fournissent les chemins et sources capturés ; un reset Index→WT préserve l’index et les sources de groupes sont partitionnées.",
+      "remaining": "Niveau N3 ciblé conservé ; la boîte confirme une sélection, elle ne remplace pas les sélecteurs de sources/fichiers de ses appelants. Auto-dimensionnement et totalité des messages/états Windows, variantes stash/sous-modules, DPI/traductions et fermeture native restent à auditer. Toute divergence de reset par rapport au produit Windows doit rester documentée ; aucune parité N4.",
       "visual": "rapproche",
       "tests": [
         "StashMenuTests",
-        "FilePaneParityTests"
+        "FilePaneParityTests",
+        "FileMenuControllerTests",
+        "ComparisonFileMenuTests"
       ],
       "adr": [
         "0035",
-        "0062"
+        "0062",
+        "0080"
       ]
     },
     "GitUI.CommandsDialogs.FormMergeBranch": {
@@ -918,8 +928,8 @@
         "CompareRevisionsDialog",
         "MainWindow"
       ],
-      "implemented": "Comparaisons commit/index/worktree, diff texte/image, lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et densité 18 px. Une feuille fichier unique ouvre les vues fichier, parents/multi les vident ; première flèche après action de mode et palettes locales conservées. Groupes ordonnés A→B, Range, BASE→B, BASE→A selon divergence et préférence globale ShowAll ; paire typée par groupe, Range capturé et dédié. BASE/HEAD de topologie figés, index/worktree dynamiques. Préférence Browse/Compare relue au calcul ; actions et fermeture de ce Settings rendent seulement l’origine filtre/liste encore valide avec caret/sélection, sans focus de rebuild. Source b692547e3, périmètre et preuves dans TODO.",
-      "remaining": "Menus métier FormDiff absents ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu/outils, gestes de sélection de plage au clavier sans oracle Windows validé et plateformes étendues encore ouverts. Parité globale non certifiée.",
+      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage.",
+      "remaining": "FormDiff reste N2. Historique Index/WT adapté explicitement à HEAD dans la fenêtre dédiée ; pas de faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée.",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
@@ -929,11 +939,28 @@
         "ComparisonFileStatusListTests",
         "FileStatusListViewTests",
         "FileStatusListBuilderTests",
-        "ComparisonGroupsDialogTests"
+        "ComparisonGroupsDialogTests",
+        "ComparisonFileMenuTests",
+        "FileMenuControllerTests",
+        "FileMenuAdditionalOperationsTests",
+        "InteractiveFileConsoleTests"
       ],
       "adr": [
         "0016",
-        "0023"
+        "0023",
+        "0080"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core des métadonnées, resets Index et flags",
+          "source": "tests/linux/GitExtensions.Core.Tests/ComparisonFileMenuScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Scénarios Core difftool par fichier et endpoint",
+          "source": "tests/linux/GitExtensions.Core.Tests/FileMenuDiffToolScenarios.cs",
+          "line": 1
+        }
       ]
     },
     "GitUI.HelperDialogs.FormCommitDiff": {
@@ -963,14 +990,16 @@
       "linux": [
         "FileHistoryDialog"
       ],
-      "implemented": "Renommages, révisions, graphe, image/texte, sauvegarde et liens vers Blame.",
-      "remaining": "Parité de tous les menus et audit natif étendu non certifiés.",
+      "implemented": "Renommages, révisions, graphe, image/texte, sauvegarde et liens vers Blame. Les menus partagés transmettent le fichier et l’endpoint capturés. Index/WT conservent leur provenance typée mais affichent explicitement l’histoire de HEAD avec une notice ; Blame porte sur un commit réel. Un fichier neuf sans histoire affiche No commits found et ne fabrique aucun blob/blame HEAD.",
+      "remaining": "N3 conservé sur son périmètre historique ciblé. Windows utilise Browse par défaut ; Linux garde la fenêtre dédiée, sans préférence équivalente ni lignes artificielles Index/WT. Tous les menus/préférences et variantes natives restent à auditer ; aucune parité globale.",
       "visual": "rapproche",
       "tests": [
-        "FileHistoryDialogTests"
+        "FileHistoryDialogTests",
+        "FileMenuControllerTests"
       ],
       "adr": [
-        "0011"
+        "0011",
+        "0080"
       ]
     },
     "GitUI.CommandsDialogs.FormBlame": {
@@ -1000,7 +1029,7 @@
       "group": "files",
       "level": "N1",
       "linux": [
-        "MainWindow@OpenWorkingFileAsync",
+        "FileMenuOperations@ExecuteAsync",
         "NativeRebaseEditorWindow"
       ],
       "implemented": "Ouverture par xdg-open/éditeur choisi ; éditeur Avalonia spécialisé pour les messages de rebase.",
@@ -1010,7 +1039,9 @@
         "FilePaneParityTests",
         "NativeRebaseEditorTests"
       ],
-      "adr": []
+      "adr": [
+        "0080"
+      ]
     },
     "GitUI.CommandsDialogs.FormGitIgnore": {
       "feature": "Édition de .gitignore/exclude",

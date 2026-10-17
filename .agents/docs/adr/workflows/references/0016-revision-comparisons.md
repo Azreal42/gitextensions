@@ -18,6 +18,6 @@ Ce menu Settings reprend son origine filtre/liste après action ou fermeture, y 
 
 Create/Checkout/Rename partagent normalisation, gardes et préférences ; Rename conserve les filtres de navigation.
 
-Restent ouverts : menus métier, métadonnées staged/tracked/sous-module, variantes de rendu/outils, gestes de plage clavier sans oracle Windows validé et plateformes étendues. Pas de parité globale certifiée ; FormDiff reste N2.
+Les menus métier et leurs métadonnées sont communs à Browse/Compare ; chaque feuille garde sa paire et les mutations restent ciblées ([ADR 0080](../../ui/0080-shared-file-menus.md)). Restent scripts/Visual Studio, découverte/réglages complets des outils, variantes de rendu, gestes de plage clavier sans oracle Windows validé et plateformes étendues. Pas de parité globale certifiée ; FormDiff reste N2.
 
 Repères : `CompareRevisionsDialog/Selection/Groups`, `ComparisonRevisionSelector`, `CompareBranchPicker`, `GitRepository.Comparisons/ComparisonGroups`, `GitComparisonGroup`, `RevisionDiffPreferencesStore`, `GitBranchNaming`, `RenameBranchDialog`, `MainWindow.Comparisons/Diffs`, `FileStatusListView/Builder`, `FileStatusListPreferencesStore`. Source, tests et preuves : [TODO](../../../todo.md).
