@@ -52,7 +52,7 @@ public sealed partial class MainWindow : Window
     private string? _navigationRevisionFilter;
     private string? _referenceSelectionOverride;
 
-    internal bool IsBusy => _busy || BrowserReads.Any(read => read.Pending != 0);
+    internal bool IsBusy => _busy || BrowserReads.Any(read => read.Pending != 0) || _commitInfo.IsLoading;
     internal Exception? LastException { get; private set; }
 
     public MainWindow()
@@ -190,6 +190,10 @@ public sealed partial class MainWindow : Window
         Closed += async (_, _) =>
         {
             _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
+            try { await _commitInfo.Completion; }
+            catch (OperationCanceledException) { }
+            catch (Exception exception) { AppendOutput("Commit information: " + exception.Message); }
+            finally { _commitInfo.Dispose(); }
             CancelBranchMenuRead();
             _commitContent?.Dispose(); _changesContent?.Dispose(); _fileContent?.Dispose(); _dashboard?.Dispose();
             _revisionFilesView?.Dispose(); _changesFilesView?.Dispose(); _fileTreeView?.Dispose();
@@ -445,7 +449,7 @@ public sealed partial class MainWindow : Window
                 if (selected is not null && selected.Hash != (_commits.SelectedItem as GitCommit)?.Hash) { _commits.SelectedItems?.Add(selected); }
             }
             ClearRevisionDiff();
-            _commitContent?.ClearImage(); _diff.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
+            _commitContent?.ClearImage(); _diff.Text = null; ClearCommitInformation(); _gpgInfo.Text = null;
             _changesContent?.ClearImage(); _changesDiff.Text = null; _selectedPatch = null; _hunks.ItemsSource = null;
             if (changedRepository) { _fileContent?.ClearImage(); _fileView.Text = null; _filePath.Text = null; }
             if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab" && SelectedTreePath is string treePath
@@ -460,7 +464,7 @@ public sealed partial class MainWindow : Window
             else
             {
                 ClearRevisionDiff();
-                _commitContent?.ClearImage(); _commitInfo.Text = null; _gpgInfo.Text = null;
+                _commitContent?.ClearImage(); ClearCommitInformation(); _gpgInfo.Text = null;
                 _diff.Text = "This repository has no commits yet.";
             }
             if (SelectedWorkingChange is GitChange change)
@@ -481,7 +485,7 @@ public sealed partial class MainWindow : Window
         if (_busy) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
         OperationFocus? previousFocus = CaptureOperationFocus();
-        bool resumeSelection = BrowserReads.Any(read => read.Current is not null);
+        bool resumeSelection = BrowserReads.Any(read => read.Current is not null) || _commitInfo.IsLoading;
         CancelBrowserReads();
         _busy = true;
         LastException = null;
@@ -516,6 +520,7 @@ public sealed partial class MainWindow : Window
                 await LoadVisibleRevisionPanelAsync();
                 if ((_tabs.SelectedItem as TabItem)?.Name == "ChangesTab") { await LoadSelectedDiffAsync(); }
             }
+            else if (!_lifetime.IsCancellationRequested) { await LoadVisibleCommitInformationAsync(); }
             RestoreOperationFocus(previousFocus);
         }
     }

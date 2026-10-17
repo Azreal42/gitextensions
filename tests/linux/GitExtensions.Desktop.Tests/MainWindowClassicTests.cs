@@ -12,6 +12,7 @@ using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using GitCommands;
 using NUnit.Framework;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace GitExtensions.Desktop.Tests;
@@ -372,7 +373,24 @@ public class MainWindowClassicTests
 
         public void Dispose()
         {
-            Window?.Close();
+            if (Window is { } window)
+            {
+                window.Close();
+                Task pending = window.CommitInformationCompletion;
+                Stopwatch timer = Stopwatch.StartNew();
+                while ((window.IsVisible || !pending.IsCompleted) && timer.Elapsed < TimeSpan.FromSeconds(15))
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    if (window.IsVisible) { window.UpdateLayout(); }
+                    AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                    Thread.Yield();
+                }
+                Assert.That(window.IsVisible, Is.False, "Fixture cleanup must close the window before its headless application scope ends.");
+                Assert.That(pending.IsCompleted, Is.True, "Fixture cleanup must drain CommitInfo before restoring its profile or deleting its repository.");
+                try { pending.GetAwaiter().GetResult(); }
+                catch (OperationCanceledException) { }
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            }
             Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", _oldConfig);
             CultureInfo.CurrentUICulture = _oldCulture;
             if (Directory.Exists(_temporary)) { Directory.Delete(_temporary, true); }

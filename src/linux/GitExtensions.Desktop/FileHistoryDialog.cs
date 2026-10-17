@@ -24,7 +24,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
     private readonly CommitGraph _graph = new() { Name = "FileHistoryGraph", Width = 180 };
     private readonly ListBox _revisions = new() { Name = "FileHistoryRevisions", SelectionMode = SelectionMode.Multiple };
     private readonly TabControl _tabs = new() { Name = "FileHistoryTabs" };
-    private readonly TextBox _commit = new() { Name = "FileHistoryCommitInfo", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+    private readonly CommitInformationView _commit = new() { Name = "FileHistoryCommitInfo" };
     private readonly FileHistoryContentView _diff = new() { Name = "FileHistoryDiff" };
     private readonly FileHistoryContentView _view = new() { Name = "FileHistoryView" };
     private readonly BlameView _blame = new() { Name = "FileHistoryBlame" };
@@ -34,6 +34,16 @@ public sealed class FileHistoryDialog : RepositoryDialog
     private bool _loading;
     private (int Line, string? Encoding)? _initialBlamePosition;
     private int _limit = 300;
+    private readonly CancellationTokenSource _informationLifetime = new();
+    private string? _informationHash, _informationPath;
+    private long _informationGeneration;
+    private Exception? _informationError;
+    private bool _informationClosing, _informationCloseReady;
+    private Window? _closingInformationOwner;
+    private readonly List<string> _informationNavigation = [];
+    private int _informationNavigationIndex = -1;
+    private bool _movingInformationNavigation;
+    internal Task InformationCompletion => _commit.Completion;
     public IReadOnlyList<GitFileHistoryEntry> History => _history;
     public GitFileHistoryEntry? SelectedEntry => _revisions.SelectedItem is GitCommit commit ? _history.FirstOrDefault(entry => entry.Commit.Hash == commit.Hash) : null;
 
@@ -62,6 +72,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
         };
         _blame.CommitInformationProvider = (line, token) => BlameDialog.ReadCommitInformationAsync(repository, line, token);
         _blame.InteractionError += error => Status.Text = error;
+        _commit.InteractionError += error => { if (!_informationClosing) { Status.Text = error; } };
+        _commit.CommandRequested += async (command, argument) => await InformationCommandAsync(command, argument);
         Width = 1100; Height = 760; MinWidth = 740; MinHeight = 480;
         _file.Text = path; _revision.Text = revision;
         _follow.Content = T("Detect and follow renames"); _exact.Content = T("Exact renames and copies only");
@@ -106,7 +118,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
         Grid layout = new() { RowDefinitions = new RowDefinitions("1*,4,2*") };
         layout.Children.Add(table); GridSplitter splitter = new() { Height = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Rows };
         Grid.SetRow(splitter, 1); layout.Children.Add(splitter); Grid.SetRow(_tabs, 2); layout.Children.Add(_tabs); Root.Children.Add(layout);
-        _revisions.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
+        _revisions.SelectionChanged += async (_, _) => { if (!_loading && !IsBusy) { RememberInformationNavigation(); await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) =>
         {
             if (args.Source != _tabs || _loading || IsBusy) { return; }
@@ -137,7 +149,22 @@ public sealed class FileHistoryDialog : RepositoryDialog
         {
             if (_tabs.SelectedIndex == 1) { await RequestDiffReloadAsync(LoadSelectionAsync); }
         };
-        Closed += (_, _) => { _view.Dispose(); _diff.Dispose(); _blame.Dispose(); foreach (Bitmap icon in _tabIcons) { icon.Dispose(); } };
+        Closing += (_, args) =>
+        {
+            if (_informationCloseReady) { return; }
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingInformationOwner = Owner as Window; }
+            _informationClosing = true; _informationLifetime.Cancel(); _commit.BeginClose();
+            Task pending = _commit.Completion;
+            if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterInformationAsync(pending); }
+        };
+        Closed += (_, _) =>
+        {
+            _informationCloseReady = true;
+            _commit.Dispose(); _informationLifetime.Dispose(); _view.Dispose(); _diff.Dispose(); _blame.Dispose();
+            foreach (Bitmap icon in _tabIcons) { icon.Dispose(); }
+            Window? owner = _closingInformationOwner; _closingInformationOwner = null;
+            if (owner is not null) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
     }
 
     public override Task InitializeAsync() => RunAsync("File History", async token =>
@@ -149,18 +176,122 @@ public sealed class FileHistoryDialog : RepositoryDialog
             string? selected = _loadedHistoryPath == path ? SelectedEntry?.Commit.Hash : null;
             _history = await Repository.GetFileHistoryAsync(path, _revision.Text ?? "HEAD",
                 new(_follow.IsChecked == true, _exact.IsChecked == true, _full.IsChecked == true, _simplify.IsChecked == true, _limit), token);
+            if (_loadedHistoryPath != path) { _informationNavigation.Clear(); _informationNavigationIndex = -1; }
             _loadedHistoryPath = path;
             _graph.Commits = _history.Select(entry => entry.Commit).ToArray();
             _graph.References = await Repository.GetReferencesAsync(token);
             _graph.CurrentHead = await Repository.ResolveRevisionAsync("HEAD", token);
             _revisions.ItemsSource = _graph.OrderedCommits;
             _revisions.SelectedItem = _graph.OrderedCommits.FirstOrDefault(commit => commit.Hash == selected) ?? _graph.OrderedCommits.FirstOrDefault();
+            RememberInformationNavigation();
+            UpdateInformationSelection(force: true);
             await LoadSelectedAsync(token);
-            Status.Text = _history.Count + " " + T("commits");
+            if (LastError is null) { Status.Text = _history.Count + " " + T("commits"); }
         }
         finally { _loading = false; }
     });
-    private Task LoadSelectionAsync() => RunAsync("Load file revision", LoadSelectedAsync);
+    private Task LoadSelectionAsync()
+    {
+        if (_informationClosing) { return Task.CompletedTask; }
+        UpdateInformationSelection();
+        if (_tabs.SelectedIndex == 0) { return LoadInformationAsync(_informationLifetime.Token); }
+        _informationGeneration++; _commit.Cancel();
+        return RunAsync("Load file revision", LoadSelectedAsync);
+    }
+
+    private void UpdateInformationSelection(bool force = false)
+    {
+        if (_informationClosing) { return; }
+        GitFileHistoryEntry? entry = SelectedEntry;
+        if (!force && _informationHash == entry?.Commit.Hash && _informationPath == entry?.Path) { return; }
+        _informationGeneration++;
+        _informationHash = entry?.Commit.Hash; _informationPath = entry?.Path;
+        if (entry is null) { _commit.SetMessage(""); }
+        else { _commit.SetRevision(Repository, entry.Commit, _graph.OrderedCommits, entry.Path); }
+    }
+
+    private async Task LoadInformationAsync(CancellationToken token)
+    {
+        long generation = _informationGeneration;
+        if (_informationError is not null && ReferenceEquals(LastException, _informationError)) { ClearError(); }
+        _informationError = null;
+        try { await _commit.LoadAsync(token); }
+        catch (OperationCanceledException) { }
+        catch (Exception exception)
+        {
+            if (!_informationClosing && generation == _informationGeneration && _tabs.SelectedIndex == 0)
+            { _informationError = exception; ReportError(exception); }
+        }
+    }
+
+    private async Task CloseAfterInformationAsync(Task pending)
+    {
+        try { await pending; }
+        catch (OperationCanceledException) { }
+        catch (Exception) { /* The current request reports its own error; closing still drains it. */ }
+        finally
+        {
+            _informationCloseReady = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(); } });
+        }
+    }
+
+    private void RememberInformationNavigation()
+    {
+        if (_movingInformationNavigation || SelectedEntry is not { } entry) { return; }
+        string hash = entry.Commit.Hash;
+        if (_informationNavigationIndex >= 0 && _informationNavigation[_informationNavigationIndex] == hash) { return; }
+        _informationNavigation.RemoveRange(_informationNavigationIndex + 1, _informationNavigation.Count - _informationNavigationIndex - 1);
+        _informationNavigation.Add(hash); _informationNavigationIndex = _informationNavigation.Count - 1;
+    }
+
+    private async Task InformationCommandAsync(CommitInformationCommand command, string? argument)
+    {
+        if (IsBusy || _informationClosing) { return; }
+        try
+        {
+            if (command == CommitInformationCommand.AddNotes && argument is not null)
+            {
+                NoteDialog dialog = new(Repository, argument) { RequestedThemeVariant = ActualThemeVariant };
+                dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+                await dialog.ShowDialog(this);
+                if (_informationClosing) { return; }
+                if (dialog.HasRepositoryChanges) { MarkRepositoryChanged(); }
+                UpdateInformationSelection(force: true);
+                if (_tabs.SelectedIndex == 0) { await LoadInformationAsync(_informationLifetime.Token); }
+                return;
+            }
+            if (command is CommitInformationCommand.Backward or CommitInformationCommand.Forward)
+            {
+                int next = _informationNavigationIndex + (command == CommitInformationCommand.Backward ? -1 : 1);
+                if (next < 0 || next >= _informationNavigation.Count) { return; }
+                _movingInformationNavigation = true;
+                try { _informationNavigationIndex = next; await SelectInformationRevisionAsync(_informationNavigation[next]); }
+                finally { _movingInformationNavigation = false; }
+            }
+            else if (command == CommitInformationCommand.NavigateRevision && argument is not null) { await SelectInformationRevisionAsync(argument); }
+            else if (command == CommitInformationCommand.NavigateReference && argument is not null)
+            {
+                string hash = await Repository.ResolveRevisionAsync(argument, _informationLifetime.Token);
+                if (!_informationClosing) { await SelectInformationRevisionAsync(hash); }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception) { if (!_informationClosing) { ReportError(exception); } }
+    }
+
+    private async Task SelectInformationRevisionAsync(string hash)
+    {
+        GitCommit? commit = _graph.OrderedCommits.FirstOrDefault(commit => commit.Hash == hash);
+        if (commit is null)
+        {
+            string message = Translations.Translate("MessageBoxes", "_cannotFindRevisionFilter", "Text", "Revision \"{0}\" is not visible in the revision grid. Remove the revision filter.");
+            await Dialogs.ShowErrorAsync(this, string.Format(System.Globalization.CultureInfo.CurrentCulture, message, hash[..Math.Min(7, hash.Length)]));
+            return;
+        }
+        _revisions.SelectedItems?.Clear(); _revisions.SelectedItem = commit; _revisions.ScrollIntoView(commit);
+        _revisions.Focus();
+    }
     private async Task LoadSelectedAsync(CancellationToken token)
     {
         GitFileHistoryEntry? entry = SelectedEntry;
@@ -168,7 +299,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
         if (entry is null)
         {
             Title = T("File History") + " — " + _file.Text;
-            _commit.Text = ""; _diff.ShowDiff(T("No commits found.")); _view.ShowDiff(T("No commits found."));
+            _commit.SetMessage(""); _diff.ShowDiff(T("No commits found.")); _view.ShowDiff(T("No commits found."));
             _blame.SetBlame(new(_file.Text ?? "", null, [], []));
             tabs[2].IsEnabled = tabs[3].IsEnabled = false;
             if (_tabs.SelectedIndex >= 2) { _tabs.SelectedIndex = 1; }
@@ -176,10 +307,14 @@ public sealed class FileHistoryDialog : RepositoryDialog
         }
         GitCommit commit = entry.Commit;
         Title = T("File History") + " — " + entry.Path;
-        _commit.Text = $"{T("Commit")}: {commit.Hash}\n{T("Author")}: {commit.AuthorName} <{commit.AuthorEmail}>\n{T("Date")}: {commit.AuthoredAt:O}\n{T("File")}: {entry.Path}\n\n{commit.Subject}\n{commit.Body}";
+        UpdateInformationSelection();
         tabs[2].IsEnabled = tabs[3].IsEnabled = !entry.IsDeleted;
         if (entry.IsDeleted && _tabs.SelectedIndex >= 2) { _tabs.SelectedIndex = 1; }
-        if (_tabs.SelectedIndex == 1)
+        if (_tabs.SelectedIndex == 0)
+        {
+            if (!_informationClosing) { await LoadInformationAsync(token); }
+        }
+        else if (_tabs.SelectedIndex == 1)
         {
             _diff.TextView.BeginDocumentLoad();
             GitCommit? other = _revisions.SelectedItems?.OfType<GitCommit>().LastOrDefault(selected => selected.Hash != commit.Hash);

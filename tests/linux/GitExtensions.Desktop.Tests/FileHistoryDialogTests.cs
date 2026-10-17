@@ -270,7 +270,7 @@ public class FileHistoryDialogTests
     internal static void Click(Window window, string name)
     { Button button = Field<Button>(window, name); Assert.That(button.IsEnabled, Is.True, name); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }
     internal static async Task Idle(RepositoryDialog dialog)
-    { await Until(() => !dialog.IsBusy); Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString() ?? dialog.LastError); }
+    { await Until(() => !dialog.IsBusy && dialog.GetVisualDescendants().OfType<CommitInformationView>().All(view => !view.IsLoading)); Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString() ?? dialog.LastError); }
     internal static async Task Until(Func<bool> predicate)
     { using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15)); while (!predicate()) { await Task.Delay(20, timeout.Token); } }
     private static async Task ExpectAsync<T>(Func<Task> action) where T : Exception
@@ -292,14 +292,14 @@ public class FileHistoryDialogTests
         }
         using MemoryStream stream = new(); bitmap.Save(stream); return stream.ToArray();
     }
-    internal static (GitRepository Repository, string Started) SlowRepository(Fixture fixture, string command)
+    internal static (GitRepository Repository, string Started) SlowRepository(Fixture fixture, string command, string? startWhenFileExists = null)
     {
         if (OperatingSystem.IsWindows()) { throw new PlatformNotSupportedException(); }
         string directory = Path.GetDirectoryName(fixture.Repository)!;
         string started = Path.Combine(directory, "slow-" + command + ".started");
         string script = Path.Combine(directory, "slow-" + command + ".py");
         File.WriteAllText(script, "#!/usr/bin/python3\nimport os, pathlib, sys, time\n" +
-            "if " + System.Text.Json.JsonSerializer.Serialize(command) + " in sys.argv[1:]:\n" +
+            "if " + System.Text.Json.JsonSerializer.Serialize(command) + " in sys.argv[1:]" + (startWhenFileExists is null ? "" : " and pathlib.Path(" + System.Text.Json.JsonSerializer.Serialize(startWhenFileExists) + ").exists()") + ":\n" +
             "    pathlib.Path(__file__).with_suffix('.started').write_text(str(os.getpid()))\n    time.sleep(30)\n" +
             "os.execvp('git', ['git'] + sys.argv[1:])\n");
         File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);

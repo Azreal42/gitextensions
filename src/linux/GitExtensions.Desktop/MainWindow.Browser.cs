@@ -16,7 +16,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed partial class MainWindow
 {
     private readonly TreeView _navigation = new() { Name = "RepositoryNavigation" };
-    private readonly TextBox _commitInfo = ReadOnlyText();
+    private readonly CommitInformationView _commitInfo = new() { Name = "CommitInformation", ShowBranchesAsLinks = true };
     private readonly TextBox _gpgInfo = ReadOnlyText();
     private readonly Dictionary<string, Control> _workflowViews = new(StringComparer.Ordinal);
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
@@ -58,9 +58,7 @@ public sealed partial class MainWindow
 
         _commits.Name = "RevisionHistory";
         _commits.Focusable = true;
-        _commitInfo.TextWrapping = TextWrapping.Wrap;
-        _commitInfo.FontFamily = FontFamily.Default;
-        _commitInfo.Name = "CommitInformation";
+        InitializeCommitInformation();
         _commits.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) =>
         {
             Control row = RevisionHistoryRow.Create(commit, _historyGraph.References);
@@ -264,7 +262,7 @@ public sealed partial class MainWindow
     {
         if (_commitInfoPosition == CommitInfoPosition.BelowList) { SelectDetailsTab("CommitInfoTab"); }
         _tabs.UpdateLayout();
-        _commitInfo.Focus();
+        _commitInfo.FocusContent();
     }
 
     private Control BuildRevisionTable()
@@ -427,7 +425,8 @@ public sealed partial class MainWindow
 
     private void UpdateCommitInfo(GitCommit commit)
     {
-        _commitInfo.Text = $"{T("Author")}: {commit.AuthorName}\n{commit.AuthorEmail}\n\n{T("Date")}: {commit.AuthoredAt.LocalDateTime:g}\n\n{T("Commit")}: {commit.Hash}\n\n{T("Parents")}: {string.Join("\n", commit.Parents)}\n\n{commit.Subject}\n\n{commit.Body}";
+        _commitInfoLoadTask = null;
+        _commitInfo.SetRevision(_repository, commit, _history);
     }
 
 }

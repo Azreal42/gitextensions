@@ -159,6 +159,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. PushScenarios.All,
     .. RemoteBranchDeletionScenarios.All,
     .. QuickReferenceScenarios.All,
+    .. CommitInformationScenarios.All,
     .. ReferenceSortingScenarios.All,
     .. RemoteSettingsScenarios.All,
     .. WorktreeScenarios.All,
@@ -189,6 +190,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 
 if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }
 if (args.Contains("--quick-references-only", StringComparer.Ordinal)) { tests = QuickReferenceScenarios.All.ToArray(); }
+if (args.Contains("--commit-information-only", StringComparer.Ordinal)) { tests = CommitInformationScenarios.All.ToArray(); }
 if (args.Contains("--reference-sorting-only", StringComparer.Ordinal)) { tests = ReferenceSortingScenarios.All.ToArray(); }
 if (args.Contains("--remote-settings-only", StringComparer.Ordinal)) { tests = RemoteSettingsScenarios.All.ToArray(); }
 if (args.Contains("--worktrees-only", StringComparer.Ordinal)) { tests = WorktreeScenarios.All.ToArray(); }

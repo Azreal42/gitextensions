@@ -44,7 +44,7 @@ public class BlameDialogTests
             Point point = margin.TranslatePoint(new Point(120, blame.TextView.Editor.TextArea.TextView.DefaultLineHeight * 1.5), dialog)!.Value;
             dialog.MouseMove(point); dialog.MouseDown(point, MouseButton.Left); dialog.MouseUp(point, MouseButton.Left);
             await Helpers.Idle(dialog);
-            Assert.That(Helpers.Field<TextBox>(dialog, "BlameCommitInfo").Text, Does.Contain("Béatrice <beatrice@example.invalid>").And.Contain("Actual author commit body."));
+            Assert.That(Helpers.Field<CommitInformationView>(dialog, "BlameCommitInfo").Text, Does.Contain("Béatrice <beatrice@example.invalid>").And.Contain("Actual author commit body."));
             Assert.That(blame.SelectedLine!.Line.LineNumber, Is.EqualTo(2));
             Assert.That(margin.TranslatePoint(default, dialog)!.Value.X + margin.Bounds.Width,
                 Is.LessThan(blame.TextView.Editor.TextArea.TextView.TranslatePoint(default, dialog)!.Value.X));

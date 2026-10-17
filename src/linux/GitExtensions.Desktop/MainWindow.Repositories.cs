@@ -115,7 +115,7 @@ public sealed partial class MainWindow
                 ClearRevisionDiff();
                 _navigationRevisionFilter = null; ResetBranchFilter();
                 _commitContent?.ClearImage(); _changesContent?.ClearImage(); _fileContent?.ClearImage();
-                _diff.Text = null; _fileView.Text = null; _commitInfo.Text = null; _gpgInfo.Text = null;
+                _diff.Text = null; _fileView.Text = null; ClearCommitInformation(); _gpgInfo.Text = null;
                 _repositorySummary = T("Open a repository to begin");
                 SetDashboardVisible(true);
             }

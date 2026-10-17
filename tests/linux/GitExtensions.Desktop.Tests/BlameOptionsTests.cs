@@ -216,11 +216,13 @@ public class BlameOptionsTests
     {
         if (!OperatingSystem.IsLinux()) { Assert.Ignore("Linux process cancellation scenario."); return; }
         using Fixture fixture = await Fixture.CreateAsync(Helpers.Initial, Helpers.Initial);
-        (GitRepository repository, string started) = Helpers.SlowRepository(fixture, "show");
+        string enable = Path.Combine(Path.GetDirectoryName(fixture.Repository)!, "slow-tooltip.enable");
+        (GitRepository repository, string started) = Helpers.SlowRepository(fixture, "show", enable);
         BlameDialog dialog = new(repository, "file.txt"); dialog.Show();
         try
         {
             await dialog.InitializeAsync(); dialog.UpdateLayout();
+            await File.WriteAllTextAsync(enable, "enabled after the initial CommitInfo read");
             BlameView view = Helpers.Field<BlameView>(dialog, "BlameView");
             dialog.MouseMove(AuthorPoint(dialog, 0));
             await Helpers.Until(() => File.Exists(started) && new FileInfo(started).Length > 0);

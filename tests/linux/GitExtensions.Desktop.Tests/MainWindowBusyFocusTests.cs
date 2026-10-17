@@ -233,7 +233,7 @@ public sealed class MainWindowBusyFocusTests
         Task work = Run(main, _ => gate.Repository.GetStatusAsync(Token(main)));
         try
         {
-            await Until(() => gate.HasStarted); TextBox info = Field<TextBox>(main, "CommitInformation");
+            await Until(() => gate.HasStarted); SelectableTextBlock info = Field<CommitInformationView>(main, "CommitInformation").MessageControl;
             Assert.That(info.IsEffectivelyEnabled, Is.True); PushProcessTestDriver.Pointer(info);
             Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(info));
             gate.Release(); await work; await Ready(main);

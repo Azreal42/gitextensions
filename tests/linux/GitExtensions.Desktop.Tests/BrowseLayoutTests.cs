@@ -44,7 +44,7 @@ public class BrowseLayoutTests
         main.KeyReleaseQwerty(PhysicalKey.Digit2, RawInputModifiers.Control);
         await LayoutAsync(main);
         Assert.That((Details(main).SelectedItem as TabItem)?.Name, Is.EqualTo("CommitInfoTab"));
-        Assert.That(Information(main).IsFocused, Is.True, "Ctrl+2 must expose and focus information when it is below the history.");
+        Assert.That(Information(main).MessageControl.IsFocused, Is.True, "Ctrl+2 must expose and focus information when it is below the history.");
         Assert.That(main.LastException, Is.Null);
     }
 
@@ -241,7 +241,7 @@ public class BrowseLayoutTests
 
     private static T Field<T>(Window owner, string? name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(control => name is null || control.Name == name);
     private static ListBox History(Window owner) => Field<ListBox>(owner, "RevisionHistory");
-    private static TextBox Information(Window owner) => Field<TextBox>(owner, "CommitInformation");
+    private static CommitInformationView Information(Window owner) => Field<CommitInformationView>(owner, "CommitInformation");
     private static TabControl Details(Window owner) => Field<TabControl>(owner, "DetailsTabs");
     private static string[] SelectedHashes(Window owner) => History(owner).SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash).OrderBy(hash => hash, StringComparer.Ordinal).ToArray();
     private static string Icon(CommitInfoPosition position) => position switch { CommitInfoPosition.BelowList => "LayoutFooterTab.png", CommitInfoPosition.LeftwardFromList => "LayoutSidebarTopLeft.png", _ => "LayoutSidebarTopRight.png" };

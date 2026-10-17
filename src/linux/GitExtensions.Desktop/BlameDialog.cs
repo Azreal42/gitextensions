@@ -16,7 +16,7 @@ public sealed class BlameDialog : RepositoryDialog
     private readonly CheckBox _moves = new() { Name = "BlameDetectMoves" };
     private readonly CheckBox _copies = new() { Name = "BlameDetectCopies" };
     private readonly BlameView _view;
-    private readonly TextBox _commit = new() { Name = "BlameCommitInfo", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+    private readonly CommitInformationView _commit = new() { Name = "BlameCommitInfo", ShowRevisionLinks = false };
     private readonly FileHistoryContentView _changes = new() { Name = "BlameChanges" };
     private readonly TabControl _tabs = new() { Name = "BlameTabs" };
     private readonly int _initialLine;
@@ -25,6 +25,12 @@ public sealed class BlameDialog : RepositoryDialog
     private bool _initialFileEncodingApplied;
     private bool _synchronizingPreferences;
     private bool _preferencesFromCheckboxes;
+    private readonly CancellationTokenSource _informationLifetime = new();
+    private bool _informationClosing, _informationCloseReady;
+    private long _informationGeneration;
+    private Exception? _informationError;
+    private Window? _closingInformationOwner;
+    internal Task InformationCompletion => _commit.Completion;
     public GitFileBlame? LastBlame { get; private set; }
 
     public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1,
@@ -39,6 +45,22 @@ public sealed class BlameDialog : RepositoryDialog
         _view = new(avatarProvider) { Name = "BlameView" };
         _view.CommitInformationProvider = (line, token) => ReadCommitInformationAsync(repository, line, token);
         _view.InteractionError += error => Status.Text = error;
+        _commit.InteractionError += error => { if (!_informationClosing) { Status.Text = error; } };
+        _commit.CommandRequested += async (command, argument) =>
+        {
+            if (command != CommitInformationCommand.AddNotes || argument is null || IsBusy || _informationClosing) { return; }
+            NoteDialog dialog = new(Repository, argument) { RequestedThemeVariant = ActualThemeVariant };
+            dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+            try
+            {
+                await dialog.ShowDialog(this);
+                if (_informationClosing) { return; }
+                if (dialog.HasRepositoryChanges) { MarkRepositoryChanged(); }
+                await UpdateInfoAsync();
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception exception) { if (!_informationClosing) { ReportError(exception); } }
+        };
         Width = 1100; Height = 760; MinWidth = 740; MinHeight = 480;
         _file.Text = path; _revision.Text = revision ?? ""; _initialLine = initialLine; _initialPath = path;
         _initialFileEncodingName = fileEncodingName;
@@ -97,8 +119,22 @@ public sealed class BlameDialog : RepositoryDialog
         {
             if (_tabs.SelectedIndex == 1 && _view.SelectedLine is not null) { await RequestDiffReloadAsync(() => ShowChangesAsync()); }
         };
-        Closing += (_, _) => _view.CancelAvatarLoading();
-        Closed += (_, _) => { _view.Dispose(); _changes.Dispose(); };
+        Closing += (_, args) =>
+        {
+            _view.CancelAvatarLoading();
+            if (_informationCloseReady) { return; }
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingInformationOwner = Owner as Window; }
+            _informationClosing = true; _informationLifetime.Cancel(); _commit.BeginClose();
+            Task pending = _commit.Completion;
+            if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterInformationAsync(pending); }
+        };
+        Closed += (_, _) =>
+        {
+            _informationCloseReady = true;
+            _commit.Dispose(); _informationLifetime.Dispose(); _view.Dispose(); _changes.Dispose();
+            Window? owner = _closingInformationOwner; _closingInformationOwner = null;
+            if (owner is not null) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
     }
 
     public override Task InitializeAsync() => RunAsync("Blame", async token =>
@@ -118,17 +154,49 @@ public sealed class BlameDialog : RepositoryDialog
         _tabs.SelectedIndex = 0;
         await SetCommitInfoAsync(_view.SelectedLine, token);
         Title = T("Blame") + " (" + path + ")";
-        Status.Text = LastBlame.Lines.Count + " " + T("lines");
+        if (LastError is null) { Status.Text = LastBlame.Lines.Count + " " + T("lines"); }
     });
 
-    private Task UpdateInfoAsync() => RunAsync("Commit information", token => SetCommitInfoAsync(_view.SelectedLine, token));
-    private async Task SetCommitInfoAsync(GitFileBlameLine? selected, CancellationToken token)
+    private Task UpdateInfoAsync() => SetCommitInfoAsync(_view.SelectedLine, _informationLifetime.Token);
+    private Task SetCommitInfoAsync(GitFileBlameLine? selected, CancellationToken token)
     {
-        if (selected is null) { _commit.Text = T("This file has no lines."); return; }
+        if (_informationClosing) { return Task.CompletedTask; }
+        _informationGeneration++;
+        if (selected is null) { _commit.SetMessage(T("This file has no lines.")); return Task.CompletedTask; }
         GitBlameLine line = selected.Line;
-        string body = line.Hash.All(character => character == '0') ? T("Not committed yet")
-            : (await Repository.GetLogAsync(1, line.Hash, token, all: false)).Single().Body;
-        _commit.Text = $"{T("Commit")}: {line.Hash}\n{T("Author")}: {line.AuthorName} <{line.AuthorEmail}>\n{T("Date")}: {line.AuthoredAt:O}\n{T("File")}: {selected.OriginalPath}:{line.OriginalLine}\n\n{line.Summary}\n{body}";
+        string context = selected.OriginalPath + ":" + line.OriginalLine;
+        if (line.Hash.All(character => character == '0'))
+        {
+            _commit.SetMessage($"{T("Not committed yet")}\n{T("Author")}: {line.AuthorName} <{line.AuthorEmail}>\n{T("File")}: {context}\n\n{line.Summary}");
+            return Task.CompletedTask;
+        }
+        _commit.SetRevision(Repository, new(line.Hash, [], line.AuthorName, line.AuthorEmail, line.AuthoredAt, line.Summary, ""), context: context);
+        return LoadInformationAsync(_informationGeneration, token);
+    }
+
+    private async Task LoadInformationAsync(long generation, CancellationToken token)
+    {
+        if (_informationError is not null && ReferenceEquals(LastException, _informationError)) { ClearError(); }
+        _informationError = null;
+        try { await _commit.LoadAsync(token); }
+        catch (OperationCanceledException) { }
+        catch (Exception exception)
+        {
+            if (!_informationClosing && generation == _informationGeneration)
+            { _informationError = exception; ReportError(exception); }
+        }
+    }
+
+    private async Task CloseAfterInformationAsync(Task pending)
+    {
+        try { await pending; }
+        catch (OperationCanceledException) { }
+        catch (Exception) { /* The current request reports its own error; closing still drains it. */ }
+        finally
+        {
+            _informationCloseReady = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(); } });
+        }
     }
 
     private Task NavigateAsync(bool previous, GitFileBlameLine? contextLine = null) => RunAsync("Blame", async token =>
@@ -198,12 +266,11 @@ public sealed class BlameDialog : RepositoryDialog
         string committer = "";
         if (!line.Hash.All(character => character == '0'))
         {
-            GitResult result = await repository.RunAsync(["show", "--encoding=UTF-8", "--no-patch", "--format=%cn%x00%ce%x00%cI", line.Hash, "--"], token);
-            string[] fields = result.StandardOutput.TrimEnd('\r', '\n').Split('\0');
-            DateTimeOffset committed = DateTimeOffset.Parse(fields[2], CultureInfo.InvariantCulture);
-            if (fields[0] != line.AuthorName || committed != line.AuthoredAt)
+            GitCommitDetails details = await repository.GetCommitDetailsAsync(line.Hash, false, token);
+            DateTimeOffset committed = details.Committer.Date;
+            if (details.Committer.Name != line.AuthorName || committed != line.AuthoredAt)
             {
-                committer = "\n" + translations.Translate("Committer") + ": " + fields[0] + "\n" + translations.Translate("Commit date") + ": " + committed.ToString("G", CultureInfo.CurrentCulture);
+                committer = "\n" + translations.Translate("Committer") + ": " + details.Committer.Name + "\n" + translations.Translate("Commit date") + ": " + committed.ToString("G", CultureInfo.CurrentCulture);
             }
         }
         return author + "\n" + date + committer + "\n" + translations.Translate("Commit hash") + ": " + line.Hash[..Math.Min(9, line.Hash.Length)] +
