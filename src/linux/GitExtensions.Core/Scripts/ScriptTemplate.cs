@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace GitExtensions.Linux.Scripts;
 
 public enum ScriptExpansionStatus { Completed, Aborted, Cancelled, Declined }
-public enum ScriptExpansionError { None, EmptyCommand, NoRevisionGrid, MissingSelectedRevision, MissingCurrentRevision, InputUnavailable }
+public enum ScriptExpansionError { None, EmptyCommand, NoRevisionGrid, MissingSelectedRevision, MissingCurrentRevision, InputUnavailable, InvalidArguments }
 public enum ScriptRequestKind { Confirmation, ChooseReference, ChooseRemote, UserInput, UserFiles }
 public enum ScriptReplyKind { Accepted, Rejected, Cancelled }
 public enum ScriptTargetKind { External, OpenUrl, Plugin, NavigateTo, PowerShell }
@@ -12,12 +12,14 @@ public enum ScriptTargetKind { External, OpenUrl, Plugin, NavigateTo, PowerShell
 public sealed record ScriptRequest(ScriptRequestKind Kind, string ScriptName, string? Option = null,
     string? Label = null, string? DefaultValue = null, IReadOnlyList<string>? Candidates = null);
 public sealed record ScriptReply(ScriptReplyKind Kind, string? Value = null);
-/// <summary>Prepared template text, not process argv or an execution result. Shell/argument transport belongs to the future launcher.</summary>
+/// <summary>Historical template preview plus an optional exact execution plan; never an execution result.</summary>
 public sealed record ScriptExpansionResult(string? Arguments, ScriptExpansionStatus Status,
     ScriptExpansionError Error = ScriptExpansionError.None, string? Option = null)
 {
     public string? Command { get; init; }
     public ScriptTargetKind Target { get; init; } = ScriptTargetKind.External;
+    public ScriptExecutionPlan? ExecutionPlan { get; init; }
+    public string? Diagnostic { get; init; }
     public IReadOnlyList<ScriptRequest> Requests { get; init; } = [];
 }
 
@@ -113,9 +115,10 @@ public static class ScriptTemplate
                 if (answer.Kind != ScriptReplyKind.Accepted)
                 { return Result(null, answer.Kind == ScriptReplyKind.Cancelled ? ScriptExpansionStatus.Cancelled : ScriptExpansionStatus.Declined); }
             }
-            ScriptExpansionResult inputs = await ParseInputsAsync(script.Arguments).ConfigureAwait(false);
+            ScriptArgumentPlanBuilder argumentBuilder = new(script.Arguments);
+            ScriptExpansionResult inputs = await ParseInputsAsync(script.Arguments, argumentBuilder).ConfigureAwait(false);
             if (inputs.Status != ScriptExpansionStatus.Completed) { return inputs; }
-            ScriptExpansionResult parsed = await ParseAsync(inputs.Arguments).ConfigureAwait(false);
+            ScriptExpansionResult parsed = await ParseAsync(inputs.Arguments, argumentBuilder).ConfigureAwait(false);
             if (parsed.Status != ScriptExpansionStatus.Completed) { return parsed; }
             string command = script.Command;
             bool Matches(string value) => context.Culture.CompareInfo.Compare(command, value, CompareOptions.IgnoreCase) == 0;
@@ -133,10 +136,19 @@ public static class ScriptTemplate
             { return Result(null, ScriptExpansionStatus.Aborted, ScriptExpansionError.NoRevisionGrid); }
             if (target == ScriptTargetKind.Plugin) { command = command.Replace("plugin:", "", StringComparison.Ordinal); }
             if (target == ScriptTargetKind.NavigateTo) { command = command.Replace("navigateTo:", "", StringComparison.Ordinal); }
-            return parsed with { Command = command, Target = target };
+            if (command.Contains('\0') || context.WorkingDir.Contains('\0') || parsed.Arguments?.Contains('\0') == true)
+            { return parsed with { Status = ScriptExpansionStatus.Aborted, Error = ScriptExpansionError.InvalidArguments, Diagnostic = "Script command, working directory and arguments cannot contain NUL." }; }
+            ScriptArgumentPlan? argumentPlan;
+            // PowerShell explicitly interprets the preview as program text; Windows plugins ignore prepared arguments.
+            // Neither route claims that this text is a reconstructed native argv.
+            if (target is ScriptTargetKind.PowerShell or ScriptTargetKind.Plugin) { argumentPlan = new([], parsed.Arguments); }
+            else if (!argumentBuilder.TryBuild(parsed.Arguments, target is ScriptTargetKind.External or ScriptTargetKind.NavigateTo ? command : null, out argumentPlan, out string? diagnostic))
+            { return parsed with { Status = ScriptExpansionStatus.Aborted, Error = ScriptExpansionError.InvalidArguments, Diagnostic = diagnostic }; }
+            return parsed with { Command = command, Target = target,
+                ExecutionPlan = new(command, context.WorkingDir, argumentPlan!, target, script.RunInBackground) };
         }
 
-        private async Task<ScriptExpansionResult> ParseInputsAsync(string? arguments)
+        private async Task<ScriptExpansionResult> ParseInputsAsync(string? arguments, ScriptArgumentPlanBuilder argumentBuilder)
         {
             if (arguments is null) { return Result(null); }
             Match match;
@@ -149,7 +161,9 @@ public static class ScriptTemplate
                 ScriptReply? reply = await RequestAsync(new(ScriptRequestKind.UserInput, scriptName, "UserInput:" + label, label, defaultValue.Arguments)).ConfigureAwait(false);
                 if (reply is null) { return Result(null, ScriptExpansionStatus.Aborted, ScriptExpansionError.InputUnavailable); }
                 if (reply.Kind != ScriptReplyKind.Accepted) { return Result(null, ScriptExpansionStatus.Cancelled); }
+                argumentBuilder.Replace("UserInput:" + label, [reply.Value ?? ""], [reply.Value ?? ""]);
                 arguments = ReplaceUserInput("UserInput:" + label, arguments, reply.Value ?? "");
+                argumentBuilder.Replace(match.Value[1..^1], [reply.Value ?? ""], [reply.Value ?? ""]);
                 arguments = ReplaceUserInput(match.Value[1..^1], arguments, reply.Value ?? "");
             }
             foreach (string option in new[] { "UserInput", "UserFiles" })
@@ -159,12 +173,13 @@ public static class ScriptTemplate
                     scriptName, option, DefaultValue: option == "UserInput" ? "" : null)).ConfigureAwait(false);
                 if (reply is null) { return Result(null, ScriptExpansionStatus.Aborted, ScriptExpansionError.InputUnavailable, option); }
                 if (reply.Kind != ScriptReplyKind.Accepted) { return Result(null, ScriptExpansionStatus.Cancelled); }
+                argumentBuilder.Replace(option.Trim(), [reply.Value ?? ""], [reply.Value ?? ""]);
                 arguments = ReplaceOption(option, arguments, [reply.Value ?? ""]);
             }
             return Result(arguments);
         }
 
-        internal async Task<ScriptExpansionResult> ParseAsync(string? arguments)
+        internal async Task<ScriptExpansionResult> ParseAsync(string? arguments, ScriptArgumentPlanBuilder? argumentBuilder = null)
         {
             token.ThrowIfCancellationRequested();
             _currentLoaded = _selectedLoaded = false; _currentRemote = "";
@@ -204,6 +219,7 @@ public static class ScriptTemplate
                 { continue; } // ParseScriptArguments retains a placeholder when a nullable scalar is absent.
                 string[]? values = await ValuesAsync(option).ConfigureAwait(false);
                 if (values is null) { return Result(null, ScriptExpansionStatus.Aborted, ScriptExpansionError.InputUnavailable, option); }
+                argumentBuilder?.Replace(option.Trim(), ExactValues(option, values), values);
                 arguments = ReplaceOption(option, arguments, values);
             }
             return Result(arguments);
@@ -266,6 +282,15 @@ public static class ScriptTemplate
             }
             return value is null ? null : [value];
             Task<string?> SelectReferences(ScriptReferenceKind kind) => SelectAsync(option, references.Where(reference => reference.Kind == kind).Select(reference => reference.Name).ToArray(), false);
+        }
+
+        private IReadOnlyList<string> ExactValues(string option, string[] legacy)
+        {
+            if (!Options.Contains(option) && context.AdditionalOptions.FirstOrDefault(item => item.Name == option) is { } supplied)
+            { return supplied.RawValues ?? supplied.Values; }
+            if (option == "SelectedRelativePaths")
+            { return context.SelectedFolder is string folder ? [folder] : context.SelectedRelativePaths; }
+            return legacy;
         }
 
         private string EscapePath(string path) => context.ArgumentPlatform == ScriptArgumentPlatform.Windows

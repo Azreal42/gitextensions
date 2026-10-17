@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -24,6 +25,12 @@ public abstract class RepositoryDialog : Window
     protected RepositoryDialog(GitRepository repository, string title)
     {
         Repository = repository;
+        DesktopScriptExecutor.AttachHotkeys(this, repository, script => RunAsync(script.GetDisplayName(), async token =>
+        {
+            ScriptMayHaveChangedRepository = true;
+            MarkRepositoryChanged();
+            await DesktopScriptExecutor.ExecuteAsync(this, Repository, script, token);
+        }));
         Title = T(title);
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Content = Root;
@@ -42,6 +49,7 @@ public abstract class RepositoryDialog : Window
 
     internal bool IsBusy { get; private set; }
     public bool HasRepositoryChanges { get; private set; }
+    public bool ScriptMayHaveChangedRepository { get; private set; }
     public string? LastError { get; private set; }
     internal Exception? LastException { get; private set; }
     public abstract Task InitializeAsync();
@@ -49,6 +57,16 @@ public abstract class RepositoryDialog : Window
     protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
     protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
+    private protected async Task<bool> RunScriptEventAsync(ScriptWorkflowScope scope, ScriptEvent scriptEvent)
+    {
+        try { return await scope.RunAsync(scriptEvent); }
+        finally
+        {
+            ScriptMayHaveChangedRepository |= scope.MayHaveRunScripts;
+            if (ScriptMayHaveChangedRepository) { MarkRepositoryChanged(); }
+        }
+    }
+
     protected void ReportError(Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
     protected void ClearError() { LastError = null; LastException = null; }
 

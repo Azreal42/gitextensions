@@ -95,6 +95,7 @@ public sealed partial class MainWindow
         top.Children.Add(BuildMenu());
         _repositoryToolbars = new StackPanel { Spacing = 0 };
         _repositoryToolbars.Children.Add(toolbar);
+        _repositoryToolbars.Children.Add(BuildScriptsToolbar());
         top.Children.Add(_repositoryToolbars);
         root.Children.Add(top);
 
@@ -422,7 +423,11 @@ public sealed partial class MainWindow
         await dialog.ShowDialog(this);
     }
 
-    private Task CheckoutCommitAsync() => RunAsync("Checkout revision", r => r.CheckoutAsync(SelectedCommit().Hash, detached: true, cancellationToken: Token));
+    private Task CheckoutCommitAsync()
+    {
+        string revision = SelectedCommit().Hash;
+        return RunAsync("Checkout revision", r => CheckoutRevisionWithScriptEventsAsync(r, revision, Token));
+    }
 
     private void UpdateCommitInfo(GitCommit commit)
     {

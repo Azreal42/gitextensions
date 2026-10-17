@@ -144,7 +144,7 @@ public sealed partial class MainWindow
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
             hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings), fonts.Preferences,
-            (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError);
+            (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError, new ScriptsPreferencesStore().Load(), (baseline, draft) => new ScriptsPreferencesStore().SaveChanges(baseline, draft));
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

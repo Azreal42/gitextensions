@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -113,11 +114,28 @@ public sealed partial class MainWindow
         if (_amend.IsChecked == true && !await Dialogs.ConfirmAsync(this, "Amend commit", "Replace the latest commit with the staged changes and this message?")) { return; }
         await RunAsync("Commit", async repository =>
         {
-            GitResult result = await repository.CommitAsync(message, _amend.IsChecked == true, Token);
+            using ScriptWorkflowScope scripts = new(WorkflowOwner, repository, Token);
+            if (!await scripts.RunAsync(ScriptEvent.BeforeCommit)) { return; }
+            scripts.ThrowIfStopped();
+            GitResult result = await repository.CommitAsync(message, _amend.IsChecked == true, scripts.Token);
+            scripts.ThrowIfStopped();
+            await scripts.RunAsync(ScriptEvent.AfterCommit);
             AppendOutput(result.StandardOutput + result.StandardError);
             _commitMessage.Text = "";
             _amend.IsChecked = false;
         });
+    }
+
+    private async Task CheckoutRevisionWithScriptEventsAsync(GitRepository repository, string revision, CancellationToken token)
+    {
+        using ScriptWorkflowScope scripts = new(WorkflowOwner, repository, token);
+        if (!await scripts.RunAsync(ScriptEvent.BeforeCheckout)) { return; }
+        scripts.ThrowIfStopped();
+        // Preserve Windows' completed-false policy without catching launch/IO/cancellation exceptions.
+        GitResult result = await repository.CheckoutRevisionAttemptAsync(revision, scripts.Token);
+        scripts.ThrowIfStopped();
+        await scripts.RunAsync(ScriptEvent.AfterCheckout);
+        if (!result.Success) { throw new GitCommandException(["switch", "--detach", revision], result); }
     }
 
     private async Task DiscardAsync()

@@ -78,9 +78,14 @@ public sealed partial class CompareRevisionsDialog
         _fileMenuOperations = new(this, RunFileMenuOperationAsync, IsCurrentFileMenuSelection, info => FileMenuExternalLauncher(info), _selectionLifetime.Token, T);
         FileMenuAdditionalOperations additional = _fileMenuAdditionalOperations = new(this, RunFileMenuOperationAsync,
             IsCurrentFileMenuSelection, info => FileMenuExternalLauncher(info), _selectionLifetime.Token);
+        DesktopScriptExecutor.SetFileProvider(this, CaptureFileMenuSelection);
+        DesktopScriptExecutor.SetReadingPositionProvider(this, () => (ActiveView.TextView.CurrentFileLine, ActiveView.TextView.Editor.TextArea.Caret.Column));
         _fileMenuController = new(_filesView, Translations, new FileMenuHost
         {
             CaptureSelection = CaptureFileMenuSelection, IsCurrent = IsCurrentFileMenuSelection,
+            RunScriptAsync = (script, selection) => RunFileMenuOperationAsync(script.GetDisplayName(),
+                async token => { await DesktopScriptExecutor.ExecuteAsync(this, Repository, script, token, selection); },
+                changes: !script.RunInBackground),
             IsBusy = () => IsBusy || _selectionClosing,
             ExecuteAsync = (command, selection) => FileMenuOperations.Handles(command)
                 ? _fileMenuOperations.ExecuteAsync(command, selection) : additional.ExecuteAsync(command, selection),

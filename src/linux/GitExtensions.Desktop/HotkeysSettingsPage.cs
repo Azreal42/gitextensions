@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Styling;
+using GitExtensions.Linux.Scripts;
 using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
@@ -83,13 +84,19 @@ internal sealed class HotkeysSettingsPage : UserControl
         Content = root;
     }
 
+    internal void UpdateScripts(IEnumerable<ScriptDefinition> scripts)
+    {
+        Draft.UpdateScripts(scripts);
+        ReloadMappings();
+    }
+
     private void ReloadMappings()
     {
         _mappings.SelectedItem = null;
         // The template reads the mutable draft. Recreate its rows even when
         // the catalogue collection itself is unchanged after Apply or Clear.
         _mappings.ItemsSource = null;
-        _mappings.ItemsSource = _contexts.SelectedItem is string context ? HotkeyCatalog.For(context) : [];
+        _mappings.ItemsSource = _contexts.SelectedItem is string context ? Draft.Commands(context) : [];
         Capture.CapturedGesture = null;
     }
 

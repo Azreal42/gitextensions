@@ -46,6 +46,10 @@ public sealed partial class MainWindow
             originKey = _navigation.SelectedItem is TreeViewItem node && _navigationKeys.TryGetValue(node, out string? key) ? key : null;
             foreach (MenuItem item in by.Items.OfType<MenuItem>()) { item.IsChecked = Equals(item.Tag, _preferences.ReferenceSorting.By); }
             foreach (MenuItem item in order.Items.OfType<MenuItem>()) { item.IsChecked = Equals(item.Tag, _preferences.ReferenceSorting.Order); }
+            object[] scripts = _navigation.SelectedItem is TreeViewItem { Tag: GitReference { IsBranch: true } }
+                ? ScriptMenuItems.Build(_scripts, script => script.AddToRevisionGridContextMenu, script => () => RunScriptAsync(script),
+                    leaf, _translations, "RepoObjectsTree") : [];
+            menu.ItemsSource = new object[] { by, order }.Concat(scripts).ToArray();
         };
         _navigation.ContextMenu = menu;
         async Task ChangeAsync(GitReferenceSorting sorting)

@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using System.Collections.Concurrent;
 using System.Text;
 using Avalonia;
@@ -42,6 +43,8 @@ public sealed partial class PullDialog : RepositoryDialog
     private IReadOnlyList<GitReference> _references = [];
     private bool _initializing, _updatingFlags;
     private GitStash? _pendingAutoStash;
+    private bool _afterScriptEventsPending;
+    internal bool GitSucceeded { get; private set; }
     internal bool IsReady { get; private set; }
     internal bool Succeeded { get; private set; }
     internal bool Cancelled { get; private set; }
@@ -174,7 +177,8 @@ public sealed partial class PullDialog : RepositoryDialog
     internal Task ExecuteAsync(Window owner, bool confirmPruneAll = false, CancellationToken cancellationToken = default)
         => RunAsync("Pull", async token =>
         {
-            Succeeded = Cancelled = false;
+            Succeeded = Cancelled = GitSucceeded = false;
+            _afterScriptEventsPending = false;
             string remote = Source;
             string? branch = string.IsNullOrEmpty(_branch.Text) ? null : _branch.Text;
             GitPullAction mode = Mode;
@@ -223,7 +227,12 @@ public sealed partial class PullDialog : RepositoryDialog
                 fetchBranch = await LocalFetchRefspecAsync(owner, branch, token);
                 if (fetchBranch is null) { Cancelled = true; return; }
             }
-            token.ThrowIfCancellationRequested();
+            using ScriptWorkflowScope scripts = new(owner, Repository, token);
+            token = scripts.Token;
+            if (mode != GitPullAction.Fetch && !await RunScriptEventAsync(scripts, ScriptEvent.BeforePull)) { Cancelled = true; return; }
+            if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforeFetch)) { Cancelled = true; return; }
+            scripts.ThrowIfStopped();
+            _afterScriptEventsPending = mode != GitPullAction.Fetch;
             _store.Save(_store.Load() with { DialogAction = mode, AutoStash = _autoStash.IsChecked == true });
             if (UseUrl) { _sourceHistory.Visit(remote, 30); }
             Attempted = true; MarkRepositoryChanged();
@@ -251,6 +260,7 @@ public sealed partial class PullDialog : RepositoryDialog
                                 remote, branch, pullOptions, ct, output, stash => _pendingAutoStash = stash);
                             return execution.Result;
                         }, token);
+                    GitSucceeded = result.Success;
                     if (execution is null) { throw new InvalidOperationException(T("No native Git result was returned.")); }
                     _pendingAutoStash = execution.AutoStash;
                     _output.Text = (execution.StashResult?.StandardOutput ?? "") + (execution.StashResult?.StandardError ?? "") + result.StandardOutput + result.StandardError;
@@ -259,17 +269,37 @@ public sealed partial class PullDialog : RepositoryDialog
                     {
                         RebaseDialog recovery = await OpenRebaseRecoveryAsync(owner, null, token);
                         await RefreshOperationAsync(token);
-                        if (!recovery.Succeeded) { Cancelled = recovery.Aborted; return; }
+                        if (!recovery.Succeeded)
+                        { Cancelled = recovery.Aborted; if (recovery.Aborted) { _afterScriptEventsPending = false; } return; }
+                    }
+                    else if (!result.Success && _operationName == "merge")
+                    {
+                        // Windows AfterFetch/AfterPull describe this recognized conflict, not native Git success.
+                        if (_resolveConflictsAsync is not null) { await _resolveConflictsAsync(owner, Repository, true, token); }
+                        else { await ResolveConflictsDialog.ShowAsync(owner, Repository, token); }
+                        scripts.ThrowIfStopped();
+                        await CompletePullScriptEventsAsync(owner, token);
+                        Status.Text = T("There are unresolved conflicts.");
+                        return;
                     }
                     else if (!result.Success) { throw new GitCommandException(execution.Arguments, result); }
-                    if (_operationName is null)
-                    {
-                        await FinishPullAsync(owner, token);
-                    }
+                    if (_operationName is null) { await FinishPullAsync(owner, token); }
+                    else { await CompletePullScriptEventsAsync(owner, token); }
+                }
+                scripts.ThrowIfStopped();
+                if (mode == GitPullAction.Fetch)
+                {
+                    GitSucceeded = true;
+                    await RunScriptEventAsync(scripts, ScriptEvent.AfterFetch);
                 }
                 Succeeded = true; Status.Text = T("Done");
             }
-            catch (Exception error) { operationError = error; throw; }
+            catch (Exception error)
+            {
+                operationError = error;
+                if (error is OperationCanceledException || _operationName is null) { _afterScriptEventsPending = false; }
+                throw;
+            }
             finally
             {
                 if (!token.IsCancellationRequested)
@@ -477,7 +507,7 @@ public sealed partial class PullDialog : RepositoryDialog
                 RebaseDialog recovery = await OpenRebaseRecoveryAsync(this, null, token);
                 await RefreshOperationAsync(token);
                 if (recovery.Succeeded) { await FinishPullAsync(this, token); Succeeded = true; }
-                else { Cancelled = recovery.Aborted; }
+                else { Cancelled = recovery.Aborted; if (recovery.Aborted) { _afterScriptEventsPending = false; } }
             });
             return;
         }
@@ -516,13 +546,15 @@ public sealed partial class PullDialog : RepositoryDialog
             RebaseDialog recovery = await OpenRebaseRecoveryAsync(this, action, token);
             await RefreshOperationAsync(token);
             if (recovery.Succeeded) { await FinishPullAsync(this, token); Succeeded = true; }
-            else { Cancelled = recovery.Aborted; }
+            else { Cancelled = recovery.Aborted; if (recovery.Aborted) { _afterScriptEventsPending = false; } }
             return;
         }
+        if (action == GitOperationAction.Abort) { _afterScriptEventsPending = false; }
         Attempted = true; MarkRepositoryChanged();
         GitResult result = await Repository.ManageOperationAsync(_operationName, action, token);
         _output.Text = result.StandardOutput + result.StandardError;
         await RefreshOperationAsync(token);
+        if (action != GitOperationAction.Abort && _operationName is null) { await FinishPullAsync(this, token); }
         Status.Text = T("Done");
     });
 
@@ -548,6 +580,19 @@ public sealed partial class PullDialog : RepositoryDialog
             await OfferAutoStashPopAsync(owner, _pendingAutoStash, token);
             _pendingAutoStash = null;
         }
+        await CompletePullScriptEventsAsync(owner, token);
+    }
+
+    private async Task CompletePullScriptEventsAsync(Window owner, CancellationToken token)
+    {
+        if (!_afterScriptEventsPending) { return; }
+        using ScriptWorkflowScope scripts = new(owner, Repository, token);
+        scripts.ThrowIfStopped();
+        // Consume before invoking scripts: a failed/declined After must not replay on a later recovery click.
+        _afterScriptEventsPending = false;
+        await RunScriptEventAsync(scripts, ScriptEvent.AfterFetch);
+        scripts.ThrowIfStopped();
+        await RunScriptEventAsync(scripts, ScriptEvent.AfterPull);
     }
 
     protected override void UpdateActions()

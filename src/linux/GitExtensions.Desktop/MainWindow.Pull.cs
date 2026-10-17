@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -165,18 +166,32 @@ public sealed partial class MainWindow
         finally
         {
             dialog.Close();
-            if (dialog.Attempted && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
+            if ((dialog.Attempted || dialog.ScriptMayHaveChangedRepository) && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
             _pullPreferences = _pullPreferencesStore.Load(); RefreshPullMenu();
         }
     }
+
+    private Task FetchAllWithScriptEventsAsync() => RunAsync("Fetch all", async repository =>
+    {
+        using ScriptWorkflowScope scripts = new(WorkflowOwner, repository, Token);
+        if (!await scripts.RunAsync(ScriptEvent.BeforeFetch)) { return; }
+        scripts.ThrowIfStopped();
+        GitResult result = await repository.FetchAllAsync(scripts.Token);
+        AppendOutput(result.StandardOutput + result.StandardError);
+        scripts.ThrowIfStopped();
+        await scripts.RunAsync(ScriptEvent.AfterFetch);
+    });
 
     private Task QuickFetchAsync() => RunAsync("Fetch", async repository =>
     {
         bool attempted = false;
         Exception? operationError = null;
         Window owner = WorkflowOwner;
+        using ScriptWorkflowScope scripts = new(owner, repository, Token);
         try
         {
+            if (!await scripts.RunAsync(ScriptEvent.BeforeFetch)) { return; }
+            scripts.ThrowIfStopped();
             System.Collections.Concurrent.ConcurrentQueue<GitProcessOutput> chunks = new();
             GitProcessDialogResult process = await GitProcessDialog.ShowAsync(owner, repository.Path, "git fetch --progress", true,
                 (token, output) =>
@@ -196,12 +211,14 @@ public sealed partial class MainWindow
             Token.ThrowIfCancellationRequested();
             if (process.WasCancelled || process.OwnerCloseRequested || !owner.IsVisible) { throw new OperationCanceledException(Token); }
             if (process.Error is Exception error) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw(); }
+            scripts.ThrowIfStopped();
+            if (process.Success) { await scripts.RunAsync(ScriptEvent.AfterFetch); }
         }
         catch (Exception error) { operationError = error; throw; }
         finally
         {
             // Refresh partial ref updates inside the original operation, before its error/status is reported.
-            if (attempted && owner.IsVisible && !_lifetime.IsCancellationRequested)
+            if ((attempted || scripts.MayHaveRunScripts) && owner.IsVisible && !_lifetime.IsCancellationRequested)
             {
                 try { await RefreshDataAsync(repository); }
                 catch when (operationError is not null) { /* Preserve the operation's native failure or interruption. */ }

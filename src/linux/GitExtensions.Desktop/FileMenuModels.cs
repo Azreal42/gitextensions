@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using GitExtensions.Linux.Scripts;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -62,6 +63,7 @@ internal sealed class FileMenuHost
     internal required FileMenuActionFactory CreateAction { get; init; }
     internal required Func<bool> IsBusy { get; init; }
     internal FileMenuCapabilities Capabilities { get; init; } = new();
+    internal Func<ScriptDefinition, FileMenuSelection, Task>? RunScriptAsync { get; init; }
     internal Func<bool> GrepVisible { get; init; } = () => false;
     internal Func<FileMenuLeaf?> GetRemembered { get; init; } = () => null;
     internal Func<IReadOnlyList<string>> GetCustomDiffTools { get; init; } = () => [];

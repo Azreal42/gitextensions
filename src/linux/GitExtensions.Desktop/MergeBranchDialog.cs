@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -121,18 +122,26 @@ public sealed class MergeBranchDialog : RepositoryDialog
         {
             await RunAsync("Merge", async token =>
             {
+                using ScriptWorkflowScope scripts = new(this, Repository, token);
+                Result = null;
+                if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforeMerge)) { return; }
                 _store.Save(_settingsKey, new(options.NoCommit, !options.AllowFastForward, _log.IsChecked == true, (int)(_count.Value ?? 20)));
-                MarkRepositoryChanged(); Result = await Repository.MergeAsync(options, token);
+                scripts.ThrowIfStopped();
+                MarkRepositoryChanged(); Result = await Repository.MergeAsync(options, scripts.Token);
                 Status.Text = Result.Result.StandardOutput + Result.Result.StandardError;
+                scripts.ThrowIfStopped();
+                if (Result.ConflictedPaths.Count > 0 || !Result.Result.Success && Result.CanContinue)
+                {
+                    if (_resolve is not null) { await _resolve(this, Repository, !options.NoCommit, scripts.Token); }
+                    else { await ResolveConflictsDialog.ShowAsync(this, Repository, scripts.Token); }
+                }
+                else if (_afterSubmodules is not null) { await _afterSubmodules(this, scripts.Token); }
+                scripts.ThrowIfStopped();
+                // Windows runs AfterMerge for a recognized conflict even when it was left unresolved.
+                await RunScriptEventAsync(scripts, ScriptEvent.AfterMerge);
+                scripts.ThrowIfStopped();
+                Close();
             }, cancellationToken: _lifetime.Token);
-            if (Result is null || !IsVisible || _lifetime.IsCancellationRequested) { return; }
-            if (Result.ConflictedPaths.Count > 0 || !Result.Result.Success && Result.CanContinue)
-            {
-                if (_resolve is not null) { await _resolve(this, Repository, !options.NoCommit, _lifetime.Token); }
-                else { await ResolveConflictsDialog.ShowAsync(this, Repository, _lifetime.Token); }
-            }
-            else if (_afterSubmodules is not null) { await _afterSubmodules(this, _lifetime.Token); }
-            if (!_lifetime.IsCancellationRequested && IsVisible) { Close(); }
         }
         finally { _postProcessing = false; UpdateActions(); }
     }

@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -54,7 +55,20 @@ public sealed class DeleteTagDialog : RepositoryDialog
         if (remote is not null && !await Dialogs.ConfirmAsync(this, T("Delete remote tag"), selected.ShortName + " → " + remote)) { return; }
         await RunAsync("Delete tag", async token =>
         {
-            try { await Repository.DeleteTagsAsync([selected.ShortName], remote, token); }
+            try
+            {
+                await Repository.DeleteTagsAsync([selected.ShortName], cancellationToken: token);
+                if (remote is not null)
+                {
+                    using ScriptWorkflowScope scripts = new(this, Repository, token);
+                    if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforePush)) { return; }
+                    scripts.ThrowIfStopped();
+                    await Repository.PushTagReferenceAsync(remote, selected.ShortName, delete: true, cancellationToken: scripts.Token);
+                    scripts.ThrowIfStopped();
+                    if (!await ScriptWorkflowScope.IsGitOperationPendingAsync(Repository, scripts.Token))
+                    { await RunScriptEventAsync(scripts, ScriptEvent.AfterPush); }
+                }
+            }
             finally { MarkRepositoryChanged(); }
             Close();
         });

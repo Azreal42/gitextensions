@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -122,6 +123,11 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
             token.ThrowIfCancellationRequested();
             try
             {
+                if (ScriptWorkflowScope.HasConfiguredEvents(ScriptEvent.BeforePush, ScriptEvent.AfterPush))
+                {
+                    await DeleteWithScriptEventsAsync(selected, unmerged, deleteTracking, token);
+                    return;
+                }
                 // One owned process preserves validation of the WHOLE selection before its first push.
                 // The result retains each remote's atomic transaction independently.
                 LastProcess = await GitProcessDialog.ShowAsync(this, Repository.Path, T("Delete remote branches"), true, async (ct, output) =>
@@ -174,6 +180,73 @@ public sealed class DeleteRemoteBranchDialog : RepositoryDialog
             Status.Text = LastError + "\n" + string.Join('\n', LastDeletion.Batches.Where(batch => batch.Status == GitRemoteBranchDeletionBatchStatus.Cancelled)
                 .Select(batch => batch.Remote + ": " + T("Deletion was cancelled; refresh remote references to check the remote outcome.")));
         }
+    }
+
+    private async Task DeleteWithScriptEventsAsync(GitRemoteBranchDeletionPreview[] selected, bool allowUnmerged, bool deleteTracking, CancellationToken token)
+    {
+        GitRemoteBranchDeletionPlan plan = await Repository.PrepareRemoteBranchDeletionAsync(new(selected, allowUnmerged), token);
+        GitRemoteBranchDeletionBatchResult[] batches = plan.Branches.GroupBy(branch => branch.Remote, StringComparer.Ordinal)
+            .Select(group => new GitRemoteBranchDeletionBatchResult(group.Key, group.ToArray(), GitRemoteBranchDeletionBatchStatus.NotAttempted)).ToArray();
+        LastDeletion = new(batches, false);
+        using ScriptWorkflowScope scripts = new(this, Repository, token);
+        for (int index = 0; index < batches.Length; index++)
+        {
+            scripts.ThrowIfStopped();
+            if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforePush))
+            {
+                LastDeletion = new(batches.ToArray(), true);
+                await RefreshRemainingAsync(selected, scripts.Token);
+                Status.Text = T("Operation cancelled");
+                return;
+            }
+            int current = index;
+            try
+            {
+                LastProcess = await GitProcessDialog.ShowAsync(this, Repository.Path, T("Delete remote branches") + " — " + batches[index].Remote, true,
+                    async (ct, output) =>
+                    {
+                        batches[current] = await Repository.DeleteRemoteBranchBatchAsync(plan, batches[current].Remote, ct, output);
+                        LastDeletion = new(batches.ToArray(), batches[current].Status == GitRemoteBranchDeletionBatchStatus.Cancelled);
+                        GitRemoteBranchDeletionBatchResult result = batches[current];
+                        if (result.Status == GitRemoteBranchDeletionBatchStatus.Cancelled) { throw new OperationCanceledException(ct); }
+                        return result.Result ?? throw new InvalidOperationException(result.ErrorMessage);
+                    }, scripts.Token, preserveStreamedOutput: true);
+            }
+            finally
+            {
+                if (batches.Any(batch => batch.Status != GitRemoteBranchDeletionBatchStatus.NotAttempted)) { MarkRepositoryChanged(); }
+                LastDeletion = new(batches.ToArray(), scripts.Token.IsCancellationRequested || batches.Any(batch => batch.Status == GitRemoteBranchDeletionBatchStatus.Cancelled));
+            }
+            if (LastProcess.OwnerCloseRequested || LastProcess.WorkflowStopRequested || LastProcess.WasCancelled)
+            { LastDeletion = LastDeletion with { Cancelled = true }; throw new OperationCanceledException(scripts.Token); }
+            scripts.ThrowIfStopped();
+            if (LastProcess.CompletionError is Exception completionError) { throw new InvalidOperationException(completionError.Message, completionError); }
+            if (!batches[index].Success) { continue; }
+            if (!await ScriptWorkflowScope.IsGitOperationPendingAsync(Repository, scripts.Token))
+            { await RunScriptEventAsync(scripts, ScriptEvent.AfterPush); }
+            scripts.ThrowIfStopped();
+            if (deleteTracking)
+            {
+                IReadOnlyList<string> local = await Repository.GetRemoteBranchTrackingLocalBranchesAsync(batches[index].Branches, scripts.Token);
+                if (local.Count > 0)
+                {
+                    DeleteBranchDialog tracking = new(Repository, local) { RequestedThemeVariant = ActualThemeVariant };
+                    tracking.Opened += async (_, _) => await tracking.InitializeAsync();
+                    using CancellationTokenRegistration registration = scripts.Token.Register(() => Dispatcher.UIThread.Post(tracking.Close));
+                    try { await tracking.ShowDialog(this); }
+                    finally { if (tracking.HasRepositoryChanges) { MarkRepositoryChanged(); } }
+                    scripts.ThrowIfStopped();
+                }
+            }
+        }
+        LastDeletion = new(batches.ToArray(), false);
+        if (!LastDeletion.Success)
+        {
+            await RefreshRemainingAsync(selected, scripts.Token);
+            throw new InvalidOperationException(string.Join("\n", batches.Where(batch => !batch.Success).Select(batch => batch.Remote + ": " + batch.ErrorMessage)));
+        }
+        scripts.ThrowIfStopped();
+        Close();
     }
 
     private async Task RefreshRemainingAsync(GitRemoteBranchDeletionPreview[] selected, CancellationToken token)

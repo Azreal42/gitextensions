@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -226,17 +227,40 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(this, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }
         await RunAsync("Checkout", async token =>
         {
+            using ScriptWorkflowScope scripts = new(operationOwner, Repository, token);
+            token = scripts.Token;
             string? previousHead = (await Repository.GetStatusAsync(token)).Head;
+            Exception? checkoutError = null;
             try
             {
-                LastResult = _constraint is null ? await Repository.CheckoutAsync(options, token) : await _constraint.CheckoutAsync(selected!, options, token);
-                if (!LastResult.Result.Success) { throw new GitCommandException(["switch"], LastResult.Result); }
+                GitCheckoutPreparation? preparation = _constraint is null ? await Repository.PrepareCheckoutAsync(options, token)
+                    : _constraint.PrepareAsync is not null ? await _constraint.PrepareAsync(selected!, options, token) : null;
+                if (preparation?.CreatedStash is not null) { MarkRepositoryChanged(); }
+                if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforeCheckout)) { return; }
+                scripts.ThrowIfStopped();
+                LastResult = _constraint is null ? await Repository.CheckoutPreparedAsync(preparation!, token)
+                    : preparation is not null && _constraint.CompleteAsync is not null ? await _constraint.CompleteAsync(selected!, preparation, token)
+                    : await _constraint.CheckoutAsync(selected!, options, token);
+                if (!LastResult.Result.Success)
+                {
+                    if (options.Kind == GitCheckoutKind.Revision)
+                    { scripts.ThrowIfStopped(); await RunScriptEventAsync(scripts, ScriptEvent.AfterCheckout); }
+                    throw new GitCommandException(["switch"], LastResult.Result);
+                }
             }
+            catch (Exception error) { checkoutError = error; throw; }
             finally
             {
                 MarkRepositoryChanged();
-                GitStash? stash = (await Repository.GetStashesAsync(token)).FirstOrDefault();
-                if (stash is not null && stash.Hash != _originalStash) { _saved.Text = T("Saved local changes:") + " " + stash.Reference + "  " + stash.Hash; }
+                if (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        GitStash? stash = (await Repository.GetStashesAsync(token)).FirstOrDefault();
+                        if (stash is not null && stash.Hash != _originalStash) { _saved.Text = T("Saved local changes:") + " " + stash.Reference + "  " + stash.Hash; }
+                    }
+                    catch when (checkoutError is not null) { /* Preserve the actual checkout/script failure. */ }
+                }
             }
             ReferencePreferences preferences = _preferences.Load();
             _preferences.Save(preferences with
@@ -262,7 +286,9 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                     if (updated && _afterSubmoduleUpdateAsync is not null) { await _afterSubmoduleUpdateAsync(token); }
                 }
             }
-            token.ThrowIfCancellationRequested();
+            scripts.ThrowIfStopped();
+            await RunScriptEventAsync(scripts, ScriptEvent.AfterCheckout);
+            scripts.ThrowIfStopped();
             Succeeded = true;
             Close();
         }, cancellationToken: cancellationToken);

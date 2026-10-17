@@ -35,6 +35,43 @@ public sealed partial class GitRepository
     /// <summary>Uses the shared checkout engine after revalidating the exact containing branch and all selected conflict guards.</summary>
     public Task<GitCheckoutResult> CheckoutSubmoduleConflictBranchAsync(GitSubmoduleConflictSnapshot expected, GitReference branch,
         GitCheckoutOptions options, CancellationToken cancellationToken = default)
+        => WithSubmoduleConflictCheckoutAsync(expected, branch, options, async (child, current, token) =>
+        {
+            GitCheckoutResult result = await child.CheckoutAsync(options, token).ConfigureAwait(false);
+            if (await ReadSubmoduleConflictHeadAsync(current.Binding.ModuleInfo!, token).ConfigureAwait(false) != branch.Hash)
+            { throw new InvalidOperationException("The branch moved during checkout. Git's checkout effects were retained; refresh Current before staging."); }
+            return result;
+        }, cancellationToken);
+
+    /// <summary>Save the child's checkout stash while the original parent/index/conflict leases are still revalidated.</summary>
+    public Task<GitCheckoutPreparation> PrepareSubmoduleConflictCheckoutAsync(GitSubmoduleConflictSnapshot expected, GitReference branch,
+        GitCheckoutOptions options, CancellationToken cancellationToken = default)
+        => WithSubmoduleConflictCheckoutAsync(expected, branch, options,
+            async (child, _, token) => new GitCheckoutPreparation(
+                await child.PrepareCheckoutAsync(options, token).ConfigureAwait(false), this), cancellationToken);
+
+    /// <summary>Resume this instance's submodule preparation after BeforeCheckout; revalidate every parent/child lease without retaining locks while UI ran.</summary>
+    public Task<GitCheckoutResult> CompleteSubmoduleConflictCheckoutAsync(GitSubmoduleConflictSnapshot expected, GitReference branch,
+        GitCheckoutPreparation preparation, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(preparation);
+        // Only PrepareSubmoduleConflictCheckoutAsync owns a private child instance. Refuse generic or foreign
+        // preparations before parent/shared-child locks, so a caller's child mutex cannot invert their order.
+        if (!ReferenceEquals(preparation.SubmoduleConflictParent, this))
+        { throw new ArgumentException("Use the preparation returned by this repository's submodule conflict checkout.", nameof(preparation)); }
+        return WithSubmoduleConflictCheckoutAsync(expected, branch, preparation.Options, async (child, current, token) =>
+        {
+            if (preparation.Repository.Path != child.Path)
+            { throw new InvalidOperationException("The checkout preparation belongs to a different submodule repository."); }
+            GitCheckoutResult result = await preparation.Repository.CheckoutPreparedAsync(preparation, token).ConfigureAwait(false);
+            if (await ReadSubmoduleConflictHeadAsync(current.Binding.ModuleInfo!, token).ConfigureAwait(false) != branch.Hash)
+            { throw new InvalidOperationException("The branch moved during checkout. Git's checkout effects were retained; refresh Current before staging."); }
+            return result;
+        }, cancellationToken);
+    }
+
+    private Task<T> WithSubmoduleConflictCheckoutAsync<T>(GitSubmoduleConflictSnapshot expected, GitReference branch,
+        GitCheckoutOptions options, Func<GitRepository, GitSubmoduleConflictSnapshot, CancellationToken, Task<T>> action, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(expected); ArgumentNullException.ThrowIfNull(branch); ArgumentNullException.ThrowIfNull(options);
         if (options.Revision != branch.Name || branch.SymbolicTarget is not null
@@ -54,10 +91,7 @@ public sealed partial class GitRepository
                 if (target is null) { throw new InvalidOperationException("The selected branch changed or no longer contains both conflict sides. Reload the containing branches."); }
                 _ = await repository.ValidateSubmoduleConflictAsync(info, expected, refreshCurrent: false, token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
-                GitCheckoutResult result = await child.CheckoutAsync(options, token).ConfigureAwait(false);
-                if (await repository.ReadSubmoduleConflictHeadAsync(current.Binding.ModuleInfo!, token).ConfigureAwait(false) != branch.Hash)
-                { throw new InvalidOperationException("The branch moved during checkout. Git's checkout effects were retained; refresh Current before staging."); }
-                return result;
+                return await action(child, current, token).ConfigureAwait(false);
             }
             finally { shared.Release(); }
         }, cancellationToken);

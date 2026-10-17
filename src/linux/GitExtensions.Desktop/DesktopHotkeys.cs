@@ -8,7 +8,7 @@ namespace GitExtensions.Linux.Desktop;
 internal static class DesktopHotkeys
 {
     private sealed record Snapshot(HotkeyBindings Bindings, Exception? Error);
-    private sealed record DisplayBinding(WeakReference<Control> Control, string FilePath, string Context, string Command, string? Caption);
+    private sealed record DisplayBinding(WeakReference<Control> Control, string FilePath, string Context, string Command, string? Caption, int? Code = null);
     private static readonly Dictionary<string, Snapshot> Snapshots = new(StringComparer.Ordinal);
     private static readonly List<DisplayBinding> Displays = [];
 
@@ -38,10 +38,13 @@ internal static class DesktopHotkeys
     internal static void BindToolTip(Control control, string context, string command, string caption)
         => BindDisplay(control, context, command, caption);
 
-    private static void BindDisplay(Control control, string context, string command, string? caption)
+    internal static void BindScript(MenuItem item, int code) => BindDisplay(item, "Scripts", "", null, code);
+    internal static void BindScriptToolTip(Control item, int code, string caption) => BindDisplay(item, "Scripts", "", caption, code);
+
+    private static void BindDisplay(Control control, string context, string command, string? caption, int? code = null)
     {
         HotkeyPreferencesStore store = new();
-        DisplayBinding binding = new(new(control), store.FilePath, context, command, caption);
+        DisplayBinding binding = new(new(control), store.FilePath, context, command, caption, code);
         lock (Displays)
         {
             Displays.RemoveAll(value => !value.Control.TryGetTarget(out Control? target)
@@ -101,7 +104,7 @@ internal static class DesktopHotkeys
 
     private static void Apply(DisplayBinding binding, Control target, HotkeyBindings bindings)
     {
-        KeyGesture? gesture = bindings.Get(binding.Context, binding.Command);
+        KeyGesture? gesture = binding.Code is int code ? bindings.Get(binding.Context, code) : bindings.Get(binding.Context, binding.Command);
         if (binding.Caption is { } caption)
         { ToolTip.SetTip(target, gesture is null ? caption : caption + " (" + gesture + ")"); }
         else if (target is MenuItem item) { item.InputGesture = gesture; }

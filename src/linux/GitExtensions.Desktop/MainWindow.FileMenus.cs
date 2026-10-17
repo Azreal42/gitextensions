@@ -146,6 +146,9 @@ public sealed partial class MainWindow
                 }
             }, gesture),
             ExecuteAsync = (command, selection) => ExecuteFileMenuAsync(command, selection, isFileTree),
+            RunScriptAsync = (script, selection) => RunFileMenuOperationAsync(script.GetDisplayName(),
+                async token => { await DesktopScriptExecutor.ExecuteAsync(WorkflowOwner, selection.Repository, script, token, selection); },
+                changes: !script.RunInBackground),
             Capabilities = new(ShowInFileTree: true, FilterInGrid: true, Grep: true), GrepVisible = () => _fileGrepSettings.ShowSearchBox,
             GetRemembered = () => _repository is { } current ? additional.GetRemembered(current) : null,
             GetCustomDiffTools = () => _repository is { } current ? additional.GetCustomDiffTools(current) : []

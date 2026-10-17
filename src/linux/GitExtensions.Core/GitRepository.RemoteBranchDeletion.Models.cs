@@ -26,3 +26,17 @@ public sealed record GitRemoteBranchDeletionResult(IReadOnlyList<GitRemoteBranch
 {
     public bool Success => !Cancelled && Batches.Count > 0 && Batches.All(batch => batch.Success);
 }
+
+/// <summary>Immutable validated selection, retained while the Desktop executes Before/AfterPush outside Core's mutation lock.</summary>
+public sealed class GitRemoteBranchDeletionPlan
+{
+    internal GitRemoteBranchDeletionPlan(GitRepository repository, bool allowUnmerged, IEnumerable<GitRemoteBranchDeletionPreview> branches)
+    {
+        Repository = repository; AllowUnmerged = allowUnmerged;
+        Branches = Array.AsReadOnly(branches.Select(branch => branch with
+        { TrackingLocalBranches = Array.AsReadOnly(branch.TrackingLocalBranches.ToArray()), ExpectedPushUrls = Array.AsReadOnly(branch.ExpectedPushUrls.ToArray()) }).ToArray());
+    }
+    internal GitRepository Repository { get; }
+    internal bool AllowUnmerged { get; }
+    public IReadOnlyList<GitRemoteBranchDeletionPreview> Branches { get; }
+}

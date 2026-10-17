@@ -122,6 +122,7 @@ public sealed partial class MainWindow
 
     private void ApplyHistoryToolbarVisibility()
     {
+        RefreshScriptsEnabled();
         if (_browserToolbar is null) { return; }
         _browserToolbar.SetItemVisibility(control => (IsFilterToolbarItem(control) ? _historyView.ShowFilterToolbar : _historyView.ShowMainToolbar)
             && (control.Name is null || !_historyView.HiddenToolbarItems.Contains(control.Name, StringComparer.Ordinal)));
@@ -163,10 +164,11 @@ public sealed partial class MainWindow
         }
         MenuItem main = Group("ViewMainToolbar", "Main toolbar", () => _historyView.ShowMainToolbar, p => p with { ShowMainToolbar = !p.ShowMainToolbar }, false);
         MenuItem filters = Group("ViewFilterToolbar", "Filter toolbar", () => _historyView.ShowFilterToolbar, p => p with { ShowFilterToolbar = !p.ShowFilterToolbar }, true);
-        MenuItem scripts = new() { Name = "ViewScriptsToolbar", Header = T("Scripts toolbar"), IsEnabled = false };
-        ToolTip.SetTip(scripts, T("The scripts toolbar is not available in this alpha."));
+        MenuItem scripts = OriginalAction("FormBrowse", "ViewScriptsToolbar", "Scripts toolbar", null,
+            () => ChangeHistoryViewAsync(p => p with { ShowScriptsToolbar = !p.ShowScriptsToolbar }, false));
+        scripts.ToggleType = MenuItemToggleType.CheckBox;
         result.ItemsSource = new[] { main, filters, scripts };
-        result.SubmenuOpened += (_, _) => { main.IsChecked = _historyView.ShowMainToolbar; filters.IsChecked = _historyView.ShowFilterToolbar; };
+        result.SubmenuOpened += (_, _) => { main.IsChecked = _historyView.ShowMainToolbar; filters.IsChecked = _historyView.ShowFilterToolbar; scripts.IsChecked = _historyView.ShowScriptsToolbar; };
         return result;
     }
 }

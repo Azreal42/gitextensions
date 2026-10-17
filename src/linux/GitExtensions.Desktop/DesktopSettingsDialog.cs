@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using System.Text.Json;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Scripts;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -25,11 +26,14 @@ internal sealed class DesktopSettingsDialog : Window
     public HotkeyBindings HotkeysResult { get; private set; }
     public bool OpenGitConfiguration { get; private set; }
     internal FontPreferences FontsResult { get; private set; }
+    public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
 
     public DesktopSettingsDialog(DesktopPreferences initial, TranslationCatalog translations, bool canConfigureGit,
         GitLogSort historySort = GitLogSort.GitDefault, FileHistoryPreferences? fileHistoryPreferences = null,
         HotkeyBindings? hotkeys = null, Action<HotkeyBindings>? saveHotkeys = null,
-        FontPreferences? fonts = null, Func<FontPreferences, FontPreferences, FontPreferences>? saveFonts = null, Exception? fontsLoadError = null)
+        FontPreferences? fonts = null, Func<FontPreferences, FontPreferences, FontPreferences>? saveFonts = null, Exception? fontsLoadError = null,
+        ScriptsPreferencesLoadResult? scripts = null,
+        Func<ScriptsPreferencesLoadResult, IReadOnlyList<ScriptDefinition>, ScriptsPreferencesLoadResult>? saveScripts = null)
     {
         Result = initial; HistorySortResult = historySort;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
@@ -37,6 +41,7 @@ internal sealed class DesktopSettingsDialog : Window
         DesktopFontSession? fontSession = fonts is null ? DesktopFonts.CreateSession() : null;
         FontPreferences fontBaseline = fonts ?? fontSession!.Preferences; FontsResult = fontBaseline;
         Exception? fontError = fontsLoadError ?? fontSession?.LoadError;
+        ScriptsResult = scripts ?? new(ScriptConfiguration.Read(null), false, ReadOnlyMemory<byte>.Empty);
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
         Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -89,7 +94,11 @@ internal sealed class DesktopSettingsDialog : Window
         TabItem hotkeysTab = new() { Name = "SettingsHotkeysTab", Header = translations.Translate("HotkeysSettingsPage", "$this", "Text", "Hotkeys"), Content = hotkeysPage };
         AppearanceFontsSettingsPage fontsPage = new(fontBaseline, translations, fontError) { Margin = new Thickness(12), Height = 315 };
         TabItem fontsTab = new() { Name = "SettingsFontsTab", Header = translations.Translate("AppearanceFontsSettingsPage", "$this", "Text", "Fonts"), Content = fontsPage };
-        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab }, SelectedItem = generalTab };
+        ScriptsSettingsPage scriptsPage = new(ScriptsResult, translations) { Margin = new Thickness(12) };
+        hotkeysPage.UpdateScripts(scriptsPage.Draft);
+        scriptsPage.DraftChanged += draft => hotkeysPage.UpdateScripts(draft);
+        TabItem scriptsTab = new() { Name = "SettingsScriptsTab", Header = translations.Translate("ScriptsSettingsPage", "$this", "Text", "Scripts"), Content = scriptsPage };
+        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab, scriptsTab }, SelectedItem = generalTab };
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
         Button cancel = new() { Name = "CancelDesktopSettings", Content = translations.Translate("Cancel"), MinWidth = 75, IsCancel = true };
         cancel.Click += (_, _) => Close(false);
@@ -102,8 +111,21 @@ internal sealed class DesktopSettingsDialog : Window
                 try { GitReferencePriorities.Validate(input.Text ?? ""); }
                 catch (ArgumentException error) { tabs.SelectedItem = sortingTab; notice.Text = error.Message; input.Focus(); return; }
             }
+            if (!scriptsPage.Validate(out string? scriptValidation))
+            { tabs.SelectedItem = scriptsTab; notice.Text = scriptValidation; return; }
             if (!fontsPage.Validate(out string? fontValidation))
             { tabs.SelectedItem = fontsTab; notice.Text = fontValidation; return; }
+            if (scriptsPage.IsDirty)
+            {
+                try
+                {
+                    ScriptsResult = saveScripts?.Invoke(ScriptsResult, scriptsPage.Draft)
+                        ?? new(new(scriptsPage.Draft, ScriptConfigurationSource.Xml), ScriptsResult.Existed, ScriptsResult.OriginalBytes);
+                    scriptsPage.AcceptSaved(ScriptsResult);
+                }
+                catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
+                { tabs.SelectedItem = scriptsTab; scriptsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save scripts.") + " " + error.Message; return; }
+            }
             HotkeyBindings acceptedHotkeys = hotkeysPage.Draft.Clone();
             try { saveHotkeys?.Invoke(acceptedHotkeys.Clone()); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)

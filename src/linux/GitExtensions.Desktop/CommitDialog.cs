@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -71,6 +72,7 @@ public sealed partial class CommitDialog : Window
     private bool _confirmationOpen;
     private bool _commitRequested;
     private bool _draftReset;
+    private bool _scriptRefreshPending;
     private CancellationToken OperationToken => _operation?.Token ?? _lifetime.Token;
     private readonly Button _commit;
     private readonly Button _push;
@@ -107,6 +109,11 @@ public sealed partial class CommitDialog : Window
         if (initialKind != TargetedCommitKind.Normal && targetCommit is null)
         { throw new ArgumentException("A targeted commit requires the selected revision.", nameof(targetCommit)); }
         _repository = repository;
+        DesktopScriptExecutor.AttachHotkeys(this, repository, script => RunAsync(script.GetDisplayName(), async () =>
+        {
+            ScriptMayHaveChangedRepository = true; HasRepositoryChanges = true; _scriptRefreshPending = true;
+            await DesktopScriptExecutor.ExecuteAsync(this, _repository, script, OperationToken);
+        }));
         DesktopFonts.Apply(_message, DesktopFontRole.Commit);
         DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
         foreach (Control input in new Control[] { _filter, _amend, _resetAuthor })
@@ -297,12 +304,14 @@ public sealed partial class CommitDialog : Window
             }
         };
         Closed += (_, _) => { _lifetime.Cancel(); _selectionFilterOperation?.Cancel(); _historyOperation?.Cancel(); _unstagedView.Dispose(); _stagedView.Dispose(); _content.Dispose(); };
+        InitializeFileScripts();
         UpdateAvailability();
     }
 
     public bool HasCommitted { get; private set; }
     public bool PushCompleted { get; private set; }
     public bool HasRepositoryChanges { get; private set; }
+    public bool ScriptMayHaveChangedRepository { get; private set; }
     public string? LastError { get; private set; }
     public event EventHandler? RepositoryChanged;
     internal bool IsBusy => _busy || _commitRequested;
@@ -795,11 +804,16 @@ public sealed partial class CommitDialog : Window
                     NoVerify: _noVerify.IsChecked,
                     AmendRevision: _kind.SelectedIndex == (int)TargetedCommitKind.Amend ? target?.Hash : null);
                 bool forceWithLease = (_amend.IsChecked == true || _forcePushAfterSoftReset) && _preferences.CommitAndPushForcedWhenAmend;
-                GitResult result = await _repository.CommitAsync(options, OperationToken);
+                using ScriptWorkflowScope scripts = new(this, _repository, OperationToken);
+                if (!await RunCommitScriptEventAsync(scripts, ScriptEvent.BeforeCommit)) { return; }
+                scripts.ThrowIfStopped();
+                GitResult result = await _repository.CommitAsync(options, scripts.Token);
                 HasCommitted = true;
                 HasRepositoryChanges = true;
                 _output.Text = result.StandardOutput + result.StandardError;
                 _output.IsVisible = false;
+                await RunCommitScriptEventAsync(scripts, ScriptEvent.AfterCommit);
+                scripts.ThrowIfStopped();
                 _message.Text = "";
                 _amend.IsChecked = false;
                 _forcePushAfterSoftReset = false;
@@ -815,6 +829,17 @@ public sealed partial class CommitDialog : Window
             });
         }
         finally { _commitRequested = false; UpdateAvailability(); }
+    }
+
+    private async Task<bool> RunCommitScriptEventAsync(ScriptWorkflowScope scope, ScriptEvent scriptEvent)
+    {
+        try { return await scope.RunAsync(scriptEvent); }
+        finally
+        {
+            ScriptMayHaveChangedRepository |= scope.MayHaveRunScripts;
+            HasRepositoryChanges |= ScriptMayHaveChangedRepository;
+            _scriptRefreshPending |= scope.MayHaveRunScripts;
+        }
     }
 
     private async Task PushCommittedChangesAsync(bool forceWithLease)
@@ -938,6 +963,12 @@ public sealed partial class CommitDialog : Window
         catch (Exception exception) { ShowFailure(label, exception); }
         finally
         {
+            if (_scriptRefreshPending && !OperationToken.IsCancellationRequested && !_closeWhenIdle && IsVisible)
+            {
+                _scriptRefreshPending = false;
+                try { await RefreshDataAsync(); RepositoryChanged?.Invoke(this, EventArgs.Empty); }
+                catch (Exception error) { if (LastError is null) { ShowFailure(label, error); } }
+            }
             _operation.Dispose();
             _operation = null;
             _busy = false;

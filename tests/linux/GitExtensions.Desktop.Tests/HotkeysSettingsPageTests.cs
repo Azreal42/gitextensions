@@ -14,6 +14,7 @@ using Avalonia.VisualTree;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Scripts;
 using NUnit.Framework;
 using Fixture = GitExtensions.Desktop.Tests.ReferenceDialogTests.ReferenceFixture;
 
@@ -36,10 +37,14 @@ public sealed class HotkeysSettingsPageTests
         foreach (string context in f.Contexts.Items.Cast<string>())
         {
             f.SelectContext(context);
-            Assert.That(f.Mappings.Items.OfType<HotkeyCommand>().Select(command => command.Name), Is.EqualTo(HotkeyCatalog.For(context).Select(command => command.Name)));
+            IEnumerable<string> expected = context == "Scripts"
+                ? ScriptConfiguration.GetDefaults().Select(script => script.GetDisplayName())
+                : HotkeyCatalog.For(context).Select(command => command.Name);
+            Assert.That(f.Mappings.Items.OfType<HotkeyCommand>().Select(command => command.Name), Is.EqualTo(expected));
             if (context == "Scripts")
             {
-                Assert.That(f.Mappings.Items, Is.Empty, "An empty Scripts context must not activate or import example scripts.");
+                Assert.That(new ScriptsPreferencesStore().Load().Scripts.All(script => !script.Enabled), Is.True,
+                    "Displaying named example hotkeys must not enable any script.");
                 PushProcessTestDriver.Pointer(f.Button("bApply")); PushProcessTestDriver.Pointer(f.Button("bClear"));
                 Assert.That(f.Page.Capture.CapturedGesture, Is.Null); continue;
             }

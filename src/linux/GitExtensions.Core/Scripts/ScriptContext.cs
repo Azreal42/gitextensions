@@ -16,7 +16,11 @@ public sealed record ScriptRevision(string Hash, string Subject = "", string? Bo
     public static DateTime FromUnixTimeSeconds(long unixTime)
         => unixTime == 0 ? DateTime.MaxValue : DateTimeOffset.FromUnixTimeSeconds(unixTime).LocalDateTime;
 }
-public sealed record ScriptOptionValues(string Name, IReadOnlyList<string> Values);
+public sealed record ScriptOptionValues(string Name, IReadOnlyList<string> Values)
+{
+    /// <summary>Optional exact values before provider escaping; null uses Values as supplied.</summary>
+    public IReadOnlyList<string>? RawValues { get; init; }
+}
 
 /// <summary>Materialized host facts only. Constructing/snapshotting this context never queries Git or UI.</summary>
 public sealed record ScriptContext
@@ -54,7 +58,8 @@ public sealed record ScriptContext
         CurrentReferences = Array.AsReadOnly(CurrentReferences.ToArray()),
         SelectedRelativePaths = Array.AsReadOnly(SelectedRelativePaths.ToArray()),
         ProviderOptions = ProviderOptions is null ? null : Array.AsReadOnly(ProviderOptions.ToArray()),
-        AdditionalOptions = Array.AsReadOnly(AdditionalOptions.Select(option => option with { Values = Array.AsReadOnly(option.Values.ToArray()) }).ToArray()),
+        AdditionalOptions = Array.AsReadOnly(AdditionalOptions.Select(option => option with { Values = Array.AsReadOnly(option.Values.ToArray()),
+            RawValues = option.RawValues is null ? null : Array.AsReadOnly(option.RawValues.ToArray()) }).ToArray()),
         BranchRemotes = new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(new Dictionary<string, string>(BranchRemotes, StringComparer.Ordinal)),
         RemoteUrls = new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(new Dictionary<string, string>(RemoteUrls, StringComparer.Ordinal)),
         Culture = CultureInfo.ReadOnly((CultureInfo)Culture.Clone())

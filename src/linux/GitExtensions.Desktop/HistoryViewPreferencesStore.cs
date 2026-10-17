@@ -6,6 +6,7 @@ internal sealed record HistoryViewPreferences
 {
     public bool ShowMainToolbar { get; init; } = true;
     public bool ShowFilterToolbar { get; init; } = true;
+    public bool ShowScriptsToolbar { get; init; } = true;
     public string[] HiddenToolbarItems { get; init; } = [];
     public bool ShowArtificialCommits { get; init; } = true;
     public bool ShowStashes { get; init; } = true;

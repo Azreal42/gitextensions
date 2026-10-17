@@ -109,7 +109,11 @@ public sealed partial class SubmoduleConflictDialog : RepositoryDialog
             GitRepository module = await Repository.OpenSubmoduleConflictRepositoryAsync(expected, token);
             CheckoutBranchConstraint constraint = new(
                 ct => Repository.GetSubmoduleConflictBranchesAsync(expected, ct),
-                (branch, options, ct) => Repository.CheckoutSubmoduleConflictBranchAsync(expected, branch, options, ct));
+                (branch, options, ct) => Repository.CheckoutSubmoduleConflictBranchAsync(expected, branch, options, ct))
+            {
+                PrepareAsync = (branch, options, ct) => Repository.PrepareSubmoduleConflictCheckoutAsync(expected, branch, options, ct),
+                CompleteAsync = (branch, preparation, ct) => Repository.CompleteSubmoduleConflictCheckoutAsync(expected, branch, preparation, ct)
+            };
             CheckoutBranchDialog dialog = new(module, constraint: constraint) { RequestedThemeVariant = ActualThemeVariant };
             dialog.Opened += async (_, _) => await dialog.InitializeAsync(token);
             using CancellationTokenRegistration close = token.Register(() => Dispatcher.UIThread.Post(dialog.Close));

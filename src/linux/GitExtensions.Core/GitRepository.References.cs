@@ -33,56 +33,95 @@ public sealed partial class GitRepository
 
     public Task<GitCheckoutResult> CheckoutAsync(GitCheckoutOptions options, CancellationToken cancellationToken = default)
     {
+        ValidateCheckoutOptions(options);
+        return WithMutationAsync(async token =>
+        {
+            GitCheckoutPreparation preparation = await PrepareCheckoutCoreAsync(options, token).ConfigureAwait(false);
+            GitCheckoutResult result = await CheckoutPreparedCoreAsync(preparation, token).ConfigureAwait(false);
+            if (!result.Result.Success) { throw new GitCommandException(preparation.Arguments, result.Result); }
+            return result;
+        }, cancellationToken);
+    }
+
+    /// <summary>Validate and save the checkout stash before the host's BeforeCheckout scripts. No UI is called under the mutation lock.</summary>
+    public Task<GitCheckoutPreparation> PrepareCheckoutAsync(GitCheckoutOptions options, CancellationToken cancellationToken = default)
+    {
+        ValidateCheckoutOptions(options);
+        return WithMutationAsync(token => PrepareCheckoutCoreAsync(options, token), cancellationToken);
+    }
+
+    /// <summary>Execute a prepared checkout after its event scripts. Git still validates the named target and worktree on execution.</summary>
+    public Task<GitCheckoutResult> CheckoutPreparedAsync(GitCheckoutPreparation preparation, CancellationToken cancellationToken = default)
+        => WithMutationAsync(token => CheckoutPreparedCoreAsync(preparation, token), cancellationToken);
+
+    private static void ValidateCheckoutOptions(GitCheckoutOptions options)
+    {
         ArgumentNullException.ThrowIfNull(options);
         if (!Enum.IsDefined(options.Kind) || !Enum.IsDefined(options.NewBranchMode) || !Enum.IsDefined(options.Changes)) { throw new ArgumentOutOfRangeException(nameof(options)); }
         if (options.Kind != GitCheckoutKind.RemoteBranch && options.NewBranchMode != CheckoutNewBranchMode.DontCreate)
         { throw new ArgumentException("Creating or resetting a local branch is available for remote checkout.", nameof(options)); }
         if (options.ReapplyStash && options.Changes != LocalChangesAction.Stash) { throw new ArgumentException("Stash reapplication requires the stash action.", nameof(options)); }
-        return WithMutationAsync(async token =>
+    }
+
+    private async Task<GitCheckoutPreparation> PrepareCheckoutCoreAsync(GitCheckoutOptions options, CancellationToken token)
+    {
+        await EnsureWorktreeAsync(token).ConfigureAwait(false);
+        string target;
+        if (options.Kind == GitCheckoutKind.Revision) { target = await ResolveRevisionAsync(options.Revision, token).ConfigureAwait(false); }
+        else
+        {
+            string prefix = options.Kind == GitCheckoutKind.LocalBranch ? "refs/heads/" : "refs/remotes/";
+            target = options.Revision.StartsWith(prefix, StringComparison.Ordinal) ? options.Revision : prefix + ValidateValue(options.Revision);
+            GitReference? reference = (await GetReferencesAsync(token).ConfigureAwait(false)).SingleOrDefault(reference => reference.Name == target && reference.SymbolicTarget is null);
+            if (reference is null) { throw new ArgumentException("Select an existing branch.", nameof(options)); }
+            if (options.Kind == GitCheckoutKind.LocalBranch) { target = reference.ShortName; }
+        }
+        List<string> arguments = ["switch"];
+        if (options.Kind == GitCheckoutKind.Revision || options.Kind == GitCheckoutKind.RemoteBranch && options.NewBranchMode == CheckoutNewBranchMode.DontCreate) { arguments.Add("--detach"); }
+        else if (options.Kind == GitCheckoutKind.RemoteBranch)
+        {
+            await ValidateReferenceNameAsync(options.LocalBranch ?? "", branch: true, token).ConfigureAwait(false);
+            arguments.AddRange([options.NewBranchMode == CheckoutNewBranchMode.Reset ? "--force-create" : "--create", options.LocalBranch!, "--track"]);
+        }
+        else { arguments.Add("--no-guess"); }
+        if (options.Changes == LocalChangesAction.Reset) { arguments.Add("--discard-changes"); }
+        if (options.Changes == LocalChangesAction.Merge) { arguments.Add("--merge"); }
+        arguments.AddRange(["--", target]);
+        string? stash = null;
+        GitStatus status = await GetStatusAsync(token).ConfigureAwait(false);
+        if (options.Changes == LocalChangesAction.Stash && status.Changes.Any(change => options.IncludeUntrackedInStash || !change.IsUntracked))
+        {
+            List<string> save = ["stash", "push", "--message", "Git Extensions: checkout " + options.Revision];
+            if (options.IncludeUntrackedInStash) { save.Add("--include-untracked"); }
+            await ExecuteAsync(save, token).ConfigureAwait(false);
+            stash = await ResolveRevisionAsync("refs/stash", token).ConfigureAwait(false);
+        }
+        return new GitCheckoutPreparation(this, options, arguments.ToArray(), stash);
+    }
+
+    private async Task<GitCheckoutResult> CheckoutPreparedCoreAsync(GitCheckoutPreparation preparation, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(preparation);
+        if (!ReferenceEquals(preparation.Repository, this)) { throw new ArgumentException("The checkout preparation belongs to another repository.", nameof(preparation)); }
+        GitResult result = preparation.Options.Kind == GitCheckoutKind.Revision
+            ? await _runner.RunAsync(Path, [.. GlobalOptions, .. preparation.Arguments], token).ConfigureAwait(false)
+            : await ExecuteAsync(preparation.Arguments, token).ConfigureAwait(false);
+        if (result.Success && preparation.CreatedStash is not null && preparation.Options.ReapplyStash)
+        {
+            GitStash? saved = (await GetStashesAsync(token).ConfigureAwait(false)).FirstOrDefault(entry => entry.Hash == preparation.CreatedStash);
+            if (saved is null) { throw new InvalidOperationException("The checkout stash changed outside this operation; it was not reapplied."); }
+            await ExecuteAsync(["stash", "pop", "--index", "--", saved.Reference], token).ConfigureAwait(false);
+        }
+        return new GitCheckoutResult(result, preparation.CreatedStash);
+    }
+
+    /// <summary>Return a completed revision checkout's native false result; launch errors and cancellation still propagate.</summary>
+    public Task<GitResult> CheckoutRevisionAttemptAsync(string revision, CancellationToken cancellationToken = default)
+        => WithMutationAsync(async token =>
         {
             await EnsureWorktreeAsync(token).ConfigureAwait(false);
-            string target;
-            if (options.Kind == GitCheckoutKind.Revision) { target = await ResolveRevisionAsync(options.Revision, token).ConfigureAwait(false); }
-            else
-            {
-                string prefix = options.Kind == GitCheckoutKind.LocalBranch ? "refs/heads/" : "refs/remotes/";
-                target = options.Revision.StartsWith(prefix, StringComparison.Ordinal) ? options.Revision : prefix + ValidateValue(options.Revision);
-                GitReference? reference = (await GetReferencesAsync(token).ConfigureAwait(false)).SingleOrDefault(reference => reference.Name == target && reference.SymbolicTarget is null);
-                if (reference is null) { throw new ArgumentException("Select an existing branch.", nameof(options)); }
-                if (options.Kind == GitCheckoutKind.LocalBranch) { target = reference.ShortName; }
-            }
-            List<string> arguments = ["switch"];
-            if (options.Kind == GitCheckoutKind.Revision || options.Kind == GitCheckoutKind.RemoteBranch && options.NewBranchMode == CheckoutNewBranchMode.DontCreate) { arguments.Add("--detach"); }
-            else if (options.Kind == GitCheckoutKind.RemoteBranch)
-            {
-                await ValidateReferenceNameAsync(options.LocalBranch ?? "", branch: true, token).ConfigureAwait(false);
-                arguments.AddRange([options.NewBranchMode == CheckoutNewBranchMode.Reset ? "--force-create" : "--create", options.LocalBranch!, "--track"]);
-            }
-            else { arguments.Add("--no-guess"); }
-            if (options.Changes == LocalChangesAction.Reset) { arguments.Add("--discard-changes"); }
-            if (options.Changes == LocalChangesAction.Merge) { arguments.Add("--merge"); }
-            arguments.AddRange(["--", target]);
-            string? stash = null;
-            GitStatus status = await GetStatusAsync(token).ConfigureAwait(false);
-            if (options.Changes == LocalChangesAction.Stash && status.Changes.Any(change => options.IncludeUntrackedInStash || !change.IsUntracked))
-            {
-                List<string> save = ["stash", "push", "--message", "Git Extensions: checkout " + options.Revision];
-                if (options.IncludeUntrackedInStash) { save.Add("--include-untracked"); }
-                await ExecuteAsync(save, token).ConfigureAwait(false);
-                stash = await ResolveRevisionAsync("refs/stash", token).ConfigureAwait(false);
-            }
-            GitResult result = await ExecuteAsync(arguments, token).ConfigureAwait(false);
-            if (stash is not null && options.ReapplyStash)
-            {
-                // Pop this exact stash entry, never a pre-existing user's stash. Conflicts retain it.
-                IReadOnlyList<GitStash> stashes = await GetStashesAsync(token).ConfigureAwait(false);
-                GitStash? saved = stashes.FirstOrDefault(entry => entry.Hash == stash);
-                if (saved is null) { throw new InvalidOperationException("The checkout stash changed outside this operation; it was not reapplied."); }
-                await ExecuteAsync(["stash", "pop", "--index", "--", saved.Reference], token).ConfigureAwait(false);
-            }
-            return new GitCheckoutResult(result, stash);
+            return await _runner.RunAsync(Path, [.. GlobalOptions, "switch", "--detach", "--", ValidateValue(revision)], token).ConfigureAwait(false);
         }, cancellationToken);
-    }
 
     public Task<IReadOnlyList<GitBranchDeletionPreview>> GetBranchDeletionPreviewAsync(CancellationToken cancellationToken = default)
         => WithMutationAsync(ReadBranchDeletionPreviewAsync, cancellationToken);
@@ -179,6 +218,14 @@ public sealed partial class GitRepository
             return result;
         }, cancellationToken);
     }
+
+    /// <summary>Remote phase of create/delete tag, deliberately separate from the already completed local mutation.</summary>
+    public Task<GitResult> PushTagReferenceAsync(string remote, string name, bool delete = false, CancellationToken cancellationToken = default)
+        => WithMutationAsync(async token =>
+        {
+            await ValidateReferenceNameAsync(name, branch: false, token).ConfigureAwait(false);
+            return await PushReferenceTagAsync(remote, name, delete, token).ConfigureAwait(false);
+        }, cancellationToken);
 
     private Task<GitResult> PushReferenceTagAsync(string remote, string name, bool delete, CancellationToken token)
         => ExecuteAsync(["push", "--", ValidateValue(remote), (delete ? "" : "refs/tags/" + name) + ":refs/tags/" + name], token);

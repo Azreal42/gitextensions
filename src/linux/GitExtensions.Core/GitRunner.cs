@@ -66,6 +66,13 @@ public sealed class GitRunner(string executable = "git")
         Action<GitProcessOutput>? outputReceived = null)
         => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true, outputReceived).ConfigureAwait(false);
 
+    // The same native ownership/drain engine without Git-specific environment or authentication policy.
+    internal Task<GitBinaryResult> RunExternalBinaryAsync(string workingDirectory, IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? environment,
+        Action<GitProcessOutput>? outputReceived, Action<int>? processStarted)
+        => RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, null, environment,
+            applyAskpass: false, outputReceived, applyGitEnvironment: false, processStarted);
+
     private async Task<GitBinaryResult> RunBinaryCoreAsync(
         string workingDirectory,
         IReadOnlyList<string> arguments,
@@ -73,7 +80,8 @@ public sealed class GitRunner(string executable = "git")
         byte[]? standardInput,
         IReadOnlyDictionary<string, string?>? environment,
         bool applyAskpass,
-        Action<GitProcessOutput>? outputReceived = null)
+        Action<GitProcessOutput>? outputReceived = null,
+        bool applyGitEnvironment = true, Action<int>? processStarted = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ProcessStartInfo startInfo = new(executable)
@@ -99,12 +107,15 @@ public sealed class GitRunner(string executable = "git")
             startInfo.ArgumentList.Add(argument);
         }
 
-        // A desktop operation must report authentication failures instead of hanging on an invisible prompt.
-        startInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
-        startInfo.Environment["GIT_PAGER"] = "cat";
-        startInfo.Environment["GIT_EDITOR"] = "true";
-        startInfo.Environment["GIT_SEQUENCE_EDITOR"] = "true";
-        startInfo.Environment["LC_ALL"] = "C.UTF-8";
+        if (applyGitEnvironment)
+        {
+            // Git operations retain their existing non-interactive desktop policy.
+            startInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
+            startInfo.Environment["GIT_PAGER"] = "cat";
+            startInfo.Environment["GIT_EDITOR"] = "true";
+            startInfo.Environment["GIT_SEQUENCE_EDITOR"] = "true";
+            startInfo.Environment["LC_ALL"] = "C.UTF-8";
+        }
         if (environment is not null)
         {
             foreach (KeyValuePair<string, string?> setting in environment)
@@ -127,14 +138,14 @@ public sealed class GitRunner(string executable = "git")
         {
             if (OperatingSystem.IsLinux()) { launch = GitProcessLaunch.Configure(startInfo); }
             cancellationToken.ThrowIfCancellationRequested();
-            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch).ConfigureAwait(false);
+            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, processStarted).ConfigureAwait(false);
             exitCode = result.ExitCode;
             return result;
         }
         catch (Exception exception) { failure = exception; throw; }
         finally
         {
-            GitCommandLog.Record(arguments, workingDirectory, started, elapsed.Elapsed, exitCode, failure is OperationCanceledException);
+            if (applyGitEnvironment) { GitCommandLog.Record(arguments, workingDirectory, started, elapsed.Elapsed, exitCode, failure is OperationCanceledException); }
             if (OperatingSystem.IsLinux() && launch is not null)
             {
                 try { launch.Dispose(); }
@@ -144,7 +155,7 @@ public sealed class GitRunner(string executable = "git")
     }
 
     private static async Task<GitBinaryResult> RunProcessAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken,
-        byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch)
+        byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch, Action<int>? processStarted)
     {
         using Process process = new() { StartInfo = startInfo };
         using GitProcessGroup? processes = OperatingSystem.IsLinux() ? new GitProcessGroup() : null;
@@ -164,7 +175,9 @@ public sealed class GitRunner(string executable = "git")
                 processes!.CaptureStartedChild(process);
                 processes!.PinOutputPipes(process.StandardOutput.BaseStream, process.StandardError.BaseStream);
                 control = launch!.ObserveExecAsync(process.Id, processes, cancellationToken);
+                if (processStarted is not null) { control = NotifyStartedAsync(control, process.Id, processStarted, cancellationToken); }
             }
+            else { processStarted?.Invoke(process.Id); }
             input = WriteInputAsync(process, standardInput, cancellationToken);
             Task exited = process.WaitForExitAsync(CancellationToken.None);
             // Monitor all four directions from the outset. Git can produce stdout while a large stdin is still blocked.
@@ -216,6 +229,12 @@ public sealed class GitRunner(string executable = "git")
             catch { /* Preserve the original failure after the child and its pipes have stopped. */ }
             throw;
         }
+    }
+
+    private static async Task NotifyStartedAsync(Task nativeExec, int processId, Action<int> callback, CancellationToken token)
+    {
+        await nativeExec.ConfigureAwait(false);
+        token.ThrowIfCancellationRequested(); callback(processId);
     }
 
     private static async Task<IOException?> WriteInputAsync(Process process, byte[]? standardInput, CancellationToken token)

@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -149,7 +150,7 @@ public sealed class PushDialog : RepositoryDialog
         if (forceWithLease) { _lease.IsChecked = true; }
         if (IsReady) { await ExecuteAsync(owner, cancellationToken); }
         cancellationToken.ThrowIfCancellationRequested();
-        if (!_workflowStopRequested && owner.IsVisible && !Succeeded) { await ShowDialog(owner); }
+        if (!_workflowStopRequested && !Cancelled && owner.IsVisible && (!Succeeded || LastError is not null)) { await ShowDialog(owner); }
         cancellationToken.ThrowIfCancellationRequested();
     }
 
@@ -387,8 +388,17 @@ public sealed class PushDialog : RepositoryDialog
             int capacity = new RepositoryHistoryStore().Load(new PreferencesStore().Load().RecentRepositories).HistorySize;
             _destinationHistory.Visit(request.Destination, capacity);
         }
+        using ScriptWorkflowScope scripts = new(owner, Repository, token);
+        if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforePush)) { Cancelled = true; return; }
+        scripts.ThrowIfStopped();
         Attempted = true; MarkRepositoryChanged();
-        try { await PushAndRecoverAsync(owner, request, token); }
+        try
+        {
+            await PushAndRecoverAsync(owner, request, scripts.Token);
+            scripts.ThrowIfStopped();
+            if (!await ScriptWorkflowScope.IsGitOperationPendingAsync(Repository, scripts.Token))
+            { await RunScriptEventAsync(scripts, ScriptEvent.AfterPush); }
+        }
         finally { token.ThrowIfCancellationRequested(); }
     }, cancellationToken: cancellationToken);
 

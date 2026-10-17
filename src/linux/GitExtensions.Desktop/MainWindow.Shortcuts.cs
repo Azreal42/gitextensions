@@ -28,6 +28,7 @@ public sealed partial class MainWindow
             if (sender is Avalonia.Controls.ContextMenu popup) { popup.Close(); }
             if (sender is MenuItem or Avalonia.Controls.ContextMenu) { _revisionContext?.Close(); }
         }
+        if (await HandleScriptHotkeyAsync(e, ClosePopup)) { return; }
         if (await HandleNavigationHotkeyAsync(e)) { return; }
         if (await HandleFilePaneShortcutAsync(e)) { return; }
         if (await ExecuteConfiguredHotkeyAsync("Browse", e, ClosePopup)) { return; }

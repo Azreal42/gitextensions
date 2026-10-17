@@ -181,6 +181,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. PushStreamingScenarios.All,
     .. CloneStreamingScenarios.All,
     .. ScriptScenarios.All,
+    .. ScriptRuntimeScenarios.All,
     .. GitProcessRelayScenarios.All,
     .. GrepScenarios.All,
     ("Linux cancellation treats zombie and dead procfs tasks as terminated", LinuxProcessState.VerifyStatesAsync),
@@ -219,7 +220,7 @@ if (args.Contains("--submodule-conflict-only", StringComparer.Ordinal)) { tests 
 if (args.Contains("--askpass-modes-only", StringComparer.Ordinal))
 { tests = [("askpass isolates response streams and preserves explicit helpers", AskpassAsync), .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All]; }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
-if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptScenarios.All.ToArray(); }
+if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptScenarios.All.Concat(ScriptRuntimeScenarios.All).ToArray(); }
 if (args.Contains("--comparison-groups-only", StringComparer.Ordinal)) { tests = ComparisonGroupScenarios.All.ToArray(); }
 if (args.Contains("--comparison-file-menus-only", StringComparer.Ordinal)) { tests = ComparisonFileMenuScenarios.All.ToArray(); }
 if (args.Contains("--file-menu-difftools-only", StringComparer.Ordinal)) { tests = FileMenuDiffToolScenarios.All.ToArray(); }

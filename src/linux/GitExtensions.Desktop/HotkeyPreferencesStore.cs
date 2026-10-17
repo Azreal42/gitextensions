@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Avalonia.Input;
+using GitExtensions.Linux.Scripts;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -28,12 +29,12 @@ internal sealed class HotkeyPreferencesStore
     {
         ArgumentNullException.ThrowIfNull(bindings);
         HotkeyBindings snapshot = bindings.Clone();
-        BindingEntry[] entries = [.. HotkeyCatalog.Contexts.SelectMany(context => HotkeyCatalog.For(context).Select(command =>
+        BindingEntry[] entries = [.. snapshot.StoredBindings.Select(entry =>
         {
-            KeyGesture? gesture = snapshot.Get(context, command.Code);
-            return new BindingEntry(context, command.Code, gesture?.Key.ToString(),
+            KeyGesture? gesture = entry.Gesture;
+            return new BindingEntry(entry.Context, entry.Code, gesture?.Key.ToString(),
                 [.. ModifierOrder.Where(modifier => gesture is not null && gesture.KeyModifiers.HasFlag(modifier)).Select(modifier => modifier.ToString())]);
-        }))];
+        })];
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new PreferencesDocument(1, entries), JsonOptions);
 
         // A damaged profile must not silently become defaults, even if the caller loaded an earlier good version.
@@ -73,7 +74,7 @@ internal sealed class HotkeyPreferencesStore
         try { bytes = File.ReadAllBytes(FilePath); }
         catch (Exception missing) when (missing is FileNotFoundException or DirectoryNotFoundException)
         {
-            bindings = new();
+            bindings = new(LoadScripts());
             return null;
         }
 
@@ -81,7 +82,7 @@ internal sealed class HotkeyPreferencesStore
         return bytes;
     }
 
-    private static HotkeyBindings Parse(byte[] bytes)
+    private HotkeyBindings Parse(byte[] bytes)
     {
         string text;
         try { text = Utf8.GetString(bytes); }
@@ -105,7 +106,7 @@ internal sealed class HotkeyPreferencesStore
             throw new JsonException("Hotkey Bindings must be an array.");
         }
 
-        HotkeyBindings result = new();
+        HotkeyBindings result = new(LoadScripts());
         foreach (JsonElement entry in entries.EnumerateArray())
         {
             if (entry.ValueKind != JsonValueKind.Object)
@@ -130,7 +131,7 @@ internal sealed class HotkeyPreferencesStore
                 throw new JsonException($"Invalid command ID in hotkey context '{context}'.");
             }
 
-            if (HotkeyCatalog.Find(context, code) is null)
+            if (HotkeyCatalog.Find(context, code) is null && !(context == "Scripts" && (code > ScriptConfiguration.MinimumUserScriptId || result.Commands(context).Any(command => command.Code == code))))
             {
                 continue;
             }
@@ -182,11 +183,15 @@ internal sealed class HotkeyPreferencesStore
                 throw new JsonException($"An unassigned hotkey '{context}:{code}' cannot have modifiers.");
             }
 
-            result.Set(context, code, gesture);
+            if (context == "Scripts") { result.SetStoredScript(code, gesture); }
+            else { result.Set(context, code, gesture); }
         }
 
         return result;
     }
+
+    private IReadOnlyList<ScriptDefinition> LoadScripts()
+        => new ScriptsPreferencesStore(Path.Combine(Path.GetDirectoryName(FilePath)!, "scripts.json")).Load().Scripts;
 
     private static JsonElement Required(JsonElement value, string name)
         => value.TryGetProperty(name, out JsonElement property) ? property : throw new JsonException($"Missing hotkey property '{name}'.");

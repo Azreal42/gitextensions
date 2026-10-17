@@ -124,7 +124,7 @@ public sealed class HotkeyPreferencesStoreTests
         Assert.That(loaded.Get("Commit", 25)!.Key, Is.EqualTo(Key.T));
         Assert.That(loaded.Get("FileViewer", 19)!.KeyModifiers, Is.EqualTo(KeyModifiers.Control));
         Assert.That(loaded.Get("Browse", 99999), Is.Null);
-        Assert.That(loaded.Get("Scripts", 9000), Is.Null);
+        Assert.That(loaded.Get("Scripts", 9000), Is.EqualTo(new KeyGesture(Key.F12)), "The named disabled example is part of the dynamic Scripts catalog, as in Windows.");
         foreach (string context in HotkeyCatalog.Contexts)
         {
             foreach (HotkeyCommand command in HotkeyCatalog.For(context))

@@ -60,8 +60,8 @@ public sealed partial class MainWindow
                 BuildRevisionAdvancedMenu(), new Separator(), BuildComparisonMenu(), new Separator(), BuildRevisionNavigateMenu(), BuildRevisionViewMenu()
             }
         };
-        _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
-        _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); };
+        _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
+        _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
         _revisionContext.Closed += (_, _) => QueuePendingRevisionDetails();
         _revisionContext.AddHandler(KeyDownEvent, async (_, args) =>
             await WithRevisionActionFocusAsync(() => HandleShortcutsAsync(_revisionContext, args)), RoutingStrategies.Tunnel);
@@ -84,7 +84,7 @@ public sealed partial class MainWindow
             }
             if (commit is not null) { row!.Focus(); }
         }, RoutingStrategies.Tunnel);
-        PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu();
+        PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu();
         return _revisionContext;
     }
 
@@ -186,7 +186,7 @@ public sealed partial class MainWindow
         GitRepository repository = _repository;
         if (!await Dialogs.ConfirmAsync(WorkflowOwner, T("Checkout this commit"), T("Checkout this commit with detached HEAD?") + "\n\n" + selected.Hash + "\n" + selected.Subject)) { return; }
         if (_repository != repository || _busy) { return; }
-        await RunAsync("Checkout revision", r => r.CheckoutAsync(selected.Hash, detached: true, cancellationToken: Token));
+        await RunAsync("Checkout revision", r => CheckoutRevisionWithScriptEventsAsync(r, selected.Hash, Token));
     }
 
     private void PopulateRevisionCopyMenu(IReadOnlyDictionary<string, DateTimeOffset>? committedDates = null)

@@ -98,10 +98,50 @@ public sealed partial class GitRepository
         return tracking.ToDictionary(pair => pair.Key, pair => pair.Value.Order(StringComparer.Ordinal).ToArray());
     }
 
-    /// <summary>Validate the entire selection, then delete each remote's branches atomically using confirmed object leases.
-    /// The fetched hashes, not an automatically refreshed tracking ref, are the expected server state. Local branches are never deleted.</summary>
+    /// <summary>Validate the entire selection, then delete each remote atomically under the legacy single mutation scope.</summary>
     public Task<GitRemoteBranchDeletionResult> DeleteRemoteBranchesAsync(GitDeleteRemoteBranchesOptions options,
         CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+    {
+        GitRemoteBranchDeletionPreview[] requested = RemoteDeletionRequests(options, cancellationToken);
+        return WithMutationAsync(async token =>
+        {
+            IReadOnlyList<GitRemoteBranchDeletionPreview> selected = await ValidateRemoteDeletionTargetsAsync(requested, options.AllowUnmerged, token).ConfigureAwait(false);
+            GitRemoteBranchDeletionBatchResult[] batches = selected.GroupBy(branch => branch.Remote, StringComparer.Ordinal)
+                .Select(group => new GitRemoteBranchDeletionBatchResult(group.Key, group.ToArray(), GitRemoteBranchDeletionBatchStatus.NotAttempted)).ToArray();
+            token.ThrowIfCancellationRequested();
+            for (int index = 0; index < batches.Length; index++)
+            {
+                if (token.IsCancellationRequested) { break; }
+                batches[index] = await RunRemoteDeletionBatchAsync(batches[index], token, outputReceived).ConfigureAwait(false);
+                if (batches[index].Status == GitRemoteBranchDeletionBatchStatus.Cancelled) { break; }
+            }
+            return new GitRemoteBranchDeletionResult(batches, token.IsCancellationRequested);
+        }, cancellationToken);
+    }
+
+    /// <summary>Freeze and validate ALL selected targets before the first remote is mutated.</summary>
+    public Task<GitRemoteBranchDeletionPlan> PrepareRemoteBranchDeletionAsync(GitDeleteRemoteBranchesOptions options, CancellationToken cancellationToken = default)
+    {
+        GitRemoteBranchDeletionPreview[] requested = RemoteDeletionRequests(options, cancellationToken);
+        return WithMutationAsync(async token => new GitRemoteBranchDeletionPlan(this, options.AllowUnmerged,
+            await ValidateRemoteDeletionTargetsAsync(requested, options.AllowUnmerged, token).ConfigureAwait(false)), cancellationToken);
+    }
+
+    /// <summary>Revalidate one planned remote's exact fetched hashes and push URLs immediately before its atomic transaction.</summary>
+    public Task<GitRemoteBranchDeletionBatchResult> DeleteRemoteBranchBatchAsync(GitRemoteBranchDeletionPlan plan, string remote,
+        CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        => WithMutationAsync(async token =>
+        {
+            ArgumentNullException.ThrowIfNull(plan);
+            if (!ReferenceEquals(plan.Repository, this)) { throw new ArgumentException("The deletion plan belongs to another repository.", nameof(plan)); }
+            GitRemoteBranchDeletionPreview[] requested = plan.Branches.Where(branch => branch.Remote == remote).ToArray();
+            if (requested.Length == 0) { throw new ArgumentException("The remote does not belong to this deletion plan.", nameof(remote)); }
+            IReadOnlyList<GitRemoteBranchDeletionPreview> selected = await ValidateRemoteDeletionTargetsAsync(requested, plan.AllowUnmerged, token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            return await RunRemoteDeletionBatchAsync(new(remote, selected, GitRemoteBranchDeletionBatchStatus.NotAttempted), token, outputReceived).ConfigureAwait(false);
+        }, cancellationToken);
+
+    private static GitRemoteBranchDeletionPreview[] RemoteDeletionRequests(GitDeleteRemoteBranchesOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(options.Branches);
@@ -112,71 +152,71 @@ public sealed partial class GitRepository
         if (requested.Select(branch => branch.Reference.Name).Distinct(StringComparer.Ordinal).Count() != requested.Length)
         { throw new ArgumentException("A remote branch may only be selected once.", nameof(options)); }
 
-        return WithMutationAsync(async token =>
-        {
-            IReadOnlyList<GitRemoteBranchDeletionPreview> current = await ReadRemoteBranchDeletionPreviewAsync(token).ConfigureAwait(false);
-            List<GitRemoteBranchDeletionPreview> selected = [];
-            foreach (GitRemoteBranchDeletionPreview branch in requested)
-            {
-                GitRemoteBranchDeletionPreview actual = current.SingleOrDefault(candidate => candidate.Reference.Name == branch.Reference.Name)
-                    ?? throw new ArgumentException("The selected remote branch no longer exists: " + branch.Reference.Name, nameof(options));
-                if (actual.Remote != branch.Remote || actual.BranchName != branch.BranchName || actual.ExpectedHash != branch.ExpectedHash)
-                { throw new InvalidOperationException("The selected remote branch changed after confirmation; refresh the list: " + branch.Reference.Name); }
-                if (!options.AllowUnmerged && !actual.IsMerged)
-                { throw new InvalidOperationException("The remote branch has not been merged into HEAD: " + actual.Reference.ShortName); }
-                await ValidateReferenceNameAsync(actual.BranchName, branch: true, token).ConfigureAwait(false);
-                if (!actual.ExpectedPushUrls.SequenceEqual(branch.ExpectedPushUrls, StringComparer.Ordinal))
-                { throw new InvalidOperationException("The push destination changed after confirmation; refresh the list: " + actual.Remote); }
-                if (actual.ExpectedPushUrls.Count != 1)
-                { throw new InvalidOperationException("Remote branch deletion requires one push URL per remote: " + actual.Remote); }
-                selected.Add(actual);
-            }
-            if (selected.GroupBy(branch => (branch.Remote, branch.BranchName)).Any(group => group.Select(branch => branch.ExpectedHash).Distinct(StringComparer.Ordinal).Count() > 1))
-            { throw new InvalidOperationException("Fetched aliases disagree on the remote branch hash; refresh the list before deleting."); }
+        return requested;
+    }
 
-            GitRemoteBranchDeletionBatchResult[] batches = selected.GroupBy(branch => branch.Remote, StringComparer.Ordinal)
-                .Select(group => new GitRemoteBranchDeletionBatchResult(group.Key, group.ToArray(), GitRemoteBranchDeletionBatchStatus.NotAttempted)).ToArray();
-            token.ThrowIfCancellationRequested();
-            for (int index = 0; index < batches.Length; index++)
+    private async Task<IReadOnlyList<GitRemoteBranchDeletionPreview>> ValidateRemoteDeletionTargetsAsync(
+        GitRemoteBranchDeletionPreview[] requested, bool allowUnmerged, CancellationToken token)
+    {
+        IReadOnlyList<GitRemoteBranchDeletionPreview> current = await ReadRemoteBranchDeletionPreviewAsync(token).ConfigureAwait(false);
+        List<GitRemoteBranchDeletionPreview> selected = [];
+        foreach (GitRemoteBranchDeletionPreview branch in requested)
+        {
+            GitRemoteBranchDeletionPreview actual = current.SingleOrDefault(candidate => candidate.Reference.Name == branch.Reference.Name)
+                ?? throw new ArgumentException("The selected remote branch no longer exists: " + branch.Reference.Name, nameof(requested));
+            if (actual.Remote != branch.Remote || actual.BranchName != branch.BranchName || actual.ExpectedHash != branch.ExpectedHash)
+            { throw new InvalidOperationException("The selected remote branch changed after confirmation; refresh the list: " + branch.Reference.Name); }
+            if (!allowUnmerged && !actual.IsMerged)
+            { throw new InvalidOperationException("The remote branch has not been merged into HEAD: " + actual.Reference.ShortName); }
+            await ValidateReferenceNameAsync(actual.BranchName, branch: true, token).ConfigureAwait(false);
+            if (!actual.ExpectedPushUrls.SequenceEqual(branch.ExpectedPushUrls, StringComparer.Ordinal))
+            { throw new InvalidOperationException("The push destination changed after confirmation; refresh the list: " + actual.Remote); }
+            if (actual.ExpectedPushUrls.Count != 1)
+            { throw new InvalidOperationException("Remote branch deletion requires one push URL per remote: " + actual.Remote); }
+            selected.Add(actual);
+        }
+        if (selected.GroupBy(branch => (branch.Remote, branch.BranchName)).Any(group => group.Select(branch => branch.ExpectedHash).Distinct(StringComparer.Ordinal).Count() > 1))
+        { throw new InvalidOperationException("Fetched aliases disagree on the remote branch hash; refresh the list before deleting."); }
+
+        return selected;
+    }
+
+    private async Task<GitRemoteBranchDeletionBatchResult> RunRemoteDeletionBatchAsync(GitRemoteBranchDeletionBatchResult batch,
+        CancellationToken token, Action<GitProcessOutput>? outputReceived)
+    {
+        List<string> arguments = ["push", "--progress", "--porcelain", "--atomic", "--no-follow-tags"];
+        GitRemoteBranchDeletionPreview[] targets = batch.Branches.DistinctBy(branch => branch.BranchName, StringComparer.Ordinal).ToArray();
+        arguments.AddRange(targets.Select(branch => "--force-with-lease=" + branch.DestinationRef + ":" + branch.ExpectedHash));
+        arguments.AddRange(["--", batch.Remote]);
+        arguments.AddRange(targets.Select(branch => ":" + branch.DestinationRef));
+        using MemoryStream output = new(), error = new();
+        try
+        {
+            GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. arguments], token, outputReceived: item =>
             {
-                if (token.IsCancellationRequested) { break; }
-                GitRemoteBranchDeletionBatchResult batch = batches[index];
-                List<string> arguments = ["push", "--progress", "--porcelain", "--atomic", "--no-follow-tags"];
-                GitRemoteBranchDeletionPreview[] targets = batch.Branches.DistinctBy(branch => branch.BranchName, StringComparer.Ordinal).ToArray();
-                arguments.AddRange(targets.Select(branch => "--force-with-lease=" + branch.DestinationRef + ":" + branch.ExpectedHash));
-                arguments.AddRange(["--", batch.Remote]);
-                arguments.AddRange(targets.Select(branch => ":" + branch.DestinationRef));
-                using MemoryStream output = new(), error = new();
-                try
-                {
-                    GitResult result = await _runner.RunAsync(Path, [.. GlobalOptions, .. arguments], token, outputReceived: item =>
-                    {
-                        (item.Stream == GitProcessOutputStream.StandardOutput ? output : error).Write(item.Bytes.Span);
-                        outputReceived?.Invoke(item);
-                    }).ConfigureAwait(false);
-                    batches[index] = batch with
-                    {
-                        Status = result.Success ? GitRemoteBranchDeletionBatchStatus.Succeeded : GitRemoteBranchDeletionBatchStatus.Failed,
-                        Result = result,
-                        ErrorMessage = result.Success ? null : result.StandardError,
-                    };
-                }
-                catch (Exception failure) when (failure is OperationCanceledException or IOException or Win32Exception or UnauthorizedAccessException)
-                {
-                    bool cancelled = failure is OperationCanceledException && token.IsCancellationRequested;
-                    List<string> warnings = [];
-                    batches[index] = batch with
-                    {
-                        Status = cancelled ? GitRemoteBranchDeletionBatchStatus.Cancelled : GitRemoteBranchDeletionBatchStatus.Failed,
-                        ErrorMessage = cancelled ? "Deletion was cancelled; refresh remote references to check the remote outcome." : failure.Message,
-                        PartialStandardOutput = GitOutputText.Utf8(output.ToArray(), "stdout", warnings),
-                        PartialStandardError = GitOutputText.Utf8(error.ToArray(), "stderr", warnings),
-                    };
-                    if (cancelled) { break; }
-                }
-            }
-            return new GitRemoteBranchDeletionResult(batches, token.IsCancellationRequested);
-        }, cancellationToken);
+                (item.Stream == GitProcessOutputStream.StandardOutput ? output : error).Write(item.Bytes.Span);
+                outputReceived?.Invoke(item);
+            }).ConfigureAwait(false);
+            return batch with
+            {
+                Status = result.Success ? GitRemoteBranchDeletionBatchStatus.Succeeded : GitRemoteBranchDeletionBatchStatus.Failed,
+                Result = result,
+                ErrorMessage = result.Success ? null : result.StandardError,
+            };
+        }
+        catch (Exception failure) when (failure is OperationCanceledException or IOException or Win32Exception or UnauthorizedAccessException)
+        {
+            bool cancelled = failure is OperationCanceledException && token.IsCancellationRequested;
+            List<string> warnings = [];
+            return batch with
+            {
+                Status = cancelled ? GitRemoteBranchDeletionBatchStatus.Cancelled : GitRemoteBranchDeletionBatchStatus.Failed,
+                ErrorMessage = cancelled ? "Deletion was cancelled; refresh remote references to check the remote outcome." : failure.Message,
+                PartialStandardOutput = GitOutputText.Utf8(output.ToArray(), "stdout", warnings),
+                PartialStandardError = GitOutputText.Utf8(error.ToArray(), "stderr", warnings),
+            };
+
+        }
     }
 
     private static string? RemoteBranchSource(string refspec, string destination)

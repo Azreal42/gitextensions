@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Scripts;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -85,7 +86,21 @@ public sealed class CreateTagDialog : RepositoryDialog
         await RunAsync("Create tag", async token =>
         {
             _summary.Text = await ReferenceDialogControls.SummaryAsync(Repository, options.Revision, token);
-            try { await Repository.CreateTagAsync(options, token); CreatedTag = options.Name; }
+            try
+            {
+                await Repository.CreateTagAsync(options with { PushRemote = null }, token);
+                CreatedTag = options.Name;
+                if (options.PushRemote is string remote)
+                {
+                    using ScriptWorkflowScope scripts = new(this, Repository, token);
+                    if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforePush)) { return; }
+                    scripts.ThrowIfStopped();
+                    await Repository.PushTagReferenceAsync(remote, options.Name, cancellationToken: scripts.Token);
+                    scripts.ThrowIfStopped();
+                    if (!await ScriptWorkflowScope.IsGitOperationPendingAsync(Repository, scripts.Token))
+                    { await RunScriptEventAsync(scripts, ScriptEvent.AfterPush); }
+                }
+            }
             finally { MarkRepositoryChanged(); }
             Close();
         });

@@ -8,6 +8,7 @@ using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Scripts;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -189,6 +190,15 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
             }
         }
         if (stop) { items.Add(Item("tsmiStopTracking", "Stop tracking this file", "StopTrackingFile.png", FileMenuCommand.StopTracking, !p.Bare)); }
+        if (host.RunScriptAsync is { } runScript && !p.DisplayOnly)
+        {
+            IReadOnlyList<ScriptDefinition> scripts = new ScriptsPreferencesStore().Load().Scripts;
+            items.AddRange(ScriptMenuItems.Build(scripts, script => script.OnEvent == ScriptEvent.ShowInFileList,
+                script => async () =>
+                {
+                    if (!host.IsBusy() && host.IsCurrent(selection)) { await runScript(script, selection); }
+                }, ready, translations, "FileStatusList"));
+        }
         if (selection.IsFileTree && view.Tree.Items.OfType<TreeViewItem>().Any(item => item.IsExpanded))
         { items.Add(Item("FileTreeCollapseRootFolders", "Collap&se root folders", "TreeCollapseAll.png", FileMenuCommand.CollapseRootFolders)); }
         if (!selection.IsFileTree) { items.Add(new Separator()); items.AddRange(view.CreateSortContextMenuItems(action => ApplyViewOption(selection, action))); }

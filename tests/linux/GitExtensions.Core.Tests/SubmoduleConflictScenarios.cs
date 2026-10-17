@@ -13,6 +13,7 @@ internal static class SubmoduleConflictScenarios
         ("submodule conflict branches intersect both sides exclude symbolic refs and checkout a selected local branch", BranchesAsync),
         ("submodule conflict remote checkout preserves shared branch creation tracking stash and reset choices", RemoteCheckoutAsync),
         ("submodule conflict checkout refuses moved branches forged hashes noncontaining refs and mismatched options", BranchGuardsAsync),
+        ("submodule conflict prepared checkout refuses generic or foreign preparations before native reads and preserves mutation state", PreparationProvenanceAsync),
         ("submodule conflict operations refuse selected or unrelated stale index entries without overwriting them", StaleIndexAsync),
         ("submodule conflict missing or uninitialized children cannot fall back to the parent or stage deletion", MissingAsync),
         ("submodule conflict child replacement parent aliases and symbolic traversal are refused before mutation", ReplacedAsync),
@@ -109,6 +110,33 @@ internal static class SubmoduleConflictScenarios
         GitReference noncontaining = (await f.Child.GetReferencesAsync()).Single(r => r.Name == selected.Name);
         await Expect<InvalidOperationException>(() => f.Repository.CheckoutSubmoduleConflictBranchAsync(s, noncontaining, new(noncontaining.Name, GitCheckoutKind.RemoteBranch)));
         Check(await f.Child.ResolveRevisionAsync("HEAD") == f.Local && Bytes(index, await f.Index()), "Rejected target changes never checkout or stage anything.");
+    }
+
+    private static async Task PreparationProvenanceAsync()
+    {
+        using Fixture f = await Fixture.CreateAsync(); GitSubmoduleConflictSnapshot snapshot = await f.Snapshot();
+        GitReference selected = (await f.Repository.GetSubmoduleConflictBranchesAsync(snapshot)).Single(r => r.Name == "refs/remotes/origin/both");
+        GitCheckoutOptions options = new(selected.Name, GitCheckoutKind.RemoteBranch); GitRepository child = f.Child;
+        GitCheckoutPreparation generic = await child.PrepareCheckoutAsync(options);
+        byte[] parentIndex = await f.Index(); ParentWitness parent = await f.Witness();
+        string childHead = await child.ResolveRevisionAsync("HEAD");
+        string childIndexPath = Line((await Native(child.Path, "rev-parse", "--path-format=absolute", "--git-path", "index")).StandardOutput);
+        byte[] childIndex = await System.IO.File.ReadAllBytesAsync(childIndexPath);
+        string probe = System.IO.Path.Combine(f.Root.Root, "completion-native-read");
+        GitRepository observed = await f.Wrapped("printf called >> " + Quote(probe) + "\nexec git \"$@\"\n");
+        ArgumentException rejected = await Expect<ArgumentException>(() => observed.CompleteSubmoduleConflictCheckoutAsync(snapshot, selected, generic));
+        Check(rejected.ParamName == "preparation" && !System.IO.File.Exists(probe)
+            && await child.ResolveRevisionAsync("HEAD") == childHead && Bytes(childIndex, await System.IO.File.ReadAllBytesAsync(childIndexPath))
+            && Bytes(parentIndex, await f.Index()) && await f.Witness() == parent,
+            "A generic same-path preparation is refused before native reads, without child or parent mutation.");
+
+        GitCheckoutPreparation paired = await f.Repository.PrepareSubmoduleConflictCheckoutAsync(snapshot, selected, options);
+        await Expect<ArgumentException>(() => observed.CompleteSubmoduleConflictCheckoutAsync(snapshot, selected, paired));
+        Check(!System.IO.File.Exists(probe), "A preparation is tied to the exact parent instance that created its private child, even for the same path.");
+        GitCheckoutResult completed = await f.Repository.CompleteSubmoduleConflictCheckoutAsync(snapshot, selected, paired);
+        Check(completed.Result.Success && await child.ResolveRevisionAsync("HEAD") == f.Merged
+            && Bytes(parentIndex, await f.Index()) && await f.Witness() == parent,
+            "The matching parent accepts its own submodule preparation and retains the unresolved parent index.");
     }
 
     private static async Task StaleIndexAsync()
