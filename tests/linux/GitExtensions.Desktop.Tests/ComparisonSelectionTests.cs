@@ -161,7 +161,7 @@ public sealed class ComparisonSelectionTests
     {
         FileStatusListView view = FileView(dialog);
         GitRevisionFile file = dialog.Comparison!.Files.Single(item => item.Path == path);
-        TreeViewItem item = view.FindItemByTag(file)!;
+        TreeViewItem item = view.FindItemByTag(new ComparisonFileSelection(dialog.ComparisonGroups[0], file))!;
         foreach (TreeViewItem parent in item.GetVisualAncestors().OfType<TreeViewItem>()) { parent.IsExpanded = true; }
         item.BringIntoView(); Pump(dialog);
         PushProcessTestDriver.Pointer(item); Pump(dialog);

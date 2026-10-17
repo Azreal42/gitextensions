@@ -100,14 +100,20 @@ public sealed partial class MainWindow
             ToggleType = MenuItemToggleType.CheckBox, IsChecked = _revisionDiffPreferences.OmitUninterestingDiff
         };
         allParents.Click += async (_, _) => await ChangeRevisionDiffPreferencesAsync(
-            _revisionDiffPreferences with { ShowDiffForAllParents = allParents.IsChecked });
+            _revisionDiffPreferencesStore.Load() with { ShowDiffForAllParents = allParents.IsChecked });
         omit.Click += async (_, _) => await ChangeRevisionDiffPreferencesAsync(
-            _revisionDiffPreferences with { OmitUninterestingDiff = omit.IsChecked });
+            _revisionDiffPreferencesStore.Load() with { OmitUninterestingDiff = omit.IsChecked });
         _revisionFilesView = new FileStatusListView(_revisionFiles) { Name = "RevisionFileStatusList", GroupByRevision = true };
         ConfigureRulesFileList(_revisionFilesView, worktreeContext: false);
         ConfigureFileContextMenu(_revisionFiles, isFileTree: false);
         _revisionFilesView.SettingsMenu.Items.Add(allParents);
         _revisionFilesView.SettingsMenu.Items.Add(omit);
+        _revisionFilesView.SettingsMenu.Opening += (_, _) =>
+        {
+            _revisionDiffPreferences = _revisionDiffPreferencesStore.Load();
+            allParents.IsChecked = _revisionDiffPreferences.ShowDiffForAllParents;
+            omit.IsChecked = _revisionDiffPreferences.OmitUninterestingDiff;
+        };
         _revisionFilesView.Toolbar.Children.Insert(1, RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
             _commits.SelectedItem is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask));
         _revisionFilesView.DisplayChanged += async (_, _) =>
@@ -199,6 +205,7 @@ public sealed partial class MainWindow
         object? previous = (_revisionFiles.SelectedItem as TreeViewItem)?.Tag ?? preservedSelection;
         CancellationToken token = cancellationToken ?? Token;
         string selectionIdentity = RevisionSelectionIdentity;
+        _revisionDiffPreferences = _revisionDiffPreferencesStore.Load();
         GitCommit[] selectedCommits = SelectedRevisionDiffCommits();
         string[] revisions = selectedCommits.Length > 0 ? selectedCommits.Select(commit => commit.Hash).ToArray() : [revision];
         IReadOnlyList<GitRevisionDiffGroup> groups = await repository.GetRevisionDiffGroupsAsync(

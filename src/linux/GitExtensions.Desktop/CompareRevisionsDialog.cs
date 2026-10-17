@@ -37,10 +37,6 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     private bool _loading;
     private bool _bare;
     public GitComparison? Comparison => _comparison;
-    public GitRevisionFile? SelectedFile => _files.SelectedItems?.Count == 1 && _files.SelectedItem is TreeViewItem { Tag: GitRevisionFile file } ? file : null;
-    public IReadOnlyList<GitRevisionFile> SelectedFiles => _files.SelectedItems?.Count == 1
-        ? _filesView.SelectedTags.OfType<GitRevisionFile>().ToArray()
-        : _files.SelectedItems?.OfType<TreeViewItem>().Select(item => item.Tag).OfType<GitRevisionFile>().Distinct().ToArray() ?? [];
     public string? MergeBaseRevision => _fixedMergeBase;
 
     public CompareRevisionsDialog(GitRepository repository, GitCompareRevision baseRevision, GitCompareRevision compareRevision, FileStatusListPreferencesStore? fileListPreferences = null)
@@ -73,6 +69,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(6, 4), Children = { _fileTool, _saveBase, _saveCompare, close } };
         DockPanel.SetDock(actions, Dock.Bottom); Root.Children.Add(actions);
         _filesView = new FileStatusListView(_files, preferencesStore: fileListPreferences) { Name = "ComparisonFileStatusList" };
+        InitializeComparisonGroups();
         _tabs.ItemsSource = new[]
         {
             new TabItem { Name = "ComparisonDiffTab", Header = T("Diff"), Content = _diff },
@@ -124,12 +121,14 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         try
         {
             _bare = (await Repository.GetInfoAsync(token)).IsBare;
+            if (!_headCaptured) { _capturedHead = (await Repository.GetStatusAsync(token)).Head; _headCaptured = true; }
             _base.SetBare(_bare); _compare.SetBare(_bare);
             if (_base.Read().Kind == GitCompareRevisionKind.Commit) { _base.SetSummary(await ReferenceDialogControls.SummaryAsync(Repository, _base.Read().Revision, token)); }
             if (_compare.Read().Kind == GitCompareRevisionKind.Commit) { _compare.SetSummary(await ReferenceDialogControls.SummaryAsync(Repository, _compare.Read().Revision, token)); }
             if (!_mergeBaseLoaded)
             {
-                _fixedMergeBase = await Repository.GetComparisonMergeBaseAsync(_base.Read(), _compare.Read(), token);
+                GitCompareRevision? first = MergeRevision(_base.Read()), second = MergeRevision(_compare.Read());
+                _fixedMergeBase = first is null || second is null ? null : await Repository.GetComparisonMergeBaseAsync(first, second, token);
                 _mergeBaseLoaded = true;
                 _mergeBase.Content = T("Compare to merge base") + (_fixedMergeBase is null ? "" : " (" + _fixedMergeBase[..Math.Min(9, _fixedMergeBase.Length)] + ")");
             }
@@ -140,32 +139,14 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
 
     private async Task ReadComparisonAsync(CancellationToken token)
     {
-        _comparison = await Repository.GetComparisonAsync(_mergeBase.IsChecked == true && _fixedMergeBase is not null ? new(_fixedMergeBase) : _base.Read(), _compare.Read(), token);
+        _comparisonGroups = await Repository.GetComparisonGroupsAsync(
+            _mergeBase.IsChecked == true && _fixedMergeBase is not null ? new(_fixedMergeBase) : _base.Read(), _compare.Read(),
+            _capturedHead, _groupPreferences.Load().ShowDiffForAllParents, token);
+        token.ThrowIfCancellationRequested();
+        _comparison = _comparisonGroups.FirstOrDefault()?.Comparison;
         SetFileGroups();
         await ReadSelectedAsync(token);
-        if (LastError is null) { Status.Text = _comparison.Files.Count + " " + T("files") + (_comparison.Files.Count == 0 ? " — " + T("No differences") : ""); }
-    }
-
-    private void SetFileGroups()
-    {
-        FileStatusListEntry[] entries = _comparison?.Files.Select(file => new FileStatusListEntry(file, file.Path,
-            file.OriginalPath, file.Status, file.SimilarityPercent, file.DiffStatus)).ToArray() ?? [];
-        GitComparison? comparison = _comparison;
-        _filesView.SetGroups(comparison is null ? [] : [new(comparison, "comparison", ComparisonGroupHeader(comparison, entries.Length, entries.Length), entries, Name: "ComparisonFileGroup")
-        { HeaderFactory = (shown, total) => ComparisonGroupHeader(comparison, shown, total) }]);
-    }
-
-    private Control ComparisonGroupHeader(GitComparison comparison, int shown, int total)
-    {
-        string revision = comparison.Base.Kind switch
-        {
-            GitCompareRevisionKind.Index => T("Commit index"), GitCompareRevisionKind.WorkingTree => T("Working directory"),
-            _ => comparison.Base.Revision[..Math.Min(9, comparison.Base.Revision.Length)]
-        };
-        string count = shown < total ? shown + "/" + total : total.ToString();
-        return new StackPanel { Orientation = Orientation.Horizontal, Height = ClassicTreeViewAppearance.RowHeight, Children =
-        { _filesView.CreateIcon("Diff.png"), new TextBlock { Text = "(" + count + ") " + T("Diff with A ") + revision,
-            Margin = new Thickness(2, 0), VerticalAlignment = VerticalAlignment.Center } } };
+        if (LastError is null) { int count = _comparison?.Files.Count ?? 0; Status.Text = count + " " + T("files") + (count == 0 ? " — " + T("No differences") : ""); }
     }
 
     public GitComparisonDiffOptions ReadDiffOptions() => _diff.TextView.ComparisonMenu.Options;
@@ -174,7 +155,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     {
         if (_loading || IsBusy) { return; }
         CancelSelectionRead(); _loadedSelection = null;
-        _comparison = null; _filesView.SetGroups([]);
+        _comparison = null; _comparisonGroups = []; _groupsByKey.Clear(); _filesView.SetGroups([]);
         _diff.ShowDiff(T("Choose revisions and press Compare.")); _baseView.ShowDiff(""); _compareView.ShowDiff("");
         Status.Text = T("Choose revisions and press Compare."); UpdateActions();
     }
@@ -201,15 +182,16 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     }
     private Task OpenToolAsync(bool directory) => RunComparisonAsync("Open with diff tool", async token =>
     {
-        if (_comparison is null) { return; }
-        try { await Repository.OpenComparisonDiffToolAsync(_comparison, directory ? null : SelectedFile, directory, token); }
+        GitComparison? comparison = directory ? _comparison : SelectedComparison;
+        if (comparison is null || !directory && SelectedFile is null) { return; }
+        try { await Repository.OpenComparisonDiffToolAsync(comparison, directory ? null : SelectedFile, directory, token); }
         finally { MarkRepositoryChanged(); }
         _loading = true; try { await ReadComparisonAsync(token); } finally { _loading = false; }
     });
     public async Task SaveSelectedFileAsync(string destination, bool baseSide = false, CancellationToken cancellationToken = default)
     {
         GitRevisionFile file = SelectedFile ?? throw new InvalidOperationException(T("Select a file first."));
-        GitComparison comparison = _comparison ?? throw new InvalidOperationException(T("Compare revisions first."));
+        GitComparison comparison = SelectedComparison ?? throw new InvalidOperationException(T("Compare revisions first."));
         if (baseSide ? file.Status == 'A' : file.IsDeleted) { throw new InvalidOperationException(T("The file does not exist in this revision.")); }
         byte[] bytes = await Repository.GetComparisonFileBytesAsync(baseSide ? comparison.Base : comparison.Compare, baseSide ? file.OriginalPath ?? file.Path : file.Path, cancellationToken);
         await using FileStream output = new(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None);
@@ -255,11 +237,12 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     }
     protected override void UpdateActions()
     {
+        _allParents.IsEnabled = !IsBusy;
         _mergeBase.IsEnabled = !IsBusy && _fixedMergeBase is not null;
         _directoryTool.IsEnabled = !IsBusy && !_bare && _comparison is not null && _comparison.Base.Kind != GitCompareRevisionKind.WorkingTree && _comparison.Files.Count > 0;
-        _fileTool.IsEnabled = !IsBusy && !_bare && SelectedFile is not null && _comparison is not null && !(_comparison.UntrackedPaths.Contains(SelectedFile.Path, StringComparer.Ordinal));
-        _saveBase.IsEnabled = !IsBusy && _comparison is not null && SelectedFile is { Status: not 'A' };
-        _saveCompare.IsEnabled = !IsBusy && _comparison is not null && SelectedFile is { IsDeleted: false };
+        _fileTool.IsEnabled = !IsBusy && !_bare && SelectedFile is not null && SelectedComparison is not null && !(SelectedComparison.UntrackedPaths.Contains(SelectedFile.Path, StringComparer.Ordinal));
+        _saveBase.IsEnabled = !IsBusy && SelectedComparison is not null && SelectedFile is { Status: not 'A' };
+        _saveCompare.IsEnabled = !IsBusy && SelectedComparison is not null && SelectedFile is { IsDeleted: false };
         _diff.TextView.ComparisonMenu.SetHostBusy(IsBusy);
         _diff.TextView.RenderingMenu.SetHostBusy(IsBusy);
     }
@@ -267,7 +250,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     {
         foreach (TreeViewItem item in items.OfType<TreeViewItem>())
         {
-            if (item.Tag is GitRevisionFile) { yield return item; }
+            if (item.Tag is ComparisonFileSelection) { yield return item; }
             foreach (TreeViewItem child in FileItems(item.Items)) { yield return child; }
         }
     }

@@ -52,7 +52,7 @@ public sealed class ComparisonFileStatusListTests
         Assert.That(f.View.Entries.Select(entry => entry.Path), Is.EquivalentTo(f.Dialog.Comparison!.Files.Select(file => file.Path)));
         Assert.That(f.View.Entries.Single(entry => entry.Path == Renamed).OriginalPath, Is.EqualTo(Old));
         Assert.That(f.View.Entries.Single(entry => entry.Path == Renamed).SimilarityPercent, Is.EqualTo(100));
-        Assert.That(f.View.Entries.All(entry => entry.Tag is GitRevisionFile), Is.True);
+        Assert.That(f.View.Entries.All(entry => entry.Tag is ComparisonFileSelection), Is.True);
         Assert.That(Diff(f.Dialog), Does.Contain("new one"));
         Assert.That(f.View.Toolbar.Bounds.Height, Is.EqualTo(24));
         Assert.That(Rows(f.View.Tree).Where(row => row.IsEffectivelyVisible).Select(row => ((Control)row.Header!).Bounds.Height), Is.All.EqualTo(ClassicTreeViewAppearance.RowHeight));
@@ -81,9 +81,9 @@ public sealed class ComparisonFileStatusListTests
         Assert.That(f.Dialog.SelectedFile!.OriginalPath, Is.EqualTo(Old));
         Assert.That(f.Dialog.FocusManager!.GetFocusedElement(), Is.SameAs(editor));
         Assert.That(editor.CaretIndex, Is.EqualTo("^old/".Length));
-        TreeViewItem oldItem = f.View.FindItemByTag(f.Dialog.SelectedFile)!;
+        TreeViewItem oldItem = f.View.FindItemByTag(new ComparisonFileSelection(f.Dialog.ComparisonGroups[0], f.Dialog.SelectedFile!))!;
         await TypeFilter(f, "["); await Until(() => f.View.FilterError is not null); await Idle(f.Dialog);
-        Assert.That(f.View.FindItemByTag(f.Dialog.SelectedFile!), Is.SameAs(oldItem), "Invalid regex retains the last good displayed tree, including selection.");
+        Assert.That(f.View.FindItemByTag(new ComparisonFileSelection(f.Dialog.ComparisonGroups[0], f.Dialog.SelectedFile!)), Is.SameAs(oldItem), "Invalid regex retains the last good displayed tree, including selection.");
         Assert.That(f.View.FilteredEntries.Single().Path, Is.EqualTo(Renamed));
         Assert.That(f.View.FilterHistory, Does.Not.Contain("["));
         Assert.That(f.Dialog.FocusManager.GetFocusedElement(), Is.SameAs(editor));
@@ -412,7 +412,7 @@ public sealed class ComparisonFileStatusListTests
             _git = git; Store = new(git.Output("preferences"));
             Dialog = new(git.Repository, before, "HEAD", Store) { RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light }; Dialog.Show();
         }
-        internal TreeViewItem Item(string path) => View.FindItemByTag(Dialog.Comparison!.Files.Single(file => file.Path == path))!;
+        internal TreeViewItem Item(string path) => View.FindItemByTag(new ComparisonFileSelection(Dialog.ComparisonGroups[0], Dialog.Comparison!.Files.Single(file => file.Path == path)))!;
         internal static async Task<Fixture> CreateAsync(bool dark = false)
         {
             ReferenceFixture git = await ReferenceFixture.CreateAsync(); Fixture? f = null;

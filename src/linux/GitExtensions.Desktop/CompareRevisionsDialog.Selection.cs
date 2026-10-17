@@ -1,11 +1,13 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
+using GitExtensions.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class CompareRevisionsDialog
 {
-    private sealed record SelectionRead(GitComparison Comparison, GitRevisionFile File, int Tab);
+    private sealed record SelectionRead(GitComparisonGroup Group, GitRevisionFile? File, int Tab)
+    { public GitComparison Comparison => Group.Comparison; }
     private readonly CancellationTokenSource _selectionLifetime = new();
     private readonly HashSet<Task> _selectionTasks = [];
     private CancellationTokenSource? _selectionRead;
@@ -60,19 +62,23 @@ public sealed partial class CompareRevisionsDialog
     {
         if (_selectionClosing) { return Task.CompletedTask; }
         GitRevisionFile? file = SelectedFile;
+        GitComparisonGroup? group = SelectedGroup;
+        bool range = group is { Kind: GitRevisionDiffGroupKind.RangeDiff, RangeDiff: not null };
         TabItem[] tabs = _tabs.Items.OfType<TabItem>().ToArray();
         tabs[1].IsEnabled = file is not null && file.Status != 'A';
         tabs[2].IsEnabled = file is not null && !file.IsDeleted;
         if (_tabs.SelectedIndex == 1 && !tabs[1].IsEnabled || _tabs.SelectedIndex == 2 && !tabs[2].IsEnabled)
         { _tabs.SelectedIndex = 0; }
-        _fileCaption.Text = file is null ? "" : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
+        _fileCaption.Text = file is null ? range ? T("Range diff") : "" : ExportDialogControls.DisplayPath(file.OriginalPath is null ? file.Path : file.OriginalPath + " → " + file.Path);
         UpdateActions();
-        if (file is null || _comparison is null)
+        if (group is null || file is null && !range)
         {
             CancelSelectionRead(); _loadedSelection = null;
-            _diff.ShowDiff(""); _baseView.ShowDiff(""); _compareView.ShowDiff(""); return Task.CompletedTask;
+            foreach (FileHistoryContentView view in new[] { _diff, _baseView, _compareView })
+            { view.ShowDiff(""); view.TextView.DocumentIdentity = null; }
+            return Task.CompletedTask;
         }
-        SelectionRead selection = new(_comparison, file, _tabs.SelectedIndex);
+        SelectionRead selection = new(group, file, _tabs.SelectedIndex);
         if (!force && SameSelection(selection, _requestedSelection) && _selectionTask is { IsCompleted: false } current) { return current; }
         if (!force && SameSelection(selection, _loadedSelection)) { return Task.CompletedTask; }
         CancelSelectionRead(); _loadedSelection = null;
@@ -88,22 +94,38 @@ public sealed partial class CompareRevisionsDialog
     { try { await task; } finally { _selectionTasks.Remove(task); } }
 
     private static bool SameSelection(SelectionRead current, SelectionRead? other)
-        => other is not null && ReferenceEquals(current.Comparison, other.Comparison) && current.File == other.File && current.Tab == other.Tab;
+        => other is not null && ReferenceEquals(current.Group, other.Group) && current.File == other.File && current.Tab == other.Tab;
 
     private bool IsCurrentSelection(SelectionRead selection, CancellationTokenSource read)
         => !_selectionClosing && !read.IsCancellationRequested && ReferenceEquals(_selectionRead, read)
-            && ReferenceEquals(_comparison, selection.Comparison) && SelectedFile == selection.File && _tabs.SelectedIndex == selection.Tab;
+            && ReferenceEquals(SelectedGroup, selection.Group) && _comparisonGroups.Any(group => ReferenceEquals(group, selection.Group)) && SelectedFile == selection.File && _tabs.SelectedIndex == selection.Tab;
 
     private async Task ReadSelectionCoreAsync(SelectionRead selection, CancellationTokenSource read)
     {
         CancellationToken token = read.Token;
-        GitComparison comparison = selection.Comparison; GitRevisionFile file = selection.File;
+        GitComparison comparison = selection.Comparison; GitRevisionFile? file = selection.File;
         try
         {
-            _diff.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.Path, file.OriginalPath, comparison.Base, comparison.Compare, "diff");
-            _baseView.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.OriginalPath ?? file.Path, comparison.Base, "blob");
-            _compareView.TextView.DocumentIdentity = string.Join("\0", Repository.Path, file.Path, comparison.Compare, "blob");
-            if (selection.Tab == 0)
+            string groupIdentity = string.Join("\0", Repository.Path, selection.Group.Kind, comparison.Base, comparison.Compare,
+                selection.Group.RangeDiff?.First.BaseRevision, selection.Group.RangeDiff?.First.TipRevision,
+                selection.Group.RangeDiff?.Second.BaseRevision, selection.Group.RangeDiff?.Second.TipRevision);
+            _diff.TextView.DocumentIdentity = string.Join("\0", groupIdentity, file?.Path, file?.OriginalPath, "diff");
+            _baseView.TextView.DocumentIdentity = file is null ? null : string.Join("\0", groupIdentity, file.OriginalPath ?? file.Path, comparison.Base, "blob");
+            _compareView.TextView.DocumentIdentity = file is null ? null : string.Join("\0", groupIdentity, file.Path, comparison.Compare, "blob");
+            if (selection.Group.Kind == GitRevisionDiffGroupKind.RangeDiff && selection.Group.RangeDiff is { } range)
+            {
+                _diff.TextView.BeginDocumentLoad();
+                await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
+                if (!IsCurrentSelection(selection, read)) { return; }
+                GitComparisonDiffOptions options = ReadDiffOptions();
+                var document = await Repository.GetRangeDiffDocumentAsync(range, new GitRangeDiffOptions
+                { ContextLines = options.ContextLines, IgnoreWhitespace = options.IgnoreWhitespace, ShowEntireFile = options.ShowEntireFile,
+                    TreatAllFilesAsText = options.TreatAllFilesAsText }, _diff.TextView.DisplayOptions, token);
+                if (!IsCurrentSelection(selection, read)) { return; }
+                _diff.ShowDiff(document); _diff.TextView.Mode = DiffViewMode.RangeDiff;
+            }
+            else if (file is null) { return; }
+            else if (selection.Tab == 0)
             {
                 _diff.TextView.BeginDocumentLoad();
                 await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
