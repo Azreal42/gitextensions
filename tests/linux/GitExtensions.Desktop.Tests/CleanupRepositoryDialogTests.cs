@@ -449,9 +449,23 @@ public sealed class CleanupRepositoryDialogTests
         public async ValueTask DisposeAsync()
         {
             static void CloseChildren(Window owner) { foreach (Window child in owner.OwnedWindows.ToArray()) { CloseChildren(child); child.Close(); } }
-            foreach (Window window in Windows.AsEnumerable().Reverse()) { CloseChildren(window); window.Close(); } CloseChildren(Owner); Owner.Close(); Stopwatch timer = Stopwatch.StartNew();
-            while (Windows.OfType<RepositoryDialog>().Any(dialog => dialog.IsBusy) && timer.Elapsed < TimeSpan.FromSeconds(8)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
-            foreach (Window window in Windows) { window.Close(); } Dispatcher.UIThread.RunJobs();
+            Window[] windows = Windows.Append(Owner).Distinct().ToArray();
+            foreach (Window window in Windows.AsEnumerable().Reverse()) { CloseChildren(window); window.Close(); } CloseChildren(Owner); Owner.Close();
+            // Closing seals each browser before taking its work snapshot. A cancelled read
+            // may still be unwinding, and its final Close is posted to the dispatcher.
+            Task pending = Task.WhenAll(windows.OfType<MainWindow>().Select(window => window.WindowWorkCompletion));
+            Stopwatch timer = Stopwatch.StartNew();
+            while ((windows.Any(window => window.IsVisible) || Windows.OfType<RepositoryDialog>().Any(dialog => dialog.IsBusy) || !pending.IsCompleted)
+                && timer.Elapsed < TimeSpan.FromSeconds(15))
+            { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
+            Assert.That(windows.Where(window => window.IsVisible).Select(window => window.GetType().Name), Is.Empty,
+                "All fixture windows must actually close before the headless scope and repository profile end.");
+            Assert.That(Windows.OfType<RepositoryDialog>().Any(dialog => dialog.IsBusy), Is.False,
+                "The existing repository operations must finish their cancellation before cleanup.");
+            Assert.That(pending.IsCompleted, Is.True, "Each browser must drain WindowWorkCompletion before restoring XDG or deleting its repository.");
+            try { await pending; }
+            catch (OperationCanceledException) { }
+            Dispatcher.UIThread.RunJobs();
             foreach ((string name, string? value) in _environment) { Environment.SetEnvironmentVariable(name, value); } CultureInfo.CurrentUICulture = _culture;
             if (Directory.Exists(Root)) { Directory.Delete(Root, true); }
         }

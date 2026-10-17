@@ -18,7 +18,7 @@ public sealed partial class MainWindow
 
     private void UpdateHistoryPresentation()
     {
-        if (_refreshing) { return; }
+        if (_refreshing || _lifetime.IsCancellationRequested) { return; }
         GitCommit[] selected = _commits.SelectedItems?.OfType<GitCommit>().ToArray() ?? [];
         // AuthorRevisionHighlighting: one selected author, keep it on multiselection,
         // and fall back to the configured user only when selection is empty.

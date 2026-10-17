@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using GitCommands;
@@ -227,6 +228,73 @@ public sealed class CommitInformationIntegrationTests
             if (information is not null) { await Drain(information.Completion); }
             if (shown is not null) { await shown; }
         }
+    }
+
+    [AvaloniaTest]
+    public async Task PostedHistoryFocusUpdateDoesNotRepaintRowsAfterClosingBegins()
+    {
+        using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
+        MainWindow main = f.Window; await MainIdle(main);
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        CommitInformationView information = Field<CommitInformationView>(main, "CommitInformation");
+        await Drain(information.Completion);
+        CommitGraph graph = main.GetVisualDescendants().OfType<CommitGraph>().Single();
+        object itemsSource = history.ItemsSource!;
+        using MetadataGate gate = new(f); gate.Arm(((GitCommit)history.Items[1]!).Hash); SetRepository(main, gate.Repository);
+        try
+        {
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+            await Until(() => gate.Started); int pid = gate.Pid;
+            Grid row = ((Control)history.ContainerFromIndex(1)!).GetVisualDescendants().OfType<Grid>()
+                .Single(control => control.Name == "RevisionHistoryRow");
+            Assert.That(history.IsKeyboardFocusWithin, Is.True);
+            Assert.That(graph.SelectionFocused, Is.True);
+            Assert.That(information.IsLoading, Is.True, "A real pending metadata process must defer the actual Close.");
+            object? background = row.Background;
+            bool closingObserved = false;
+            int rowRepaintsAfterClosing = 0, graphFocusChangesAfterClosing = 0;
+            main.Closing += (_, _) => closingObserved = true;
+            row.PropertyChanged += (_, args) =>
+            { if (closingObserved && args.Property == Panel.BackgroundProperty) { rowRepaintsAfterClosing++; } };
+            graph.PropertyChanged += (_, args) =>
+            { if (closingObserved && args.Property == CommitGraph.SelectionFocusedProperty) { graphFocusChangesAfterClosing++; } };
+
+            Task? completion = null;
+            (bool Visible, int RowRepaints, int GraphChanges, object? Background, bool Focused)? afterQueuedPresentation = null;
+            bool closeRequested = false;
+            // The headless keyboard helper can drain dispatcher jobs before returning.
+            // Request the real Close inside LostFocus, after the production handler has
+            // posted its update, then queue the observation before the helper resumes.
+            history.LostFocus += (_, _) =>
+            {
+                if (closeRequested) { return; }
+                closeRequested = true;
+                Assert.That(graph.SelectionFocused, Is.True, "The posted focus update must still be pending at the LostFocus boundary.");
+                main.Close();
+                completion = main.WindowWorkCompletion;
+                Assert.That(closingObserved, Is.True);
+                Assert.That(main.IsVisible, Is.True, "A real pending metadata request must defer Close.");
+                Assert.That(completion.IsCompleted, Is.False);
+                Dispatcher.UIThread.Post(() => afterQueuedPresentation =
+                    (main.IsVisible, rowRepaintsAfterClosing, graphFocusChangesAfterClosing, row.Background, graph.SelectionFocused));
+            };
+            main.KeyPressQwerty(PhysicalKey.Digit2, RawInputModifiers.Control);
+            main.KeyReleaseQwerty(PhysicalKey.Digit2, RawInputModifiers.Control);
+            Assert.That(closeRequested, Is.True);
+            await Until(() => afterQueuedPresentation.HasValue);
+            var observed = afterQueuedPresentation!.Value;
+            Assert.That(observed.Visible, Is.True, "The ordered observation must happen during the real deferred close, before visual detach.");
+            Assert.That(observed.RowRepaints, Is.Zero, "The posted focus change must not republish row presentation after Closing.");
+            Assert.That(observed.GraphChanges, Is.Zero);
+            Assert.That(observed.Background, Is.SameAs(background));
+            Assert.That(observed.Focused, Is.True);
+
+            await Until(() => !main.IsVisible && completion!.IsCompleted && !Alive(pid));
+            await Drain(completion!);
+            Assert.That(history.ItemsSource, Is.SameAs(itemsSource), "Closing must not replace the loaded history to suppress the callback.");
+            Assert.That(Alive(pid), Is.False, "The real Git process must be cancelled and drained, not merely hidden.");
+        }
+        finally { gate.Release(); main.Close(); await Drain(main.WindowWorkCompletion); }
     }
 
     [AvaloniaTest]
