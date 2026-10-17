@@ -220,7 +220,8 @@ internal sealed class FileMenuOperations
                 present |= selected.Any(paths.Contains); missing |= selected.Any(path => !paths.Contains(path));
             }
             EnsureCurrent(selection); token.ThrowIfCancellationRequested();
-            ResetChangesDialog dialog = new(present, missing, _translate("Are you sure you want to reset all selected files to") + " " + (first ? _translate("First: A ") : _translate("Second: B ")) + "?\n\n" + string.Join('\n', selection.ResetPaths)) { RequestedThemeVariant = Owner.ActualThemeVariant };
+            string sourceDescription = FileMenuRevisionDescription.Describe(groups.Select(group => group.Key!), _translate);
+            ResetChangesDialog dialog = new(present, missing, _translate("Are you sure you want to reset all selected files to") + " " + (first ? _translate("First: A ") : _translate("Second: B ")) + sourceDescription + "?\n\n" + string.Join('\n', selection.ResetPaths)) { RequestedThemeVariant = Owner.ActualThemeVariant };
             ResetChangesDialog.Decision decision = await dialog.ShowDialog<ResetChangesDialog.Decision>(Owner);
             if (decision == ResetChangesDialog.Decision.Cancel) { return; }
             EnsureCurrent(selection); token.ThrowIfCancellationRequested();

@@ -44,7 +44,9 @@ public sealed class ComparisonFileMenuTests
     }
 
     [AvaloniaTest]
-    public async Task ResetSecondUsesTheSelectedBaseToAGroupAndCancelLeavesAllGitStateUnchanged()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task ResetUsesTheSelectedGroupSourceAndCancelLeavesAllGitStateUnchanged(bool resetFirst)
     {
         using RepoFixture git = await RepoFixture.CreateAsync();
         await File.WriteAllTextAsync(git.PathInRepository("shared.txt"), "BASE\n"); await File.WriteAllTextAsync(git.PathInRepository("untouched.txt"), "keep\n");
@@ -53,21 +55,44 @@ public sealed class ComparisonFileMenuTests
         await git.GitAsync("checkout", "-b", "side-b", common); await File.WriteAllTextAsync(git.PathInRepository("shared.txt"), "value B\n"); await git.Repository.StageAllAsync(); await git.Repository.CommitAsync("B"); string b = await git.Repository.ResolveRevisionAsync("HEAD");
         await File.WriteAllTextAsync(git.PathInRepository("untouched.txt"), "dirty unrelated\n");
         await using Host f = await Host.ShowAsync(git, new(a), new(b));
-        ComparisonFileSelection leaf = f.View.Entries.Select(entry => entry.Tag).OfType<ComparisonFileSelection>().Single(item => item.Group.Kind == GitRevisionDiffGroupKind.BaseToFirst && item.File.Path == "shared.txt");
+        ComparisonFileSelection leaf = f.View.Entries.Select(entry => entry.Tag).OfType<ComparisonFileSelection>().Single(item => item.Group.Kind == (resetFirst ? GitRevisionDiffGroupKind.BaseToSecond : GitRevisionDiffGroupKind.BaseToFirst) && item.File.Path == "shared.txt");
         f.View.SelectTags([leaf]); await Idle(f.Dialog); PushProcessTestDriver.Pointer(Row(f.View.FindItemByTag(leaf)!));
         string before = (await git.GitAsync("status", "--porcelain=v1")).StandardOutput;
-        await ResetSecond(f); ResetChangesDialog cancel = f.Dialog.OwnedWindows.OfType<ResetChangesDialog>().Single();
+        await Reset(f, resetFirst); ResetChangesDialog cancel = f.Dialog.OwnedWindows.OfType<ResetChangesDialog>().Single();
         PushProcessTestDriver.Pointer(Field<Button>(cancel, "CancelResetChanges")); await Idle(f.Dialog);
         Assert.That(await File.ReadAllTextAsync(git.PathInRepository("shared.txt")), Is.EqualTo("value B\n"));
         Assert.That((await git.GitAsync("status", "--porcelain=v1")).StandardOutput, Is.EqualTo(before));
-        leaf = f.View.Entries.Select(entry => entry.Tag).OfType<ComparisonFileSelection>().Single(item => item.Group.Kind == GitRevisionDiffGroupKind.BaseToFirst && item.File.Path == "shared.txt");
+        leaf = f.View.Entries.Select(entry => entry.Tag).OfType<ComparisonFileSelection>().Single(item => item.Group.Kind == (resetFirst ? GitRevisionDiffGroupKind.BaseToSecond : GitRevisionDiffGroupKind.BaseToFirst) && item.File.Path == "shared.txt");
         f.View.SelectTags([leaf]); await Idle(f.Dialog); PushProcessTestDriver.Pointer(Row(f.View.FindItemByTag(leaf)!));
-        await ResetSecond(f); ResetChangesDialog confirm = f.Dialog.OwnedWindows.OfType<ResetChangesDialog>().Single();
-        Assert.That(Field<TextBox>(confirm, "ResetChangesMessage").Text, Does.Contain("Second: B"));
+        await Reset(f, resetFirst); ResetChangesDialog confirm = f.Dialog.OwnedWindows.OfType<ResetChangesDialog>().Single();
+        string expectedSource = resetFirst ? common : a;
+        Assert.That(Field<TextBox>(confirm, "ResetChangesMessage").Text, Does.Contain(resetFirst ? "First: A" : "Second: B").And.Contain(expectedSource[..8]));
         PushProcessTestDriver.Pointer(Field<Button>(confirm, "ConfirmResetChanges")); await Idle(f.Dialog);
-        Assert.That(await File.ReadAllTextAsync(git.PathInRepository("shared.txt")), Is.EqualTo("value A\n"), "The menu must reset to the selected BASE→A group's A, not the form's B.");
-        Assert.That(System.Text.Encoding.UTF8.GetString(await git.Repository.GetIndexFileBytesAsync("shared.txt")), Is.EqualTo("value A\n"));
+        Assert.That(await File.ReadAllTextAsync(git.PathInRepository("shared.txt")), Is.EqualTo(resetFirst ? "BASE\n" : "value A\n"), "Reset must use the selected group endpoint, not the form endpoint.");
+        Assert.That(System.Text.Encoding.UTF8.GetString(await git.Repository.GetIndexFileBytesAsync("shared.txt")), Is.EqualTo(resetFirst ? "BASE\n" : "value A\n"));
         Assert.That(await File.ReadAllTextAsync(git.PathInRepository("untouched.txt")), Is.EqualTo("dirty unrelated\n"));
+        Assert.That(f.Dialog.LastError, Is.Null);
+    }
+
+    [AvaloniaTest]
+    public async Task RightClickOnAnotherFileUpdatesOnlyTheDiffWhileItsMenuStaysOpenAndTheFirstArrowNavigates()
+    {
+        using RepoFixture git = await RepoFixture.CreateAsync();
+        foreach (string path in new[] { "first.txt", "second.txt" }) { await File.WriteAllTextAsync(git.PathInRepository(path), path + " before\n"); }
+        await git.Repository.StageAllAsync(); await git.Repository.CommitAsync("Before"); string before = await git.Repository.ResolveRevisionAsync("HEAD");
+        foreach (string path in new[] { "first.txt", "second.txt" }) { await File.WriteAllTextAsync(git.PathInRepository(path), path + " after\n"); }
+        await git.Repository.StageAllAsync(); await git.Repository.CommitAsync("After");
+        await using Host f = await Host.ShowAsync(git, new(before), new("HEAD")); Select(f, "first.txt"); await Idle(f.Dialog);
+        object tag = f.View.Entries.Single(entry => entry.Path == "second.txt").Tag;
+        TreeViewItem row = f.View.FindItemByTag(tag)!;
+        ContextMenu menu = OpenMenu(f, row); await Idle(f.Dialog);
+        Assert.That(menu.IsOpen, Is.True, "Rendering the selected file must not close its context menu.");
+        Assert.That(f.View.FindItemByTag(tag), Is.SameAs(row), "A detail read must preserve file-list containers.");
+        Assert.That(Field<FileHistoryContentView>(f.Dialog, "ComparisonDiff").TextView.Editor.Text, Does.Contain("second.txt before").And.Contain("second.txt after"));
+        Press(TopLevel.GetTopLevel(menu)!, PhysicalKey.Escape); await Until(() => !menu.IsOpen);
+        Press(f.Dialog, PhysicalKey.ArrowUp); await Idle(f.Dialog);
+        Assert.That(((ComparisonFileSelection)((TreeViewItem)f.View.Tree.SelectedItem!).Tag!).File.Path, Is.EqualTo("first.txt"));
+        Assert.That(Field<FileHistoryContentView>(f.Dialog, "ComparisonDiff").TextView.Editor.Text, Does.Contain("first.txt before").And.Contain("first.txt after"));
         Assert.That(f.Dialog.LastError, Is.Null);
     }
 
@@ -86,6 +111,13 @@ public sealed class ComparisonFileMenuTests
         Assert.That(editor.SelectedText, Is.EqualTo("txt")); Assert.That(f.Dialog.FocusManager!.GetFocusedElement(), Is.SameAs(editor));
     }
 
+    private static async Task Reset(Host f, bool first)
+    {
+        if (!first) { await ResetSecond(f); return; }
+        Press(f.Dialog, PhysicalKey.R);
+        await Until(() => f.Dialog.OwnedWindows.OfType<ResetChangesDialog>().Any());
+    }
+
     private static async Task ResetSecond(Host f)
     {
         ContextMenu menu = OpenMenu(f); MenuItem root = Item(menu, "tsmiResetFileTo");
@@ -97,9 +129,9 @@ public sealed class ComparisonFileMenuTests
     }
     private static void Select(Host f, string path)
     { object tag = f.View.Entries.Single(entry => entry.Path == path).Tag; f.View.SelectTags([tag]); Pump(f.Dialog); PushProcessTestDriver.Pointer(Row(f.View.FindItemByTag(tag)!)); }
-    private static ContextMenu OpenMenu(Host f)
+    private static ContextMenu OpenMenu(Host f, TreeViewItem? target = null)
     {
-        Control row = Row((TreeViewItem)f.View.Tree.SelectedItem!); Pump(f.Dialog);
+        Control row = Row(target ?? (TreeViewItem)f.View.Tree.SelectedItem!); Pump(f.Dialog);
         Point point = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), f.Dialog)!.Value;
         Assert.That((f.Dialog.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(row), Is.True);
         f.Dialog.MouseMove(point); f.Dialog.MouseDown(point, MouseButton.Right); f.Dialog.MouseUp(point, MouseButton.Right); Pump(f.Dialog);

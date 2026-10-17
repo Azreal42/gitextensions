@@ -34,6 +34,17 @@ internal sealed record FileMenuSelection(GitRepository Repository, IReadOnlyList
         ? new[] { leaf.File.Path, leaf.File.OriginalPath } : [leaf.File.Path]).Distinct(StringComparer.Ordinal).ToArray();
 }
 
+internal static class FileMenuRevisionDescription
+{
+    internal static string Describe(IEnumerable<GitCompareRevision> endpoints, Func<string, string> translate)
+    {
+        GitCompareRevision[] values = endpoints.Distinct().ToArray();
+        if (values.Length > 1) { return translate("<multiple>"); }
+        return values.FirstOrDefault() is not { } value ? "" : value.Kind switch
+        { GitCompareRevisionKind.Index => translate("Index"), GitCompareRevisionKind.WorkingTree => translate("Working directory"), _ => value.Revision[..Math.Min(8, value.Revision.Length)] };
+    }
+}
+
 internal sealed record FileMenuCapabilities(bool ShowInFileTree = false, bool FilterInGrid = false,
     bool Grep = false, bool SupportLinePatching = false, bool CherryPick = false,
     bool VisualStudio = false, bool Scripts = false);

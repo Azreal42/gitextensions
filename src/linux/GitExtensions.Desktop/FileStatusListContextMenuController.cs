@@ -259,10 +259,5 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
         return Task.FromResult(true);
     }
     private string Describe(IEnumerable<GitCompareRevision> endpoints)
-    {
-        GitCompareRevision[] values = endpoints.Distinct().ToArray();
-        if (values.Length > 1) { return T("<multiple>"); }
-        return values.FirstOrDefault() is not { } value ? "" : value.Kind switch
-        { GitCompareRevisionKind.Index => T("Index"), GitCompareRevisionKind.WorkingTree => T("Working directory"), _ => value.Revision[..Math.Min(8, value.Revision.Length)] };
-    }
+        => FileMenuRevisionDescription.Describe(endpoints, T);
 }

@@ -17,7 +17,6 @@ public sealed partial class CompareRevisionsDialog
     private FileMenuAdditionalOperations? _fileMenuAdditionalOperations;
     private IReadOnlyDictionary<GitComparisonGroup, IReadOnlyList<GitComparisonFileMetadata>> _fileMenuMetadata
         = new Dictionary<GitComparisonGroup, IReadOnlyList<GitComparisonFileMetadata>>(ReferenceEqualityComparer.Instance);
-    private bool _selectingFileContext, _contextNeedsDetails;
     private sealed record ComparisonMenuIdentity(GitComparisonGroup[] Groups);
     internal Func<ProcessStartInfo, Process?> FileMenuExternalLauncher { get; set; } = Process.Start;
 
@@ -94,18 +93,10 @@ public sealed partial class CompareRevisionsDialog
             if (!args.GetCurrentPoint(_files).Properties.IsRightButtonPressed) { return; }
             TreeViewItem? item = (args.Source as Visual)?.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
             if (item is null) { return; }
-            _selectingFileContext = true;
-            if (_files.SelectedItems?.Contains(item) != true) { _contextNeedsDetails = true; _files.SelectedItem = item; }
+            if (_files.SelectedItems?.Contains(item) != true) { _files.SelectedItem = item; }
             item.Focus();
         }, RoutingStrategies.Tunnel);
-        menu.Opening += (_, _) => { _selectingFileContext = true; menu.ItemsSource = _fileMenuController.BuildItems(CaptureFileMenuSelection()); };
-        menu.Closed += (_, _) =>
-        {
-            _selectingFileContext = false;
-            if (!_contextNeedsDetails) { return; }
-            _contextNeedsDetails = false;
-            Dispatcher.UIThread.Post(async () => { if (!IsBusy && !_selectionClosing) { await LoadSelectionAsync(); } });
-        };
+        menu.Opening += (_, _) => menu.ItemsSource = _fileMenuController.BuildItems(CaptureFileMenuSelection());
         _files.AddHandler(InputElement.DoubleTappedEvent, async (_, args) =>
         {
             if (CaptureFileMenuSelection() is not { Leaves.Count: 1, Folder: null } selection) { return; }

@@ -102,8 +102,8 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         _base.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_base);
         _compare.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_compare);
         _mergeBase.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await InitializeAsync(); } };
-        _files.SelectionChanged += async (_, args) => { if (args.Source == _files && !_loading && !_filesView.IsUpdating && !_selectingFileContext && !IsBusy) { await LoadSelectionAsync(); } };
-        _filesView.DisplayChanged += async (_, _) => { if (!_loading && !_selectingFileContext && !IsBusy) { await LoadSelectionAsync(); } };
+        _files.SelectionChanged += async (_, args) => { if (args.Source == _files && !_loading && !_filesView.IsUpdating && !IsBusy) { await LoadSelectionAsync(); } };
+        _filesView.DisplayChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
         AddHandler(KeyDownEvent, async (_, args) => await HandleKeyAsync(args), RoutingStrategies.Tunnel);
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
