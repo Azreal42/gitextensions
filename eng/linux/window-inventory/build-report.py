@@ -332,7 +332,7 @@ def md():
     '| OpenFileDialog | StorageProvider.OpenFilePickerAsync selon le workflow | Adaptation OS ; tous les sites Windows ne sont pas repris. |',
     '| SaveFileDialog | StorageProvider.SaveFilePickerAsync selon le workflow | Adaptation OS ; journal/cache et certains exports restent absents. |',
     '| FolderBrowserDialog | StorageProvider.OpenFolderPickerAsync | Utilisé pour ouverture/clone/cleanup ; autres sites à comparer. |',
-    '| FontDialog | Aucun sélecteur global équivalent | Non porté ; le zoom d’un lecteur ne remplace pas le choix de polices. |',
+    '| FontDialog | FontPickerDialog pour la page Fonts : quatre rôles indépendants | Adaptation ciblée N2, ADR0091 ; autres appelants Windows, ConEmu et fournisseurs de fontes restent à porter/auditer. |',
     '| ColorDialog | Sélecteur RGB/HTML de Remotes, thèmes/palettes et lecteur | Adaptations ciblées ; éditeur global des couleurs Windows absent. |',
     '| MessageBox / TaskDialog | Dialogs.ConfirmAsync, ShowErrorAsync, fenêtres spécialisées | Adaptations par workflow ; aucune certification globale de tous les boutons/choix. |','',
     f"Le [CSV des {len(SYSTEM)} sites système/confirmations](windows-linux-system-dialog-sites.csv) donne chaque fichier, ligne, propriétaire et méthode, avec la ligne de la matrice correspondante lorsque disponible. **Ces sites ne sont pas individuellement déclarés portés.**",'',

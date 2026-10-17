@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
-  "source_digest_sha256": "4d422b6f7fe496bbd26ac5bf9e7e4421aa3c6b88b32c8af524076d5bcac950f7",
-  "scanned_csharp_files": 2009,
+  "code_reference_commit": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+  "source_digest_sha256": "5a13413ba6b6d31d43fb4482a26b6524239274505e446f141629cb2ee2a6d954",
+  "scanned_csharp_files": 2075,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,7 +26,7 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 86,
+    "linux_window_types": 87,
     "linux_abstract_bases": 3,
     "linux_dynamic_factories": 32,
     "windows_dynamic_hosts": 2,
@@ -38,9 +38,9 @@
       "NA": 2
     },
     "settings_levels": {
-      "N0": 15,
+      "N0": 14,
       "N1": 8,
-      "N2": 8,
+      "N2": 9,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/language-preferences-20261017/full-01/desktop.trx",
-    "source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
-    "trx_sha256": "0556da5a4df619c07ab3413fcfe64423be04854ed637a154aa85baf24891e1a5",
+    "trx": "artifacts/linux/fonts-preferences-20261017/full-02/desktop.trx",
+    "source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+    "trx_sha256": "2237d71dda46ddf39234d0a8fdcdcbd256d423df26aec13730502e7ef5de62c5",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
-        "execution_source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
-        "candidate_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+        "source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+        "execution_source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+        "candidate_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
         "passed": 675,
         "total": 675,
-        "execution_result": "artifacts/linux/language-preferences-20261017/full-01/core-result.json",
-        "build_result": "artifacts/linux/language-preferences-20261017/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/language-preferences-20261017/full-01/parent-verification.json",
+        "execution_result": "artifacts/linux/fonts-preferences-20261017/full-02/core-result.json",
+        "build_result": "artifacts/linux/fonts-preferences-20261017/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/fonts-preferences-20261017/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
-        "execution_source_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
-        "candidate_sha": "3dd2fa83b17c5852269f3c3cd83ee073f0762c15",
+        "source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+        "execution_source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+        "candidate_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/language-preferences-20261017/full-01/plugins-result.json",
-        "build_result": "artifacts/linux/language-preferences-20261017/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/language-preferences-20261017/full-01/parent-verification.json",
+        "execution_result": "artifacts/linux/fonts-preferences-20261017/full-02/plugins-result.json",
+        "build_result": "artifacts/linux/fonts-preferences-20261017/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/fonts-preferences-20261017/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -250,6 +250,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -1017,6 +1023,12 @@
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
@@ -1152,7 +1164,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 336,
+          "line": 343,
           "kind": "window"
         },
         {
@@ -1312,7 +1324,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 843,
+          "line": 847,
           "kind": "window"
         }
       ],
@@ -1458,6 +1470,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
           "test_class": "FileContentTests",
           "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -1687,7 +1705,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 138,
+          "line": 143,
           "kind": "window"
         }
       ],
@@ -1792,7 +1810,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -1965,7 +1983,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -2659,6 +2677,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
           "test_class": "FileContentTests",
           "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -3435,7 +3459,7 @@
           "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
           "label": "NativeRebaseEditorWindow",
           "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 48,
+          "line": 49,
           "kind": "window"
         }
       ],
@@ -3586,7 +3610,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -3714,7 +3738,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 138,
+          "line": 143,
           "kind": "window"
         }
       ],
@@ -4425,7 +4449,7 @@
           "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
           "label": "NativeRebaseEditorWindow",
           "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 48,
+          "line": 49,
           "kind": "window"
         }
       ],
@@ -4903,7 +4927,7 @@
       "feature": "Paramètres de l’application",
       "group": "settings",
       "level": "N1",
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092.",
       "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
       "visual": "adapte",
       "linux": [
@@ -4925,7 +4949,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 401,
+          "line": 402,
           "kind": "window"
         },
         {
@@ -4934,6 +4958,20 @@
           "source": "src/linux/GitExtensions.Desktop/FileHistoryPreferencesStore.cs",
           "line": 21,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppearanceFontsSettingsPage",
+          "label": "AppearanceFontsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AppearanceFontsSettingsPage.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FontPickerDialog",
+          "label": "FontPickerDialog",
+          "source": "src/linux/GitExtensions.Desktop/FontPickerDialog.cs",
+          "line": 12,
+          "kind": "window"
         }
       ],
       "tests": [
@@ -4971,6 +5009,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
           "results_present": true
         },
         {
@@ -5020,7 +5064,9 @@
         ".agents/docs/adr/ui/0060-shared-classic-menus.md",
         ".agents/docs/adr/workflows/files/0086-shared-file-history-settings.md",
         ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
-        ".agents/docs/adr/preferences/language/0090-language-selection.md"
+        ".agents/docs/adr/preferences/language/0090-language-selection.md",
+        ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
+        ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md"
       ]
     },
     {
@@ -5741,6 +5787,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -5803,13 +5855,151 @@
       "category": "settings",
       "feature": "Polices des vues",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Polices définies dans les contrôles.",
-      "remaining": "Page de configuration et choix indépendants des polices absents.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée.",
+      "remaining": "Import Windows, arbre/Apply global de Settings, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.AppearanceFontsSettingsPage",
+          "label": "AppearanceFontsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AppearanceFontsSettingsPage.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FontPickerDialog",
+          "label": "FontPickerDialog",
+          "source": "src/linux/GitExtensions.Desktop/FontPickerDialog.cs",
+          "line": 12,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 11,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FontPreferencesStore",
+          "label": "FontPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/FontPreferencesStore.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopFonts",
+          "label": "DesktopFonts",
+          "source": "src/linux/GitExtensions.Desktop/DesktopFonts.cs",
+          "line": 33,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopFontResolver",
+          "label": "DesktopFontResolver",
+          "source": "src/linux/GitExtensions.Desktop/DesktopFontResolver.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopFontMetrics",
+          "label": "DesktopFontMetrics",
+          "source": "src/linux/GitExtensions.Desktop/DesktopFontMetrics.cs",
+          "line": 9,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DesktopFontsTests.cs",
+          "test_class": "DesktopFontsTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
+          "test_class": "FileHistoryPreferencesTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontPreferencesStoreTests.cs",
+          "test_class": "FontPreferencesStoreTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontStreamLifetimeTests.cs",
+          "test_class": "FontStreamLifetimeTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
+          "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
+        ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage",
@@ -5834,7 +6024,7 @@
       "feature": "Apparence générale",
       "group": "settings-pages",
       "level": "N1",
-      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO.",
+      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO. Les polices et EOL sont traités dans la page Fonts dédiée (ADR0091) ; la page Appearance globale reste N1.",
       "remaining": "Page Appearance globale absente ; dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; page N1 inchangée.",
       "visual": "integre",
       "linux": [
@@ -5858,6 +6048,13 @@
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
           "line": 11,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppearanceFontsSettingsPage",
+          "label": "AppearanceFontsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AppearanceFontsSettingsPage.cs",
+          "line": 10,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -5906,7 +6103,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -5919,6 +6116,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
           "results_present": true
         },
         {
@@ -5959,7 +6168,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/preferences/language/0090-language-selection.md"
+        ".agents/docs/adr/preferences/language/0090-language-selection.md",
+        ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md"
       ]
     },
     {
@@ -6031,7 +6241,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -6166,6 +6376,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -6280,6 +6496,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
           "test_class": "FileContentTests",
           "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
+          "test_class": "FontConsumerTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6561,6 +6783,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -6819,7 +7047,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -6850,6 +7078,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FilePaneParityTests.cs",
           "test_class": "FilePaneParityTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
           "results_present": true
         },
         {
@@ -6949,7 +7183,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 401,
+          "line": 402,
           "kind": "window"
         }
       ],
@@ -6987,7 +7221,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 401,
+          "line": 402,
           "kind": "window"
         },
         {
@@ -7176,6 +7410,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -7265,7 +7505,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 282,
+          "line": 283,
           "kind": "window"
         }
       ],
@@ -7494,6 +7734,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
           "results_present": true
         },
         {
@@ -8232,7 +8478,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -8495,7 +8741,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -8761,7 +9007,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -9029,7 +9275,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 138,
+          "line": 143,
           "kind": "window"
         }
       ],
@@ -10091,7 +10337,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 9,
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -11178,6 +11424,11 @@
           "level": "N1"
         },
         {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
+          "name": "AppearanceFontsSettingsPage",
+          "level": "N2"
+        },
+        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage",
           "name": "AppearanceSettingsPage",
           "level": "N1"
@@ -11214,11 +11465,11 @@
       "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
       "name": "ExportRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-      "line": 138,
+      "line": 143,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 138
+          "line": 143
         }
       ],
       "bases": [
@@ -11365,6 +11616,35 @@
           "id": "GitExtensions.Plugins.FindLargeFiles.FindLargeFilesForm",
           "name": "FindLargeFilesForm",
           "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.FontPickerDialog",
+      "name": "FontPickerDialog",
+      "source": "src/linux/GitExtensions.Desktop/FontPickerDialog.cs",
+      "line": 12,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/FontPickerDialog.cs",
+          "line": 12
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormSettings",
+          "name": "FormSettings",
+          "level": "N1"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
+          "name": "AppearanceFontsSettingsPage",
+          "level": "N2"
         }
       ],
       "note": ""
@@ -12009,11 +12289,11 @@
       "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
       "name": "NativeRebaseEditorWindow",
       "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-      "line": 48,
+      "line": 49,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 48
+          "line": 49
         }
       ],
       "bases": [
@@ -13166,7 +13446,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 419,
+      "line": 420,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -13216,7 +13496,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 326,
+      "line": 327,
       "method": "UpdateSubmodulesAfterPullAsync",
       "text": "new() { Name = \"ConfirmInitializePullSubmodules\", Title = C(\"_questionInitSubmodulesCaption\", \"Submodules\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocatio",
       "platform": "linux",
@@ -13226,7 +13506,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 356,
+      "line": 357,
       "method": "OfferAutoStashPopAsync",
       "text": "new() { Name = \"ConfirmPopPullAutoStash\", Title = C(\"_applyStashedItemsAgainCaption\", \"Auto stash\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = Wind",
       "platform": "linux",
@@ -13236,7 +13516,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 399,
+      "line": 400,
       "method": "ConfirmMismatchAsync",
       "text": "new() { Name = \"ConfirmPullRemoteMismatch\", Title = T(\"Remote branch not specified\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocati",
       "platform": "linux",
@@ -13246,7 +13526,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 410,
+      "line": 411,
       "method": "ConfirmRebaseAsync",
       "text": "new() { Name = \"ConfirmRebasePull\", Title = T(\"Rebase merge commit?\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner ",
       "platform": "linux",
@@ -13256,7 +13536,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 426,
+      "line": 427,
       "method": "ConfirmDetachedAsync",
       "text": "new() { Name = \"ConfirmDetachedPull\", Title = T(\"Pull\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner }",
       "platform": "linux",
@@ -13266,7 +13546,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 443,
+      "line": 444,
       "method": "ConfirmPruneAsync",
       "text": "new() { Name = \"ConfirmFetchPruneAll\", Title = T(\"Fetch and prune all\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwne",
       "platform": "linux",
@@ -13276,7 +13556,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 517,
+      "line": 518,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",
@@ -13306,7 +13586,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.RecoverLostObjectsDialog",
       "path": "src/linux/GitExtensions.Desktop/RecoverLostObjectsDialog.cs",
-      "line": 324,
+      "line": 325,
       "method": "ViewAsync",
       "text": "new() { Name = \"RecoveryQuickView\", Title = data.SuggestedFileName, Width = 800, Height = 550,",
       "platform": "linux",
@@ -13316,7 +13596,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.RecoverLostObjectsDialog",
       "path": "src/linux/GitExtensions.Desktop/RecoverLostObjectsDialog.cs",
-      "line": 461,
+      "line": 462,
       "method": "MessageWindow",
       "text": "new() { Name = name, Title = title, Width = 540, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",
@@ -17542,9 +17822,9 @@
       "N3": 5
     },
     "settings-pages": {
-      "N0": 9,
+      "N0": 8,
       "N1": 8,
-      "N2": 8,
+      "N2": 9,
       "NA": 1
     },
     "ci-settings": {

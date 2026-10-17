@@ -538,3 +538,49 @@ Les ciblés01–04 conservent les régressions et le scénario négatif invalide
 | Home+Enter depuis une combo sans sélection ne choisit rien | Le scénario doit activer un vrai item ; un clic unique strict remplace ce geste de test, sans setter ni refocus. |
 
 Les [huit régressions initiales](../../artifacts/linux/language-preferences-20261017/worktree-preintegration/regressions-red/language.trx) donnent sept échecs et un succès avant correction. Le [premier broad corrigé](../../artifacts/linux/language-preferences-20261017/worktree-preintegration/corrected-broad/language.trx), 240/241, garde le geste de test invalide ; le [broad final](../../artifacts/linux/language-preferences-20261017/worktree-preintegration/final-candidate-verification.json) passe 241/241 avec les sept régressions corrigées. Le full1711 antérieur aux corrections reste historique ; il ne remplace pas le full final de la source intégrée.
+
+## Polices — densité et flux natif
+
+| Piège | Règle retenue |
+| --- | --- |
+| Police générale plus grande, métriques ou style ignorés | Utiliser la face réellement rendue et adapter ses hôtes ; conserver les minima compacts 18/22/20 lorsque la ligne tient, sans changer les oracles pour obtenir un vert. |
+| Repli d’une famille absente enregistré comme nouveau choix | Garder l’identité demandée et le diagnostic ; seul un choix explicite remplace le rôle. Une sauvegarde sans rapport préserve le profil. |
+| Sauvegarde partielle change certaines vues déjà ouvertes | Snapshot Fonts au début de la session ; aperçus et sauvegarde ne changent pas les consommateurs existants. |
+| Arrêt natif pendant une lecture ou un style synthétique | Le backend exact conserve et libère le `SKStreamAsset` après la lecture ; ne pas supprimer des fontes/styles du catalogue. ADR0092. |
+| Runner rejeté assimilé à un succès complet | Conserver le retour brut 1 du ciblé13-v2 ; la revue Root classe séparément les sorties générées, le VSTest 0 et les 482 succès. |
+
+Les preuves brutes et leurs index [copy02](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-02/index.json), [copy03](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-03/index.json) et [copy04](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-04/index.json) conservent les essais de développement, leurs gates et sorties réelles ; aucune étape ne devient une suite complète par addition.
+
+| Lot | Résultat et limite |
+| --- | --- |
+| 01/02/04 | Compilation avant tests refusée ; aucune validation UI. |
+| 03 | **463/480**, 17 échecs conservés : densité, oracles JSON et infrastructure SDK. |
+| 05/06/07 | **05 : crash après 70/481** ; isolé 06 7/7 sans expliquer 05 ; découverte 07 refusée avant tests. |
+| 08 | **Crash après 283/481** ; pile `TryGetStream` au clic Bold/Italic réel, sans full accepté. |
+| 09/10 | Compilation 09 refusée ; build 10 à 0 et examen des métadonnées, sans validation applicative. |
+| 11/14 | Fragment de copie 11 refusé ; build 14 à 0 et copie complète contrôlée, sans nouveau test exécuté. |
+| 12 | [Calibration](../../artifacts/linux/fonts-preferences-20261017/root-calibration12-review.json) : officiel **2×SIGSEGV** ; corrigé **2×256 exports**, sorties 0 ; Regular bornée seulement. |
+| 13-v2 | [Ciblé](../../artifacts/linux/fonts-preferences-20261017/root-targeted13-review.json) : **VSTest 0, 482/482**, runner brut **1** conservé ; **47 sorties PNG** reclassifiées indépendamment par Root. |
+| 15 | Diagnostic instrumenté **276/276**, runner brut **1** conservé ; 403 événements, aucune registration FontManager parent observée, 57 PNG et 1 JSON attribués aux Passed ; aucune reproduction du full01. |
+| 16 | Setup inconcluant avant Close ; la présentation avait déjà été traitée. Aucun défaut post-Closing prouvé par cet essai. |
+| 17/18 | Même fichier de test figé :17 atteint ses préconditions puis voit un repaint après Closing ;18 passe avec la garde centrale. La causalité SystemFonts n’est pas démontrée. |
+
+Les [12 rendus revus](../../artifacts/linux/fonts-preferences-20261017/root-targeted13-render-review.json) restent headless ; les lineboxes fractionnaires des badges ne prouvent ni encre coupée ni confinement universel. [Syntaxe primaire b74bb4522](../../artifacts/linux/fonts-preferences-20261017/syntax-b74bb4522.result.json) : 2075 fichiers, 0 diagnostic. Full primaire02, paquet exact et natif borné acceptés séparément sur b74 ; limites dans le TODO.
+
+Le [full primaire01](../../artifacts/linux/fonts-preferences-20261017/full-01/run-summary.json) de `95386c18d663430323752c650634f822a40edd4b` est clos en échec : **452/1777 Desktop**, 1325 échecs (1319 `fonts:SystemFonts`, 6 erreurs de thread), sortie réelle 1 ; Core **675/675** et Plugins **35/35**, sorties 0. Ce rouge reste conservé.
+
+La frontière Cleanup seule (**32/32**) et le diagnostic instrumenté du préfixe (**276/276**, 403 événements) ne reproduisent pas ce défaut : aucune registration de FontManager parent observée. Le runner du diagnostic276 conserve son retour brut **1** ; 57 PNG et 1 JSON sont attribués séparément aux cas Passed. Ces essais bornés ne déterminent pas la cause du full01 et ne remplacent pas une suite complète.
+
+Le négatif16 reste inconcluant : le helper avait traité la présentation avant Close. Le négatif17 atteint toutes ses préconditions puis observe **1 repaint de cellule après Closing** (build 0, test 1, 0/1 Passed). Le même fichier de test `CommitInformationIntegrationTests.cs`, SHA256 `dd7f43d3f7384081b966e460e58a2048d559f61ad0b39f7234e2fb64748d612e`, passe en18 après la garde centrale (build 0, test 0, **1/1**). Le commit `b74bb452223a125fdcc1ee052e18e827fcacd20f` intègre cette garde et renforce également le teardown de la fixture Cleanup ; le cas18 ne valide pas à lui seul ce teardown. La cause des échecs `fonts:SystemFonts` du full01 n’est pas définitivement attribuée.
+
+Le [full primaire02 accepté](../../artifacts/linux/fonts-preferences-20261017/full-02/parent-verification.json) de `b74bb452223a125fdcc1ee052e18e827fcacd20f` est terminé : **1778/1778 Desktop, 176 classes**, **675/675 Core**, **35/35 Plugins**, build et trois suites avec sorties réelles **0**. Les identités comparées à la référence Language ajoutent **59 cas Desktop sans retrait** ; Core et Plugins n’en ajoutent ni n’en retirent. Sources et inputs runtime sont restés inchangés, aucun acteur marqué restant. La [référence de validation du snapshot](../../artifacts/linux/snapshots/b74bb4522/proofs/source-validation.json) atteste le full accepté ; le paquet exact et le natif borné sont désormais vérifiés séparément. La syntaxe b74 reste **2075 fichiers, 0 diagnostic**.
+
+Le [paquet exact b74 vérifié](../../artifacts/linux/snapshots/b74bb4522/proofs/package-parent-verification.json) compte **35 403 640 octets, 442 entrées dont 386 fichiers** ; les cinq phases produit ont été réellement attendues à 0 et l’extraction complète concorde avec l’archive (chemins, types, modes, cibles et octets). Le [contrôle du backend livré](../../artifacts/linux/snapshots/b74bb4522/proofs/package-backend-verification.json) confirme la base du lock net8, onze bibliothèques de compilation officielles, l’identité/surface publique, les 35 IVT, les ressources, les bibliothèques natives et les notices/licences. Ces vérifications ne valent pas acceptation native.
+
+Le natif attempt01 est conservé et **non accepté** : commande059 Ctrl+Alt+W refusée par l’allowlist du banc **avant injection**, sans échec applicatif démontré. Le cleanup explicite g02 par SIGTERM et le wait externe1 restent bruts ; ils ne deviennent pas une fermeture normale. Le [mémo d’incident](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-05/preparation/readers/gitextensions-fonts-native-attempt01-incident-20261017.md) décrit ce périmètre. [Attempt02](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-05/natif-attempt02/) est accepté séparément via la [revue Root](../../artifacts/linux/snapshots/b74bb4522/proofs/native-fonts-review.json), sans transférer les observations de01. Les corps et reçus de [attempt01](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-05/natif-attempt01/) restent distincts.
+
+Copy03 ajoute Q15, ses préparations/rapports, une closure calibrée14 corrigée complète et la DLL officielle distincte ; copy04 conserve le complément de preuves Root. L’index [copy05](../../artifacts/linux/fonts-preferences-20261017/development-evidence/copy-05/index.json) lie les deux bancs natifs, le mémo et les préparations. Les copies ne constituent aucune nouvelle validation et leurs omissions/résolutions restent explicites dans chaque index.
+
+Le natif attempt02 complète **77 reçus**, deux GUI à wait0, WM0 et wait externe0 ; Root revoit personnellement sept frames dont Worktrees. Douze checkpoints Git et un contrôle final avec Git stock concordent ; quatre intervalles Settings dédiés ne lancent aucun Git. Le fichier Fonts final est 490 octets, mode0600 ; les acteurs connus sont retirés et le payload reste exact à l’archive. L’opérateur délégué `/root/fonts_native_operator` est explicitement chargé des commandes019–077 ; la revue indépendante Root demeure distincte de cette conduite. Ce résultat borné anglais/clair/X11 ne détermine pas la cause SystemFonts antérieure et ne couvre ni tous les acteurs jamais observés ni toutes les variantes de rendu.
+
+Le défaut post-Closing observé17 et corrigé18 ne doit pas être présenté comme une attribution définitive des 1319 erreurs SystemFonts du full01. Aucun reset global du FontManager ni fallback silencieux n’est revendiqué.

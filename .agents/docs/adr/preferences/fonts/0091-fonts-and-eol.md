@@ -1,0 +1,15 @@
+# ADR 0091 — Polices par rôle et marqueurs EOL
+
+Statut : intégré b74 ; full, paquet exact et natif anglais/clair/X11 vérifiés. Fonts N2 sur ce périmètre ; Appearance reste N1.
+
+L’utilisateur choisit indépendamment Code, Application, Commit et Monospace, puis applique ses choix au prochain démarrage. Chaque rôle conserve la famille demandée, la taille en points, le gras et l’italique. Les défauts Linux sont Consolas 10 pt pour Code, Segoe UI 9 pt pour Application/Commit et Consolas 9 pt pour Monospace ; ils ne présument pas des familles installées. Code seul exige une face fixe, styles compris. Monospace reste libre et les fontes verticales sont exclues.
+
+Une famille absente garde son identité et affiche son repli effectif sans fausse sélection ; seul un choix explicite remplace cette intention. Le picker et Settings travaillent sur un brouillon : Cancel ne publie rien, OK enregistre ou laisse l’erreur visible. `fonts.json` sous XDG fusionne seulement les rôles entiers et le choix EOL modifiés depuis l’ouverture, en conservant les données inconnues. Un brouillon inchangé n’écrit rien ; un fichier corrompu n’est pas écrasé. Aucune transaction entre stores ni CAS interprocessus n’est promise.
+
+La session active est capturée avant les styles et reste inchangée jusqu’au vrai redémarrage. Application couvre l’interface et ses popups, Code les lecteurs et marges, Commit les messages, Monospace les identifiants et consoles. La conversion points vers DIP est unique ; zoom local, emphases métier et minima compacts sont conservés lorsque le texte tient. Les exceptions Windows explicites, dont QuickSearch et le journal Git, restent distinctes.
+
+`ShowEolMarkerAsGlyph` ne change que le dessin sous Nonprinting : CR `«`, LF `¶`, CRLF `¤`. Texte, copie, patches et conversions Git restent identiques. La durée de vie du flux de fonte est traitée séparément dans l’[ADR0092](../../platform/rendering/0092-skia-stream-lifetime.md).
+
+Repères : `AppearanceFontsSettingsPage`, `FontPickerDialog`, `FontPreferencesStore`, `DesktopFonts/Session/Resolver/Metrics` et consommateurs `DiffView/BlameView`. Les [suites complètes](../../../../../artifacts/linux/fonts-preferences-20261017/full-02/parent-verification.json), le [paquet exact](../../../../../artifacts/linux/snapshots/b74bb4522/proofs/package-parent-verification.json) et le [natif borné](../../../../../artifacts/linux/snapshots/b74bb4522/proofs/native-fonts-review.json) sont liés à la même source. Le natif vérifie brouillons, sauvegarde, vrai redémarrage, effets des rôles et EOL ; les [échecs conservés](../../../failure.md#polices--densité-et-flux-natif) gardent leurs limites causales.
+
+Import Windows, arbre/Apply global de Settings, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Treize familles ouvertes, aucun N4.

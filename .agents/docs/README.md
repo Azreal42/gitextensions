@@ -25,3 +25,6 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [Raccourcis configurables](adr/preferences/hotkeys/0089-configurable-hotkeys.md) : catalogue Windows, brouillon et configuration commune au clavier et aux menus ; page Hotkeys N2, validations et limites dans le TODO.
 
 - [Langue](adr/preferences/language/0090-language-selection.md) : choix initial XLF et préférence partagée avec Settings ; redémarrage requis, chooser N2 et limites dans le TODO.
+
+- [Polices et EOL](adr/preferences/fonts/0091-fonts-and-eol.md) : quatre rôles indépendants et session appliquée au redémarrage ; full b74, [paquet exact](../../artifacts/linux/snapshots/b74bb4522/proofs/package-parent-verification.json) et [natif anglais/clair/X11](../../artifacts/linux/snapshots/b74bb4522/proofs/native-fonts-review.json) vérifiés ; Fonts seul N2, Appearance N1 et autres familles ouvertes.
+- [Flux natif des fontes](adr/platform/rendering/0092-skia-stream-lifetime.md) : backend Avalonia.Skia exact avec durée de vie explicite ; calibration bornée sur les octets d’une vraie fonte, sans certification de tout le catalogue.

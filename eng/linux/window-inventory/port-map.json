@@ -1685,9 +1685,11 @@
         "DesktopSettingsDialog",
         "NativeDiffViewerSettingsDialog",
         "MainWindow@ShowWorkflowAsync",
-        "FileHistoryPreferencesStore"
+        "FileHistoryPreferencesStore",
+        "AppearanceFontsSettingsPage",
+        "FontPickerDialog"
       ],
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092.",
       "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
       "visual": "adapte",
       "tests": [
@@ -1695,13 +1697,16 @@
         "NativeDiffViewerSettingsDialogTests",
         "FileHistoryPreferencesTests",
         "HotkeysSettingsPageTests",
-        "LanguagePreferencesTests"
+        "LanguagePreferencesTests",
+        "FontSettingsTests"
       ],
       "adr": [
         "0060",
         "0086",
         "0089",
-        "0090"
+        "0090",
+        "0091",
+        "0092"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2146,13 +2151,30 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage": {
       "feature": "Polices des vues",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Polices définies dans les contrôles.",
-      "remaining": "Page de configuration et choix indépendants des polices absents.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "AppearanceFontsSettingsPage",
+        "FontPickerDialog",
+        "DesktopSettingsDialog",
+        "FontPreferencesStore",
+        "DesktopFonts",
+        "DesktopFontResolver",
+        "DesktopFontMetrics"
+      ],
+      "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée.",
+      "remaining": "Import Windows, arbre/Apply global de Settings, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
+      "visual": "rapproche",
+      "tests": [
+        "FontPreferencesStoreTests",
+        "DesktopFontsTests",
+        "FontSettingsTests",
+        "FontConsumerTests",
+        "FontStreamLifetimeTests"
+      ],
+      "adr": [
+        "0091",
+        "0092"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage": {
       "feature": "Apparence générale",
@@ -2161,16 +2183,19 @@
       "linux": [
         "MainWindow@ViewHistoryCommands",
         "BlameDialog",
-        "DesktopSettingsDialog"
+        "DesktopSettingsDialog",
+        "AppearanceFontsSettingsPage"
       ],
-      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO.",
+      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO. Les polices et EOL sont traités dans la page Fonts dédiée (ADR0091) ; la page Appearance globale reste N1.",
       "remaining": "Page Appearance globale absente ; dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; page N1 inchangée.",
       "visual": "integre",
       "tests": [
-        "LanguagePreferencesTests"
+        "LanguagePreferencesTests",
+        "FontConsumerTests"
       ],
       "adr": [
-        "0090"
+        "0090",
+        "0091"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.BlameViewerSettingsPage": {
