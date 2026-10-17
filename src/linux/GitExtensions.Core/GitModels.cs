@@ -20,6 +20,8 @@ public sealed record GitStatus(string? Branch, string? Head, int Ahead, int Behi
 
 public sealed record GitCommit(string Hash, IReadOnlyList<string> Parents, string AuthorName, string AuthorEmail, DateTimeOffset AuthoredAt, string Subject, string Body)
 {
+    /// <summary>Native %B, including the original subject lines and separators; null for legacy readers.</summary>
+    public string? FullMessage { get; init; }
     public ObjectId? Sha1Id => ObjectId.TryParse(Hash, out ObjectId value) ? value : null;
 }
 

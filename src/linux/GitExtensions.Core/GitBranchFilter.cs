@@ -164,12 +164,12 @@ public sealed partial class GitRepository
     {
         if (output.Length == 0) { return; }
         string[] fields = output.Split('\0');
-        if (fields[^1].Length != 0 || (fields.Length - 1) % 7 != 0)
+        if (fields[^1].Length != 0 || (fields.Length - 1) % 8 != 0)
         {
             throw new InvalidDataException("Git history options produced output incompatible with the canonical NUL-delimited history format.");
         }
 
-        for (int index = 0; index + 6 < fields.Length; index += 7)
+        for (int index = 0; index + 7 < fields.Length; index += 8)
         {
             if (!IsObjectName(fields[index]) || fields[index + 1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(parent => !IsObjectName(parent)))
             {

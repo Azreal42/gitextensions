@@ -79,10 +79,10 @@ public static class GitOutputParser
     {
         List<GitCommit> commits = [];
         string[] fields = output.Split('\0');
-        for (int i = 0; i + 6 < fields.Length; i += 7)
+        for (int i = 0; i + 7 < fields.Length; i += 8)
         {
             commits.Add(new GitCommit(fields[i], fields[i + 1].Split(' ', StringSplitOptions.RemoveEmptyEntries), fields[i + 2], fields[i + 3],
-                DateTimeOffset.Parse(fields[i + 4], CultureInfo.InvariantCulture), fields[i + 5], fields[i + 6]));
+                DateTimeOffset.Parse(fields[i + 4], CultureInfo.InvariantCulture), fields[i + 5], fields[i + 6]) { FullMessage = fields[i + 7] });
         }
 
         return commits;
