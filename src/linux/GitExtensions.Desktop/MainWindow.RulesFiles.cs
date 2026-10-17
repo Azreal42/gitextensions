@@ -19,7 +19,7 @@ public sealed partial class MainWindow
         remotes.Click += async (_, _) => await ManageRemotesAsync();
         MenuItem worktrees = OriginalMenuItems.Create(_translations, "FormBrowse", "manageWorktreeToolStripMenuItem", "Manage &worktrees...", "WorkTree.png");
         _manageWorktreesMenu = worktrees; worktrees.IsEnabled = !_busy && _repository is not null;
-        worktrees.Tag = false; worktrees.InputGesture = new(Avalonia.Input.Key.W, Avalonia.Input.KeyModifiers.Control | Avalonia.Input.KeyModifiers.Alt);
+        worktrees.Tag = false; DesktopHotkeys.Bind(worktrees, "Browse", "ManageWorkTrees");
         _actionMenus.Add(worktrees); worktrees.Click += async (_, _) =>
         {
             try { await ManageWorktreesAsync(); }

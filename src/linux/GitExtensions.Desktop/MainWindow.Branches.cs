@@ -55,8 +55,9 @@ public sealed partial class MainWindow
     {
         items.Clear();
         MenuItem checkout = new() { Name = prefix + "Checkout", Header = T("Checkout branch…"),
-            Icon = OriginalIconImage("BranchCheckout.png"), InputGesture = new(Key.OemPeriod, KeyModifiers.Control),
+            Icon = OriginalIconImage("BranchCheckout.png"),
             IsEnabled = !_busy && _repository is { IsBare: false } };
+        DesktopHotkeys.Bind(checkout, "Browse", "CheckoutBranch");
         checkout.AddHandler(KeyDownEvent, HandleShortcuts, RoutingStrategies.Tunnel);
         checkout.Click += async (_, _) => await OpenBranchCheckoutAsync();
         items.Add(checkout); items.Add(new Separator());

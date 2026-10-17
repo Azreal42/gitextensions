@@ -191,7 +191,7 @@ public sealed partial class MainWindow
     {
         Button button = IconButton(label, icon, action, text);
         button.Name = name; button.Height = 24; button.MinHeight = 24; button.MinWidth = 0;
-        if (BrowseHotkeyName(label) is { } command) { DesktopHotkeys.BindToolTip(button, "Browse", command, T(label)); }
+        if (MenuHotkeyIdentity(label) is { } hotkey) { DesktopHotkeys.BindToolTip(button, hotkey.Context, hotkey.Command, T(label)); }
         button.Padding = new Thickness(text ? 3 : 0, 0); button.BorderThickness = default;
         button.Styles.Add(new Avalonia.Styling.Style(selector => selector.OfType<Button>())
         { Setters = { new Avalonia.Styling.Setter(BackgroundProperty, Brushes.Transparent) } });

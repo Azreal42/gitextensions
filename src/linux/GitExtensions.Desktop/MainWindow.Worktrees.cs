@@ -200,6 +200,8 @@ public sealed partial class MainWindow
         MenuItem item = new() { Name = name, Header = literal ? caption : new AccessText
             { Text = _translations.TranslateAccessKeys(category, key, "Text", caption) },
             Icon = icon is null ? null : OriginalIconImage(icon), IsEnabled = !_busy && _repository is not null };
+        if (key is "_manageWorktrees" or "mnubtnManageWorktreesFromRootNode")
+        { DesktopHotkeys.Bind(item, "Browse", "ManageWorkTrees"); }
         item.AddHandler(KeyDownEvent, HandleShortcuts, RoutingStrategies.Tunnel);
         item.Click += async (_, args) =>
         {

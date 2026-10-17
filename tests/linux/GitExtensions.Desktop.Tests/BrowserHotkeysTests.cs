@@ -202,6 +202,75 @@ public sealed class BrowserHotkeysTests
         Assert.That(await File.ReadAllTextAsync(store.FilePath), Is.EqualTo(malformed));
     }
 
+    [AvaloniaTest]
+    public async Task SavingAndClearingBindingsUpdatesExistingBranchWorktreeAndToolbarDisplaysWithoutReadingGit()
+    {
+        using Fixture f = await Fixture.CreateAsync("base\n", "base\n"); await Idle(f.Window);
+        string linked = Path.Combine(Path.GetDirectoryName(f.Repository)!, "display-hints-linked");
+        GitResult added = await f.Git.RunAsync(f.Repository, ["worktree", "add", "-b", "display-hints-linked", linked, "HEAD"]);
+        Assert.That(added.Success, Is.True, added.StandardError);
+        await f.Window.OpenRepositoryAsync(f.Repository); await Idle(f.Window);
+        MainWindow main = f.Window; ListBox history = Field<ListBox>(main, "RevisionHistory");
+        TreeView navigation = Field<TreeView>(main, "RepositoryNavigation");
+        object? source = history.ItemsSource, selected = history.SelectedItem;
+        object[] navigationItems = navigation.Items.Cast<object>().ToArray();
+        CompactBrowserToolbar toolbar = Field<CompactBrowserToolbar>(main, "RepositoryToolbar");
+        Button worktrees = Field<Button>(main, "BrowseWorktrees"), console = Field<Button>(main, "BrowseConsole"),
+            filter = Field<Button>(main, "BrowseAdvancedFilter"), settings = Field<Button>(main, "BrowseSettings");
+        MenuFlyout branches = (MenuFlyout)Field<Button>(main, "BrowseCurrentBranch").Flyout!;
+        MenuFlyout worktreeMenu = (MenuFlyout)Field<Button>(main, "BrowseWorktreesDropdown").Flyout!;
+        MenuItem branchCheckout = branches.Items.OfType<MenuItem>().Single(item => item.Name == "BranchMenuCheckout");
+        MenuItem worktreeManage = worktreeMenu.Items.OfType<MenuItem>().Single(item => item.Name == "WorktreeMenuManage");
+        TreeViewItem worktreeRoot = navigation.Items.OfType<TreeViewItem>()
+            .Single(node => node.Items.OfType<TreeViewItem>().Any(child => child.Tag is GitWorktree));
+        MenuItem rootManage = worktreeRoot.ContextMenu!.Items.OfType<MenuItem>()
+            .Single(item => item.Name == "mnubtnManageWorktreesFromRootNode");
+        // Inspect the actual overflow entries without opening menus that deliberately read Git on opening.
+        toolbar.Width = 320; Pump(main);
+        MenuItem overflowBranches = toolbar.OverflowFlyout.Items.OfType<MenuItem>().Single(item => item.Name == "BranchOverflow");
+        MenuItem overflowCheckout = Item(overflowBranches, "BranchOverflowCheckout");
+        MenuItem overflowWorktrees = toolbar.OverflowFlyout.Items.OfType<MenuItem>().Single(item => item.Name == "WorktreeOverflow");
+        MenuItem overflowManage = Item(overflowWorktrees, "WorktreeOverflowManage");
+        MenuItem repositoryManage = AllMenuItems(main).Single(item => item.Name == "manageWorktreeToolStripMenuItem");
+        MenuItem fetch = AllMenuItems(main).Single(item => item.Header as string == "Fetch");
+        (string Context, string Command, KeyGesture Gesture, MenuItem[] Menus, (Control Control, string Caption)[] Hints)[] displays =
+        [
+            ("Browse", "ManageWorkTrees", new(Key.F6, KeyModifiers.Control), [repositoryManage, worktreeManage, rootManage, overflowManage], [(worktrees, "Manage worktrees...")]),
+            ("Browse", "CheckoutBranch", new(Key.F7, KeyModifiers.Control), [branchCheckout, overflowCheckout], []),
+            ("Browse", "GitBash", new(Key.F8, KeyModifiers.Control), [], [(console, "Console")]),
+            ("Browse", "QuickFetch", new(Key.F9, KeyModifiers.Control), [fetch], []),
+            ("RevisionGrid", "RevisionFilter", new(Key.F10, KeyModifiers.Control), [], [(filter, "Filter revisions")])
+        ];
+        HotkeyBindings bindings = DesktopHotkeys.Current.Clone(); GitCommandLog.Clear();
+        foreach (var display in displays) { Set(bindings, display.Context, display.Command, display.Gesture); }
+        Set(bindings, "Browse", "OpenSettings", new(Key.F11, KeyModifiers.Control)); Save(bindings);
+        AssertDisplays(assigned: true);
+        foreach (var display in displays) { Set(bindings, display.Context, display.Command, null); }
+        Set(bindings, "Browse", "OpenSettings", null); Save(bindings);
+        AssertDisplays(assigned: false);
+        Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected));
+        Assert.That(navigation.Items.Cast<object>(), Is.EqualTo(navigationItems));
+        Assert.That(GitCommandLog.Snapshot(), Is.Empty, "Saving display bindings must not refresh any repository data.");
+
+        void AssertDisplays(bool assigned)
+        {
+            foreach (var display in displays)
+            {
+                KeyGesture? gesture = assigned ? display.Gesture : null;
+                foreach (MenuItem item in display.Menus) { Assert.That(item.InputGesture, Is.EqualTo(gesture), item.Name); }
+                foreach (var hint in display.Hints)
+                {
+                    string expected = assigned ? hint.Caption + " (" + display.Gesture + ")" : hint.Caption;
+                    Assert.That(ToolTip.GetTip(hint.Control)?.ToString(), Is.EqualTo(expected), hint.Control.Name);
+                }
+            }
+            Assert.That(ToolTip.GetTip(settings)?.ToString(), Is.EqualTo("Settings"),
+                "The Git configuration toolbar button must not advertise the separate Desktop Settings command.");
+            Assert.That(branches.IsOpen, Is.False); Assert.That(worktreeMenu.IsOpen, Is.False);
+            Assert.That(toolbar.OverflowFlyout.IsOpen, Is.False);
+        }
+    }
+
     private static void Set(HotkeyBindings bindings, string context, string command, KeyGesture? gesture)
         => bindings.Set(context, HotkeyCatalog.Find(context, command)!.Code, gesture);
     private static void Save(HotkeyBindings bindings) { new HotkeyPreferencesStore().Save(bindings); Dispatcher.UIThread.RunJobs(); }

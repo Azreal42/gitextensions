@@ -27,8 +27,8 @@ public sealed partial class MainWindow
         "Open repository…" or "Open repository" => "OpenRepo", "Close" => "CloseRepository",
         "Commit…" or "Commit" => "Commit", "Create branch…" => "CreateBranch", "Checkout branch…" or "Checkout branch" => "CheckoutBranch",
         "Create tag…" => "CreateTag", "Merge…" => "MergeBranches", "Rebase…" => "Rebase", "Pull…" or "Pull" or "Pull/Fetch…" => "PullOrFetch",
-        "Push…" or "Push" => "Push", "Settings…" => "OpenSettings", "Terminal" or "Git bash" => "GitBash",
-        "Show left panel" or "Toggle left panel" => "ToggleLeftPanel", "Worktrees…" => "ManageWorkTrees", _ => null
+        "Push…" or "Push" => "Push", "Settings…" => "OpenSettings", "Terminal" or "Git bash" or "Console" => "GitBash", "Fetch" => "QuickFetch",
+        "Show left panel" or "Toggle left panel" => "ToggleLeftPanel", "Worktrees…" or "Manage worktrees..." => "ManageWorkTrees", _ => null
     };
 
     private static (string Context, string Command)? MenuHotkeyIdentity(string label)
@@ -36,6 +36,7 @@ public sealed partial class MainWindow
         if (BrowseHotkeyName(label) is { } browse) { return ("Browse", browse); }
         string? grid = label switch
         {
+            "Filter revisions" => "RevisionFilter",
             "Open selected commits with difftool" => "OpenCommitsWithDifftool", "Compare to branch…" => "CompareToBranch",
             "Compare with current branch" => "CompareToCurrentBranch", "Select as BASE to compare" => "SelectAsBaseToCompare",
             "Compare to BASE" => "CompareToBase", "Compare to working directory" => "CompareToWorkingDirectory",
