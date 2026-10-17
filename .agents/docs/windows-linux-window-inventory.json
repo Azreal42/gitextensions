@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-  "source_digest_sha256": "7020369f26711d292b00e334429f8ba38de5c9758febea3a883f530cb5f23989",
-  "scanned_csharp_files": 1957,
+  "code_reference_commit": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+  "source_digest_sha256": "495375b270f212a7a065b500faa4bf9ef773e53674e573a47ef2d38474758b54",
+  "scanned_csharp_files": 1974,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/unix-socket-temp-20261017/full-01/desktop.trx",
-    "source_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-    "trx_sha256": "fff20f27863595ac2db8facf37ba8b91239ac9cb982909a2fe01ebe8fbd4e205",
+    "trx": "artifacts/linux/file-history-browse-20261017/full-02/desktop.trx",
+    "source_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+    "trx_sha256": "eea776cbf255e35d4a3af2e80ddb5da05f90f0c34f3a9d97e098b221e21e24dd",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-        "execution_source_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-        "candidate_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-        "passed": 636,
-        "total": 636,
-        "execution_result": "artifacts/linux/unix-socket-temp-20261017/full-01/core-result.json",
-        "build_result": "artifacts/linux/unix-socket-temp-20261017/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/unix-socket-temp-20261017/full-01/parent-verification.json",
+        "source_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+        "execution_source_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+        "candidate_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+        "passed": 657,
+        "total": 657,
+        "execution_result": "artifacts/linux/file-history-browse-20261017/full-02/core-result.json",
+        "build_result": "artifacts/linux/file-history-browse-20261017/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/file-history-browse-20261017/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-        "execution_source_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
-        "candidate_sha": "dc85753b178daad3f8bbf5ecd1b10adbce26c70d",
+        "source_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+        "execution_source_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
+        "candidate_sha": "1e6cc163a7b1b0395f1815050e7ab469c0ef4477",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/unix-socket-temp-20261017/full-01/plugins-result.json",
-        "build_result": "artifacts/linux/unix-socket-temp-20261017/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/unix-socket-temp-20261017/full-01/parent-verification.json",
+        "execution_result": "artifacts/linux/file-history-browse-20261017/full-02/plugins-result.json",
+        "build_result": "artifacts/linux/file-history-browse-20261017/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/file-history-browse-20261017/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -1145,7 +1145,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 311,
+          "line": 321,
           "kind": "window"
         },
         {
@@ -1719,7 +1719,7 @@
       "feature": "Attribution des lignes",
       "group": "files",
       "level": "N3",
-      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé.",
+      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. File tree du Browse historique réutilise BlameView/options/codec/navigation : Index fournit stage0, WT ses octets, sans faux HEAD ; publication document/identité atomique, erreur native honnête et fermeture drainée. ADR 0085.",
       "remaining": "Audit natif intégral du lecteur et des multiples modes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. CommitInfo de cet hôte non vérifié en natif.",
       "visual": "rapproche",
       "linux": [
@@ -1735,6 +1735,13 @@
           "label": "CommitInformationView",
           "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
           "line": 20,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileHistoryBlameController",
+          "label": "FileHistoryBlameController",
+          "source": "src/linux/GitExtensions.Desktop/FileHistoryBlameController.cs",
+          "line": 12,
           "kind": "component"
         }
       ],
@@ -1792,13 +1799,20 @@
           "test_class": "FileHistoryDialogTests",
           "passed_in_reference_run": 5,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryInlineBlameTests.cs",
+          "test_class": "FileHistoryInlineBlameTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/files/0011-history-and-blame.md",
         ".agents/docs/adr/workflows/files/0017-blame-preferences.md",
         ".agents/docs/adr/workflows/files/blame/0030-byte-safe-blame-and-reading-position.md",
-        ".agents/docs/adr/ui/history/0083-shared-commit-information.md"
+        ".agents/docs/adr/ui/history/0083-shared-commit-information.md",
+        ".agents/docs/adr/workflows/files/0085-browse-file-history.md"
       ]
     },
     {
@@ -1841,9 +1855,21 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés).",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Historique Browse : Follow/Exact non exposés complètement ; CLI FirstId artificiel avec révision réelle sélectionnée peut laisser CommitInfo vide après refresh (H ne fournit pas FirstId). Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Graphe fichier natif et noms suivis depuis HEAD",
+          "source": "tests/linux/GitExtensions.Core.Tests/FileHistoryGraphScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Endpoints Commit/Index/WorkingTree/EmptyTree natifs",
+          "source": "tests/linux/GitExtensions.Core.Tests/ComparisonEndpointScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
@@ -1858,6 +1884,20 @@
           "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
           "line": 20,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileHistoryWorkflow",
+          "label": "FileHistoryWorkflow",
+          "source": "src/linux/GitExtensions.Desktop/FileHistoryWorkflow.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileHistoryBlameController",
+          "label": "FileHistoryBlameController",
+          "source": "src/linux/GitExtensions.Desktop/FileHistoryBlameController.cs",
+          "line": 12,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -1865,6 +1905,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AnnotatedReferencePresentationTests.cs",
           "test_class": "AnnotatedReferencePresentationTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialHistoryRevisionTests.cs",
+          "test_class": "ArtificialHistoryRevisionTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -1901,6 +1953,30 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
           "test_class": "CreateBranchInitializationFocusTests",
           "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryBrowseTests.cs",
+          "test_class": "FileHistoryBrowseTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryEmptyTreeMenuTests.cs",
+          "test_class": "FileHistoryEmptyTreeMenuTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryInlineBlameTests.cs",
+          "test_class": "FileHistoryInlineBlameTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryWorkflowTests.cs",
+          "test_class": "FileHistoryWorkflowTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -1978,7 +2054,8 @@
         ".agents/docs/adr/ui/0080-shared-file-menus.md",
         ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md",
         ".agents/docs/adr/ui/history/0083-shared-commit-information.md",
-        ".agents/docs/adr/platform/git/0084-bounded-unix-sockets.md"
+        ".agents/docs/adr/platform/git/0084-bounded-unix-sockets.md",
+        ".agents/docs/adr/workflows/files/0085-browse-file-history.md"
       ]
     },
     {
@@ -3296,9 +3373,21 @@
       "feature": "Historique d’un fichier",
       "group": "files",
       "level": "N3",
-      "implemented": "Renommages, révisions, graphe, image/texte, sauvegarde et liens vers Blame. Les menus partagés transmettent le fichier et l’endpoint capturés. Index/WT conservent leur provenance typée mais affichent explicitement l’histoire de HEAD avec une notice ; Blame porte sur un commit réel. Un fichier neuf sans histoire affiche No commits found et ne fabrique aucun blob/blame HEAD. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé.",
-      "remaining": "N3 conservé sur son périmètre historique ciblé. Windows ouvre par défaut un Browse indépendant et présélectionne la révision sans borner son historique ; Linux garde le dialogue modal dédié et utilise la révision comme borne des ancêtres, sans préférence équivalente ni lignes artificielles Index/WT. Tous les menus/préférences et variantes natives restent à auditer ; aucune parité globale. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. CommitInfo de cet hôte non vérifié en natif.",
+      "implemented": "Dialogue dédié conservé : renommages, graphe, image/texte, sauvegarde, liens Blame et CommitInfo partagé (ADR 0083). Son adaptation historique Index/WT avec notice HEAD reste distincte du nouveau Browse. UseBrowseForFileHistory=true lance un Browse indépendant, présélectionne sans borner les ancêtres et garde Diff/navigation de démarrage temporaires. Graphe normal sur les noms suivis depuis HEAD, liste Diff complète/fallback du premier groupe ; endpoints réels Commit/Index/WT/EmptyTree, refresh/grep typés, Blame File tree partagé à publication atomique et fermeture drainée. ADR 0085.",
+      "remaining": "N3 conservé sur le périmètre dédié historique ; le Browse par défaut reste N2. Exposition complète Follow/Exact, CLI FirstId artificiel + refresh CommitInfo et autres menus/filtres/plateformes encore ouverts. Le nom historique donné à H ne suit pas un renommage futur absent de son oracle HEAD ; ne pas confondre Path A et Path B. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) ouverts ; CommitInfo du dialogue dédié non vérifié en natif.",
       "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Graphe fichier natif et noms suivis depuis HEAD",
+          "source": "tests/linux/GitExtensions.Core.Tests/FileHistoryGraphScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Endpoints Commit/Index/WorkingTree/EmptyTree natifs",
+          "source": "tests/linux/GitExtensions.Core.Tests/ComparisonEndpointScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.FileHistoryDialog",
@@ -3313,9 +3402,36 @@
           "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
           "line": 20,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
+          "line": 15,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileHistoryWorkflow",
+          "label": "FileHistoryWorkflow",
+          "source": "src/linux/GitExtensions.Desktop/FileHistoryWorkflow.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileHistoryBlameController",
+          "label": "FileHistoryBlameController",
+          "source": "src/linux/GitExtensions.Desktop/FileHistoryBlameController.cs",
+          "line": 12,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialHistoryRevisionTests.cs",
+          "test_class": "ArtificialHistoryRevisionTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameAvatarTests.cs",
           "test_class": "BlameAvatarTests",
@@ -3332,6 +3448,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -3353,9 +3475,33 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryBrowseTests.cs",
+          "test_class": "FileHistoryBrowseTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryDialogTests.cs",
           "test_class": "FileHistoryDialogTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryEmptyTreeMenuTests.cs",
+          "test_class": "FileHistoryEmptyTreeMenuTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryInlineBlameTests.cs",
+          "test_class": "FileHistoryInlineBlameTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryWorkflowTests.cs",
+          "test_class": "FileHistoryWorkflowTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -3380,7 +3526,8 @@
       "adr": [
         ".agents/docs/adr/workflows/files/0011-history-and-blame.md",
         ".agents/docs/adr/ui/0080-shared-file-menus.md",
-        ".agents/docs/adr/ui/history/0083-shared-commit-information.md"
+        ".agents/docs/adr/ui/history/0083-shared-commit-information.md",
+        ".agents/docs/adr/workflows/files/0085-browse-file-history.md"
       ]
     },
     {
@@ -4613,11 +4760,17 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 401,
+          "line": 400,
           "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
@@ -5357,6 +5510,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
@@ -5499,6 +5658,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -5731,6 +5896,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
@@ -6097,6 +6268,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
@@ -6219,7 +6396,7 @@
       "feature": "Réglages généraux",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows.",
+      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085.",
       "remaining": "Page générale absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
       "visual": "integre",
       "linux": [
@@ -6257,6 +6434,13 @@
           "source": "src/linux/GitExtensions.Desktop/FileHistoryDialog.cs",
           "line": 14,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileHistoryWorkflow",
+          "label": "FileHistoryWorkflow",
+          "source": "src/linux/GitExtensions.Desktop/FileHistoryWorkflow.cs",
+          "line": 7,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -6276,6 +6460,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6306,6 +6496,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryDialogTests.cs",
           "test_class": "FileHistoryDialogTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryWorkflowTests.cs",
+          "test_class": "FileHistoryWorkflowTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -6369,7 +6565,9 @@
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/workflows/files/0085-browse-file-history.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigAdvancedSettingsPage",
@@ -6402,7 +6600,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 401,
+          "line": 400,
           "kind": "window"
         }
       ],
@@ -6440,14 +6638,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 401,
+          "line": 400,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 488,
+          "line": 491,
           "kind": "window"
         }
       ],
@@ -6776,6 +6974,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
@@ -10806,6 +11010,10 @@
       "line": 15,
       "sources": [
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.ArtificialRevisions.cs",
+          "line": 9
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.BranchFilter.cs",
           "line": 12
         },
@@ -10838,6 +11046,14 @@
           "line": 3
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.FileHistory.cs",
+          "line": 7
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.FileHistoryBlame.cs",
+          "line": 6
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.FileMenus.cs",
           "line": 12
         },
@@ -10868,6 +11084,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs",
           "line": 11
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.Lifetime.cs",
+          "line": 3
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Navigation.cs",
@@ -10994,6 +11214,11 @@
           "id": "GitUI.CommandsDialogs.FormDiff",
           "name": "FormDiff",
           "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.FormFileHistory",
+          "name": "FormFileHistory",
+          "level": "N3"
         },
         {
           "id": "GitUI.CommandsDialogs.FormLog",
@@ -12311,7 +12536,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 419,
+      "line": 418,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",

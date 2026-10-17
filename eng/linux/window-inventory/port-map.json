@@ -89,10 +89,12 @@
       "level": "N2",
       "linux": [
         "MainWindow",
-        "CommitInformationView"
+        "CommitInformationView",
+        "FileHistoryWorkflow",
+        "FileHistoryBlameController"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés).",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Historique Browse : Follow/Exact non exposés complètement ; CLI FirstId artificiel avec révision réelle sélectionnée peut laisser CommitInfo vide après refresh (H ne fournit pas FirstId). Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -111,7 +113,13 @@
         "CommitInformationPresentationTests",
         "CommitInformationViewTests",
         "CommitInformationIntegrationTests",
-        "InteractiveFileConsoleSocketTests"
+        "InteractiveFileConsoleSocketTests",
+        "BrowseStartupTests",
+        "FileHistoryWorkflowTests",
+        "FileHistoryBrowseTests",
+        "ArtificialHistoryRevisionTests",
+        "FileHistoryInlineBlameTests",
+        "FileHistoryEmptyTreeMenuTests"
       ],
       "adr": [
         "0031",
@@ -127,7 +135,20 @@
         "0080",
         "0081",
         "0083",
-        "0084"
+        "0084",
+        "0085"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Graphe fichier natif et noms suivis depuis HEAD",
+          "source": "tests/linux/GitExtensions.Core.Tests/FileHistoryGraphScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Endpoints Commit/Index/WorkingTree/EmptyTree natifs",
+          "source": "tests/linux/GitExtensions.Core.Tests/ComparisonEndpointScenarios.cs",
+          "line": 1
+        }
       ]
     },
     "GitUI.CommandsDialogs.FormLog": {
@@ -1002,22 +1023,44 @@
       "level": "N3",
       "linux": [
         "FileHistoryDialog",
-        "CommitInformationView"
+        "CommitInformationView",
+        "MainWindow",
+        "FileHistoryWorkflow",
+        "FileHistoryBlameController"
       ],
-      "implemented": "Renommages, révisions, graphe, image/texte, sauvegarde et liens vers Blame. Les menus partagés transmettent le fichier et l’endpoint capturés. Index/WT conservent leur provenance typée mais affichent explicitement l’histoire de HEAD avec une notice ; Blame porte sur un commit réel. Un fichier neuf sans histoire affiche No commits found et ne fabrique aucun blob/blame HEAD. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé.",
-      "remaining": "N3 conservé sur son périmètre historique ciblé. Windows ouvre par défaut un Browse indépendant et présélectionne la révision sans borner son historique ; Linux garde le dialogue modal dédié et utilise la révision comme borne des ancêtres, sans préférence équivalente ni lignes artificielles Index/WT. Tous les menus/préférences et variantes natives restent à auditer ; aucune parité globale. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. CommitInfo de cet hôte non vérifié en natif.",
+      "implemented": "Dialogue dédié conservé : renommages, graphe, image/texte, sauvegarde, liens Blame et CommitInfo partagé (ADR 0083). Son adaptation historique Index/WT avec notice HEAD reste distincte du nouveau Browse. UseBrowseForFileHistory=true lance un Browse indépendant, présélectionne sans borner les ancêtres et garde Diff/navigation de démarrage temporaires. Graphe normal sur les noms suivis depuis HEAD, liste Diff complète/fallback du premier groupe ; endpoints réels Commit/Index/WT/EmptyTree, refresh/grep typés, Blame File tree partagé à publication atomique et fermeture drainée. ADR 0085.",
+      "remaining": "N3 conservé sur le périmètre dédié historique ; le Browse par défaut reste N2. Exposition complète Follow/Exact, CLI FirstId artificiel + refresh CommitInfo et autres menus/filtres/plateformes encore ouverts. Le nom historique donné à H ne suit pas un renommage futur absent de son oracle HEAD ; ne pas confondre Path A et Path B. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) ouverts ; CommitInfo du dialogue dédié non vérifié en natif.",
       "visual": "rapproche",
       "tests": [
         "FileHistoryDialogTests",
         "FileMenuControllerTests",
         "CommitInformationPresentationTests",
         "CommitInformationViewTests",
-        "CommitInformationIntegrationTests"
+        "CommitInformationIntegrationTests",
+        "BrowseStartupTests",
+        "FileHistoryWorkflowTests",
+        "FileHistoryBrowseTests",
+        "ArtificialHistoryRevisionTests",
+        "FileHistoryInlineBlameTests",
+        "FileHistoryEmptyTreeMenuTests"
       ],
       "adr": [
         "0011",
         "0080",
-        "0083"
+        "0083",
+        "0085"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Graphe fichier natif et noms suivis depuis HEAD",
+          "source": "tests/linux/GitExtensions.Core.Tests/FileHistoryGraphScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Endpoints Commit/Index/WorkingTree/EmptyTree natifs",
+          "source": "tests/linux/GitExtensions.Core.Tests/ComparisonEndpointScenarios.cs",
+          "line": 1
+        }
       ]
     },
     "GitUI.CommandsDialogs.FormBlame": {
@@ -1026,9 +1069,10 @@
       "level": "N3",
       "linux": [
         "BlameDialog",
-        "CommitInformationView"
+        "CommitInformationView",
+        "FileHistoryBlameController"
       ],
-      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé.",
+      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. File tree du Browse historique réutilise BlameView/options/codec/navigation : Index fournit stage0, WT ses octets, sans faux HEAD ; publication document/identité atomique, erreur native honnête et fermeture drainée. ADR 0085.",
       "remaining": "Audit natif intégral du lecteur et des multiples modes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. CommitInfo de cet hôte non vérifié en natif.",
       "visual": "rapproche",
       "tests": [
@@ -1038,13 +1082,15 @@
         "BlameOptionsTests",
         "CommitInformationPresentationTests",
         "CommitInformationViewTests",
-        "CommitInformationIntegrationTests"
+        "CommitInformationIntegrationTests",
+        "FileHistoryInlineBlameTests"
       ],
       "adr": [
         "0011",
         "0017",
         "0030",
-        "0083"
+        "0083",
+        "0085"
       ]
     },
     "GitUI.CommandsDialogs.FormEditor": {
@@ -2207,13 +2253,19 @@
         "MainWindow@BuildPullButton",
         "CheckoutSubmodulePrompt",
         "GitProcessDialog",
-        "FileHistoryDialog"
+        "FileHistoryDialog",
+        "FileHistoryWorkflow"
       ],
-      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows.",
+      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085.",
       "remaining": "Page générale absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
       "visual": "integre",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "BrowseStartupTests",
+        "FileHistoryWorkflowTests"
+      ],
+      "adr": [
+        "0085"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigAdvancedSettingsPage": {
       "feature": "Configuration Git avancée",

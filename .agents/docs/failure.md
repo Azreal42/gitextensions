@@ -461,3 +461,15 @@ Le [Full01 EA6 refusé](../../artifacts/linux/commit-information-20261017/full-0
 Les refus des paquets [01](../../artifacts/linux/snapshots/b356d5f67/proofs/setup-source-reconciliation.json) (modes) et [02](../../artifacts/linux/snapshots/b356d5f67-package02/proofs/package-post-build-source-reconciliation.json) (locks), du premier checker de log et du checker04 restent conservés. Le [checker05](../../artifacts/linux/snapshots/b356d5f67-package03/proofs/log-finalized-parent-verification-05/package-parent-verification.json) détaille la réconciliation sans réécriture des logs et la portée privée du contrôle : les quatre processus protégés antérieurs ont une identité connue, mais leur environnement et leurs FD n’ont pas été audités ; aucun audit global de l’UID.
 
 Le [natif accepté](../../artifacts/linux/snapshots/b356d5f67/proofs/native-commit-information-parent-review.json) couvre Browse anglais/clair/X11 seulement. Le refus003 a précédé toute entrée : il ne compte pas comme un clic réel supplémentaire. AT-SPI est indisponible sur les trois relevés ; aucune certification d’accessibilité, des autres hôtes ou variantes. ADR [0083](adr/ui/history/0083-shared-commit-information.md).
+
+## Historique fichier Browse — présélection et publication
+
+| Piège | Invariant |
+| --- | --- |
+| OID d’ouverture devient borne et cache les descendants | Séparer présélection et requête ; découverte des noms depuis HEAD puis graphe normal. Les chemins courant/ancien ne suivent pas les mêmes futurs renames. |
+| Ancien commit renommé montre le premier autre fichier | Conserver la liste Diff complète puis choisir le nom historique dans le premier groupe ; cas avec bruit alphabétiquement premier. |
+| Refresh ou grep d’Index/WT lit HEAD | Garder le vrai endpoint typé ; Current sans HEAD ne doit pas effacer les références de All. Refuser Reset depuis EmptyTree avant confirmation. |
+| Nouveau Blame expose une identité mélangée ou une ligne périmée | Ancien document et identité restent ensemble jusqu’au succès complet ; navigation des anciennes lignes bloquée pendant la nouvelle demande, erreur courante vide l’aperçu. |
+| Close retourne avant les lecteurs | Sceller puis annuler ; provider d’infobulle lié au lifetime et tous acteurs drainés avant Dispose/profil/dépôt. |
+
+[Full01 14b89 refusé](../../artifacts/linux/file-history-browse-20261017/full-01/parent-failure-review.json) : 1460/1466 Desktop, six échecs conservés avec leurs entrées ; candidat non livrable. La validation de la correction `1e6cc163a` reste séparée : [Full02 vérifié](../../artifacts/linux/file-history-browse-20261017/full-02/parent-verification.json), [revue native parent](../../artifacts/linux/snapshots/1e6cc163a/proofs/native-file-history-parent-review.json). Le défaut CLI FirstId artificiel + refresh CommitInfo et l’exposition Follow/Exact demeurent ouverts ; ils ne décrivent pas la route H par défaut.
