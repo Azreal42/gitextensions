@@ -8,6 +8,7 @@ public sealed class App : Application
 {
     public override void Initialize()
     {
+        DesktopFonts.Initialize();
         Styles.Add(new FluentTheme());
         Styles.Add(ClassicStyles.Create());
         Styles.Add(Controls.ClassicMenuAppearance.Create());

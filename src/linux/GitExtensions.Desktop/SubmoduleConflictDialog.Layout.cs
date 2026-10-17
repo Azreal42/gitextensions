@@ -46,7 +46,7 @@ public sealed partial class SubmoduleConflictDialog
         Caption("label5", "Current:", 15, 159, 88); Place(_current, 106, 155, 438, 27);
         Place(_refresh, 552, 152, 34, 31); Place(_open, 19, 212, 176, 31);
         Place(_checkout, 203, 212, 181, 31); Place(_stage, 392, 212, 190, 31);
-        Status.FontSize = 11; Status.TextTrimming = TextTrimming.CharacterEllipsis; Status.TextWrapping = TextWrapping.NoWrap;
+        Status.FontSize = Math.Max(1, DesktopFonts.For(DesktopFontRole.Application).SizeInDips - 1); Status.TextTrimming = TextTrimming.CharacterEllipsis; Status.TextWrapping = TextWrapping.NoWrap;
         Place(Status, 15, 187, 571, 20); Status.IsVisible = false;
         Status.PropertyChanged += (_, change) =>
         {

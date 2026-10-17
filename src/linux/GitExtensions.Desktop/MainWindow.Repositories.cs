@@ -145,5 +145,5 @@ public sealed partial class MainWindow
         if (result is not null) { SaveRepositoryHistory(result); _dashboard?.Refresh(reload: false); }
     }
 
-    private double MeasureRepositoryCaption(string text) => new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily), FontSize, Foreground ?? Brushes.Black).Width;
+    private double MeasureRepositoryCaption(string text) => new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily, FontStyle, FontWeight, FontStretch), FontSize, Foreground ?? Brushes.Black).Width;
 }

@@ -94,14 +94,14 @@ public sealed partial class MainWindow
         _worktreeDropdown = Button("Worktrees", () => Task.CompletedTask);
         _worktreeDropdown.Name = "BrowseWorktreesDropdown";
         _worktreeDropdown.Content = ToolbarDropdownArrow(_worktreeDropdown, "BrowseWorktreesDropdownArrow");
-        _worktreeDropdown.Width = 10; _worktreeDropdown.Height = _worktreeDropdown.MinHeight = 24; _worktreeDropdown.MinWidth = 0;
+        _worktreeDropdown.Width = 10; _worktreeDropdown.Height = _worktreeDropdown.MinHeight = DesktopFontMetrics.ToolbarHeight; _worktreeDropdown.MinWidth = 0;
         _worktreeDropdown.Padding = default; _worktreeDropdown.BorderThickness = default; _worktreeDropdown.Background = Brushes.Transparent;
         ToolTip.SetTip(_worktreeDropdown, T("Worktrees"));
         _worktreeFlyout.ItemsSource = CreateWorktreeMenu("WorktreeMenu", _navigationWorktrees);
         _worktreeDropdown.Flyout = _worktreeFlyout; ConfigureBrowserFlyout(_worktreeFlyout, _worktreeDropdown);
         _worktreeFlyout.Opened += async (_, _) => await ReadWorktreeMenuAsync("WorktreeMenu", items => _worktreeFlyout.ItemsSource = items, () => _worktreeFlyout.IsOpen);
         _worktreeFlyout.Closed += (_, _) => _worktreeMenuRead.Cancel();
-        Grid split = new() { Name = "BrowseWorktreesControl", ColumnDefinitions = new("24,10"), Width = 34, Height = 24 };
+        Grid split = new() { Name = "BrowseWorktreesControl", ColumnDefinitions = new("24,10"), Width = 34, Height = DesktopFontMetrics.ToolbarHeight };
         _worktreeControl = split;
         split.Children.Add(_worktreeButton); Grid.SetColumn(_worktreeDropdown, 1); split.Children.Add(_worktreeDropdown);
         RefreshWorktreeMenu(); return split;

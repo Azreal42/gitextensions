@@ -161,7 +161,7 @@ public sealed class ReflogDialog : RepositoryDialog
     }
     private void SizeColumns()
     {
-        double Measure(string text) { TextBlock value = new() { Text = text, FontFamily = FontFamily, FontSize = FontSize }; value.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); return value.DesiredSize.Width + 12; }
+        double Measure(string text) { TextBlock value = new() { Text = text, FontFamily = FontFamily, FontSize = FontSize, FontStyle = FontStyle, FontWeight = FontWeight }; value.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); return value.DesiredSize.Width + 12; }
         double sha = Math.Max(Measure(Text("Sha", "SHA-1", "HeaderText")), _values.Select(entry => Measure(entry.Hash)).DefaultIfEmpty(270).Max());
         double reference = Math.Max(Measure(Text("Ref", "Ref", "HeaderText")), _values.Select(entry => Measure(entry.Selector)).DefaultIfEmpty(120).Max());
         double action = Math.Max(260, _values.Select(entry => Measure(entry.Description)).DefaultIfEmpty(330).Max());

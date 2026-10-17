@@ -16,7 +16,7 @@ public sealed class ArchiveDialog : RepositoryDialog
     private readonly RadioButton _zip = new() { Name = "ArchiveZip", Content = "zip", GroupName = "ArchiveFormat", IsChecked = true };
     private readonly RadioButton _tar = new() { Name = "ArchiveTar", Content = "tar", GroupName = "ArchiveFormat" };
     private readonly CheckBox _pathsEnabled = new() { Name = "ArchivePathsEnabled" };
-    private readonly TextBox _paths = new() { Name = "ArchivePaths", AcceptsReturn = true, Height = 66, FontFamily = new FontFamily("monospace") };
+    private readonly TextBox _paths = new() { Name = "ArchivePaths", AcceptsReturn = true, Height = 66, };
     private readonly ListBox _exactPaths = new() { Name = "ArchiveExactPaths", SelectionMode = SelectionMode.Multiple, Height = 75, IsVisible = false };
     private readonly CheckBox _comparisonEnabled = new() { Name = "ArchiveComparisonEnabled" };
     private readonly TextBox _comparison = new() { Name = "ArchiveComparison", Height = 24 };
@@ -28,6 +28,7 @@ public sealed class ArchiveDialog : RepositoryDialog
 
     public ArchiveDialog(GitRepository repository, string revision = "HEAD", string? path = null) : base(repository, "Archive")
     {
+        DesktopFonts.Apply(_paths, DesktopFontRole.Application);
         Width = 630;
         MinWidth = 540;
         SizeToContent = SizeToContent.Height;

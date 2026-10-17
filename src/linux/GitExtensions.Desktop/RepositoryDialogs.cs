@@ -406,7 +406,12 @@ public sealed class SparseCheckoutDialog : RepositoryDialog
     private readonly CheckBox _enabled = new() { Name = "SparseEnabled" };
     private readonly CheckBox _cone = new() { Name = "SparseCone" };
     private readonly CheckBox _sparseIndex = new() { Name = "SparseIndex" };
-    private readonly TextBox _rules = new() { Name = "SparseRules", AcceptsReturn = true, AcceptsTab = true, FontFamily = new FontFamily("Consolas, DejaVu Sans Mono, monospace") };
+    private readonly TextBox _rules = CreateRulesEditor();
+    private static TextBox CreateRulesEditor()
+    {
+        TextBox editor = new() { Name = "SparseRules", AcceptsReturn = true, AcceptsTab = true };
+        DesktopFonts.Apply(editor, DesktopFontRole.Code); return editor;
+    }
     private readonly Button _reapply;
     private GitSparseCheckoutState? _state;
 

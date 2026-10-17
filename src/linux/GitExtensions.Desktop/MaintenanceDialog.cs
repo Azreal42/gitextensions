@@ -16,14 +16,16 @@ public sealed class MaintenanceDialog : RepositoryDialog
     private readonly CheckBox _noReflogs = new() { Name = "VerifyNoReflogs" };
     private readonly CheckBox _strict = new() { Name = "VerifyStrict" };
     private readonly ListBox _objects = new() { Name = "VerifiedObjects", Height = 140 };
-    private readonly TextBox _report = new() { Name = "VerificationReport", AcceptsReturn = true, IsReadOnly = true, FontFamily = new FontFamily("monospace") };
-    private readonly TextBox _statistics = new() { Name = "RepositoryStatistics", AcceptsReturn = true, IsReadOnly = true, FontFamily = new FontFamily("monospace") };
+    private readonly TextBox _report = new() { Name = "VerificationReport", AcceptsReturn = true, IsReadOnly = true, };
+    private readonly TextBox _statistics = new() { Name = "RepositoryStatistics", AcceptsReturn = true, IsReadOnly = true, };
     private readonly TabControl _tabs = new() { Name = "MaintenanceTabs" };
     public GitFsckResult? LastVerification { get; private set; }
     public GitRepositoryStatistics? LastStatistics { get; private set; }
 
     public MaintenanceDialog(GitRepository repository, MaintenanceView initialView = MaintenanceView.Verify) : base(repository, "Repository maintenance")
     {
+        DesktopFonts.Apply(_report, DesktopFontRole.Code);
+        DesktopFonts.Apply(_statistics, DesktopFontRole.Monospace);
         _initialView = initialView;
         Width = 700;
         Height = 480;
@@ -43,7 +45,7 @@ public sealed class MaintenanceDialog : RepositoryDialog
         _objects.ItemTemplate = new FuncDataTemplate<GitFsckIssue>((item, _) => new TextBlock
         {
             Text = item is null ? "" : T(item.Kind.ToString()) + "    " + item.ObjectType + "    " + item.Hash,
-            FontFamily = new FontFamily("monospace"), Margin = new Thickness(4, 2), TextTrimming = TextTrimming.CharacterEllipsis
+            Margin = new Thickness(4, 2), TextTrimming = TextTrimming.CharacterEllipsis
         });
         DockPanel verify = new() { LastChildFill = true };
         DockPanel.SetDock(_objects, Dock.Top);

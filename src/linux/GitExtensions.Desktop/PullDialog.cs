@@ -31,7 +31,7 @@ public sealed partial class PullDialog : RepositoryDialog
     private readonly RadioButton _tagsFollow = new() { Name = "PullTagsFollow", GroupName = "PullTagMode", IsChecked = true };
     private readonly RadioButton _tagsNone = new() { Name = "PullTagsNone", GroupName = "PullTagMode" };
     private readonly RadioButton _tagsAll = new() { Name = "PullTagsAll", GroupName = "PullTagMode" };
-    private readonly TextBox _output = new() { Name = "PullOutput", AcceptsReturn = true, IsReadOnly = true, MinHeight = 80, MaxHeight = 180, FontFamily = new("monospace") };
+    private readonly TextBox _output = new() { Name = "PullOutput", AcceptsReturn = true, IsReadOnly = true, MinHeight = 80, MaxHeight = 180, };
     private readonly ListBox _conflicts = new() { Name = "PullConflicts", Height = 72, IsVisible = false };
     private readonly Button _execute, _continue, _abort, _resolve, _stash, _manage, _browse;
     private IReadOnlyList<GitRemote> _remotes = [];
@@ -53,6 +53,7 @@ public sealed partial class PullDialog : RepositoryDialog
         Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
         Func<Window, GitRepository, bool, CancellationToken, Task>? resolveConflictsAsync = null) : base(repository, "Pull")
     {
+        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
         if (!PullPreferencesStore.IsToolbarAction(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         _initialAction = action;
         _initialRemote = remote; _initialBranch = branch;

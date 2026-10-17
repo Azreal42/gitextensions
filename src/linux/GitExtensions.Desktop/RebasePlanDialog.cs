@@ -25,6 +25,7 @@ internal static class RebasePlanDialog
             MinHeight = 420,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         };
+        DesktopFonts.Apply(dialog, DesktopFontRole.Application);
         ListBox commits = new() { ItemsSource = rows, SelectionMode = SelectionMode.Single };
         commits.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
@@ -54,7 +55,8 @@ internal static class RebasePlanDialog
             IsEnabled = false,
         };
         TextBlock messageLabel = new() { Text = "Commit message", VerticalAlignment = VerticalAlignment.Center };
-        TextBlock messageHint = new() { Text = "Select Reword or Squash to edit its message.", FontSize = 11, Opacity = 0.8 };
+        DesktopFonts.Apply(message, DesktopFontRole.Commit);
+        TextBlock messageHint = new() { Text = "Select Reword or Squash to edit its message.", FontSize = Math.Max(1, DesktopFonts.For(DesktopFontRole.Application).SizeInDips - 1), Opacity = 0.8 };
         TextBlock validation = new() { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Firebrick, MinHeight = 18 };
         TextBlock count = new() { VerticalAlignment = VerticalAlignment.Center };
         bool loadingMessage = false;
@@ -81,10 +83,10 @@ internal static class RebasePlanDialog
             TextBlock hash = new()
             {
                 Text = row.Step.Hash[..Math.Min(9, row.Step.Hash.Length)],
-                FontFamily = new FontFamily("DejaVu Sans Mono, monospace"),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(4, 0),
             };
+            DesktopFonts.Apply(hash, DesktopFontRole.Monospace);
             row.SubjectLabel = new TextBlock
             {
                 Text = Subject(row.Step),

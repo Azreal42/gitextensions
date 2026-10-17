@@ -11,7 +11,7 @@ public sealed class SubmoduleUpdateDialog : RepositoryDialog
     private readonly TextBox _output = new()
     {
         Name = "SubmoduleUpdateOutput", IsReadOnly = true, AcceptsReturn = true,
-        FontFamily = new FontFamily("monospace"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10)
+        TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10)
     };
     private readonly ProgressBar _progress = new() { Name = "SubmoduleUpdateProgress", IsIndeterminate = true, Height = 8, Margin = new Thickness(10, 10, 10, 0) };
     private bool _cancelled;
@@ -20,6 +20,7 @@ public sealed class SubmoduleUpdateDialog : RepositoryDialog
 
     public SubmoduleUpdateDialog(GitRepository repository) : base(repository, "Update submodules")
     {
+        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
         Width = 620; Height = 290; MinWidth = 460; MinHeight = 220;
         Button close = new() { Name = "CancelSubmoduleUpdate", Content = T("Cancel"), IsCancel = true, Height = 24, MinHeight = 24, MinWidth = 75, Padding = new Thickness(8, 0) };
         close.Click += (_, _) => Close();

@@ -40,7 +40,7 @@ public sealed class PushDialog : RepositoryDialog
     private readonly TabControl _tabs = new() { Name = "PushTabs" };
     private readonly StackPanel _options = new() { Name = "PushOptionsPanel", Spacing = 4, IsVisible = false };
     private readonly StackPanel _multipleRows = new() { Name = "PushBranchGrid", Spacing = 0 };
-    private readonly TextBox _output = new() { Name = "PushOutput", IsReadOnly = true, AcceptsReturn = true, MinHeight = 65, MaxHeight = 180, FontFamily = new("monospace") };
+    private readonly TextBox _output = new() { Name = "PushOutput", IsReadOnly = true, AcceptsReturn = true, MinHeight = 65, MaxHeight = 180, };
     private readonly Button _push, _pull, _manage, _browse, _showOptions;
     private readonly List<BranchRow> _rows = [];
     private IReadOnlyList<GitReference> _references = [];
@@ -56,6 +56,7 @@ public sealed class PushDialog : RepositoryDialog
 
     public PushDialog(GitRepository repository, Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Push")
     {
+        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferences = _store.Load();
         _url.ItemsSource = _destinationHistory.Load();
@@ -528,7 +529,7 @@ public sealed class PushDialog : RepositoryDialog
                     new Avalonia.Controls.Shapes.Ellipse { Fill = Brushes.Red, Width = 32, Height = 32 },
                     new PathIcon { Data = Geometry.Parse("M 1,3 L 3,1 L 9,7 L 15,1 L 17,3 L 11,9 L 17,15 L 15,17 L 9,11 L 3,17 L 1,15 L 7,9 Z"), Foreground = Brushes.White, Width = 18, Height = 18, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
                 } },
-                new TextBlock { Text = C("_pullRepositoryMainMergeInstruction", "Pull latest changes from remote repository"), FontSize = 15, VerticalAlignment = VerticalAlignment.Center }
+                new TextBlock { Text = C("_pullRepositoryMainMergeInstruction", "Pull latest changes from remote repository"), FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 3, VerticalAlignment = VerticalAlignment.Center }
             } });
         }
         body.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap });
@@ -579,7 +580,7 @@ public sealed class PushDialog : RepositoryDialog
             {
                 new Setter(Button.BackgroundProperty, Resource("Window")), new Setter(Button.ForegroundProperty, Resource("Text")),
                 new Setter(Button.BorderBrushProperty, Brushes.Transparent), new Setter(Button.BorderThicknessProperty, new Thickness(1)),
-                new Setter(Button.PaddingProperty, new Thickness(10)), new Setter(Button.FontSizeProperty, 14d),
+                new Setter(Button.PaddingProperty, new Thickness(10)), new Setter(Button.FontSizeProperty, DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 2),
                 new Setter(Button.MinHeightProperty, 48d), new Setter(Button.HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
             }
         });

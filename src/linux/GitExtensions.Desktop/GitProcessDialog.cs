@@ -39,7 +39,7 @@ public sealed class GitProcessDialog : Window
     private readonly StringBuilder _display = new();
     private readonly PipeLine _stdoutLine = new(), _stderrLine = new();
     private readonly TextBox _output = new() { Name = "ProcessOutput", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
-        FontFamily = new FontFamily("Consolas, DejaVu Sans Mono, monospace"), HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
+        HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
     private readonly TextBlock _notice = new() { Name = "ProcessNotice", TextWrapping = TextWrapping.Wrap, IsVisible = false };
     private readonly ScrollViewer _noticeScroll;
     private readonly ProgressBar _progress = new() { Name = "ProgressBar", Height = 3, Minimum = 0, Maximum = 100, IsIndeterminate = true };
@@ -59,6 +59,7 @@ public sealed class GitProcessDialog : Window
         ProcessDialogPreferencesStore? preferencesStore = null, bool preserveStreamedOutput = false,
         Func<GitProcessDialog, GitProcessAttemptResult, CancellationToken, Task<GitProcessCommand?>>? handleOnExit = null)
     {
+        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
         ArgumentNullException.ThrowIfNull(command); ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(commandDescription);
         _command = command; _store = preferencesStore ?? new(); _preserveStreamedOutput = preserveStreamedOutput;

@@ -92,7 +92,8 @@ public sealed class BlameView : UserControl, IDisposable
         _avatarProvider = avatarProvider ?? DefaultAvatarProvider;
         Uri image = new("avares://GitExtensions/Assets/Icons/User80.png");
         if (AssetLoader.Exists(image)) { using Stream stream = AssetLoader.Open(image); _avatar = new Bitmap(stream); }
-        _authors = new(this) { Name = "BlameAuthorMargin", Width = 290 };
+        _authors = new(this) { Name = "BlameAuthorMargin" };
+        TextView.Editor.PropertyChanged += EditorFontChanged;
         Border tooltip = new() { Child = _tooltipText, Padding = new Thickness(8), BorderThickness = new Thickness(1) };
         tooltip.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicTooltipBrush"));
         tooltip.Bind(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicBorderBrush"));
@@ -234,6 +235,7 @@ public sealed class BlameView : UserControl, IDisposable
     {
         if (_disposed) { return; }
         _disposed = true; _lifetime.Cancel(); CancelAvatarLoading(); ClearHover();
+        TextView.Editor.PropertyChanged -= EditorFontChanged;
         _content.Dispose(); _avatar?.Dispose();
         foreach (Bitmap avatar in _avatars.Values) { avatar.Dispose(); }
         foreach (Bitmap icon in _menuIcons) { icon.Dispose(); }
@@ -414,14 +416,45 @@ public sealed class BlameView : UserControl, IDisposable
         return new Image { Source = icon, Width = 16, Height = 16 };
     }
 
+    private void EditorFontChanged(object? sender, AvaloniaPropertyChangedEventArgs change)
+    {
+        if (_disposed || change.Property.Name is not ("FontSize" or "FontFamily" or "FontWeight" or "FontStyle" or "FontStretch")) { return; }
+        _authors.InvalidateMeasure(); _authors.InvalidateVisual();
+    }
+
     private sealed class AuthorMargin(BlameView owner) : AbstractMargin
     {
-        protected override Size MeasureOverride(Size availableSize) => new(Width, 0);
+        private (Typeface Face, double Size, int Digits)? _numberMetrics;
+        private double _numberWidth;
+        private double NumberWidth()
+        {
+            if (!owner.ShowLineNumbers) { return 0; }
+            var editor = owner.TextView.Editor;
+            Typeface face = new(editor.FontFamily, editor.FontStyle, editor.FontWeight, editor.FontStretch);
+            int digits = owner.Lines.Count.ToString(CultureInfo.InvariantCulture).Length;
+            var key = (face, editor.FontSize, digits);
+            if (_numberMetrics is not { } previous || !previous.Equals(key))
+            {
+                _numberWidth = new FormattedText(new string('9', digits) + " ", CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, face, editor.FontSize, editor.Foreground).WidthIncludingTrailingWhitespace;
+                _numberMetrics = key;
+            }
+            return _numberWidth;
+        }
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            var editor = owner.TextView.Editor;
+            FormattedText sample = new("By yyyy-MM-dd HH:mm:ss 0000000000", CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight, new Typeface(editor.FontFamily, editor.FontStyle, editor.FontWeight, editor.FontStretch),
+                editor.FontSize, editor.Foreground);
+            return new(Math.Max(290, Math.Ceiling(sample.WidthIncludingTrailingWhitespace) + 28), 0);
+        }
         public override void Render(DrawingContext context)
         {
             base.Render(context);
             context.DrawRectangle(owner.TextView.Editor.Background, null, new Rect(Bounds.Size));
             if (TextView?.VisualLinesValid != true) { return; }
+            double numberWidth = NumberWidth();
             using (context.PushClip(new Rect(Bounds.Size)))
             foreach (VisualLine visual in TextView.VisualLines)
             {
@@ -434,11 +467,10 @@ public sealed class BlameView : UserControl, IDisposable
                 bool first = index == 0 || owner.Lines[index - 1].Line.Hash != line.Line.Hash;
                 double textY = visual.GetTextLineVisualYPosition(visual.TextLines[0], VisualYPosition.TextTop) - TextView.VerticalOffset;
                 double avatarWidth = owner.ShowAvatar ? Math.Min(visual.Height, 20) : 0;
-                double numberWidth = owner.ShowLineNumbers ? (owner.Lines.Count.ToString(CultureInfo.InvariantCulture).Length + 1) * owner.TextView.Editor.FontSize * .65 : 0;
                 if (owner.ShowLineNumbers)
                 {
                     FormattedText number = new((index + 1).ToString(CultureInfo.CurrentCulture), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                        new Typeface(owner.TextView.Editor.FontFamily), owner.TextView.Editor.FontSize, owner.TextView.Editor.Foreground);
+                        new Typeface(owner.TextView.Editor.FontFamily, owner.TextView.Editor.FontStyle, owner.TextView.Editor.FontWeight, owner.TextView.Editor.FontStretch), owner.TextView.Editor.FontSize, owner.TextView.Editor.Foreground);
                     context.DrawText(number, new Point(8 + avatarWidth, textY));
                 }
                 if (!first) { continue; }
@@ -447,7 +479,7 @@ public sealed class BlameView : UserControl, IDisposable
                 { context.DrawImage(avatar, new Rect(avatar.Size), new Rect(6, top, avatarWidth, avatarWidth)); }
                 string text = owner.GetAuthorLine(line);
                 FormattedText author = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                    new Typeface(owner.TextView.Editor.FontFamily), owner.TextView.Editor.FontSize, owner.TextView.Editor.Foreground);
+                    new Typeface(owner.TextView.Editor.FontFamily, owner.TextView.Editor.FontStyle, owner.TextView.Editor.FontWeight, owner.TextView.Editor.FontStretch), owner.TextView.Editor.FontSize, owner.TextView.Editor.Foreground);
                 context.DrawText(author, new Point(8 + avatarWidth + numberWidth, textY));
             }
         }

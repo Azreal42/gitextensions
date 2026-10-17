@@ -32,7 +32,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
     private readonly ListBox _objects = new() { Name = "RecoveryObjects", SelectionMode = SelectionMode.Single, Focusable = true };
     private readonly FileHistoryContentView _preview = new() { Name = "RecoveryPreview", ClipToBounds = true };
     private readonly TextBlock _previewError = new() { Name = "RecoveryPreviewError", TextWrapping = TextWrapping.Wrap, IsVisible = false };
-    private readonly TextBox _report = new() { Name = "RecoveryReport", IsReadOnly = true, AcceptsReturn = true, FontFamily = new FontFamily("monospace"), Height = 110 };
+    private readonly TextBox _report = new() { Name = "RecoveryReport", IsReadOnly = true, AcceptsReturn = true, Height = 110 };
     private readonly Grid _header = new() { Name = "RecoveryHeader", Height = 30 };
     private readonly Grid _table = new() { RowDefinitions = new("Auto,*"), MinWidth = 700, ClipToBounds = true };
     private readonly Button _recover, _delete, _prune, _saveObjects;
@@ -58,6 +58,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
 
     public RecoverLostObjectsDialog(GitRepository repository, bool autoNormalize = true, string replacement = "_") : base(repository, "Verify database")
     {
+        DesktopFonts.Apply(_report, DesktopFontRole.Code);
         Name = "RecoverLostObjectsDialog"; Title = Text("$this", "Verify database"); Width = 859; Height = 575; MinWidth = 760; MinHeight = 420;
         _autoNormalize = autoNormalize; _replacement = replacement; ConstrainStatusHeight("RecoveryStatus", 54);
         _commits.Content = Caption("ShowCommitsAndTags", "Show commits and annotated tags"); _other.Content = Caption("ShowOtherObjects", "Show blobs and trees");
@@ -208,7 +209,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
     }
     private void UpdateColumns()
     {
-        double Measure(string value) { TextBlock text = new() { Text = value, FontFamily = FontFamily, FontSize = FontSize }; text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); return text.DesiredSize.Width + 12; }
+        double Measure(string value) { TextBlock text = new() { Text = value, FontFamily = FontFamily, FontSize = FontSize, FontWeight = FontWeight, FontStyle = FontStyle }; text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); return text.DesiredSize.Width + 12; }
         IEnumerable<RecoveryRow> visible = _rows.Where(row => MatchesFilter(row.Object));
         double date = Math.Max(56, visible.Select(row => Measure(row.Object.Date?.LocalDateTime.ToString("g") ?? "")).DefaultIfEmpty(56).Max());
         double type = Math.Max(58, visible.Select(row => Measure(row.RawType)).DefaultIfEmpty(58).Max());

@@ -19,7 +19,7 @@ public sealed partial class MainWindow
     private Button BuildCurrentBranchButton()
     {
         // FormBrowse.branchSelect opens the same list from its label and arrow.
-        Button button = new() { Name = "BrowseCurrentBranch", Width = 132, Height = 24, MinHeight = 24,
+        Button button = new() { Name = "BrowseCurrentBranch", Width = 132, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight,
             Padding = new Thickness(2, 0), Content = IconLabel("Branch", "BranchLocal.png"), Flyout = _branchFlyout };
         _branchFlyout.ItemsSource = _branchItems;
         ConfigureBrowserFlyout(_branchFlyout, button);

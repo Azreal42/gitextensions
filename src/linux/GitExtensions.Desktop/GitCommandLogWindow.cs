@@ -8,7 +8,7 @@ namespace GitExtensions.Linux.Desktop;
 
 internal sealed class GitCommandLogWindow : Window
 {
-    private readonly TextBox _text = new() { Name = "GitCommandLogText", IsReadOnly = true, AcceptsReturn = true, FontFamily = new Avalonia.Media.FontFamily("DejaVu Sans Mono"), FontSize = 12, Margin = new Thickness(6) };
+    private readonly TextBox _text = new() { Name = "GitCommandLogText", IsReadOnly = true, AcceptsReturn = true, FontFamily = new Avalonia.Media.FontFamily("DejaVu Sans Mono"), FontSize = 12, FontWeight = Avalonia.Media.FontWeight.Normal, FontStyle = Avalonia.Media.FontStyle.Normal, Margin = new Thickness(6) };
     private readonly TranslationCatalog _translations;
     private readonly DispatcherTimer _timer;
     private GitCommandLogEntry? _last;

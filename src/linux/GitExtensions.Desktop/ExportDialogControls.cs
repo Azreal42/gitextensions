@@ -50,7 +50,7 @@ internal static class ExportDialogControls
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Template = new FuncControlTemplate<Expander>((host, _) =>
             {
-                Button heading = new() { Height = 24, MinHeight = 24, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(6, 2) };
+                Button heading = new() { Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(6, 2) };
                 ContentPresenter body = new() { Content = host.Content, Padding = new Thickness(6), HorizontalContentAlignment = HorizontalAlignment.Stretch };
                 void Refresh() { heading.Content = (host.IsExpanded ? "▾ " : "▸ ") + host.Header; body.IsVisible = host.IsExpanded; }
                 Refresh();
@@ -87,18 +87,22 @@ internal sealed class ExportRevisionList : UserControl
     internal ExportRevisionList(string name, bool multiple)
     {
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
+        DesktopFontSession fonts = DesktopFonts.Active;
+        double hashWidth = DesktopFontMetrics.HashWidth(fonts.For(DesktopFontRole.Monospace));
         Rows = new ListBox { Name = name, SelectionMode = multiple ? SelectionMode.Multiple : SelectionMode.Single };
         Rows.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
-            Setters = { new Setter(HeightProperty, CommitGraph.RowHeight), new Setter(MinHeightProperty, CommitGraph.RowHeight), new Setter(PaddingProperty, new Thickness(4, 1)), new Setter(MarginProperty, new Thickness(0)) }
+            Setters = { new Setter(HeightProperty, _graph.LineHeight), new Setter(MinHeightProperty, _graph.LineHeight), new Setter(PaddingProperty, new Thickness(4, 1)), new Setter(MarginProperty, new Thickness(0)) }
         });
         Rows.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) =>
         {
-            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,120,125,75"), Height = CommitGraph.RowHeight - 2 };
+            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,120,125,75"), Height = _graph.LineHeight - 2 };
+            row.ColumnDefinitions[3].Width = new GridLength(hashWidth);
             string[] values = [commit?.Subject ?? "", commit?.AuthorName ?? "", commit?.AuthoredAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "", commit?.Hash[..Math.Min(9, commit.Hash.Length)] ?? ""];
             for (int column = 0; column < values.Length; column++)
             {
                 TextBlock cell = new() { Text = values[column], Margin = new Thickness(4, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+                fonts.Apply(cell, column == 3 ? DesktopFontRole.Monospace : DesktopFontRole.Application);
                 Grid.SetColumn(cell, column);
                 row.Children.Add(cell);
             }
@@ -106,7 +110,8 @@ internal sealed class ExportRevisionList : UserControl
         });
         Rows.AddHandler(ScrollViewer.ScrollChangedEvent, (_, change) => { if (change.Source is ScrollViewer viewer) { _graph.VerticalOffset = viewer.Offset.Y; } });
         DockPanel panel = new() { LastChildFill = true };
-        Grid headings = new() { ColumnDefinitions = new ColumnDefinitions("90,*,120,125,75"), Height = 24 };
+        Grid headings = new() { ColumnDefinitions = new ColumnDefinitions("90,*,120,125,75"), Height = _graph.LineHeight };
+        headings.ColumnDefinitions[4].Width = new GridLength(hashWidth);
         string[] labels = ["Graph", "Message", "Author", "Date", "Commit"];
         for (int column = 0; column < labels.Length; column++)
         {
@@ -138,7 +143,7 @@ internal sealed class ExportRevisionList : UserControl
 internal sealed class ExportRevisionPicker : RepositoryDialog
 {
     private readonly ExportRevisionList _revisions = new("ChooseRevision", false);
-    private readonly TextBox _search = new() { Name = "RevisionSearch", Height = 24 };
+    private readonly TextBox _search = new() { Name = "RevisionSearch", Height = DesktopFontMetrics.ToolbarHeight };
 
     private ExportRevisionPicker(GitRepository repository) : base(repository, "Choose revision")
     {

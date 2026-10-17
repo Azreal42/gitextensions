@@ -13,6 +13,7 @@ public sealed class AskpassApplication : Application
 
     public override void Initialize()
     {
+        DesktopFonts.Initialize();
         Styles.Add(new FluentTheme());
         Styles.Add(ClassicStyles.Create());
         RequestedThemeVariant = ReadPreferredTheme();

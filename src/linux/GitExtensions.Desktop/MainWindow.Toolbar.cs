@@ -14,13 +14,13 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private const double BrowseRowHeight = 20;
+    private double BrowseRowHeight => DesktopFontMetrics.HistoryRowHeight(_desktopFonts);
     private const double NavigationWidth = 195;
     private CompactBrowserToolbar? _browserToolbar;
     private Button? _currentBranchButton, _commitToolbarButton, _scopeButton, _cancelToolbarButton;
     private MenuItem? _scopeOverflow;
     private MenuItem? _recentToolbarMenu;
-    private readonly TextBox _quickHistoryFilter = new() { Name = "RevisionQuickFilter", Width = 100, Height = 24, MinHeight = 24 };
+    private readonly TextBox _quickHistoryFilter = new() { Name = "RevisionQuickFilter", Width = 100, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight };
     private string _quickHistoryFilterKind = "Message";
     private readonly List<MenuItem> _quickFilterChoices = [];
 
@@ -52,10 +52,10 @@ public sealed partial class MainWindow
         toolbar.Add(position, positions);
         Command("BrowseOpen", "Open repository", "FolderClosed.png", ChooseRepositoryAsync);
         _repositoryPath.Name = "RepositoryPath"; _repositoryPath.MinWidth = 120; _repositoryPath.Width = 220;
-        _repositoryPath.Height = 24; _repositoryPath.Padding = new Thickness(3, 2);
+        _repositoryPath.Height = DesktopFontMetrics.ToolbarHeight; _repositoryPath.Padding = new Thickness(3, 2);
         toolbar.Add(_repositoryPath, ToolbarInput("RepositoryPathOverflow", "Repository", _repositoryPath,
             () => OpenRepositoryAsync(_repositoryPath.Text ?? "")));
-        _recent.Width = 24; _recent.Height = 24; _recent.MinWidth = 0; _recent.Padding = default;
+        _recent.Width = 24; _recent.Height = DesktopFontMetrics.ToolbarHeight; _recent.MinWidth = 0; _recent.Padding = default;
         _recent.Name = "RecentRepositoriesDropdown"; _recent.PlaceholderText = ""; _recent.SelectionBoxItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<object>((_, _) => new TextBlock());
         _recent.Classes.Add("browse-toolbar-dropdown");
         _recent.Styles.Add(new Style(selector => selector.OfType<ComboBox>().Class("browse-toolbar-dropdown").Template().OfType<PathIcon>().Name("DropDownGlyph"))
@@ -112,7 +112,7 @@ public sealed partial class MainWindow
         Command("BrowseAdvancedFilter", "Filter revisions", "FunnelPencil.png", FilterHistoryAsync);
         _scopeOverflow = new MenuItem { Header = T("All branches"), ItemsSource = HistoryScopeChoices("Overflow") };
         // The scope button opens choices; it must not also change the query on its first click.
-        _scopeButton = new Button { Name = "BrowseHistoryScope", MinWidth = 110, Height = 24, MinHeight = 24,
+        _scopeButton = new Button { Name = "BrowseHistoryScope", MinWidth = 110, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight,
             Padding = new Thickness(2, 0), Content = IconLabel("All branches", "BranchLocal.png"), Flyout = new MenuFlyout { ItemsSource = HistoryScopeChoices("") } };
         ConfigureBrowserFlyout((MenuFlyout)_scopeButton.Flyout!, _scopeButton);
         _actionButtons.Add(_scopeButton);
@@ -125,7 +125,7 @@ public sealed partial class MainWindow
         _quickHistoryFilter.KeyDown += async (_, args) =>
         { if (args.Key == Key.Enter && !_busy) { args.Handled = true; await ApplyQuickHistoryFilterAsync(); } };
         Button type = new() { Name = "RevisionQuickFilterType", Content = OriginalIconImage("FunnelPencil.png"),
-            Width = 24, Height = 24, MinWidth = 0, MinHeight = 24, Padding = default };
+            Width = 24, Height = DesktopFontMetrics.ToolbarHeight, MinWidth = 0, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = default };
         foreach (string kind in new[] { "Message", "Author", "Committer", "DiffContent" })
         {
             string label = kind switch { "Message" => "Commit message", "DiffContent" => "Diff contains (SLOW)", _ => kind };
@@ -190,7 +190,7 @@ public sealed partial class MainWindow
     private Button ToolbarButton(string name, string label, string icon, Func<Task> action, bool text = false)
     {
         Button button = IconButton(label, icon, action, text);
-        button.Name = name; button.Height = 24; button.MinHeight = 24; button.MinWidth = 0;
+        button.Name = name; button.Height = DesktopFontMetrics.ToolbarHeight; button.MinHeight = DesktopFontMetrics.ToolbarHeight; button.MinWidth = 0;
         if (MenuHotkeyIdentity(label) is { } hotkey) { DesktopHotkeys.BindToolTip(button, hotkey.Context, hotkey.Command, T(label)); }
         button.Padding = new Thickness(text ? 3 : 0, 0); button.BorderThickness = default;
         button.Styles.Add(new Avalonia.Styling.Style(selector => selector.OfType<Button>())
@@ -203,7 +203,7 @@ public sealed partial class MainWindow
         => ClassicToolbarAppearance.DropdownArrow(owner, name);
     private static Grid ToolbarField(string label, Control input, Control? trailing = null)
     {
-        Grid field = new() { ColumnDefinitions = new ColumnDefinitions(trailing is null ? "Auto,Auto" : "Auto,Auto,Auto"), Height = 24 };
+        Grid field = new() { ColumnDefinitions = new ColumnDefinitions(trailing is null ? "Auto,Auto" : "Auto,Auto,Auto"), Height = DesktopFontMetrics.ToolbarHeight };
         field.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 2, 0) });
         Grid.SetColumn(input, 1); field.Children.Add(input);
         if (trailing is not null) { Grid.SetColumn(trailing, 2); field.Children.Add(trailing); }
@@ -211,7 +211,7 @@ public sealed partial class MainWindow
     }
     private MenuItem ToolbarInput(string name, string label, TextBox original, Func<Task> accept)
     {
-        TextBox input = new() { Name = name, Width = 190, Height = 24, MinHeight = 24 };
+        TextBox input = new() { Name = name, Width = 190, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight };
         if (name == "RevisionQuickFilterOverflow")
         {
             _quickFilterOverflowInput = input;

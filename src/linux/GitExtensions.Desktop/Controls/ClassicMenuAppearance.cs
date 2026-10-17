@@ -14,10 +14,10 @@ namespace GitExtensions.Linux.Desktop.Controls;
 /// <summary>Shared Windows menu metrics and colors for native menu bars, context menus and flyouts.</summary>
 internal static class ClassicMenuAppearance
 {
-    private static readonly FontFamily MenuFont = new("Segoe UI, Noto Sans, DejaVu Sans");
-
-    public static Styles Create()
+    public static Styles Create(DesktopFontSession? fonts = null)
     {
+        ResolvedDesktopFont application = (fonts ?? DesktopFonts.Active).For(DesktopFontRole.Application);
+        double rowHeight = DesktopFontMetrics.CompactHeight(application, 22, 6);
         Styles styles = new();
         // These are the dimensions consumed inside Fluent's native menu and
         // submenu templates. Application resources also reach later additions
@@ -71,7 +71,9 @@ internal static class ClassicMenuAppearance
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(7, 3)),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutPresenterBackground")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForeground"))
@@ -94,8 +96,10 @@ internal static class ClassicMenuAppearance
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontFamilyProperty, MenuFont),
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontFamilyProperty, application.Family),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutPresenterBackground")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForeground")),
                     new Setter(TemplatedControl.BorderBrushProperty, Resource("MenuFlyoutPresenterBorderBrush")),
@@ -111,15 +115,17 @@ internal static class ClassicMenuAppearance
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontFamilyProperty, MenuFont),
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontFamilyProperty, application.Family),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(4, 0, 8, 0)),
                     new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(0)),
                     new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0)),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("MenuFlyoutItemBackground")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("MenuFlyoutItemForeground")),
-                    new Setter(Layoutable.HeightProperty, 22d),
-                    new Setter(Layoutable.MinHeightProperty, 22d),
+                    new Setter(Layoutable.HeightProperty, rowHeight),
+                    new Setter(Layoutable.MinHeightProperty, rowHeight),
                     new Setter(Layoutable.MarginProperty, new Thickness(0)),
                     new Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
                 }
@@ -173,8 +179,10 @@ internal static class ClassicMenuAppearance
             {
                 Setters =
                 {
-                    new Setter(TextBlock.FontFamilyProperty, MenuFont),
-                    new Setter(TextBlock.FontSizeProperty, 12d),
+                    new Setter(TextBlock.FontFamilyProperty, application.Family),
+                    new Setter(TextBlock.FontSizeProperty, application.SizeInDips),
+                    new Setter(TextBlock.FontWeightProperty, application.Weight),
+                    new Setter(TextBlock.FontStyleProperty, application.Style),
                     new Setter(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Right),
                     new Setter(Layoutable.MarginProperty, new Thickness(24, 0, 0, 0))
                 }

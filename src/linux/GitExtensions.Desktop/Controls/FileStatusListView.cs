@@ -35,8 +35,8 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private readonly FileStatusListPreferencesStore _store;
     private readonly Func<FileStatusListEntry, Control> _fileHeader;
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
-    private readonly StackPanel _toolbar = new() { Orientation = Orientation.Horizontal, Height = 24 };
-    private readonly ComboBox _filter = new() { IsEditable = true, Height = 24, MinHeight = 24, HorizontalAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(2, 0), FontWeight = FontWeight.Bold };
+    private readonly StackPanel _toolbar = new() { Orientation = Orientation.Horizontal, Height = DesktopFontMetrics.ToolbarHeight };
+    private readonly ComboBox _filter = new() { IsEditable = true, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, HorizontalAlignment = HorizontalAlignment.Stretch, Padding = new Thickness(2, 0), FontWeight = FontWeight.Bold };
     private readonly Button _clearFilter;
     private readonly SplitButton _viewMode;
     private readonly ToggleButton _byPath, _byExtension, _byStatus, _unequal, _onlyB, _onlyA, _same;
@@ -51,7 +51,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private readonly List<string> _history = ["^(?!.*NotThisWord)", @"^(?!.*\bg?tests?/)"];
     private readonly Dictionary<Control, string> _toolbarRoles = [];
     private readonly TextBlock _noFiles = new() { FontStyle = FontStyle.Italic, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(2, 0) };
-    private readonly Grid _filterRow = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Height = 24 };
+    private readonly Grid _filterRow = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Height = DesktopFontMetrics.ToolbarHeight };
     private IReadOnlyList<FileStatusListGroup> _groups = [];
     private FileStatusListOptions _options;
     private FileStatusListDiffFilter _diffFilter = new();
@@ -106,7 +106,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         _dense.Click += (_, _) => DenseTree = _dense.IsChecked;
         _flatGroups = new() { Name = Prefix("ShowGroupNodesInFlatList"), Header = T("Show group nodes in flat list (if multiple)"), ToggleType = MenuItemToggleType.CheckBox };
         _flatGroups.Click += (_, _) => ShowGroupNodesInFlatList = _flatGroups.IsChecked;
-        _viewMode = new() { Name = Prefix("ViewMode"), Height = 24, MinHeight = 24, Width = 32, Padding = new Thickness(2, 0) };
+        _viewMode = new() { Name = Prefix("ViewMode"), Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, Width = 32, Padding = new Thickness(2, 0) };
         _viewMode.Resources["ButtonMinHeight"] = 24d;
         MenuFlyout modes = new() { ItemsSource = _sortMenus.Cast<object>().Concat(new object[] { new Separator(), _dense, _flatGroups }).ToArray() };
         _viewMode.Flyout = modes; CaptureModePointer(_viewMode);
@@ -475,7 +475,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     }
     private ToggleButton SortButton(string name, string tip, string icon, FileStatusListSortMode basis)
     {
-        ToggleButton button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = 24, MinHeight = 24,
+        ToggleButton button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight,
             CornerRadius = new CornerRadius(0), BorderThickness = new Thickness(1), Padding = new Thickness(2, 0) };
         CaptureModePointer(button);
         ToolTip.SetTip(button, T(tip)); button.Click += (_, _) =>
@@ -484,14 +484,14 @@ public sealed class FileStatusListView : UserControl, IDisposable
     }
     private ToggleButton DiffButton(string name, string caption, string tip, string color, Action<bool> update)
     {
-        ToggleButton button = new() { Name = Prefix(name), Content = caption, Width = 24, Height = 24, MinHeight = 24, IsChecked = true,
+        ToggleButton button = new() { Name = Prefix(name), Content = caption, Width = 24, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, IsChecked = true,
             CornerRadius = new CornerRadius(0), BorderThickness = new Thickness(1), Padding = new Thickness(2, 0), Tag = Color.Parse(color) };
         ToolTip.SetTip(button, T(tip)); button.Click += (_, _) => { if (!_updatingToolbar) { update(button.IsChecked == true); Rebuild(); } };
         _toolbar.Children.Add(button); _toolbarRoles[button] = name; return button;
     }
     private Button IconButton(string name, string tip, string icon, Action action)
     {
-        Button button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = 24, MinHeight = 24, Padding = new Thickness(2, 0) };
+        Button button = new() { Name = Prefix(name), Content = Icon(icon), Width = 24, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = new Thickness(2, 0) };
         ToolTip.SetTip(button, T(tip)); button.Click += (_, _) => action(); return button;
     }
     private Control DefaultFileHeader(FileStatusListEntry entry)

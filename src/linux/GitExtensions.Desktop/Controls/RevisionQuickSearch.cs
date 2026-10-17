@@ -14,7 +14,7 @@ internal sealed class RevisionQuickSearch : IDisposable
     private readonly Func<int, string, bool> _matches;
     private readonly string _prefix;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(4000) };
-    private readonly TextBlock _text = new() { Name = "RevisionQuickSearchText", FontSize = 44d / 3, FontWeight = FontWeight.Bold };
+    private readonly TextBlock _text = new() { Name = "RevisionQuickSearchText", FontFamily = FontFamily.Default, FontSize = 44d / 3, FontWeight = FontWeight.Bold, FontStyle = FontStyle.Normal };
     private string _active = "", _last = "";
     private bool _found = true;
     private IDisposable? _foregroundBinding;

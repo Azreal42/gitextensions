@@ -29,6 +29,7 @@ public sealed class DiffView : UserControl, IDisposable
     private static readonly Regex RangeHeader = new(@"^\s*(?:\d+|-):\s+(?:[0-9a-f]{4,64}|-+)\s+(?<change>[=<>!])\s+(?:\d+|-):\s+(?:[0-9a-f]{4,64}|-+)(?:\s|$)", RegexOptions.CultureInvariant);
     public static readonly StyledProperty<DiffViewMode> ModeProperty = AvaloniaProperty.Register<DiffView, DiffViewMode>(nameof(Mode), DiffViewMode.Auto);
     private readonly TextBox _source;
+    private readonly DesktopFontSession _fonts = DesktopFonts.Active;
     private readonly TextEditor _editor;
     private readonly DiffNumberMargin _numbers;
     private readonly List<DiffLine> _lines = [];
@@ -102,8 +103,6 @@ public sealed class DiffView : UserControl, IDisposable
         {
             Name = "DiffTextEditor",
             IsReadOnly = true,
-            FontFamily = new FontFamily("Consolas, DejaVu Sans Mono, monospace"),
-            FontSize = 12,
             WordWrap = false,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
@@ -113,6 +112,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.Options.EnableHyperlinks = false;
         _editor.Options.EnableEmailHyperlinks = false;
         _editor.TextArea.SelectionCornerRadius = 0;
+        _fonts.Apply(_editor, DesktopFontRole.Code);
         _numbers = new DiffNumberMargin(this);
         _editor.TextArea.LeftMargins.Add(_numbers);
         _editor.TextArea.TextView.BackgroundRenderers.Add(new DiffBackground(this));
@@ -798,7 +798,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.SyntaxHighlighting = _syntaxPath is null || Mode != DiffViewMode.PlainText && !_renderingOptions.ShowSyntaxHighlightingInDiff
             ? null : FileHistorySyntax.Load(_syntaxPath, ActualThemeVariant == ThemeVariant.Dark);
         DiffViewerNonprintingPalette markers = DiffViewerNonprintingRenderer.CreateOriginalPalette(ActualThemeVariant == ThemeVariant.Dark);
-        _nonprinting.Apply(_renderingOptions.ShowNonPrintingChars, markers.SpaceTab, markers.EndOfLine);
+        _nonprinting.Apply(_renderingOptions.ShowNonPrintingChars, markers.SpaceTab, markers.EndOfLine, _fonts.ShowEolMarkerAsGlyph);
         _editor.TextArea.TextView.Redraw();
     }
 
@@ -965,7 +965,7 @@ public sealed class DiffView : UserControl, IDisposable
             if (owner.RightColumnStart > 0)
             {
                 FormattedText character = new(" ", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                    new Typeface(owner._editor.FontFamily), owner._editor.FontSize, owner._palette.Foreground);
+                    new Typeface(owner._editor.FontFamily, owner._editor.FontStyle, owner._editor.FontWeight, owner._editor.FontStretch), owner._editor.FontSize, owner._palette.Foreground);
                 double x = Math.Round(character.WidthIncludingTrailingWhitespace * owner.RightColumnStart - textView.HorizontalOffset) + 0.5;
                 drawingContext.DrawLine(new Pen(owner._palette.LineNumbers, 1), new Point(x, 0), new Point(x, textView.Bounds.Height));
             }
@@ -1011,7 +1011,8 @@ public sealed class DiffView : UserControl, IDisposable
 
         private FormattedText CreateText(string text, bool current = false)
             => new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                new Typeface(owner._editor.FontFamily, weight: current ? FontWeight.Bold : FontWeight.Normal),
+                new Typeface(owner._editor.FontFamily, owner._editor.FontStyle,
+                    current ? FontWeight.Bold : owner._editor.FontWeight, owner._editor.FontStretch),
                 owner._editor.FontSize, current ? owner._palette.Foreground : owner._palette.LineNumbers);
     }
 

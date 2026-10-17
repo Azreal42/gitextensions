@@ -38,6 +38,7 @@ public sealed partial class MainWindow : Window
     private readonly CancellationTokenSource _lifetime = new();
     private readonly PreferencesStore _preferencesStore = new();
     private DesktopPreferences _preferences = new();
+    private readonly DesktopFontSession _desktopFonts = DesktopFonts.Active;
     private GitRepository? _repository;
     private CancellationTokenSource? _operation;
     private bool _busy;
@@ -60,6 +61,8 @@ public sealed partial class MainWindow : Window
     internal MainWindow(BrowseRequest request)
     {
         _browseRequest = request ?? throw new ArgumentNullException(nameof(request));
+        _desktopFonts.Apply(this, DesktopFontRole.Application);
+        _desktopFonts.Apply(_output, DesktopFontRole.Monospace);
         Title = "Git Extensions";
         Width = 1280;
         Height = 840;
@@ -108,7 +111,7 @@ public sealed partial class MainWindow : Window
             Children =
             {
                 new TextBlock { Text = commit?.Subject, TextTrimming = TextTrimming.CharacterEllipsis },
-                new TextBlock { Text = commit is null ? "" : $"{commit.Hash[..Math.Min(9, commit.Hash.Length)]}  ·  {commit.AuthorName}  ·  {commit.AuthoredAt.LocalDateTime:g}", FontSize = 11, Opacity = 0.7 }
+                new TextBlock { Text = commit is null ? "" : $"{commit.Hash[..Math.Min(9, commit.Hash.Length)]}  ·  {commit.AuthorName}  ·  {commit.AuthoredAt.LocalDateTime:g}", FontSize = Math.Max(1, _desktopFonts.For(DesktopFontRole.Application).SizeInDips - 1), Opacity = 0.7 }
             }
         });
         _references.ItemTemplate = TextTemplate<GitReference>(reference => $"{(reference.IsCurrent ? "● " : "  ")}{reference.ShortName}{(reference.IsTag ? "  [tag]" : reference.IsRemote ? "  [remote]" : "")}{(reference.Upstream is null ? "" : " → " + reference.Upstream)}");
@@ -287,7 +290,11 @@ public sealed partial class MainWindow : Window
         return panel;
     }
 
-    private static TextBox ReadOnlyText() => new() { IsReadOnly = true, AcceptsReturn = true, FontFamily = new FontFamily("monospace"), TextWrapping = TextWrapping.NoWrap };
+    private static TextBox ReadOnlyText()
+    {
+        TextBox text = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap };
+        DesktopFonts.Apply(text, DesktopFontRole.Code); return text;
+    }
     private static FuncDataTemplate<T> TextTemplate<T>(Func<T, string> text) where T : class => new((item, _) => new TextBlock { Text = item is null ? "" : text(item), Margin = new Thickness(4), TextWrapping = TextWrapping.Wrap });
     private static WrapPanel Row(params Control[] controls)
     {

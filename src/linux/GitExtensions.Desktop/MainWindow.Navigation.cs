@@ -10,7 +10,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed partial class MainWindow
 {
     private Control? _navigationPanel;
-    private readonly TextBox _navigationSearch = new() { Name = "RepositoryNavigationSearch", Height = 22, MinHeight = 22, Padding = new Thickness(3, 1) };
+    private readonly TextBox _navigationSearch = new() { Name = "RepositoryNavigationSearch", Height = DesktopFontMetrics.Height(DesktopFonts.For(DesktopFontRole.Application), 22, 4), MinHeight = 22, Padding = new Thickness(3, 1) };
     private readonly Dictionary<string, bool> _navigationGroups = new(StringComparer.Ordinal)
     { ["Branches"] = true, ["Remotes"] = true, ["Tags"] = true, ["Submodules"] = true, ["Stashes"] = true, ["Worktrees"] = true };
     private readonly Dictionary<string, bool> _navigationExpansion = new(StringComparer.Ordinal);
@@ -29,7 +29,8 @@ public sealed partial class MainWindow
     {
         DockPanel panel = new() { Name = "RepositoryNavigationPanel", LastChildFill = true };
         _navigationPanel = panel;
-        StackPanel toolbar = new() { Name = "RepositoryNavigationToolbar", Orientation = Orientation.Horizontal, Spacing = 0, Height = 24 };
+        double toolbarHeight = DesktopFontMetrics.ToolbarHeight;
+        StackPanel toolbar = new() { Name = "RepositoryNavigationToolbar", Orientation = Orientation.Horizontal, Spacing = 0, Height = toolbarHeight };
         Button collapse = ToolbarButton("NavigationCollapseAll", "Collapse all", "CollapseAll.png", () =>
         { foreach (TreeViewItem item in NavigationItems()) { item.IsExpanded = false; } return Task.CompletedTask; });
         toolbar.Children.Add(collapse);
@@ -37,8 +38,8 @@ public sealed partial class MainWindow
             ("Tags", "TagHorizontal.png"), ("Submodules", "FolderSubmodule.png"), ("Stashes", "stash.png"), ("Worktrees", "WorkTree.png") })
         {
             Avalonia.Controls.Primitives.ToggleButton toggle = new()
-            { Name = "NavigationShow" + name, Content = OriginalIconImage(icon), IsChecked = true, Width = 24, Height = 24,
-                MinWidth = 0, MinHeight = 24, Padding = default, CornerRadius = default,
+            { Name = "NavigationShow" + name, Content = OriginalIconImage(icon), IsChecked = true, Width = 24, Height = toolbarHeight,
+                MinWidth = 0, MinHeight = toolbarHeight, Padding = default, CornerRadius = default,
                 Resources = new ResourceDictionary { ThemeDictionaries =
                 { [ThemeVariant.Light] = NavigationToolbarResources(false), [ThemeVariant.Dark] = NavigationToolbarResources(true) } } };
             ToolTip.SetTip(toggle, T("Show " + name.ToLowerInvariant()));
@@ -46,7 +47,7 @@ public sealed partial class MainWindow
             toolbar.Children.Add(toggle);
         }
         DockPanel.SetDock(toolbar, Dock.Top); panel.Children.Add(toolbar);
-        Grid search = new() { ColumnDefinitions = new ColumnDefinitions("*,20"), Height = 24, Margin = new Thickness(3, 0, 3, 1) };
+        Grid search = new() { ColumnDefinitions = new ColumnDefinitions("*,20"), Height = Math.Max(24, _navigationSearch.Height), Margin = new Thickness(3, 0, 3, 1) };
         search.Children.Add(_navigationSearch);
         TextBlock magnifier = new() { Text = "⌕", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, FontSize = 17 };
         Grid.SetColumn(magnifier, 1); search.Children.Add(magnifier);

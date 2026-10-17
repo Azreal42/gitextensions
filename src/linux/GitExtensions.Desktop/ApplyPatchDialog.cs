@@ -326,7 +326,12 @@ internal sealed record PatchApplicationRow(int Number, string Name, string Statu
 internal sealed class PatchConflictDialog : RepositoryDialog
 {
     private readonly string _path;
-    private readonly TextBox _text = new() { Name = "PatchConflictText", AcceptsReturn = true, AcceptsTab = true, FontFamily = new FontFamily("monospace") };
+    private readonly TextBox _text = CreatePatchEditor();
+    private static TextBox CreatePatchEditor()
+    {
+        TextBox editor = new() { Name = "PatchConflictText", AcceptsReturn = true, AcceptsTab = true };
+        DesktopFonts.Apply(editor, DesktopFontRole.Code); return editor;
+    }
     private readonly Button _save;
     private byte[] _original = [];
     private bool _editable;

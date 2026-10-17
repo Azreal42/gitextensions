@@ -13,16 +13,31 @@ namespace GitExtensions.Linux.Desktop;
 
 internal static class ClassicStyles
 {
-    public static Styles Create()
+    public static Styles Create(DesktopFontSession? fonts = null)
     {
+        ResolvedDesktopFont application = (fonts ?? DesktopFonts.Active).For(DesktopFontRole.Application);
+        double inputHeight = DesktopFontMetrics.Height(application, 24, 6);
         Styles styles =
         [
+            // Fluent control themes can supply local font defaults instead of inheriting the Window.
+            new Style(selector => selector.Is<TemplatedControl>())
+            {
+                Setters =
+                {
+                    new Setter(TemplatedControl.FontFamilyProperty, application.Family),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style)
+                }
+            },
             new Style(selector => selector.OfType<Window>())
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontFamilyProperty, new FontFamily("Segoe UI, Noto Sans, DejaVu Sans")),
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontFamilyProperty, application.Family),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("Window")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("Text"))
                 }
@@ -31,9 +46,11 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(5, 2)),
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(0)),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("Button")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("ControlText")),
@@ -56,9 +73,11 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(4, 2)),
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(0)),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("Editor")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("Text")),
@@ -92,7 +111,7 @@ internal static class ClassicStyles
                     new Setter(TemplatedControl.BackgroundProperty, Resource("Editor")),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("Text")),
                     new Setter(TemplatedControl.BorderBrushProperty, Resource("Border")),
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(0))
                 }
             },
@@ -116,7 +135,9 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
-                    new Setter(TemplatedControl.FontSizeProperty, 12d),
+                    new Setter(TemplatedControl.FontSizeProperty, application.SizeInDips),
+                    new Setter(TemplatedControl.FontWeightProperty, application.Weight),
+                    new Setter(TemplatedControl.FontStyleProperty, application.Style),
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(7, 3)),
                     new Setter(Layoutable.MinHeightProperty, 25d),
                     new Setter(TemplatedControl.BackgroundProperty, Resource("Control")),
@@ -136,7 +157,7 @@ internal static class ClassicStyles
                 Setters =
                 {
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(4, 1)),
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("Text"))
                 }
             },
@@ -159,7 +180,7 @@ internal static class ClassicStyles
                 Setters =
                 {
                     new Setter(TemplatedControl.PaddingProperty, new Thickness(4, 1)),
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("Text"))
                 }
             },
@@ -175,7 +196,7 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("ControlText"))
                 }
             },
@@ -183,7 +204,7 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
-                    new Setter(Layoutable.MinHeightProperty, 24d),
+                    new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("ControlText"))
                 }
             },

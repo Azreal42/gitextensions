@@ -54,7 +54,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
     internal DiffViewerToolbar(DiffView view, TextEditor editor)
     {
         _view = view; _editor = editor;
-        Name = "DiffViewerToolbar"; Height = 24; IsVisible = false; Child = _row;
+        Name = "DiffViewerToolbar"; Height = DesktopFontMetrics.ToolbarHeight; IsVisible = false; Child = _row;
         NextChange = IconButton("ArrowDown.png", "nextChangeButton", "Next change");
         PreviousChange = IconButton("ArrowUp.png", "previousChangeButton", "Previous change");
         NextChange.Click += async (_, _) => { HandleNavigationCommand(next: true); await PendingNavigationOperation; };
@@ -73,7 +73,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
         IReadOnlyList<object> comparison = view.ComparisonMenu.CreateContextMenuItems("DiffViewerOverflow");
         IReadOnlyList<object> rendering = view.RenderingMenu.CreateContextMenuItems("DiffViewerOverflow");
         _overflowEncoding = view.ReadingMenu.CreateEncodingSelector();
-        MenuItem encoding = new() { Header = _overflowEncoding, StaysOpenOnClick = true, Height = 24, MinHeight = 24, Padding = new Thickness(7, 0) };
+        MenuItem encoding = new() { Header = _overflowEncoding, StaysOpenOnClick = true, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = new Thickness(7, 0) };
         MenuItem settings = PopupItem("settingsButton", "Settings", "Settings.png");
         settings.Click += (_, _) => OpenSettings();
         Add(NextChange, NavigationItem(true)); Add(PreviousChange, NavigationItem(false)); Add(_navigationSeparator, new Separator());
@@ -87,7 +87,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
         OverflowFlyout.ItemsSource = _popupItems;
         Overflow = new Button
         {
-            Width = 24, Height = 24, MinHeight = 24, MinWidth = 0, Padding = default, IsVisible = false,
+            Width = 24, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, MinWidth = 0, Padding = default, IsVisible = false,
             Content = new TextBlock { Text = "»", FontSize = 14, VerticalAlignment = VerticalAlignment.Center }, Flyout = OverflowFlyout
         };
         _row.Children.Add(Overflow);
@@ -171,7 +171,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
             double available = Math.Min(paneWidth, Math.Max(24, paneWidth - 40));
             double natural = 0;
             foreach (Entry entry in _entries)
-            { entry.Control.Measure(new Size(double.PositiveInfinity, 24)); if (entry.Control.IsVisible) { natural += entry.Control.DesiredSize.Width; } }
+            { entry.Control.Measure(new Size(double.PositiveInfinity, DesktopFontMetrics.ToolbarHeight)); if (entry.Control.IsVisible) { natural += entry.Control.DesiredSize.Width; } }
             bool overflows = natural > available;
             double remaining = overflows ? Math.Max(0, available - 24) : available;
             bool exhausted = false;
@@ -190,7 +190,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
             Overflow.IsVisible = overflows;
             Overflow.Width = Math.Min(24, paneWidth);
             Width = double.NaN;
-            Measure(new Size(double.PositiveInfinity, 24));
+            Measure(new Size(double.PositiveInfinity, DesktopFontMetrics.ToolbarHeight));
             Width = Math.Min(paneWidth, DesiredSize.Width);
             Canvas.SetLeft(this, Math.Max(0, paneWidth - Width - 40));
             Canvas.SetTop(this, 0);
@@ -251,7 +251,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
     }
     private MenuItem PopupItem(string original, string text, string asset)
         => new() { Header = new AccessText { Text = _translations.Translate("FileViewer", original, "ToolTipText", text) },
-            Icon = CreateIcon(asset), Height = 24, MinHeight = 24, Padding = new Thickness(7, 2) };
+            Icon = CreateIcon(asset), Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = new Thickness(7, 2) };
     private void OpenSettings()
     {
         if (!_disposed && _view.IsEffectivelyEnabled && TopLevel.GetTopLevel(_view) is Window { IsVisible: true } owner)
@@ -265,7 +265,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
     }
     private Button IconButton(string asset, string original, string tooltip)
     {
-        Button button = new() { Content = CreateIcon(asset), Width = 24, Height = 24, MinHeight = 24, MinWidth = 0, Padding = default };
+        Button button = new() { Content = CreateIcon(asset), Width = 24, Height = DesktopFontMetrics.ToolbarHeight, MinHeight = DesktopFontMetrics.ToolbarHeight, MinWidth = 0, Padding = default };
         string caption = _translations.Translate("FileViewer", original, "ToolTipText", tooltip);
         string? hotkey = original switch { "nextChangeButton" => "NextChange", "previousChangeButton" => "PreviousChange", _ => null };
         if (hotkey is not null) { DesktopHotkeys.BindToolTip(button, "FileViewer", hotkey, caption); }

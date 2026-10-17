@@ -531,13 +531,14 @@ public sealed partial class MainWindow
     private Control BuildRepositoryTools()
     {
         StackPanel tools = new() { Spacing = 10, Margin = new Thickness(16) };
-        tools.Children.Add(new TextBlock { Text = "History and repository maintenance", FontSize = 20 });
+        tools.Children.Add(new TextBlock { Text = "History and repository maintenance", FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 8 });
         Button reflog = Button("Reflog", ReflogAsync); reflog.Name = "RepositoryShowReflog";
         tools.Children.Add(Row(reflog, Button("Verify objects", VerifyObjectsAsync), Button("Repository statistics", StatisticsAsync)));
         tools.Children.Add(Row(Button("Export archive…", ExportArchiveAsync), Button("Create patches…", FormatPatchAsync), Button("Apply patch…", ApplyPatchAsync), Button("Notes…", NotesAsync)));
         tools.Children.Add(Row(Button("Bisect…", BisectAsync), Button("Sparse checkout…", SparseCheckoutAsync), Button("Garbage collection…", GarbageCollectAsync)));
-        tools.Children.Add(new TextBlock { Text = "Output", FontSize = 16 });
+        tools.Children.Add(new TextBlock { Text = "Output", FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 4 });
         _repositoryOutput = ReadOnlyText();
+        DesktopFonts.Apply(_repositoryOutput, DesktopFontRole.Monospace);
         _repositoryOutput.MinHeight = 360;
         tools.Children.Add(_repositoryOutput);
         return new ScrollViewer { Content = tools };

@@ -27,7 +27,7 @@ public sealed class FormatPatchDialog : RepositoryDialog
     private readonly CheckBox _binary = new() { Name = "PatchBinary", IsChecked = true };
     private readonly TextBox _prefix = new() { Name = "PatchSubjectPrefix", Height = 24, Watermark = "PATCH" };
     private readonly ComboBox _numbered = new() { Name = "PatchNumbered", Height = 24, SelectedIndex = 0 };
-    private readonly TextBox _created = new() { Name = "PatchCreatedFiles", AcceptsReturn = true, IsReadOnly = true, MinHeight = 70, FontFamily = new FontFamily("monospace") };
+    private readonly TextBox _created = new() { Name = "PatchCreatedFiles", AcceptsReturn = true, IsReadOnly = true, MinHeight = 70, };
     private readonly Expander _result;
     private readonly Button _create;
     private readonly Button _more;
@@ -37,6 +37,7 @@ public sealed class FormatPatchDialog : RepositoryDialog
 
     public FormatPatchDialog(GitRepository repository, string initialRevision = "HEAD") : base(repository, "Create patches")
     {
+        DesktopFonts.Apply(_created, DesktopFontRole.Application);
         _initialRevision = initialRevision;
         _output.Text = _preferences.Load().LastFormatPatchDirectory;
         Width = 860;

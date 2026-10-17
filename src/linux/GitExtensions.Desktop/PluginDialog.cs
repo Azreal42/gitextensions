@@ -19,13 +19,14 @@ public sealed class PluginDialog : RepositoryDialog
     private readonly ListBox _rows = new() { Name = "PluginRows", SelectionMode = SelectionMode.Multiple };
     private readonly Grid _headers = new() { Height = 24 };
     private readonly Grid _table = new() { RowDefinitions = new RowDefinitions("Auto,*") };
-    private readonly TextBox _text = new() { Name = "PluginText", IsReadOnly = true, AcceptsReturn = true, FontFamily = new FontFamily("Consolas, DejaVu Sans Mono, monospace"), TextWrapping = TextWrapping.Wrap };
+    private readonly TextBox _text = new() { Name = "PluginText", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel _links = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
     public PluginResult? LastResult { get; private set; }
 
     public PluginDialog(GitRepository repository, INativePlugin plugin, IReadOnlyDictionary<string, string?>? savedValues = null,
         Func<IReadOnlyDictionary<string, string?>, CancellationToken, Task>? applySettings = null) : base(repository, plugin.Descriptor.Name)
     {
+        DesktopFonts.Apply(_text, DesktopFontRole.Monospace);
         _plugin = plugin;
         _applySettings = applySettings;
         Width = 1040;

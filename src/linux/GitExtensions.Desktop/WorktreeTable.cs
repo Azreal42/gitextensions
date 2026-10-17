@@ -19,13 +19,17 @@ internal sealed class WorktreeTable : UserControl
     private readonly double[] _widths = [265, 65, 155, 90];
     private readonly Func<string, string> _translate;
     private double _available;
+    private readonly DesktopFontSession _fonts = DesktopFonts.Active;
 
     internal WorktreeTable(Func<string, string> translate)
     {
         _translate = translate;
+        _fonts.Apply(this, DesktopFontRole.Application);
+        double rowHeight = DesktopFontMetrics.WorktreeRowHeight(_fonts);
+        _headers.Height = rowHeight + 2;
         Rows.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>()) { Setters =
         {
-            new Setter(MinHeightProperty, 22d), new Setter(PaddingProperty, new Thickness(0)), new Setter(MarginProperty, new Thickness(0)),
+            new Setter(MinHeightProperty, rowHeight), new Setter(PaddingProperty, new Thickness(0)), new Setter(MarginProperty, new Thickness(0)),
             new Setter(BorderThicknessProperty, new Thickness(0)),
             new Setter(HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch)
         } });
@@ -46,7 +50,7 @@ internal sealed class WorktreeTable : UserControl
         Rows.ItemTemplate = new FuncDataTemplate<WorktreeSnapshot>((worktree, _) =>
         {
             ColumnDefinitions columns = Columns();
-            Grid row = new() { Height = 22, ClipToBounds = true, ColumnDefinitions = columns,
+            Grid row = new() { Height = rowHeight, ClipToBounds = true, ColumnDefinitions = columns,
                 Width = columns.Sum(column => column.Width.Value), HorizontalAlignment = HorizontalAlignment.Left };
             _rowGrids.Add(new(row));
             if (worktree is null) { return row; }
@@ -56,7 +60,7 @@ internal sealed class WorktreeTable : UserControl
             {
                 TextBlock cell = new() { Name = "Worktree" + names[column], Text = values[column], Margin = new Thickness(4, 2), VerticalAlignment = VerticalAlignment.Center,
                     TextWrapping = column == 3 ? TextWrapping.Wrap : TextWrapping.NoWrap };
-                if (column == 3) { cell.FontFamily = new FontFamily("Consolas, DejaVu Sans Mono, monospace"); }
+                _fonts.Apply(cell, column == 3 ? DesktopFontRole.Monospace : DesktopFontRole.Application);
                 if (!worktree.Exists) { cell.TextDecorations = TextDecorations.Strikethrough; }
                 Border border = ClassicChrome.Border(cell, new Thickness(0, 0, 1, 1)); border.ClipToBounds = true; Grid.SetColumn(border, column); row.Children.Add(border);
             }
@@ -97,7 +101,8 @@ internal sealed class WorktreeTable : UserControl
     {
         return Math.Max(45, values.Max(value =>
         {
-            TextBlock text = new() { Text = value, FontFamily = FontFamily, FontSize = FontSize };
+            TextBlock text = new() { Text = value };
+            _fonts.Apply(text, DesktopFontRole.Application);
             text.Measure(Size.Infinity); return Math.Ceiling(text.DesiredSize.Width) + 10;
         }));
     }

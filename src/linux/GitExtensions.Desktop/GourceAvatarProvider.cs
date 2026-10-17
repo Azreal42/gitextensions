@@ -26,6 +26,7 @@ public sealed class GourceAvatarProvider(HttpClient? client = null, string? cach
     public async Task<byte[]?> GetAvatarPngAsync(string email, string authorName, int imageSize, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        DesktopFontSession fonts = DesktopFonts.Active;
         string key = GourceAvatarProtocol.CacheKey(email, authorName, imageSize);
         lock (_gate)
         {
@@ -53,7 +54,7 @@ public sealed class GourceAvatarProvider(HttpClient? client = null, string? cach
             finally { Downloads.Release(); }
         }
         bool remoteImage = png is not null;
-        png ??= await Dispatcher.UIThread.InvokeAsync(() => InitialsPng(email, authorName, imageSize, cancellationToken));
+        png ??= await Dispatcher.UIThread.InvokeAsync(() => InitialsPng(email, authorName, imageSize, cancellationToken, fonts));
         cancellationToken.ThrowIfCancellationRequested();
         if (downloaded && remoteImage) await WriteCacheAsync(path, png, cancellationToken).ConfigureAwait(false);
         lock (_gate)
@@ -137,7 +138,7 @@ public sealed class GourceAvatarProvider(HttpClient? client = null, string? cach
         return null;
     }
 
-    private static byte[] InitialsPng(string email, string name, int size, CancellationToken token)
+    private static byte[] InitialsPng(string email, string name, int size, CancellationToken token, DesktopFontSession fonts)
     {
         token.ThrowIfCancellationRequested();
         string[] palette = ["SlateGray", "RoyalBlue", "Purple", "OrangeRed", "Teal", "OliveDrab"];
@@ -145,7 +146,7 @@ public sealed class GourceAvatarProvider(HttpClient? client = null, string? cach
         static double Linear(byte value) { double c = value / 255d; return c <= 0.04045 ? c / 12.92 : Math.Pow((c + .055) / 1.055, 2.4); }
         IBrush foreground = .2126 * Linear(background.R) + .7152 * Linear(background.G) + .0722 * Linear(background.B) > .185 ? Brushes.Black : Brushes.White;
         string initials = GourceAvatarProtocol.Initials(email, name);
-        Typeface face = new(new FontFamily("Segoe UI, DejaVu Sans, sans-serif"));
+        Typeface face = new(fonts.For(DesktopFontRole.Application).Family);
         FormattedText estimate = new(initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20, foreground);
         double ratio = size / Math.Max(estimate.WidthIncludingTrailingWhitespace, estimate.Height);
         FormattedText text = new(initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20 * ratio, foreground);

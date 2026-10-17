@@ -36,12 +36,12 @@ internal sealed class CompactBrowserToolbar : Border
     internal CompactBrowserToolbar()
     {
         Name = "RepositoryToolbar";
-        Height = 26; MinHeight = 26; MaxHeight = 26; Padding = new Thickness(3, 1);
+        Height = DesktopFontMetrics.ToolbarHeight + 2; MinHeight = Height; MaxHeight = Height; Padding = new Thickness(3, 1);
         _flyout.ItemsSource = _popupItems;
         Overflow = new Button
         {
-            Name = "RepositoryToolbarOverflow", Content = "»", Width = 24, Height = 24,
-            MinWidth = 0, MinHeight = 24, Padding = default, IsVisible = false, Flyout = _flyout
+            Name = "RepositoryToolbarOverflow", Content = "»", Width = 24, Height = DesktopFontMetrics.ToolbarHeight,
+            MinWidth = 0, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = default, IsVisible = false, Flyout = _flyout
         };
         _row.Children.Add(Overflow); Child = _row;
         SizeChanged += (_, _) => { EndKeyboardReveal(); Place(); };
@@ -66,7 +66,7 @@ internal sealed class CompactBrowserToolbar : Border
 
     internal void Add(Control control, Control popup)
     {
-        Border host = new() { Child = control, Height = 24 };
+        Border host = new() { Child = control, Height = DesktopFontMetrics.ToolbarHeight };
         _entries.Add(new(control, host, popup));
         if (popup is MenuItem menu)
         {
@@ -160,7 +160,7 @@ internal sealed class CompactBrowserToolbar : Border
         try
         {
             List<Entry> available = _entries.Where(entry => entry.Control.IsVisible && _itemVisibility(entry.Control)).ToList();
-            foreach (Entry entry in available) { entry.Control.Measure(new Size(double.PositiveInfinity, 24)); }
+            foreach (Entry entry in available) { entry.Control.Measure(new Size(double.PositiveInfinity, DesktopFontMetrics.ToolbarHeight)); }
             double width = Bounds.Width - Padding.Left - Padding.Right;
             bool overflow = available.Sum(entry => entry.Control.DesiredSize.Width + 1) > width;
             double used = 0;

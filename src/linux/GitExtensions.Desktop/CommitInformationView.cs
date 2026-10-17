@@ -67,6 +67,7 @@ public sealed class CommitInformationView : UserControl, IDisposable
     public CommitInformationView(CommitInformationPreferencesStore preferences)
     {
         _preferences = preferences; Options = preferences.Load();
+        DesktopFonts.Apply(MessageControl, DesktopFontRole.Commit);
         Focusable = false;
         foreach (string field in new[] { "Author", "Date", "Committer", "Commit date", "Commit hash", "Children", "Parents", "File" })
         {

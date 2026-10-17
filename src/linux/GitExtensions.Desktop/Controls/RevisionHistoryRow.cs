@@ -9,6 +9,7 @@ using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop.Localization;
 using GitExtensions.Linux.Plugins;
 using SmartFormat;
+using GitExtensions.Linux.Desktop;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -48,6 +49,7 @@ public static class RevisionHistoryRow
         ToolTip.SetTip(date, commit.AuthoredAt.LocalDateTime.ToString("G", CultureInfo.CurrentCulture));
         Grid.SetColumn(date, 2); row.Children.Add(date);
         TextBlock hash = Cell("RevisionHash", commit.Hash[..Math.Min(9, commit.Hash.Length)]);
+        DesktopFonts.Apply(hash, DesktopFontRole.Monospace);
         ToolTip.SetTip(hash, commit.Hash); Grid.SetColumn(hash, 3); row.Children.Add(hash);
         row.TextCells = [message.Subject, authorName, date, hash];
         row.AuthorName = authorName;
@@ -81,6 +83,7 @@ public static class RevisionHistoryRow
     private sealed class HistoryRow : Grid
     {
         private readonly GitCommit? _commit;
+        private readonly ResolvedDesktopFont _application = DesktopFonts.For(DesktopFontRole.Application);
         private bool _hasState, _selected, _selectionFocused, _alternateBackground;
         private string? _authoredEmail;
         private int _rowIndex;
@@ -103,7 +106,7 @@ public static class RevisionHistoryRow
             ToolTip.SetTip(date, value.Date.LocalDateTime.ToString("G", CultureInfo.CurrentCulture));
             ColumnDefinitions[2].Width = new GridLength(value.ShowDate ? 100 : 0);
             Children.OfType<TextBlock>().Single(c => c.Name == "RevisionHash").IsVisible = value.ShowId;
-            ColumnDefinitions[3].Width = new GridLength(value.ShowId ? 75 : 0);
+            ColumnDefinitions[3].Width = new GridLength(value.ShowId ? HashWidth() : 0);
             if (value.ShowNotesColumn && _notes is null)
             {
                 _notes = Cell("RevisionNotes", ""); ColumnDefinitions.Add(new ColumnDefinition(220, GridUnitType.Pixel));
@@ -124,7 +127,9 @@ public static class RevisionHistoryRow
         public HistoryRow(GitCommit? commit)
         {
             _commit = commit; Name = "RevisionHistoryRow";
-            ColumnDefinitions = new ColumnDefinitions("*,150,100,75"); Height = 18; ClipToBounds = true;
+            ColumnDefinitions = new ColumnDefinitions("*,150,100,75");
+            ColumnDefinitions[3].Width = new GridLength(HashWidth());
+            Height = DesktopFontMetrics.HistoryContentHeight(DesktopFonts.Active); ClipToBounds = true;
             ActualThemeVariantChanged += (_, _) => ApplyState();
             AttachedToVisualTree += (_, _) => ApplyState();
         }
@@ -146,15 +151,22 @@ public static class RevisionHistoryRow
             foreach (TextBlock text in TextCells) { text.Foreground = foreground; }
             foreach (MessageCell message in Children.OfType<MessageCell>())
             { message.Details.Foreground = _selected && _selectionFocused ? dark ? DarkText : Brushes.White : Brushes.Gray; }
-            if (AuthorName is not null) { AuthorName.FontWeight = IsAuthored(_commit, _authoredEmail) ? FontWeight.Bold : FontWeight.Normal; }
+            if (AuthorName is not null) { AuthorName.FontWeight = IsAuthored(_commit, _authoredEmail) ? FontWeight.Bold : _application.Weight; }
         }
     }
 
-    private static TextBlock Cell(string name, string value) => new()
+    private static double HashWidth() => DesktopFontMetrics.HashWidth(DesktopFonts.For(DesktopFontRole.Monospace));
+
+    private static TextBlock Cell(string name, string value)
     {
-        Name = name, Text = value, VerticalAlignment = VerticalAlignment.Center,
-        TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(4, 0)
-    };
+        TextBlock text = new()
+        {
+            Name = name, Text = value, VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(4, 0)
+        };
+        DesktopFonts.Apply(text, DesktopFontRole.Application);
+        return text;
+    }
 
     internal static string FormatRelativeDate(DateTimeOffset date, DateTimeOffset now, TranslationCatalog? translations = null)
     {
@@ -182,6 +194,7 @@ public static class RevisionHistoryRow
     private sealed class MessageCell : Panel
     {
         private readonly string _body;
+        private readonly double _height = DesktopFontMetrics.HistoryContentHeight(DesktopFonts.Active);
         private ReferenceBadge[] _badges;
         private GitReference[] _references;
         private double[] _widths = [];
@@ -213,13 +226,13 @@ public static class RevisionHistoryRow
         {
             _widths = new double[_badges.Length];
             for (int index = 0; index < _badges.Length; index++)
-            { _badges[index].Measure(new Size(double.PositiveInfinity, 18)); _widths[index] = _badges[index].DesiredSize.Width; }
-            Subject.Measure(new Size(double.PositiveInfinity, 18)); _subjectWidth = Subject.DesiredSize.Width;
-            Details.Measure(new Size(double.PositiveInfinity, 18));
+            { _badges[index].Measure(new Size(double.PositiveInfinity, _height)); _widths[index] = _badges[index].DesiredSize.Width; }
+            Subject.Measure(new Size(double.PositiveInfinity, _height)); _subjectWidth = Subject.DesiredSize.Width;
+            Details.Measure(new Size(double.PositiveInfinity, _height));
             double natural = _widths.Sum() + _badges.Length * 5 + _subjectWidth + Details.DesiredSize.Width;
             double width = double.IsFinite(availableSize.Width) ? availableSize.Width : natural;
             ArrangeChildren(width, measureOnly: true);
-            return new(Math.Min(natural, width), 18);
+            return new(Math.Min(natural, width), _height);
         }
         protected override Size ArrangeOverride(Size finalSize)
         { ArrangeChildren(finalSize.Width, measureOnly: false); return finalSize; }
@@ -234,17 +247,17 @@ public static class RevisionHistoryRow
             for (int index = 0; index < _badges.Length; index++)
             {
                 double badgeWidth = _widths[index] * ratio;
-                if (measureOnly) { _badges[index].Measure(new Size(badgeWidth, 18)); }
-                else { _badges[index].Arrange(new Rect(x, 0, badgeWidth, 18)); }
+                if (measureOnly) { _badges[index].Measure(new Size(badgeWidth, _height)); }
+                else { _badges[index].Arrange(new Rect(x, 0, badgeWidth, _height)); }
                 x += badgeWidth + (_badges.Length == 0 ? 0 : gaps / _badges.Length);
             }
             double subjectWidth = Math.Max(0, width - x);
             double textWidth = Math.Min(subjectWidth, _subjectWidth);
-            if (measureOnly) { Subject.Measure(new Size(subjectWidth, 18)); }
+            if (measureOnly) { Subject.Measure(new Size(subjectWidth, _height)); }
             else
             {
-                Subject.Arrange(new Rect(x, 0, textWidth, 18));
-                Details.Arrange(new Rect(x + textWidth, 0, Math.Max(0, subjectWidth - textWidth), 18));
+                Subject.Arrange(new Rect(x, 0, textWidth, _height));
+                Details.Arrange(new Rect(x + textWidth, 0, Math.Max(0, subjectWidth - textWidth), _height));
             }
         }
     }
@@ -258,10 +271,10 @@ public static class RevisionHistoryRow
         public ReferenceBadge(GitReference reference)
         {
             _reference = reference; Name = "RevisionReference"; Tag = reference;
-            Height = 18; BorderThickness = new Thickness(1); CornerRadius = new CornerRadius(5);
+            Height = DesktopFontMetrics.HistoryContentHeight(DesktopFonts.Active); BorderThickness = new Thickness(1); CornerRadius = new CornerRadius(5);
             Padding = new Thickness(3, 0); ClipToBounds = true;
             _label = Cell("RevisionReferenceLabel", reference.ShortName); _label.Margin = default;
-            _label.FontWeight = reference.IsCurrent ? FontWeight.Bold : FontWeight.Normal;
+            _label.FontWeight = reference.IsCurrent ? FontWeight.Bold : DesktopFonts.For(DesktopFontRole.Application).Weight;
             Grid content = new() { ColumnDefinitions = new ColumnDefinitions(reference.IsCurrent ? "9,*" : "*") };
             if (reference.IsCurrent)
             {
@@ -318,6 +331,7 @@ public static class RevisionHistoryRow
 
     private sealed class InitialsAvatar : Control
     {
+        private readonly ResolvedDesktopFont _applicationFont = DesktopFonts.For(DesktopFontRole.Application);
         private static readonly string[] Palette = ["SlateGray", "RoyalBlue", "Purple", "OrangeRed", "Teal", "OliveDrab"];
         private readonly string _initials;
         private readonly Color _background;
@@ -334,7 +348,7 @@ public static class RevisionHistoryRow
         {
             base.Render(context);
             context.FillRectangle(new SolidColorBrush(_background), new Rect(Bounds.Size));
-            Typeface face = new(new FontFamily("Segoe UI, Noto Sans, DejaVu Sans"));
+            Typeface face = new(_applicationFont.Family);
             FormattedText estimate = new(_initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20, _foreground);
             double ratio = Math.Min(Bounds.Width, Bounds.Height) / Math.Max(estimate.WidthIncludingTrailingWhitespace, estimate.Height);
             FormattedText text = new(_initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20 * ratio, _foreground);

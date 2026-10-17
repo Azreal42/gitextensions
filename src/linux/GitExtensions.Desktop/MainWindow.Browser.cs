@@ -39,6 +39,7 @@ public sealed partial class MainWindow
 
     private Control BuildLayout()
     {
+        _desktopFonts.Apply(_gpgInfo, DesktopFontRole.Application);
         _commitInfoPosition = _browserLayoutPreferences.Load().CommitInfoPosition;
         // Reuse the same workflow controls in dialogs; keep the Browse layout from FormBrowse.
         IReadOnlyList<TabItem> views = BuildTabs();
@@ -162,19 +163,19 @@ public sealed partial class MainWindow
         }).ToArray();
         _commitInfoPositionButton = new Button
         {
-            Name = "CommitInfoPosition", Width = 22, Height = 24, MinWidth = 0, MinHeight = 24, Padding = new Thickness(0)
+            Name = "CommitInfoPosition", Width = 22, Height = DesktopFontMetrics.ToolbarHeight, MinWidth = 0, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = new Thickness(0)
         };
         _commitInfoPositionButton.Click += (_, _) => ApplyCommitInfoLayout(
             (CommitInfoPosition)(((int)_commitInfoPosition + 1) % Enum.GetValues<CommitInfoPosition>().Length), persist: true);
         Button dropdown = new()
         {
-            Name = "CommitInfoPositionMenu", Width = 10, Height = 24, MinWidth = 0, MinHeight = 24, Padding = new Thickness(0),
+            Name = "CommitInfoPositionMenu", Width = 10, Height = DesktopFontMetrics.ToolbarHeight, MinWidth = 0, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = new Thickness(0),
             Flyout = new MenuFlyout { ItemsSource = _commitInfoPositionItems }
         };
         dropdown.Content = ToolbarDropdownArrow(dropdown, "CommitInfoPositionDropdownArrow");
         ConfigureBrowserFlyout((MenuFlyout)dropdown.Flyout!, dropdown);
         ToolTip.SetTip(dropdown, T("Commit info position"));
-        Grid splitButton = new() { Name = "CommitInfoPositionControl", ColumnDefinitions = new ColumnDefinitions("22,10"), Height = 24 };
+        Grid splitButton = new() { Name = "CommitInfoPositionControl", ColumnDefinitions = new ColumnDefinitions("22,10"), Height = DesktopFontMetrics.ToolbarHeight };
         splitButton.Children.Add(_commitInfoPositionButton);
         Grid.SetColumn(dropdown, 1);
         splitButton.Children.Add(dropdown);

@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using GitExtensions.Desktop.Controls.Graph;
 using GitExtensions.Linux;
+using GitExtensions.Linux.Desktop;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -44,6 +45,7 @@ public sealed class CommitGraph : Control
     private CommitGraphLayout _layout = CommitGraphLayout.Build([]);
     private Dictionary<string, GitReference[]> _refsByHash = new(StringComparer.Ordinal);
     private double _verticalOffset;
+    private readonly ResolvedDesktopFont _application = DesktopFonts.For(DesktopFontRole.Application);
     private string? _currentHead;
     private IReadOnlyCollection<string> _selectedHashes = [];
     private HashSet<string> _selectedHashSet = new(StringComparer.Ordinal);
@@ -56,6 +58,7 @@ public sealed class CommitGraph : Control
 
     public CommitGraph()
     {
+        LineHeight = DesktopFontMetrics.GraphRowHeight(DesktopFonts.Active);
         ClipToBounds = true;
         PointerMoved += ShowCommitTooltip;
         PointerExited += (_, _) => ToolTip.SetTip(this, null);
@@ -223,12 +226,13 @@ public sealed class CommitGraph : Control
                     Color color = ReferenceColor(reference, dark);
                     IBrush badgeBrush = new SolidColorBrush(color);
                     FormattedText text = new(reference.ShortName, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                        new Typeface(FontFamily.Default), 11, badgeBrush);
+                        DesktopFontMetrics.Typeface(_application, reference.IsCurrent), _application.SizeInDips, badgeBrush);
                     double width = Math.Min(105, text.Width + 10);
                     double available = Bounds.Width - x - 2;
                     if (available < 16) { break; }
                     width = Math.Min(width, available);
-                    Rect badge = new(x, center.Y - 8, width, 16);
+                    double badgeHeight = Math.Max(16, Math.Ceiling(text.Height) + 2);
+                    Rect badge = new(x, center.Y - badgeHeight / 2, width, badgeHeight);
                     context.DrawRectangle(new SolidColorBrush(Color.FromArgb(26, color.R, color.G, color.B)), new Pen(badgeBrush, 1), badge, 3, 3);
                     using (context.PushClip(badge.Deflate(3)))
                     {

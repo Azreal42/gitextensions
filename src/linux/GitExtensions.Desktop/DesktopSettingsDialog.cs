@@ -24,14 +24,19 @@ internal sealed class DesktopSettingsDialog : Window
     public FileHistoryPreferences FileHistoryResult { get; private set; }
     public HotkeyBindings HotkeysResult { get; private set; }
     public bool OpenGitConfiguration { get; private set; }
+    internal FontPreferences FontsResult { get; private set; }
 
     public DesktopSettingsDialog(DesktopPreferences initial, TranslationCatalog translations, bool canConfigureGit,
         GitLogSort historySort = GitLogSort.GitDefault, FileHistoryPreferences? fileHistoryPreferences = null,
-        HotkeyBindings? hotkeys = null, Action<HotkeyBindings>? saveHotkeys = null)
+        HotkeyBindings? hotkeys = null, Action<HotkeyBindings>? saveHotkeys = null,
+        FontPreferences? fonts = null, Func<FontPreferences, FontPreferences, FontPreferences>? saveFonts = null, Exception? fontsLoadError = null)
     {
         Result = initial; HistorySortResult = historySort;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         HotkeyBindings activeHotkeys = hotkeys ?? new(); HotkeysResult = activeHotkeys.Clone();
+        DesktopFontSession? fontSession = fonts is null ? DesktopFonts.CreateSession() : null;
+        FontPreferences fontBaseline = fonts ?? fontSession!.Preferences; FontsResult = fontBaseline;
+        Exception? fontError = fontsLoadError ?? fontSession?.LoadError;
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
         Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -82,7 +87,9 @@ internal sealed class DesktopSettingsDialog : Window
         TabItem sortingTab = new() { Name = "SettingsSortingTab", Header = translations.Translate("Sorting"), Content = sorting };
         HotkeysSettingsPage hotkeysPage = new(activeHotkeys, translations) { Margin = new Thickness(12) };
         TabItem hotkeysTab = new() { Name = "SettingsHotkeysTab", Header = translations.Translate("HotkeysSettingsPage", "$this", "Text", "Hotkeys"), Content = hotkeysPage };
-        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab }, SelectedItem = generalTab };
+        AppearanceFontsSettingsPage fontsPage = new(fontBaseline, translations, fontError) { Margin = new Thickness(12), Height = 315 };
+        TabItem fontsTab = new() { Name = "SettingsFontsTab", Header = translations.Translate("AppearanceFontsSettingsPage", "$this", "Text", "Fonts"), Content = fontsPage };
+        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab }, SelectedItem = generalTab };
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
         Button cancel = new() { Name = "CancelDesktopSettings", Content = translations.Translate("Cancel"), MinWidth = 75, IsCancel = true };
         cancel.Click += (_, _) => Close(false);
@@ -95,10 +102,20 @@ internal sealed class DesktopSettingsDialog : Window
                 try { GitReferencePriorities.Validate(input.Text ?? ""); }
                 catch (ArgumentException error) { tabs.SelectedItem = sortingTab; notice.Text = error.Message; input.Focus(); return; }
             }
+            if (!fontsPage.Validate(out string? fontValidation))
+            { tabs.SelectedItem = fontsTab; notice.Text = fontValidation; return; }
             HotkeyBindings acceptedHotkeys = hotkeysPage.Draft.Clone();
             try { saveHotkeys?.Invoke(acceptedHotkeys.Clone()); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
             { tabs.SelectedItem = hotkeysTab; notice.Text = translations.Translate("Unable to save hotkeys.") + " " + error.Message; return; }
+            try
+            {
+                // An unreadable, untouched font profile is not replaced by unrelated Settings changes.
+                FontsResult = fontError is not null && fontsPage.Draft == fontBaseline ? fontBaseline
+                    : saveFonts?.Invoke(fontBaseline, fontsPage.Draft) ?? fontsPage.Draft;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+            { tabs.SelectedItem = fontsTab; fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return; }
             Result = initial with
             {
                 Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,

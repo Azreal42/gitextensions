@@ -47,7 +47,7 @@ public sealed class DashboardControl : UserControl, IDisposable
             { e.Handled = true; await OpenAsync(entry.Path); }
         };
         Grid header = new() { RowDefinitions = new RowDefinitions("*,Auto") };
-        header.Children.Add(new TextBlock { Text = T("Recent repositories"), FontSize = 18, VerticalAlignment = VerticalAlignment.Center });
+        header.Children.Add(new TextBlock { Text = T("Recent repositories"), FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 5.5 * 96 / 72, VerticalAlignment = VerticalAlignment.Center });
         Grid.SetRow(_search, 1); header.Children.Add(_search); _header.Child = header;
         _logo.Child = new Image { Source = LoadBitmap("GitExtensionsLogoWide.png"), Stretch = Stretch.Uniform };
         _start.Child = new StackPanel { Spacing = 8, Children = { Link(T("Create new repository"), "RepoCreate.png", create), Link(T("Open repository"), "RepoOpen.png", choose), Link(T("Clone repository"), "CloneRepoGit.png", clone) } };
@@ -56,7 +56,7 @@ public sealed class DashboardControl : UserControl, IDisposable
             Spacing = 8,
             Children =
             {
-                new TextBlock { Text = T("Contribute"), FontSize = 18, Margin = new Thickness(0, 0, 0, 8) },
+                new TextBlock { Text = T("Contribute"), FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 5.5 * 96 / 72, Margin = new Thickness(0, 0, 0, 8) },
                 Link(T("Develop"), "Develop.png", () => OpenUrlAsync("https://github.com/gitextensions/gitextensions")),
                 Link(T("Donate"), "DollarSign.png", () => OpenUrlAsync("https://opencollective.com/gitextensions")),
                 Link(T("Translate"), "Translate.png", () => OpenUrlAsync("https://github.com/gitextensions/gitextensions/wiki/Translations")),
@@ -121,7 +121,7 @@ public sealed class DashboardControl : UserControl, IDisposable
         DashboardRepository[] repositories = entries.Select(item => Row(item, favorite)).Concat((uncategorizedFavorites ?? []).Select(item => Row(item, true))).ToArray();
         static DashboardRepository Row(RepositoryHistoryRow item, bool favorite) => new(item.Path, favorite, item.Entry.Category, item.IsAnchored) { Caption = item.Caption };
         if (repositories.Length == 0) { return; }
-        TextBlock heading = new() { Text = title, FontSize = 14, Margin = new Thickness(0, 4, 0, 2) };
+        TextBlock heading = new() { Text = title, FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 2, Margin = new Thickness(0, 4, 0, 2) };
         List<MenuItem> actions = [];
         if (!favorite) { actions.Add(Menu(T("Clear all recent repositories"), async () =>
         {
@@ -172,7 +172,7 @@ public sealed class DashboardControl : UserControl, IDisposable
         StackPanel text = new() { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         TextBlock path = new() { Text = entry.Caption ?? entry.Path, TextTrimming = TextTrimming.CharacterEllipsis, FontWeight = entry.Pinned ? FontWeight.Bold : FontWeight.Normal };
         if (entry.IsFavorite) { path.Foreground = new SolidColorBrush(ClassicTextContrast.AdaptForeground(this, Color.Parse(ActualThemeVariant == ThemeVariant.Dark ? "#DAA520" : "#B8860B"))); }
-        TextBlock branch = new() { Name = "DashboardBranch", FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = new SolidColorBrush(ClassicTextContrast.AdaptForeground(this, Color.Parse(ActualThemeVariant == ThemeVariant.Dark ? "#87CEFA" : "#647FD2"))) };
+        TextBlock branch = new() { Name = "DashboardBranch", FontSize = Math.Max(1, DesktopFonts.For(DesktopFontRole.Application).SizeInDips - 96d / 72), TextTrimming = TextTrimming.CharacterEllipsis, Foreground = new SolidColorBrush(ClassicTextContrast.AdaptForeground(this, Color.Parse(ActualThemeVariant == ThemeVariant.Dark ? "#87CEFA" : "#647FD2"))) };
         text.Children.Add(path); text.Children.Add(branch); Grid.SetColumn(text, 1); tile.Children.Add(text); ToolTip.SetTip(tile, entry.Path);
         if (!_rows.TryGetValue(entry.Path, out List<(Image, TextBlock)>? rows)) { _rows[entry.Path] = rows = []; }
         rows.Add((icon, branch));
@@ -314,7 +314,7 @@ public sealed class DashboardControl : UserControl, IDisposable
     }
     private readonly Dictionary<string, Bitmap> _bitmapCache = new(StringComparer.Ordinal);
     private string T(string source) => _translations.Translate(source);
-    private double MeasureCaption(string text) => new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily), FontSize, Foreground ?? Brushes.Black).Width;
+    private double MeasureCaption(string text) => new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily, FontStyle, FontWeight, FontStretch), FontSize, Foreground ?? Brushes.Black).Width;
 
     public void Dispose()
     {

@@ -146,11 +146,11 @@ public sealed class RecentRepositoriesSettingsDialog : Window
     private double ColumnWidth(IReadOnlyList<RepositoryHistoryRow> entries, int width, RepositoryHistoryAnchor boldAnchor)
         => width > 0 ? Math.Max(30, width) : Math.Max(30, entries.Select(entry => new FormattedText(
             ExportDialogControls.DisplayPath(entry.Caption), CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            new Typeface(FontFamily, FontStyle.Normal, entry.Entry.EffectiveAnchor == boldAnchor ? FontWeight.Bold : FontWeight.Normal),
+            new Typeface(FontFamily, FontStyle, entry.Entry.EffectiveAnchor == boldAnchor ? FontWeight.Bold : FontWeight, FontStretch),
             FontSize, Brushes.Black).WidthIncludingTrailingWhitespace + 10).DefaultIfEmpty(30).Max());
 
     private double MeasureCaption(string text)
-        => new FormattedText(ExportDialogControls.DisplayPath(text), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily), FontSize, Brushes.Black).WidthIncludingTrailingWhitespace;
+        => new FormattedText(ExportDialogControls.DisplayPath(text), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily, FontStyle, FontWeight, FontStretch), FontSize, Brushes.Black).WidthIncludingTrailingWhitespace;
 
     private void MinimumWidthChanged()
     {

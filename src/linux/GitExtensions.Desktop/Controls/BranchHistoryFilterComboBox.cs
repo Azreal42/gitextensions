@@ -270,7 +270,7 @@ internal sealed class BranchHistoryFilterComboBox : ComboBox
         _popup.OverlayDismissEventPassThrough = true;
         _popup.OverlayInputPassThroughElement = _pointerOwner;
         double widest = Items.OfType<string>().Select(text => new FormattedText(text,
-            System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily), FontSize,
+            System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(FontFamily, FontStyle, FontWeight, FontStretch), FontSize,
             Foreground ?? Brushes.Black).Width + 24).DefaultIfEmpty(300).Max();
         _popup.MinWidth = Math.Clamp(widest, 300, 600); _popup.MaxWidth = 600;
     }

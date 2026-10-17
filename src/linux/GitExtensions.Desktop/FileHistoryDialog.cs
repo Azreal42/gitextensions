@@ -21,6 +21,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
     private readonly MenuItem _follow, _exact, _full, _simplify;
     private readonly FileHistoryPreferencesStore _historyPreferencesStore = new();
     private FileHistoryPreferences _historyPreferences = new();
+    private readonly DesktopFontSession _desktopFonts = DesktopFonts.Active;
     private readonly CommitGraph _graph = new() { Name = "FileHistoryGraph", Width = 180 };
     private readonly ListBox _revisions = new() { Name = "FileHistoryRevisions", SelectionMode = SelectionMode.Multiple };
     private readonly TabControl _tabs = new() { Name = "FileHistoryTabs" };
@@ -112,11 +113,12 @@ public sealed class FileHistoryDialog : RepositoryDialog
         ((Button)actions.Children[^1]).Click += (_, _) => Close();
         DockPanel.SetDock(actions, Dock.Bottom); Root.Children.Add(actions);
         _revisions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
-        { Setters = { new Setter(HeightProperty, 24d), new Setter(MinHeightProperty, 24d), new Setter(PaddingProperty, new Avalonia.Thickness(0)) } });
+        { Setters = { new Setter(HeightProperty, _graph.LineHeight), new Setter(MinHeightProperty, _graph.LineHeight), new Setter(PaddingProperty, new Avalonia.Thickness(0)) } });
         _revisions.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) => Row(commit));
         _revisions.AddHandler(ScrollViewer.ScrollChangedEvent, (_, args) => { if (args.Source is ScrollViewer viewer) { _graph.VerticalOffset = viewer.Offset.Y; } });
         DockPanel table = new();
-        Grid headers = new() { ColumnDefinitions = new ColumnDefinitions("180,*,150,110,90"), Height = 24 };
+        Grid headers = new() { ColumnDefinitions = new ColumnDefinitions("180,*,150,110,90"), Height = _graph.LineHeight };
+        headers.ColumnDefinitions[4].Width = new GridLength(Math.Max(90, DesktopFontMetrics.HashWidth(_desktopFonts.For(DesktopFontRole.Monospace))));
         string[] labels = ["Graph", "Message", "Author", "Date", "Commit"];
         for (int index = 0; index < labels.Length; index++) { TextBlock label = new() { Text = T(labels[index]), Margin = new Avalonia.Thickness(4, 2) }; Grid.SetColumn(label, index); headers.Children.Add(label); }
         Border header = ClassicChrome.Border(headers, new Avalonia.Thickness(0, 0, 0, 1));
@@ -438,13 +440,16 @@ public sealed class FileHistoryDialog : RepositoryDialog
         IStorageFile? file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions { Title = T("Save as"), SuggestedFileName = Path.GetFileName(SelectedEntry.Path) });
         if (file?.TryGetLocalPath() is string path) { await RunAsync("Save as", token => SaveSelectedFileAsync(path, token)); }
     }
-    private static Control Row(GitCommit? commit)
+    private Control Row(GitCommit? commit)
     {
         if (commit is null) { return new TextBlock(); }
-        Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,150,110,90"), Height = 24 };
+        Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,150,110,90"), Height = _graph.LineHeight };
+        row.ColumnDefinitions[3].Width = new GridLength(Math.Max(90, DesktopFontMetrics.HashWidth(_desktopFonts.For(DesktopFontRole.Monospace))));
         string[] values = [commit.Subject, commit.AuthorName, commit.AuthoredAt.ToString("yyyy-MM-dd"), commit.Hash[..Math.Min(9, commit.Hash.Length)]];
         for (int index = 0; index < values.Length; index++)
-        { TextBlock text = new() { Text = values[index], Margin = new Avalonia.Thickness(4, 2), TextTrimming = TextTrimming.CharacterEllipsis }; Grid.SetColumn(text, index); row.Children.Add(text); }
+        { TextBlock text = new() { Text = values[index], Margin = new Avalonia.Thickness(4, 2), TextTrimming = TextTrimming.CharacterEllipsis };
+            _desktopFonts.Apply(text, index == 3 ? DesktopFontRole.Monospace : DesktopFontRole.Application);
+            Grid.SetColumn(text, index); row.Children.Add(text); }
         return row;
     }
     private Control TabHeader(string label, string iconName)

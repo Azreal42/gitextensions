@@ -52,20 +52,22 @@ public sealed partial class MainWindow
 
     private Control BuildVirtualRevisionRows()
     {
-        Grid rows = new() { Name = "WorkingRevisions", ColumnDefinitions = new ColumnDefinitions("20,*"), RowDefinitions = new RowDefinitions("20,20") };
+        double rowHeight = BrowseRowHeight;
+        Grid rows = new() { Name = "WorkingRevisions", ColumnDefinitions = new ColumnDefinitions("20,*"),
+            RowDefinitions = new RowDefinitions { new RowDefinition(rowHeight, GridUnitType.Pixel), new RowDefinition(rowHeight, GridUnitType.Pixel) } };
         // These are actual worktree/index actions, outside the commit model.
         for (int i = 0; i < 2; i++)
         {
-            Canvas graph = new() { Width = 20, Height = 20 };
-            graph.Children.Add(new Avalonia.Controls.Shapes.Line { StartPoint = new Point(8, 0), EndPoint = new Point(8, 20), Stroke = Brush.Parse("#d3d3d3"), StrokeThickness = 1.5 });
+            Canvas graph = new() { Width = 20, Height = rowHeight };
+            graph.Children.Add(new Avalonia.Controls.Shapes.Line { StartPoint = new Point(8, 0), EndPoint = new Point(8, rowHeight), Stroke = Brush.Parse("#d3d3d3"), StrokeThickness = 1.5 });
             Avalonia.Controls.Shapes.Ellipse node = new() { Width = 7, Height = 7, Fill = Brush.Parse("#d3d3d3") };
-            Canvas.SetLeft(node, 4.5); Canvas.SetTop(node, 6.5); graph.Children.Add(node);
+            Canvas.SetLeft(node, 4.5); Canvas.SetTop(node, (rowHeight - 7) / 2); graph.Children.Add(node);
             Grid.SetRow(graph, i); rows.Children.Add(graph);
-            Button action = new RevisionSearchButton { Name = i == 0 ? "WorkingDirectoryRevision" : "IndexRevision", Height = 20, MinHeight = 20,
+            Button action = new RevisionSearchButton { Name = i == 0 ? "WorkingDirectoryRevision" : "IndexRevision", Height = rowHeight, MinHeight = rowHeight,
                 MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(4, 0), Margin = new Thickness(2, 0, 0, 0) };
             action.Content = new TextBlock { Text = T(i == 0 ? "Working directory" : "Commit index"), VerticalAlignment = VerticalAlignment.Center };
             TextBlock state = new() { Text = "✓", Foreground = Brush.Parse("#24c221"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0) };
-            StackPanel content = new() { Orientation = Orientation.Horizontal, Height = 20, Children = { action, state } };
+            StackPanel content = new() { Orientation = Orientation.Horizontal, Height = rowHeight, Children = { action, state } };
             Grid.SetRow(content, i); Grid.SetColumn(content, 1); rows.Children.Add(content);
             bool staged = i == 1;
             action.Click += async (_, _) => await ActivateArtificialRevisionAsync(staged);

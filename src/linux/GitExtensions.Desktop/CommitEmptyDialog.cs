@@ -44,7 +44,7 @@ public sealed class CommitEmptyDialog : Window
                 new Setter(Button.BorderBrushProperty, Brushes.Transparent),
                 new Setter(Button.BorderThicknessProperty, new Thickness(1)),
                 new Setter(Button.PaddingProperty, new Thickness(10)),
-                new Setter(Button.FontSizeProperty, 14d),
+                new Setter(Button.FontSizeProperty, DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 2),
                 new Setter(Button.MinHeightProperty, 56d),
                 new Setter(Button.HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
             }
@@ -103,7 +103,7 @@ public sealed class CommitEmptyDialog : Window
         TextBlock instructions = new()
         {
             Text = C("_noFilesStagedCommitInstructions", "There aren't any changes in the staging area.\nHow do you want to proceed?"),
-            FontSize = 15, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center
+            FontSize = DesktopFonts.For(DesktopFontRole.Application).SizeInDips + 3, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center
         };
         Grid.SetColumn(instructions, 2);
         heading.Children.Add(instructions);

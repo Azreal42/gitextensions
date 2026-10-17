@@ -15,6 +15,7 @@ public sealed class NativeRebaseEditorApplication : Application
     private NativeRebaseEditorWindow? _window;
     public override void Initialize()
     {
+        DesktopFonts.Initialize();
         Styles.Add(new FluentTheme()); Styles.Add(ClassicStyles.Create());
         RequestedThemeVariant = AskpassApplication.ReadPreferredTheme();
     }
@@ -49,7 +50,7 @@ internal sealed class NativeRebaseEditorWindow : Window
 {
     private readonly GitRebaseEditorRequest _request;
     private readonly TextBox _text = new() { Name = "NativeRebaseEditorText", AcceptsReturn = true, AcceptsTab = true,
-        TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("monospace"), MinHeight = 260,
+        TextWrapping = TextWrapping.NoWrap, MinHeight = 260,
         HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
     private readonly TextBlock _error = new() { Name = "NativeRebaseEditorError", TextWrapping = TextWrapping.Wrap, IsVisible = false };
     internal bool Saved { get; private set; }
@@ -61,6 +62,7 @@ internal sealed class NativeRebaseEditorWindow : Window
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
         Name = "NativeRebaseEditor"; Title = translations.Translate(request.Kind == GitRebaseEditorKind.Todo ? "Edit rebase todo" : "Edit commit message");
         Width = 900; Height = 640; MinWidth = 600; MinHeight = 360; WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        DesktopFonts.Apply(_text, request.Kind == GitRebaseEditorKind.Todo ? DesktopFontRole.Code : DesktopFontRole.Commit);
         _text.SetCurrentValue(TextBox.TextProperty, request.Text);
         Button save = new() { Name = "SaveNativeRebaseEditor", Content = translations.Translate("Save"), IsDefault = true, MinWidth = 75 };
         save.Click += (_, _) => Save();

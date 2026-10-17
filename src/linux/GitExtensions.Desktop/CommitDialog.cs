@@ -50,7 +50,7 @@ public sealed partial class CommitDialog : Window
     private readonly TextBox _signingKey = new() { Name = "SigningKey", Width = 250, Watermark = "Signing key", IsEnabled = false };
     private readonly ComboBox _kind = new() { Name = "CommitKind", SelectedIndex = 0, Width = 250 };
     private readonly ComboBox _target = new() { Name = "TargetCommit", Width = 330, IsEnabled = false };
-    private readonly TextBox _output = new() { Name = "CommitOutput", IsReadOnly = true, AcceptsReturn = true, IsVisible = false, Height = 72, FontFamily = new FontFamily("monospace") };
+    private readonly TextBox _output = new() { Name = "CommitOutput", IsReadOnly = true, AcceptsReturn = true, IsVisible = false, Height = 72, };
     private readonly TextBlock _state = new() { Name = "CommitStatus", TextWrapping = TextWrapping.Wrap };
     private readonly MenuItem _signOff;
     private readonly MenuItem _closeAfterCommit;
@@ -107,6 +107,10 @@ public sealed partial class CommitDialog : Window
         if (initialKind != TargetedCommitKind.Normal && targetCommit is null)
         { throw new ArgumentException("A targeted commit requires the selected revision.", nameof(targetCommit)); }
         _repository = repository;
+        DesktopFonts.Apply(_message, DesktopFontRole.Commit);
+        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        foreach (Control input in new Control[] { _filter, _amend, _resetAuthor })
+        { input.Height = input.MinHeight = DesktopFontMetrics.ToolbarHeight; }
         _initialKind = initialKind;
         _initialTarget = targetCommit;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
