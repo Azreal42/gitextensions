@@ -38,6 +38,7 @@
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationCategory.cs" Link="Localization/Shared/TranslationCategory.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationBody.cs" Link="Localization/Shared/TranslationBody.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationItem.cs" Link="Localization/Shared/TranslationItem.cs" />
+    <Content Include="../../app/GitUI/Translation/*.gif" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../app/GitUI/Translation/*.xlf" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

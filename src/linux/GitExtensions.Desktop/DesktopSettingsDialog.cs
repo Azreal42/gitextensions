@@ -36,6 +36,13 @@ internal sealed class DesktopSettingsDialog : Window
         Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ComboBox theme = new() { Name = "SettingsTheme", ItemsSource = new[] { "Light", "Dark", "System" }, SelectedItem = initial.Theme, MinWidth = 150 };
+        var languageCatalog = LanguageCatalog.LoadDefault();
+        LanguageChoice? initialLanguage = string.IsNullOrEmpty(initial.Language) ? LanguageCatalog.English : languageCatalog.Find(initial.Language);
+        ComboBox language = new() { Name = "Language", ItemsSource = languageCatalog.Choices,
+            SelectedItem = initialLanguage, PlaceholderText = initialLanguage is null ? "English (" + translations.Translate("fallback") + ")" : null, MinWidth = 180,
+            ItemTemplate = new FuncDataTemplate<LanguageChoice>((choice, _) => new TextBlock { Text = choice?.Name }) };
+        if (initialLanguage is null)
+        { ToolTip.SetTip(language, initial.Language + "\n" + translations.Translate("Translation unavailable; using English")); }
         NumericUpDown history = new() { Name = "SettingsHistoryLimit", Minimum = 1, Maximum = 5000, Value = Math.Clamp(initial.HistoryLimit, 1, 5000), FormatString = "0", Width = 150 };
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
         CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
@@ -45,7 +52,9 @@ internal sealed class DesktopSettingsDialog : Window
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
         StackPanel fields = new() { Margin = new Thickness(12), Spacing = 10 };
-        GeneralField("Theme", theme); GeneralField("Number of commits to load", history);
+        GeneralField("Theme", theme);
+        GeneralField(translations.Translate("AppearanceSettingsPage", "lblLanguage", "Text", "Language (restart required)"), language);
+        GeneralField("Number of commits to load", history);
         fields.Children.Add(normalise); GeneralField("Replacement symbol", symbol); fields.Children.Add(advanced);
         fields.Children.Add(fileHistory);
         Grid fileHistoryOptions = new() { ColumnDefinitions = new ColumnDefinitions("*,*") };
@@ -93,6 +102,7 @@ internal sealed class DesktopSettingsDialog : Window
             Result = initial with
             {
                 Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
+                Language = (language.SelectedItem as LanguageChoice)?.Name ?? initial.Language,
                 AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
                 UseBrowseForFileHistory = fileHistory.IsChecked == true,
                 ReferenceSorting = new((GitRefsSortBy)references.SelectedItem!, (GitRefsSortOrder)order.SelectedItem!),

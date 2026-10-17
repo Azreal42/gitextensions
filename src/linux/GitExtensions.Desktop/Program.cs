@@ -51,6 +51,7 @@ internal static class Program
 
         try
         {
+            DesktopLanguage.ApplyPreferredCulture();
             StartupRequest = DesktopStartupDispatcher.PrepareAsync(startup, Environment.CurrentDirectory).GetAwaiter().GetResult();
             RepositoryPath = StartupRequest.BrowseRequest?.RepositoryPath ?? RepositoryPath;
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();

@@ -512,10 +512,11 @@ public sealed partial class MainWindow
 
     private Task ChangeThemeAsync()
     {
+        DesktopPreferences latest = _preferencesStore.Load();
         string theme = _preferences.Theme switch { "System" => "Dark", "Dark" => "Light", _ => "System" };
         _preferences = _preferences with { Theme = theme };
         ApplyTheme(theme);
-        _preferencesStore.Save(_preferences);
+        _preferencesStore.Save(latest with { Theme = theme });
         return Task.CompletedTask;
     }
 

@@ -6,6 +6,7 @@ public sealed record DesktopPreferences
 {
     public List<string> RecentRepositories { get; init; } = [];
     public string Theme { get; init; } = "Light";
+    public string? Language { get; init; }
     public int HistoryLimit { get; init; } = 300;
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";

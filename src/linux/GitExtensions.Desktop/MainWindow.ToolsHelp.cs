@@ -140,12 +140,20 @@ public sealed partial class MainWindow
         if (_busy) { return; }
         FileHistoryPreferences fileHistory = _fileHistoryPreferencesStore.Load();
         HotkeyBindings hotkeys = DesktopHotkeys.Reload();
-        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null, _historyView.Sort, fileHistory,
+        DesktopPreferences initial = _preferencesStore.Load();
+        DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
             hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings));
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
-        DesktopPreferences preferences = dialog.Result;
+        DesktopPreferences latest = _preferencesStore.Load();
+        DesktopPreferences preferences = dialog.Result with
+        {
+            // An unchanged language control must not undo a choice saved by another Browse
+            // after this Settings window opened. Explicit new choices still win.
+            Language = dialog.Result.Language == initial.Language ? latest.Language : dialog.Result.Language,
+            RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
+        };
         _preferencesStore.Save(preferences);
         bool reload = preferences.HistoryLimit != _preferences.HistoryLimit || dialog.HistorySortResult != _historyView.Sort;
         if (dialog.FileHistoryResult.FollowRenames != fileHistory.FollowRenames || dialog.FileHistoryResult.ExactRenames != fileHistory.ExactRenames)

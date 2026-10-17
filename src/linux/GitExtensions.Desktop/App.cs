@@ -18,16 +18,23 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            if (Program.StartupRequest.Arguments.Mode == DesktopStartupMode.Cleanup)
+            var shutdown = Program.StartupRequest.Arguments.Mode == DesktopStartupMode.Cleanup
+                ? Avalonia.Controls.ShutdownMode.OnMainWindowClose : desktop.ShutdownMode;
+            // The chooser can close before the real main window is constructed.
+            desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnExplicitShutdown;
+            desktop.MainWindow = DesktopLanguage.CreateInitialWindow(Program.StartupRequest, window =>
             {
-                desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
-            }
-            desktop.MainWindow = CreateStartupWindow(Program.StartupRequest);
+                desktop.MainWindow = window; window.Show(); desktop.ShutdownMode = shutdown;
+            });
+            if (desktop.MainWindow is not ChooseLanguageDialog) { desktop.ShutdownMode = shutdown; }
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
     internal static Avalonia.Controls.Window CreateStartupWindow(DesktopStartupRequest request)
-        => DesktopStartupDispatcher.CreateMainWindow(request);
+    {
+        DesktopLanguage.ApplyPreferredCulture();
+        return DesktopStartupDispatcher.CreateMainWindow(request);
+    }
 }

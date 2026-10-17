@@ -17,13 +17,14 @@ public sealed partial class MainWindow
 
     private void SavePluginSettings(PluginDescriptor descriptor, IReadOnlyDictionary<string, string?> values)
     {
-        Dictionary<string, Dictionary<string, string?>> settings = new(_preferences.PluginSettings)
+        DesktopPreferences latest = _preferencesStore.Load();
+        Dictionary<string, Dictionary<string, string?>> settings = new(latest.PluginSettings)
         {
             [descriptor.Id.ToString()] = values.Where(value => !value.Key.Equals("password", StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(value => value.Key, value => value.Value)
         };
         _preferences = _preferences with { PluginSettings = settings };
-        _preferencesStore.Save(_preferences);
+        _preferencesStore.Save(latest with { PluginSettings = settings });
     }
 
     private IEnumerable<INativePlugin> LifecycleSettingsPlugins()

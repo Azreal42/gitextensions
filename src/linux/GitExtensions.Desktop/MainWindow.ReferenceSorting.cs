@@ -52,7 +52,9 @@ public sealed partial class MainWindow
         {
             if (_busy || _repository is null || _navigation.SelectedItem is not TreeViewItem { Tag: GitReference }) { return; }
             string? key = originKey;
-            _preferences = _preferences with { ReferenceSorting = sorting }; _preferencesStore.Save(_preferences);
+            DesktopPreferences latest = _preferencesStore.Load();
+            _preferencesStore.Save(latest with { ReferenceSorting = sorting });
+            _preferences = _preferences with { ReferenceSorting = sorting };
             await ApplyReferenceSortingPreferencesAsync(key, menu);
         }
     }

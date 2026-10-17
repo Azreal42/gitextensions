@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
-using System.Globalization;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -92,9 +91,8 @@ public sealed class AskpassApplication : Application
 
     internal static void ApplyUiCulture()
     {
-        string? name = Environment.GetEnvironmentVariable("GITEXTENSIONS_UI_CULTURE");
-        if (string.IsNullOrWhiteSpace(name)) { return; }
-        try { CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(name); }
-        catch (CultureNotFoundException) { }
+        try { DesktopLanguage.ApplyPreferredCulture(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        { /* An unreadable UI preference must not leak into the authentication protocol. */ }
     }
 }
