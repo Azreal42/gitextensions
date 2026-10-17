@@ -372,7 +372,8 @@ public sealed partial class MainWindow : Window
             else if (startupSelection is not null) { artificialSelection = startupSelection; }
             if (startupFirst?.Kind == GitCompareRevisionKind.Commit)
             { startupFirst = startupFirst with { Revision = await repository.ResolveRevisionAsync(startupFirst.Revision, Token) }; }
-            string[] requiredStartupHashes = new[] { startupSelection, startupFirst }.OfType<GitCompareRevision>()
+            BrowseInitialComparison? retainedComparison = changedRepository ? null : _browseInitialComparison;
+            string[] requiredSelectionHashes = new[] { startupSelection, startupFirst, retainedComparison?.First, retainedComparison?.Selected }.OfType<GitCompareRevision>()
                 .Where(source => source.Kind == GitCompareRevisionKind.Commit).Select(source => source.Revision).Distinct(StringComparer.Ordinal).ToArray();
             string[] selectedHashOrder = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).Distinct(StringComparer.Ordinal).ToArray();
             HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
@@ -405,7 +406,7 @@ public sealed partial class MainWindow : Window
             var historyRead = await ReadBrowseHistoryAsync(repository, query, status.IsUnborn, Token);
             IReadOnlyList<GitCommit> history = historyRead.Commits;
             // -commit selects a row. Expand from the newest page; it must never become a revision/ancestor filter.
-            while (requiredStartupHashes.Any(hash => !history.Take(historyWindow).Any(commit => commit.Hash == hash))
+            while (requiredSelectionHashes.Any(hash => !history.Take(historyWindow).Any(commit => commit.Hash == hash))
                 && history.Count > historyWindow && historyWindow < 100000)
             {
                 historyWindow = (int)Math.Min(100000L, (long)historyWindow + configuredQuery.Count);
@@ -509,7 +510,7 @@ public sealed partial class MainWindow : Window
             if (UsesArtificialInitialComparison && _browseInitialComparison is { } initialPair)
             {
                 await LoadArtificialHistoryComparisonAsync(repository, initialPair.First, initialPair.Selected, Token);
-                if (startupSelection?.Kind == GitCompareRevisionKind.Commit && _commits.SelectedItem is GitCommit selected) { UpdateCommitInfo(selected); }
+                if (initialPair.Selected.Kind == GitCompareRevisionKind.Commit && _commits.SelectedItem is GitCommit selected) { UpdateCommitInfo(selected); }
             }
             else if (_selectedArtificialHistoryRevision is { } artificial)
             { await LoadArtificialHistoryRevisionAsync(repository, artificial, Token); }
