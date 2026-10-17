@@ -289,7 +289,7 @@ internal static class BranchFilterScenarios
 
     private static async Task SameAsGit(GitRepository repo, string expression, IEnumerable<string> arguments, string? path = null, bool includeStash = true)
     {
-        List<string> args = ["--no-pager", "-c", "color.ui=false", "--literal-pathspecs", "log", "--encoding=UTF-8", "--topo-order", "-z", "--format=%H", "--max-count=100"];
+        List<string> args = ["--no-pager", "-c", "color.ui=false", "--literal-pathspecs", "log", "--encoding=UTF-8", "-z", "--format=%H", "--max-count=100"];
         if (includeStash) { args.Add("--glob=refs/stas[h]"); }
         args.AddRange(arguments); args.Add("--"); if (path is not null) { args.Add(path); }
         GitResult oracle = await new GitRunner().RunAsync(repo.Path, args); Check(oracle.Success, oracle.StandardError);
@@ -301,7 +301,7 @@ internal static class BranchFilterScenarios
     {
         ProcessStartInfo start = new("git")
         {
-            Arguments = "--no-pager -c color.ui=false log --encoding=UTF-8 --topo-order -z --format=%H --max-count=100 --glob=refs/stas[h] " + expression + " --",
+            Arguments = "--no-pager -c color.ui=false log --encoding=UTF-8 -z --format=%H --max-count=100 --glob=refs/stas[h] " + expression + " --",
             WorkingDirectory = repo.Path, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8,
         };

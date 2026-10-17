@@ -16,7 +16,7 @@ public sealed partial class MainWindow
     private readonly BrowserRead _revisionRead = new(), _revisionDiffRead = new();
     private readonly BrowserRead _treeRead = new(), _treeFileRead = new();
     private readonly BrowserRead _workingDiffRead = new(), _signatureRead = new();
-    private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead];
+    private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead, _referenceSortingRead];
     private string? _loadedDiffSelection;
     private string RevisionSelectionIdentity => string.Join('\0', SelectedRevisionDiffCommits().Select(commit => commit.Hash));
 

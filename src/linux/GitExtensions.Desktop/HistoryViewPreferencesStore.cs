@@ -24,7 +24,7 @@ internal sealed record HistoryViewPreferences
     public bool ShowId { get; init; } = true;
     public bool DrawNonRelativesGray { get; init; } = true;
     public bool ShowReflog { get; init; }
-    public GitLogSort Sort { get; init; } = GitLogSort.Topology;
+    public GitLogSort Sort { get; init; } = GitLogSort.GitDefault;
 }
 
 internal sealed class HistoryViewPreferencesStore
@@ -35,7 +35,7 @@ internal sealed class HistoryViewPreferencesStore
         try
         {
             HistoryViewPreferences value = File.Exists(FilePath) ? JsonSerializer.Deserialize<HistoryViewPreferences>(File.ReadAllText(FilePath)) ?? new() : new();
-            return value with { HiddenToolbarItems = value.HiddenToolbarItems ?? [], Sort = Enum.IsDefined(value.Sort) ? value.Sort : GitLogSort.Topology };
+            return value with { HiddenToolbarItems = value.HiddenToolbarItems ?? [], Sort = Enum.IsDefined(value.Sort) ? value.Sort : GitLogSort.GitDefault };
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { return new(); }
     }

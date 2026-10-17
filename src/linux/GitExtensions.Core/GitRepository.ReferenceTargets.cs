@@ -7,13 +7,14 @@ public sealed partial class GitRepository
     private async Task<IReadOnlyList<ReferenceTarget>> ReadReferenceTargetsAsync(IReadOnlyList<string> patterns,
         CancellationToken cancellationToken, bool noOptionalLocks = false)
     {
+        GitReferenceSorting sorting = ReferenceSorting;
         // This is Windows Commands.GetRefs' expression, not recursive ^{commit} peeling.
         // Keeping the direct object separately lets callers detect a reannotated tag at the same commit.
         const string format = "--format=%(refname)%00%(objectname)%00"
             + "%(if)%(authordate)%(then)%(objectname)%(else)%(*objectname)%(end)%00"
             + "%(if)%(authordate)%(then)%(objecttype)%(else)%(*objecttype)%(end)%00"
             + "%(upstream:short)%00%(HEAD)%00%(symref)";
-        List<string> arguments = ["for-each-ref", format, .. patterns];
+        List<string> arguments = ["for-each-ref", .. ReferenceSortArguments(sorting, includeTags: true), format, .. patterns];
         if (noOptionalLocks) { arguments.Insert(0, "--no-optional-locks"); }
         GitResult result = await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
         List<ReferenceTarget> targets = [];

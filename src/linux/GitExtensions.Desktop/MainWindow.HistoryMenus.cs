@@ -78,8 +78,8 @@ public sealed partial class MainWindow
             Toggle("showDateColumnToolStripMenuItem", "Show &date column", p => p.ShowDate, p => p with { ShowDate = !p.ShowDate }),
             Toggle("showIdColumnToolStripMenuItem", "Show SHA&-1 column", p => p.ShowId, p => p with { ShowId = !p.ShowId }),
             new("|", ""), new("SortingToolStripMenuItem", "Sorting", Caption: true),
-            Toggle("AuthorDateSort", "&Sort commits by author date", p => p.Sort == GitLogSort.AuthorDate, p => p with { Sort = p.Sort == GitLogSort.AuthorDate ? GitLogSort.Date : GitLogSort.AuthorDate }, true),
-            Toggle("TopoOrder", "Arrange c&ommits by topo order (ancestor order)", p => p.Sort == GitLogSort.Topology, p => p with { Sort = p.Sort == GitLogSort.Topology ? GitLogSort.Date : GitLogSort.Topology }, true),
+            Toggle("AuthorDateSort", "&Sort commits by author date", p => p.Sort == GitLogSort.AuthorDate, p => p with { Sort = p.Sort == GitLogSort.AuthorDate ? GitLogSort.GitDefault : GitLogSort.AuthorDate }, true),
+            Toggle("TopoOrder", "Arrange c&ommits by topo order (ancestor order)", p => p.Sort == GitLogSort.Topology, p => p with { Sort = p.Sort == GitLogSort.Topology ? GitLogSort.GitDefault : GitLogSort.Topology }, true),
             new("|", ""), new("Settings_persistenceToolStripMenuItem", "Settings persistence", Caption: true),
             new("SaveAsDefault", "Save current view settings as default", SaveCurrentViewSettingsAsync)
         ];

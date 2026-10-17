@@ -10,6 +10,9 @@ public sealed record DesktopPreferences
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";
     public bool AlwaysShowAdvancedOptions { get; init; }
+    public GitReferenceSorting ReferenceSorting { get; init; } = new();
+    public string PrioritizedBranchNames { get; init; } = GitReferencePriorities.DefaultBranchPatterns;
+    public string PrioritizedRemoteNames { get; init; } = GitReferencePriorities.DefaultRemotePatterns;
     public Dictionary<string, Dictionary<string, string?>> PluginSettings { get; init; } = [];
 }
 
@@ -31,7 +34,15 @@ public sealed class PreferencesStore
             return new DesktopPreferences();
         }
 
-        return JsonSerializer.Deserialize<DesktopPreferences>(File.ReadAllText(FilePath)) ?? new DesktopPreferences();
+        DesktopPreferences value = JsonSerializer.Deserialize<DesktopPreferences>(File.ReadAllText(FilePath)) ?? new();
+        GitReferenceSorting sorting = value.ReferenceSorting ?? new();
+        return value with
+        {
+            ReferenceSorting = new(Enum.IsDefined(sorting.By) ? sorting.By : GitRefsSortBy.GitDefault,
+                Enum.IsDefined(sorting.Order) ? sorting.Order : GitRefsSortOrder.Descending),
+            PrioritizedBranchNames = value.PrioritizedBranchNames ?? GitReferencePriorities.DefaultBranchPatterns,
+            PrioritizedRemoteNames = value.PrioritizedRemoteNames ?? GitReferencePriorities.DefaultRemotePatterns
+        };
     }
 
     public void Save(DesktopPreferences preferences)

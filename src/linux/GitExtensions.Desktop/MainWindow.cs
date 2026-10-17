@@ -346,6 +346,7 @@ public sealed partial class MainWindow : Window
         _refreshing = true;
         try
         {
+            ApplyReferenceSorting(repository);
             bool changedRepository = opening && _repository?.Path != repository.Path;
             string? selectedPath = changedRepository ? null : SelectedWorkingChange?.Path;
             string? selectedHash = changedRepository ? null : (_commits.SelectedItem as GitCommit)?.Hash;

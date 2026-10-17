@@ -64,6 +64,7 @@ public sealed partial class MainWindow
             try { await OpenWorktreePathAsync(worktree.Path, confirm: true); }
             catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
         };
+        ConfigureReferenceSortingMenu();
         panel.Children.Add(Controls.ClassicTreeViewAppearance.Wrap(_navigation));
         return panel;
     }
@@ -106,6 +107,12 @@ public sealed partial class MainWindow
     private void RebuildNavigation()
     {
         if (_updatingNavigation) { return; }
+        try
+        {
+            GitReferencePriorities.Validate(_preferences.PrioritizedBranchNames);
+            GitReferencePriorities.Validate(_preferences.PrioritizedRemoteNames);
+        }
+        catch (ArgumentException error) { LastException = error; _state.Text = error.Message; return; }
         if (_navigationAppliedFilter.Length == 0)
         { foreach ((TreeViewItem node, string key) in _navigationKeys) { _navigationExpansion[key] = node.IsExpanded; } }
         if (_navigation.SelectedItem is TreeViewItem selected)
@@ -126,7 +133,7 @@ public sealed partial class MainWindow
         }
         IEnumerable<TreeViewItem> References(string group, IEnumerable<GitReference> refs, string prefix = "")
         {
-            GitReference[] entries = refs.OrderBy(reference => reference.ShortName, StringComparer.OrdinalIgnoreCase).ToArray();
+            GitReference[] entries = refs.ToArray();
             foreach (IGrouping<string, GitReference> segment in entries.GroupBy(reference => reference.ShortName[prefix.Length..].Split('/')[0], StringComparer.Ordinal))
             {
                 GitReference[] direct = segment.Where(reference => reference.ShortName[prefix.Length..] == segment.Key).ToArray();
@@ -174,6 +181,8 @@ public sealed partial class MainWindow
                 yield return node;
             }
         }
+        KeyValuePair<TreeViewItem, string>[] previousKeys = _navigationKeys.ToArray();
+        object? previousSelection = _navigation.SelectedItem;
         _updatingNavigation = true;
         try
         {
@@ -189,8 +198,8 @@ public sealed partial class MainWindow
                     groups.Add(root);
                 }
             }
-            Group("Branches", "LocalBranchRoot.png", References("Branches", _navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName))));
-            Group("Remotes", "RemoteBranchRoot.png", References("Remotes", _navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName))));
+            Group("Branches", "LocalBranchRoot.png", References("Branches", GitReferencePriorities.OrderByPriority(_navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName)), reference => reference.ShortName, _preferences.PrioritizedBranchNames)));
+            Group("Remotes", "RemoteBranchRoot.png", ReferenceRemoteNodes(_navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName)), References, Node));
             Group("Tags", "TagHorizontal.png", References("Tags", _navigationReferences.Where(reference => reference.IsTag && Matches(reference.ShortName))));
             Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Where(module => Matches(module.Path)).Select(module => Node("submodule:" + module.Path, module.Path, "FolderSubmodule.png", "Submodules")));
             Group("Stashes", "stash.png", _navigationStashes.Where(stash => Matches(stash.Subject)).Select(stash => Node("stash:" + stash.Reference, stash.Subject, "stash.png", "Stashes")));
@@ -198,6 +207,14 @@ public sealed partial class MainWindow
             _navigationAppliedFilter = filter;
             _navigation.ItemsSource = groups;
             _navigation.SelectedItem = NavigationItems().FirstOrDefault(node => _navigationKeys.GetValueOrDefault(node) == _navigationSelectionKey);
+        }
+        catch (ArgumentException error)
+        {
+            // A bounded regex can also fail while matching. Keep the last valid tree
+            // and selection rather than publishing a partially rebuilt hierarchy.
+            _navigationKeys.Clear();
+            foreach ((TreeViewItem node, string key) in previousKeys) { _navigationKeys[node] = key; }
+            _navigation.SelectedItem = previousSelection; LastException = error; _state.Text = error.Message;
         }
         finally { _updatingNavigation = false; }
     }

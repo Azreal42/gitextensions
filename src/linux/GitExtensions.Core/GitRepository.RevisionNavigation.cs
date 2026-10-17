@@ -8,13 +8,15 @@ public sealed partial class GitRepository
     public async Task<IReadOnlyList<GitReference>> GetGoToCommitReferencesAsync(GitGoToCommitReferenceKind kind,
         CancellationToken cancellationToken = default)
     {
+        GitReferenceSorting sorting = ReferenceSorting;
         string prefix = kind switch
         {
             GitGoToCommitReferenceKind.LocalBranch => "refs/heads/",
             GitGoToCommitReferenceKind.Tag => "refs/tags/",
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
-        GitResult result = await ExecuteAsync(["--no-optional-locks", "for-each-ref", "--count=1000",
+        GitResult result = await ExecuteAsync(["--no-optional-locks", "for-each-ref",
+            .. ReferenceSortArguments(sorting, includeTags: kind == GitGoToCommitReferenceKind.Tag), "--count=1000",
             "--format=%(refname)%00%(objectname)%00%(symref)", prefix], cancellationToken).ConfigureAwait(false);
         return result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line =>
         {

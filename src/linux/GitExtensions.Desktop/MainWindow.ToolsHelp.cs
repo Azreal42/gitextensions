@@ -133,13 +133,20 @@ public sealed partial class MainWindow
     private async Task ShowSettingsAsync()
     {
         if (_busy) { return; }
-        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null);
+        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null, _historyView.Sort);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
         DesktopPreferences preferences = dialog.Result;
         _preferencesStore.Save(preferences);
-        bool reload = preferences.HistoryLimit != _preferences.HistoryLimit;
+        bool reload = preferences.HistoryLimit != _preferences.HistoryLimit || dialog.HistorySortResult != _historyView.Sort;
+        bool referencesChanged = preferences.ReferenceSorting != _preferences.ReferenceSorting
+            || preferences.PrioritizedBranchNames != _preferences.PrioritizedBranchNames
+            || preferences.PrioritizedRemoteNames != _preferences.PrioritizedRemoteNames;
+        // Settings saves this field explicitly; unrelated session-only View choices
+        // still need Save as default, as in the original application.
+        _historyViewStore.Save(_historyViewStore.Load() with { Sort = dialog.HistorySortResult });
+        _historyView = _historyView with { Sort = dialog.HistorySortResult };
         _preferences = preferences;
         ApplyTheme(_preferences.Theme);
         if (reload)
@@ -148,5 +155,7 @@ public sealed partial class MainWindow
             _historyWindow = _historyQuery.Count;
             if (_repository is not null) { await RefreshAsync(); }
         }
+        else if (referencesChanged) { await ApplyReferenceSortingPreferencesAsync(); }
+        RefreshHistoryMenuStates();
     }
 }
