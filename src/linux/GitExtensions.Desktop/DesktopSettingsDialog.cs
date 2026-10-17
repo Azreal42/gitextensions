@@ -102,7 +102,7 @@ internal sealed class DesktopSettingsDialog : Window
             if (help is null) { return; }
             Control icon = GitExtensions.Linux.Desktop.Controls.OriginalMenuItems.Icon("information.png");
             icon.VerticalAlignment = VerticalAlignment.Center; icon.HorizontalAlignment = HorizontalAlignment.Center;
-            ToolTip.SetTip(icon, translations.Translate(help)); ToolTip.SetTip(editor, translations.Translate(help));
+            ToolTip.SetTip(icon, translations.Translate(help));
             Grid.SetRow(icon, row); Grid.SetColumn(icon, 2); sorting.Children.Add(icon);
         }
     }

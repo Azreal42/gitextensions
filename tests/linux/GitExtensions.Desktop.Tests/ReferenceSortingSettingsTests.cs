@@ -153,6 +153,70 @@ public sealed class ReferenceSortingSettingsTests
         finally { CultureInfo.CurrentUICulture = old; }
     }
 
+    [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task IconOnlySortingHintsLeaveTheFirstEditorClickReadyAfterRealComboChoicesAndReopening(bool dark)
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        ThemeVariant theme = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+        Window owner = new() { RequestedThemeVariant = theme }; owner.Show();
+        DesktopPreferences initial = new();
+        try
+        {
+            for (int opening = 1; opening <= 2; opening++)
+            {
+                DesktopSettingsDialog dialog = new(initial, TranslationCatalog.LoadDefault(), false) { RequestedThemeVariant = theme };
+                Task<bool> result = dialog.ShowDialog<bool>(owner);
+                try
+                {
+                    ShowSorting(dialog);
+                    ComboBox references = Field<ComboBox>(dialog, "_NO_TRANSLATE_cmbBranchesSortBy");
+                    ComboBox order = Field<ComboBox>(dialog, "_NO_TRANSLATE_cmbBranchesOrder");
+                    Choose(references, GitRefsSortBy.VersionRefName);
+                    Choose(order, GitRefsSortOrder.Ascending);
+                    Grid sorting = Field<Grid>(dialog, "SortingSettingsPage");
+                    Control[] editors = sorting.Children.Where(control => Grid.GetColumn(control) == 1).ToArray();
+                    Control[] icons = sorting.Children.Where(control => Grid.GetColumn(control) == 2).ToArray();
+                    Assert.That(editors, Has.Length.EqualTo(5));
+                    Assert.That(editors.Select(ToolTip.GetTip), Is.All.Null,
+                        "Windows keeps the three sorting hints on the information icons, so an editor cannot cover the next input with its hint.");
+                    Assert.That(icons, Has.Length.EqualTo(3));
+                    Assert.That(icons.All(control => ToolTip.GetTip(control) is string text && text.Length > 0), Is.True);
+                    TextBox remotes = Field<TextBox>(dialog, "txtPrioRemoteNames");
+                    PushProcessTestDriver.Pointer(remotes); Pump(dialog);
+                    Assert.That(remotes.IsFocused, Is.True, "The first center click after the native combo choices must focus the real editor.");
+                    Press(dialog, PhysicalKey.A, RawInputModifiers.Control);
+                    Assert.That(remotes.SelectedText, Is.EqualTo(initial.PrioritizedRemoteNames));
+                    dialog.KeyTextInput("upstream;origin"); Pump(dialog);
+                    Assert.That(remotes.Text, Is.EqualTo("upstream;origin"));
+                    Assert.That(remotes.IsFocused, Is.True);
+                    Assert.That(references.SelectedItem, Is.EqualTo(GitRefsSortBy.VersionRefName));
+                    Assert.That(order.SelectedItem, Is.EqualTo(GitRefsSortOrder.Ascending));
+                    using var frame = dialog.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+                    string path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"reference-sorting-first-editor-click-{theme}-{opening}.png");
+                    frame!.Save(path); TestContext.AddTestAttachment(path);
+                    Press(dialog, PhysicalKey.Escape); Assert.That(await result, Is.False);
+                    Assert.That(dialog.Result, Is.SameAs(initial));
+                }
+                finally { if (dialog.IsVisible) { dialog.Close(false); } }
+            }
+        }
+        finally { owner.Close(); }
+
+        void Choose(ComboBox choice, object value)
+        {
+            PushProcessTestDriver.Pointer(choice); Pump((TopLevel)TopLevel.GetTopLevel(choice)!);
+            Assert.That(choice.IsDropDownOpen, Is.True);
+            Control item = choice.ContainerFromItem(value)!;
+            Assert.That(item, Is.Not.Null, "The actual combo popup must contain the chosen value.");
+            PushProcessTestDriver.Pointer(item);
+            Pump((TopLevel)TopLevel.GetTopLevel(choice)!);
+            Assert.That(choice.SelectedItem, Is.EqualTo(value));
+            Assert.That(choice.IsDropDownOpen, Is.False);
+        }
+    }
+
     private static void ShowSorting(DesktopSettingsDialog dialog) { Pump(dialog); PushProcessTestDriver.Pointer(Field<TabItem>(dialog, "SettingsSortingTab")); Pump(dialog); }
     private static T Field<T>(TopLevel root, string name) where T : Control => root.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static void Edit(Window window, TextBox input, string text) { PushProcessTestDriver.Pointer(input); Press(window, PhysicalKey.A, RawInputModifiers.Control); window.KeyTextInput(text); Pump(window); }
