@@ -6,6 +6,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Observation | Cause / suite |
 | --- | --- |
+| Skip worktree masque la seule entrée du diff | Le flag retire le fichier des changements ; File tree ne relit pas encore ces flags pour fournir la commande inverse. Retour UI Skip-off et variantes Assume à porter/auditer ; ne pas fabriquer une entrée ni considérer une commande Git manuelle comme validation du menu. |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
@@ -166,7 +167,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | AvaloniaTheory non découvert | Constructeur NUnit TheoryAttribute incompatible : entrées AvaloniaTest et parcours partagé. |
 | Culture/Alt/HEAD du test ne correspondent pas à l'écran | Fixer culture avant construction, poser focus initial, sélectionner le vrai commit attendu ; réouverture conserve volontairement la sélection. |
 | Pixels sélectionnés absents ou rejetés | Attendre une frame, exiger la vraie sélection, comparer le mélange anticrénelé plutôt qu'un pixel opaque. |
-| Geste XTest envoyé avant rendu, focus logique sans focus X11 | IsViewable peut précéder une frame encore noire ; mesurer une vraie frame rendue et le titre/PID avant input. Calibration sans WM explicite, sans preuve Wayland. |
+| Geste XTest envoyé avant rendu, focus logique sans focus X11 | IsViewable peut précéder une frame encore noire ; mesurer une vraie frame rendue et le titre/PID avant saisie. Calibration sans WM explicite, sans preuve Wayland. |
 | WM_DELETE_WINDOW absent dans Xvfb sans WM | Avalonia met en cache les atoms absents ; le harnais pose les trois noms standard avant GUI et garde la connexion jusqu’à la fin du driver. Aucun comportement du WM hôte revendiqué. |
 | Clic natif sur un menu refusé malgré le bon PID | Un popup Avalonia possède sa propre fenêtre X11 ; cibler son ID issu de la dernière capture, pas celui du parent. Garder l’essai refusé hors acceptation et reprendre un cas complet. |
 | Contrôle du runtime inclut les rendus des tests | Les PNG et traces de fermeture produits dans le working directory de test sont des sorties ; conserver leurs témoins séparément et vérifier les vrais fichiers construits avec leur ensemble de chemins exact. |
@@ -343,7 +344,7 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 | Annulation manquée en rouvrant le même chemin | Annuler la séquence explicite au changement de contexte, indépendamment du texte ou de l’identité du chemin ; vérifier le token avant application. |
 | Un popup partagé reste plafonné après agrandissement | Garder le plafond MRU pour les chemins ; les références GoTo suivent la largeur réelle du champ. |
 | Headless vert, mais fermer la modale par la croix renvoie vers Start sous Openbox | Restaurer explicitement le focus de la grille après retour et drainage du dialogue, uniquement si le contexte reste valide ; conserver la preuve native rouge puis rejouer le paquet corrigé avec un vrai gestionnaire de fenêtres. |
-| Première touche consommée pour activer une modale déjà visible | Mapper la fenêtre et focaliser son champ logique ne prouvent pas l’activation OS. Activer au passage Loaded, après rendu et avant input, sans refaire le choix du champ ; vérifier la toute première frappe sous un vrai gestionnaire de fenêtres. |
+| Première touche consommée pour activer une modale déjà visible | Mapper la fenêtre et focaliser son champ logique ne prouvent pas l’activation OS. Activer au passage Loaded, après rendu et avant saisie, sans refaire le choix du champ ; vérifier la toute première frappe sous un vrai gestionnaire de fenêtres. |
 | PID masqué dans le bac à sable pris pour un acteur arrêté | Observer les PID/start-times dans le même environnement que le lancement ; attendre le vrai résultat avant toute relance. |
 
 ## Sélecteur rapide de références
@@ -413,11 +414,17 @@ Périmètre et preuves : [TODO](todo.md), ADR 0016/0080. Une validation ciblée 
 
 | Piège | Règle retenue |
 | --- | --- |
+| Première Échap de Commit enfant ou Rename sert seulement à activer la fenêtre | Activer après mapping avant la première saisie, partager ce comportement et laisser l’initialisation mémorisée au constructeur du Commit. Une entrée native réellement livrée est requise ; Focus de test ne valide pas cette frontière. |
+| Deux fichiers comparés dans le sens inverse ou sélection perdue après outil | SelectedItem n’est pas le focus. Conserver la dernière ligne réellement focalisée encore présente/sélectionnée ; bookmark local à l’action et restauration de tous les tags sélectionnés après relecture. |
+| Show in File tree affiche le bon fichier mais Up atteint Start | Le changement d’onglet doit sélectionner puis focaliser la ligne cible après layout ; ne pas focaliser le TreeView avant la sélection ni restaurer l’ancien Diff caché. Le full 9ced vert ne couvrait pas ce geste natif. |
+| Clic droit sélectionne un fichier mais garde l’ancien diff tant que le popup reste ouvert | La lecture ciblée ne doit pas attendre Closed ; elle actualise le viewer sans désactiver ni reconstruire la liste. Première flèche après fermeture conservée. |
+| Reset ne décrit que First/Second sans la révision réellement restaurée | Partager la description des endpoints entre menu et confirmation ; les groupes BASE ne suivent pas les endpoints globaux du formulaire. |
 | Métadonnées de menu relisant tout l’arbre à chaque commit | Lire les modes Git sur les chemins littéraux concernés ; garder l’assertion de non-rechargement et ignorer les descendants hors sélection exacte lorsqu’un gitlink devient dossier. Les flèches ne construisent pas de menu. |
 | Outil personnalisé refusé ou éditions perdues | Git refuse `--gui` avec `--tool`. Les côtés Commit/Index sont des copies privées ; WT existant reste vivant et éditable. Le code natif 1 de `--no-index` est attendu. |
-| Reset applique chaque source à tous les fichiers | Partitionner par source et refuser un même chemin avec deux sources ; Index→WT conserve tous les octets de l’index. R vise seulement First ; Cancel reçoit la première touche dans la confirmation. |
+| Reset applique chaque source à tous les fichiers | Partitionner par source et refuser un même chemin avec deux sources ; l’opération Index→WT conserve l’index ; sa relecture UI peut rafraîchir les seules données stat, sans changer OID/modes/flags. Garder les deux observations distinctes. R vise seulement First ; Cancel reçoit la première touche dans la confirmation. |
 | Console bloquée ou résultat terminé transformé en annulation | Acquitter avant Git, attendre les vrais acteurs, sonder l’entrée de façon annulable et conserver le résultat Git déjà obtenu. `Reset chunk` appelle `checkout --patch`. |
 | TMPDIR privé trop long ou Openbox sans thème | Limite produit AF_UNIX ouverte : chemin court requis pour le lanceur actuel. Le banc garde un TMPDIR privé court et le share du thème Openbox ; un démarrage sans dépôt/cadre WM n’est pas un parcours métier réussi. |
+| Lecture xwininfo concurrente à une fermeture ou calibration périmée | Conserver les vrais diagnostics du banc ; une lecture BadWindow se réessaie sans modifier le focus. Une calibration invalide est refusée avant saisie, sans tuer l’application ni consommer la première touche. |
 | Suite Core exécutée depuis une copie déplacée ou via sa DLL | Le banc utilise son apphost dans le répertoire bin canonique : recherches de sources relatives et scénarios de relancement en dépendent. Conserver les tentatives rejetées ; ne pas modifier les assertions. |
 | Publish RID modifie les locks d’une suite en cours | Publier dans un checkout isolé ; la restauration RID peut ajouter des cibles aux locks. Conserver les différences, vérifier les identités des dépendances et restaurer seulement les octets générés. Les binaires de test restent figés. |
 
