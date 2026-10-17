@@ -207,6 +207,34 @@ public sealed class FileStatusListView : UserControl, IDisposable
         // Hosts may update a diff once for this logical selection, rather than for each intermediate item.
         DisplayChanged?.Invoke(this, EventArgs.Empty);
     }
+    // FileStatusList selects all files in the first revision group, never the group headers.
+    public void SelectFirstGroup()
+    {
+        if (_groups.Count == 0 || _disposed) { return; }
+        string first = _groups[0].Key;
+        SelectTags(_models.Where(pair => pair.Value.GroupKey == first && pair.Value.Entry is not null).Select(pair => pair.Value.Entry!.Tag));
+    }
+    public IReadOnlyList<object> CreateSortContextMenuItems(Action<Action>? apply = null)
+    {
+        MenuItem root = new() { Name = "sortListByContextMenuItem", Icon = Icon("SortBy.png"),
+            Header = new AccessText { Text = _translations.TranslateAccessKeys("FileStatusList", "_sortByContextMenu", "Text", "&Sort and group by") } };
+        foreach (FileStatusListSortMode mode in Enum.GetValues<FileStatusListSortMode>())
+        {
+            (string key, string caption) = mode switch
+            {
+                FileStatusListSortMode.FilePath => ("_filePathSortText", "File &path - tree"),
+                FileStatusListSortMode.FilePathFlat => ("_filePathFlatSortText", "&File path - flat"),
+                FileStatusListSortMode.FileExtension => ("_fileExtensionSortText", "File &extension - tree"),
+                FileStatusListSortMode.FileExtensionFlat => ("_fileExtensionFlatSortText", "File e&xtension - flat"),
+                FileStatusListSortMode.FileStatus => ("_fileStatusSortText", "File &status - tree"),
+                _ => ("_fileStatusFlatSortText", "File s&tatus - flat")
+            };
+            MenuItem item = new() { Name = Prefix("ContextSort_" + mode), Header = new AccessText { Text = _translations.TranslateAccessKeys("SortDiffListContextMenuItem", key, "Text", caption) },
+                ToggleType = MenuItemToggleType.CheckBox, IsChecked = SortMode == mode };
+            item.Click += (_, args) => { if (args.Source == item) { args.Handled = true; if (apply is null) { SortMode = mode; } else { apply(() => SortMode = mode); } } }; root.Items.Add(item);
+        }
+        return [root];
+    }
     public void ClearSelection() => Tree.UnselectAll();
     public void ClearFilter()
     {

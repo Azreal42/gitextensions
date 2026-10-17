@@ -190,6 +190,7 @@ public sealed partial class MainWindow
     {
         _revisionFilesView?.SetGroups([], preserveSelection: false);
         _revisionDiffGroups = [];
+        _fileMenuMetadata = new Dictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>>(ReferenceEqualityComparer.Instance);
         if (_commitContent is not null) { _commitContent.TextView.Mode = DiffViewMode.Auto; }
     }
 
@@ -210,7 +211,10 @@ public sealed partial class MainWindow
         string[] revisions = selectedCommits.Length > 0 ? selectedCommits.Select(commit => commit.Hash).ToArray() : [revision];
         IReadOnlyList<GitRevisionDiffGroup> groups = await repository.GetRevisionDiffGroupsAsync(
             revisions, _revisionDiffPreferences.ShowDiffForAllParents, token);
+        var fileMenuMetadata = await ReadFileMenuMetadataAsync(repository, groups, token);
         token.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(_repository, repository) || RevisionSelectionIdentity != selectionIdentity) { return; }
+        _fileMenuMetadata = fileMenuMetadata;
         _loadingCommitFiles = true;
         TreeViewItem? selected;
         try

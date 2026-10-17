@@ -23,8 +23,9 @@ internal sealed class ResetChangesDialog : Window
         _deleteNew.Content = Caption("cbDeleteNewFilesAndDirectories", "Also delete &new files and/or directories");
         _deleteNew.IsChecked = !hasExistingFiles;
         _deleteNew.IsEnabled = hasExistingFiles && hasNewFiles;
-        Button cancel = new() { Name = "CancelResetChanges", Content = Caption("btnCancel", "&Cancel"), IsDefault = true, IsCancel = true };
-        Button reset = new() { Name = "ConfirmResetChanges", Content = Caption("btnReset", "R&eset") };
+        Button cancel = new() { Name = "CancelResetChanges", Content = Caption("btnCancel", "&Cancel"), IsDefault = true, IsCancel = true, TabIndex = 1 };
+        Button reset = new() { Name = "ConfirmResetChanges", Content = Caption("btnReset", "R&eset"), TabIndex = 2 };
+        Opened += (_, _) => { cancel.Focus(); ModalWindowActivation.AfterMapping(this, () => IsVisible); };
         cancel.Click += (_, _) => Close(Decision.Cancel);
         reset.Click += (_, _) => Close(_deleteNew.IsChecked == true ? Decision.ResetAndDelete : Decision.Reset);
         KeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; Close(Decision.Cancel); } };

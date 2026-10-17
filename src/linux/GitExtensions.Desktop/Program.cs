@@ -13,6 +13,8 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (args.FirstOrDefault() == InteractiveFileConsoleProtocol.Mode)
+        { return InteractiveFileConsoleApplication.Run(args[1..]); }
         if (GitRebaseEditor.IsNativeEditorInvocation(args))
         {
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();

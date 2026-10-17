@@ -102,8 +102,8 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         _base.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_base);
         _compare.CommitButton.Click += async (_, _) => await ChooseCommitAsync(_compare);
         _mergeBase.IsCheckedChanged += async (_, _) => { if (!_loading && !IsBusy) { await InitializeAsync(); } };
-        _files.SelectionChanged += async (_, args) => { if (args.Source == _files && !_loading && !_filesView.IsUpdating && !IsBusy) { await LoadSelectionAsync(); } };
-        _filesView.DisplayChanged += async (_, _) => { if (!_loading && !IsBusy) { await LoadSelectionAsync(); } };
+        _files.SelectionChanged += async (_, args) => { if (args.Source == _files && !_loading && !_filesView.IsUpdating && !_selectingFileContext && !IsBusy) { await LoadSelectionAsync(); } };
+        _filesView.DisplayChanged += async (_, _) => { if (!_loading && !_selectingFileContext && !IsBusy) { await LoadSelectionAsync(); } };
         _tabs.SelectionChanged += async (_, args) => { if (args.Source == _tabs && !_loading && !IsBusy) { await LoadSelectionAsync(); } };
         AddHandler(KeyDownEvent, async (_, args) => await HandleKeyAsync(args), RoutingStrategies.Tunnel);
         _diff.TextView.DisplayOptionsChanged += async (_, _) =>
@@ -111,6 +111,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
             if (_tabs.SelectedIndex == 0) { await RequestDiffReloadAsync(ReloadSelectionAsync); }
         };
         InitializeSelectionLifetime();
+        InitializeFileMenus();
         Closed += (_, _) => { _filesView.Dispose(); _base.Dispose(); _compare.Dispose(); _diff.Dispose(); _baseView.Dispose(); _compareView.Dispose(); foreach (Bitmap icon in _icons) { icon.Dispose(); } };
         UpdateActions();
     }
@@ -139,10 +140,12 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
 
     private async Task ReadComparisonAsync(CancellationToken token)
     {
-        _comparisonGroups = await Repository.GetComparisonGroupsAsync(
+        IReadOnlyList<GitComparisonGroup> groups = await Repository.GetComparisonGroupsAsync(
             _mergeBase.IsChecked == true && _fixedMergeBase is not null ? new(_fixedMergeBase) : _base.Read(), _compare.Read(),
             _capturedHead, _groupPreferences.Load().ShowDiffForAllParents, token);
+        IReadOnlyDictionary<GitComparisonGroup, IReadOnlyList<GitComparisonFileMetadata>> metadata = await ReadFileMenuMetadataAsync(groups, token);
         token.ThrowIfCancellationRequested();
+        _comparisonGroups = groups; _fileMenuMetadata = metadata;
         _comparison = _comparisonGroups.FirstOrDefault()?.Comparison;
         SetFileGroups();
         await ReadSelectedAsync(token);
@@ -231,6 +234,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     private async Task HandleKeyAsync(KeyEventArgs args)
     {
         if (args.Handled || IsBusy) { return; }
+        if (_fileMenuController is not null && await _fileMenuController.HandleShortcutAsync(args)) { return; }
         if (ActiveView.TextView.HandleReadingShortcut(args)
             || ActiveView.TextView.AppearanceMenu.HandleKeyDown(args)) { return; }
         if (args.Key is Key.Up or Key.Down && args.KeyModifiers == KeyModifiers.Alt) { await MoveChangeAsync(args.Key == Key.Down); args.Handled = true; }

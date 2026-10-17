@@ -15,6 +15,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
 {
     private readonly TextBox _file = new() { Name = "FileHistoryPath" };
     private readonly TextBox _revision = new() { Name = "FileHistoryRevision" };
+    private readonly TextBlock _sourceNotice = new() { Name = "FileHistorySourceNotice", IsVisible = false, Margin = new Avalonia.Thickness(9, 0, 9, 4), TextWrapping = TextWrapping.Wrap };
+    public GitCompareRevision InitialSource { get; private set; } = new();
     private readonly CheckBox _follow = new() { Name = "FileHistoryFollow", IsChecked = true };
     private readonly CheckBox _exact = new() { Name = "FileHistoryExact" };
     private readonly CheckBox _full = new() { Name = "FileHistoryFull" };
@@ -35,8 +37,23 @@ public sealed class FileHistoryDialog : RepositoryDialog
     public IReadOnlyList<GitFileHistoryEntry> History => _history;
     public GitFileHistoryEntry? SelectedEntry => _revisions.SelectedItem is GitCommit commit ? _history.FirstOrDefault(entry => entry.Commit.Hash == commit.Hash) : null;
 
-    public FileHistoryDialog(GitRepository repository, string path, string revision = "HEAD") : base(repository, "File History")
+    public FileHistoryDialog(GitRepository repository, string path, GitCompareRevision source, bool initialBlame = false)
+        : this(repository, path, HistoryAnchor(source), initialBlame)
     {
+        InitialSource = source;
+        if (source.Kind == GitCompareRevisionKind.Commit) { return; }
+        _sourceNotice.Text = source.Kind == GitCompareRevisionKind.Index
+            ? T("Showing HEAD history for the index.") : T("Showing HEAD history for the working directory.");
+        _sourceNotice.IsVisible = true;
+        _revision.PropertyChanged += (_, change) =>
+        { if (change.Property == TextBox.TextProperty) { _sourceNotice.IsVisible = _revision.Text == "HEAD"; } };
+    }
+    private static string HistoryAnchor(GitCompareRevision source)
+    { ArgumentNullException.ThrowIfNull(source); return source.Kind == GitCompareRevisionKind.Commit ? source.Revision : "HEAD"; }
+
+    public FileHistoryDialog(GitRepository repository, string path, string revision = "HEAD", bool initialBlame = false) : base(repository, "File History")
+    {
+        InitialSource = new(revision);
         _diff.TextView.ContextMenu = new ContextMenu { ItemsSource = _diff.TextView.CreateContextMenuItems("FileHistoryDiff") };
         _diff.Toolbar.SetNames("FileHistoryDiff");
         _diff.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
@@ -56,6 +73,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
         Button blameOptions = _blame.CreateOptionsButton();
         StackPanel options = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Avalonia.Thickness(9, 2), Children = { _follow, _exact, _full, _simplify, blameOptions } };
         DockPanel.SetDock(paths, Dock.Top); Root.Children.Add(paths); DockPanel.SetDock(options, Dock.Top); Root.Children.Add(options);
+        DockPanel.SetDock(_sourceNotice, Dock.Top); Root.Children.Add(_sourceNotice);
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Avalonia.Thickness(6, 4), Children =
         {
             Action("MoreFileHistory", "Load more", async () => { _limit = Math.Min(100000, _limit + 300); await InitializeAsync(); }),
@@ -84,7 +102,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
             new TabItem { Name = "FileHistoryViewTab", Header = TabHeader("View", "ViewFile.png"), Content = _view },
             new TabItem { Name = "FileHistoryBlameTab", Header = TabHeader("Blame", "Blame.png"), Content = _blame }
         };
-        _tabs.SelectedIndex = 1;
+        _tabs.SelectedIndex = initialBlame ? 3 : 1;
         Grid layout = new() { RowDefinitions = new RowDefinitions("1*,4,2*") };
         layout.Children.Add(table); GridSplitter splitter = new() { Height = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Rows };
         Grid.SetRow(splitter, 1); layout.Children.Add(splitter); Grid.SetRow(_tabs, 2); layout.Children.Add(_tabs); Root.Children.Add(layout);

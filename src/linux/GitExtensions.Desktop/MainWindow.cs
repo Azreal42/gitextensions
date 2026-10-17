@@ -382,6 +382,7 @@ public sealed partial class MainWindow : Window
             IReadOnlyList<GitWorktree> worktrees = await repository.GetWorktreesAsync(Token);
             IReadOnlyList<GitSubmodule> submodules = await repository.GetSubmodulesAsync(Token);
             var configuration = await repository.GetConfigAsync(cancellationToken: Token);
+            if (_fileMenuAdditionalOperations is not null) { await _fileMenuAdditionalOperations.RefreshAsync(repository, Token); }
             GitCommit[] visibleHistory = history.Take(historyWindow).ToArray();
             await LoadHistoryViewMetadataAsync(repository, visibleHistory, Token);
             string treeRevision = visibleHistory.FirstOrDefault(commit => commit.Hash == selectedHash)?.Hash

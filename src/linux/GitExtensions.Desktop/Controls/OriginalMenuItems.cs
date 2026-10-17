@@ -26,7 +26,7 @@ internal static class OriginalMenuItems
         using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + file));
         Bitmap original = new(stream);
         Image image = new() { Source = original, Width = 16, Height = 16, Tag = file, Stretch = Stretch.Uniform, UseLayoutRounding = true };
-        if (file == "Translate.png")
+        if (file is "Translate.png" or "FileStatusRenamed.png")
         {
             Bitmap? dark = null;
             void UpdateSource()
