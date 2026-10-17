@@ -91,7 +91,7 @@
         "MainWindow"
       ],
       "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée.",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Une valeur TMPDIR trop longue dépasse encore la limite des sockets Unix ; essais natifs selon le TODO. Retour aux flags masqués après Skip worktree et audit natif étendu des autres variantes encore ouverts.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Une valeur TMPDIR trop longue dépasse encore la limite des sockets Unix ; essais natifs selon le TODO. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -119,7 +119,8 @@
         "0076",
         "0077",
         "0079",
-        "0080"
+        "0080",
+        "0081"
       ]
     },
     "GitUI.CommandsDialogs.FormLog": {
@@ -585,18 +586,20 @@
         "CommitDialog",
         "CommitEmptyDialog"
       ],
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO.",
       "remaining": "Templates multiples/éditeur, validation personnalisée, scripts et options superproject/branche inline encore incomplets.",
       "visual": "rapproche",
       "tests": [
         "CommitDialogTests",
         "CommitMessageWorkflowTests",
-        "CommitAndPushWorkflowTests"
+        "CommitAndPushWorkflowTests",
+        "CommitIndexFlagTests"
       ],
       "adr": [
         "0018",
         "0021",
-        "0046"
+        "0046",
+        "0081"
       ]
     },
     "GitUI.CommandsDialogs.CommitDialog.FormCommitTemplateSettings": {
@@ -930,7 +933,7 @@
         "MainWindow"
       ],
       "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert.",
-      "remaining": "FormDiff reste N2. Historique Index/WT adapté explicitement à HEAD dans la fenêtre dédiée ; pas de faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Rétablissement des flags après disparition du fichier du diff et audit des autres variantes de prompts encore ouverts.",
+      "remaining": "FormDiff reste N2. Historique Index/WT adapté explicitement à HEAD dans la fenêtre dédiée ; pas de faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
@@ -950,7 +953,8 @@
       "adr": [
         "0016",
         "0023",
-        "0080"
+        "0080",
+        "0081"
       ],
       "extra_evidence": [
         {

@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "31b7be8f8735e81245ddf3e82079774348ef0fdd",
-  "source_digest_sha256": "27fbe1fc542665e7c20b211f970747d9ef16b748131c10d69440eac6dc132115",
-  "scanned_csharp_files": 1935,
+  "code_reference_commit": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
+  "source_digest_sha256": "bbbae64f9c6684eadc3f717a5fff170951e8f794106a3094c20b108ff208a5ce",
+  "scanned_csharp_files": 1938,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,15 +50,15 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/comparison-file-menus-20261017/full-root-05-browse-handoff/desktop.trx",
-    "source_sha": "31b7be8f8735e81245ddf3e82079774348ef0fdd",
-    "trx_sha256": "8359ad8edf88e716df34865b22d4f0180c5f0582a9270df1c5ddd869a69011e1",
+    "trx": "artifacts/linux/comparison-file-menus-20261017/full-root-07-index-flags-focus/desktop.trx",
+    "source_sha": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
+    "trx_sha256": "c686c93b9008810c20bfe792cf49a190fa156342065e9b8f5a30c54f3c99a2f0",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
         "source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
         "execution_source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
-        "candidate_sha": "31b7be8f8735e81245ddf3e82079774348ef0fdd",
+        "candidate_sha": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
         "passed": 586,
         "total": 586,
         "execution_result": "artifacts/linux/comparison-file-menus-20261017/core-root-final02/result.json",
@@ -69,12 +69,12 @@
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": false,
         "reexecuted_on_candidate": false,
-        "unchanged_component_proof": "artifacts/linux/snapshots/31b7be8f8/proofs/unchanged-core-plugins-reference.json"
+        "unchanged_component_proof": "artifacts/linux/snapshots/a0ba1c140/proofs/unchanged-core-plugins-reference.json"
       },
       "plugins": {
         "source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
         "execution_source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
-        "candidate_sha": "31b7be8f8735e81245ddf3e82079774348ef0fdd",
+        "candidate_sha": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
         "passed": 35,
         "total": 35,
         "execution_result": "artifacts/linux/comparison-file-menus-20261017/full-root-02/plugins-result.json",
@@ -84,7 +84,7 @@
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": false,
         "reexecuted_on_candidate": false,
-        "unchanged_component_proof": "artifacts/linux/snapshots/31b7be8f8/proofs/unchanged-core-plugins-reference.json"
+        "unchanged_component_proof": "artifacts/linux/snapshots/a0ba1c140/proofs/unchanged-core-plugins-reference.json"
       }
     },
     "current_linux_code_equivalent": true,
@@ -1304,7 +1304,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 776,
+          "line": 779,
           "kind": "window"
         }
       ],
@@ -1426,6 +1426,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitDisplayFilterTests.cs",
           "test_class": "CommitDisplayFilterTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitIndexFlagTests.cs",
+          "test_class": "CommitIndexFlagTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -1809,7 +1815,7 @@
       "group": "navigation",
       "level": "N2",
       "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée.",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Une valeur TMPDIR trop longue dépasse encore la limite des sockets Unix ; essais natifs selon le TODO. Retour aux flags masqués après Skip worktree et audit natif étendu des autres variantes encore ouverts.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts, choix parents/enfants et recherche incrémentale de grille incomplets. Historique dédié au lieu du Browse Windows par défaut ; ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Une valeur TMPDIR trop longue dépasse encore la limite des sockets Unix ; essais natifs selon le TODO. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert.",
       "visual": "rapproche",
       "linux": [
         {
@@ -1911,7 +1917,8 @@
         ".agents/docs/adr/ui/0076-revision-context-focus.md",
         ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md",
         ".agents/docs/adr/ui/0079-main-operation-focus.md",
-        ".agents/docs/adr/ui/0080-shared-file-menus.md"
+        ".agents/docs/adr/ui/0080-shared-file-menus.md",
+        ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md"
       ]
     },
     {
@@ -2366,7 +2373,7 @@
       "feature": "Préparation et création de commit",
       "group": "operations",
       "level": "N2",
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO.",
       "remaining": "Templates multiples/éditeur, validation personnalisée, scripts et options superproject/branche inline encore incomplets.",
       "visual": "rapproche",
       "linux": [
@@ -2402,6 +2409,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitDisplayFilterTests.cs",
           "test_class": "CommitDisplayFilterTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitIndexFlagTests.cs",
+          "test_class": "CommitIndexFlagTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -2474,7 +2487,8 @@
       "adr": [
         ".agents/docs/adr/workflows/commits/0018-messages-and-session.md",
         ".agents/docs/adr/platform/git/0021-commit-encoding.md",
-        ".agents/docs/adr/workflows/commits/0046-commit-and-push.md"
+        ".agents/docs/adr/workflows/commits/0046-commit-and-push.md",
+        ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md"
       ]
     },
     {
@@ -2985,7 +2999,7 @@
       "group": "files",
       "level": "N2",
       "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert.",
-      "remaining": "FormDiff reste N2. Historique Index/WT adapté explicitement à HEAD dans la fenêtre dédiée ; pas de faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Rétablissement des flags après disparition du fichier du diff et audit des autres variantes de prompts encore ouverts.",
+      "remaining": "FormDiff reste N2. Historique Index/WT adapté explicitement à HEAD dans la fenêtre dédiée ; pas de faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
       "visual": "integre",
       "extra_evidence": [
         {
@@ -3128,7 +3142,8 @@
       "adr": [
         ".agents/docs/adr/workflows/references/0016-revision-comparisons.md",
         ".agents/docs/adr/workflows/files/diffs/0023-multiple-revisions.md",
-        ".agents/docs/adr/ui/0080-shared-file-menus.md"
+        ".agents/docs/adr/ui/0080-shared-file-menus.md",
+        ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md"
       ]
     },
     {
@@ -5631,6 +5646,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitDisplayFilterTests.cs",
           "test_class": "CommitDisplayFilterTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitIndexFlagTests.cs",
+          "test_class": "CommitIndexFlagTests",
+          "passed_in_reference_run": 11,
           "results_present": true
         },
         {
@@ -9651,6 +9672,10 @@
       "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
       "line": 21,
       "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.IndexFlags.cs",
+          "line": 3
+        },
         {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.RulesFiles.cs",
           "line": 7
