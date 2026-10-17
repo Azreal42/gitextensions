@@ -197,8 +197,16 @@ public sealed class FileStatusListView : UserControl, IDisposable
     // focus, and the resolved row must still be a member of the current selection.
     internal Func<bool>? CaptureSelectedRowFocus()
     {
-        if (FocusedSelectedItem is not { } row) { return null; }
-        var identity = Identity(_models[row]);
+        return CaptureSelectedRowFocus(FocusedSelectedItem);
+    }
+
+    // A real context-menu pointer origin can outlive the brief disabled state of
+    // its detail reader. Capture that selected row without repairing focus first.
+    internal Func<bool>? CaptureSelectedRowFocus(TreeViewItem? row)
+    {
+        if (_disposed || row is null || !_models.TryGetValue(row, out FileStatusListNode? node)
+            || Tree.SelectedItems?.Contains(row) != true) { return null; }
+        var identity = Identity(node);
         return () => !_disposed && _models.FirstOrDefault(pair => Identity(pair.Value) == identity
             && Tree.SelectedItems?.Contains(pair.Key) == true).Key?.Focus() == true;
     }

@@ -6,11 +6,14 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class CommitDialog
 {
+    private readonly List<Action> _updateRulesFileContexts = [];
+
     private void ConfigureRulesFileList(FileStatusListView view)
     {
         bool Available() => !_busy && !_commitRequested && !_repository.IsBare;
         RulesFileMenus.AttachEditors(view, Available, kind => ShowRulesDialogAsync(new RulesFileEditorDialog(_repository, kind)));
-        RulesFileMenus.AttachIgnoreContext(view, Available, (local, patterns) => ShowRulesDialogAsync(new AddToGitIgnoreDialog(_repository, local, patterns)));
+        _updateRulesFileContexts.Add(RulesFileMenus.AttachIgnoreContext(view, Available,
+            (local, patterns) => ShowRulesDialogAsync(new AddToGitIgnoreDialog(_repository, local, patterns))));
     }
 
     private Task ShowRulesDialogAsync(RepositoryDialog dialog) => RunAsync(T("Edit ignored files"), async () =>

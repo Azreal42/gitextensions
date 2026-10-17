@@ -21,7 +21,7 @@ internal static class RulesFileMenus
         view.SettingsMenu.Opening += (_, _) => ignore.IsEnabled = local.IsEnabled = available();
     }
 
-    internal static void AttachIgnoreContext(FileStatusListView view, Func<bool> available, Func<bool, string[], Task> open)
+    internal static Action AttachIgnoreContext(FileStatusListView view, Func<bool> available, Func<bool, string[], Task> open)
     {
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
         ContextMenu menu = view.Tree.ContextMenu ??= new ContextMenu { Name = "WorkingFilesIgnoreMenu" };
@@ -54,5 +54,6 @@ internal static class RulesFileMenus
         }
         menu.Opening += (_, _) => UpdateItems();
         menu.Opened += (_, _) => UpdateItems();
+        return UpdateItems;
     }
 }

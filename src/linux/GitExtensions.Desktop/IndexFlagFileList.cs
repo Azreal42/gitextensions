@@ -20,6 +20,7 @@ internal sealed class IndexFlagFileList
     private IReadOnlyDictionary<string, GitIndexFileFlags> _flags = new Dictionary<string, GitIndexFileFlags>();
     private IReadOnlySet<string> _submodules = new HashSet<string>();
     private InputOrigin? _input;
+    private TreeViewItem? _contextPointerRow;
     private Action _updateContext = () => { };
     private sealed record InputOrigin(Window Owner, string Filter, Func<bool>? Row, TextBox? Editor, int Caret, int Start, int End);
 
@@ -64,7 +65,19 @@ internal sealed class IndexFlagFileList
             assume.IsChecked = paths.Any(path => _flags[path].IsAssumeUnchanged);
         }
         _updateContext = UpdateContext;
-        menu.Opening += (_, _) => { UpdateContext(); CaptureInput(); };
+        view.Tree.AddHandler(InputElement.PointerPressedEvent, (_, args) =>
+        {
+            _contextPointerRow = args.GetCurrentPoint(view.Tree).Properties.IsRightButtonPressed
+                ? (args.Source as Visual)?.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault() : null;
+            _input = null;
+        }, RoutingStrategies.Tunnel);
+        view.Tree.AddHandler(InputElement.KeyDownEvent, (_, _) => { _contextPointerRow = null; _input = null; }, RoutingStrategies.Tunnel);
+        menu.Opening += (_, _) =>
+        {
+            // Selection follows PointerPressed tunneling. Validate the actual clicked
+            // row here, once selection has run, without moving focus to open the menu.
+            UpdateContext(); CaptureInput(_contextPointerRow); _contextPointerRow = null;
+        };
         menu.Closed += (_, _) => ForgetInput();
         skip.Click += async (_, _) => await ToggleAsync(true);
         assume.Click += async (_, _) => await ToggleAsync(false);
@@ -118,10 +131,13 @@ internal sealed class IndexFlagFileList
     }
     private bool Visible(GitIndexFileFlags file) => _showSkip.IsChecked && file.IsSkipWorktree || _showAssume.IsChecked && file.IsAssumeUnchanged;
 
-    private void CaptureInput()
+    private void CaptureInput(TreeViewItem? pointerRow = null)
     {
         _input = null;
-        if (TopLevel.GetTopLevel(_view) is not Window owner || owner.FocusManager?.GetFocusedElement() is not Control focused) { return; }
+        if (TopLevel.GetTopLevel(_view) is not Window owner) { return; }
+        if (pointerRow is not null && _view.CaptureSelectedRowFocus(pointerRow) is { } pointerOrigin)
+        { _input = new(owner, _view.FilterText, pointerOrigin, null, 0, 0, 0); return; }
+        if (owner.FocusManager?.GetFocusedElement() is not Control focused) { return; }
         if (focused is TextBox editor && editor.GetVisualAncestors().Contains(_view))
         { _input = new(owner, _view.FilterText, null, editor, editor.CaretIndex, editor.SelectionStart, editor.SelectionEnd); }
         else if (focused.GetSelfAndVisualAncestors().Contains(_view.Tree) && _view.CaptureSelectedRowFocus() is { } row)

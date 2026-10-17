@@ -904,6 +904,7 @@ public sealed partial class CommitDialog : Window
         _diff.ComparisonMenu.SetHostBusy(_busy || _commitRequested);
         _diff.RenderingMenu.SetHostBusy(_busy || _commitRequested);
         _indexFlagFiles?.UpdateAvailability();
+        foreach (Action update in _updateRulesFileContexts) { update(); }
         if (_busy || _commitRequested) { return; }
         _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
         _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();

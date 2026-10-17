@@ -161,6 +161,64 @@ public sealed class CommitIndexFlagTests
         finally { dialog.Close(); }
     }
 
+    [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task RemovingAFlagReturnsTheFirstArrowToItsSelectedUnstagedRow(bool skip)
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        const string path = "aaa-flags.txt";
+        await File.WriteAllTextAsync(f.PathInRepository(path), "indexed\n");
+        await f.Repository.StageAsync([path]); await f.Repository.CommitAsync("Flag focus");
+        await File.WriteAllTextAsync(f.PathInRepository(path), "flagged local change\n");
+        await File.WriteAllTextAsync(f.File, "ordinary local change\n");
+        if (skip) { await f.Repository.SetSkipWorktreeAsync([path], true); }
+        else { await f.Repository.SetAssumeUnchangedAsync([path], true); }
+        CommitDialog dialog = new(f.Repository, new CommitPreferencesStore(f.Output("commit-prefs.json")));
+        dialog.Show();
+        try
+        {
+            await dialog.InitializeAsync(); await Idle(dialog);
+            FileStatusListView view = Field<FileStatusListView>(dialog, "UnstagedFileStatusList");
+            await Reveal(dialog, view, skip);
+            await Toggle(dialog, view, path, skip, expectedChecked: true);
+            Assert.That(view.SelectedEntries.Select(entry => entry.Path), Is.EqualTo(new[] { path }));
+            dialog.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+            dialog.KeyReleaseQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None); await Idle(dialog);
+            Assert.That(view.SelectedEntries.Select(entry => entry.Path), Is.EqualTo(new[] { "file.txt" }),
+                "The sole first Down must move the file selection, without an intervening click or Focus call.");
+            Assert.That(Field<DiffView>(dialog, "SelectedDiff").Text, Does.Contain("ordinary local change"));
+        }
+        finally { dialog.Close(); }
+    }
+
+    [AvaloniaTest]
+    public async Task IgnoreCommandsReactivateInTheFirstContextAfterTheInitialFileRead()
+    {
+        using Fixture f = await Fixture.CreateAsync();
+        const string path = "second.txt";
+        await File.WriteAllTextAsync(f.PathInRepository(path), "indexed\n");
+        await f.Repository.StageAsync([path]); await f.Repository.CommitAsync("Context availability");
+        await File.WriteAllTextAsync(f.File, "first change\n");
+        await File.WriteAllTextAsync(f.PathInRepository(path), "second change\n");
+        CommitDialog dialog = new(f.Repository, new CommitPreferencesStore(f.Output("commit-prefs.json")));
+        dialog.Show();
+        try
+        {
+            await dialog.InitializeAsync(); await Idle(dialog);
+            FileStatusListView view = Field<FileStatusListView>(dialog, "UnstagedFileStatusList");
+            TreeViewItem row = view.FindItemByTag(view.Entries.Single(entry => entry.Path == path).Tag)!; Pump(dialog);
+            Control header = row.GetVisualDescendants().OfType<Control>().Single(control => control.Name == "PART_Header" && control.GetVisualAncestors().OfType<TreeViewItem>().FirstOrDefault() == row);
+            Point point = header.TranslatePoint(new Point(header.Bounds.Width / 2, header.Bounds.Height / 2), dialog)!.Value;
+            dialog.MouseMove(point); dialog.MouseDown(point, MouseButton.Right); dialog.MouseUp(point, MouseButton.Right); await Idle(dialog);
+            ContextMenu menu = view.Tree.ContextMenu!; Assert.That(menu.IsOpen, Is.True);
+            foreach (string name in new[] { "tsmiAddFileToGitIgnore", "tsmiAddFileToGitInfoExclude" })
+            { Assert.That(menu.Items.OfType<MenuItem>().Single(item => item.Name == name).IsEnabled, Is.True, name + " must update without a second opening."); }
+            Assert.That(view.SelectedEntries.Select(entry => entry.Path), Is.EqualTo(new[] { path }));
+        }
+        finally { dialog.Close(); }
+    }
+
     private static async Task Reveal(CommitDialog dialog, FileStatusListView view, bool skip)
     {
         Pump(dialog);
