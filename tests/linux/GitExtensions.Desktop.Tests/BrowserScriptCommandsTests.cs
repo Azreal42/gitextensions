@@ -33,7 +33,17 @@ public sealed class BrowserScriptCommandsTests
         HotkeyPreferencesStore hotkeys = new(); HotkeyBindings bindings = hotkeys.Load();
         bindings.Set("Scripts", 9017, new(Key.F10, KeyModifiers.Control)); hotkeys.Save(bindings);
         Button toolbar = main.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ScriptToolbar_9017");
-        Assert.That(history.ContextMenu!.Items.OfType<MenuItem>().Count(item => item.Name == "UserScript_9017"), Is.EqualTo(1));
+        ContextMenu context = history.ContextMenu!;
+        MenuItem foreign = new() { Name = "LateForeignContribution", Header = "Late contribution" };
+        context.ItemsSource = context.Items.Cast<object>().Append(foreign).ToArray();
+        for (int repetition = 0; repetition < 2; repetition++)
+        {
+            scripts.Save([script]);
+            Assert.That(context.Items.OfType<MenuItem>().Count(item => item.Name == "UserScript_9017"), Is.EqualTo(1));
+            Assert.That(context.Items.Cast<object>().Any(item => ReferenceEquals(item, foreign)), Is.True,
+                "Updating this Scripts contribution cannot remove another contributor's late item.");
+        }
+        toolbar = main.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ScriptToolbar_9017");
         PushProcessTestDriver.Pointer(toolbar);
         await PushProcessTestDriver.UntilAsync(main, () => File.Exists(output) && !main.IsBusy);
         string[] expected = [selected.Hash, history.Items.OfType<GitCommit>().First().Hash];
@@ -41,7 +51,8 @@ public sealed class BrowserScriptCommandsTests
         Assert.That(main.LastException, Is.Null);
         File.Delete(output);
         scripts.Save([script with { Name = "&Renamed", Enabled = false }]);
-        Assert.That(history.ContextMenu.Items.OfType<MenuItem>().Any(item => item.Name == "UserScript_9017"), Is.False);
+        Assert.That(context.Items.OfType<MenuItem>().Any(item => item.Name == "UserScript_9017"), Is.False);
+        Assert.That(context.Items.Cast<object>().Any(item => ReferenceEquals(item, foreign)), Is.True);
         history.Focus();
         main.KeyPressQwerty(PhysicalKey.F10, RawInputModifiers.Control);
         main.KeyReleaseQwerty(PhysicalKey.F10, RawInputModifiers.Control);

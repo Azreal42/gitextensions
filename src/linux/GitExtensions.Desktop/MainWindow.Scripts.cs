@@ -13,7 +13,7 @@ public sealed partial class MainWindow
     private IReadOnlyList<ScriptDefinition> _scripts = [];
     private CompactBrowserToolbar? _scriptsToolbar;
     private readonly List<Control> _scriptActions = [];
-    private object[]? _revisionMenuWithoutScripts;
+    private IReadOnlyList<object> _revisionScriptItems = [];
 
     private void InitializeScripts()
     {
@@ -40,7 +40,7 @@ public sealed partial class MainWindow
     private Control BuildScriptsToolbar()
     {
         _scriptActions.Clear();
-        CompactBrowserToolbar toolbar = new() { Name = "ScriptsToolbar" }; _scriptsToolbar = toolbar;
+        CompactBrowserToolbar toolbar = new("ScriptsToolbar"); _scriptsToolbar = toolbar;
         foreach (ScriptDefinition script in _scripts.Where(script => script.Enabled && script.OnEvent == ScriptEvent.ShowInUserMenuBar))
         {
             StackPanel label = new() { Orientation = Orientation.Horizontal, Spacing = 3 };
@@ -63,10 +63,9 @@ public sealed partial class MainWindow
     private void RefreshRevisionScriptMenu()
     {
         if (_revisionContext is null) { return; }
-        _revisionMenuWithoutScripts ??= _revisionContext.Items.Cast<object>().ToArray();
         object[] scripts = ScriptMenuItems.Build(_scripts, script => script.AddToRevisionGridContextMenu,
             script => () => RunScriptAsync(script), !_busy && _repository is not null, _translations, "RevisionGridControl");
-        _revisionContext.ItemsSource = _revisionMenuWithoutScripts.Concat(scripts).ToArray();
+        _revisionScriptItems = ScriptMenuItems.ReplaceOwned(_revisionContext, _revisionScriptItems, scripts);
     }
     internal ScriptHostSelection CaptureScriptSelection(FileMenuSelection? files = null)
     {

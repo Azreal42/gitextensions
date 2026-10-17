@@ -150,7 +150,7 @@ public sealed class PushDialog : RepositoryDialog
         if (forceWithLease) { _lease.IsChecked = true; }
         if (IsReady) { await ExecuteAsync(owner, cancellationToken); }
         cancellationToken.ThrowIfCancellationRequested();
-        if (!_workflowStopRequested && !Cancelled && owner.IsVisible && (!Succeeded || LastError is not null)) { await ShowDialog(owner); }
+        if (!_workflowStopRequested && owner.IsVisible && (!Succeeded || LastError is not null)) { await ShowDialog(owner); }
         cancellationToken.ThrowIfCancellationRequested();
     }
 

@@ -33,14 +33,14 @@ internal sealed class CompactBrowserToolbar : Border
     internal IReadOnlyList<Control> InlineItems => _entries.Where(entry => entry.Host.IsVisible).Select(entry => entry.Control).ToArray();
     internal MenuFlyout OverflowFlyout => _flyout;
 
-    internal CompactBrowserToolbar()
+    internal CompactBrowserToolbar(string name = "RepositoryToolbar")
     {
-        Name = "RepositoryToolbar";
+        Name = name;
         Height = DesktopFontMetrics.ToolbarHeight + 2; MinHeight = Height; MaxHeight = Height; Padding = new Thickness(3, 1);
         _flyout.ItemsSource = _popupItems;
         Overflow = new Button
         {
-            Name = "RepositoryToolbarOverflow", Content = "»", Width = 24, Height = DesktopFontMetrics.ToolbarHeight,
+            Name = name + "Overflow", Content = "»", Width = 24, Height = DesktopFontMetrics.ToolbarHeight,
             MinWidth = 0, MinHeight = DesktopFontMetrics.ToolbarHeight, Padding = default, IsVisible = false, Flyout = _flyout
         };
         _row.Children.Add(Overflow); Child = _row;

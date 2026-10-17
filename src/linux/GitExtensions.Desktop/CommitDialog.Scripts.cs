@@ -12,14 +12,16 @@ public sealed partial class CommitDialog
         DesktopScriptExecutor.SetFileProvider(this, () => CaptureScriptFiles(_viewStaged ? _stagedView : _unstagedView, _viewStaged));
         foreach (var entry in new[] { (View: _unstagedView, Staged: false), (View: _stagedView, Staged: true) })
         {
-            ContextMenu menu = new() { Name = entry.Staged ? "StagedScriptsMenu" : "UnstagedScriptsMenu" };
-            entry.View.Tree.ContextMenu = menu;
+            // Rules and index flags have already attached their handlers and menu items.
+            ContextMenu menu = entry.View.Tree.ContextMenu ??= new() { Name = entry.Staged ? "StagedScriptsMenu" : "UnstagedScriptsMenu" };
+            IReadOnlyList<object> ownedScripts = [];
             menu.Opening += (_, _) =>
             {
                 FileMenuSelection selection = CaptureScriptFiles(entry.View, entry.Staged);
-                menu.ItemsSource = ScriptMenuItems.Build(new ScriptsPreferencesStore().Load().Scripts,
+                object[] scripts = ScriptMenuItems.Build(new ScriptsPreferencesStore().Load().Scripts,
                     script => script.OnEvent == ScriptEvent.ShowInFileList,
                     script => () => RunFileScriptAsync(script, selection), !IsBusy, _translations, "FileStatusList");
+                ownedScripts = ScriptMenuItems.ReplaceOwned(menu, ownedScripts, scripts);
             };
         }
     }
