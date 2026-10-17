@@ -506,3 +506,24 @@ Les essais ciblés 01/02 ont corrigé des erreurs de compilation (extension clip
 | WT/Index ordinaire perd sa sélection typée à F5 depuis le diff Changes | Conserver la destination typée et le panneau de retour pendant le rebind de la ligne réelle retenue ; ciblé06 rouge puis les deux cas ciblé07 verts, pas une preuve native de F5. |
 
 Les ciblés01–04 conservent les régressions et le scénario négatif invalide à critère blanc ; ciblé06 conserve les deux pertes WT/Index à F5 avant correction. Ciblé07 accepte 121/121 Desktop, Core8/8 et endpoints16/16 ; les six rendus frais ciblé07 sont relus par Root, avec leur rapport distinct de l’exécution et du natif. Le full final et le natif N01 sont des preuves distinctes ; aucune couverture native F5 transférée.
+
+## Raccourcis — corrections et limites du périmètre ADR0089
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Apply change la touche active mais garde l’ancien texte dans la liste | Le template lisait le brouillon une seule fois et recevait la même collection. Recréer ses lignes, vérifier la touche réellement affichée après Apply/Clear. |
+| Premier clic puis Next/Previous Commit perd le clavier | La lecture désactive l’arbre avant son focus natif. Conserver l’intention du clic et restaurer la feuille courante seulement si sélection, activité et intention utilisateur restent inchangées. |
+| Remap Stash sur R/Échap absorbé par une action fixe | Résoudre le viewer focalisé et le contexte avant le fallback natif, comme ProcessCmdKey Windows. |
+| Un test « retirement » lance un autre workflow | Effacer une affectation laisse les autres IDs disponibles. F8 est QuickPullOrFetch DANS Browse ; un enfant capable peut traiter son propre raccourci en priorité. Choisir une touche réellement libre ou configurer explicitement la collision. Ctrl+R est BASE dans Windows. |
+| Reset filters perd le reflog et l’expression mémorisée | Désactiver le filtre de branches sans effacer son brouillon accepté ; conserver le mode reflog. Ses racines restent visibles avec une expression de branche, comme Git. |
+| Gestes figés ou absents dans Branches/Worktrees, Fetch et aides Console/Filter | Raccorder chaque contrôle existant à son identité partagée, y compris overflow et racine ; Settings de la barre reste la configuration Git distincte. Save puis None ne recharge aucune donnée Git. |
+| Comparaison Index utilise HEAD | Garder la destination typée et une BASE typée ; ne pas convertir une sélection artificielle vide en CurrentRevision. |
+| Le full03 lit un PID askpass vide | Le worker de test publiait son marqueur avant la fin de son écriture. Écrire entièrement dans un fichier frère puis renommer sans écrasement ; garder les assertions de vraie annulation et de terminaison. Le rouge Core 674/675 est conservé et les suites finales doivent être fraîches. |
+| Le teardown masque une assertion UI | Ne pas capturer ni envoyer KeyRelease au TopLevel détruit par Close/Échap. Les parseurs JSON peuvent émettre une sous-classe de JsonException ; vérifier le contrat d’erreur et les octets préservés. |
+| F2 ou Delete de Grid déborde dans un éditeur de texte | Refuser RenameRef/DeleteRef lorsque le focus est un TextBox ou TextArea ; préserver l’identité saisie et ses gestes d’édition, sans commande Git implicite. |
+| Une commande Browse avale le raccourci de son panneau de fichiers | Résoudre le child FilePane avant Browse/Grid, depuis son arbre, viewer ou popup ; fermer seulement son popup exact après acceptation d’une commande capable, pas avant le contrôle de disponibilité. |
+| Next/Previous est refusé pour un RangeDiff reconnu en mode Auto | Reprendre la capacité de navigation partielle AutoNextPrevious et celle du vrai bouton ; un RangeDiff Auto reconnu reste navigable entre résumés, sans traiter ses hunks internes comme un patch ordinaire. |
+| Les anciens oracles de tooltip attendent seulement la légende | Les hints affichent la touche actuellement affectée, y compris Ctrl+F, X et Ctrl+E ; vérifier légende traduite ET hint réel, sans retirer ce dernier pour faire passer l’ancien test. |
+| Le F5 de fixture part d’un contrôle devenu invisible après changement programmatique d’onglet | Ouvrir Changes avec un vrai clic sur son TabItem puis envoyer F5 depuis son focus réel ; ne pas réparer le focus par appel direct pour masquer une erreur. |
+| Le test du seuil SHA trouve déjà un message au premier caractère | Envoyer le terme de deux caractères en une seule entrée pour isoler le seuil SHA, puis saisir le troisième. Garder la recherche normale après chaque caractère dans les autres scénarios ; aucun rollback de sélection inventé en cas de non-match. |
+| Sous-menu ParentChild : cible détachée dans full01 puis ciblé07 | Le chemin hover puis un seul clic strict sur la commande passe ciblé08 ; la cause exacte de la flake antérieure n’est pas prouvée. Conserver les rouges et ne pas affirmer qu’un clic sur hover ferme le menu dans la source Windows. |

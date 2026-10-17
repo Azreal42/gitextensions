@@ -21,3 +21,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [Recherche incrémentale de grille](adr/ui/history/0087-revision-quick-search.md) : contrat Windows, messages complets et destinations typées ; validation et limites dans le TODO.
 
 - [Navigation parent/enfant](adr/ui/history/0088-parent-child-navigation.md) : parcours réversible Windows, voisins du graphe affiché et focus fichier ; validation et limites dans le TODO.
+
+- [Raccourcis configurables](adr/preferences/hotkeys/0089-configurable-hotkeys.md) : catalogue Windows, brouillon et configuration commune au clavier et aux menus ; page Hotkeys N2, validations et limites dans le TODO.

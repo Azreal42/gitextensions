@@ -94,7 +94,7 @@
         "FileHistoryBlameController",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
       "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
@@ -126,7 +126,10 @@
         "FileHistoryInitialComparisonRefreshTests",
         "RevisionQuickSearchTests",
         "ParentChildNavigationHistoryTests",
-        "ParentChildNavigationTests"
+        "ParentChildNavigationTests",
+        "BrowserHotkeysTests",
+        "FileViewerHotkeysTests",
+        "BrowseDiffHotkeysTests"
       ],
       "adr": [
         "0031",
@@ -146,7 +149,8 @@
         "0085",
         "0086",
         "0087",
-        "0088"
+        "0088",
+        "0089"
       ],
       "extra_evidence": [
         {
@@ -213,8 +217,8 @@
         "MainWindow@GoToRevisionAsync",
         "MainWindow@NavigateRevisionHistoryAsync"
       ],
-      "implemented": "Dialogue Windows à trois champs expression/tag/branche locale, ancrages et focus cyclique ; listes natives séparées, bornées à 1 000 et sans verrou de mutation. SuggestAppend insensible à la casse, choix explicites au clavier/souris, aide originale et proposition de presse-papiers non intrusive. Go fige les sources, résout un vrai commit (tags annotés inclus) ; fermeture et changements de contexte annulent/drainent les acteurs. Activation native avant la première frappe ; retour de focus explicite après Échap/croix, navigation ciblée et Back/Forward sans recharger la grille, erreurs distinctes de révision invalide et de commit filtré, filtres conservés.",
-      "remaining": "Préférences Windows de tri configurable des références non portées. Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector est une fenêtre distincte, évaluée séparément dans cette matrice.",
+      "implemented": "Dialogue Windows à trois champs expression/tag/branche locale, ancrages et focus cyclique ; listes natives séparées, bornées à 1 000 et sans verrou de mutation. SuggestAppend insensible à la casse, choix explicites au clavier/souris, aide originale et proposition de presse-papiers non intrusive. Go fige les sources, résout un vrai commit (tags annotés inclus) ; fermeture et changements de contexte annulent/drainent les acteurs. Activation native avant la première frappe ; retour de focus explicite après Échap/croix, navigation ciblée et Back/Forward sans recharger la grille, erreurs distinctes de révision invalide et de commit filtré, filtres conservés. Les listes de tags et de branches locales consomment le tri de références configuré dans Settings → Sorting ou les menus du panneau : neuf critères et deux sens, appliqués par Git avant la limite de 1 000 références, ADR 0082.",
+      "remaining": "Audit GUI natif exhaustif avec gestionnaire de fenêtres, Wayland, DPI/accessibilité et toutes les traductions restent ouverts. La vérification d’un SHA complet inconnu corrige volontairement le raccourci Windows sans objet ; aucune extension silencieuse de l’historique filtré. QuickGitRefSelector est une fenêtre distincte, évaluée séparément dans cette matrice.",
       "visual": "rapproche",
       "tests": [
         "GoToCommitDialogTests",
@@ -222,7 +226,8 @@
         "HistoryMenuParityTests"
       ],
       "adr": [
-        "0073"
+        "0073",
+        "0082"
       ]
     },
     "GitUI.UserControls.RevisionGrid.FormQuickGitRefSelector": {
@@ -632,20 +637,22 @@
         "CommitDialog",
         "CommitEmptyDialog"
       ],
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
       "remaining": "Templates multiples/éditeur, validation personnalisée, scripts et options superproject/branche inline encore incomplets.",
       "visual": "rapproche",
       "tests": [
         "CommitDialogTests",
         "CommitMessageWorkflowTests",
         "CommitAndPushWorkflowTests",
-        "CommitIndexFlagTests"
+        "CommitIndexFlagTests",
+        "HotkeyHostDialogTests"
       ],
       "adr": [
         "0018",
         "0021",
         "0046",
-        "0081"
+        "0081",
+        "0089"
       ]
     },
     "GitUI.CommandsDialogs.CommitDialog.FormCommitTemplateSettings": {
@@ -729,16 +736,18 @@
       "linux": [
         "ResolveConflictsDialog"
       ],
-      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations. Assistant gitlink partagé depuis bouton, doubleclic ou Entrée, avec relecture après retour.",
+      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations. Assistant gitlink partagé depuis bouton, doubleclic ou Entrée, avec relecture après retour. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
       "remaining": "Toutes les variantes d’outils, encodages, conflits et fermetures restent à auditer en GUI natif.",
       "visual": "rapproche",
       "tests": [
         "MergeBranchDialogTests",
-        "ConflictRoutingTests"
+        "ConflictRoutingTests",
+        "HotkeyHostDialogTests"
       ],
       "adr": [
         "0043",
-        "0071"
+        "0071",
+        "0089"
       ]
     },
     "GitUI.CommandsDialogs.FormRebase": {
@@ -922,17 +931,19 @@
         "StashDropConfirmation",
         "ResetChangesDialog"
       ],
-      "implemented": "Création, sélection/all/staged, Keep index/untracked, diff, Apply/Pop/Drop et conflits.",
+      "implemented": "Création, sélection/all/staged, Keep index/untracked, diff, Apply/Pop/Drop et conflits. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
       "remaining": "Audit de toutes les combinaisons et du rendu natif complet restant.",
       "visual": "rapproche",
       "tests": [
         "StashMenuTests",
-        "ConflictRoutingTests"
+        "ConflictRoutingTests",
+        "HotkeyHostDialogTests"
       ],
       "adr": [
         "0033",
         "0035",
-        "0071"
+        "0071",
+        "0089"
       ]
     },
     "GitUI.CommandsDialogs.FormReflog": {
@@ -979,7 +990,7 @@
         "MainWindow"
       ],
       "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert.",
-      "remaining": "FormDiff reste N2. Historique Index/WT adapté explicitement à HEAD dans la fenêtre dédiée ; pas de faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
+      "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
@@ -1212,10 +1223,11 @@
       "group": "files",
       "level": "N2",
       "linux": [
-        "ApplyPatchDialog"
+        "ApplyPatchDialog",
+        "RebaseDialog@ShowPatchAsync"
       ],
-      "implemented": "Aperçu du patch avant application dans le dialogue Apply.",
-      "remaining": "Fenêtre de lecture seule autonome et tous ses points d’entrée non portés.",
+      "implemented": "Aperçu du patch avant application dans Apply ; depuis la grille Rebase, lecture par Compare pour un commit avec parent ou par le viewer spécialisé RebasePatchDiff pour le fallback commit/fichier patch.",
+      "remaining": "Pas de fenêtre générale équivalente à FormViewPatch pour choisir librement un patch sur disque et parcourir sa grille de fichiers/types. Les aperçus Apply et Rebase existent ; les autres points d’entrée Windows et leurs variantes restent à comparer.",
       "visual": "integre",
       "tests": [
         "ExportDialogTests"
@@ -1668,17 +1680,19 @@
         "MainWindow@ShowWorkflowAsync",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
       "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
       "visual": "adapte",
       "tests": [
         "ClassicMenuTests",
         "NativeDiffViewerSettingsDialogTests",
-        "FileHistoryPreferencesTests"
+        "FileHistoryPreferencesTests",
+        "HotkeysSettingsPageTests"
       ],
       "adr": [
         "0060",
-        "0086"
+        "0086",
+        "0089"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2213,7 +2227,7 @@
       "group": "settings-pages",
       "level": "N1",
       "linux": [
-        "file:src/linux/GitExtensions.Desktop/PreferencesStore.cs"
+        "file:src/linux/GitExtensions.Desktop/BrowseCommandPreferencesStore.cs"
       ],
       "implemented": "Quelques choix mémorisables dans les workflows.",
       "remaining": "Pas de page globale listant et réinitialisant les confirmations Windows.",
@@ -2250,7 +2264,7 @@
       "linux": [
         "NativeDiffViewerSettingsDialog"
       ],
-      "implemented": "Options du lecteur, session/défauts, présentation et recherche.",
+      "implemented": "Fenêtre General/Diff coloring : six flags Remember (whitespace, invisibles, fichier entier, apparence, contexte, syntaxe), Git coloring/reverse et sauvegarde explicite des valeurs de vue par défaut. Recherche/remplacement disponibles séparément dans le lecteur, sans réglage de recherche dans cette page.",
       "remaining": "Page originale et totalité de ses contrôles/modes non certifiées iso.",
       "visual": "integre",
       "tests": [],
@@ -2348,13 +2362,31 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.HotkeysSettingsPage": {
       "feature": "Raccourcis personnalisables",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Raccourcis fixes implémentés dans le code.",
-      "remaining": "Éditeur par contexte, avertissement des touches déjà affectées et configuration partagée des raccourcis absents.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "DesktopSettingsDialog",
+        "HotkeysSettingsPage",
+        "HotkeyCaptureTextBox",
+        "HotkeyCatalog",
+        "HotkeyBindings",
+        "HotkeyPreferencesStore",
+        "DesktopHotkeys"
+      ],
+      "implemented": "Éditeur Settings compact par neuf contextes et 171 presets fixes Windows : identités/alternatives/None conservés, capture et avertissement global non bloquant, Apply/Clear/Reset en brouillon, OK publie et sauvegarde le profil XDG. Menus/tooltips et dispatcher partagent un instantané actif ; raccords aux commandes existantes Browse/Grid/LeftPanel/FileViewer/BrowseDiff/Commit/Stash/Resolve. Tests de vrais gestes, capacité, erreurs JSON et effets Git natifs ; ADR0089, périmètres de validation dans le TODO.",
+      "remaining": "Page partielle : Scripts reste vide sans moteur/import. Commandes CI/output/superproject, sélection multiple LeftPanel, fork-point Grid et ConventionalCommit sans fournisseur ; Visual Studio indisponible. TreatFileAsText sans consommateur et ResetLines limité à Commit. Import de réglages Windows et audit natif étendu de tous les contextes/hôtes/variantes ouverts. ToggleOrderRevisionsByDate est sans case dans la source Windows actuelle.",
+      "visual": "rapproche",
+      "tests": [
+        "HotkeyCatalogTests",
+        "HotkeyPreferencesStoreTests",
+        "HotkeysSettingsPageTests",
+        "BrowserHotkeysTests",
+        "FileViewerHotkeysTests",
+        "BrowseDiffHotkeysTests",
+        "HotkeyHostDialogTests"
+      ],
+      "adr": [
+        "0089"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.RevisionLinksSettingsPage": {
       "feature": "Liens des révisions",
@@ -2372,8 +2404,8 @@
       "group": "settings-pages",
       "level": "N0",
       "linux": [],
-      "implemented": "Modèles/préparation et préférences du Core seulement.",
-      "remaining": "Page d’édition, exécution, événements et branchement UI non portés.",
+      "implemented": "Modèles, configuration et expansion purs dans Core ; store de profil XDG et préparation des demandes dans Desktop (confirmation, saisie/fichiers et choix de référence/remote). Aucun éditeur Settings de scripts ni exécuteur d’événements intégré.",
+      "remaining": "Page Settings d’édition du catalogue/propriétés, lancement des scripts, événements et raccords des workflows non portés. Les dialogues Desktop de préparation des demandes existent déjà ; ils ne remplacent pas ces intégrations.",
       "visual": "absent",
       "tests": [],
       "adr": []
