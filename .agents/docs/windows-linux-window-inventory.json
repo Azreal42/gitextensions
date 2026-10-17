@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
-  "source_digest_sha256": "bbbae64f9c6684eadc3f717a5fff170951e8f794106a3094c20b108ff208a5ce",
-  "scanned_csharp_files": 1938,
+  "code_reference_commit": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+  "source_digest_sha256": "316187ad9eb4cd63a0ae6d5636f03fcc0d5ab2e6738dd7b0ba61588f27442f57",
+  "scanned_csharp_files": 1945,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -39,8 +39,8 @@
     },
     "settings_levels": {
       "N0": 16,
-      "N1": 9,
-      "N2": 6,
+      "N1": 8,
+      "N2": 7,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,41 +50,36 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/comparison-file-menus-20261017/full-root-07-index-flags-focus/desktop.trx",
-    "source_sha": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
-    "trx_sha256": "c686c93b9008810c20bfe792cf49a190fa156342065e9b8f5a30c54f3c99a2f0",
+    "trx": "artifacts/linux/reference-sorting-20261017/full-03/desktop.trx",
+    "source_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+    "trx_sha256": "189793bf785d359ab67afd923d350943a51b71d6f50dafe2fb0efdc9e8a3cec8",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
-        "execution_source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
-        "candidate_sha": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
-        "passed": 586,
-        "total": 586,
-        "execution_result": "artifacts/linux/comparison-file-menus-20261017/core-root-final02/result.json",
-        "build_result": "artifacts/linux/comparison-file-menus-20261017/full-root-02/build-result.json",
-        "parent_verification": "artifacts/linux/comparison-file-menus-20261017/core-root-final02/parent-verification.json",
-        "source_hashes_verified": 192,
-        "runtime_hashes_verified": 8,
+        "source_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+        "execution_source_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+        "candidate_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+        "passed": 609,
+        "total": 609,
+        "execution_result": "artifacts/linux/reference-sorting-20261017/full-03/core-result.json",
+        "build_result": "artifacts/linux/reference-sorting-20261017/full-03/build-result.json",
+        "parent_verification": "artifacts/linux/reference-sorting-20261017/full-03/parent-verification.json",
         "runtime_inputs_unchanged": true,
-        "fresh_execution_this_tranche": false,
-        "reexecuted_on_candidate": false,
-        "unchanged_component_proof": "artifacts/linux/snapshots/a0ba1c140/proofs/unchanged-core-plugins-reference.json"
+        "fresh_execution_this_tranche": true,
+        "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
-        "execution_source_sha": "10c43096c90f06d7333b958abe70c50b8f106dab",
-        "candidate_sha": "a0ba1c1409887bf50b92981224d92f1be0f40b44",
+        "source_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+        "execution_source_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
+        "candidate_sha": "5a52db1a997028b0c22b331f37fd45c6c6cd6223",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/comparison-file-menus-20261017/full-root-02/plugins-result.json",
-        "build_result": "artifacts/linux/comparison-file-menus-20261017/full-root-02/build-result.json",
-        "source_hashes_verified": 24,
-        "runtime_hashes_verified": 9,
+        "execution_result": "artifacts/linux/reference-sorting-20261017/full-03/plugins-result.json",
+        "build_result": "artifacts/linux/reference-sorting-20261017/full-03/build-result.json",
+        "parent_verification": "artifacts/linux/reference-sorting-20261017/full-03/parent-verification.json",
         "runtime_inputs_unchanged": true,
-        "fresh_execution_this_tranche": false,
-        "reexecuted_on_candidate": false,
-        "unchanged_component_proof": "artifacts/linux/snapshots/a0ba1c140/proofs/unchanged-core-plugins-reference.json"
+        "fresh_execution_this_tranche": true,
+        "reexecuted_on_candidate": true
       }
     },
     "current_linux_code_equivalent": true,
@@ -1106,6 +1101,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/MainWindowBusyFocusTests.cs",
           "test_class": "MainWindowBusyFocusTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         }
       ],
@@ -4513,7 +4514,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         },
         {
@@ -4557,9 +4558,27 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/NativeDiffViewerSettingsDialogTests.cs",
           "test_class": "NativeDiffViewerSettingsDialogTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -5247,7 +5266,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         }
       ],
@@ -5256,6 +5275,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -5344,7 +5381,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         }
       ],
@@ -5389,6 +5426,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryDialogTests.cs",
           "test_class": "FileHistoryDialogTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -5567,7 +5622,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         },
         {
@@ -5583,6 +5638,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -5921,7 +5994,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         }
       ],
@@ -5930,6 +6003,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -6039,7 +6130,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         },
         {
@@ -6127,9 +6218,27 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullAdvancedDialogTests.cs",
           "test_class": "PullAdvancedDialogTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -6493,25 +6602,68 @@
       "category": "settings",
       "feature": "Règles de tri",
       "group": "settings-pages",
-      "level": "N1",
-      "implemented": "Tris d’historique par topologie/date/auteur dans View.",
-      "remaining": "Page absente : ordre/priorités des branches et remotes ; le repli GitDefault Windows sans option reste à aligner (Linux ajoute --date-order).",
-      "visual": "integre",
+      "level": "N2",
+      "implemented": "Settings → Sorting et menus du panneau partagent les neuf critères natifs, sens et priorités Windows ; tri avant limites 100/1 000, priorités avant dossiers. GitDefault sans flag dans le lecteur ; le graphe Windows partagé peut réordonner les parents après leurs enfants, valeurs JSON 0/1/2 préservées ; View en session, OK Settings sauve les références et le seul Sort de la vue, Save as default sauve la vue. Validation complète des motifs à OK et matching borné explicites.",
+      "remaining": "CommitInfo sans liste branches/contained-in, comparateurs badges/QuickRef distincts ; remotes vides/inactifs, paramètres globaux/locaux/distribués et audit natif étendu restent ouverts. Noms remote avec slash mieux séparés mais non iso Windows. Aucun autre niveau modifié, aucun N4.",
+      "visual": "rapproche",
       "extra_evidence": [
         {
-          "label": "Options de tri Git Linux",
-          "source": "src/linux/GitExtensions.Core/GitLogQuery.cs",
-          "line": 58,
+          "label": "Clés natives Windows de référence",
+          "source": "src/app/GitCommands/Git/Commands.Arguments.cs",
+          "line": 293,
           "kind": "source"
         },
         {
-          "label": "Options de tri Git Windows",
-          "source": "src/app/GitCommands/RevisionReader.cs",
-          "line": 392,
+          "label": "Snapshot de tri natif Core",
+          "source": "src/linux/GitExtensions.Core/GitReferenceSorting.cs",
+          "line": 19,
+          "kind": "source"
+        },
+        {
+          "label": "Priorités stables partagées",
+          "source": "src/linux/GitExtensions.Core/GitReferencePriorities.cs",
+          "line": 6,
+          "kind": "source"
+        },
+        {
+          "label": "GitDefault sans option globale",
+          "source": "src/linux/GitExtensions.Core/GitLogQuery.cs",
+          "line": 67,
+          "kind": "source"
+        },
+        {
+          "label": "Windows : ligne visible issue du graphe",
+          "source": "src/app/GitUI/UserControls/RevisionGrid/RevisionDataGridView.cs",
+          "line": 629,
+          "kind": "source"
+        },
+        {
+          "label": "Windows : parent repoussé après enfant tardif",
+          "source": "src/app/GitUI/UserControls/RevisionGrid/Graph/RevisionGraph.cs",
+          "line": 300,
+          "kind": "source"
+        },
+        {
+          "label": "Port : ordre brut lecteur distinct du layout",
+          "source": "src/linux/GitExtensions.Desktop/Controls/CommitGraph.cs",
+          "line": 64,
+          "kind": "source"
+        },
+        {
+          "label": "Scénarios Git natifs de tri (moteur)",
+          "source": "tests/linux/GitExtensions.Core.Tests/ReferenceSortingScenarios.cs",
+          "line": 5,
           "kind": "source"
         }
       ],
       "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 10,
+          "kind": "window"
+        },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ViewHistoryCommands",
@@ -6520,8 +6672,41 @@
           "kind": "window"
         }
       ],
-      "tests": [],
-      "adr": []
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/sorting/0082-native-reference-sorting.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.SshSettingsPage",
@@ -10018,11 +10203,11 @@
       "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
       "name": "DesktopSettingsDialog",
       "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-      "line": 9,
+      "line": 10,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 9
+          "line": 10
         }
       ],
       "bases": [
@@ -10058,6 +10243,11 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GeneralSettingsPage",
           "name": "GeneralSettingsPage",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.SortingSettingsPage",
+          "name": "SortingSettingsPage",
           "level": "N2"
         }
       ],
@@ -10564,6 +10754,10 @@
           "line": 9
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.ReferenceSorting.cs",
+          "line": 10
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Repositories.cs",
           "line": 8
         },
@@ -10709,7 +10903,7 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.SortingSettingsPage",
           "name": "SortingSettingsPage",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Plugins.PluginSettingsPage",
@@ -16344,8 +16538,8 @@
     },
     "settings-pages": {
       "N0": 10,
-      "N1": 9,
-      "N2": 6,
+      "N1": 8,
+      "N2": 7,
       "NA": 1
     },
     "ci-settings": {

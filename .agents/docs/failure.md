@@ -431,3 +431,17 @@ Périmètre et preuves : [TODO](todo.md), ADR 0016/0080. Une validation ciblée 
 | Publish RID modifie les locks d’une suite en cours | Publier dans un checkout isolé ; la restauration RID peut ajouter des cibles aux locks. Conserver les différences, vérifier les identités des dépendances et restaurer seulement les octets générés. Les binaires de test restent figés. |
 
 Logs et essais rejetés : `artifacts/linux/comparison-file-menus-20261017/`, paquet et preuves de livraison dans son snapshot. Les outils Xvfb et D-Bus du banc restent privés ; leur absence du PATH ne constitue pas un défaut produit.
+
+## Tri et priorités
+
+| Piège | Règle retenue |
+| --- | --- |
+| Lanceur natif long interrompu après les gestes UI | Application et Openbox ont fini à 0, mais le lanceur a renvoyé 143 avec finalisation incomplète sur 0ac : ne pas reconstruire les fichiers manquants ni valider le redémarrage non joué. Garder ce banc partiel, puis refaire un parcours court sur le paquet courant avec vrais retours et drainage. |
+| Premier clic de champ Settings sans focus | L’aide de l’éditeur recouvrait le champ voisin sur 0ac. Garder les aides sur leurs trois icônes comme Windows ; deux premières saisies et aide positive vérifiées sur 5a52. Le second clic initial reste un geste réparé, conservé dans les preuves. |
+| Décocher un tri impose encore `--date-order` | GitDefault Windows n’ajoute aucun flag global ; garder les options explicites du filtre et les nombres JSON 0/1/2. |
+| Le premier `--all` est pris pour HEAD ou pour la première ligne | Une opération se vérifie sur HEAD explicite ; la grille passe par le graphe Windows, qui peut repousser un parent reçu avant un enfant tardif. Vérifier l’ordre brut, l’ensemble des commits et l’ordre visible séparément. |
+| Le panneau réalphabétise la sortie native ou forme trop tôt ses dossiers | Trier avant les limites, appliquer les priorités aux branches complètes avant regroupement et garder la stabilité de chaque niveau. |
+| OK Settings sauvegarde toute la vue de session | Relire les défauts du disque et ne remplacer que Sort ; les autres choix View attendent Save as default. |
+| Un motif invalide reste caché derrière une première correspondance | Valider tous les motifs avant toute sauvegarde ; erreur lisible et saisie conservée, matching borné et captures nommées ExplicitCapture gardées. |
+
+Preuves et limites : [TODO](todo.md), ADR [0082](adr/preferences/sorting/0082-native-reference-sorting.md). Full01 et ciblés rejetés sont conservés ; aucun audit natif ancien n’est transféré.

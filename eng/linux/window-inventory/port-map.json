@@ -2296,26 +2296,69 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.SortingSettingsPage": {
       "feature": "Règles de tri",
       "group": "settings-pages",
-      "level": "N1",
+      "level": "N2",
       "linux": [
+        "DesktopSettingsDialog",
         "MainWindow@ViewHistoryCommands"
       ],
-      "implemented": "Tris d’historique par topologie/date/auteur dans View.",
-      "remaining": "Page absente : ordre/priorités des branches et remotes ; le repli GitDefault Windows sans option reste à aligner (Linux ajoute --date-order).",
-      "visual": "integre",
-      "tests": [],
-      "adr": [],
+      "implemented": "Settings → Sorting et menus du panneau partagent les neuf critères natifs, sens et priorités Windows ; tri avant limites 100/1 000, priorités avant dossiers. GitDefault sans flag dans le lecteur ; le graphe Windows partagé peut réordonner les parents après leurs enfants, valeurs JSON 0/1/2 préservées ; View en session, OK Settings sauve les références et le seul Sort de la vue, Save as default sauve la vue. Validation complète des motifs à OK et matching borné explicites.",
+      "remaining": "CommitInfo sans liste branches/contained-in, comparateurs badges/QuickRef distincts ; remotes vides/inactifs, paramètres globaux/locaux/distribués et audit natif étendu restent ouverts. Noms remote avec slash mieux séparés mais non iso Windows. Aucun autre niveau modifié, aucun N4.",
+      "visual": "rapproche",
+      "tests": [
+        "HistorySortDefaultTests",
+        "ReferenceSortingSettingsTests",
+        "ReferenceSortingNavigationTests"
+      ],
+      "adr": [
+        "0082"
+      ],
       "extra_evidence": [
         {
-          "label": "Options de tri Git Linux",
-          "source": "src/linux/GitExtensions.Core/GitLogQuery.cs",
-          "line": 58,
+          "label": "Clés natives Windows de référence",
+          "source": "src/app/GitCommands/Git/Commands.Arguments.cs",
+          "line": 293,
           "kind": "source"
         },
         {
-          "label": "Options de tri Git Windows",
-          "source": "src/app/GitCommands/RevisionReader.cs",
-          "line": 392,
+          "label": "Snapshot de tri natif Core",
+          "source": "src/linux/GitExtensions.Core/GitReferenceSorting.cs",
+          "line": 19,
+          "kind": "source"
+        },
+        {
+          "label": "Priorités stables partagées",
+          "source": "src/linux/GitExtensions.Core/GitReferencePriorities.cs",
+          "line": 6,
+          "kind": "source"
+        },
+        {
+          "label": "GitDefault sans option globale",
+          "source": "src/linux/GitExtensions.Core/GitLogQuery.cs",
+          "line": 67,
+          "kind": "source"
+        },
+        {
+          "label": "Windows : ligne visible issue du graphe",
+          "source": "src/app/GitUI/UserControls/RevisionGrid/RevisionDataGridView.cs",
+          "line": 629,
+          "kind": "source"
+        },
+        {
+          "label": "Windows : parent repoussé après enfant tardif",
+          "source": "src/app/GitUI/UserControls/RevisionGrid/Graph/RevisionGraph.cs",
+          "line": 300,
+          "kind": "source"
+        },
+        {
+          "label": "Port : ordre brut lecteur distinct du layout",
+          "source": "src/linux/GitExtensions.Desktop/Controls/CommitGraph.cs",
+          "line": 64,
+          "kind": "source"
+        },
+        {
+          "label": "Scénarios Git natifs de tri (moteur)",
+          "source": "tests/linux/GitExtensions.Core.Tests/ReferenceSortingScenarios.cs",
+          "line": 5,
           "kind": "source"
         }
       ]
