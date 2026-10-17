@@ -6,7 +6,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `2e3bba726` ; suite Desktop complète de référence `2e3bba726` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé `2ab5db302` ; suite Desktop complète de référence `2ab5db302` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 17 N1 substituts minimaux, 25 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 9 N1, 6 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstraites), 31 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -91,7 +91,7 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 ## Prochains écarts concrets
 
 - Focus : parcours ciblés verts sur `2e3bba726` ; étendre les variantes de panneaux, thèmes, traductions et plateformes sans transférer automatiquement cette acceptation. Browse reste N2.
-- Compare : réutiliser FileStatusList pour les modes, filtre regex, menus et densité Windows ; lectures ciblées/fermetures vérifiées. FormDiff reste N2. ADR 0016.
+- Compare : liste partagée, six modes, regex/MRU, renommages et sélection/lecteur cohérents ; vérifié sur le périmètre décrit. Menus métier FormDiff absents ; défaut AllParents divergent et groupes range/base non raccordés ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu, outils externes et gestes de sélection de plage au clavier non certifiés, sans oracle Windows validé ; audits natifs restants. Parité globale non certifiée. FormDiff et Browse restent N2. ADR 0016.
 - Scripts : pont de préparation typée inclus dans la suite complète de `2e3bba726`. Relier le contexte actif, le lanceur, les événements, menus et raccourcis ; conserver argv avant Quote et attendre le picker natif. Les trois saisies restent N1. ADR 0057/0078.
 - Préférences : pages absentes de raccourcis, scripts/événements, langue, fontes et outils ; réglages distribués et tri/priorités Windows, dont repli GitDefault sans --date-order.
 - Navigation : recherche incrémentale, choix interactif des parents/enfants, CI/superproject et véritables fournisseurs PR/hébergement.
@@ -104,15 +104,13 @@ L’inventaire contient aussi les 84 types Window Avalonia (dont 3 bases abstrai
 
 La matrice donne les autres écarts écran par écran ; aucune famille n’est retirée du périmètre.
 
-## Dernière validation — saisies et retours clavier ciblés
+## Dernière validation — Compare et liste de fichiers partagée
 
-`2e3bba726` conserve la saisie Compare pendant les lectures ciblées, réutilise l’activation partagée du filtre historique et prépare les demandes scripts via les dialogues existants. [ADR 0016](adr/workflows/references/0016-revision-comparisons.md), [0079](adr/ui/0079-main-operation-focus.md), [0078](adr/workflows/scripts/0078-script-input-dialogs.md). Scripts : aucune route de lancement/menu/événement ; les trois saisies restent N1.
+`2ab5db302` : liste Compare partagée avec Browse/Commit, six modes, regex/MRU, renommages, préférences et lignes de 18 px. Sélection, lectures, première flèche après action de mode et palettes vérifiées sur le périmètre de l’[ADR 0016](adr/workflows/references/0016-revision-comparisons.md). Un groupe Browse filtré vide efface son aperçu ; RangeDiff reste affichable.
 
-[Validation](../../artifacts/linux/snapshots/2e3bba726/proofs/source-validation.json) : Desktop complet **1241/1241**, 135 classes ; Core **556/556** et Plugins **35/35** réexécutés dans cette tranche sur `84d94785d` et `84997d827`, puis composants et runtimes vérifiés inchangés pour `2e3bba726`. **1832 scénarios exécutés**, zéro échec/ignoré ; 32 nouveaux cas Desktop et 2 Core. Ciblés isolés et rouges originaux, dont Compare limité à c, conservés séparément.
+[Desktop complet](../../artifacts/linux/snapshots/2ab5db302/proofs/source-validation.json) : **1265/1265**, 136 classes, zéro échec/ignoré, dont 24 nouveaux cas. Core **556** et Plugins **35** réutilisés après contrôle des sources/runtimes inchangés ; ces 591 cas n’ont pas été réexécutés dans cette tranche. Le premier full refusé et ses rouges sont conservés séparément.
 
-[Natif du paquet exact](../../artifacts/linux/snapshots/2e3bba726/proofs/native-parent-verification.json) : filtre actif avant la première Échap puis Haut/Bas ; six fermetures Create avec première frappe, picker imbriqué, autre champ/F5, Rename dynamique, texte Compare complet et retours F5/Ctrl+R sans réparation. Fermeture finale normale et drainage contrôlés. Acceptation limitée à cette matrice X11/Openbox claire ; aucune parité globale ou validation Wayland/DPI/accessibilité.
-
-[Debian construit, extrait et installé en isolation](../../artifacts/linux/snapshots/2e3bba726/proofs/package-runtime-verification.json), SHA256 `a707f616ce46afaacc4c6c49440ea1b4208b867794a1a0346da106c4b0f0017b`. Aucun nouveau paquet installé sur l’hôte ni push. Picker natif scripts et lanceur restent ouverts ; treize familles ouvertes, aucun N4.
+[Paquet exact](../../artifacts/linux/snapshots/2ab5db302/proofs/package-runtime-verification.json) construit, extrait et installé en isolation ; [10 parcours natifs](../../artifacts/linux/snapshots/2ab5db302/proofs/native-parent-verification.json) verts, fermeture normale et invariants Git vérifiés. Périmètre X11/Openbox anglais clair ; autres plateformes, DPI/accessibilité et parité globale ouverts. Aucun nouveau paquet installé sur l’hôte ni push ; treize familles ouvertes, Browse/FormDiff N2, aucun N4.
 
 ## Livraison et preuves
 

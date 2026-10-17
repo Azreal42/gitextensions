@@ -918,14 +918,17 @@
         "CompareRevisionsDialog",
         "MainWindow"
       ],
-      "implemented": "Comparaisons de révisions, endpoints HEAD/index/worktree et diff texte/image. Lecture ciblée par comparaison/fichier/onglet sans désactiver filtre/liste ; sélection identique réutilisée, résultats/erreurs périmés rejetés et fermeture drainée. Frappe native complète puis retour aux commits vérifiés sur2e3bba726.",
-      "remaining": "Parité globale FormDiff non certifiée. Liste autonome encore fondée sur ListBox et filtre Contains : modes, filtre regex et menus historiques FileStatusList restent à reprendre, ainsi que les variantes de rendu et les outils externes.",
+      "implemented": "Comparaisons commit/index/worktree et diff texte/image ; lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et lignes de 18 px. Dans Compare, seule une feuille sélectionnée alimente le lecteur ; parents/multi le vident. Première flèche après action de mode et palette locale vérifiées. Source 2ab5db302, périmètre et preuves dans TODO.",
+      "remaining": "Menus métier FormDiff absents ; défaut AllParents divergent et groupes range/base non raccordés ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu, outils externes et gestes de sélection de plage au clavier non certifiés, sans oracle Windows validé ; audits natifs restants. Parité globale non certifiée.",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
         "RevisionDiffGroupTests",
         "RangeDiffWorkflowTests",
-        "ComparisonSelectionTests"
+        "ComparisonSelectionTests",
+        "ComparisonFileStatusListTests",
+        "FileStatusListViewTests",
+        "FileStatusListBuilderTests"
       ],
       "adr": [
         "0016",

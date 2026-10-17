@@ -390,3 +390,15 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 
 - Défaut UserInput terminé par des espaces : le remplacement générique trimait son nom et ne consommait plus le jeton. Remplacer le jeton littéral ; deux régressions bornées conservent les refus/annulations et les autres variables.
 - Ordre des demandes : UserInput précède UserFiles, même si le texte place UserFiles en premier. Les fixtures doivent suivre ce contrat hérité, sans changer silencieusement le parseur.
+
+## Comparaisons et listes partagées
+
+| Piège | Règle retenue |
+| --- | --- |
+| Compare garde un ancien aperçu après choix d’un parent ou d’une multisélection | Contrat Compare uniquement : seule la feuille unique est affichable. Une racine parent ne sélectionne pas implicitement son descendant. |
+| Browse conserve prompt et identité pour un groupe ordinaire filtré sans enfant | Vider ce groupe ordinaire seulement ; conserver les résumés de dossiers, prompts de groupes non vides et le RangeDiff affichable sans fichiers. |
+| La première flèche ne navigue pas après clic de ligne ou action de mode | Le Border interne ne prend pas le focus ; après l’action de mode ou son popup de modes, reprendre l’origine valide une seule fois. Aucun repli général à chaque popup ou reconstruction ; la saisie garde son éditeur. |
+| Un clic abandonné détourne une action clavier ultérieure | Désarmer l’origine pointeur lorsque le clavier prend la suite ; ne pas réutiliser un geste qui n’a pas produit d’action. |
+| Le survol reprend les couleurs Fluent malgré le thème historique | Ressources locales sur le présentateur réellement peint, dans les deux thèmes. |
+
+Périmètre et preuves : [TODO](todo.md), ADR 0016. Les modes de présentation ne certifient pas les menus métier ni la parité FormDiff.

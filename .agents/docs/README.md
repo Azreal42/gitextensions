@@ -7,6 +7,6 @@ But : proposer les workflows Git Extensions sur un bureau Linux, installables en
 - [TODO](todo.md) : périmètre restant et état de livraison.
 - [Inventaire Windows → Linux](windows-linux-window-inventory.md) : chaque fenêtre/page, équivalent réel, niveau N0–N4, écarts et preuves ; CSV/JSON et contrôle reproductible ; dialogues de l’installateur et travaux non validés séparés.
 - [Failures](failure.md) : causes et pièges à ne pas reproduire.
-- [Dernière validation complète Desktop](../../artifacts/linux/snapshots/2e3bba726/proofs/source-validation.json) et [paquet vérifié en isolation](../../artifacts/linux/snapshots/2e3bba726/proofs/package-runtime-verification.json) ; 1241/1241 ; saisie Compare et retours modaux ciblés vérifiés en natif, parité globale encore ouverte. Installation hôte distincte dans le TODO.
+- [Tranche Compare/FileStatusList](../../artifacts/linux/snapshots/2ab5db302/proofs/source-validation.json), [paquet isolé](../../artifacts/linux/snapshots/2ab5db302/proofs/package-runtime-verification.json) et [nouveau natif ciblé](../../artifacts/linux/snapshots/2ab5db302/proofs/native-parent-verification.json) : vérifié sur le périmètre décrit. Core/Plugins réutilisés inchangés ; limites et installation hôte dans le TODO, aucun N4.
 
 Le code, les tests et les scripts sont la source de vérité. Ces notes gardent l'intention et les chemins utiles ; les logs, captures, checksums et preuves historiques restent dans `artifacts/linux/`, avec leur source d'origine.

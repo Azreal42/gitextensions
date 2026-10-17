@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "2e3bba7267dc6c448f9842cac528d558572693c0",
-  "source_digest_sha256": "c2f3ee1bd9bf968a72edb76794baa1a8ab8d7d27dd3f55751b49cb7b7e61a684",
-  "scanned_csharp_files": 1905,
+  "code_reference_commit": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
+  "source_digest_sha256": "e46c10a0bc0dabb08e12800692680ab4a952e47103fa41bade87175bb084c73d",
+  "scanned_csharp_files": 1906,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,14 +50,14 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/selection-input-desktop-checks-20261017-02-full/desktop.trx",
-    "source_sha": "2e3bba7267dc6c448f9842cac528d558572693c0",
-    "trx_sha256": "07e0ca83c9659efadea1b0826ffe9a9b6bf6108885577a05ffb6ebf5e80b0f3a",
+    "trx": "artifacts/linux/comparison-empty-preview-desktop-checks-20261017-02-full/desktop.trx",
+    "source_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
+    "trx_sha256": "1b623a175febe745a77514de88a4fe60d30931868c915af5bb3f17e5d852bbe9",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
         "source_sha": "84d94785da393e42104b0633ea20490a60d22665",
-        "candidate_sha": "2e3bba7267dc6c448f9842cac528d558572693c0",
+        "candidate_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
         "passed": 556,
         "total": 556,
         "execution_result": "artifacts/linux/script-preparation-core-checks-20261017-01-full/full-result.json",
@@ -65,12 +65,12 @@
         "runtime_hashes_verified": 8,
         "runtime_inputs_unchanged": true,
         "reexecuted_on_candidate": false,
-        "fresh_execution_this_tranche": true,
-        "meaning": "Actual fresh execution after Core token change; later candidate UI-only commits preserve all component trees and original test-bin runtime bytes. Execution SHA remains explicit."
+        "fresh_execution_this_tranche": false,
+        "meaning": "Prior actual component execution reused; all candidate component source inputs and the original test-bin runtime bytes were verified unchanged. No fresh execution of this suite in this tranche."
       },
       "plugins": {
         "source_sha": "84997d82746422584c91b1c71b8f3468a66d2026",
-        "candidate_sha": "2e3bba7267dc6c448f9842cac528d558572693c0",
+        "candidate_sha": "2ab5db3026ee3289d69a51657db16189fbd5b46e",
         "passed": 35,
         "total": 35,
         "execution_result": "artifacts/linux/script-preparation-plugins-checks-20261017-01/plugins-result.json",
@@ -78,8 +78,8 @@
         "runtime_hashes_verified": 10,
         "runtime_inputs_unchanged": true,
         "reexecuted_on_candidate": false,
-        "fresh_execution_this_tranche": true,
-        "meaning": "Actual fresh execution after Core token change; later candidate UI-only commits preserve all component trees and original test-bin runtime bytes. Execution SHA remains explicit."
+        "fresh_execution_this_tranche": false,
+        "meaning": "Prior actual component execution reused; all candidate component source inputs and the original test-bin runtime bytes were verified unchanged. No fresh execution of this suite in this tranche."
       }
     },
     "current_linux_code_equivalent": true,
@@ -1825,7 +1825,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserSelectionTests.cs",
           "test_class": "BrowserSelectionTests",
-          "passed_in_reference_run": 6,
+          "passed_in_reference_run": 7,
           "results_present": true
         },
         {
@@ -2485,9 +2485,15 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonFileStatusListTests.cs",
+          "test_class": "ComparisonFileStatusListTests",
+          "passed_in_reference_run": 22,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonSelectionTests.cs",
           "test_class": "ComparisonSelectionTests",
-          "passed_in_reference_run": 11,
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -2924,8 +2930,8 @@
       "feature": "Comparaison/diff autonome",
       "group": "files",
       "level": "N2",
-      "implemented": "Comparaisons de révisions, endpoints HEAD/index/worktree et diff texte/image. Lecture ciblée par comparaison/fichier/onglet sans désactiver filtre/liste ; sélection identique réutilisée, résultats/erreurs périmés rejetés et fermeture drainée. Frappe native complète puis retour aux commits vérifiés sur2e3bba726.",
-      "remaining": "Parité globale FormDiff non certifiée. Liste autonome encore fondée sur ListBox et filtre Contains : modes, filtre regex et menus historiques FileStatusList restent à reprendre, ainsi que les variantes de rendu et les outils externes.",
+      "implemented": "Comparaisons commit/index/worktree et diff texte/image ; lectures ciblées annulables et fermeture drainée. FileStatusList commun : six modes, regex/MRU, renommages, préférences et lignes de 18 px. Dans Compare, seule une feuille sélectionnée alimente le lecteur ; parents/multi le vident. Première flèche après action de mode et palette locale vérifiées. Source 2ab5db302, périmètre et preuves dans TODO.",
+      "remaining": "Menus métier FormDiff absents ; défaut AllParents divergent et groupes range/base non raccordés ; métadonnées typées staged/tracked/sous-module absentes ; variantes de rendu, outils externes et gestes de sélection de plage au clavier non certifiés, sans oracle Windows validé ; audits natifs restants. Parité globale non certifiée.",
       "visual": "integre",
       "linux": [
         {
@@ -2945,9 +2951,27 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonFileStatusListTests.cs",
+          "test_class": "ComparisonFileStatusListTests",
+          "passed_in_reference_run": 22,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonSelectionTests.cs",
           "test_class": "ComparisonSelectionTests",
-          "passed_in_reference_run": 11,
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileStatusListBuilderTests.cs",
+          "test_class": "FileStatusListBuilderTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileStatusListViewTests.cs",
+          "test_class": "FileStatusListViewTests",
+          "passed_in_reference_run": 9,
           "results_present": true
         },
         {
@@ -7853,9 +7877,15 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonFileStatusListTests.cs",
+          "test_class": "ComparisonFileStatusListTests",
+          "passed_in_reference_run": 22,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonSelectionTests.cs",
           "test_class": "ComparisonSelectionTests",
-          "passed_in_reference_run": 11,
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {

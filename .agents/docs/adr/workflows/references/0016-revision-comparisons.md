@@ -1,13 +1,17 @@
 # ADR 0016 · Comparer les révisions
 
-Statut : accepté.
+Statut : accepté sur le périmètre décrit ; FormDiff reste N2.
 
-Besoin : conserver les choix BASE/Compare, les comparaisons de branche et les outils externes sans remplacer l'aperçu déjà affiché dans Browse.
+Besoin : comparer BASE/A/B sans remplacer l’aperçu de Browse, avec les choix et gestes de l’original.
 
-Décision : dialogue natif dédié ; endpoints commit/index/worktree typés. La merge-base est figée à l'ouverture comme dans l'original. Les chemins renommés et fichiers non suivis restent littéraux. Un outil externe peut éditer les fichiers : relire les données même après une erreur ou annulation. Les lectures de démarrage commencent après l'établissement du propriétaire, pour fermer et annuler ensemble.
+Décision : dialogue dédié et endpoints commit/index/worktree typés ; merge-base figée à l’ouverture, chemins renommés et non suivis littéraux. Relire après un outil externe, même en échec/annulation. Démarrer les lectures après établissement du propriétaire.
 
-Repères : `CompareRevisionsDialog`, `ComparisonRevisionSelector`, `CompareBranchPicker`, `GitRepository.Comparisons`, `MainWindow.Comparisons`. Create/Checkout/Rename réemploient le normaliseur original et sa garde de saisie, avec les préférences partagées. Rename conserve les filtres de navigation après renommage.
+Browse, Commit et Compare partagent FileStatusList : six modes, regex/MRU, renommages, densité 18 px et préférences. Dans Compare, seule une feuille sélectionnée alimente le lecteur ; parents/multisélections le vident. La racine unique sans enfant est automatiquement sélectionnée comme sous Windows, sans descendre dans un parent. Dans Browse, le groupe ordinaire filtré vide efface contenu/identité ; résumés de dossiers, groupes non vides et RangeDiff gardent leur comportement propre.
 
-Le filtre et la liste restent utilisables pendant une lecture de fichier, comme les séquences indépendantes de FormDiff Windows. CompareRevisionsDialog.Selection porte une demande par comparaison/fichier/onglet : réutiliser la sélection identique, annuler la précédente et refuser toute publication ou erreur périmée. Filtrer ne publie pas les sélections intermédiaires. Les opérations globales annulent/drainent ces lectures avant de démarrer ; Close attend le drainage, y compris quand Avalonia ferme les enfants avant de notifier leur propriétaire. Aucun Focus différé n’est ajouté.
+Les lectures ciblées laissent filtre/liste utilisables : réutiliser la même sélection, annuler la précédente et refuser les publications/erreurs périmées. Une opération globale ou la fermeture annule et draine ces lectures. Aucun retour du focus lors d’une reconstruction. Après une action de mode, reprendre seulement son origine encore valide ; abandonner l’ancienne origine pointeur quand le clavier prend la suite. Le décor de ligne ne prend pas le focus, et les palettes restent locales au contrôle.
 
-Validation ciblée :53/53, dont11 nouveaux cas de saisie, concurrence et fermeture ; la régression échoue sur l’original7a avec seulement c au lieu de context-focus-compare. Inclus dans Desktop1241/1241 sur2e3bba726 ; frappe native complète et retour aux commits vérifiés. FormDiff reste N2 : liste/modes/regex/menus historiques encore incomplets.
+Create/Checkout/Rename partagent normalisation, gardes et préférences ; Rename conserve les filtres de navigation.
+
+Restent ouverts : menus métier, groupes AllParents/range/base des révisions divergentes, métadonnées staged/tracked/sous-module, variantes de rendu/outils et gestes de plage au clavier. Pas de parité globale certifiée.
+
+Repères : `CompareRevisionsDialog/Selection`, `ComparisonRevisionSelector`, `CompareBranchPicker`, `GitRepository.Comparisons`, `GitBranchNaming`, `RenameBranchDialog`, `MainWindow.Comparisons/Diffs`, `FileStatusListView/Builder`, `FileStatusListPreferencesStore`. Source, tests et preuves : [TODO](../../../todo.md).
