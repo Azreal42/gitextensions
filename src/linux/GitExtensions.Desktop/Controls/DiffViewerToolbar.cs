@@ -49,6 +49,7 @@ public sealed class DiffViewerToolbar : Border, IDisposable
     public Func<Task>? NextChangeRequested { get; set; }
     public Func<Task>? PreviousChangeRequested { get; set; }
     public Task PendingSettingsOperation { get; private set; } = Task.CompletedTask;
+    public Task PendingNavigationOperation { get; private set; } = Task.CompletedTask;
 
     internal DiffViewerToolbar(DiffView view, TextEditor editor)
     {
@@ -56,8 +57,8 @@ public sealed class DiffViewerToolbar : Border, IDisposable
         Name = "DiffViewerToolbar"; Height = 24; IsVisible = false; Child = _row;
         NextChange = IconButton("ArrowDown.png", "nextChangeButton", "Next change");
         PreviousChange = IconButton("ArrowUp.png", "previousChangeButton", "Previous change");
-        NextChange.Click += async (_, _) => { if (NextChangeRequested is { } action) { await action(); } else { _view.GoToNextChange(); } };
-        PreviousChange.Click += async (_, _) => { if (PreviousChangeRequested is { } action) { await action(); } else { _view.GoToPreviousChange(); } };
+        NextChange.Click += async (_, _) => { HandleNavigationCommand(next: true); await PendingNavigationOperation; };
+        PreviousChange.Click += async (_, _) => { HandleNavigationCommand(next: false); await PendingNavigationOperation; };
         IncreaseContext = view.ComparisonMenu.CreateIncreaseContextButton();
         DecreaseContext = view.ComparisonMenu.CreateDecreaseContextButton();
         EntireFile = view.ComparisonMenu.CreateWholeFileButton();
@@ -226,13 +227,27 @@ public sealed class DiffViewerToolbar : Border, IDisposable
     private MenuItem NavigationItem(bool next)
     {
         MenuItem item = PopupItem(next ? "nextChangeButton" : "previousChangeButton", next ? "Next change" : "Previous change", next ? "ArrowDown.png" : "ArrowUp.png");
-        item.InputGesture = new(next ? Key.Down : Key.Up, KeyModifiers.Alt);
+        DesktopHotkeys.Bind(item, "FileViewer", next ? "NextChange" : "PreviousChange");
         item.Click += async (_, _) =>
         {
-            if (next) { if (NextChangeRequested is { } action) { await action(); } else { _view.GoToNextChange(); } }
-            else { if (PreviousChangeRequested is { } action) { await action(); } else { _view.GoToPreviousChange(); } }
+            HandleNavigationCommand(next); await PendingNavigationOperation;
         };
         return item;
+    }
+
+    internal bool HandleNavigationCommand(bool next)
+    {
+        Button button = next ? NextChange : PreviousChange;
+        if (_disposed || !_view.IsEffectivelyEnabled || !button.IsVisible || !button.IsEnabled) { return false; }
+        PendingNavigationOperation = NavigateAsync(next); return true;
+    }
+
+    private async Task NavigateAsync(bool next)
+    {
+        Func<Task>? action = next ? NextChangeRequested : PreviousChangeRequested;
+        if (action is not null) { await action(); }
+        else if (next) { _view.GoToNextChange(); }
+        else { _view.GoToPreviousChange(); }
     }
     private MenuItem PopupItem(string original, string text, string asset)
         => new() { Header = new AccessText { Text = _translations.Translate("FileViewer", original, "ToolTipText", text) },
@@ -251,7 +266,10 @@ public sealed class DiffViewerToolbar : Border, IDisposable
     private Button IconButton(string asset, string original, string tooltip)
     {
         Button button = new() { Content = CreateIcon(asset), Width = 24, Height = 24, MinHeight = 24, MinWidth = 0, Padding = default };
-        ToolTip.SetTip(button, _translations.Translate("FileViewer", original, "ToolTipText", tooltip));
+        string caption = _translations.Translate("FileViewer", original, "ToolTipText", tooltip);
+        string? hotkey = original switch { "nextChangeButton" => "NextChange", "previousChangeButton" => "PreviousChange", _ => null };
+        if (hotkey is not null) { DesktopHotkeys.BindToolTip(button, "FileViewer", hotkey, caption); }
+        else { ToolTip.SetTip(button, caption); }
         return button;
     }
     private Image CreateIcon(string asset)

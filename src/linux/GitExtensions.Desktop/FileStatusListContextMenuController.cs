@@ -14,16 +14,22 @@ namespace GitExtensions.Linux.Desktop;
 /// <summary>One menu order, native predicates and shortcut dispatcher for file-list hosts.</summary>
 internal sealed class FileStatusListContextMenuController(FileStatusListView view, TranslationCatalog translations, FileMenuHost host)
 {
+    private readonly Dictionary<MenuItem, Func<Task?>> _executions = [];
+
     private string T(string value) => translations.Translate(value);
     internal object[] BuildItems(FileMenuSelection? selection)
     {
+        _executions.Clear();
         if (selection is null) { return []; }
         FileMenuPolicy p = new(selection);
         bool ready = !host.IsBusy() && host.IsCurrent(selection);
         FileMenuCapabilities c = host.Capabilities;
         MenuItem Item(string name, string label, string? icon, FileMenuCommand command, bool enabled = true, KeyGesture? gesture = null)
         {
-            MenuItem item = host.CreateAction("FileStatusList", name, label, icon, () => command == FileMenuCommand.ResetToFirst && !p.CanResetFirst ? Task.CompletedTask : ExecuteAsync(command, selection), gesture);
+            MenuItem item = CommandItem("FileStatusList", name, label, icon,
+                () => command == FileMenuCommand.ResetToFirst && !p.CanResetFirst ? Task.CompletedTask : ExecuteAsync(command, selection),
+                command, selection, gesture, bindHotkey: name != "tsmiResetFileTo");
+            if (command == FileMenuCommand.ResetToFirst && !p.CanResetFirst) { item.Tag = null; }
             item.IsEnabled = ready && enabled;
             if (name != "tsmiOpenWithDifftool" && command is (FileMenuCommand.DiffFirstToSecond or FileMenuCommand.DiffSecondToWorkingTree or FileMenuCommand.DiffFirstToWorkingTree
                 or FileMenuCommand.DiffTwoSelected or FileMenuCommand.DiffWithRemembered))
@@ -34,8 +40,9 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
                     for (int index = 0; index < tools.Length; index++)
                     {
                         string tool = tools[index];
-                        MenuItem choice = host.CreateAction("FileStatusList", name + "Tool" + index, tool, null,
-                            () => ExecuteAsync(command, selection with { CustomDiffTool = tool }), index == 0 ? gesture : null);
+                        MenuItem choice = CommandItem("FileStatusList", name + "Tool" + index, tool, null,
+                            () => ExecuteAsync(command, selection with { CustomDiffTool = tool }), command, selection,
+                            index == 0 ? gesture : null, bindHotkey: index == 0);
                         choice.IsEnabled = item.IsEnabled;
                         if (index == 0) { choice.FontWeight = FontWeight.Bold; }
                         item.Items.Add(choice);
@@ -144,7 +151,7 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
         MenuItem copy = Container("CopyPathsToolStripMenuItem", "Copy &path(s)", "CopyToClipboard.png", selection.CopyPaths.Count > 0 && !p.DisplayOnly);
         MenuItem Copy(string name, string label, FileMenuCommand command, KeyGesture? gesture = null)
         {
-            MenuItem item = host.CreateAction("CopyPathsToolStripMenuItem", name, label, null, () => ExecuteAsync(command, selection), gesture);
+            MenuItem item = CommandItem("CopyPathsToolStripMenuItem", name, label, null, () => ExecuteAsync(command, selection), command, selection, gesture);
             item.IsEnabled = ready && selection.CopyPaths.Count > 0 && !p.DisplayOnly; return item;
         }
         copy.Items.Add(Copy("copyRelativePathsPosixToolStripMenuItem", "Copy relative path(s) - &POSIX", FileMenuCommand.CopyRelativePosix));
@@ -242,23 +249,113 @@ internal sealed class FileStatusListContextMenuController(FileStatusListView vie
         view.FindItemByTag(chosen.Tag)?.Focus();
     }
 
+    private MenuItem CommandItem(string category, string name, string label, string? icon, Func<Task> action,
+        FileMenuCommand command, FileMenuSelection selection, KeyGesture? fixedGesture, bool bindHotkey = true)
+    {
+        Task? operation = null;
+        MenuItem item = host.CreateAction(category, name, label, icon, () =>
+        {
+            Task started = InvokeActionAsync(action); operation = started; return started;
+        }, fixedGesture);
+        item.Tag = command;
+        _executions[item] = () => operation;
+        if (bindHotkey && HotkeyName(command, selection.IsFileTree) is { } hotkey) { DesktopHotkeys.Bind(item, "BrowseDiff", hotkey); }
+        return item;
+    }
+
+    private static async Task InvokeActionAsync(Func<Task> action) => await action();
+
+    private static string? HotkeyName(FileMenuCommand command, bool tree) => command switch
+    {
+        FileMenuCommand.AddToIgnore => "AddFileToGitIgnore",
+        FileMenuCommand.Blame => "Blame", FileMenuCommand.DeleteFile => "DeleteSelectedFiles",
+        FileMenuCommand.EditWorkingFile => "EditFile", FileMenuCommand.FilterInGrid => "FilterFileInGrid",
+        FileMenuCommand.FindFile => "FindFile",
+        FileMenuCommand.FindInCommitFiles => tree ? "FindInCommitFilesUsingGitGrep_FileTreeTab" : "FindInCommitFilesUsingGitGrep_DiffTab",
+        FileMenuCommand.OpenRevisionFile => "OpenAsTempFile", FileMenuCommand.OpenRevisionFileWith => "OpenAsTempFileWith",
+        FileMenuCommand.DiffFirstToSecond => "OpenWithDifftool", FileMenuCommand.DiffFirstToWorkingTree => "OpenWithDifftoolFirstToLocal",
+        FileMenuCommand.DiffSecondToWorkingTree => "OpenWithDifftoolSelectedToLocal",
+        FileMenuCommand.OpenWorkingFile => "OpenWorkingDirectoryFile", FileMenuCommand.OpenWorkingFileWith => "OpenWorkingDirectoryFileWith",
+        FileMenuCommand.RenameMove => "RenameMove", FileMenuCommand.ResetToFirst => "ResetSelectedFiles",
+        FileMenuCommand.ShowInFileTree => "ShowFileTree", FileMenuCommand.FileHistory => "ShowHistory",
+        FileMenuCommand.Stage => "StageSelectedFile", FileMenuCommand.Unstage => "UnStageSelectedFile", _ => null
+    };
+
+    private static FileMenuCommand? CommandFor(string name, bool tree) => name switch
+    {
+        "AddFileToGitIgnore" => FileMenuCommand.AddToIgnore,
+        "Blame" => FileMenuCommand.Blame, "DeleteSelectedFiles" => FileMenuCommand.DeleteFile,
+        "EditFile" => FileMenuCommand.EditWorkingFile, "FilterFileInGrid" => FileMenuCommand.FilterInGrid,
+        "FindFile" => FileMenuCommand.FindFile,
+        "FindInCommitFilesUsingGitGrep_DiffTab" when !tree => FileMenuCommand.FindInCommitFiles,
+        "FindInCommitFilesUsingGitGrep_FileTreeTab" when tree => FileMenuCommand.FindInCommitFiles,
+        "OpenAsTempFile" => FileMenuCommand.OpenRevisionFile, "OpenAsTempFileWith" => FileMenuCommand.OpenRevisionFileWith,
+        "OpenWithDifftool" => FileMenuCommand.DiffFirstToSecond, "OpenWithDifftoolFirstToLocal" => FileMenuCommand.DiffFirstToWorkingTree,
+        "OpenWithDifftoolSelectedToLocal" => FileMenuCommand.DiffSecondToWorkingTree,
+        "OpenWorkingDirectoryFile" => FileMenuCommand.OpenWorkingFile, "OpenWorkingDirectoryFileWith" => FileMenuCommand.OpenWorkingFileWith,
+        "RenameMove" => FileMenuCommand.RenameMove, "ResetSelectedFiles" => FileMenuCommand.ResetToFirst,
+        "ShowFileTree" => FileMenuCommand.ShowInFileTree, "ShowHistory" => FileMenuCommand.FileHistory,
+        "StageSelectedFile" => FileMenuCommand.Stage, "UnStageSelectedFile" => FileMenuCommand.Unstage,
+        // Parent commands belong to the Browse owner; Visual Studio has no Linux action.
+        "GoToFirstParent" or "GoToLastParent" or "OpenInVisualStudio" => null,
+        _ => null
+    };
+
+    private static IEnumerable<MenuItem> EnabledItems(IEnumerable<object> items)
+    {
+        foreach (MenuItem item in items.OfType<MenuItem>())
+        {
+            if (!item.IsEnabled || !item.IsVisible) { continue; }
+            yield return item;
+            foreach (MenuItem child in EnabledItems(item.Items.Cast<object>())) { yield return child; }
+        }
+    }
+
+    /// <summary>Accepts the current enabled menu command; the existing host click scope owns errors and focus.</summary>
+    internal Task<bool> ExecuteCommandAsync(FileMenuCommand command)
+        => host.IsBusy() || !view.IsEffectivelyEnabled ? Task.FromResult(false) : ExecuteCommandAsync(command, host.CaptureSelection());
+
+    private Task<bool> ExecuteCommandAsync(FileMenuCommand command, FileMenuSelection? selection, Action? accepted = null)
+    {
+        if (selection is null || host.IsBusy() || !host.IsCurrent(selection) || !view.IsEffectivelyEnabled) { return Task.FromResult(false); }
+        MenuItem? item = EnabledItems(BuildItems(selection)).FirstOrDefault(item => item.Tag is FileMenuCommand value && value == command);
+        return item is null ? Task.FromResult(false) : InvokeItemAsync(item, accepted);
+    }
+
+    private async Task<bool> InvokeItemAsync(MenuItem item, Action? accepted)
+    {
+        Func<Task?>? operation = _executions.GetValueOrDefault(item);
+        if (operation is null) { return false; }
+        accepted?.Invoke();
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, item));
+        if (operation() is not { } started) { return false; }
+        // The same host event handler reports failures, including its owned error window.
+        // True means the available command was accepted; never retry a second binding on failure.
+        try { await started; } catch (Exception) { }
+        return true;
+    }
+
     internal Task<bool> HandleShortcutAsync(KeyEventArgs args)
     {
-        if (args.Handled || host.IsBusy() || !view.Tree.IsKeyboardFocusWithin) { return Task.FromResult(false); }
-        if (args.Key is Key.Up or Key.Down or Key.Left or Key.Right or Key.Home or Key.End or Key.PageUp or Key.PageDown)
-        { return Task.FromResult(false); }
-        static IEnumerable<MenuItem> Descendants(IEnumerable<object> items)
-        {
-            foreach (MenuItem item in items.OfType<MenuItem>())
-            { yield return item; foreach (MenuItem child in Descendants(item.Items.Cast<object>())) { yield return child; } }
-        }
-        if (args.Key == Key.A && args.KeyModifiers == KeyModifiers.Control)
+        if (args.Handled || host.IsBusy() || !view.IsEffectivelyEnabled || !view.Tree.IsKeyboardFocusWithin) { return Task.FromResult(false); }
+        HotkeyCommand? hotkey = DesktopHotkeys.Match("BrowseDiff", args);
+        FileMenuSelection? selection = host.CaptureSelection();
+        if (selection is null || !host.IsCurrent(selection)) { return Task.FromResult(false); }
+        if (hotkey?.Name == "SelectFirstGroupChanges")
         { args.Handled = true; view.SelectFirstGroup(); return Task.FromResult(true); }
-        MenuItem? action = Descendants(BuildItems(host.CaptureSelection())).FirstOrDefault(item => item.IsEnabled && item.InputGesture is { } gesture
-            && gesture.Key == args.Key && gesture.KeyModifiers == args.KeyModifiers);
-        if (action is null) { return Task.FromResult(false); }
-        args.Handled = true; action.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, action));
-        return Task.FromResult(true);
+        if (hotkey is not null)
+        {
+            FileMenuCommand? command = CommandFor(hotkey.Name, selection.IsFileTree);
+            return command is { } value ? ExecuteCommandAsync(value, selection, () => args.Handled = true) : Task.FromResult(false);
+        }
+        // These two ordinary menu shortcuts have no Windows BrowseDiff preset.
+        FileMenuCommand? fixedCommand = (args.Key, args.KeyModifiers) switch
+        {
+            (Key.C, KeyModifiers.Control) => FileMenuCommand.CopyFullNative,
+            (Key.S, KeyModifiers.Control) => FileMenuCommand.SaveAs,
+            _ => null
+        };
+        return fixedCommand is { } fixedValue ? ExecuteCommandAsync(fixedValue, selection, () => args.Handled = true) : Task.FromResult(false);
     }
     private string Describe(IEnumerable<GitCompareRevision> endpoints)
         => FileMenuRevisionDescription.Describe(endpoints, T);

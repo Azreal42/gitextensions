@@ -94,7 +94,8 @@ public sealed partial class MainWindow
                 if (_busy || _repository is null || command.Available?.Invoke() == false || command.Execute is null) { return; }
                 try { await command.Execute(); }
                 finally { RefreshHistoryMenuStates(); }
-            }, command.Gesture);
+            }, HistoryHotkeyNames.TryGetValue(command.Name, out string? hotkey) ? DesktopHotkeys.Get("RevisionGrid", hotkey) : command.Gesture);
+            if (hotkey is not null) { DesktopHotkeys.Bind(item, "RevisionGrid", hotkey); }
             // The XLF key is the upstream command name; the host prefix only names controls.
             item.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("RevisionGrid", command.Name, "Text", command.Text) };
             if (prefix == "RevisionView" && command.Name == "SaveAsDefault") { item.Name = "SaveCurrentViewSettingsAsDefault"; }
@@ -137,28 +138,13 @@ public sealed partial class MainWindow
 
     private async Task<bool> HandleHistoryMenuShortcutAsync(KeyEventArgs args, Action? beforeExecute = null)
     {
-        if (args.KeyModifiers == KeyModifiers.None && args.Key is Key.BrowserBack or Key.BrowserForward)
-        {
-            args.Handled = true; beforeExecute?.Invoke(); await NavigateRevisionHistoryAsync(args.Key == Key.BrowserBack ? -1 : 1); return true;
-        }
-        HistoryCommand? command = NavigateHistoryCommands().Concat(ViewHistoryCommands()).FirstOrDefault(c => c.Gesture is { } g && g.Key == args.Key && g.KeyModifiers == args.KeyModifiers);
-        if (command is null || command.Available?.Invoke() == false || command.Execute is null) { return false; }
-        args.Handled = true;
-        try { beforeExecute?.Invoke(); await command.Execute(); }
-        catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
-        finally { RefreshHistoryMenuStates(); }
-        return true;
+        return await ExecuteConfiguredHotkeyAsync("RevisionGrid", args, beforeExecute);
     }
 
     private async void HistoryMenuKeyDown(object? sender, KeyEventArgs args)
     {
         if (_busy || args.Handled || _repository is null) { return; }
-        void CloseMenu()
-        {
-            if (sender is MenuItem menu) { menu.IsSubMenuOpen = false; }
-            _revisionContext?.Close();
-        }
-        async Task ExecuteAsync() { await HandleHistoryMenuShortcutAsync(args, CloseMenu); }
+        async Task ExecuteAsync() { await HandleConfiguredShortcutsAsync(sender, args, allowAlt: true); }
         if (sender is MenuItem source) { await WithMenuActionFocusAsync(source, ExecuteAsync); }
         else { await ExecuteAsync(); }
     }
@@ -169,7 +155,7 @@ public sealed partial class MainWindow
         // handler first. Handling it at the window tunnel suppresses that
         // bookkeeping and Alt-up subsequently opens the main menu.
         if (!_busy && !args.Handled && args.KeyModifiers == KeyModifiers.Alt)
-        { await HandleHistoryMenuShortcutAsync(args); }
+        { await HandleConfiguredShortcutsAsync(sender, args, allowAlt: true); }
     }
 
     private Task ToggleArtificialRevisionAsync()

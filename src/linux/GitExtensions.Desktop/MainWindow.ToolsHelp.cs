@@ -20,6 +20,11 @@ public sealed partial class MainWindow
     private MenuItem OriginalAction(string category, string name, string label, string? icon, Func<Task> action, KeyGesture? gesture = null)
     {
         MenuItem item = OriginalMenuItems.Create(_translations, category, name, label, icon, gesture);
+        if (category == "FormBrowse" && (name switch
+        {
+            "gitBashToolStripMenuItem" => "GitBash", "gitGUIToolStripMenuItem" => "GitGui", "kGitToolStripMenuItem" => "GitGitK",
+            "settingsToolStripMenuItem" => "OpenSettings", _ => null
+        }) is { } command) { DesktopHotkeys.Bind(item, "Browse", command); }
         item.Click += async (_, args) =>
         {
             if (args.Source != item || !item.IsEnabled) { return; }
@@ -134,7 +139,9 @@ public sealed partial class MainWindow
     {
         if (_busy) { return; }
         FileHistoryPreferences fileHistory = _fileHistoryPreferencesStore.Load();
-        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null, _historyView.Sort, fileHistory);
+        HotkeyBindings hotkeys = DesktopHotkeys.Reload();
+        DesktopSettingsDialog dialog = new(_preferences, _translations, _repository is not null, _historyView.Sort, fileHistory,
+            hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings));
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

@@ -30,7 +30,7 @@ public sealed partial class MainWindow : Window
     private readonly ListBox _worktrees = new();
     private readonly ListBox _submodules = new() { Name = "SubmodulesList" };
     private readonly ListBox _configuration = new();
-    private readonly TreeView _tree = new() { SelectionMode = SelectionMode.Multiple };
+    private readonly TreeView _tree = new() { SelectionMode = SelectionMode.Multiple, Focusable = true };
     private readonly BranchHistoryFilterComboBox _historyRevision = new();
     private readonly TextBox _filePath = new() { Watermark = "Repository-relative file path", MinWidth = 240 };
     private readonly TextBox _fileView = ReadOnlyText();
@@ -73,6 +73,9 @@ public sealed partial class MainWindow : Window
         {
             AppendOutput($"Unable to read preferences: {exception.Message}");
         }
+
+        DesktopHotkeys.Reload();
+        if (DesktopHotkeys.LoadError is { } hotkeyError) { AppendOutput($"Unable to read hotkeys: {hotkeyError.Message}"); }
 
         LoadRepositoryHistory();
         _historyView = _historyViewStore.Load();
@@ -214,6 +217,7 @@ public sealed partial class MainWindow : Window
             await _backgroundFetch.DisposeAsync();
         };
         AddHandler(KeyDownEvent, HandleShortcuts, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Bubble);
     }
 
     private CancellationToken Token => _operation?.Token ?? _lifetime.Token;
@@ -257,6 +261,13 @@ public sealed partial class MainWindow : Window
     private Control BuildChangesDiff()
     {
         _changesDiffView = new DiffView(_changesDiff) { Name = "WorktreeDiff" };
+        _changesDiffView.FileViewerCommandRequested = command =>
+        {
+            Button? action = command switch { "StageLines" => _stageLinesButton, "UnstageLines" => _unstageLinesButton, _ => null };
+            if (action?.IsEnabled != true || _busy || _workingDiffRead.Current is not null) { return false; }
+            action.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+            return true;
+        };
         _changesDiffView.Toolbar.SetNames("WorktreeDiff");
         _workingViewerOptions = _changesDiffView.ComparisonMenu.Options;
         _changesDiffView.ComparisonMenu.OptionsChanged += async (_, _) =>

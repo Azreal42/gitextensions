@@ -15,7 +15,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private readonly TreeView _navigation = new() { Name = "RepositoryNavigation" };
+    private readonly TreeView _navigation = new() { Name = "RepositoryNavigation", Focusable = true };
     private readonly CommitInformationView _commitInfo = new() { Name = "CommitInformation", ShowBranchesAsLinks = true };
     private readonly TextBox _gpgInfo = ReadOnlyText();
     private readonly Dictionary<string, Control> _workflowViews = new(StringComparer.Ordinal);
@@ -357,6 +357,7 @@ public sealed partial class MainWindow
     private MenuItem MenuAction(string header, Func<Task> action, string? icon = null)
     {
         MenuItem item = new() { Header = T(header), InputGesture = BrowserGesture(header), Tag = RequiresWorktree(header) };
+        if (MenuHotkeyIdentity(header) is { } hotkey) { DesktopHotkeys.Bind(item, hotkey.Context, hotkey.Command); }
         if (icon is not null)
         {
             item.Icon = OriginalIconImage(icon);

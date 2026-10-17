@@ -57,7 +57,7 @@ public sealed class DiffViewerRenderingMenu : IDisposable
 
     public bool HandleKeyDown(KeyEventArgs args)
     {
-        if (_disposed || IsBlocked || args.Handled || !_supportsSyntax || args.KeyModifiers != KeyModifiers.None || args.Key != Key.X) { return false; }
+        if (_disposed || IsBlocked || args.Handled || !_supportsSyntax || DesktopHotkeys.Match("FileViewer", args)?.Name != "ShowSyntaxHighlighting") { return false; }
         args.Handled = true; ToggleSyntaxHighlighting(); return true;
     }
 
@@ -66,7 +66,7 @@ public sealed class DiffViewerRenderingMenu : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this); string names = prefix ?? "DiffViewer";
         MenuItem nonPrinting = Item(names + "NonPrintingMenu", false, "showNonprintableCharactersToolStripMenuItem", "S&how nonprinting characters", "ShowWhitespace.png");
         MenuItem syntax = Item(names + "SyntaxHighlightingMenu", true, "showSyntaxHighlightingToolStripMenuItem", "Show synta&x highlighting", "SyntaxHighlighting.png");
-        syntax.InputGesture = new(Key.X); Refresh(); return [nonPrinting, syntax];
+        DesktopHotkeys.Bind(syntax, "FileViewer", "ShowSyntaxHighlighting"); Refresh(); return [nonPrinting, syntax];
     }
     public Button CreateNonPrintingButton(string? name = null) => Button(name ?? "DiffViewerNonPrinting", false, "ShowWhitespace.png", "showNonPrintChars", "Show nonprinting characters");
     public Button CreateSyntaxHighlightingButton(string? name = null) => Button(name ?? "DiffViewerSyntaxHighlighting", true, "SyntaxHighlighting.png", "showSyntaxHighlighting", "Show syntax highlighting");
@@ -101,7 +101,9 @@ public sealed class DiffViewerRenderingMenu : IDisposable
             Name = name, Content = Icon(asset), Width = 24, Height = 24, MinWidth = 0, MinHeight = 24, Padding = default,
             Resources = ButtonResources()
         };
-        ToolTip.SetTip(button, _translations.Translate("FileViewer", original, "ToolTipText", tooltip));
+        string caption = _translations.Translate("FileViewer", original, "ToolTipText", tooltip);
+        if (syntax) { DesktopHotkeys.BindToolTip(button, "FileViewer", "ShowSyntaxHighlighting", caption); }
+        else { ToolTip.SetTip(button, caption); }
         button.Click += (_, _) => Execute(syntax); _buttons.Add((button, syntax)); Refresh(); return button;
     }
     private Image Icon(string asset)

@@ -263,10 +263,19 @@ public sealed partial class MainWindow
     private async Task OpenFileGrepFromDiffAsync() { FocusDetail("FileTreeTab"); await ShowFileGrepDialogAsync(); }
     private Task ToggleFileGrepAsync()
     { UpdateFileGrepSettings(_fileGrepSettings with { ShowSearchBox = !_fileGrepSettings.ShowSearchBox }); FocusDetail("FileTreeTab"); return Task.CompletedTask; }
-    private Task<bool> HandleFilePaneShortcutAsync(KeyEventArgs args)
+    private async Task<bool> HandleFilePaneShortcutAsync(KeyEventArgs args)
     {
         bool tree = _tree.IsKeyboardFocusWithin;
-        return (tree || _revisionFiles.IsKeyboardFocusWithin) && _fileMenuControllers.TryGetValue(tree, out FileStatusListContextMenuController? controller)
-            ? controller.HandleShortcutAsync(args) : Task.FromResult(false);
+        bool diff = _revisionFiles.IsKeyboardFocusWithin || _commitContent?.IsKeyboardFocusWithin == true;
+        if (!tree && !diff || IsFocusedTextEditingKey(args)) { return false; }
+        HotkeyCommand? command = DesktopHotkeys.Match("BrowseDiff", args);
+        if (diff && command?.Name is "GoToFirstParent" or "GoToLastParent")
+        {
+            args.Handled = true;
+            await MoveHistoryRelativeAsync(command.Name == "GoToFirstParent" ? RelativeRevisionCommand.FirstParent : RelativeRevisionCommand.LastParent);
+            return true;
+        }
+        return _fileMenuControllers.TryGetValue(tree, out FileStatusListContextMenuController? controller)
+            && await controller.HandleShortcutAsync(args);
     }
 }

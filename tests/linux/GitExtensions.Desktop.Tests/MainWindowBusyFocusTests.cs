@@ -151,7 +151,7 @@ public sealed class MainWindowBusyFocusTests
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
         ListBoxItem origin = (ListBoxItem)history.ContainerFromIndex(2)!; string hash = ((GitCommit)origin.DataContext!).Hash;
         object source = history.ItemsSource!; Pointer(main, origin, MouseButton.Right); await Until(() => history.ContextMenu!.IsOpen);
-        Press(TopLevel.GetTopLevel(history.ContextMenu!)!, compare ? PhysicalKey.R : PhysicalKey.F5,
+        Press(TopLevel.GetTopLevel(history.ContextMenu!)!, compare ? PhysicalKey.D : PhysicalKey.F5,
             compare ? RawInputModifiers.Control : RawInputModifiers.None);
         await Until(() => !history.ContextMenu!.IsOpen);
         if (compare)

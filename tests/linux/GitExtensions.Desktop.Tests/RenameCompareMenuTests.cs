@@ -85,6 +85,12 @@ public class RenameCompareMenuTests
     public async Task ControlRComparesRootParentAndMultipleSelectionsInHistoryOrderAndPreservesSelectionOnRefresh()
     {
         using Fixture fixture = await Fixture.CreateAsync("oldest\n", "oldest\n");
+        // Preserve this selected-commits regression through an explicit user
+        // binding; Windows reserves the default Ctrl+R for Compare to BASE.
+        HotkeyBindings hotkeys = DesktopHotkeys.Current.Clone();
+        hotkeys.Set("RevisionGrid", HotkeyCatalog.Find("RevisionGrid", "CompareToBase")!.Code, null);
+        hotkeys.Set("RevisionGrid", HotkeyCatalog.Find("RevisionGrid", "CompareSelectedCommits")!.Code, new(Key.R, KeyModifiers.Control));
+        new HotkeyPreferencesStore().Save(hotkeys);
         GitRepository repository = await GitRepository.OpenAsync(fixture.Repository);
         string oldest = await repository.ResolveRevisionAsync("HEAD");
         await CommitAsync(fixture, repository, "middle\n", "Middle commit");

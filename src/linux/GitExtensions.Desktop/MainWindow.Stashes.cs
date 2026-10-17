@@ -34,6 +34,8 @@ public sealed partial class MainWindow
         {
             MenuItem item = new() { Name = prefix + suffix, Tag = true,
                 Header = new AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", key, "Text", text) }, InputGesture = gesture };
+            if ((suffix switch { "Save" => "Stash", "Staged" => "StashStaged", "Pop" => "StashPop", _ => null }) is { } command)
+            { DesktopHotkeys.Bind(item, "Browse", command); }
             _actionMenus.Add(item); _stashMenuItems.Add(item);
             item.AddHandler(KeyDownEvent, HandleShortcuts, RoutingStrategies.Tunnel);
             item.Click += async (_, _) =>

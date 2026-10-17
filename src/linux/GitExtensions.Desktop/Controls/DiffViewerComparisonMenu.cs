@@ -80,14 +80,16 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     public bool HandleKeyDown(KeyEventArgs args)
     {
         if (_disposed || IsBlocked || args.Handled) { return false; }
-        if (args.KeyModifiers == KeyModifiers.Control && args.Key == Key.E && _supportsContext)
-        { args.Handled = true; ToggleWholeFile(); return true; }
-        if (args.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && args.Key == Key.W && _supportsWhitespace)
-        { args.Handled = true; SelectWhitespace(IgnoreWhitespaceKind.AllSpace); return true; }
-        bool increase = args.Key is Key.OemPlus or Key.Add;
-        if (args.KeyModifiers == KeyModifiers.Control && (increase || args.Key is Key.OemMinus or Key.Subtract) && CanChangeContext)
-        { args.Handled = true; if (increase) { IncreaseContext(); } else { DecreaseContext(); } return true; }
-        return false;
+        Command? command = DesktopHotkeys.Match("FileViewer", args)?.Name switch
+        {
+            "ShowEntireFile" => Command.Whole,
+            "IgnoreAllWhitespace" => Command.All,
+            "IncreaseNumberOfVisibleLines" => Command.Increase,
+            "DecreaseNumberOfVisibleLines" => Command.Decrease,
+            _ => null
+        };
+        if (command is not { } selected || !Enabled(selected)) { return false; }
+        args.Handled = true; Execute(selected); return true;
     }
 
     public IReadOnlyList<object> CreateContextMenuItems(string? prefix = null)
@@ -99,8 +101,8 @@ public sealed class DiffViewerComparisonMenu : IDisposable
         MenuItem increase = Item(names + "IncreaseContextMenu", "FileViewer", "increaseNumberOfLinesToolStripMenuItem", "&Increase the number of lines of context", Command.Increase, "NumberOfLinesIncrease.png");
         MenuItem decrease = Item(names + "DecreaseContextMenu", "FileViewer", "decreaseNumberOfLinesToolStripMenuItem", "&Decrease the number of lines of context", Command.Decrease, "NumberOfLinesDecrease.png");
         MenuItem whole = Item(names + "EntireFileMenu", "FileViewer", "showEntireFileToolStripMenuItem", "Show &entire file", Command.Whole, "ShowEntireFile.png");
-        increase.InputGesture = new(Key.OemPlus, KeyModifiers.Control); decrease.InputGesture = new(Key.OemMinus, KeyModifiers.Control);
-        whole.InputGesture = new(Key.E, KeyModifiers.Control); all.InputGesture = new(Key.W, KeyModifiers.Control | KeyModifiers.Shift);
+        DesktopHotkeys.Bind(increase, "FileViewer", "IncreaseNumberOfVisibleLines"); DesktopHotkeys.Bind(decrease, "FileViewer", "DecreaseNumberOfVisibleLines");
+        DesktopHotkeys.Bind(whole, "FileViewer", "ShowEntireFile"); DesktopHotkeys.Bind(all, "FileViewer", "IgnoreAllWhitespace");
         Refresh();
         return [increase, decrease, whole, new Separator(), eol, change, all];
     }
@@ -177,7 +179,11 @@ public sealed class DiffViewerComparisonMenu : IDisposable
         Button button = command is Command.Whole or Command.Eol or Command.Change or Command.All ? new ToggleButton() : new Button();
         button.Name = name; button.Width = button.Height = button.MinHeight = 24; button.MinWidth = 0; button.Padding = default; button.Content = Icon(icon);
         button.Resources = new ResourceDictionary { ThemeDictionaries = { [ThemeVariant.Light] = ButtonResources(false), [ThemeVariant.Dark] = ButtonResources(true) } };
-        ToolTip.SetTip(button, _translations.Translate("FileViewer", original, "ToolTipText", tooltip));
+        string caption = _translations.Translate("FileViewer", original, "ToolTipText", tooltip);
+        string? hotkey = command switch { Command.Increase => "IncreaseNumberOfVisibleLines", Command.Decrease => "DecreaseNumberOfVisibleLines",
+            Command.Whole => "ShowEntireFile", Command.All => "IgnoreAllWhitespace", _ => null };
+        if (hotkey is not null) { DesktopHotkeys.BindToolTip(button, "FileViewer", hotkey, caption); }
+        else { ToolTip.SetTip(button, caption); }
         button.Click += (_, _) => { Execute(command); Refresh(); }; _buttons.Add((button, command)); Refresh(); return button;
     }
     private Image Icon(string name)

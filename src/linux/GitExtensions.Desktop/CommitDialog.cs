@@ -8,6 +8,8 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 using System.Text;
@@ -86,6 +88,8 @@ public sealed partial class CommitDialog : Window
     private bool _busy;
     private bool _pendingDiffAppearance;
     private bool _refreshing;
+    private sealed record FileSelectionPointer(FileStatusListView View, GitChange Change);
+    private FileSelectionPointer? _fileSelectionPointer;
     private bool _viewStaged;
     private string? _path;
     private string _committer = "";
@@ -115,6 +119,8 @@ public sealed partial class CommitDialog : Window
         MinHeight = 600;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _diff = new DiffView(_source, new DiffViewerPreferencesStore(Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!)) { Name = "SelectedDiff" };
+        _diff.FileViewerCommandRequested = HandleDiffCommand;
+        _diff.Search.OpenDiffToolRequested = OpenSelectedDiffToolAsync;
         _diff.Toolbar.SetNames("CommitDiff");
         _viewerOptions = _diff.ComparisonMenu.Options;
         _diff.ComparisonMenu.OptionsChanged += async (_, _) =>
@@ -175,7 +181,7 @@ public sealed partial class CommitDialog : Window
         ConfigureList(_stagedView, true);
         _interactive.AddRange([_filter, _message, _amend, _resetAuthor, _author, _sign, _signingKey, _kind, _target]);
         Content = BuildLayout();
-        ToolTip.SetTip(_filter, C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
+        DesktopHotkeys.BindToolTip(_filter, "Commit", "ToggleSelectionFilter", C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
         _filter.PropertyChanged += async (_, change) =>
         {
             if (change.Property == ComboBox.TextProperty && !_busy && !_updatingSelectionFilterHistory)
@@ -241,10 +247,20 @@ public sealed partial class CommitDialog : Window
         // FileViewerInternal relays Escape before its editor consumes it: a
         // selection is cleared first, then an empty selection cancels Commit.
         _diff.Editor.TextArea.AddHandler(KeyDownEvent, RelayDiffEscape, RoutingStrategies.Tunnel);
-        KeyDown += HandleShortcut;
+        KeyDown += (sender, args) =>
+        {
+            HandleShortcut(sender, args);
+            if (!args.Handled && args.Key == Key.Escape) { Close(); args.Handled = true; }
+        };
         AddHandler(KeyDownEvent, (sender, args) =>
         {
-            if (args.KeyModifiers == KeyModifiers.Control && (args.Key is Key.Enter or Key.S || args.Key == Key.E && _diff.IsKeyboardFocusWithin)) { HandleShortcut(sender, args); }
+            // ProcessCmdKey resolves configured commands before native dialog
+            // keys. An unassigned Escape still reaches the viewer's selection
+            // handler before the form's ordinary Close fallback.
+            if (DesktopHotkeys.Match("Commit", args) is not null
+                || _diff.IsKeyboardFocusWithin && DesktopHotkeys.Match("FileViewer", args) is not null
+                || args.Key != Key.Escape && (_diff.IsKeyboardFocusWithin || args.Key == Key.Enter && args.KeyModifiers == KeyModifiers.Control))
+            { HandleShortcut(sender, args); }
         }, RoutingStrategies.Tunnel);
         Opened += async (_, _) =>
         {
@@ -403,6 +419,19 @@ public sealed partial class CommitDialog : Window
         TreeView list = view.Tree;
         list.Focusable = true;
         _interactive.AddRange([view, list]);
+        list.AddHandler(PointerPressedEvent, (_, args) =>
+        {
+            if (_busy || !args.GetCurrentPoint(list).Properties.IsLeftButtonPressed) { return; }
+            TreeViewItem? row = (args.Source as Visual)?.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
+            if (row?.Tag is not GitChange change) { return; }
+            // SelectionChanged can start its read before the item's native
+            // pointer handler has focused it. Retain only this pointer's intent.
+            FileSelectionPointer pointer = new(view, change); _fileSelectionPointer = pointer;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(_fileSelectionPointer, pointer)) { _fileSelectionPointer = null; }
+            }, DispatcherPriority.Input);
+        }, RoutingStrategies.Tunnel);
         list.SelectionChanged += async (_, args) =>
         {
             if (ReferenceEquals(args.Source, list) && !view.IsUpdating && !_refreshing && !_busy) { await SelectFileAsync(view, staged); }
@@ -422,8 +451,10 @@ public sealed partial class CommitDialog : Window
     {
         bool filtered = !string.IsNullOrEmpty(view.FilterText);
         button.Content = IconLabel("", staged ? filtered ? "UnstageAllFiltered.png" : "UnstageAll.png" : filtered ? "StageAllFiltered.png" : "StageAll.png");
-        ToolTip.SetTip(button, staged ? filtered ? C("_unstageFiltered", "Unstage filtered") : C("_unstageAll", "Unstage all")
-            : filtered ? C("_stageFiltered", "Stage filtered") : C("_stageAll", "Stage all"));
+        string caption = staged ? filtered ? C("_unstageFiltered", "Unstage filtered") : C("_unstageAll", "Unstage all")
+            : filtered ? C("_stageFiltered", "Stage filtered") : C("_stageAll", "Stage all");
+        if (staged) { ToolTip.SetTip(button, caption); }
+        else { DesktopHotkeys.BindToolTip(button, "Commit", "StageAll", caption); }
     }
 
     private async Task RefreshDataAsync()
@@ -509,7 +540,7 @@ public sealed partial class CommitDialog : Window
         {
             Regex regex = new(expression, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
             matches = _unstagedView.FilteredEntries.Select(entry => (GitChange)entry.Tag).Where(change => regex.IsMatch(change.Path)).ToArray();
-            ToolTip.SetTip(_filter, C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
+            DesktopHotkeys.BindToolTip(_filter, "Commit", "ToggleSelectionFilter", C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
         }
         catch (Exception exception) when (exception is ArgumentException or RegexMatchTimeoutException)
         {
@@ -551,7 +582,40 @@ public sealed partial class CommitDialog : Window
             try { (staged ? _unstagedView : _stagedView).ClearSelection(); }
             finally { _refreshing = false; }
         }
-        return RunAsync(T("Diff"), LoadDiffAsync);
+        FileSelectionPointer? pointer = _fileSelectionPointer; _fileSelectionPointer = null;
+        bool focusRow = view.Tree.IsKeyboardFocusWithin || pointer is not null && ReferenceEquals(pointer.View, view) && Equals(pointer.Change, selected);
+        Func<bool>? restoreRow = focusRow && selected is not null ? view.CaptureSelectedRowFocus(view.FindItemByTag(selected)) : null;
+        Control? origin = focusRow ? null : FocusManager?.GetFocusedElement() as Control;
+        return ReadSelectedDiffAsync(view, selected, staged, restoreRow, origin);
+    }
+
+    private async Task ReadSelectedDiffAsync(FileStatusListView view, GitChange? selected, bool staged,
+        Func<bool>? restoreRow, Control? origin)
+    {
+        bool wasActive = IsActive;
+        Task read = RunAsync(T("Diff"), LoadDiffAsync);
+        // RunAsync synchronously disables the inputs. Its automatic focus loss
+        // is not a new user choice; any later input or focus change is.
+        IInputElement? suspendedFocus = FocusManager?.GetFocusedElement();
+        bool superseded = false;
+        void Input(object? sender, RoutedEventArgs args) => superseded = true;
+        void FocusChanged(object? sender, GotFocusEventArgs args)
+        { if (!ReferenceEquals(args.Source, suspendedFocus)) { superseded = true; } }
+        AddHandler(PointerPressedEvent, Input, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, Input, RoutingStrategies.Tunnel);
+        AddHandler(GotFocusEvent, FocusChanged, RoutingStrategies.Tunnel);
+        try { await read; }
+        finally
+        {
+            RemoveHandler(PointerPressedEvent, Input);
+            RemoveHandler(KeyDownEvent, Input);
+            RemoveHandler(GotFocusEvent, FocusChanged);
+        }
+        if (superseded || _busy || _commitRequested || _closeWhenIdle || _lifetime.IsCancellationRequested || !IsVisible || !IsEffectivelyEnabled
+            || wasActive && !IsActive || OwnedWindows.Any(window => window.IsVisible) || staged != _viewStaged
+            || !Equals(selected, SelectedChange(view)) || !ReferenceEquals(FocusManager?.GetFocusedElement(), suspendedFocus)) { return; }
+        if (restoreRow is not null) { restoreRow(); }
+        else if (origin is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true } && TopLevel.GetTopLevel(origin) == this) { origin.Focus(); }
     }
 
     private async Task LoadDiffAsync()
@@ -951,35 +1015,128 @@ public sealed partial class CommitDialog : Window
     private async void HandleShortcut(object? sender, KeyEventArgs args)
     {
         if (args.Handled) { return; }
-        if (args.Key == Key.Escape) { Close(); args.Handled = true; return; }
-        if (_busy || _commitRequested) { return; }
-        if (_diff.IsKeyboardFocusWithin && (_diff.HandleReadingShortcut(args)
-            || _diff.AppearanceMenu.HandleKeyDown(args))) { return; }
-        if (args.KeyModifiers == KeyModifiers.Control)
+        if (_busy || _commitRequested || _confirmationOpen || _lifetime.IsCancellationRequested || !IsVisible
+            || OwnedWindows.Any(window => window.IsVisible)) { return; }
+        // Windows routes ProcessCmdKey through the focused child before its
+        // form. A capable FileViewer binding therefore wins a form collision.
+        if (_diff.IsKeyboardFocusWithin && (_diff.HandleReadingShortcut(args) || _diff.AppearanceMenu.HandleKeyDown(args))) { return; }
+        Func<Task>? action = DesktopHotkeys.Match("Commit", args)?.Name switch
         {
-            switch (args.Key)
+            "FocusUnstagedFiles" => () => FocusInputAsync(_unstaged),
+            "FocusSelectedDiff" => () => FocusInputAsync(_diff.Editor.TextArea),
+            "FocusStagedFiles" => () => FocusInputAsync(_staged),
+            "FocusCommitMessage" => () => FocusInputAsync(_message),
+            "ToggleSelectionFilter" when _selectionFilterToolbar is not null => () =>
             {
-                case Key.D1: _unstaged.Focus(); break;
-                case Key.D2: _diff.Editor.TextArea.Focus(); break;
-                case Key.D3: _staged.Focus(); break;
-                case Key.D4: _message.Focus(); break;
-                case Key.F:
-                    if (_selectionFilterToolbar is null) { return; }
-                    _selectionFilterToolbar.IsVisible = !_selectionFilterToolbar.IsVisible;
-                    if (_selectionFilterToolbar.IsVisible) { _filter.Focus(); }
-                    else { _unstaged.Focus(); }
-                    break;
-                case Key.S: args.Handled = true; await StageAsync(true); break;
-                case Key.Enter:
-                    if (!_commit.IsEnabled) { return; }
-                    args.Handled = true;
-                    await CommitAsync(false);
-                    break;
-                default: return;
-            }
-            args.Handled = true;
+                _selectionFilterToolbar.IsVisible = !_selectionFilterToolbar.IsVisible;
+                return FocusInputAsync(_selectionFilterToolbar.IsVisible ? _filter : _unstaged);
+            },
+            "StageAll" when _unstagedView.FilteredEntries.Count > 0 => () => StageAsync(true),
+            "Refresh" => RefreshAsync,
+            "OpenWithDifftool" => OpenSelectedDiffToolAsync,
+            "CreateBranch" => CreateBranchAsync,
+            "SelectNext" or "SelectNext_AlternativeHotkey1" or "SelectNext_AlternativeHotkey2" => () => MoveFileSelectionAsync(false),
+            "SelectPrevious" or "SelectPrevious_AlternativeHotkey1" or "SelectPrevious_AlternativeHotkey2" => () => MoveFileSelectionAsync(true),
+            "AddSelectionToCommitMessage" when _diff.IsKeyboardFocusWithin && _diff.SelectionLength > 0 && _message.IsEffectivelyEnabled => () =>
+            {
+                string selected = _diff.Editor.SelectedText;
+                if (_message.SelectionStart == _message.SelectionEnd) { selected += "\n"; }
+                int start = Math.Min(_message.SelectionStart, _message.SelectionEnd);
+                _message.SelectedText = selected; _message.CaretIndex = start + selected.Length;
+                _message.SelectionStart = _message.SelectionEnd = _message.CaretIndex;
+                return Task.CompletedTask;
+            },
+            // Conventional commit providers are not available in this host.
+            _ => null
+        };
+        if (action is not null)
+        {
+            args.Handled = true; await action(); return;
         }
-        else if (args.Key == Key.F5) { args.Handled = true; await RefreshAsync(); }
+        if (args.Key == Key.Enter && args.KeyModifiers == KeyModifiers.Control && _commit.IsEnabled)
+        { args.Handled = true; await CommitAsync(false); }
+    }
+
+    private static Task FocusInputAsync(Control input)
+    { if (input.IsEffectivelyEnabled && input.IsEffectivelyVisible) { input.Focus(); } return Task.CompletedTask; }
+
+    private async Task MoveFileSelectionAsync(bool backwards)
+    {
+        FileStatusListView view = _message.IsKeyboardFocusWithin ? _stagedView : _viewStaged ? _stagedView : _unstagedView;
+        FileStatusListEntry[] entries = view.FilteredEntries.ToArray();
+        if (entries.Length == 0) { return; }
+        int current = Array.FindIndex(entries, entry => ReferenceEquals(entry.Tag, SelectedChange(view)));
+        int next = current < 0 ? backwards ? entries.Length - 1 : 0 : (current + (backwards ? -1 : 1) + entries.Length) % entries.Length;
+        _refreshing = true;
+        try { view.SelectTags([entries[next].Tag]); }
+        finally { _refreshing = false; }
+        await SelectFileAsync(view, ReferenceEquals(view, _stagedView));
+    }
+
+    private Task OpenSelectedDiffToolAsync()
+    {
+        FileStatusListView view = _viewStaged ? _stagedView : _unstagedView;
+        string[] paths = view.SelectedTags.OfType<GitChange>().Select(change => change.Path).ToArray();
+        if (_busy || _commitRequested || _lifetime.IsCancellationRequested || paths.Length == 0) { return Task.CompletedTask; }
+        GitCompareRevision source = new(Kind: _viewStaged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
+        return RunAsync(T("Open with difftool"), async () =>
+        {
+            GitComparison comparison = await _repository.GetArtificialRevisionComparisonAsync(source, OperationToken);
+            try
+            {
+                foreach (string path in paths)
+                {
+                    GitRevisionFile file = comparison.Files.Single(file => file.Path == path);
+                    await _repository.OpenComparisonDiffToolAsync(comparison, file, cancellationToken: OperationToken);
+                }
+            }
+            finally { if (!OperationToken.IsCancellationRequested) { await RefreshDataAsync(); } }
+        });
+    }
+
+    private Task CreateBranchAsync() => RunAsync(T("Create branch"), async () =>
+    {
+        DesktopPreferences preferences = new PreferencesStore().Load();
+        CreateBranchDialog dialog = new(_repository, autoNormalize: preferences.AutoNormaliseBranchName, replacement: preferences.AutoNormaliseSymbol)
+            { RequestedThemeVariant = ActualThemeVariant };
+        Task initialization = Task.CompletedTask;
+        dialog.Opened += (_, _) => initialization = dialog.InitializeAsync();
+        using CancellationTokenRegistration registration = OperationToken.Register(() => Dispatcher.UIThread.Post(dialog.Close));
+        try { await dialog.ShowDialog(this); await initialization; OperationToken.ThrowIfCancellationRequested(); }
+        finally { dialog.Close(); }
+        if (dialog.HasRepositoryChanges) { HasRepositoryChanges = true; await RefreshDataAsync(); RepositoryChanged?.Invoke(this, EventArgs.Empty); }
+    });
+
+    private bool HandleDiffCommand(string command)
+    {
+        if (_busy || _commitRequested || _confirmationOpen || _lifetime.IsCancellationRequested || !IsVisible
+            || !_diff.IsReadOnly || !_diff.CanStagePatch || _patch is null || _diff.SelectionLength == 0) { return false; }
+        switch (command)
+        {
+            case "StageLines" when !_viewStaged: _ = ApplyPatchAsync(false, true); return true;
+            case "UnstageLines" when _viewStaged: _ = ApplyPatchAsync(true, true); return true;
+            case "ResetLines": _ = ResetSelectedLinesAsync(); return true;
+            default: return false;
+        }
+    }
+
+    private async Task ResetSelectedLinesAsync()
+    {
+        GitDiffDocument? document = _diff.Document;
+        GitChange? change = _status?.Changes.SingleOrDefault(change => change.Path == _path);
+        if (document is null || change is null) { return; }
+        bool staged = _viewStaged;
+        byte[]? patch = GitEncodedPatch.SelectLines(document, _diff.SelectionStart, _diff.SelectionLength,
+            // Build a forward patch against the displayed after-image: changes
+            // outside the selection stay as context when Git reverses it.
+            staged: true, reverse: true, isNewFile: change.IndexStatus == 'A', isRenamed: change.OriginalPath is not null);
+        if (patch is null) { return; }
+        _confirmationOpen = true;
+        bool accepted;
+        try { accepted = await Dialogs.ConfirmAsync(this, T("Reset changes"), T("Are you sure you want to reset the selected lines?")); }
+        finally { _confirmationOpen = false; }
+        if (!accepted || !IsVisible || _lifetime.IsCancellationRequested || !ReferenceEquals(document, _diff.Document) || staged != _viewStaged) { return; }
+        await MutateAsync(T("Reset changes"), () => _repository.ResetSelectedPatchAsync(patch, staged, OperationToken));
     }
 
     private static string? EmptyToNull(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;

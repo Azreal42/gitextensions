@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -36,9 +37,12 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
         Add(GitConflictResolution.Theirs, "Use remote version (theirs)"); Add(GitConflictResolution.Delete, "Delete file");
         Add(GitConflictResolution.Manual, "Mark as resolved");
         _tool = Action("ConflictMergeTool", "Open merge tool", MergeToolAsync); _tool.Height = 25; actions.Children.Add(_tool);
+        DesktopHotkeys.BindToolTip(_tool, "FormMergeConflicts", "Merge", T("Open merge tool"));
         Grid content = new() { ColumnDefinitions = new ColumnDefinitions("*,210"), Margin = new Thickness(10) };
         content.Children.Add(ClassicChrome.Border(_files, new Thickness(1))); Grid.SetColumn(actions, 1); content.Children.Add(actions);
-        StackPanel footer = ExportDialogControls.Buttons(Action("RefreshConflicts", "Refresh", InitializeAsync), Action("CloseConflicts", "Close", () => { Close(); return Task.CompletedTask; }));
+        Button refresh = Action("RefreshConflicts", "Refresh", InitializeAsync);
+        DesktopHotkeys.BindToolTip(refresh, "FormMergeConflicts", "Rescan", T("Refresh"));
+        StackPanel footer = ExportDialogControls.Buttons(refresh, Action("CloseConflicts", "Close", () => { Close(); return Task.CompletedTask; }));
         DockPanel.SetDock(footer, Dock.Bottom); Root.Children.Add(footer);
         _stages.Margin = new Thickness(10, 2); DockPanel.SetDock(_stages, Dock.Bottom); Root.Children.Add(_stages); Root.Children.Add(content);
         Closing += (_, args) => { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingOwner = Owner as Window; } };
@@ -47,10 +51,30 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
             Window? owner = _closingOwner; _closingOwner = null;
             if (owner is not null) { Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
         };
+        AddHandler(KeyDownEvent, async (_, args) =>
+        {
+            if (args.Handled || IsBusy || !IsVisible || OwnedWindows.Any(window => window.IsVisible)) { return; }
+            string? command = DesktopHotkeys.Match("FormMergeConflicts", args)?.Name;
+            GitConflictResolution? choice = command switch
+            {
+                "ChooseBase" => GitConflictResolution.Base, "ChooseLocal" => GitConflictResolution.Ours,
+                "ChooseRemote" => GitConflictResolution.Theirs, _ => null
+            };
+            try
+            {
+                if (choice is { } resolution && _choices[resolution].IsEffectivelyEnabled)
+                { args.Handled = true; await ResolveAsync(resolution); }
+                else if (command == "Merge" && _tool.IsEffectivelyEnabled) { args.Handled = true; await MergeToolAsync(); }
+                else if (command == "Rescan") { args.Handled = true; await InitializeAsync(); }
+            }
+            catch (Exception error) { ReportError(error); }
+        }, RoutingStrategies.Tunnel);
         UpdateActions();
         void Add(GitConflictResolution choice, string label)
         {
             Button button = Action("Resolve" + choice, label, () => ResolveAsync(choice)); button.Height = 25;
+            string? command = choice switch { GitConflictResolution.Base => "ChooseBase", GitConflictResolution.Ours => "ChooseLocal", GitConflictResolution.Theirs => "ChooseRemote", _ => null };
+            if (command is not null) { DesktopHotkeys.BindToolTip(button, "FormMergeConflicts", command, T(label)); }
             _choices[choice] = button; actions.Children.Add(button);
         }
     }

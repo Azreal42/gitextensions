@@ -4,25 +4,21 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private string? _comparisonBase;
+    private GitCompareRevision? _comparisonBase;
     private MenuItem? _compareToBaseMenu;
 
     private MenuItem BuildComparisonMenu()
     {
-        _compareToBaseMenu = MenuAction("Compare to BASE", () => ShowComparisonAsync(new(_comparisonBase ?? throw new InvalidOperationException(T("Select a BASE revision first."))), new(CurrentRevision)));
+        _compareToBaseMenu = MenuAction("Compare to BASE", CompareToBaseHotkeyAsync);
         _compareToBaseMenu.IsEnabled = false;
         return new MenuItem { Name = "RevisionCompare", Header = T("Compare"), Icon = OriginalIconImage("Diff.png"), ItemsSource = new object[] {
             MenuAction("Open selected commits with difftool", OpenComparisonToolAsync),
             new Separator(),
             MenuAction("Compare to branch…", CompareToBranchAsync),
-            MenuAction("Compare with current branch", () => ShowComparisonAsync(new(CurrentRevision), new("HEAD"))),
-            MenuAction("Select as BASE to compare", () =>
-            {
-                if (_commits.SelectedItem is GitCommit selected) { _comparisonBase = selected.Hash; _compareToBaseMenu.IsEnabled = true; }
-                return Task.CompletedTask;
-            }),
+            MenuAction("Compare with current branch", CompareToCurrentBranchAsync),
+            MenuAction("Select as BASE to compare", SelectComparisonBaseAsync),
             _compareToBaseMenu,
-            MenuAction("Compare to working directory", () => ShowComparisonAsync(new(CurrentRevision), new("", GitCompareRevisionKind.WorkingTree))),
+            MenuAction("Compare to working directory", CompareToWorkingDirectoryAsync),
             MenuAction("Compare selected commits", CompareSelectedCommitsAsync),
             new Separator(), MenuAction("Range diff", ShowSelectedRangeDiffAsync, "DiffR.png") } };
     }
@@ -30,11 +26,26 @@ public sealed partial class MainWindow
     private Task ShowComparisonAsync(GitCompareRevision from, GitCompareRevision to)
         => _repository is null || _busy ? Task.CompletedTask : ShowRepositoryDialogAsync(new CompareRevisionsDialog(_repository, from, to));
 
+    private Task SelectComparisonBaseAsync()
+    {
+        if (CurrentRelativeRevision() is { } selected)
+        { _comparisonBase = selected; if (_compareToBaseMenu is not null) { _compareToBaseMenu.IsEnabled = true; } }
+        return Task.CompletedTask;
+    }
+
+    private Task CompareToCurrentBranchAsync() => CurrentRelativeRevision() is { } selected
+        ? ShowComparisonAsync(selected, new("HEAD")) : Task.CompletedTask;
+
+    private Task CompareToWorkingDirectoryAsync() => CurrentRelativeRevision() is not { } selected ? Task.CompletedTask
+        : selected.Kind == GitCompareRevisionKind.WorkingTree
+            ? Dialogs.ShowErrorAsync(this, "Cannot diff working directory to itself")
+            : ShowComparisonAsync(selected, new("", GitCompareRevisionKind.WorkingTree));
+
     private async Task CompareToBranchAsync()
     {
         if (_repository is null || _busy) { return; }
         GitRepository repository = _repository;
-        GitCompareRevision selected = new(CurrentRevision);
+        if (CurrentRelativeRevision() is not { } selected) { return; }
         GitReference? branch = null;
         await RunAsync("Compare to branch", async _ => branch = await CompareBranchPicker.ShowAsync(WorkflowOwner, repository, selected, (_references.SelectedItem as GitReference)?.Name), refresh: false);
         if (branch is not null && _repository == repository) { await ShowComparisonAsync(new(branch.Name), selected); }

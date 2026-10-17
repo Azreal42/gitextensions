@@ -39,9 +39,11 @@ public sealed partial class MainWindow
         _revisionRenameBranches = new() { Name = "RevisionRenameBranch", Header = RevisionHeader("renameBranchToolStripMenuItem", "R&ename branch..."), Icon = OriginalIconImage("Renamed.png") };
         _revisionDeleteBranches = new() { Name = "RevisionDeleteBranch", Header = RevisionHeader("deleteBranchToolStripMenuItem", "&Delete branch..."), Icon = OriginalIconImage("BranchDelete.png") };
         MenuItem createBranch = RevisionAction("RevisionCreateBranch", "createNewBranchToolStripMenuItem", "Create new &branch here...", CreateBranchAsync, "BranchCreate.png");
-        createBranch.InputGesture = new(Key.B, KeyModifiers.Control);
+        DesktopHotkeys.Bind(createBranch, "Browse", "CreateBranch");
         MenuItem createTag = RevisionAction("RevisionCreateTag", "createTagToolStripMenuItem", "Create new ta&g here...", CreateTagAsync, "TagCreate.png");
-        createTag.InputGesture = new(Key.T, KeyModifiers.Control);
+        DesktopHotkeys.Bind(createTag, "Browse", "CreateTag");
+        DesktopHotkeys.Bind(_revisionRenameBranches, "RevisionGrid", "RenameRef");
+        DesktopHotkeys.Bind(_revisionDeleteBranches, "RevisionGrid", "DeleteRef");
         _revisionContext = new ContextMenu
         {
             Name = "RevisionContextMenu", ItemsSource = new object[]

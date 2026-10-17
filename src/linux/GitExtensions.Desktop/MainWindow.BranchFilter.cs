@@ -272,8 +272,8 @@ public sealed partial class MainWindow
     private void RelayBranchFilterFocusShortcut(object? sender, Avalonia.Input.KeyEventArgs args)
     {
         // PopupRoot has its own input route; the main window's tunnel handler
-        // cannot receive the next Ctrl+E from either overflow editor.
-        if (_busy || args.Handled || args.Key != Avalonia.Input.Key.E || args.KeyModifiers != Avalonia.Input.KeyModifiers.Control) { return; }
+        // cannot receive the configured focus command from either overflow editor.
+        if (_busy || args.Handled || DesktopHotkeys.Match("Browse", args)?.Name != "FocusFilter") { return; }
         args.Handled = true; FocusHistoryFilter();
     }
 

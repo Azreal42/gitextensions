@@ -55,7 +55,7 @@ public sealed partial class MainWindow
                 StaysOpenOnClick = asDefault,
                 ToggleType = asDefault ? MenuItemToggleType.CheckBox : MenuItemToggleType.None
             };
-            if (!asDefault && action == GitPullAction.None) { item.InputGesture = new(Key.Down, KeyModifiers.Control); }
+            if (!asDefault && action == GitPullAction.None) { DesktopHotkeys.Bind(item, "Browse", "PullOrFetch"); }
             _actionMenus.Add(item); _pullMenuItems.Add((item, action, asDefault));
             // Popup roots are outside the Window's input route. Preserve the
             // original global pull gestures while this menu has keyboard focus.
@@ -111,7 +111,7 @@ public sealed partial class MainWindow
         {
             (string key, string label, string icon) = PullDescription(_pullPreferences.DefaultAction);
             _pullButton.Content = OriginalIconImage(icon);
-            ToolTip.SetTip(_pullButton, _translations.Translate("FormBrowse", key, "Text", label).Replace("&", "", StringComparison.Ordinal) + "  F8");
+            DesktopHotkeys.BindToolTip(_pullButton, "Browse", "QuickPullOrFetch", _translations.Translate("FormBrowse", key, "Text", label).Replace("&", "", StringComparison.Ordinal));
             _shownPullAction = _pullPreferences.DefaultAction;
         }
         int remotes = _remotes.Items.OfType<GitRemote>().Count();

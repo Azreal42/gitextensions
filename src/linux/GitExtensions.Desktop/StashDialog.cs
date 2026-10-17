@@ -108,6 +108,18 @@ public sealed class StashDialog : RepositoryDialog
         AddHandler(KeyDownEvent, async (_, args) =>
         {
             if (args.Handled) { return; }
+            if (!IsBusy)
+            {
+                if (_content.TextView.IsKeyboardFocusWithin
+                    && (_content.TextView.HandleReadingShortcut(args) || _content.TextView.AppearanceMenu.HandleKeyDown(args))) { return; }
+                string? command = DesktopHotkeys.Match("Stash", args)?.Name;
+                if (command == "Refresh") { args.Handled = true; await InitializeAsync(); return; }
+                if (command is "NextStash" or "PreviousStash")
+                {
+                    int index = _selector.SelectedIndex + (command == "NextStash" ? -1 : 1);
+                    if (index >= 0 && index < _selector.ItemCount) { args.Handled = true; _selector.SelectedIndex = index; return; }
+                }
+            }
             if (args.Key == Key.Escape && args.KeyModifiers == KeyModifiers.None)
             {
                 if (_selector.IsDropDownOpen) { _selector.IsDropDownOpen = false; args.Handled = true; return; }
@@ -117,14 +129,8 @@ public sealed class StashDialog : RepositoryDialog
             if (args.Key == Key.R && args.KeyModifiers == KeyModifiers.None && _files.IsKeyboardFocusWithin && Selected is not null)
             { args.Handled = true; await ResetSelectedFilesAsync(true); return; }
             if (_content.TextView.HandleReadingShortcut(args)) { return; }
-            if (args.Key == Key.F5 && args.KeyModifiers == KeyModifiers.None) { args.Handled = true; await InitializeAsync(); }
-            else if (args.KeyModifiers == KeyModifiers.Control && args.Key is Key.N or Key.P)
-            {
-                args.Handled = true;
-                int index = _selector.SelectedIndex + (args.Key == Key.N ? -1 : 1);
-                if (index >= 0 && index < _selector.ItemCount) { _selector.SelectedIndex = index; }
-            }
         }, RoutingStrategies.Tunnel);
+        DesktopHotkeys.BindToolTip(_selector, "Stash", "NextStash", Translations.Translate("FormStash", "Stashes", "ToolTipText", "Select a stash"));
         UpdateActions();
     }
 

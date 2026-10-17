@@ -75,11 +75,11 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
 
     public bool HandleKeyDown(KeyEventArgs args)
     {
-        if (_disposed || args.Handled || !_supportsAppearance || args.KeyModifiers != KeyModifiers.Control) { return false; }
-        DiffViewerAppearance? appearance = args.Key switch
+        if (_disposed || args.Handled || !_supportsAppearance) { return false; }
+        DiffViewerAppearance? appearance = DesktopHotkeys.Match("FileViewer", args)?.Name switch
         {
-            Key.D => DiffViewerAppearance.GitWordDiff,
-            Key.T when _difftasticAvailable => DiffViewerAppearance.Difftastic,
+            "ShowGitWordColoring" => DiffViewerAppearance.GitWordDiff,
+            "ShowDifftastic" when _difftasticAvailable => DiffViewerAppearance.Difftastic,
             _ => null
         };
         if (appearance is null) { return false; }
@@ -93,7 +93,7 @@ public sealed class DiffViewerAppearanceMenu : IDisposable
         MenuItem word = Item("GitWordDiff", "FileViewer", "showGitWordColoringToolStripMenuItem", "Git wor&d diff", "EditColor.png");
         MenuItem difftastic = Item("Difftastic", "FileViewer", "showDifftasticToolStripMenuItem", "Diff&tastic", "difftastic.ico");
         patch.ToggleType = word.ToggleType = difftastic.ToggleType = MenuItemToggleType.CheckBox;
-        word.InputGesture = new(Key.D, KeyModifiers.Control); difftastic.InputGesture = new(Key.T, KeyModifiers.Control);
+        DesktopHotkeys.Bind(word, "FileViewer", "ShowGitWordColoring"); DesktopHotkeys.Bind(difftastic, "FileViewer", "ShowDifftastic");
         patch.Click += (_, _) => SelectAppearance(DiffViewerAppearance.Patch);
         word.Click += (_, _) => SelectAppearance(DiffViewerAppearance.GitWordDiff);
         difftastic.Click += (_, _) => SelectAppearance(DiffViewerAppearance.Difftastic);

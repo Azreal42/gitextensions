@@ -163,6 +163,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. CherryPickScenarios.All,
     .. MergeConflictScenarios.All,
     .. ResetRevertScenarios.All,
+    .. ResetSelectedPatchScenarios.All,
     .. CherryPickRecoveryScenarios.All,
     .. RebaseAdvancedScenarios.All,
     .. PushScenarios.All,
@@ -200,6 +201,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 if (args.Contains("--unix-socket-directory-only", StringComparer.Ordinal)) { tests = UnixSocketDirectoryScenarios.All.ToArray(); }
 if (args.Contains("--file-history-graph-only", StringComparer.Ordinal)) { tests = FileHistoryGraphScenarios.All.ToArray(); }
 if (args.Contains("--quick-search-message-only", StringComparer.Ordinal)) { tests = QuickSearchMessageScenarios.All.ToArray(); }
+if (args.Contains("--reset-selected-patch-only", StringComparer.Ordinal)) { tests = ResetSelectedPatchScenarios.All.ToArray(); }
 if (args.Contains("--comparison-endpoints-only", StringComparer.Ordinal)) { tests = ComparisonEndpointScenarios.All.ToArray(); }
 if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }
 if (args.Contains("--quick-references-only", StringComparer.Ordinal)) { tests = QuickReferenceScenarios.All.ToArray(); }

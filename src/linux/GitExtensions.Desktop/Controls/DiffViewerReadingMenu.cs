@@ -45,7 +45,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
         MenuItem current = CopyItem("CopyNewVersion", "copyNewVersionToolStripMenuItem", "Copy &new version", GitDiffCopyOperation.NewVersion);
         MenuItem previous = CopyItem("CopyOldVersion", "copyOldVersionToolStripMenuItem", "Copy &old version", GitDiffCopyOperation.OldVersion);
         MenuItem find = Item("Find", "findToolStripMenuItem", "&Find...");
-        find.InputGesture = new(Key.F, KeyModifiers.Control);
+        DesktopHotkeys.Bind(find, "FileViewer", "Find");
         using (Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/Preview.png")))
         {
             Bitmap bitmap = new(stream); Image icon = new() { Source = bitmap, Width = 16, Height = 16 };
@@ -53,10 +53,10 @@ public sealed class DiffViewerReadingMenu : IDisposable
         }
         find.Click += (_, _) => _view.Search.ShowFind();
         MenuItem goTo = Item("GoToLine", "goToLineToolStripMenuItem", "&Go to line");
-        goTo.InputGesture = new(Key.G, KeyModifiers.Control);
+        DesktopHotkeys.Bind(goTo, "FileViewer", "GoToLine");
         goTo.Click += (_, _) => Start(ShowGoToLineAsync);
         MenuItem replace = Item("Replace", "replaceToolStripMenuItem", "&Replace...");
-        replace.InputGesture = new(Key.H, KeyModifiers.Control);
+        DesktopHotkeys.Bind(replace, "FileViewer", "Replace");
         replace.Click += (_, _) => _view.Search.ShowFind(replaceMode: true);
         _items.Add((copy, null)); _items.Add((find, null)); _items.Add((replace, null)); _items.Add((goTo, null)); Refresh();
         return [copy, patch, current, previous, new Separator(), find, replace, goTo];
@@ -164,7 +164,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
 
     public bool HandleKeyDown(KeyEventArgs args)
     {
-        if (_disposed || args.Handled || !_view.IsEffectivelyEnabled || args.KeyModifiers != KeyModifiers.Control || args.Key != Key.G) { return false; }
+        if (_disposed || args.Handled || !_view.IsEffectivelyEnabled || DesktopHotkeys.Match("FileViewer", args)?.Name != "GoToLine") { return false; }
         if (_view.MaxFileLine < 1 || TopLevel.GetTopLevel(_view) is not Window) { return false; }
         args.Handled = true;
         Start(ShowGoToLineAsync);

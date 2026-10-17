@@ -158,6 +158,12 @@ public class MainWindowSelectionTests
     public async Task TheContextComparisonOfOneCommitMatchesControlRAndStillOrdersMultipleSelections()
     {
         using Fixture fixture = await Fixture.CreateAsync("parent\n", "parent\n");
+        // Ctrl+R is BASE by default in Windows. This regression exercises an
+        // explicit user binding for the existing selected-commits comparison.
+        HotkeyBindings hotkeys = DesktopHotkeys.Current.Clone();
+        hotkeys.Set("RevisionGrid", HotkeyCatalog.Find("RevisionGrid", "CompareToBase")!.Code, null);
+        hotkeys.Set("RevisionGrid", HotkeyCatalog.Find("RevisionGrid", "CompareSelectedCommits")!.Code, new(Key.R, KeyModifiers.Control));
+        new HotkeyPreferencesStore().Save(hotkeys);
         GitRepository repository = await GitRepository.OpenAsync(fixture.Repository);
         string parent = await repository.ResolveRevisionAsync("HEAD");
         await CommitAsync(repository, "selected\n", "Single selected commit");

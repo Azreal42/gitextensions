@@ -37,7 +37,7 @@ public class CommitDisplayFilterTests
             Collapse(unstaged.Tree);
             await Idle(dialog);
             Assert.That(unstaged.FilteredEntries.Count, Is.EqualTo(2), "A collapsed folder still contains both logical leaves.");
-            Assert.That(ToolTip.GetTip(Field<Button>(dialog, "StageAll")), Is.EqualTo("Stage filtered"));
+            Assert.That(ToolTip.GetTip(Field<Button>(dialog, "StageAll")), Is.EqualTo("Stage filtered (Ctrl+S)"));
             if (attempt == 0) { Click(dialog, "StageAll"); }
             else { Press(dialog, PhysicalKey.S, RawInputModifiers.Control); }
             await Idle(dialog);
@@ -46,7 +46,7 @@ public class CommitDisplayFilterTests
             Assert.That(await fixture.IndexText(hidden), Is.EqualTo(Fixture.Initial));
             Assert.That((await fixture.Git("diff", "--cached", "--", indexed)).StandardOutput, Is.EqualTo(preserved));
             Assert.That(unstaged.FilterText, Is.Empty);
-            Assert.That(ToolTip.GetTip(Field<Button>(dialog, "StageAll")), Is.EqualTo("Stage all"));
+            Assert.That(ToolTip.GetTip(Field<Button>(dialog, "StageAll")), Is.EqualTo("Stage all (Ctrl+S)"));
             await fixture.Repository.UnstageAsync([first, literal]);
             await dialog.RefreshAsync();
         }

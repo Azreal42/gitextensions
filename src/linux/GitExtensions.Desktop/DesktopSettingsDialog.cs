@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
+using System.Text.Json;
 using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
@@ -21,15 +22,18 @@ internal sealed class DesktopSettingsDialog : Window
     public DesktopPreferences Result { get; private set; }
     public GitLogSort HistorySortResult { get; private set; }
     public FileHistoryPreferences FileHistoryResult { get; private set; }
+    public HotkeyBindings HotkeysResult { get; private set; }
     public bool OpenGitConfiguration { get; private set; }
 
     public DesktopSettingsDialog(DesktopPreferences initial, TranslationCatalog translations, bool canConfigureGit,
-        GitLogSort historySort = GitLogSort.GitDefault, FileHistoryPreferences? fileHistoryPreferences = null)
+        GitLogSort historySort = GitLogSort.GitDefault, FileHistoryPreferences? fileHistoryPreferences = null,
+        HotkeyBindings? hotkeys = null, Action<HotkeyBindings>? saveHotkeys = null)
     {
         Result = initial; HistorySortResult = historySort;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
+        HotkeyBindings activeHotkeys = hotkeys ?? new(); HotkeysResult = activeHotkeys.Clone();
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
-        Width = 640; SizeToContent = SizeToContent.Height; CanResize = false;
+        Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ComboBox theme = new() { Name = "SettingsTheme", ItemsSource = new[] { "Light", "Dark", "System" }, SelectedItem = initial.Theme, MinWidth = 150 };
         NumericUpDown history = new() { Name = "SettingsHistoryLimit", Minimum = 1, Maximum = 5000, Value = Math.Clamp(initial.HistoryLimit, 1, 5000), FormatString = "0", Width = 150 };
@@ -67,7 +71,9 @@ internal sealed class DesktopSettingsDialog : Window
         SortingField(4, "Prioritized remotes", remotes, "Regex to prioritize remote names in the left panel.\nThe remotes matching the pattern will be shown before the others.\nSeparate the priorities with ';'.");
         TabItem generalTab = new() { Name = "SettingsGeneralTab", Header = translations.Translate("General"), Content = fields };
         TabItem sortingTab = new() { Name = "SettingsSortingTab", Header = translations.Translate("Sorting"), Content = sorting };
-        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab }, SelectedItem = generalTab };
+        HotkeysSettingsPage hotkeysPage = new(activeHotkeys, translations) { Margin = new Thickness(12) };
+        TabItem hotkeysTab = new() { Name = "SettingsHotkeysTab", Header = translations.Translate("HotkeysSettingsPage", "$this", "Text", "Hotkeys"), Content = hotkeysPage };
+        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab }, SelectedItem = generalTab };
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
         Button cancel = new() { Name = "CancelDesktopSettings", Content = translations.Translate("Cancel"), MinWidth = 75, IsCancel = true };
         cancel.Click += (_, _) => Close(false);
@@ -80,6 +86,10 @@ internal sealed class DesktopSettingsDialog : Window
                 try { GitReferencePriorities.Validate(input.Text ?? ""); }
                 catch (ArgumentException error) { tabs.SelectedItem = sortingTab; notice.Text = error.Message; input.Focus(); return; }
             }
+            HotkeyBindings acceptedHotkeys = hotkeysPage.Draft.Clone();
+            try { saveHotkeys?.Invoke(acceptedHotkeys.Clone()); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+            { tabs.SelectedItem = hotkeysTab; notice.Text = translations.Translate("Unable to save hotkeys.") + " " + error.Message; return; }
             Result = initial with
             {
                 Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
@@ -90,6 +100,7 @@ internal sealed class DesktopSettingsDialog : Window
             };
             HistorySortResult = (GitLogSort)revisions.SelectedItem!;
             FileHistoryResult = FileHistoryResult with { FollowRenames = follow.IsChecked == true, ExactRenames = exact.IsChecked == true };
+            HotkeysResult = acceptedHotkeys;
             Close(true);
         };
         DockPanel root = new() { LastChildFill = true };

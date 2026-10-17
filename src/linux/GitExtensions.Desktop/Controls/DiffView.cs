@@ -76,6 +76,8 @@ public sealed class DiffView : UserControl, IDisposable
     public event EventHandler? FileEncodingChanged;
     public event EventHandler? TextChanged;
     public event EventHandler? ModifiedChanged;
+    /// <summary>The host accepts only available repository commands; absence leaves the key unhandled.</summary>
+    public Func<string, bool>? FileViewerCommandRequested { get; set; }
 
     public DiffView(TextBox source, DiffViewerPreferencesStore? preferencesStore = null)
     {
@@ -123,12 +125,6 @@ public sealed class DiffView : UserControl, IDisposable
         ReadingMenu = new(this);
         ContextMenu = new ContextMenu { ItemsSource = CreateContextMenuItems() };
         _source.PropertyChanged += SourceChanged;
-        AddHandler(KeyDownEvent, (_, args) =>
-        {
-            if (args.KeyModifiers != KeyModifiers.Alt || args.Key is not (Key.Down or Key.Up)) { return; }
-            if (args.Key == Key.Down) { GoToNextChange(); } else { GoToPreviousChange(); }
-            args.Handled = true;
-        }, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, (_, args) => HandleReadingShortcut(args), RoutingStrategies.Tunnel);
         AddHandler(PointerWheelChangedEvent, ZoomWithWheel, RoutingStrategies.Tunnel);
         ActualThemeVariantChanged += ThemeChanged;
@@ -301,8 +297,29 @@ public sealed class DiffView : UserControl, IDisposable
     public void Select(int start, int length) { _readingVersion++; _editor.Select(start, length); }
     public bool GoToNextChange() => NavigateChange(forward: true);
     public bool GoToPreviousChange() => NavigateChange(forward: false);
-    public bool HandleReadingShortcut(KeyEventArgs args) => ComparisonMenu.HandleKeyDown(args)
-        || IsReadOnly && _editor.TextArea.IsKeyboardFocusWithin && RenderingMenu.HandleKeyDown(args) || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args);
+    public bool HandleReadingShortcut(KeyEventArgs args)
+    {
+        if (_disposed || args.Handled || !IsEffectivelyEnabled) { return false; }
+        return ComparisonMenu.HandleKeyDown(args)
+            || IsReadOnly && _editor.TextArea.IsKeyboardFocusWithin && RenderingMenu.HandleKeyDown(args)
+            || Search.HandleKeyDown(args) || ReadingMenu.HandleKeyDown(args) || HandleFileViewerCommand(args);
+    }
+
+    private bool HandleFileViewerCommand(KeyEventArgs args)
+    {
+        if (!_documentReady || RenderingMenu.IsHostBusy) { return false; }
+        string? name = DesktopHotkeys.Match("FileViewer", args)?.Name;
+        bool handled = name switch
+        {
+            "NextChange" => Toolbar.HandleNavigationCommand(next: true),
+            "PreviousChange" => Toolbar.HandleNavigationCommand(next: false),
+            "TreatFileAsText" => FileViewerCommandRequested?.Invoke(name) == true,
+            "StageLines" or "UnstageLines" or "ResetLines" when IsReadOnly && CanStagePatch
+                => FileViewerCommandRequested?.Invoke(name) == true,
+            _ => false
+        };
+        args.Handled = handled; return handled;
+    }
     public IReadOnlyList<object> CreateContextMenuItems(string? comparisonPrefix = null)
     {
         IReadOnlyList<object> reading = ReadingMenu.CreateContextMenuItems();
@@ -848,6 +865,7 @@ public sealed class DiffView : UserControl, IDisposable
         _source.PropertyChanged -= SourceChanged;
         ActualThemeVariantChanged -= ThemeChanged;
         AppearanceMenu.Changed -= PreferencesChanged;
+        FileViewerCommandRequested = null;
         AppearanceMenu.Dispose();
         ComparisonMenu.OptionsChanged -= ComparisonChanged;
         ComparisonMenu.Dispose();

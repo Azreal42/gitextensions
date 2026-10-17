@@ -10,95 +10,52 @@ public sealed partial class MainWindow
     // Defaults from HotkeySettingsManager/FormBrowse and RevisionGridControl.
     private async void HandleShortcuts(object? sender, KeyEventArgs e) => await HandleShortcutsAsync(sender, e);
 
-    private async Task HandleShortcutsAsync(object? sender, KeyEventArgs e)
+    private Task HandleShortcutsAsync(object? sender, KeyEventArgs e) => HandleConfiguredShortcutsAsync(sender, e, allowAlt: false);
+
+    private async Task HandleConfiguredShortcutsAsync(object? sender, KeyEventArgs e, bool allowAlt)
     {
-        if (_busy || e.Handled) { return; }
-        // Window tunnel handlers run before the focused viewer. Preserve the
-        // original child-first command scope when its gesture is available.
+        if (_busy || e.Handled || _lifetime.IsCancellationRequested) { return; }
+        // Alt goes through the owner access-key preview before dispatch, otherwise
+        // releasing Alt can unexpectedly select the main menu.
+        if (e.KeyModifiers == KeyModifiers.Alt && !allowAlt && sender is not MenuItem and not Avalonia.Controls.ContextMenu) { return; }
         DiffView? focusedDiff = _commitContent?.TextView.IsKeyboardFocusWithin == true ? _commitContent.TextView
             : _changesDiffView?.IsKeyboardFocusWithin == true ? _changesDiffView
             : _fileContent?.TextView.IsKeyboardFocusWithin == true ? _fileContent.TextView : null;
-        if (focusedDiff?.HandleReadingShortcut(e) == true) { return; }
-        if (focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
-        if (await HandleFilePaneShortcutAsync(e)) { return; }
-        if (e.KeyModifiers == KeyModifiers.None && _commits.IsKeyboardFocusWithin && e.Key is Key.F2 or Key.Delete)
+        if (focusedDiff?.HandleReadingShortcut(e) == true || focusedDiff?.AppearanceMenu.HandleKeyDown(e) == true) { return; }
+        void ClosePopup()
         {
-            e.Handled = true;
-            try { await ExecuteQuickReferenceActionAsync(e.Key == Key.F2 ? QuickGitRefAction.Rename : QuickGitRefAction.Delete); }
-            catch (Exception exception) { LastException = exception; AppendOutput(exception.Message); _state.Text = exception.Message; }
-            return;
+            if (sender is MenuItem menu) { menu.IsSubMenuOpen = false; }
+            if (sender is MenuItem or Avalonia.Controls.ContextMenu) { _revisionContext?.Close(); }
         }
-        if (e.KeyModifiers != KeyModifiers.Alt && (_commits.IsKeyboardFocusWithin || _workingRevision?.IsKeyboardFocusWithin == true || _indexRevision?.IsKeyboardFocusWithin == true) && await HandleHistoryMenuShortcutAsync(e)) { return; }
+        if (await HandleNavigationHotkeyAsync(e)) { return; }
+        if (await ExecuteConfiguredHotkeyAsync("Browse", e, ClosePopup)) { return; }
+        if (!IsFocusedTextEditingKey(e) && await ExecuteConfiguredHotkeyAsync("RevisionGrid", e, ClosePopup)) { return; }
+        if (await HandleFilePaneShortcutAsync(e)) { return; }
+
+        // These are framework/application commands outside the configurable
+        // Windows contexts. Configured commands above have no legacy fallback.
         Func<Task>? action = (e.Key, e.KeyModifiers) switch
         {
             (Key.F5, KeyModifiers.None) => RefreshAsync,
-            (Key.O, KeyModifiers.Control) => ChooseRepositoryAsync,
-            (Key.W, KeyModifiers.Control) => CloseRepositoryAsync,
-            (Key.Space, KeyModifiers.Control) => () => ShowWorkflowAsync("Changes"),
-            (Key.R, KeyModifiers.Control) => CompareAsync,
-            (Key.B, KeyModifiers.Control) => CreateBranchAsync,
-            (Key.OemPeriod, KeyModifiers.Control) => OpenBranchCheckoutAsync,
-            (Key.T, KeyModifiers.Control) => CreateTagAsync,
-            (Key.M, KeyModifiers.Control) => MergeAsync,
-            (Key.E, KeyModifiers.Control | KeyModifiers.Shift) => RebaseAsync,
-            (Key.Down, KeyModifiers.Control) => PullAsync,
-            (Key.Up, KeyModifiers.Control) => PushAsync,
-            (Key.Down, KeyModifiers.Control | KeyModifiers.Shift) => QuickFetchAsync,
-            (Key.P, KeyModifiers.Control | KeyModifiers.Shift) => () => ExecutePullActionAsync(GitExtensions.Extensibility.Git.GitPullAction.Merge),
-            (Key.F8, KeyModifiers.None) => DefaultPullAsync,
-            (Key.Up, KeyModifiers.Control | KeyModifiers.Shift) => QuickPushAsync,
-            (Key.Up, KeyModifiers.Control | KeyModifiers.Alt) => QuickStashAsync,
-            (Key.Down, KeyModifiers.Control | KeyModifiers.Alt) => QuickStashPopAsync,
-            (Key.Up, KeyModifiers.Control | KeyModifiers.Shift | KeyModifiers.Alt) when _supportsStashStaged == true => QuickStashStagedAsync,
-            (Key.G, KeyModifiers.Control) => OpenTerminalAsync,
-            (Key.OemComma, KeyModifiers.Control) => ShowSettingsAsync,
             (Key.F12, KeyModifiers.None) => ShowCommandLogAsync,
-            (Key.C, KeyModifiers.Control | KeyModifiers.Alt) => ToggleNavigationAsync,
-            (Key.W, KeyModifiers.Control | KeyModifiers.Alt) => () => ManageWorktreesAsync(),
-            (Key.N, KeyModifiers.Control | KeyModifiers.Shift) => NotesAsync,
             (Key.Enter, KeyModifiers.Control) when (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab" => CommitAsync,
-            (Key.A, KeyModifiers.Control | KeyModifiers.Shift) => () => SetHistoryScopeAsync(true),
-            (Key.U, KeyModifiers.Control | KeyModifiers.Shift) => () => SetHistoryScopeAsync(false),
             _ => null
         };
-        if (action is not null)
-        {
-            e.Handled = true;
-            try
-            {
-                if (ReferenceEquals(sender, _revisionContext)) { _revisionContext?.Close(); }
-                await action();
-            }
-            catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
-            return;
-        }
+        if (action is null) { return; }
+        e.Handled = true;
+        try { ClosePopup(); await action(); }
+        catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
+    }
 
-        if (e.KeyModifiers == KeyModifiers.Control)
-        {
-            e.Handled = true;
-            switch (e.Key)
-            {
-                case Key.D0: _navigation.Focus(); break;
-                case Key.D1: _commits.Focus(); break;
-                case Key.D2: FocusCommitInformation(); break;
-                case Key.D3: FocusDetail("DiffTab"); break;
-                case Key.D4: FocusDetail("FileTreeTab"); break;
-                case Key.D5: FocusDetail("GpgTab"); break;
-                case Key.D6: FocusDetail("ConsoleTab"); break;
-                case Key.E: FocusHistoryFilter(); break;
-                case Key.Tab: CycleDetails(1); break;
-                case Key.P: await MoveHistoryRelativeAsync(RelativeRevisionCommand.Parent); break;
-                case Key.N: await MoveHistoryRelativeAsync(RelativeRevisionCommand.Child); break;
-                case Key.Left: await MoveHistoryRelativeAsync(RelativeRevisionCommand.FirstParent); break;
-                case Key.Right: await MoveHistoryRelativeAsync(RelativeRevisionCommand.LastParent); break;
-                default: e.Handled = false; break;
-            }
-        }
-        else if (e.Key == Key.Tab && e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift))
-        {
-            e.Handled = true;
-            CycleDetails(-1);
-        }
+    private bool IsFocusedTextEditingKey(KeyEventArgs args)
+    {
+        if (FocusManager?.GetFocusedElement() is not (TextBox or AvaloniaEdit.Editing.TextArea)) { return false; }
+        KeyModifiers modifiers = args.KeyModifiers & ~KeyModifiers.Shift;
+        if (modifiers == KeyModifiers.None && (args.Key is >= Key.A and <= Key.Z or >= Key.D0 and <= Key.D9
+            or Key.Space or Key.Insert || args.Key.ToString().StartsWith("Oem", StringComparison.Ordinal))) { return true; }
+        modifiers &= ~KeyModifiers.Control;
+        return modifiers == KeyModifiers.None && args.Key is Key.A or Key.C or Key.V or Key.X or Key.Y or Key.Z
+            or Key.Back or Key.Delete or Key.Left or Key.Right or Key.Home or Key.End or Key.Up or Key.Down or Key.PageUp or Key.PageDown;
     }
 
     private void FocusDetail(string name)
@@ -121,22 +78,6 @@ public sealed partial class MainWindow
         FocusDetail(tabs[(index + direction + tabs.Length) % tabs.Length].Name!);
     }
 
-    private static KeyGesture? BrowserGesture(string label) => label switch
-    {
-        "Open repository…" => new(Key.O, KeyModifiers.Control),
-        "Close" => new(Key.W, KeyModifiers.Control),
-        "Commit…" => new(Key.Space, KeyModifiers.Control),
-        "Create branch…" => new(Key.B, KeyModifiers.Control),
-        "Checkout branch…" => new(Key.OemPeriod, KeyModifiers.Control),
-        "Create tag…" => new(Key.T, KeyModifiers.Control),
-        "Merge…" => new(Key.M, KeyModifiers.Control),
-        "Rebase…" => new(Key.E, KeyModifiers.Control | KeyModifiers.Shift),
-        "Pull…" => new(Key.Down, KeyModifiers.Control),
-        "Push…" => new(Key.Up, KeyModifiers.Control),
-        "Settings…" => new(Key.OemComma, KeyModifiers.Control),
-        "Terminal" => new(Key.G, KeyModifiers.Control),
-        "Show left panel" => new(Key.C, KeyModifiers.Control | KeyModifiers.Alt),
-        "Worktrees…" => new(Key.W, KeyModifiers.Control | KeyModifiers.Alt),
-        _ => null
-    };
+    private static KeyGesture? BrowserGesture(string label)
+        => BrowseHotkeyName(label) is { } command ? DesktopHotkeys.Get("Browse", command) : null;
 }

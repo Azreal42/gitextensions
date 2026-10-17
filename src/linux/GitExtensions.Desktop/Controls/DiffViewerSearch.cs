@@ -219,16 +219,21 @@ public sealed class DiffViewerSearch : IDisposable
     public bool HandleKeyDown(KeyEventArgs args)
     {
         if (args.Handled || !IsAvailable) { return false; }
-        if (args.Key == Key.F && args.KeyModifiers == KeyModifiers.Control) { args.Handled = true; ShowFind(); return true; }
-        if (args.Key == Key.H && args.KeyModifiers == KeyModifiers.Control && CanReplace) { args.Handled = true; ShowFind(replaceMode: true); return true; }
-        if (args.Key == Key.F3 && args.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
+        switch (DesktopHotkeys.Match("FileViewer", args)?.Name)
         {
-            args.Handled = true;
-            bool backwards = args.KeyModifiers == KeyModifiers.Shift;
-            PendingOperation = FindFromCommandAsync(backwards, viaF3: true); return true;
+            case "Find": args.Handled = true; ShowFind(); return true;
+            case "Replace":
+                // Windows consumes readonly Replace, without opening a search or mutating text.
+                args.Handled = true;
+                if (CanReplace) { ShowFind(replaceMode: true); }
+                return true;
+            case "FindNextOrOpenWithDifftool":
+                args.Handled = true; PendingOperation = FindFromCommandAsync(backwards: false, viaF3: true); return true;
+            case "FindPrevious":
+                args.Handled = true; PendingOperation = FindFromCommandAsync(backwards: true, viaF3: true); return true;
+            case "PreviousOccurrence": args.Handled = true; GoToPreviousOccurrence(); return true;
+            case "NextOccurrence": args.Handled = true; GoToNextOccurrence(); return true;
         }
-        if (args.KeyModifiers == KeyModifiers.Alt && args.Key is Key.Left or Key.Right)
-        { args.Handled = true; if (args.Key == Key.Left) { GoToPreviousOccurrence(); } else { GoToNextOccurrence(); } return true; }
         return false;
     }
 

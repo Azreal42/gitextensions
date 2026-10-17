@@ -191,6 +191,7 @@ public sealed partial class MainWindow
     {
         Button button = IconButton(label, icon, action, text);
         button.Name = name; button.Height = 24; button.MinHeight = 24; button.MinWidth = 0;
+        if (BrowseHotkeyName(label) is { } command) { DesktopHotkeys.BindToolTip(button, "Browse", command, T(label)); }
         button.Padding = new Thickness(text ? 3 : 0, 0); button.BorderThickness = default;
         button.Styles.Add(new Avalonia.Styling.Style(selector => selector.OfType<Button>())
         { Setters = { new Avalonia.Styling.Setter(BackgroundProperty, Brushes.Transparent) } });
@@ -253,7 +254,7 @@ public sealed partial class MainWindow
             { OriginalIconImage("BranchLocal.png"), new TextBlock { Text = branch, TextTrimming = TextTrimming.CharacterEllipsis,
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0) }, ToolbarDropdownArrow(_currentBranchButton, "BrowseCurrentBranchDropdownArrow") } };
             Grid.SetColumn(((Grid)_currentBranchButton.Content).Children[1], 1); Grid.SetColumn(((Grid)_currentBranchButton.Content).Children[2], 2);
-            ToolTip.SetTip(_currentBranchButton, branch + " — " + T("Checkout branch"));
+            DesktopHotkeys.BindToolTip(_currentBranchButton, "Browse", "CheckoutBranch", branch + " — " + T("Checkout branch"));
             if (_branchOverflow is not null) { _branchOverflow.Header = branch; }
         }
         if (_commitToolbarButton is not null)
