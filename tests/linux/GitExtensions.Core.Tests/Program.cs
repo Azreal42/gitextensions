@@ -47,6 +47,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 
 (string Name, Func<Task> Run)[] tests =
 [
+    .. ComparisonGroupScenarios.All,
     ("unborn status and unstage", UnbornAsync),
     ("repository discovery normalizes subdirectories and metadata to root", DiscoveryAsync),
     ("repository discovery resolves linked worktree files and metadata", LinkedDiscoveryAsync),
@@ -194,6 +195,7 @@ if (args.Contains("--askpass-modes-only", StringComparer.Ordinal))
 { tests = [("askpass isolates response streams and preserves explicit helpers", AskpassAsync), .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All]; }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
 if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptScenarios.All.ToArray(); }
+if (args.Contains("--comparison-groups-only", StringComparer.Ordinal)) { tests = ComparisonGroupScenarios.All.ToArray(); }
 
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)
