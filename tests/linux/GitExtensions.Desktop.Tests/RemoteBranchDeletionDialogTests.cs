@@ -438,6 +438,7 @@ public sealed class RemoteBranchDeletionDialogTests
             Assert.That(process.Outcome!.Success, Is.False);
             Assert.That(process.Outcome.Error, Is.Not.Null);
             Assert.That(process.Outcome.Result, Is.Null, "Validation failed before starting any native push transaction.");
+            await VisibleProcessNoticeAsync(process);
             Assert.That(Field<TextBlock>(process, "ProcessNotice").Text, Does.Contain("push").IgnoreCase.And.Contain("origin"));
             Assert.That(File.Exists(attempted), Is.False, "Neither server may be contacted by a push before the whole selection is validated.");
             Pointer(process, "Ok"); await Idle(dialog);
@@ -485,6 +486,7 @@ public sealed class RemoteBranchDeletionDialogTests
             Assert.That(process.Outcome!.Error, Is.Not.Null);
             Assert.That(process.Outcome.Success, Is.False);
             Assert.That(process.Outcome.Result, Is.Null);
+            await VisibleProcessNoticeAsync(process);
             Assert.That(Field<TextBlock>(process, "ProcessNotice").Text, Does.Contain("destination").IgnoreCase.And.Contain("changed").And.Contain("origin"));
             Pointer(process, "Ok"); await Idle(dialog);
             Assert.That(dialog.IsVisible, Is.True);
@@ -667,6 +669,14 @@ public sealed class RemoteBranchDeletionDialogTests
         while (!condition() && watch.Elapsed < TimeSpan.FromSeconds(20)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
         Assert.That(condition(), Is.True, "Remote branch UI did not reach the expected state within 20 seconds.");
     }
+    private static Task VisibleProcessNoticeAsync(GitProcessDialog process) => Until(() =>
+    {
+        // Execution can finish before newly visible ScrollViewer content is materialized.
+        // Render it before observing the visual tree, without acknowledging the process.
+        Pump(process);
+        return process.GetVisualDescendants().OfType<TextBlock>()
+            .Any(notice => notice.Name == "ProcessNotice" && notice.IsEffectivelyVisible);
+    });
     private static void Pump(TopLevel window)
     {
         Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs();
