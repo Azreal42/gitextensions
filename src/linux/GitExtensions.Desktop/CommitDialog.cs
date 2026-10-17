@@ -135,6 +135,7 @@ public sealed partial class CommitDialog : Window
         _stagedView = new FileStatusListView(_staged, FileHeader, fileListPreferences) { Name = "StagedFileStatusList" };
         ConfigureRulesFileList(_unstagedView);
         ConfigureRulesFileList(_stagedView);
+        ConfigureIndexFlagFiles();
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
         _sign.ItemsSource = new[] { T("Git default GPG signing"), T("Do not sign commit"), T("Sign with default GPG"), T("Sign with specific GPG") };
@@ -428,6 +429,7 @@ public sealed partial class CommitDialog : Window
     private async Task RefreshDataAsync()
     {
         _status = await _repository.GetStatusAsync(OperationToken);
+        await _indexFlagFiles!.RefreshAsync(_repository, OperationToken);
         _mergePending = File.Exists(await GetGitPathAsync("MERGE_HEAD"));
         IReadOnlyList<KeyValuePair<string, string>> configuration = await _repository.GetConfigAsync("^user\\.(name|email)$", cancellationToken: OperationToken);
         _committer = $"{configuration.LastOrDefault(item => item.Key == "user.name").Value} <{configuration.LastOrDefault(item => item.Key == "user.email").Value}>";
@@ -453,7 +455,7 @@ public sealed partial class CommitDialog : Window
             HashSet<string> unstagedSelection = _unstagedView.SelectedTags.OfType<GitChange>().Select(change => change.Path).ToHashSet(StringComparer.Ordinal);
             HashSet<string> stagedSelection = _stagedView.SelectedTags.OfType<GitChange>().Select(change => change.Path).ToHashSet(StringComparer.Ordinal);
             _unstagedView.SetGroups([new FileStatusListGroup(_unstaged, "unstaged", new TextBlock(),
-                _status.Changes.Where(change => (change.IsModified || change.IsConflict) && !change.IsIgnored)
+                _indexFlagFiles!.WithVisibleFlags(_status.Changes.Where(change => (change.IsModified || change.IsConflict) && !change.IsIgnored))
                     .Select(change => new FileStatusListEntry(change, change.Path, change.OriginalPath,
                         change.IsConflict ? 'U' : change.IsUntracked ? 'A' : change.WorkTreeStatus != '.' ? change.WorkTreeStatus : change.IndexStatus,
                         change.SimilarityPercent)).ToArray())]);
@@ -557,7 +559,8 @@ public sealed partial class CommitDialog : Window
         _content.ClearImage();
         _diff.BeginDocumentLoad();
         _patch = null;
-        GitChange? change = _status?.Changes.FirstOrDefault(change => change.Path == _path);
+        GitChange? change = _status?.Changes.FirstOrDefault(change => change.Path == _path)
+            ?? (!_viewStaged ? _unstagedView.Entries.Select(entry => entry.Tag).OfType<GitChange>().FirstOrDefault(change => change.Path == _path) : null);
         if (change is null) { _diff.Mode = DiffViewMode.Auto; _source.Text = T("Select a file to view its changes."); _patch = null; return; }
         _diff.DocumentIdentity = string.Join('\0', _repository.Path, change.Path, change.OriginalPath, _status?.Head, _viewStaged ? "index" : "worktree");
         await _diff.ConfigureRepositoryAsync(_repository, OperationToken);
@@ -900,6 +903,7 @@ public sealed partial class CommitDialog : Window
         foreach (Control control in _interactive) { control.IsEnabled = !_busy && !_commitRequested; }
         _diff.ComparisonMenu.SetHostBusy(_busy || _commitRequested);
         _diff.RenderingMenu.SetHostBusy(_busy || _commitRequested);
+        _indexFlagFiles?.UpdateAvailability();
         if (_busy || _commitRequested) { return; }
         _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
         _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();
