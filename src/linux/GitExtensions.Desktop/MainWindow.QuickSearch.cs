@@ -73,8 +73,13 @@ public sealed partial class MainWindow
         {
             foreach (GitCommit added in args.AddedItems.OfType<GitCommit>())
             { _historySelectionOrder.Remove(added.Hash); _historySelectionOrder.Add(added.Hash); }
-            _quickSearchArtificialSelection = null;
-            if (!_applyingQuickSearchSelection) { _quickSearchReturnTab = null; }
+            // Refresh rebinds the retained real row behind an ordinary artificial
+            // revision. That publication must not leave the working/index view.
+            if (!_refreshing || _quickSearchArtificialSelection is null || QuickSearchArtificialCount == 0)
+            {
+                _quickSearchArtificialSelection = null;
+                if (!_applyingQuickSearchSelection) { _quickSearchReturnTab = null; }
+            }
         }
         _quickSearchLastCommit = _historySelectionOrder.LastOrDefault();
         if (_quickSearchLastCommit is not null) { _parentChildLatestCommit = _quickSearchLastCommit; }

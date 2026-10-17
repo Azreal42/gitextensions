@@ -252,6 +252,72 @@ public sealed class ParentChildNavigationTests
     }
 
     [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task OrdinaryArtificialSelectionSurvivesRefreshFromTheWorkingDiffAndKeepsItsTypedParentAndChild(bool staged)
+    {
+        await using Scope f = await Scope.OpenAsync(showArtificial: true, dirtyWorkingTree: true);
+        await f.SelectAsync(f.C);
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
+        GitCompareRevisionKind kind = staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree;
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision"));
+        await f.IdleAsync();
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(kind));
+        Assert.That(f.Selected, Is.EqualTo(f.C), "Ordinary Browse retains its physical real selection behind the typed artificial destination.");
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
+        DiffView working = Field<DiffView>(f.Main, "WorktreeDiff");
+        Assert.That(working.Text, Does.Contain(staged ? "-D FILE" : "-INDEX FILE").And.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
+        Assert.That(working.DocumentIdentity, Does.Contain(staged ? "index" : "worktree"));
+
+        // The ordinary typed selection must survive when its button is no longer
+        // focused. Ctrl+1 would deliberately select the real-grid surface instead.
+        PushProcessTestDriver.Pointer(working.Editor.TextArea); await f.IdleAsync();
+        Assert.That(working.Editor.TextArea.IsKeyboardFocusWithin, Is.True);
+        Assert.That(f.History.IsKeyboardFocusWithin, Is.False);
+        Assert.That(Field<Button>(f.Main, "WorkingDirectoryRevision").IsKeyboardFocusWithin, Is.False);
+        Assert.That(Field<Button>(f.Main, "IndexRevision").IsKeyboardFocusWithin, Is.False);
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(kind));
+        FocusCheckpoint("ordinary-artificial-before-F5-" + kind, f.Main);
+        Press(f.Main, PhysicalKey.F5); await f.IdleAsync();
+        FocusCheckpoint("ordinary-artificial-after-F5-" + kind, f.Main);
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(kind), "F5 must preserve the ordinary typed destination rather than let the real-row rebind replace it.");
+        Assert.That(working.Editor.TextArea.IsKeyboardFocusWithin, Is.True, "The same working-diff editor must remain the real input origin after F5.");
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
+        Assert.That(working.Text, Does.Contain(staged ? "-D FILE" : "-INDEX FILE").And.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
+        Assert.That(working.DocumentIdentity, Does.Contain(staged ? "index" : "worktree"));
+        Assert.That(f.Selected, Is.EqualTo(f.C));
+        object? refreshedSource = f.History.ItemsSource; GitCommandLog.Clear();
+
+        // First command after refresh, without a focus repair or another click.
+        Press(f.Main, PhysicalKey.P, RawInputModifiers.Control); await f.IdleAsync();
+        if (staged)
+        {
+            Assert.That(f.Artificial, Is.Null);
+            Assert.That(f.Selected, Is.EqualTo(f.D), "Index's parent is real HEAD D, never the parent of the retained physical C row.");
+            Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
+            Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"),
+                "F5 must also preserve the prior revision panel for the automatic Changes-to-real transition.");
+        }
+        else
+        {
+            Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
+            Assert.That(Field<Button>(f.Main, "IndexRevision").IsKeyboardFocusWithin, Is.True);
+            Assert.That(working.Text, Does.Contain("-D FILE").And.Contain("+INDEX FILE"));
+            Assert.That(working.DocumentIdentity, Does.Contain("index"));
+        }
+        Press(f.Main, PhysicalKey.N, RawInputModifiers.Control); await f.IdleAsync();
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(kind), "Child must reverse the exact typed parent step after F5.");
+        Assert.That(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").IsKeyboardFocusWithin, Is.True);
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
+        Assert.That(working.Text, Does.Contain(staged ? "-D FILE" : "-INDEX FILE").And.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
+        Assert.That(working.DocumentIdentity, Does.Contain(staged ? "index" : "worktree"));
+        Assert.That(f.History.ItemsSource, Is.SameAs(refreshedSource));
+        Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Not.Contain("git log").And.Not.Contain("git status"),
+            "After the explicit F5, Parent/Child uses the loaded graph and only the normal targeted detail readers.");
+        Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
     public async Task TheUnbornIndexHasNoFakeHeadParentButCanReturnToItsWorkingTreeChild()
     {
         await using Scope f = await Scope.OpenAsync(showArtificial: true, fileHistory: true, unborn: true);
@@ -322,7 +388,7 @@ public sealed class ParentChildNavigationTests
             .GetField("_quickSearchArtificialSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(main);
 
         internal static async Task<Scope> OpenAsync(string culture = "en", bool dark = false, int limit = 300, bool showArtificial = false,
-            bool fileHistory = false, bool unborn = false, bool bare = false, bool headAtMerge = false)
+            bool fileHistory = false, bool unborn = false, bool bare = false, bool headAtMerge = false, bool dirtyWorkingTree = false)
         {
             GitFixture git = await GitFixture.CreateAsync(unborn: true); MainWindow? main = null;
             try
@@ -344,6 +410,13 @@ public sealed class ParentChildNavigationTests
                     await git.GitAsync("checkout", "-b", "alternate", c);
                     await File.WriteAllTextAsync(git.PathInRepository("other.txt"), "E OTHER\n"); e = await Commit("Child E"); await git.GitAsync("checkout", "main");
                     if (headAtMerge) { await git.GitAsync("checkout", "--detach", c); }
+                }
+                if (dirtyWorkingTree)
+                {
+                    Assert.That(unborn || bare || headAtMerge, Is.False, "The dirty ordinary fixture requires HEAD D in a non-bare repository.");
+                    await File.WriteAllTextAsync(git.File, "INDEX FILE\n");
+                    await git.GitAsync("add", "--", "file.txt");
+                    await File.WriteAllTextAsync(git.File, "WORKTREE FILE\n");
                 }
                 string repository = git.Repository.Path;
                 if (bare) { repository = git.Output("bare.git"); await git.GitAsync("clone", "--bare", git.Repository.Path, repository); }
