@@ -6,7 +6,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé et de la suite Desktop complète `b356d5f67` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 16 N1 substituts minimaux, 26 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 8 N1, 7 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) remplace toute lecture « une fenêtre existe donc elle est complète ». Référence du code recensé et de la suite Desktop complète `dc85753b1` : 99 fenêtres/dialogues métier (98 WinForms et 1 ressource askpass C++), hors 5 bases WinForms ; 32 pages de paramètres, hors 4 bases. Fenêtres : 6 N0 absentes, 16 N1 substituts minimaux, 26 N2 partielles, 49 N3 fonctionnelles sur un périmètre testé, 2 spécifiques Windows. Pages : 16 N0, 8 N1, 7 N2, 1 spécifique Windows. Aucun N4 de parité complète auditée. Ces nombres ne sont pas un pourcentage du travail de migration.
 
 L’inventaire contient aussi les 85 types Window Avalonia (dont 3 bases abstraites), 31 fabriques Linux sans classe dédiée et 366 sites de boîtes système/confirmations Windows, dont le Yes/No askpass natif C++. Les 13 dialogues de l’installateur Windows et 9 dialogues WiX référencés sont listés à part avec leur adaptation Debian. Chaque type/page est évalué explicitement ; le générateur signale toute nouvelle entrée non classée ou référence disparue. Les 189 fichiers Designer sont réconciliés. Les tests associés sont ceux des exécutions de référence, pas un nouveau test ni un audit complet de chaque écran.
 
@@ -14,6 +14,8 @@ L’inventaire contient aussi les 85 types Window Avalonia (dont 3 bases abstrai
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; configuration des raccourcis/scripts/langue/fontes ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Sockets du lancement Git et de la console : répertoire privé, limite UTF-8 et repli court sous TMPDIR long ; suites complètes et paquet exact vérifiés, commandes/annulations et ouverture X11 sous TMPDIR longs. ADR 0084, sans promotion de niveau.
 
 - [x] CommitInfo partagé : détails, notes, références contenant, tags annotés directs et six options, sans bloquer la sélection. Suites complètes et paquet exact vérifiés ; natif Browse anglais/clair/X11 ciblé, autres hôtes et variantes ouverts. ADR 0083.
 
@@ -104,7 +106,7 @@ L’inventaire contient aussi les 85 types Window Avalonia (dont 3 bases abstrai
 - Merge/Reset/Revert : resolver avancé, renommages/sous-modules et réglages distribués ; ne pas transférer les audits ciblés à toutes les variantes.
 - Fsck/Reflog/Cleanup et exports : audits natifs étendus, picker/Save as avec propriétaire témoin, binaires, annulation et fermetures normales. ADR 0048/0049/0050.
 - Grilles Remotes/Worktrees/sous-modules : gestes complets de DataGridView, copies de cellules et variantes natives ; écrans ciblés présents, audit global ouvert. ADR 0067–0071.
-- Askpass/plateforme : Wayland, DPI/accessibilité, matériel FIDO, invites localisées, chemins aux octets non UTF-8, intégrations XDG et arm64. TMPDIR personnalisé long : le socket Unix du lanceur peut dépasser sa limite de chemin avant le premier Git ; repli court à porter. Le banc utilise des temporaires privés courts et ne certifie pas ce cas. Aucun de ces points n’est certifié par le seul headless.
+- Askpass/plateforme : Wayland, DPI/accessibilité, matériel FIDO, invites localisées, chemins aux octets non UTF-8, intégrations XDG et arm64. Aucun de ces points n’est certifié par le seul headless.
 
 La matrice donne les autres écarts écran par écran ; aucune famille n’est retirée du périmètre.
 
@@ -145,3 +147,11 @@ Aucune validation native de FileHistory/Blame, des autres dispositions/thèmes/l
 Le paquet installé sur l’hôte reste `7.2.1-linux-alpha+879f7bae3…` : [version relue le 17 octobre](../../artifacts/linux/snapshots/5a52db1a9/proofs/host-application-version-observation.json), sortie réelle 0 ; [installation antérieure vérifiée](../../artifacts/linux/snapshots/879f7bae3/proofs/host-installation-verification-20261016-01.json). Aucun nouveau paquet installé sur l’hôte ; les candidats restent distincts en isolation, aucune application utilisateur arrêtée et aucun push.
 
 Les [snapshots](../../artifacts/linux/snapshots/) conservent résultats, captures, checksums et diagnostics avec leur SHA. Un audit natif ancien n’est pas transféré automatiquement à un candidat récent. L’[ancienne chronologie détaillée](../../artifacts/linux/migration-notes-20261016/todo-before-compaction-983a0d809.md) est archivée depuis le commit 983a0d809 ; le présent TODO garde les périmètres et les suites à donner.
+
+## Validation — sockets et TMPDIR
+
+Source `dc85753b178daad3f8bbf5ecd1b10adbce26c70d` : [suites complètes fraîches](../../artifacts/linux/unix-socket-temp-20261017/full-01/parent-verification.json), **1406/1406 Desktop**, **150 classes**, **636/636 Core**, **35/35 Plugins** ; sorties réelles à 0, entrées stables et aucun ancien cas retiré (**+4 Desktop, +11 Core**). Les [ciblés de préparation](../../artifacts/linux/unix-socket-temp-20261017/targeted-01/summary.json), les [quatre tests sous TMPDIR ASCII long](../../artifacts/linux/unix-socket-temp-20261017/desktop-long-01/ascii/result.json) et [UTF-8 long](../../artifacts/linux/unix-socket-temp-20261017/desktop-long-01/utf8/result.json) sont des périmètres recouvrants.
+
+[Paquet exact](../../artifacts/linux/snapshots/dc85753b1/proofs/package-parent-verification.json) : cinq phases réelles à 0, installation isolée et **402 entrées / 346 fichiers** conformes. [Revue des processus et ouvertures X11](../../artifacts/linux/snapshots/dc85753b1/proofs/unix-socket-native-parent-review.json) : **21 processus neufs, 13 succès et 8 annulations après démarrage**, 78 identités PID/start arrêtées et six sockets de repli supprimés ; dépôt ouvert sous Xvfb avec TMPDIR de 128 et 148 octets. Le contenu complet reste inchangé après ces vérifications.
+
+Le [rouge antérieur b356](../../artifacts/linux/unix-socket-temp-20261017/probe/campaigns/b356-full-matrix/summary.json) et les sondes précommit restent séparés du paquet exact. Aucun nouvel audit visuel ou des gestes de menus/focus ; Wayland, DPI et accessibilité restent ouverts. Niveaux inchangés, treize familles ouvertes, aucun N4 ; aucune installation hôte ni push. ADR [0084](adr/platform/git/0084-bounded-unix-sockets.md).
