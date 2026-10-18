@@ -508,11 +508,14 @@ public sealed partial class MainWindow
 
     private Task DiffToolAsync() => ShowGitToolsSettingsAsync(WorkflowOwner, GitToolRole.Diff);
 
-    private async Task ShowGitToolsSettingsAsync(Window owner, GitToolRole? focus = null)
+    private async Task ShowGitToolsSettingsAsync(Window owner, GitToolRole? focus = null,
+        GitToolConfigurationView? view = null, GitConfigurationField? field = null)
     {
-        if (_busy || _repository is null || _lifetime.IsCancellationRequested || !owner.IsVisible) { return; }
-        GitRepository repository = _repository;
-        GitToolsSettingsDialog dialog = new(repository, _translations, focus, _lifetime.Token)
+        if (_busy || _lifetime.IsCancellationRequested || !owner.IsVisible) { return; }
+        GitRepository? repository = _repository;
+        using GitConfigurationContext context = GitConfigurationContext.Create(repository, GitEnvironment.Current);
+        GitToolsSettingsDialog dialog = new(context.Repository, _translations, focus, _lifetime.Token,
+            initialView: view ?? (context.GlobalOnly ? GitToolConfigurationView.Global : null), focusField: field)
             { RequestedThemeVariant = owner.ActualThemeVariant };
         try
         {
@@ -522,13 +525,13 @@ public sealed partial class MainWindow
                 using CancellationTokenRegistration cancellation = Token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.RequestClose));
                 Token.ThrowIfCancellationRequested();
                 await dialog.ShowDialog<bool>(owner);
-            }, refresh: false);
+            }, refresh: false, requireRepository: false);
         }
         finally
         {
             // Apply then Cancel, or a partially failed save, can still have changed Git configuration.
             if (!dialog.OwnerCloseRequested && owner.IsVisible && dialog.MayHaveChangedConfiguration && IsVisible && !_lifetime.IsCancellationRequested
-                && ReferenceEquals(repository, _repository)) { await RefreshAsync(); }
+                && repository is not null && ReferenceEquals(repository, _repository)) { await RefreshAsync(); }
             if (!dialog.OwnerCloseRequested && owner.IsVisible && !_lifetime.IsCancellationRequested) { owner.Activate(); }
         }
     }

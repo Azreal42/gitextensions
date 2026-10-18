@@ -1,11 +1,41 @@
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Win32.SafeHandles;
 
 namespace GitExtensions.Linux.Desktop;
 
-internal sealed record InteractiveFileConsoleRequest(string SocketPath, string Nonce, string RepositoryPath, string GitExecutable, string[] Arguments);
+internal sealed record InteractiveFileConsoleRequest(string SocketPath, string Nonce, string RepositoryPath, string GitExecutable, string[] Arguments)
+{
+    // Optional for helpers/requests produced before environment snapshots were transported.
+    public InteractiveFileConsoleEnvironment? ExecutionEnvironment { get; init; }
+    internal GitExecutionEnvironment RestoreExecutionEnvironment()
+    {
+        GitExecutionEnvironment environment = ExecutionEnvironment?.Restore()
+            ?? GitExecutionEnvironment.Capture(new() { Executable = GitExecutable });
+        if (environment.Executable != GitExecutable)
+        { throw new InvalidDataException("The interactive Git executable differs from its captured environment."); }
+        return environment;
+    }
+}
+
+/// <summary>Only effective child environment data, copied before a terminal or helper can outlive its caller.</summary>
+internal sealed class InteractiveFileConsoleEnvironment
+{
+    [JsonConstructor]
+    public InteractiveFileConsoleEnvironment(GitEnvironmentOptions options, IReadOnlyDictionary<string, string?> environmentVariables)
+    {
+        ArgumentNullException.ThrowIfNull(options); ArgumentNullException.ThrowIfNull(environmentVariables);
+        GitExecutionEnvironment captured = GitExecutionEnvironment.Capture(options, environmentVariables);
+        Options = captured.Options; EnvironmentVariables = captured.EnvironmentVariables;
+    }
+    public GitEnvironmentOptions Options { get; }
+    public IReadOnlyDictionary<string, string?> EnvironmentVariables { get; }
+    internal static InteractiveFileConsoleEnvironment Capture(GitExecutionEnvironment environment)
+        => new(environment.Options, environment.EnvironmentVariables);
+    internal GitExecutionEnvironment Restore() => GitExecutionEnvironment.Capture(Options, EnvironmentVariables);
+}
 internal sealed record InteractiveFileConsoleHello(string Nonce);
 internal sealed record InteractiveFileConsoleResult(int ExitCode, bool Cancelled, string? Error);
 

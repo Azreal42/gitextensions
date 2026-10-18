@@ -182,11 +182,27 @@ public sealed partial class MainWindow : Window
             }
 
             _opened = true;
-            string? path = _browseRequest.RepositoryPath ?? Program.RepositoryPath ?? _repositoryHistory.Recent.FirstOrDefault()?.Path;
-            if (path is not null)
+            GitEnvironmentStartup? environmentStartup = Program.TakeEnvironmentStartup();
+            string? path = environmentStartup is { PreparationError: not null, Arguments.BrowseRequest: not null }
+                ? environmentStartup.Arguments.RepositoryArgument ?? environmentStartup.CurrentDirectory ?? Environment.CurrentDirectory
+                : _browseRequest.RepositoryPath ?? environmentStartup?.Arguments.RepositoryArgument ?? Program.RepositoryPath ?? _repositoryHistory.Recent.FirstOrDefault()?.Path;
+            if (environmentStartup is not null && path is not null)
+            {
+                _startupArgumentsToRetry = environmentStartup.Arguments with
+                {
+                    RepositoryArgument = path,
+                    BrowseRequest = environmentStartup.Arguments.BrowseRequest is { } request ? request with { RepositoryPath = path } : new(path)
+                };
+                _startupDirectoryToRetry = environmentStartup.CurrentDirectory ?? Environment.CurrentDirectory;
+            }
+            if (path is not null && environmentStartup?.PreparationError is null)
             {
                 await OpenRepositoryAsync(path);
+                if (_repository is not null) { _startupArgumentsToRetry = null; }
             }
+
+            if (environmentStartup is not null && (environmentStartup.CheckAtStartup || GitEnvironmentStartup.IsExecutableUnavailable(LastException)))
+            { await CheckStartupEnvironmentAsync(); }
 
             if (Program.SmokeTest)
             {
@@ -383,6 +399,7 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
+        using IDisposable execution = repository.BeginOperation();
         HideQuickSearch();
         _parentChildNavigation?.Clear();
         _parentChildFileFocus = null;
@@ -587,6 +604,7 @@ public sealed partial class MainWindow : Window
     {
         if (_busy || _lifetime.IsCancellationRequested) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
+        using IDisposable execution = _repository?.BeginOperation() ?? GitEnvironment.BeginOperation();
         using WindowWork work = TrackWindowWork();
         OperationFocus? previousFocus = CaptureOperationFocus();
         bool resumeSelection = BrowserReads.Any(read => read.Current is not null) || _commitInfo.IsLoading;

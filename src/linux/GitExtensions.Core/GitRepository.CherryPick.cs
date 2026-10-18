@@ -69,6 +69,7 @@ public sealed partial class GitRepository
 
     public async Task<GitCherryPickResult> CherryPickAsync(GitCherryPickOptions options, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         ArgumentNullException.ThrowIfNull(options);
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -118,6 +119,7 @@ public sealed partial class GitRepository
 
     public async Task<GitCherryPickResult> ResumeCherryPickAsync(GitCherryPickSession session, GitOperationAction action, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         ArgumentNullException.ThrowIfNull(session);
         if (!Enum.IsDefined(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         if (!StringComparer.Ordinal.Equals(session.Root, Path) || session.Completed || session.Aborted)

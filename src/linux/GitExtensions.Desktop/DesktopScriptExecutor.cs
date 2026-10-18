@@ -20,6 +20,7 @@ internal static class DesktopScriptExecutor
 
     internal static async Task<bool> RunEventAsync(Window owner, GitRepository repository, ScriptEvent scriptEvent, CancellationToken token = default)
     {
+        using IDisposable execution = repository.BeginOperation();
         token.ThrowIfCancellationRequested();
         ScriptsPreferencesLoadResult settings = new ScriptsPreferencesStore().Load();
         if (settings.Error is not null) { throw new InvalidDataException("Unable to read scripts.", settings.Error); }
@@ -35,6 +36,7 @@ internal static class DesktopScriptExecutor
     internal static async Task<bool> ExecuteAsync(Window owner, GitRepository repository, ScriptDefinition script,
         CancellationToken token = default, FileMenuSelection? files = null)
     {
+        using IDisposable execution = repository.BeginOperation();
         Dispatcher.UIThread.VerifyAccess(); token.ThrowIfCancellationRequested();
         if (!owner.IsVisible) { return false; }
         Lifetime lifetime = Lifetimes.GetValue(owner, window => new Lifetime(window));
@@ -65,7 +67,8 @@ internal static class DesktopScriptExecutor
         if (plan.Target == ScriptTargetKind.NavigateTo)
         {
             if (executable.Length == 0) { return true; }
-            ScriptProcessResult navigation = await new ScriptProcessRunner().RunAsync(executable, repository.Path, arguments, cancellation);
+            ScriptProcessResult navigation = await new ScriptProcessRunner().RunAsync(executable, repository.Path, arguments, cancellation,
+                executionEnvironment: captured.Context.ExecutionEnvironment);
             if (browse is null) { return false; }
             string revision = Encoding.UTF8.GetString(navigation.StandardOutputBytes).Split('\n')[0].TrimEnd('\r');
             // The Windows adapter uses stdout even after a nonzero native exit;
@@ -78,12 +81,12 @@ internal static class DesktopScriptExecutor
             // Do not tie a detached command to a short-lived workflow operation token.
             // Its owner lifetime still cancels and drains it when the window closes.
             cancellation.ThrowIfCancellationRequested();
-            return await lifetime.StartAsync(executable, repository.Path, arguments, browse);
+            return await lifetime.StartAsync(executable, repository.Path, arguments, browse, captured.Context.ExecutionEnvironment);
         }
         GitProcessDialogResult outcome = await GitProcessDialog.ShowAsync(owner, repository.Path,
             script.GetDisplayName() + ": " + executable + " " + plan.ArgumentPlan.Preview, true,
             async (processToken, output) => ToGitResult(await new ScriptProcessRunner().RunAsync(executable, repository.Path, arguments,
-                processToken, outputReceived: output)), cancellation, preserveStreamedOutput: true);
+                processToken, outputReceived: output, executionEnvironment: captured.Context.ExecutionEnvironment)), cancellation, preserveStreamedOutput: true);
         return !outcome.OwnerCloseRequested && !outcome.WorkflowStopRequested && outcome.Success;
     }
 
@@ -153,9 +156,11 @@ internal static class DesktopScriptExecutor
             };
         }
 
-        internal async Task<bool> StartAsync(string executable, string directory, IReadOnlyList<string> arguments, MainWindow? browse)
+        internal async Task<bool> StartAsync(string executable, string directory, IReadOnlyList<string> arguments, MainWindow? browse,
+            GitExecutionEnvironment? executionEnvironment = null)
         {
             Token.ThrowIfCancellationRequested();
+            executionEnvironment ??= GitEnvironment.Current;
             TaskCompletionSource<bool> started = new(TaskCreationOptions.RunContinuationsAsynchronously);
             Task process = ObserveAsync();
             _pending.Add(process);
@@ -167,7 +172,7 @@ internal static class DesktopScriptExecutor
                 try
                 {
                     ScriptProcessResult result = await new ScriptProcessRunner().RunAsync(executable, directory, arguments, Token,
-                        processStarted: _ => started.TrySetResult(true));
+                        processStarted: _ => started.TrySetResult(true), executionEnvironment: executionEnvironment);
                     started.TrySetResult(false);
                     if (!result.Success) { browse?.ReportScriptOutput("Script exited with code " + result.ExitCode + ".\n" + Encoding.UTF8.GetString(result.StandardErrorBytes)); }
                 }

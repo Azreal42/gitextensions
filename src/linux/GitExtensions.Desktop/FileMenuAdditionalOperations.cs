@@ -109,7 +109,7 @@ internal sealed class FileMenuAdditionalOperations
                         {
                             launchedArguments = arguments;
                             return InteractiveFileConsoleLauncher.RunAsync(Owner, selection.Repository.Path,
-                                selection.Repository.GitExecutable, arguments, cancellation);
+                                selection.Repository.ExecutionEnvironment, arguments, cancellation);
                         }, token);
                     if (!result.Success) { throw new GitCommandException(launchedArguments, result); }
                 }, true); return;

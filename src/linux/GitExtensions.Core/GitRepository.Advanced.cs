@@ -93,6 +93,7 @@ public sealed partial class GitRepository
 
     public async Task<string?> GetCommitTemplateAsync(string? templatePath = null, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         if (templatePath is null)
         {
             templatePath = (await GetConfigAsync("^commit\\.template$", cancellationToken: cancellationToken).ConfigureAwait(false)).LastOrDefault().Value;
@@ -105,7 +106,8 @@ public sealed partial class GitRepository
 
         if (templatePath.StartsWith("~/", StringComparison.Ordinal))
         {
-            templatePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), templatePath[2..]);
+            string home = _runner.ExecutionEnvironment.GetVariable("HOME") ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            templatePath = System.IO.Path.Combine(home, templatePath[2..]);
         }
 
         System.Text.Encoding encoding = await GetCommitMessageEncodingAsync(cancellationToken).ConfigureAwait(false);

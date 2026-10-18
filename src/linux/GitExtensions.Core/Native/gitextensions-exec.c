@@ -162,6 +162,18 @@ int main(int argc, char **argv)
     if (setsid() < 0) { int error = errno; launch_failed(control, argv[2], error, 1); }
     char *target = argv[3][0] != '\0' ? argv[3] : resolve_path(argv[4], argv[5], argv[6]);
     if (target == NULL) { int error = errno; launch_failed(control, argv[2], error, 2); }
+    /* Git itself can prepend its exec-path to PATH. Native editor/index-filter children must
+       retain this actual selection while argv0 and the kernel's shebang semantics stay intact. */
+    const char *git = getenv("GITEXTENSIONS_GIT_EXECUTABLE");
+    if (git != NULL && strcmp(git, argv[6]) == 0)
+    {
+        char *directory = target[0] == '/' ? NULL : getcwd(NULL, 0);
+        char *selected = target[0] == '/' ? strdup(target) : directory == NULL ? NULL : combine(directory, target);
+        free(directory);
+        if (selected == NULL || setenv("GITEXTENSIONS_GIT_EXECUTABLE", selected, 1) < 0)
+        { int error = errno; free(selected); launch_failed(control, argv[2], error, 2); }
+        free(selected);
+    }
     execv(target, argv + 6);
     int error = errno;
     launch_failed(control, argv[2], error, 2);

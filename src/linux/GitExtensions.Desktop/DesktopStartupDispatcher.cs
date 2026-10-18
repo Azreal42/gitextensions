@@ -7,6 +7,7 @@ internal static class DesktopStartupDispatcher
     internal static async Task<DesktopStartupRequest> PrepareAsync(DesktopStartupArguments arguments, string currentDirectory,
         CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = GitEnvironment.BeginOperation();
         ArgumentNullException.ThrowIfNull(arguments);
         cancellationToken.ThrowIfCancellationRequested();
         if (arguments.Mode == DesktopStartupMode.Browse)

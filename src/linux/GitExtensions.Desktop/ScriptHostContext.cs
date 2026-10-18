@@ -13,6 +13,8 @@ internal static class ScriptHostContext
 {
     internal static async Task<CapturedScriptContext> CaptureAsync(GitRepository repository, ScriptHostSelection selection, CancellationToken token)
     {
+        using IDisposable operation = repository.BeginOperation();
+        GitExecutionEnvironment environment = repository.ExecutionEnvironment;
         GitStatus status = await repository.GetStatusAsync(token);
         IReadOnlyList<GitReference> references = (await repository.GetReferencesAsync(token))
             .Where(reference => reference.IsBranch || reference.IsRemote || reference.IsTag).ToArray();
@@ -61,6 +63,7 @@ internal static class ScriptHostContext
             RemoteUrls = remotes.ToDictionary(remote => remote.Name, remote => remote.FetchUrls.FirstOrDefault() ?? "", StringComparer.Ordinal),
             SelectedFolder = selection.Files?.Folder, SelectedRelativePaths = selection.Files?.Paths ?? [],
             LineNumber = selection.LineNumber, ColumnNumber = selection.ColumnNumber,
+            GitExecutable = environment.Executable, ExecutionEnvironment = environment,
             ApplicationExecutable = Environment.ProcessPath ?? "gitextensions"
         };
         return new(context.Snapshot(), new(selectedReferences, currentReferences));

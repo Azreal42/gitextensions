@@ -6,7 +6,7 @@ public sealed partial class GitRepository
 {
     // Values are transported in a private NUL file and environment, never interpolated into shell code.
     // Git 2.38 (our minimum) supports rm's --pathspec-from-file/--pathspec-file-nul.
-    private const string HistoryRemovalIndexFilter = "\"$GITEXTENSIONS_HISTORY_GIT\" --literal-pathspecs rm -r -f --cached --ignore-unmatch --pathspec-from-file=\"$GITEXTENSIONS_HISTORY_PATHS_FILE\" --pathspec-file-nul --";
+    private const string HistoryRemovalIndexFilter = "\"$GITEXTENSIONS_GIT_EXECUTABLE\" --literal-pathspecs rm -r -f --cached --ignore-unmatch --pathspec-from-file=\"$GITEXTENSIONS_HISTORY_PATHS_FILE\" --pathspec-file-nul --";
     private static readonly UTF8Encoding HistoryRemovalUtf8 = new(false, true);
 
     /// <summary>FindLargeFiles deletion: one index-filter for the literal union, then native backup/reflog/object cleanup.
@@ -51,14 +51,8 @@ public sealed partial class GitRepository
                             await file.WriteAsync(new byte[1], token).ConfigureAwait(false);
                         }
                     }
-                    string executable = _runner.Executable;
-                    if (OperatingSystem.IsLinux() && GitProcessLaunch.ResolveDirectExecutable(executable) is string direct && direct.Length != 0)
-                    { executable = direct; }
-                    else if (!System.IO.Path.IsPathRooted(executable) && executable.Contains(System.IO.Path.DirectorySeparatorChar))
-                    { executable = System.IO.Path.GetFullPath(executable, Directory.GetCurrentDirectory()); }
                     Dictionary<string, string?> environment = new(StringComparer.Ordinal)
                     {
-                        ["GITEXTENSIONS_HISTORY_GIT"] = executable,
                         ["GITEXTENSIONS_HISTORY_PATHS_FILE"] = pathFile,
                     };
                     token.ThrowIfCancellationRequested();

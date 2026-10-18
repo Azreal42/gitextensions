@@ -9,6 +9,8 @@ internal static class Program
     internal static string? RepositoryPath { get; private set; }
     internal static bool SmokeTest { get; private set; }
     internal static DesktopStartupRequest StartupRequest { get; private set; } = DesktopStartupRequest.Browse;
+    private static GitEnvironmentStartup? _environmentStartup;
+    internal static GitEnvironmentStartup? TakeEnvironmentStartup() => Interlocked.Exchange(ref _environmentStartup, null);
 
     [STAThread]
     public static int Main(string[] args)
@@ -51,8 +53,22 @@ internal static class Program
 
         try
         {
+            GitEnvironmentPreferencesLoadResult environment = new GitEnvironmentPreferencesStore().Load();
+            GitEnvironment.Configure(GitEnvironmentSettingsSession.Options(environment.Preferences));
             DesktopLanguage.ApplyPreferredCulture();
-            StartupRequest = DesktopStartupDispatcher.PrepareAsync(startup, Environment.CurrentDirectory).GetAwaiter().GetResult();
+            Exception? preparationError = null;
+            try { StartupRequest = DesktopStartupDispatcher.PrepareAsync(startup, Environment.CurrentDirectory).GetAwaiter().GetResult(); }
+            catch (Exception error) when (!SmokeTest && startup.Mode == DesktopStartupMode.Browse && GitEnvironmentStartup.IsExecutableUnavailable(error))
+            {
+                // Keep the original request for retry after the user repairs Git; never substitute an unrelated cwd repository.
+                preparationError = error; RepositoryPath = null;
+                StartupRequest = new(startup with { RepositoryArgument = null }, BrowseRequest: startup.BrowseRequest);
+            }
+            if (!SmokeTest && startup.Mode == DesktopStartupMode.Browse)
+            {
+                _environmentStartup = new(startup, environment.Preferences.CheckAtStartup || environment.Error is not null || preparationError is not null,
+                    preparationError, Environment.CurrentDirectory);
+            }
             RepositoryPath = StartupRequest.BrowseRequest?.RepositoryPath ?? RepositoryPath;
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
             GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, "gitextensions-askpass");

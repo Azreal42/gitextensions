@@ -16,12 +16,16 @@ public sealed partial class GitRepository
     }
 
     public string Path { get; }
+    public GitExecutionEnvironment ExecutionEnvironment => _runner.ExecutionEnvironment;
+    /// <summary>Pins this repository's executable and environment through a multi-command workflow.</summary>
+    public IDisposable BeginOperation() => _runner.BeginOperation();
     /// <summary>Discovery metadata; populated by OpenAsync or GetInfoAsync.</summary>
     public GitRepositoryInfo? Info { get; private set; }
     public bool IsBare => Info?.IsBare == true;
 
     public async Task<GitResult> RunAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         if (!await IsRepositoryAsync(cancellationToken).ConfigureAwait(false))
         {
             throw new InvalidOperationException("The selected directory is not a Git repository.");
@@ -145,6 +149,7 @@ public sealed partial class GitRepository
 
     public async Task<GitResult> UnstageAsync(IEnumerable<string> paths, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         string[] validated = ValidatePaths(paths);
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -543,6 +548,7 @@ public sealed partial class GitRepository
     private async Task<GitResult> MutateAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken, string? standardInput = null, int[]? allowedExitCodes = null,
         IReadOnlyDictionary<string, string?>? environment = null)
     {
+        using IDisposable operation = _runner.BeginOperation();
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -557,6 +563,7 @@ public sealed partial class GitRepository
     private async Task<GitResult> ExecuteAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken, string? standardInput = null, int[]? allowedExitCodes = null,
         IReadOnlyDictionary<string, string?>? environment = null, Func<GitBinaryResult, GitOutputDecoding>? outputDecoder = null)
     {
+        using IDisposable operation = _runner.BeginOperation();
         string? command = arguments.FirstOrDefault();
         bool worktreeRequired = command is "status" or "add" or "rm" or "restore" or "checkout" or "switch" or "commit" or "stash"
             or "merge" or "rebase" or "cherry-pick" or "revert" or "am" or "apply" or "clean" or "sparse-checkout" or "submodule"
@@ -583,6 +590,7 @@ public sealed partial class GitRepository
 
     private async Task<T> WithMutationAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
     {
+        using IDisposable execution = _runner.BeginOperation();
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

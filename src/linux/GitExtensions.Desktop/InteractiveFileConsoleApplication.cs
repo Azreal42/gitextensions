@@ -24,6 +24,7 @@ internal static class InteractiveFileConsoleApplication
         { throw new InvalidDataException("The interactive Git console request must be a private regular file."); }
         InteractiveFileConsoleRequest request = JsonSerializer.Deserialize<InteractiveFileConsoleRequest>(await File.ReadAllTextAsync(path))
             ?? throw new InvalidDataException("The interactive Git console request is invalid.");
+        GitExecutionEnvironment environment = request.RestoreExecutionEnvironment();
         using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         await socket.ConnectAsync(new UnixDomainSocketEndPoint(request.SocketPath));
         _ = InteractiveFileConsoleProtocol.Peer(socket);
@@ -46,7 +47,7 @@ internal static class InteractiveFileConsoleApplication
             Console.WriteLine("Git Extensions — interactive Git");
             Console.WriteLine(request.RepositoryPath);
             Console.WriteLine("Use Git's displayed choices. Closing this console cancels and waits for this Git operation.");
-            completed = await GitInteractiveTerminalProcess.RunAsync(request.RepositoryPath, request.GitExecutable, request.Arguments, job.Token);
+            completed = await GitInteractiveTerminalProcess.RunAsync(request.RepositoryPath, environment, request.Arguments, job.Token);
             Console.WriteLine(); Console.WriteLine("Git exited with code " + completed.ExitCode + ". Press Enter to close.");
             await InteractiveFileConsoleProtocol.WaitForCloseInputAsync(job.Token);
             result = new(completed.ExitCode, false, null);

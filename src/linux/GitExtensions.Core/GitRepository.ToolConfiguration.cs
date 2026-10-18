@@ -25,6 +25,7 @@ public sealed partial class GitRepository
     public async Task<GitToolConfigurationSaveResult> SaveToolConfigurationAsync(GitToolConfigurationSnapshot expected,
         IReadOnlyList<GitToolConfigurationScopeEdit> edits, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         ArgumentNullException.ThrowIfNull(expected); ArgumentNullException.ThrowIfNull(edits);
         List<GitToolConfigurationWriteReceipt> receipts = [];
         List<SemaphoreSlim> acquired = [];
@@ -178,7 +179,7 @@ public sealed partial class GitRepository
     private async Task<ToolConfigurationState> ReadToolConfigurationAsync(CancellationToken token)
     {
         string environment = ToolConfigurationEnvironment();
-        if (Environment.GetEnvironmentVariable("GIT_CONFIG") is not null)
+        if (_runner.ExecutionEnvironment.GetVariable("GIT_CONFIG") is not null)
         { throw new NotSupportedException("An explicit GIT_CONFIG file override is outside this scoped editor. No write destination was inferred."); }
         Version version = await GetToolConfigurationGitVersionAsync(token).ConfigureAwait(false);
         if (version < new Version(2, 26))
@@ -205,7 +206,7 @@ public sealed partial class GitRepository
                 string basePath = IOPath.GetDirectoryName(IOPath.GetFullPath(entry.Origin[5..], Path))!;
                 if (include.StartsWith("~/", StringComparison.Ordinal))
                 {
-                    string home = Environment.GetEnvironmentVariable("HOME") ?? throw new IOException("Cannot guard a home-relative Git include without HOME.");
+                    string home = _runner.ExecutionEnvironment.GetVariable("HOME") ?? throw new IOException("Cannot guard a home-relative Git include without HOME.");
                     include = IOPath.Combine(home, include[2..]);
                 }
                 else if (include.StartsWith('~')) { throw new NotSupportedException("This configuration includes a user-home path whose physical origin cannot be guarded by this editor."); }
@@ -238,21 +239,22 @@ public sealed partial class GitRepository
 
     private (string? Target, string[] Candidates) ToolGlobalTargets()
     {
-        string? configured = Environment.GetEnvironmentVariable("GIT_CONFIG_GLOBAL");
+        string? configured = _runner.ExecutionEnvironment.GetVariable("GIT_CONFIG_GLOBAL");
         if (configured is not null)
         { return configured.Length == 0 ? (null, []) : (IOPath.GetFullPath(configured, Path), [IOPath.GetFullPath(configured, Path)]); }
-        string? home = Environment.GetEnvironmentVariable("HOME");
+        string? home = _runner.ExecutionEnvironment.GetVariable("HOME");
         if (string.IsNullOrEmpty(home) || !IOPath.IsPathRooted(home)) { return (null, []); }
         string normal = IOPath.Combine(home, ".gitconfig");
-        string xdg = IOPath.Combine(Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") is { Length: > 0 } directory ? IOPath.GetFullPath(directory, Path) : IOPath.Combine(home, ".config"), "git", "config");
+        string xdg = IOPath.Combine(_runner.ExecutionEnvironment.GetVariable("XDG_CONFIG_HOME") is { Length: > 0 } directory ? IOPath.GetFullPath(directory, Path) : IOPath.Combine(home, ".config"), "git", "config");
         return (File.Exists(normal) || !File.Exists(xdg) ? normal : xdg, [normal, xdg]);
     }
-    private static string ToolConfigurationEnvironment()
+    private string ToolConfigurationEnvironment()
     {
-        IEnumerable<string> names = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(name => name.StartsWith("GIT_CONFIG", StringComparison.Ordinal)
+        GitExecutionEnvironment environment = _runner.ExecutionEnvironment;
+        IEnumerable<string> names = environment.EnvironmentVariables.Keys.Where(name => name.StartsWith("GIT_CONFIG", StringComparison.Ordinal)
             || name is "HOME" or "XDG_CONFIG_HOME" or "GIT_DIR" or "GIT_WORK_TREE" or "GIT_COMMON_DIR" or "GIT_CEILING_DIRECTORIES" or "PATH" or "GIT_EXEC_PATH");
         // Context values can contain secrets; retain only their digest, never expose them in diagnostics or public DTOs.
-        return GitRulesFiles.Hash(ToolConfigurationUtf8.GetBytes(string.Concat(names.Order(StringComparer.Ordinal).Select(name => name + "\0" + Environment.GetEnvironmentVariable(name) + "\0"))));
+        return GitRulesFiles.Hash(ToolConfigurationUtf8.GetBytes(string.Concat(names.Order(StringComparer.Ordinal).Select(name => name + "\0" + environment.GetVariable(name) + "\0"))));
     }
     private GitToolConfigurationOccurrence[] ParseToolConfiguration(GitBinaryResult raw, IReadOnlyList<string> arguments, string? localTarget, string? globalTarget)
     {

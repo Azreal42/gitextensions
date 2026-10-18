@@ -48,6 +48,7 @@ public sealed record ScriptContext
     public ScriptArgumentPlatform ArgumentPlatform { get; init; } = ScriptArgumentPlatform.Posix;
     public CultureInfo Culture { get; init; } = CultureInfo.CurrentCulture;
     public string GitExecutable { get; init; } = "git";
+    public GitExecutionEnvironment? ExecutionEnvironment { get; init; }
     public string ApplicationExecutable { get; init; } = "gitextensions";
     public string OpenUrlExecutable { get; init; } = "xdg-open";
 

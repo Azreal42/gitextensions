@@ -27,6 +27,13 @@ internal sealed class DesktopSettingsDialog : Window
     public bool OpenGitConfiguration { get; private set; }
     internal FontPreferences FontsResult { get; private set; }
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
+    private TabControl? _settingsPages;
+    private TabItem? _gitEnvironmentTab, _checklistTab;
+    internal GitEnvironmentSettingsSession? GitEnvironmentSession { get; private set; }
+    internal void SelectGitEnvironmentPage(bool checklist)
+    {
+        if (_settingsPages is not null) { _settingsPages.SelectedItem = checklist ? _checklistTab : _gitEnvironmentTab; }
+    }
 
     public DesktopSettingsDialog(DesktopPreferences initial, TranslationCatalog translations, bool canConfigureGit,
         GitLogSort historySort = GitLogSort.GitDefault, FileHistoryPreferences? fileHistoryPreferences = null,
@@ -34,9 +41,14 @@ internal sealed class DesktopSettingsDialog : Window
         FontPreferences? fonts = null, Func<FontPreferences, FontPreferences, FontPreferences>? saveFonts = null, Exception? fontsLoadError = null,
         ScriptsPreferencesLoadResult? scripts = null,
         Func<ScriptsPreferencesLoadResult, IReadOnlyList<ScriptDefinition>, ScriptsPreferencesLoadResult>? saveScripts = null,
-        Func<Window, Task>? configureGitTools = null)
+        Func<Window, Task>? configureGitTools = null,
+        GitEnvironmentSettingsSession? gitEnvironment = null,
+        Func<DesktopSettingsDialog, Task>? publishSettings = null,
+        Func<GitEnvironmentCheckId, Window, Task>? repairEnvironment = null,
+        bool showChecklist = false)
     {
         Result = initial; HistorySortResult = historySort;
+        GitEnvironmentSession = gitEnvironment;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         HotkeyBindings activeHotkeys = hotkeys ?? new(); HotkeysResult = activeHotkeys.Clone();
         DesktopFontSession? fontSession = fonts is null ? DesktopFonts.CreateSession() : null;
@@ -46,7 +58,7 @@ internal sealed class DesktopSettingsDialog : Window
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
         Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        if (configureGitTools is not null)
+        if (configureGitTools is not null || gitEnvironment is not null)
         {
             // Preserve Main -> Settings -> busy Config close requests before the child veto.
             ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
@@ -85,7 +97,7 @@ internal sealed class DesktopSettingsDialog : Window
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); }; fields.Children.Add(configuration);
-        Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit && configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
+        Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
         bool configuringTools = false;
         tools.Click += async (_, _) =>
         {
@@ -94,7 +106,7 @@ internal sealed class DesktopSettingsDialog : Window
             try { await configureGitTools(this); }
             catch (OperationCanceledException) { }
             catch (Exception error) { if (IsVisible) { notice.Text = error.Message; } }
-            finally { configuringTools = false; if (IsVisible) { tools.IsEnabled = canConfigureGit; } }
+            finally { configuringTools = false; if (IsVisible) { tools.IsEnabled = configureGitTools is not null; } }
         };
         fields.Children.Add(tools);
 
@@ -124,63 +136,137 @@ internal sealed class DesktopSettingsDialog : Window
         scriptsPage.DraftChanged += draft => hotkeysPage.UpdateScripts(draft);
         TabItem scriptsTab = new() { Name = "SettingsScriptsTab", Header = translations.Translate("ScriptsSettingsPage", "$this", "Text", "Scripts"), Content = scriptsPage };
         TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab, scriptsTab }, SelectedItem = generalTab };
+        _settingsPages = tabs;
+        if (gitEnvironment is not null)
+        {
+            _gitEnvironmentTab = new() { Name = "SettingsGitTab", Header = translations.Translate("GitSettingsPage", "$this", "Text", "Git"),
+                Content = new ScrollViewer { Content = gitEnvironment.Page, Margin = new Thickness(12), VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto } };
+            _checklistTab = new() { Name = "SettingsChecklistTab", Header = translations.Translate("ChecklistSettingsPage", "$this", "Text", "Checklist"),
+                Content = new ScrollViewer { Content = gitEnvironment.Checklist, Margin = new Thickness(12), VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto } };
+            tabs.ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab, scriptsTab, _gitEnvironmentTab, _checklistTab };
+            if (showChecklist) { tabs.SelectedItem = _checklistTab; }
+        }
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
         Button cancel = new() { Name = "CancelDesktopSettings", Content = translations.Translate("Cancel"), MinWidth = 75, IsCancel = true };
+        bool saving = false, closeWhenIdle = false, accepting = false;
         cancel.Click += (_, _) => Close(false);
-        save.Click += (_, _) =>
+        save.Click += async (_, _) => await SaveAllAsync(closeOnSuccess: true);
+        async Task<bool> SaveAllAsync(bool closeOnSuccess)
         {
-            if (history.Value is null || history.Value < 1 || history.Value > 5000 || (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text)))
-            { tabs.SelectedItem = generalTab; notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); return; }
-            foreach (TextBox input in new[] { branches, remotes })
-            {
-                try { GitReferencePriorities.Validate(input.Text ?? ""); }
-                catch (ArgumentException error) { tabs.SelectedItem = sortingTab; notice.Text = error.Message; input.Focus(); return; }
-            }
-            if (!scriptsPage.Validate(out string? scriptValidation))
-            { tabs.SelectedItem = scriptsTab; notice.Text = scriptValidation; return; }
-            if (!fontsPage.Validate(out string? fontValidation))
-            { tabs.SelectedItem = fontsTab; notice.Text = fontValidation; return; }
-            if (scriptsPage.IsDirty)
-            {
-                try
-                {
-                    ScriptsResult = saveScripts?.Invoke(ScriptsResult, scriptsPage.Draft)
-                        ?? new(new(scriptsPage.Draft, ScriptConfigurationSource.Xml), ScriptsResult.Existed, ScriptsResult.OriginalBytes);
-                    scriptsPage.AcceptSaved(ScriptsResult);
-                }
-                catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
-                { tabs.SelectedItem = scriptsTab; scriptsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save scripts.") + " " + error.Message; return; }
-            }
-            HotkeyBindings acceptedHotkeys = hotkeysPage.Draft.Clone();
-            try { saveHotkeys?.Invoke(acceptedHotkeys.Clone()); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
-            { tabs.SelectedItem = hotkeysTab; notice.Text = translations.Translate("Unable to save hotkeys.") + " " + error.Message; return; }
+            if (saving || gitEnvironment?.IsBusy == true) { return false; }
+            saving = true; save.IsEnabled = false;
             try
             {
-                // An unreadable, untouched font profile is not replaced by unrelated Settings changes.
-                FontsResult = fontError is not null && fontsPage.Draft == fontBaseline ? fontBaseline
-                    : saveFonts?.Invoke(fontBaseline, fontsPage.Draft) ?? fontsPage.Draft;
+                if (history.Value is null || history.Value < 1 || history.Value > 5000 || (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text)))
+                { tabs.SelectedItem = generalTab; notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); return false; }
+                foreach (TextBox input in new[] { branches, remotes })
+                {
+                    try { GitReferencePriorities.Validate(input.Text ?? ""); }
+                    catch (ArgumentException error) { tabs.SelectedItem = sortingTab; notice.Text = error.Message; input.Focus(); return false; }
+                }
+                if (!scriptsPage.Validate(out string? scriptValidation))
+                { tabs.SelectedItem = scriptsTab; notice.Text = scriptValidation; return false; }
+                if (!fontsPage.Validate(out string? fontValidation))
+                { tabs.SelectedItem = fontsTab; notice.Text = fontValidation; return false; }
+                if (gitEnvironment is not null && !gitEnvironment.Page.Validate(out string? environmentValidation))
+                { tabs.SelectedItem = _gitEnvironmentTab; notice.Text = environmentValidation; return false; }
+                if (scriptsPage.IsDirty)
+                {
+                    try
+                    {
+                        ScriptsResult = saveScripts?.Invoke(ScriptsResult, scriptsPage.Draft)
+                            ?? new(new(scriptsPage.Draft, ScriptConfigurationSource.Xml), ScriptsResult.Existed, ScriptsResult.OriginalBytes);
+                        scriptsPage.AcceptSaved(ScriptsResult);
+                    }
+                    catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
+                    { tabs.SelectedItem = scriptsTab; scriptsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save scripts.") + " " + error.Message; return false; }
+                }
+                HotkeyBindings acceptedHotkeys = hotkeysPage.Draft.Clone();
+                try { saveHotkeys?.Invoke(acceptedHotkeys.Clone()); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
+                { tabs.SelectedItem = hotkeysTab; notice.Text = translations.Translate("Unable to save hotkeys.") + " " + error.Message; return false; }
+                try
+                {
+                    // An unreadable, untouched font profile is not replaced by unrelated Settings changes.
+                    FontsResult = fontError is not null && fontsPage.Draft == fontBaseline ? fontBaseline
+                        : saveFonts?.Invoke(fontBaseline, fontsPage.Draft) ?? fontsPage.Draft;
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+                { tabs.SelectedItem = fontsTab; fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return false; }
+                if (gitEnvironment is not null && !gitEnvironment.TrySave())
+                { tabs.SelectedItem = _gitEnvironmentTab; return false; }
+                Result = initial with
+                {
+                    Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
+                    Language = (language.SelectedItem as LanguageChoice)?.Name ?? initial.Language,
+                    AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
+                    UseBrowseForFileHistory = fileHistory.IsChecked == true,
+                    ReferenceSorting = new((GitRefsSortBy)references.SelectedItem!, (GitRefsSortOrder)order.SelectedItem!),
+                    PrioritizedBranchNames = branches.Text ?? "", PrioritizedRemoteNames = remotes.Text ?? ""
+                };
+                HistorySortResult = (GitLogSort)revisions.SelectedItem!;
+                FileHistoryResult = FileHistoryResult with { FollowRenames = follow.IsChecked == true, ExactRenames = exact.IsChecked == true };
+                HotkeysResult = acceptedHotkeys;
+                if (publishSettings is not null)
+                {
+                    tabs.IsEnabled = false;
+                    try { await publishSettings(this); }
+                    catch (OperationCanceledException) when (closeWhenIdle) { return false; }
+                    catch (Exception error)
+                    {
+                        notice.Text = translations.Translate("Unable to save settings.") + " " + error.Message + "\n"
+                            + translations.Translate("Some settings may already have been saved. Cancel discards only unsaved changes.");
+                        return false;
+                    }
+                }
+                fontBaseline = FontsResult;
+                if (closeOnSuccess && !closeWhenIdle) { accepting = true; try { Close(true); } finally { accepting = false; } }
+                return !closeWhenIdle;
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
-            { tabs.SelectedItem = fontsTab; fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return; }
-            Result = initial with
+            finally
             {
-                Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
-                Language = (language.SelectedItem as LanguageChoice)?.Name ?? initial.Language,
-                AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
-                UseBrowseForFileHistory = fileHistory.IsChecked == true,
-                ReferenceSorting = new((GitRefsSortBy)references.SelectedItem!, (GitRefsSortOrder)order.SelectedItem!),
-                PrioritizedBranchNames = branches.Text ?? "", PrioritizedRemoteNames = remotes.Text ?? ""
+                saving = false; tabs.IsEnabled = true; save.IsEnabled = gitEnvironment?.IsBusy != true;
+                if (closeWhenIdle && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(false); } }); }
+            }
+        }
+        if (gitEnvironment is not null)
+        {
+            gitEnvironment.SaveAllRequested = () => SaveAllAsync(closeOnSuccess: false);
+            gitEnvironment.RepairRequested = id => repairEnvironment is null ? Task.CompletedTask : repairEnvironment(id, this);
+            gitEnvironment.BusyChanged += () => { save.IsEnabled = !saving && !gitEnvironment.IsBusy; };
+            gitEnvironment.Settled += () =>
+            {
+                if (closeWhenIdle && !saving) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(false); } }); }
             };
-            HistorySortResult = (GitLogSort)revisions.SelectedItem!;
-            FileHistoryResult = FileHistoryResult with { FollowRenames = follow.IsChecked == true, ExactRenames = exact.IsChecked == true };
-            HotkeysResult = acceptedHotkeys;
-            Close(true);
-        };
+            Closing += (_, args) =>
+            {
+                if (!accepting && (gitEnvironment.IsBusy || saving))
+                { args.Cancel = true; closeWhenIdle = true; gitEnvironment.Cancel(); }
+            };
+            Closed += (_, _) => gitEnvironment.Dispose();
+            tabs.SelectionChanged += async (_, _) =>
+            {
+                if (IsVisible && tabs.SelectedItem == _checklistTab && gitEnvironment.LastScan is null)
+                { await gitEnvironment.ScanAsync(); }
+            };
+        }
         DockPanel root = new() { LastChildFill = true };
         StackPanel footer = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6, Margin = new Thickness(12, 6), Children = { save, cancel } };
+        if (gitEnvironment is not null)
+        {
+            Button reloadEnvironment = new() { Name = "ReloadGitEnvironment", Content = translations.Translate("Reload"), MinWidth = 75 };
+            reloadEnvironment.Click += (_, _) => gitEnvironment.Reload();
+            gitEnvironment.BusyChanged += () => reloadEnvironment.IsEnabled = !gitEnvironment.IsBusy && !saving;
+            footer.Children.Insert(0, reloadEnvironment);
+        }
         DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer); DockPanel.SetDock(notice, Dock.Bottom); root.Children.Add(notice); root.Children.Add(tabs); Content = root;
-        Opened += (_, _) => { theme.Focus(); ModalWindowActivation.AfterMapping(this, () => IsVisible); };
+        Opened += async (_, _) =>
+        {
+            if (Screens.ScreenFromWindow(this) is { } screen) { MaxHeight = Math.Max(260, screen.WorkingArea.Height / screen.Scaling - 40); }
+            if (showChecklist) { gitEnvironment?.Checklist.Focus(); } else { theme.Focus(); }
+            ModalWindowActivation.AfterMapping(this, () => IsVisible);
+            if (showChecklist && gitEnvironment is not null) { await gitEnvironment.ScanAsync(); }
+        };
 
         void GeneralField(string label, Control editor)
         {

@@ -99,7 +99,7 @@ public static partial class GitRebaseEditor
         if (!System.IO.Path.IsPathFullyQualified(state.RepositoryPath) || !System.IO.Path.IsPathFullyQualified(state.GitDirectory)
             || fullDirectory != System.IO.Path.Combine(state.GitDirectory, NativeStateDirectoryName))
         { throw new InvalidOperationException("Native rebase editor state is outside its Git directory."); }
-        GitRepositoryInfo info = new GitRepository(state.RepositoryPath).GetInfoAsync().GetAwaiter().GetResult();
+        GitRepositoryInfo info = NativeEditorRepository(state.RepositoryPath).GetInfoAsync().GetAwaiter().GetResult();
         if (info.RootPath != state.RepositoryPath || info.GitDirectory != state.GitDirectory || info.IsBare)
         { throw new InvalidOperationException("Native rebase editor state belongs to a different repository."); }
         _ = GetStrictEncoding(state.EncodingName);
@@ -158,10 +158,16 @@ public static partial class GitRebaseEditor
 
     private static Encoding ValidateCurrentEncoding(NativeRebaseEditorState state)
     {
-        Encoding current = new GitRepository(state.RepositoryPath).GetCommitMessageEncodingAsync().GetAwaiter().GetResult();
+        Encoding current = NativeEditorRepository(state.RepositoryPath).GetCommitMessageEncodingAsync().GetAwaiter().GetResult();
         if (current.WebName != state.EncodingName)
         { throw new InvalidOperationException("The commit encoding changed during this editor session. Restore its original encoding before saving."); }
         return current;
+    }
+
+    private static GitRepository NativeEditorRepository(string path)
+    {
+        string? inherited = Environment.GetEnvironmentVariable(GitEnvironment.InheritedExecutableVariable);
+        return inherited is null ? new(path) : new(path, new GitRunner(GitExecutionEnvironment.Capture(new() { Executable = inherited })));
     }
 
     private static string ValidateNativeEditorPath(string directory, NativeRebaseEditorState state, string supplied, GitRebaseEditorKind kind)

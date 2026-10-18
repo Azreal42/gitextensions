@@ -99,6 +99,7 @@ public sealed partial class MainWindow
         if (repository is null || _busy || files is not null && !IsCurrentFileMenuSelection(files)) { return; }
         await RunAsync(script.GetDisplayName(), async current =>
         {
+            using IDisposable operation = current.BeginOperation();
             try { await DesktopScriptExecutor.ExecuteAsync(owner ?? WorkflowOwner, current, script, Token, files); }
             finally
             {

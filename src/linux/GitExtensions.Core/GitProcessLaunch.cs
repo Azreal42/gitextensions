@@ -23,9 +23,12 @@ internal sealed class GitProcessLaunch : IDisposable
     }
 
     internal static GitProcessLaunch Configure(ProcessStartInfo startInfo)
+        => Configure(startInfo, Environment.GetEnvironmentVariable("PATH") ?? "");
+
+    internal static GitProcessLaunch Configure(ProcessStartInfo startInfo, string executableSearchPath)
     {
         string original = startInfo.FileName, target = ResolveDirectExecutable(original);
-        string parentDirectory = Directory.GetCurrentDirectory(), parentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+        string parentDirectory = Directory.GetCurrentDirectory(), parentPath = executableSearchPath;
         string[] arguments = startInfo.ArgumentList.ToArray();
         LinuxUnixSocketDirectory directory = LinuxUnixSocketDirectory.Create("gitextensions-exec-");
         GitProcessLaunch? launch = null;

@@ -3,9 +3,10 @@ namespace GitExtensions.Linux;
 public sealed partial class GitRepository
 {
     /// <summary>Opens a repository from its root, a descendant directory, a .git file/directory, or linked-worktree metadata.</summary>
-    public static async Task<GitRepository> OpenAsync(string path, CancellationToken cancellationToken = default)
+    public static async Task<GitRepository> OpenAsync(string path, CancellationToken cancellationToken = default, GitRunner? runner = null)
     {
-        GitRunner runner = new();
+        runner ??= new();
+        using IDisposable operation = runner.BeginOperation();
         GitRepositoryInfo info = await DiscoverRepositoryAsync(path, runner, cancellationToken).ConfigureAwait(false);
         return new GitRepository(info.RootPath, runner) { Info = info };
     }

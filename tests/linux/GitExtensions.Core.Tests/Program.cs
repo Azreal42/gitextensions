@@ -56,6 +56,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 
 (string Name, Func<Task> Run)[] tests =
 [
+    .. GitEnvironmentScenarios.All,
     .. UnixSocketDirectoryScenarios.All,
     .. FileHistoryGraphScenarios.All,
     .. QuickSearchMessageScenarios.All,
@@ -227,6 +228,10 @@ if (args.Contains("--comparison-groups-only", StringComparer.Ordinal)) { tests =
 if (args.Contains("--comparison-file-menus-only", StringComparer.Ordinal)) { tests = ComparisonFileMenuScenarios.All.ToArray(); }
 if (args.Contains("--file-menu-difftools-only", StringComparer.Ordinal)) { tests = FileMenuDiffToolScenarios.All.ToArray(); }
 if (args.Contains("--tool-config-only", StringComparer.Ordinal)) { tests = ToolConfigurationScenarios.All.ToArray(); }
+if (args.Contains("--git-environment-only", StringComparer.Ordinal)) { tests = GitEnvironmentScenarios.All.ToArray(); }
+if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal))
+{ tests = [.. GitProcessStreamingScenarios.All, .. ToolConfigurationScenarios.All, .. ScriptScenarios.All, .. ScriptRuntimeScenarios.All,
+    .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All, .. HistoryRemovalScenarios.All]; }
 if (args.Contains("--configuration-fields-only", StringComparer.Ordinal)) { tests = ConfigurationFieldsScenarios.All.ToArray(); }
 
 int failures = 0;

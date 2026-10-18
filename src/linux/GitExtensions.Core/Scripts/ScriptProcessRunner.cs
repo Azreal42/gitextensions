@@ -13,11 +13,13 @@ public sealed class ScriptProcessRunner
     public async Task<ScriptProcessResult> RunAsync(string executable, string workingDirectory,
         IReadOnlyList<string> arguments, CancellationToken cancellationToken = default,
         IReadOnlyDictionary<string, string?>? environment = null,
-        Action<GitProcessOutput>? outputReceived = null, Action<ScriptProcessStarted>? processStarted = null)
+        Action<GitProcessOutput>? outputReceived = null, Action<ScriptProcessStarted>? processStarted = null,
+        GitExecutionEnvironment? executionEnvironment = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executable); ArgumentNullException.ThrowIfNull(workingDirectory);
         ArgumentNullException.ThrowIfNull(arguments);
-        GitBinaryResult result = await new GitRunner(executable).RunExternalBinaryAsync(workingDirectory, arguments,
+        GitRunner runner = executionEnvironment is null ? new(executable) : new(executionEnvironment.WithExecutable(executable));
+        GitBinaryResult result = await runner.RunExternalBinaryAsync(workingDirectory, arguments,
             cancellationToken, environment, outputReceived, processStarted is null ? null : pid => processStarted(new(pid))).ConfigureAwait(false);
         return new(result.ExitCode, result.StandardOutput, result.StandardErrorBytes);
     }

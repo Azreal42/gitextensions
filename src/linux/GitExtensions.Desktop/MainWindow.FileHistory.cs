@@ -6,7 +6,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private readonly BrowseRequest _browseRequest;
+    private BrowseRequest _browseRequest;
     private bool _browseSelectionApplied;
     private GitFileHistoryGraph? _browseFileHistory;
     private readonly FileHistoryPreferencesStore _fileHistoryPreferencesStore = new();

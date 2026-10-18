@@ -279,9 +279,11 @@ public sealed class CloneDialog : StartupRepositoryDialog
 
     private async Task ReadBranchesAsync(string source, long version, long sourceVersion, CancellationToken token)
     {
+        using IDisposable execution = GitEnvironment.BeginOperation();
+        GitRunner runner = GitEnvironment.Current.CreateRunner();
         try
         {
-            IReadOnlyList<string> branches = await GitRepository.GetRemoteBranchesAsync(source, token);
+            IReadOnlyList<string> branches = await GitRepository.GetRemoteBranchesAsync(source, token, runner);
             token.ThrowIfCancellationRequested();
             if (_branchClosing || !IsVisible || version != _branchVersion || sourceVersion != _sourceVersion || source != _source.Text) { return; }
             // Preserve the latest manual edit/selection, not the text present when ls-remote began.
@@ -316,6 +318,8 @@ public sealed class CloneDialog : StartupRepositoryDialog
 
     private Task CloneAsync() => RunAsync("Clone", async token =>
     {
+        using IDisposable execution = GitEnvironment.BeginOperation();
+        GitRunner runner = GitEnvironment.Current.CreateRunner();
         LastProcess = null;
         string directory = AbsoluteDirectory(_destination.Text);
         string subdirectory = _subdirectory.Text ?? "";
@@ -331,7 +335,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
             + (options.Depth is int depth ? " --depth=" + depth.ToString(CultureInfo.InvariantCulture) + " --no-single-branch" : "")
             + " — " + source;
         LastProcess = await GitProcessDialog.ShowAsync(this, directory, description, true,
-            (ct, output) => GitRepository.CloneCommandAsync(source, path, options, ct, output), token);
+            (ct, output) => GitRepository.CloneCommandAsync(source, path, options, ct, output, runner), token);
         if (LastProcess.WasCancelled || LastProcess.OwnerCloseRequested || LastProcess.WorkflowStopRequested
             || token.IsCancellationRequested || !IsVisible)
         { throw new OperationCanceledException(token); }
@@ -340,7 +344,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
         if (LastProcess.Result?.Success != true) { throw new InvalidOperationException(T("No native Git result was returned.")); }
         // Keep discovery out of the clone observer: its output is neither transfer
         // progress nor the native clone result displayed by the process window.
-        GitRepository cloned = await GitRepository.OpenAsync(path, token);
+        GitRepository cloned = await GitRepository.OpenAsync(path, token, runner);
         token.ThrowIfCancellationRequested();
         if (!IsVisible) { throw new OperationCanceledException(token); }
         _preferences.Save(new(directory, options.RecurseSubmodules));

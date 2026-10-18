@@ -22,6 +22,7 @@ public sealed partial class GitRepository
 
     public async Task<GitResult> InteractiveRebaseAsync(GitRebasePlan plan, string editorExecutable, CancellationToken cancellationToken = default)
     {
+        using IDisposable operation = _runner.BeginOperation();
         ArgumentNullException.ThrowIfNull(plan);
         GitRebaseEditor.ValidateExecutable(editorExecutable);
         await _mutationLock.WaitAsync(cancellationToken).ConfigureAwait(false);

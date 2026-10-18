@@ -209,6 +209,8 @@ public sealed class DashboardControl : UserControl, IDisposable
 
     private async Task LoadMetadataAsync(CancellationToken token)
     {
+        using IDisposable operation = GitEnvironment.BeginOperation();
+        GitRunner runner = GitEnvironment.Current.CreateRunner();
         using SemaphoreSlim limit = new(4);
         try
         {
@@ -221,11 +223,11 @@ public sealed class DashboardControl : UserControl, IDisposable
                     (bool Valid, string Branch) metadata;
                     try
                     {
-                        GitRepository repository = await GitRepository.OpenAsync(path, token);
+                        GitRepository repository = await GitRepository.OpenAsync(path, token, runner);
                         string branch = "";
                         if (!repository.IsBare)
                         {
-                            GitResult result = await new GitRunner().RunAsync(repository.Path, ["symbolic-ref", "--quiet", "--short", "HEAD"], token);
+                            GitResult result = await runner.RunAsync(repository.Path, ["symbolic-ref", "--quiet", "--short", "HEAD"], token);
                             branch = result.Success ? result.StandardOutput.TrimEnd('\r', '\n') : T("Detached HEAD");
                         }
                         metadata = (true, branch);

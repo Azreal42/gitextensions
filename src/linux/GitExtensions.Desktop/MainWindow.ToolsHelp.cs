@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Platform;
+using Avalonia.LogicalTree;
 using GitExtensions.Linux.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
@@ -75,7 +76,18 @@ public sealed partial class MainWindow
     private async Task LaunchGitToolAsync(string tool)
     {
         if (_repository is null || _busy || (tool == "gui" && _repository.IsBare)) { return; }
-        ProcessStartInfo info = new(tool == "gitk" ? "gitk" : "git") { WorkingDirectory = _repository.Path, UseShellExecute = false };
+        GitExecutionEnvironment environment = _repository.ExecutionEnvironment;
+        string executable = tool == "gitk" ? "gitk" : environment.Executable;
+        if (!string.IsNullOrEmpty(environment.Options.ToolsDirectory) && !executable.Contains(Path.DirectorySeparatorChar))
+        {
+            executable = (environment.GetVariable("PATH") ?? "").Split(Path.PathSeparator)
+                .Select(directory => Path.GetFullPath(Path.Combine(directory.Length == 0 ? "." : directory, executable), _repository.Path))
+                .FirstOrDefault(path => File.Exists(path) && (OperatingSystem.IsWindows()
+                    || (File.GetUnixFileMode(path) & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) != 0))
+                ?? throw new FileNotFoundException("Cannot find the requested Git tool in the configured PATH: " + executable);
+        }
+        ProcessStartInfo info = new(executable) { WorkingDirectory = _repository.Path, UseShellExecute = false };
+        environment.ApplyTo(info);
         if (tool == "gui") { info.ArgumentList.Add("gui"); }
         using Process? process = ExternalLauncher(info);
         if (process is null) { return; }
@@ -135,7 +147,9 @@ public sealed partial class MainWindow
         return Task.CompletedTask;
     }
 
-    private async Task ShowSettingsAsync()
+    private Task ShowSettingsAsync() => ShowSettingsPageAsync(showChecklist: false);
+
+    private async Task ShowSettingsPageAsync(bool showChecklist)
     {
         if (_busy) { return; }
         FileHistoryPreferences fileHistory = _fileHistoryPreferencesStore.Load();
@@ -143,46 +157,95 @@ public sealed partial class MainWindow
         DesktopPreferences initial = _preferencesStore.Load();
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         GitRepository? settingsRepository = _repository;
+        using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
         DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
             hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings), fonts.Preferences,
             (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError, new ScriptsPreferencesStore().Load(), (baseline, draft) => new ScriptsPreferencesStore().SaveChanges(baseline, draft),
-            owner => settingsRepository is not null && ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
-                ? ShowGitToolsSettingsAsync(owner) : Task.CompletedTask);
+            owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
+                ? ShowGitToolsSettingsAsync(owner) : Task.CompletedTask,
+            environment, ApplySettingsAsync, RepairEnvironmentAsync, showChecklist);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
-        DesktopPreferences latest = _preferencesStore.Load();
-        DesktopPreferences preferences = dialog.Result with
+
+        async Task RepairEnvironmentAsync(GitEnvironmentCheckId id, Window owner)
         {
-            // An unchanged language control must not undo a choice saved by another Browse
-            // after this Settings window opened. Explicit new choices still win.
-            Language = dialog.Result.Language == initial.Language ? latest.Language : dialog.Result.Language,
-            RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
-        };
-        _preferencesStore.Save(preferences);
-        bool reload = preferences.HistoryLimit != _preferences.HistoryLimit || dialog.HistorySortResult != _historyView.Sort;
-        if (dialog.FileHistoryResult.FollowRenames != fileHistory.FollowRenames || dialog.FileHistoryResult.ExactRenames != fileHistory.ExactRenames)
-        {
-            _fileHistoryPreferencesStore.Save(_fileHistoryPreferencesStore.Load() with
-            { FollowRenames = dialog.FileHistoryResult.FollowRenames, ExactRenames = dialog.FileHistoryResult.ExactRenames });
-            reload |= _historyQuery.Path is not null;
+            if (!owner.IsVisible || _lifetime.IsCancellationRequested) { return; }
+            switch (id)
+            {
+                case GitEnvironmentCheckId.GlobalIdentity:
+                case GitEnvironmentCheckId.Editor:
+                case GitEnvironmentCheckId.MergeTool:
+                case GitEnvironmentCheckId.DiffTool:
+                    await ShowGitToolsSettingsAsync(owner,
+                        id == GitEnvironmentCheckId.DiffTool ? GitToolRole.Diff : id == GitEnvironmentCheckId.MergeTool ? GitToolRole.Merge : null,
+                        GitToolConfigurationView.Global,
+                        id == GitEnvironmentCheckId.GlobalIdentity ? GitConfigurationField.UserName : id == GitEnvironmentCheckId.Editor ? GitConfigurationField.Editor : null);
+                    await environment.ScanAsync();
+                    break;
+                case GitEnvironmentCheckId.Translation:
+                    if (owner.GetLogicalDescendants().OfType<TabControl>().FirstOrDefault(control => control.Name == "DesktopSettingsPages") is { } pages) { pages.SelectedIndex = 0; }
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => owner.GetLogicalDescendants().OfType<ComboBox>().FirstOrDefault(control => control.Name == "Language")?.Focus());
+                    break;
+                default:
+                    if (owner is DesktopSettingsDialog settings) { settings.SelectGitEnvironmentPage(checklist: false); }
+                    string control = id == GitEnvironmentCheckId.Home ? "ChangeHomeButton" : id == GitEnvironmentCheckId.GitExecutable ? "GitPath" : "LinuxToolsDir";
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => environment.Page.GetLogicalDescendants().OfType<Control>().FirstOrDefault(input => input.Name == control)?.Focus());
+                    break;
+            }
         }
-        bool referencesChanged = preferences.ReferenceSorting != _preferences.ReferenceSorting
-            || preferences.PrioritizedBranchNames != _preferences.PrioritizedBranchNames
-            || preferences.PrioritizedRemoteNames != _preferences.PrioritizedRemoteNames;
-        // Settings saves this field explicitly; unrelated session-only View choices
-        // still need Save as default, as in the original application.
-        _historyViewStore.Save(_historyViewStore.Load() with { Sort = dialog.HistorySortResult });
-        _historyView = _historyView with { Sort = dialog.HistorySortResult };
-        _preferences = preferences;
-        ApplyTheme(_preferences.Theme);
-        if (reload)
+
+        async Task ApplySettingsAsync(DesktopSettingsDialog settings)
         {
-            _historyQuery = _historyQuery with { Count = _preferences.HistoryLimit };
-            _historyWindow = _historyQuery.Count;
-            if (_repository is not null) { await RefreshAsync(); }
+            using WindowWork work = TrackWindowWork();
+            CancellationToken token = environment.CancellationToken;
+            bool publishing = true;
+            using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (publishing) { _operation?.Cancel(); CancelBrowserReads(); }
+            }));
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                DesktopPreferences latest = _preferencesStore.Load();
+                DesktopPreferences preferences = settings.Result with
+                {
+                    // An unchanged language control must not undo a choice saved by another Browse
+                    // after this Settings window opened. Explicit new choices still win.
+                    Language = settings.Result.Language == initial.Language ? latest.Language : settings.Result.Language,
+                    RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
+                };
+                _preferencesStore.Save(preferences);
+                bool reload = preferences.HistoryLimit != _preferences.HistoryLimit || settings.HistorySortResult != _historyView.Sort;
+                if (settings.FileHistoryResult.FollowRenames != fileHistory.FollowRenames || settings.FileHistoryResult.ExactRenames != fileHistory.ExactRenames)
+                {
+                    _fileHistoryPreferencesStore.Save(_fileHistoryPreferencesStore.Load() with
+                    { FollowRenames = settings.FileHistoryResult.FollowRenames, ExactRenames = settings.FileHistoryResult.ExactRenames });
+                    reload |= _historyQuery.Path is not null;
+                }
+                bool referencesChanged = preferences.ReferenceSorting != _preferences.ReferenceSorting
+                    || preferences.PrioritizedBranchNames != _preferences.PrioritizedBranchNames
+                    || preferences.PrioritizedRemoteNames != _preferences.PrioritizedRemoteNames;
+                // Settings saves this field explicitly; unrelated session-only View choices
+                // still need Save as default, as in the original application.
+                _historyViewStore.Save(_historyViewStore.Load() with { Sort = settings.HistorySortResult });
+                _historyView = _historyView with { Sort = settings.HistorySortResult };
+                _preferences = preferences;
+                ApplyTheme(_preferences.Theme);
+                if (reload)
+                {
+                    _historyQuery = _historyQuery with { Count = _preferences.HistoryLimit };
+                    _historyWindow = _historyQuery.Count;
+                    if (_repository is not null) { await RefreshAsync(); }
+                }
+                else if (referencesChanged) { await ApplyReferenceSortingPreferencesAsync(); }
+                RefreshHistoryMenuStates();
+                initial = preferences; fileHistory = settings.FileHistoryResult;
+                if (_repository is null && _startupArgumentsToRetry is not null)
+                { await RetryStartupRepositoryAsync(token); }
+                token.ThrowIfCancellationRequested();
+            }
+            finally { publishing = false; }
         }
-        else if (referencesChanged) { await ApplyReferenceSortingPreferencesAsync(); }
-        RefreshHistoryMenuStates();
     }
 }

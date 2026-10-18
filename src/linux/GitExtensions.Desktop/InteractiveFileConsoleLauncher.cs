@@ -17,8 +17,17 @@ public static class InteractiveFileConsoleLauncher
         IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
         => await RunWithTerminalAsync(owner, repositoryPath, gitExecutable, arguments, cancellationToken, null);
 
+    public static Task<GitResult> RunAsync(Window owner, string repositoryPath, GitExecutionEnvironment environment,
+        IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        return RunWithTerminalAsync(owner, repositoryPath, environment.Executable, arguments, cancellationToken, null,
+            executionEnvironment: environment);
+    }
+
     internal static async Task<GitResult> RunWithTerminalAsync(Window owner, string repositoryPath, string gitExecutable,
-        IReadOnlyList<string> arguments, CancellationToken cancellationToken, Func<string, IReadOnlyList<string>, Process>? startTerminal, string? helperExecutable = null)
+        IReadOnlyList<string> arguments, CancellationToken cancellationToken, Func<string, IReadOnlyList<string>, Process>? startTerminal, string? helperExecutable = null,
+        GitExecutionEnvironment? executionEnvironment = null)
     {
         if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("Interactive file actions require a Linux terminal."); }
         using CancellationTokenSource lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -26,7 +35,7 @@ public static class InteractiveFileConsoleLauncher
         void Closing(object? sender, WindowClosingEventArgs args)
         { closeRequested = true; args.Cancel = true; lifetime.Cancel(); }
         owner.Closing += Closing;
-        try { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable); }
+        try { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable, executionEnvironment); }
         finally
         {
             owner.Closing -= Closing;
@@ -36,9 +45,13 @@ public static class InteractiveFileConsoleLauncher
 
     [SupportedOSPlatform("linux")]
     internal static async Task<GitResult> RunCoreAsync(string repositoryPath, string gitExecutable,
-        IReadOnlyList<string> arguments, CancellationToken token, Func<string, IReadOnlyList<string>, Process>? startTerminal = null, string? helperExecutable = null)
+        IReadOnlyList<string> arguments, CancellationToken token, Func<string, IReadOnlyList<string>, Process>? startTerminal = null, string? helperExecutable = null,
+        GitExecutionEnvironment? executionEnvironment = null)
     {
         token.ThrowIfCancellationRequested();
+        executionEnvironment ??= GitExecutionEnvironment.Capture(new() { Executable = gitExecutable });
+        if (executionEnvironment.Executable != gitExecutable)
+        { throw new ArgumentException("The interactive Git executable must match its captured environment.", nameof(executionEnvironment)); }
         using LinuxUnixSocketDirectory socketDirectory = LinuxUnixSocketDirectory.Create("ge-interactive-");
         string directory = socketDirectory.DirectoryPath;
         string socketPath = socketDirectory.SocketPath, requestPath = Path.Combine(directory, "request.json");
@@ -54,12 +67,14 @@ public static class InteractiveFileConsoleLauncher
             File.SetUnixFileMode(socketPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             listener.Listen(1);
             InteractiveFileConsoleRequest request = new(socketPath, Convert.ToHexString(RandomNumberGenerator.GetBytes(32)),
-                Path.GetFullPath(repositoryPath), gitExecutable, arguments.ToArray());
+                Path.GetFullPath(repositoryPath), gitExecutable, arguments.ToArray())
+            { ExecutionEnvironment = InteractiveFileConsoleEnvironment.Capture(executionEnvironment) };
             await File.WriteAllTextAsync(requestPath, JsonSerializer.Serialize(request), new UTF8Encoding(false), token);
             File.SetUnixFileMode(requestPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             string executable = helperExecutable ?? Path.Combine(AppContext.BaseDirectory, "GitExtensions");
             if (!File.Exists(executable)) { throw new FileNotFoundException("The interactive Git console application is unavailable.", executable); }
-            terminal = (startTerminal ?? StartTerminal)(executable, [InteractiveFileConsoleProtocol.Mode, requestPath]);
+            terminal = startTerminal is not null ? startTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath])
+                : StartTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath], executionEnvironment);
             using CancellationTokenSource opening = CancellationTokenSource.CreateLinkedTokenSource(token);
             opening.CancelAfter(TimeSpan.FromSeconds(30));
             try { connection = await listener.AcceptAsync(opening.Token); }
@@ -100,12 +115,13 @@ public static class InteractiveFileConsoleLauncher
         }
     }
 
-    private static Process StartTerminal(string executable, IReadOnlyList<string> arguments)
+    private static Process StartTerminal(string executable, IReadOnlyList<string> arguments, GitExecutionEnvironment environment)
     {
-        string? terminal = FindExecutable("gnome-terminal") ?? FindExecutable("konsole")
-            ?? FindExecutable("xterm") ?? FindExecutable("x-terminal-emulator");
+        string? terminal = FindExecutable("gnome-terminal", environment) ?? FindExecutable("konsole", environment)
+            ?? FindExecutable("xterm", environment) ?? FindExecutable("x-terminal-emulator", environment);
         if (terminal is null) { throw new FileNotFoundException("No supported terminal emulator is installed. Install gnome-terminal, konsole, xterm or x-terminal-emulator to use interactive Git."); }
         ProcessStartInfo info = new(terminal) { UseShellExecute = false };
+        environment.ApplyTo(info);
         string name = Path.GetFileName(terminal);
         if (name == "gnome-terminal") { info.ArgumentList.Add("--wait"); info.ArgumentList.Add("--"); }
         else
@@ -117,7 +133,7 @@ public static class InteractiveFileConsoleLauncher
         foreach (string argument in arguments) { info.ArgumentList.Add(argument); }
         return Process.Start(info) ?? throw new IOException("The interactive Git terminal could not be started.");
     }
-    private static string? FindExecutable(string name)
-        => (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
+    private static string? FindExecutable(string name, GitExecutionEnvironment environment)
+        => (environment.GetVariable("PATH") ?? "").Split(Path.PathSeparator)
             .Where(value => !string.IsNullOrEmpty(value)).Select(value => Path.Combine(value, name)).FirstOrDefault(File.Exists);
 }

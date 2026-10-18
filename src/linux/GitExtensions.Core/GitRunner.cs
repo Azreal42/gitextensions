@@ -32,9 +32,26 @@ public sealed class GitCommandException : Exception
 }
 
 /// <summary>Runs Git directly. Paths, revision names and messages never pass through a shell.</summary>
-public sealed class GitRunner(string executable = "git")
+public sealed class GitRunner
 {
-    internal string Executable => executable;
+    private readonly string? _legacyExecutable;
+    private readonly GitExecutionEnvironment? _fixedEnvironment;
+    private readonly AsyncLocal<GitExecutionEnvironment?> _operation = new();
+
+    /// <summary>Uses current application options and ambient environment at each operation boundary.</summary>
+    public GitRunner() { }
+    /// <summary>Explicit injection retains native parent-PATH resolution and ignores application choices.</summary>
+    public GitRunner(string executable) { ArgumentException.ThrowIfNullOrEmpty(executable); _legacyExecutable = executable; }
+    public GitRunner(GitExecutionEnvironment environment) { _fixedEnvironment = environment ?? throw new ArgumentNullException(nameof(environment)); }
+    public string Executable => ExecutionEnvironment.Executable;
+    public GitExecutionEnvironment ExecutionEnvironment => _operation.Value ?? _fixedEnvironment
+        ?? (_legacyExecutable is null ? GitEnvironment.Current : GitExecutionEnvironment.Capture(new() { Executable = _legacyExecutable }));
+    public IDisposable BeginOperation()
+    {
+        GitExecutionEnvironment? previous = _operation.Value;
+        _operation.Value ??= ExecutionEnvironment;
+        return new GitEnvironmentOperation(() => _operation.Value = previous);
+    }
 
     /// <summary>Optional desktop fallback. Applied only to child processes with a display, preserving explicit user helpers.</summary>
     public static string? AskpassFallbackPath { get; set; }
@@ -64,14 +81,15 @@ public sealed class GitRunner(string executable = "git")
         byte[]? standardInput = null,
         IReadOnlyDictionary<string, string?>? environment = null,
         Action<GitProcessOutput>? outputReceived = null)
-        => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true, outputReceived).ConfigureAwait(false);
+        => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true, outputReceived,
+            executionEnvironment: ExecutionEnvironment).ConfigureAwait(false);
 
     // The same native ownership/drain engine without Git-specific environment or authentication policy.
     internal Task<GitBinaryResult> RunExternalBinaryAsync(string workingDirectory, IReadOnlyList<string> arguments,
         CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? environment,
         Action<GitProcessOutput>? outputReceived, Action<int>? processStarted)
         => RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, null, environment,
-            applyAskpass: false, outputReceived, applyGitEnvironment: false, processStarted);
+            applyAskpass: false, outputReceived, applyGitEnvironment: false, processStarted, ExecutionEnvironment);
 
     private async Task<GitBinaryResult> RunBinaryCoreAsync(
         string workingDirectory,
@@ -81,10 +99,11 @@ public sealed class GitRunner(string executable = "git")
         IReadOnlyDictionary<string, string?>? environment,
         bool applyAskpass,
         Action<GitProcessOutput>? outputReceived = null,
-        bool applyGitEnvironment = true, Action<int>? processStarted = null)
+        bool applyGitEnvironment = true, Action<int>? processStarted = null, GitExecutionEnvironment? executionEnvironment = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ProcessStartInfo startInfo = new(executable)
+        executionEnvironment ??= ExecutionEnvironment;
+        ProcessStartInfo startInfo = new(executionEnvironment.Executable)
         {
             WorkingDirectory = workingDirectory,
             UseShellExecute = false,
@@ -96,6 +115,7 @@ public sealed class GitRunner(string executable = "git")
             StandardInputEncoding = new UTF8Encoding(false),
             CreateNoWindow = true,
         };
+        executionEnvironment.ApplyTo(startInfo);
         foreach (string argument in arguments)
         {
             ArgumentNullException.ThrowIfNull(argument);
@@ -115,6 +135,8 @@ public sealed class GitRunner(string executable = "git")
             startInfo.Environment["GIT_EDITOR"] = "true";
             startInfo.Environment["GIT_SEQUENCE_EDITOR"] = "true";
             startInfo.Environment["LC_ALL"] = "C.UTF-8";
+            // Native editor helpers inherit the owning Git context, including an explicitly injected executable.
+            startInfo.Environment[GitEnvironment.InheritedExecutableVariable] = executionEnvironment.Executable;
         }
         if (environment is not null)
         {
@@ -126,7 +148,7 @@ public sealed class GitRunner(string executable = "git")
 
         if (applyAskpass)
         {
-            await ApplyAskpassAsync(startInfo, arguments, cancellationToken).ConfigureAwait(false);
+            await ApplyAskpassAsync(startInfo, arguments, cancellationToken, executionEnvironment).ConfigureAwait(false);
         }
 
         DateTimeOffset started = DateTimeOffset.Now;
@@ -136,7 +158,11 @@ public sealed class GitRunner(string executable = "git")
         Exception? failure = null;
         try
         {
-            if (OperatingSystem.IsLinux()) { launch = GitProcessLaunch.Configure(startInfo); }
+            if (OperatingSystem.IsLinux())
+            {
+                launch = _legacyExecutable is not null ? GitProcessLaunch.Configure(startInfo)
+                    : GitProcessLaunch.Configure(startInfo, executionEnvironment.GetVariable("PATH") ?? "");
+            }
             cancellationToken.ThrowIfCancellationRequested();
             GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, processStarted).ConfigureAwait(false);
             exitCode = result.ExitCode;
@@ -264,7 +290,8 @@ public sealed class GitRunner(string executable = "git")
         }
     }
 
-    private async Task ApplyAskpassAsync(ProcessStartInfo startInfo, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task ApplyAskpassAsync(ProcessStartInfo startInfo, IReadOnlyList<string> arguments, CancellationToken cancellationToken,
+        GitExecutionEnvironment executionEnvironment)
     {
         string? helper = AskpassFallbackPath;
         startInfo.Environment.TryGetValue("DISPLAY", out string? display);
@@ -293,7 +320,8 @@ public sealed class GitRunner(string executable = "git")
             // core.askpass sits between GIT_ASKPASS and SSH_ASKPASS in Git's precedence.
             // Probe with the same global options/environment so repository, -c and config-env choices are respected.
             GitBinaryResult configured = await RunBinaryCoreAsync(startInfo.WorkingDirectory, [.. prefix, "config", "--get", "core.askpass"],
-                cancellationToken, null, new Dictionary<string, string?>(startInfo.Environment), applyAskpass: false).ConfigureAwait(false);
+                cancellationToken, null, new Dictionary<string, string?>(startInfo.Environment), applyAskpass: false,
+                executionEnvironment: executionEnvironment).ConfigureAwait(false);
             if (configured.ExitCode == 1)
             {
                 startInfo.Environment["GIT_ASKPASS"] = helper;

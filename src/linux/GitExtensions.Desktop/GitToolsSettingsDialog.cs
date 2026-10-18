@@ -43,7 +43,8 @@ internal sealed class GitToolsSettingsDialog : Window
     internal Func<string, CancellationToken, Task<string?>>? TemplateFilePicker { get; set; }
 
     internal GitToolsSettingsDialog(GitRepository repository, TranslationCatalog? translations = null,
-        GitToolRole? focus = null, CancellationToken ownerToken = default, AvailableEncodingsPreferencesStore? encodingPreferences = null)
+        GitToolRole? focus = null, CancellationToken ownerToken = default, AvailableEncodingsPreferencesStore? encodingPreferences = null,
+        GitToolConfigurationView? initialView = null, GitConfigurationField? focusField = null)
     {
         _repository = repository; _translations = translations ?? TranslationCatalog.LoadDefault();
         _encodingPreferences = encodingPreferences ?? new();
@@ -95,7 +96,9 @@ internal sealed class GitToolsSettingsDialog : Window
             await InitializeAsync();
             if (!_closeRequested && IsVisible)
             {
+                if (initialView is { } view) { _page.SelectScope(view); }
                 if (focus is { } role) { _page.FocusRole(role); }
+                if (focusField is { } field) { _page.FocusValidation(new(_page.View, Field: field)); }
                 ModalWindowActivation.AfterMapping(this, () => !_closeRequested && !_closed);
             }
         };

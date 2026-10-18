@@ -5,8 +5,10 @@ public sealed record GitCloneOptions(bool Bare = false, bool RecurseSubmodules =
 
 public sealed partial class GitRepository
 {
-    public static async Task<GitRepository> InitAsync(string path, GitInitOptions options, CancellationToken cancellationToken = default)
+    public static async Task<GitRepository> InitAsync(string path, GitInitOptions options, CancellationToken cancellationToken = default, GitRunner? runner = null)
     {
+        runner ??= new();
+        using IDisposable operation = runner.BeginOperation();
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(options);
         cancellationToken.ThrowIfCancellationRequested();
@@ -16,24 +18,28 @@ public sealed partial class GitRepository
         if (options.Shared) { arguments.Add("--shared=all"); }
         string fullPath = System.IO.Path.GetFullPath(path);
         Directory.CreateDirectory(fullPath);
-        GitRepository repository = new(fullPath);
+        GitRepository repository = new(fullPath, runner);
         arguments.AddRange(["--", fullPath]);
         await repository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
-        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
+        return await OpenAsync(fullPath, cancellationToken, runner).ConfigureAwait(false);
     }
 
-    public static async Task<GitRepository> CloneAsync(string source, string destination, GitCloneOptions options, CancellationToken cancellationToken = default)
+    public static async Task<GitRepository> CloneAsync(string source, string destination, GitCloneOptions options, CancellationToken cancellationToken = default, GitRunner? runner = null)
     {
+        runner ??= new();
+        using IDisposable operation = runner.BeginOperation();
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         string fullPath = System.IO.Path.GetFullPath(destination);
-        await CloneCommandAsync(source, fullPath, options, cancellationToken).ConfigureAwait(false);
-        return await OpenAsync(fullPath, cancellationToken).ConfigureAwait(false);
+        await CloneCommandAsync(source, fullPath, options, cancellationToken, runner: runner).ConfigureAwait(false);
+        return await OpenAsync(fullPath, cancellationToken, runner).ConfigureAwait(false);
     }
 
     /// <summary>Runs the native clone only. Discovery of the destination is a separate readonly operation.</summary>
     public static async Task<GitResult> CloneCommandAsync(string source, string destination, GitCloneOptions options,
-        CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null)
+        CancellationToken cancellationToken = default, Action<GitProcessOutput>? outputReceived = null, GitRunner? runner = null)
     {
+        runner ??= new();
+        using IDisposable operation = runner.BeginOperation();
         ValidateValue(source);
         ArgumentException.ThrowIfNullOrWhiteSpace(destination);
         ArgumentNullException.ThrowIfNull(options);
@@ -54,7 +60,7 @@ public sealed partial class GitRepository
         string fullPath = System.IO.Path.GetFullPath(destination);
         string parent = System.IO.Path.GetDirectoryName(fullPath) ?? throw new ArgumentException("Clone destination requires a parent.", nameof(destination));
         Directory.CreateDirectory(parent);
-        GitRepository repository = new(parent);
+        GitRepository repository = new(parent, runner);
         arguments.AddRange(["--", source, fullPath]);
         if (outputReceived is null) { return await repository.ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false); }
         GitResult result = await repository._runner.RunAsync(parent, [.. GlobalOptions, .. arguments], cancellationToken,
@@ -63,9 +69,11 @@ public sealed partial class GitRepository
         return result;
     }
 
-    public static async Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string source, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<string>> GetRemoteBranchesAsync(string source, CancellationToken cancellationToken = default, GitRunner? runner = null)
     {
-        GitResult result = await new GitRepository(System.IO.Path.GetTempPath()).ExecuteAsync(["ls-remote", "--heads", "--", ValidateValue(source)], cancellationToken).ConfigureAwait(false);
+        runner ??= new();
+        using IDisposable operation = runner.BeginOperation();
+        GitResult result = await new GitRepository(System.IO.Path.GetTempPath(), runner).ExecuteAsync(["ls-remote", "--heads", "--", ValidateValue(source)], cancellationToken).ConfigureAwait(false);
         const string prefix = "refs/heads/";
         return result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line[(line.IndexOf('\t') + 1)..].TrimEnd('\r'))

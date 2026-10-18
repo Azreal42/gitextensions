@@ -9,6 +9,14 @@ public static class GitInteractiveTerminalProcess
 {
     public static async Task<GitResult> RunAsync(string repositoryPath, string gitExecutable, IReadOnlyList<string> arguments,
         CancellationToken cancellationToken = default)
+        => await RunCoreAsync(repositoryPath, gitExecutable, arguments, null, cancellationToken).ConfigureAwait(false);
+
+    public static Task<GitResult> RunAsync(string repositoryPath, GitExecutionEnvironment environment, IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken = default)
+        => RunCoreAsync(repositoryPath, environment.Executable, arguments, environment, cancellationToken);
+
+    private static async Task<GitResult> RunCoreAsync(string repositoryPath, string gitExecutable, IReadOnlyList<string> arguments,
+        GitExecutionEnvironment? environment, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(repositoryPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(gitExecutable);
@@ -19,13 +27,15 @@ public static class GitInteractiveTerminalProcess
         if (!Directory.Exists(repositoryPath)) { throw new DirectoryNotFoundException(repositoryPath); }
         string command = string.Join(" ", new[] { gitExecutable }.Concat(arguments).Select(Quote));
         ProcessStartInfo start = new(script) { WorkingDirectory = repositoryPath, UseShellExecute = false };
+        environment?.ApplyTo(start);
         foreach (string value in new[] { "--quiet", "--return", "--flush", "--command", command, "/dev/null" }) { start.ArgumentList.Add(value); }
         // script allocates a new PTY/controlling terminal after the private exec helper creates its session.
         // Do not apply the noninteractive runner's GIT_EDITOR=true or close stdin: 'e' must launch the real editor.
         start.Environment["GIT_PAGER"] = "cat";
         start.Environment["GIT_TERMINAL_PROMPT"] = "1";
         start.Environment["LC_ALL"] = "C.UTF-8";
-        using GitProcessLaunch launch = GitProcessLaunch.Configure(start);
+        using GitProcessLaunch launch = environment is null ? GitProcessLaunch.Configure(start)
+            : GitProcessLaunch.Configure(start, environment.GetVariable("PATH") ?? "");
         using GitProcessGroup group = new();
         using Process process = new() { StartInfo = start };
         process.Start();
