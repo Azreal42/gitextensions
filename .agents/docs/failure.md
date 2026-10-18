@@ -746,3 +746,13 @@ Harnais X11 : tentative01 terminée par fermeture de stdin, nettoyage forcé san
 ## Complétion — survol et sélection
 
 Le popup pouvait afficher deux lignes bleues : le présentateur Fluent peignait le survol en plus de la sélection. `ClassicCompletionList` applique les ressources historiques au conteneur et au présentateur pour les deux états sélectionné/non sélectionné, communs à Commit/Clone/champs dépôt. [Build/ciblé106](../../artifacts/linux/completion-list-20261018/review/targeted-01-root-review.json) et [natif Commit borné](../../artifacts/linux/completion-list-20261018/review/native-source-01-root-review.json) sur8d9 vérifiés ; le full/paquet069 reste une référence distincte.
+
+## Messages Commit — formatage et chiffres
+
+L’[archive des essais](../../artifacts/linux/commit-templates-20261018/worktree-evidence-01/index.json) conserve les bruts W01–08 : formatage/caret, Undo différé, chiffres cachés par Fluent, puis correctifs et oracles inchangés. Contrôles Classic et gardes de formatage précèdent le [ciblé primaire fe1 214/214](../../artifacts/linux/commit-templates-20261018/review/targeted-primary-02-root-review.json) ; cette validation bornée ne devient pas un nouveau full.
+
+## Messages Commit — deux écarts natifs
+
+[Native01 refusé](../../artifacts/linux/commit-templates-20261018/review/native-source-01-root-review.json) : la première Échap du déroulant fermait Settings ; Ctrl+T montrait feat sélectionné mais Entrée appliquait le parent survolé. La sortie normale à 0 ne suffisait pas. Le [natif source02 fe1 accepté](../../artifacts/linux/commit-templates-20261018/review/native-source-02-root-review.json) conserve Settings/brouillon après Échap et applique feat/feat() par les premiers Enter, sous souris immobile, avec Undo et fermetures réelles à 0.
+
+W06 conserve 19 verts/deux rouges : sélectionner les seuls ancêtres ne protégeait pas le mappage sous la souris. Le build W07 sur une API inexistante reste archivé ; W08 puis primaire02 qualifient le garde libéré au mouvement réel/appui/Échap/fermeture, sans faux Enter/Click. La reprise réelle du pointeur et les autres variantes natives restent ouvertes ; le [paquet03 isolé](../../artifacts/linux/commit-templates-20261018/review/package-03-root-review.json) ne vaut pas audit interactif du paquet.

@@ -687,10 +687,16 @@
         "GitCommitAutoCompleteProvider",
         "GitCommitAutoCompleteRules",
         "file:src/linux/GitExtensions.Core/GitRepository.CommitCompletion.cs",
-        "ClassicCompletionList"
+        "ClassicCompletionList",
+        "CommitMessageSettingsDialog",
+        "file:src/linux/GitExtensions.Desktop/CommitMessagePreferences.cs",
+        "CommitMessagePreferencesStore",
+        "CommitMessageFormatting",
+        "CommitTemplateRegistry",
+        "MenuKeyboardSelection"
       ],
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion).",
-      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103).",
+      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Options superproject/branche inline encore incomplètes ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
       "visual": "rapproche",
       "tests": [
         "CommitDialogTests",
@@ -707,7 +713,10 @@
         "CommitSpellingTests",
         "CommitCompletionControllerTests",
         "CommitCompletionIntegrationTests",
-        "CommitCompletionSpellingRaceTests"
+        "CommitCompletionSpellingRaceTests",
+        "CommitMessagePreferencesStoreTests",
+        "CommitMessageFormattingTests",
+        "CommitTemplateDialogTests"
       ],
       "adr": [
         "0018",
@@ -718,7 +727,8 @@
         "0057",
         "0078",
         "0101",
-        "0102"
+        "0102",
+        "0103"
       ],
       "extra_evidence": [
         {
@@ -736,18 +746,33 @@
     "GitUI.CommandsDialogs.CommitDialog.FormCommitTemplateSettings": {
       "feature": "Gestion des templates de commit",
       "group": "operations",
-      "level": "N1",
+      "level": "N2",
       "linux": [
-        "CommitDialog@LoadTemplateAsync"
+        "CommitDialog@LoadTemplateAsync",
+        "CommitMessageSettingsDialog",
+        "file:src/linux/GitExtensions.Desktop/CommitMessagePreferences.cs",
+        "CommitMessagePreferencesStore",
+        "CommitMessageFormatting",
+        "CommitTemplateRegistry",
+        "CommitDialog@BuildTemplatesMenu",
+        "CommitDialog@ApplyMessageTemplateAsync",
+        "CommitDialog@ValidateCommitMessageAsync",
+        "ClassicNumericInput",
+        "ClassicChoiceAppearance",
+        "MenuKeyboardSelection"
       ],
-      "implemented": "Chargement du template Git configuré dans le message.",
-      "remaining": "Fenêtre de gestion/édition et bibliothèque de templates Windows absentes.",
+      "implemented": "Bibliothèque applicative distincte du fichier Git commit.template : deux onglets, dix emplacements initiaux nom/texte/regex de branche et six règles Windows. Intentions par profil XDG, OK/Cancel, publication Saved, erreurs/conflits visibles, Conventional et registre applicatif, WordWrapper lié et édition native/Undo. Échap ferme le déroulant avant Settings ; garde de sélection clavier sous souris immobile, libérée au premier mouvement réel/appui/Échap/fermeture. Source fe1 : ciblé primaire214/214, quatre rendus anglais/clair et français/sombre, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément (ADR0103). Suite complète069 historique inchangée.",
+      "remaining": "Redémarrage et audit natif de validation personnalisée/erreurs/regex/fournisseurs/reprise réelle du pointeur encore ouverts ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité, compatibilité des plugins Windows et paquet interactif non audités.",
       "visual": "integre",
       "tests": [
-        "CommitMessageWorkflowTests"
+        "CommitMessageWorkflowTests",
+        "CommitMessagePreferencesStoreTests",
+        "CommitMessageFormattingTests",
+        "CommitTemplateDialogTests"
       ],
       "adr": [
-        "0018"
+        "0018",
+        "0103"
       ]
     },
     "GitUI.CommandsDialogs.FormAddFiles": {

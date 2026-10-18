@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "8d9c99259234ac5cc01ef9e50bf9fc35b7162225",
-  "source_digest_sha256": "a2a326a053b6e8799e5ced0968326f76b3dca1f4862b587d8913268fc9402159",
-  "scanned_csharp_files": 2209,
+  "code_reference_commit": "fe1cff98626a24e9bc099714cc96a5d8524dfa8f",
+  "source_digest_sha256": "8e1058b2e35c069501dc6c7647609221baab152e055a3cf1d00b1211a4df2b12",
+  "scanned_csharp_files": 2220,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,14 +26,14 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 90,
+    "linux_window_types": 91,
     "linux_abstract_bases": 3,
-    "linux_dynamic_factories": 33,
+    "linux_dynamic_factories": 34,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 5,
-      "N1": 14,
-      "N2": 30,
+      "N1": 13,
+      "N2": 31,
       "N3": 49,
       "NA": 1
     },
@@ -1357,29 +1357,124 @@
       "category": "windows",
       "feature": "Gestion des templates de commit",
       "group": "operations",
-      "level": "N1",
-      "implemented": "Chargement du template Git configuré dans le message.",
-      "remaining": "Fenêtre de gestion/édition et bibliothèque de templates Windows absentes.",
+      "level": "N2",
+      "implemented": "Bibliothèque applicative distincte du fichier Git commit.template : deux onglets, dix emplacements initiaux nom/texte/regex de branche et six règles Windows. Intentions par profil XDG, OK/Cancel, publication Saved, erreurs/conflits visibles, Conventional et registre applicatif, WordWrapper lié et édition native/Undo. Échap ferme le déroulant avant Settings ; garde de sélection clavier sous souris immobile, libérée au premier mouvement réel/appui/Échap/fermeture. Source fe1 : ciblé primaire214/214, quatre rendus anglais/clair et français/sombre, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément (ADR0103). Suite complète069 historique inchangée.",
+      "remaining": "Redémarrage et audit natif de validation personnalisée/erreurs/regex/fournisseurs/reprise réelle du pointeur encore ouverts ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité, compatibilité des plugins Windows et paquet interactif non audités.",
       "visual": "integre",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 950,
+          "line": 953,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitMessageSettingsDialog",
+          "label": "CommitMessageSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessageSettingsDialog.cs",
+          "line": 13,
+          "kind": "window"
+        },
+        {
+          "label": "CommitMessagePreferences.cs",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessagePreferences.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitMessagePreferencesStore",
+          "label": "CommitMessagePreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessagePreferencesStore.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitMessageFormatting",
+          "label": "CommitMessageFormatting",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessageFormatting.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitTemplateRegistry",
+          "label": "CommitTemplateRegistry",
+          "source": "src/linux/GitExtensions.Desktop/CommitTemplateRegistry.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitDialog",
+          "label": "CommitDialog.BuildTemplatesMenu",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
+          "line": 52,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitDialog",
+          "label": "CommitDialog.ApplyMessageTemplateAsync",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
+          "line": 134,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitDialog",
+          "label": "CommitDialog.ValidateCommitMessageAsync",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
+          "line": 240,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ClassicNumericInput",
+          "label": "ClassicNumericInput",
+          "source": "src/linux/GitExtensions.Desktop/ClassicNumericInput.cs",
+          "line": 12,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ClassicChoiceAppearance",
+          "label": "ClassicChoiceAppearance",
+          "source": "src/linux/GitExtensions.Desktop/ClassicChoiceAppearance.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.MenuKeyboardSelection",
+          "label": "MenuKeyboardSelection",
+          "source": "src/linux/GitExtensions.Desktop/Controls/MenuKeyboardSelection.cs",
+          "line": 10,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageFormattingTests.cs",
+          "test_class": "CommitMessageFormattingTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessagePreferencesStoreTests.cs",
+          "test_class": "CommitMessagePreferencesStoreTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageWorkflowTests.cs",
           "test_class": "CommitMessageWorkflowTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
+          "test_class": "CommitTemplateDialogTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/commits/0018-messages-and-session.md"
+        ".agents/docs/adr/workflows/commits/0018-messages-and-session.md",
+        ".agents/docs/adr/preferences/commit-templates/0103-commit-message-templates.md"
       ]
     },
     {
@@ -1519,6 +1614,12 @@
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
+          "test_class": "CommitTemplateDialogTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
@@ -2817,8 +2918,8 @@
       "feature": "Préparation et création de commit",
       "group": "operations",
       "level": "N2",
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion).",
-      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103).",
+      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Options superproject/branche inline encore incomplètes ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2858,7 +2959,7 @@
           "id": "GitExtensions.Linux.Desktop.Controls.SpellingEditorView",
           "label": "SpellingEditorView",
           "source": "src/linux/GitExtensions.Desktop/Controls/SpellingEditorView.cs",
-          "line": 13,
+          "line": 14,
           "kind": "component"
         },
         {
@@ -2914,6 +3015,47 @@
           "source": "src/linux/GitExtensions.Desktop/Controls/ClassicCompletionList.cs",
           "line": 9,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitMessageSettingsDialog",
+          "label": "CommitMessageSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessageSettingsDialog.cs",
+          "line": 13,
+          "kind": "window"
+        },
+        {
+          "label": "CommitMessagePreferences.cs",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessagePreferences.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitMessagePreferencesStore",
+          "label": "CommitMessagePreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessagePreferencesStore.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitMessageFormatting",
+          "label": "CommitMessageFormatting",
+          "source": "src/linux/GitExtensions.Desktop/CommitMessageFormatting.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitTemplateRegistry",
+          "label": "CommitTemplateRegistry",
+          "source": "src/linux/GitExtensions.Desktop/CommitTemplateRegistry.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.MenuKeyboardSelection",
+          "label": "MenuKeyboardSelection",
+          "source": "src/linux/GitExtensions.Desktop/Controls/MenuKeyboardSelection.cs",
+          "line": 10,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -2966,6 +3108,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageFormattingTests.cs",
+          "test_class": "CommitMessageFormattingTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessagePreferencesStoreTests.cs",
+          "test_class": "CommitMessagePreferencesStoreTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageWorkflowTests.cs",
           "test_class": "CommitMessageWorkflowTests",
           "passed_in_reference_run": 13,
@@ -2982,6 +3136,12 @@
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
+          "test_class": "CommitTemplateDialogTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DictionaryPreferencesTests.cs",
@@ -3107,7 +3267,8 @@
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
         ".agents/docs/adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md",
-        ".agents/docs/adr/preferences/commit-completion/0102-commit-message-completion.md"
+        ".agents/docs/adr/preferences/commit-completion/0102-commit-message-completion.md",
+        ".agents/docs/adr/preferences/commit-templates/0103-commit-message-templates.md"
       ]
     },
     {
@@ -7849,6 +8010,12 @@
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
+          "test_class": "CommitTemplateDialogTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
@@ -13865,6 +14032,10 @@
           "line": 7
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
+          "line": 15
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
           "line": 25
         }
@@ -13877,7 +14048,7 @@
         {
           "id": "GitUI.CommandsDialogs.CommitDialog.FormCommitTemplateSettings",
           "name": "FormCommitTemplateSettings",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.FormAddFiles",
@@ -13920,6 +14091,35 @@
         }
       ],
       "note": "Choix de commit sans index ; variante de confirmation de FormCommit."
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.CommitMessageSettingsDialog",
+      "name": "CommitMessageSettingsDialog",
+      "source": "src/linux/GitExtensions.Desktop/CommitMessageSettingsDialog.cs",
+      "line": 13,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CommitMessageSettingsDialog.cs",
+          "line": 13
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.CommitDialog.FormCommitTemplateSettings",
+          "name": "FormCommitTemplateSettings",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.FormCommit",
+          "name": "FormCommit",
+          "level": "N2"
+        }
+      ],
+      "note": ""
     },
     {
       "id": "GitExtensions.Linux.Desktop.CompareBranchPicker",
@@ -16264,6 +16464,16 @@
       "line": 144,
       "method": "ConfirmAsync",
       "text": "new() { Name = \"CleanupConfirmation\", Title = Text(\"_reallyCleanupQuestionCaption\", \"Cleanup\"), Width = 460,",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.CommitDialog",
+      "path": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
+      "line": 261,
+      "method": "ConfirmCommitWarningAsync",
+      "text": "new() { Name = \"CommitValidation\", Title = C(\"_commitValidationCaption\", \"Commit validation\"), Width = 520, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
       "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
     },
@@ -20682,8 +20892,7 @@
       "N3": 7
     },
     "operations": {
-      "N1": 1,
-      "N2": 3,
+      "N2": 4,
       "N3": 10
     },
     "network": {
