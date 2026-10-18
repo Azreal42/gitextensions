@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "014c7e53492c32896e7158e3e105a18adf3687c0",
-  "source_digest_sha256": "a8524170109fddd6a4e23c69a556b2fc9c7222ba4d4279eb5ee313f9c65194d9",
-  "scanned_csharp_files": 2200,
+  "code_reference_commit": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+  "source_digest_sha256": "49d420ca3a9fe6782b71c2aa831832a083d2b93da28c961cb4797b15b3fdb6c8",
+  "scanned_csharp_files": 2208,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,43 +50,43 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/dictionary-20261018/full-03/desktop.trx",
-    "source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
-    "trx_sha256": "ec1009305aa1dbe773da8f38bec8e657b37902cd031d0fda26f544c8ff5f8a39",
+    "trx": "artifacts/linux/commit-completion-20261018/full-02/results/desktop.trx",
+    "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+    "trx_sha256": "6413ee85582c58fac129c753662d20ccf7d3024a11f5ab7a4cb3a2a7868b4b01",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
-        "execution_source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
-        "candidate_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
-        "passed": 728,
-        "total": 728,
-        "execution_result": "artifacts/linux/dictionary-20261018/full-03/core-result.json",
-        "execution_result_sha256": "3b927f2de6c308ddeef24c26c7c5c5d3318b6646ab4230f3866dcbd68d52e487",
+        "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+        "execution_source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+        "candidate_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+        "passed": 739,
+        "total": 739,
+        "execution_result": "artifacts/linux/commit-completion-20261018/full-02/core-result.json",
+        "execution_result_sha256": "86d04fa345196c388d0b292d2856158af9499255074db76f6d329a15c5839417",
         "execution_exit_code": 0,
-        "build_result": "artifacts/linux/dictionary-20261018/full-03/build-result.json",
-        "build_result_sha256": "668cf861b68b9b358ca9326a7b541e264ca3aff0fa5e0025378219c9289b3ee4",
+        "build_result": "artifacts/linux/commit-completion-20261018/full-02/build-result.json",
+        "build_result_sha256": "4e71a3aad94f66addfc18c0acda0f4823edd542841ed12c3d3e30ac74373a750",
         "build_exit_code": 0,
-        "parent_verification": "artifacts/linux/dictionary-20261018/full-03/parent-verification.json",
-        "parent_verification_sha256": "ce5c83548fdaf1906de3c3c23958cbcd6e97d7c921d1c431fe49d5bc3e6cc68c",
+        "parent_verification": "artifacts/linux/commit-completion-20261018/full-02/parent-verification.json",
+        "parent_verification_sha256": "f2b86c5c37a25dc8e8e49b5c8280923c96261ff2fb588a5967a795a952404353",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
-        "execution_source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
-        "candidate_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+        "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+        "execution_source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+        "candidate_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/dictionary-20261018/full-03/plugins-result.json",
-        "execution_result_sha256": "202e6bf70f0e20fea4785ca2f41097f73aee4ea675fabf7da6003a2ebb092a7e",
+        "execution_result": "artifacts/linux/commit-completion-20261018/full-02/plugins-result.json",
+        "execution_result_sha256": "266763ef960f060f64272ba32de5328295030ed2bf138d394c1ebedc1d2d7f1a",
         "execution_exit_code": 0,
-        "build_result": "artifacts/linux/dictionary-20261018/full-03/build-result.json",
-        "build_result_sha256": "668cf861b68b9b358ca9326a7b541e264ca3aff0fa5e0025378219c9289b3ee4",
+        "build_result": "artifacts/linux/commit-completion-20261018/full-02/build-result.json",
+        "build_result_sha256": "4e71a3aad94f66addfc18c0acda0f4823edd542841ed12c3d3e30ac74373a750",
         "build_exit_code": 0,
-        "parent_verification": "artifacts/linux/dictionary-20261018/full-03/parent-verification.json",
-        "parent_verification_sha256": "ce5c83548fdaf1906de3c3c23958cbcd6e97d7c921d1c431fe49d5bc3e6cc68c",
+        "parent_verification": "artifacts/linux/commit-completion-20261018/full-02/parent-verification.json",
+        "parent_verification_sha256": "f2b86c5c37a25dc8e8e49b5c8280923c96261ff2fb588a5967a795a952404353",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -1366,7 +1366,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 929,
+          "line": 950,
           "kind": "window"
         }
       ],
@@ -1476,6 +1476,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
+          "test_class": "CommitCompletionIntegrationTests",
+          "passed_in_reference_run": 6,
           "results_present": true
         },
         {
@@ -2811,13 +2817,18 @@
       "feature": "Préparation et création de commit",
       "group": "operations",
       "level": "N2",
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary).",
-      "remaining": "Complétion Windows des noms/stems actuels et anciens, symboles, cinq préfixes fixes et exemptions NetSpell temporaires en mémoire encore absente ; Ignore occurrence au même texte est une adaptation Linux explicite. Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic.",
+      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Survol et sélection du popup utilisent le même bleu : différencier ces états pour se rapprocher de Windows. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
       "visual": "rapproche",
       "extra_evidence": [
         {
           "label": "Contrats XML Windows, priorité locale/distribuée/globale et écriture locale contrôlée",
           "source": "tests/linux/GitExtensions.Core.Tests/DictionarySettingsScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Scénarios Git natifs du corpus et des replis Windows, Core03 11/11 et suite complète de référence",
+          "source": "tests/linux/GitExtensions.Core.Tests/CommitCompletionScenarios.cs",
           "line": 1
         }
       ],
@@ -2854,7 +2865,7 @@
           "id": "GitExtensions.Linux.Spelling.SpellCheckService",
           "label": "SpellCheckService",
           "source": "src/linux/GitExtensions.SpellChecking/SpellCheckService.cs",
-          "line": 10,
+          "line": 11,
           "kind": "component"
         },
         {
@@ -2867,6 +2878,33 @@
         {
           "label": "GitRepository.DictionarySettings.cs",
           "source": "src/linux/GitExtensions.Core/GitRepository.DictionarySettings.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitCompletionController",
+          "label": "CommitCompletionController",
+          "source": "src/linux/GitExtensions.Desktop/CommitCompletionController.cs",
+          "line": 21,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitCommitAutoCompleteProvider",
+          "label": "GitCommitAutoCompleteProvider",
+          "source": "src/linux/GitExtensions.Core/GitCommitAutoCompleteProvider.cs",
+          "line": 12,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitCommitAutoCompleteRules",
+          "label": "GitCommitAutoCompleteRules",
+          "source": "src/linux/GitExtensions.Core/GitCommitAutoCompleteRules.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "GitRepository.CommitCompletion.cs",
+          "source": "src/linux/GitExtensions.Core/GitRepository.CommitCompletion.cs",
           "line": 1,
           "kind": "source"
         }
@@ -2882,6 +2920,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionControllerTests.cs",
+          "test_class": "CommitCompletionControllerTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
+          "test_class": "CommitCompletionIntegrationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionSpellingRaceTests.cs",
+          "test_class": "CommitCompletionSpellingRaceTests",
+          "passed_in_reference_run": 1,
           "results_present": true
         },
         {
@@ -2929,7 +2985,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DictionaryServiceTests.cs",
           "test_class": "DictionaryServiceTests",
-          "passed_in_reference_run": 32,
+          "passed_in_reference_run": 39,
           "results_present": true
         },
         {
@@ -3043,7 +3099,8 @@
         ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
-        ".agents/docs/adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md"
+        ".agents/docs/adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md",
+        ".agents/docs/adr/preferences/commit-completion/0102-commit-message-completion.md"
       ]
     },
     {
@@ -6852,13 +6909,18 @@
       "feature": "Apparence générale",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Groupes Windows General, Author images et Language ; préférences Windows actives et thème Linux Light/Dark/System. TruncatePathMethod propose None/Compact/Trim start/Filename only par profil ; Apply publie le choix sauvegardé aux listes existantes et Cancel abandonne le brouillon (ADR0100). Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Le socle Avatar partage provider Default/Custom/None, fallback, template et caches mémoire/disque entre grille, CommitInfo, Blame et Gource. Clear image cache utilise la politique sauvegardée ; les deux aides sont raccordées. Changement de politique et effacement retirent les anciennes générations avant publication ; lectures visibles et fermeture drainée, durée du cache disque capturée au démarrage. Métadonnées de branche partagées dans Dashboard et récents ; langue effective au redémarrage. Preuves antérieures c831 : full 2285/720/35 et paquet exact isolé vérifiés ; natif source anglais/clair/X11 avec fournisseur local, Apply/Cancel/Clear, visibilité CommitInfo, premier clic/flèches et persistance au vrai redémarrage. Les éditeurs restent dans leur groupe avec un draft de template long de 858 caractères ; aides provider/fallback et Help translate visibles sans scroll/resize ni clic externe à la largeur Settings 958. Dictionary propose None et le catalogue local réel ; la valeur globale sauvegardée est publiée aux éditeurs concernés, y compris après sauvegarde partielle. Une identité indisponible reste diagnostiquée et préservée jusqu’au choix explicite ; Download dictionary utilise le lanceur d’aide fourni par le host (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary).",
-      "remaining": "Branche dans Visual Studio et EnableAutoScale restent indisponibles ou adaptés. aucun comportement Windows complet n’est déduit du catalogue ou des rendus headless. Compact adapte PathCompactPathEx aux chemins POSIX et protège les graphèmes, sans égalité des coupes Win32 ; le suffixe de statut submodule manque encore au modèle commun (ADR0100). La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel ; défaut de mise en page corrigé et revérifié sur c831 dans le seul périmètre décrit. Le parcours fonctionnel source et le paquet vérifiés ne certifient ni tous les providers réels ni Blame/Gource natifs, le chooser/classic, l’identité interne du runtime/TTL ou une sortie réelle avec renderer en attente. Autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif ouverts ; aucune parité globale ni N3/N4. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts.",
+      "implemented": "Groupes Windows General, Author images et Language ; préférences Windows actives et thème Linux Light/Dark/System. TruncatePathMethod propose None/Compact/Trim start/Filename only par profil ; Apply publie le choix sauvegardé aux listes existantes et Cancel abandonne le brouillon (ADR0100). Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Le socle Avatar partage provider Default/Custom/None, fallback, template et caches mémoire/disque entre grille, CommitInfo, Blame et Gource. Clear image cache utilise la politique sauvegardée ; les deux aides sont raccordées. Changement de politique et effacement retirent les anciennes générations avant publication ; lectures visibles et fermeture drainée, durée du cache disque capturée au démarrage. Métadonnées de branche partagées dans Dashboard et récents ; langue effective au redémarrage. Preuves antérieures c831 : full 2285/720/35 et paquet exact isolé vérifiés ; natif source anglais/clair/X11 avec fournisseur local, Apply/Cancel/Clear, visibilité CommitInfo, premier clic/flèches et persistance au vrai redémarrage. Les éditeurs restent dans leur groupe avec un draft de template long de 858 caractères ; aides provider/fallback et Help translate visibles sans scroll/resize ni clic externe à la largeur Settings 958. Dictionary propose None et le catalogue local réel ; la valeur globale sauvegardée est publiée aux éditeurs concernés, y compris après sauvegarde partielle. Une identité indisponible reste diagnostiquée et préservée jusqu’au choix explicite ; Download dictionary utilise le lanceur d’aide fourni par le host (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). La complétion Git reste active sous Dictionary None ; les mots collectés pendant la vie de l’éditeur sont réinjectés en mémoire au changement de moteur, sans user.dic ni nouveau réglage Appearance (ADR0102). Full02 et paquet exact vérifiés ; périmètre natif dans le TODO.",
+      "remaining": "Branche dans Visual Studio et EnableAutoScale restent indisponibles ou adaptés. aucun comportement Windows complet n’est déduit du catalogue ou des rendus headless. Compact adapte PathCompactPathEx aux chemins POSIX et protège les graphèmes, sans égalité des coupes Win32 ; le suffixe de statut submodule manque encore au modèle commun (ADR0100). La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel ; défaut de mise en page corrigé et revérifié sur c831 dans le seul périmètre décrit. Le parcours fonctionnel source et le paquet vérifiés ne certifient ni tous les providers réels ni Blame/Gource natifs, le chooser/classic, l’identité interne du runtime/TTL ou une sortie réelle avec renderer en attente. Autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif ouverts ; aucune parité globale ni N3/N4. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Survol et sélection du popup utilisent le même bleu : différencier ces états pour se rapprocher de Windows. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
       "visual": "rapproche",
       "extra_evidence": [
         {
           "label": "Contrats XML Windows, priorité locale/distribuée/globale et écriture locale contrôlée",
           "source": "tests/linux/GitExtensions.Core.Tests/DictionarySettingsScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Scénarios Git natifs du corpus et des replis Windows, Core03 11/11 et suite complète de référence",
+          "source": "tests/linux/GitExtensions.Core.Tests/CommitCompletionScenarios.cs",
           "line": 1
         }
       ],
@@ -6978,6 +7040,27 @@
           "source": "src/linux/GitExtensions.Core/GitRepository.DictionarySettings.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitCompletionController",
+          "label": "CommitCompletionController",
+          "source": "src/linux/GitExtensions.Desktop/CommitCompletionController.cs",
+          "line": 21,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitSpellingController",
+          "label": "CommitSpellingController",
+          "source": "src/linux/GitExtensions.Desktop/CommitSpellingController.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Spelling.SpellCheckService",
+          "label": "SpellCheckService",
+          "source": "src/linux/GitExtensions.SpellChecking/SpellCheckService.cs",
+          "line": 11,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -7072,6 +7155,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
+          "test_class": "CommitCompletionIntegrationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionSpellingRaceTests.cs",
+          "test_class": "CommitCompletionSpellingRaceTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSpellingTests.cs",
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
@@ -7086,7 +7181,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DictionaryServiceTests.cs",
           "test_class": "DictionaryServiceTests",
-          "passed_in_reference_run": 32,
+          "passed_in_reference_run": 39,
           "results_present": true
         },
         {
@@ -7221,7 +7316,8 @@
         ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
         ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
         ".agents/docs/adr/preferences/appearance/0098-appearance-shared-settings.md",
-        ".agents/docs/adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md"
+        ".agents/docs/adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md",
+        ".agents/docs/adr/preferences/commit-completion/0102-commit-message-completion.md"
       ]
     },
     {
@@ -7703,6 +7799,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
+          "test_class": "CommitCompletionIntegrationTests",
+          "passed_in_reference_run": 6,
           "results_present": true
         },
         {

@@ -682,10 +682,14 @@
         "SpellingEditorView",
         "SpellCheckService",
         "DictionaryCatalog",
-        "file:src/linux/GitExtensions.Core/GitRepository.DictionarySettings.cs"
+        "file:src/linux/GitExtensions.Core/GitRepository.DictionarySettings.cs",
+        "CommitCompletionController",
+        "GitCommitAutoCompleteProvider",
+        "GitCommitAutoCompleteRules",
+        "file:src/linux/GitExtensions.Core/GitRepository.CommitCompletion.cs"
       ],
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary).",
-      "remaining": "Complétion Windows des noms/stems actuels et anciens, symboles, cinq préfixes fixes et exemptions NetSpell temporaires en mémoire encore absente ; Ignore occurrence au même texte est une adaptation Linux explicite. Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic.",
+      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Survol et sélection du popup utilisent le même bleu : différencier ces états pour se rapprocher de Windows. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
       "visual": "rapproche",
       "tests": [
         "CommitDialogTests",
@@ -699,7 +703,10 @@
         "NetSpellUnicodeTests",
         "DictionaryPreferencesTests",
         "AppearanceDictionaryTests",
-        "CommitSpellingTests"
+        "CommitSpellingTests",
+        "CommitCompletionControllerTests",
+        "CommitCompletionIntegrationTests",
+        "CommitCompletionSpellingRaceTests"
       ],
       "adr": [
         "0018",
@@ -709,12 +716,18 @@
         "0089",
         "0057",
         "0078",
-        "0101"
+        "0101",
+        "0102"
       ],
       "extra_evidence": [
         {
           "label": "Contrats XML Windows, priorité locale/distribuée/globale et écriture locale contrôlée",
           "source": "tests/linux/GitExtensions.Core.Tests/DictionarySettingsScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Scénarios Git natifs du corpus et des replis Windows, Core03 11/11 et suite complète de référence",
+          "source": "tests/linux/GitExtensions.Core.Tests/CommitCompletionScenarios.cs",
           "line": 1
         }
       ]
@@ -2349,10 +2362,13 @@
         "AvatarWindowLifetime",
         "DictionaryCatalog",
         "file:src/linux/GitExtensions.Core/GitDictionarySettings.cs",
-        "file:src/linux/GitExtensions.Core/GitRepository.DictionarySettings.cs"
+        "file:src/linux/GitExtensions.Core/GitRepository.DictionarySettings.cs",
+        "CommitCompletionController",
+        "CommitSpellingController",
+        "SpellCheckService"
       ],
-      "implemented": "Groupes Windows General, Author images et Language ; préférences Windows actives et thème Linux Light/Dark/System. TruncatePathMethod propose None/Compact/Trim start/Filename only par profil ; Apply publie le choix sauvegardé aux listes existantes et Cancel abandonne le brouillon (ADR0100). Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Le socle Avatar partage provider Default/Custom/None, fallback, template et caches mémoire/disque entre grille, CommitInfo, Blame et Gource. Clear image cache utilise la politique sauvegardée ; les deux aides sont raccordées. Changement de politique et effacement retirent les anciennes générations avant publication ; lectures visibles et fermeture drainée, durée du cache disque capturée au démarrage. Métadonnées de branche partagées dans Dashboard et récents ; langue effective au redémarrage. Preuves antérieures c831 : full 2285/720/35 et paquet exact isolé vérifiés ; natif source anglais/clair/X11 avec fournisseur local, Apply/Cancel/Clear, visibilité CommitInfo, premier clic/flèches et persistance au vrai redémarrage. Les éditeurs restent dans leur groupe avec un draft de template long de 858 caractères ; aides provider/fallback et Help translate visibles sans scroll/resize ni clic externe à la largeur Settings 958. Dictionary propose None et le catalogue local réel ; la valeur globale sauvegardée est publiée aux éditeurs concernés, y compris après sauvegarde partielle. Une identité indisponible reste diagnostiquée et préservée jusqu’au choix explicite ; Download dictionary utilise le lanceur d’aide fourni par le host (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary).",
-      "remaining": "Branche dans Visual Studio et EnableAutoScale restent indisponibles ou adaptés. aucun comportement Windows complet n’est déduit du catalogue ou des rendus headless. Compact adapte PathCompactPathEx aux chemins POSIX et protège les graphèmes, sans égalité des coupes Win32 ; le suffixe de statut submodule manque encore au modèle commun (ADR0100). La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel ; défaut de mise en page corrigé et revérifié sur c831 dans le seul périmètre décrit. Le parcours fonctionnel source et le paquet vérifiés ne certifient ni tous les providers réels ni Blame/Gource natifs, le chooser/classic, l’identité interne du runtime/TTL ou une sortie réelle avec renderer en attente. Autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif ouverts ; aucune parité globale ni N3/N4. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts.",
+      "implemented": "Groupes Windows General, Author images et Language ; préférences Windows actives et thème Linux Light/Dark/System. TruncatePathMethod propose None/Compact/Trim start/Filename only par profil ; Apply publie le choix sauvegardé aux listes existantes et Cancel abandonne le brouillon (ADR0100). Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Le socle Avatar partage provider Default/Custom/None, fallback, template et caches mémoire/disque entre grille, CommitInfo, Blame et Gource. Clear image cache utilise la politique sauvegardée ; les deux aides sont raccordées. Changement de politique et effacement retirent les anciennes générations avant publication ; lectures visibles et fermeture drainée, durée du cache disque capturée au démarrage. Métadonnées de branche partagées dans Dashboard et récents ; langue effective au redémarrage. Preuves antérieures c831 : full 2285/720/35 et paquet exact isolé vérifiés ; natif source anglais/clair/X11 avec fournisseur local, Apply/Cancel/Clear, visibilité CommitInfo, premier clic/flèches et persistance au vrai redémarrage. Les éditeurs restent dans leur groupe avec un draft de template long de 858 caractères ; aides provider/fallback et Help translate visibles sans scroll/resize ni clic externe à la largeur Settings 958. Dictionary propose None et le catalogue local réel ; la valeur globale sauvegardée est publiée aux éditeurs concernés, y compris après sauvegarde partielle. Une identité indisponible reste diagnostiquée et préservée jusqu’au choix explicite ; Download dictionary utilise le lanceur d’aide fourni par le host (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). La complétion Git reste active sous Dictionary None ; les mots collectés pendant la vie de l’éditeur sont réinjectés en mémoire au changement de moteur, sans user.dic ni nouveau réglage Appearance (ADR0102). Full02 et paquet exact vérifiés ; périmètre natif dans le TODO.",
+      "remaining": "Branche dans Visual Studio et EnableAutoScale restent indisponibles ou adaptés. aucun comportement Windows complet n’est déduit du catalogue ou des rendus headless. Compact adapte PathCompactPathEx aux chemins POSIX et protège les graphèmes, sans égalité des coupes Win32 ; le suffixe de statut submodule manque encore au modèle commun (ADR0100). La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel ; défaut de mise en page corrigé et revérifié sur c831 dans le seul périmètre décrit. Le parcours fonctionnel source et le paquet vérifiés ne certifient ni tous les providers réels ni Blame/Gource natifs, le chooser/classic, l’identité interne du runtime/TTL ou une sortie réelle avec renderer en attente. Autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif ouverts ; aucune parité globale ni N3/N4. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Survol et sélection du popup utilisent le même bleu : différencier ces états pour se rapprocher de Windows. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
       "visual": "rapproche",
       "tests": [
         "LanguagePreferencesTests",
@@ -2373,19 +2389,27 @@
         "NetSpellUnicodeTests",
         "DictionaryPreferencesTests",
         "AppearanceDictionaryTests",
-        "CommitSpellingTests"
+        "CommitSpellingTests",
+        "CommitCompletionIntegrationTests",
+        "CommitCompletionSpellingRaceTests"
       ],
       "adr": [
         "0090",
         "0091",
         "0096",
         "0098",
-        "0101"
+        "0101",
+        "0102"
       ],
       "extra_evidence": [
         {
           "label": "Contrats XML Windows, priorité locale/distribuée/globale et écriture locale contrôlée",
           "source": "tests/linux/GitExtensions.Core.Tests/DictionarySettingsScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Scénarios Git natifs du corpus et des replis Windows, Core03 11/11 et suite complète de référence",
+          "source": "tests/linux/GitExtensions.Core.Tests/CommitCompletionScenarios.cs",
           "line": 1
         }
       ]

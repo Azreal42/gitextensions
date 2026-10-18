@@ -32,3 +32,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [Environnement Git et Checklist](adr/preferences/environment/0095-git-environment-and-checklist.md) : choix Git/HOME enfant, diagnostics et récupération du démarrage, Config Global sans dépôt ; suites/paquet vérifiés, natif source borné, niveaux et limites dans la matrice.
 
 - [Dictionary et message Commit](adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md) : XML local/distribué/global et NetSpell partagé ; suites complètes, paquet isolé et natif source ciblé vérifiés ; périmètres et limites dans le [TODO](todo.md#dictionary--périmètre-vérifié). Niveaux et matrice inchangés.
+
+- [Complétion du message Commit](adr/preferences/commit-completion/0102-commit-message-completion.md) : règles Windows partagées, popup au caret et exemptions temporaires du correcteur ; [preuves et limites](todo.md#complétion-du-message-commit--périmètre-vérifié), dont le survol à distinguer de la sélection.
