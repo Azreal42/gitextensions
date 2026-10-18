@@ -315,8 +315,10 @@ internal sealed class AppearanceSettingsPage : UserControl
     {
         Grid grid = new() { Name = name, ColumnSpacing = 8, RowSpacing = 1 };
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto) { SharedSizeGroup = "AppearanceCaption" });
-        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto) { SharedSizeGroup = "AppearanceEditor" });
+        // An intrinsic text width must not grow every group's editor column and
+        // push its help controls outside the viewport. Reserve help first.
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1, GridUnitType.Star)));
+        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         return grid;
     }
     private static int AddRow(Grid grid)
