@@ -6,9 +6,9 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `c831b414b`, suites complètes 2285/2285 Desktop (215 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=6, N2=15, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `5a61ab43c`, suites complètes 2371/2371 Desktop (218 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=6, N2=15, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
 
-**Recensement actuel : 2179 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
+**Recensement actuel : 2184 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
 
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
@@ -167,6 +167,8 @@ Aucune validation native de FileHistory/Blame, des autres dispositions/thèmes/l
 
 ## Livraison et preuves
 
+Dernier candidat vérifié isolément : [`5a61ab43c`](../../artifacts/linux/truncate-path-20261018/review/package-root-review-01.json), `7.2.1-linux-alpha`, **35 626 068 octets**, SHA256 `133943068fc70c3f0c500713a681c3f939b69ff129543efa5b35d9e7daa750f3` ; cinq phases à 0, extraction complète et backend vérifiés.
+
 Le paquet installé sur l’hôte reste `7.2.1-linux-alpha+879f7bae3…` : [version relue le 17 octobre](../../artifacts/linux/snapshots/5a52db1a9/proofs/host-application-version-observation.json), sortie réelle 0 ; [installation antérieure vérifiée](../../artifacts/linux/snapshots/879f7bae3/proofs/host-installation-verification-20261016-01.json). Aucun nouveau paquet installé sur l’hôte ; les candidats restent distincts en isolation, aucune application utilisateur arrêtée et aucun push.
 
 Les [snapshots](../../artifacts/linux/snapshots/) conservent résultats, captures, checksums et diagnostics avec leur SHA. Un audit natif ancien n’est pas transféré automatiquement à un candidat récent. L’[ancienne chronologie détaillée](../../artifacts/linux/migration-notes-20261016/todo-before-compaction-983a0d809.md) est archivée depuis le commit 983a0d809 ; le présent TODO garde les périmètres et les suites à donner.
@@ -307,7 +309,7 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Publication en place, sauvegardes partielles et choix View temporaires ; prélecture Dashboard réutilisée sans modifier l’oracle de réouverture.
 - [x] Appearance N1→N2 partiel ; inventaire régénéré et contrôlé : 99 fenêtres métier, 32 pages Settings dont 15 N2. Treize familles ouvertes, aucun N4.
-- [ ] Après le lot avatars ci-dessous, intégration Visual Studio, AutoScale et dictionnaire restent ouverts ; troncature implémentée, validation complète en cours ci-dessous. Aucun niveau supplémentaire acquis.
+- [ ] Intégration Visual Studio et AutoScale restent ouvertes ; Dictionary est le prochain lot, sources W non validées et non livrées. Troncature vérifiée sur le périmètre ci-dessous, sans niveau supplémentaire acquis.
 - [ ] Colonne de branche Windows, autres consommateurs et variantes natives, langues/thèmes, Wayland/DPI/accessibilité, paquet interactif et macOS.
 
 ## Avatars partagés — périmètre vérifié et disposition
@@ -321,8 +323,11 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 - [x] Correction c831 validée : [full01](../../artifacts/linux/appearance-layout-20261018/full-01/parent-verification.json) **2285/2285 Desktop (215 classes), 720/720 Core, 35/35 Plugins**, deux cas Layout ajoutés sans skip/retrait ; [paquet isolé exact](../../artifacts/linux/snapshots/c831b414b/proofs/package-parent-verification.json) **35 607 404 octets** et [natif source](../../artifacts/linux/appearance-layout-20261018/native-source-01/root-operator-review.json) distincts. Anglais/clair/X11, 67 commandes, 4 GET locaux à 200, deux sorties normales à 0 et drain ; draft de 858 caractères dans Settings à 958 pixels, trois aides visibles sans scroll/resize ni clic externe. Les preuves 3954 et les [refus de préparation/bookkeeping](failure.md#avatars-partagés--activation) restent conservés ; mêmes 139 entrées/niveaux/aspects, treize familles ouvertes, aucun N4.
 - [ ] Chooser/classic réel, identité runtime/TTL entre familles et renderer en attente à la sortie réelle ; Blame/Gource natifs, providers externes, autres langues/thèmes, Wayland/DPI/accessibilité et macOS.
 
-## Présentation des chemins — validation en cours
+## Présentation des chemins — périmètre vérifié
 
 - [x] Quatre choix Windows actifs dans Appearance, préférence par profil et publication en place aux listes communes ; chemin Git et tooltip complets conservés. [ADR0100](adr/preferences/appearance/0100-file-path-presentation.md).
 - [x] [Ciblé02](../../artifacts/linux/truncate-path-20261018/review/root-targeted-import-01.json) : **278/278**, 192 historiques et 86 nouveaux, build sans avertissement. Rendus clair/sombre revus ; deux attentes historiques adaptées précisément. Les sorties du banc sont distinctes du vrai retour des tests.
-- [ ] Full du nouveau commit, paquet exact et parcours natif ; Compact reste une adaptation portable, suffixe submodule manquant. Inventaire et niveaux inchangés, treize familles ouvertes, aucun N4.
+- [x] Source `5a61ab43c` : [suites complètes acceptées par qualification complémentaire](../../artifacts/linux/truncate-path-20261018/review/full-02-postprocessed-root-review-01.json), **2371/2371 Desktop (218 classes), 720/720 Core, 35/35 Plugins** ; 2285 anciens cas et 86 ajouts retenus, zéro skip/retrait. Build/tests réellement à 0 ; récupération distincte à 0, retours du runner et du pipeline à 1 et comparaison runtime brute false conservés. 3150 sources et 1098 anciennes entrées runtime Desktop identiques, onze sorties de tests précisément classées.
+- [x] [Paquet exact isolé](../../artifacts/linux/snapshots/5a61ab43c/proofs/package-parent-verification.json) et [backend](../../artifacts/linux/snapshots/5a61ab43c/proofs/package-backend-environment-verification.json) vérifiés ; état du dernier candidat ci-dessus, aucune installation hôte.
+- [x] [Natif source ciblé](../../artifacts/linux/truncate-path-20261018/native-source-02/root-operator-review.json), anglais/clair/X11 privé : 39 commandes, quatre choix et Cancel/Apply/OK dans Appearance, rendus Diff/File tree, premier clic/Haut/Bas sans réparation et persistance au vrai redémarrage. Deux sorties normales et owner à 0 ; sources, runtime et dépôt inchangés.
+- [ ] Resize et transitions regex natifs, Commit/Compare/Stash natifs, sombre/autres langues, Wayland/DPI/accessibilité et paquet interactif restent ouverts. Compact est portable, suffixe submodule absent ; inventaire régénéré et contrôlé, niveaux inchangés, treize familles ouvertes, aucun N4.
