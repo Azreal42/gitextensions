@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "fe1cff98626a24e9bc099714cc96a5d8524dfa8f",
-  "source_digest_sha256": "8e1058b2e35c069501dc6c7647609221baab152e055a3cf1d00b1211a4df2b12",
-  "scanned_csharp_files": 2220,
+  "code_reference_commit": "8872bdb6773dc7769bfe6b8415bac1a8b2893111",
+  "source_digest_sha256": "690638ed9492b52033057209aa88310e4f0cfab7e16e9c40fe79a5d302fd4972",
+  "scanned_csharp_files": 2231,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,7 +26,7 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 91,
+    "linux_window_types": 92,
     "linux_abstract_bases": 3,
     "linux_dynamic_factories": 34,
     "windows_dynamic_hosts": 2,
@@ -1366,7 +1366,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 953,
+          "line": 966,
           "kind": "window"
         },
         {
@@ -1421,7 +1421,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.ValidateCommitMessageAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
-          "line": 240,
+          "line": 241,
           "kind": "window"
         },
         {
@@ -1447,6 +1447,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageFormattingTests.cs",
           "test_class": "CommitMessageFormattingTests",
@@ -1574,6 +1580,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
           "test_class": "CommitCompletionIntegrationTests",
           "passed_in_reference_run": 6,
@@ -1614,6 +1626,12 @@
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
+          "test_class": "CommitSuperprojectTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
@@ -2511,6 +2529,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
           "test_class": "DialogAccessKeyTests",
           "passed_in_reference_run": 4,
@@ -2918,8 +2942,8 @@
       "feature": "Préparation et création de commit",
       "group": "operations",
       "level": "N2",
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103).",
-      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Options superproject/branche inline encore incomplètes ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103). Branche/superproject (ADR0104) : bouton/raccourci Create branch, statut→tracking et nom suggéré sans écraser la saisie ; quatre choix en HEAD détachée hors rebase. Stage global mémorisé/relu après commit et push réussis : seul le gitlink associé au HEAD enfant final est indexé ; erreurs et effets restent visibles. Toolbar canonique avec Options à droite/débordement et CommandLink commun. Core20 et Desktop415 ciblés, natif source français/sombre/X11 et paquet isolé vérifiés séparément ; périmètres et preuves dans le TODO, sans nouveau full ni certification de parité.",
+      "remaining": "Ignore occurrence au même texte reste une adaptation Linux explicite. Audit étendu des scripts/erreurs/fermetures et réserves antérieures Commit ouverts. Le paquet du lot branche/superproject est vérifié isolément, sans validation interactive ; commit/push/staging, geste detached et redémarrage restent non exécutés en natif, le parcours source accepté est borné au français/sombre/X11 ; aucun full sur sa source, référence complète069 historique inchangée. Création Worktrees gérée depuis un sous-module absorbé : défaut distinct du linked child natif Core. Premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. N2 conservé, aucune parité globale certifiée.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2930,6 +2954,11 @@
         {
           "label": "Scénarios Git natifs du corpus et des replis Windows, Core03 11/11 et suite complète de référence",
           "source": "tests/linux/GitExtensions.Core.Tests/CommitCompletionScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "20 scénarios Core de relation réelle, gitlink final, erreurs/effets et annulation ; qualification ciblée distincte du full069",
+          "source": "tests/linux/GitExtensions.Core.Tests/SuperprojectScenarios.cs",
           "line": 1
         }
       ],
@@ -2945,7 +2974,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitEmptyDialog",
           "label": "CommitEmptyDialog",
           "source": "src/linux/GitExtensions.Desktop/CommitEmptyDialog.cs",
-          "line": 19,
+          "line": 15,
           "kind": "window"
         },
         {
@@ -3056,6 +3085,101 @@
           "source": "src/linux/GitExtensions.Desktop/Controls/MenuKeyboardSelection.cs",
           "line": 10,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitDialog",
+          "label": "CommitDialog.RefreshBranchStatusAsync",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
+          "line": 61,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitDialog",
+          "label": "CommitDialog.OpenCommitTrackingAsync",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
+          "line": 84,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitBranchChoiceDialog",
+          "label": "CommitBranchChoiceDialog",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
+          "line": 228,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CreateBranchDialog",
+          "label": "CreateBranchDialog.SuggestInitialNameAsync",
+          "source": "src/linux/GitExtensions.Desktop/CreateBranchDialog.cs",
+          "line": 87,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
+          "label": "CheckoutBranchDialog",
+          "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
+          "line": 12,
+          "kind": "window"
+        },
+        {
+          "label": "CheckoutBranchConstraint.cs",
+          "source": "src/linux/GitExtensions.Desktop/CheckoutBranchConstraint.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitPreferencesStore",
+          "label": "CommitPreferencesStore.LoadForSuperprojectStaging",
+          "source": "src/linux/GitExtensions.Desktop/CommitPreferencesStore.cs",
+          "line": 38,
+          "kind": "component"
+        },
+        {
+          "label": "CommitPreferencesStore.cs",
+          "source": "src/linux/GitExtensions.Desktop/CommitPreferencesStore.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRepository",
+          "label": "GitRepository.GetSuperprojectSnapshotAsync",
+          "source": "src/linux/GitExtensions.Core/GitRepository.Superproject.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRepository",
+          "label": "GitRepository.StageInSuperprojectAsync",
+          "source": "src/linux/GitExtensions.Core/GitRepository.Superproject.cs",
+          "line": 37,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitSuperprojectSnapshot",
+          "label": "GitSuperprojectSnapshot",
+          "source": "src/linux/GitExtensions.Core/GitSuperprojectSnapshot.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "label": "GitSuperprojectSnapshot.cs",
+          "source": "src/linux/GitExtensions.Core/GitSuperprojectSnapshot.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.CompactMenuToolbar",
+          "label": "CompactMenuToolbar",
+          "source": "src/linux/GitExtensions.Desktop/Controls/CompactMenuToolbar.cs",
+          "line": 18,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.ClassicCommandLink",
+          "label": "ClassicCommandLink",
+          "source": "src/linux/GitExtensions.Desktop/Controls/ClassicCommandLink.cs",
+          "line": 15,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -3066,10 +3190,40 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchMenuTests.cs",
+          "test_class": "BranchMenuTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BranchNameNormalizationTests.cs",
+          "test_class": "BranchNameNormalizationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CheckoutInitialLayoutTests.cs",
+          "test_class": "CheckoutInitialLayoutTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CheckoutSubmoduleTests.cs",
+          "test_class": "CheckoutSubmoduleTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionControllerTests.cs",
@@ -3138,10 +3292,22 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
+          "test_class": "CommitSuperprojectTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
           "passed_in_reference_run": 0,
           "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
+          "test_class": "DialogAccessKeyTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DictionaryPreferencesTests.cs",
@@ -3180,6 +3346,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralSettingsBehaviorTests.cs",
+          "test_class": "GeneralSettingsBehaviorTests",
+          "passed_in_reference_run": 24,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
           "test_class": "HotkeyHostDialogTests",
           "passed_in_reference_run": 26,
@@ -3195,6 +3367,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/NetSpellUnicodeTests.cs",
           "test_class": "NetSpellUnicodeTests",
           "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
+          "test_class": "ReferenceDialogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
+          "test_class": "ReferenceMenuTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ResetRevertDialogTests.cs",
+          "test_class": "ResetRevertDialogTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -3225,6 +3415,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
           "test_class": "ScriptPluginOwnershipTests",
           "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
+          "test_class": "SubmoduleConflictDialogTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -3268,7 +3464,8 @@
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
         ".agents/docs/adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md",
         ".agents/docs/adr/preferences/commit-completion/0102-commit-message-completion.md",
-        ".agents/docs/adr/preferences/commit-templates/0103-commit-message-templates.md"
+        ".agents/docs/adr/preferences/commit-templates/0103-commit-message-templates.md",
+        ".agents/docs/adr/workflows/commits/0104-commit-branch-and-superproject.md"
       ]
     },
     {
@@ -3426,7 +3623,7 @@
       "feature": "Création de branche",
       "group": "references",
       "level": "N3",
-      "implemented": "Nom normalisé, révision, checkout/tracking et options de création.",
+      "implemented": "Nom normalisé, révision, checkout/tracking et options de création. Préremplissage depuis la première référence de la révision (branche avant tag, préfixe remote retiré) ; toute saisie commencée et tout nom explicite sont conservés. Route Commit partagée et cas ciblés W06/primaires415 vérifiés séparément ; natif source8872 français/sombre/X11 borné : ouverture depuis débordement, main présélectionné et Cancel vérifiés, sans création native exécutée ; paquet isolé vérifié séparément, sans création native ou interface empaquetée certifiée (ADR0104).",
       "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe après lecture Git retardée vérifiée en natif sur189 ; retour clavier au navigateur après annulation encore ouvert.",
       "visual": "rapproche",
       "linux": [
@@ -3436,6 +3633,13 @@
           "source": "src/linux/GitExtensions.Desktop/CreateBranchDialog.cs",
           "line": 8,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CreateBranchDialog",
+          "label": "CreateBranchDialog.SuggestInitialNameAsync",
+          "source": "src/linux/GitExtensions.Desktop/CreateBranchDialog.cs",
+          "line": 87,
+          "kind": "window"
         }
       ],
       "tests": [
@@ -3444,6 +3648,12 @@
           "test_class": "BranchNameNormalizationTests",
           "passed_in_reference_run": 7,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
@@ -3502,7 +3712,8 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/references/0012-reference-dialogs.md",
-        ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md"
+        ".agents/docs/adr/ui/dialogs/0077-async-input-focus.md",
+        ".agents/docs/adr/workflows/commits/0104-commit-branch-and-superproject.md"
       ]
     },
     {
@@ -4784,6 +4995,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
@@ -4888,6 +5105,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
+          "test_class": "CommitSuperprojectTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
@@ -4989,7 +5212,7 @@
           "id": "GitExtensions.Linux.Desktop.PushDialog",
           "label": "PushDialog",
           "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 22,
+          "line": 19,
           "kind": "window"
         },
         {
@@ -5013,6 +5236,18 @@
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
+          "test_class": "CommitSuperprojectTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullLayoutTests.cs",
@@ -5270,6 +5505,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullLayoutTests.cs",
           "test_class": "PullLayoutTests",
@@ -7970,6 +8211,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
           "test_class": "CommitCompletionIntegrationTests",
           "passed_in_reference_run": 6,
@@ -8010,6 +8257,12 @@
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
+          "test_class": "CommitSuperprojectTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
@@ -8935,6 +9188,12 @@
           "test_class": "CloneProcessDialogTests",
           "passed_in_reference_run": 8,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -11303,6 +11562,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
           "passed_in_reference_run": 10,
@@ -11570,6 +11835,12 @@
           "test_class": "CleanupRepositoryDialogTests",
           "passed_in_reference_run": 17,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -11842,6 +12113,12 @@
           "test_class": "CleanupRepositoryDialogTests",
           "passed_in_reference_run": 17,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -13259,6 +13536,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
+          "test_class": "CommitBranchTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
           "passed_in_reference_run": 10,
@@ -13837,6 +14120,11 @@
           "level": "N3"
         },
         {
+          "id": "GitUI.CommandsDialogs.FormCommit",
+          "name": "FormCommit",
+          "level": "N2"
+        },
+        {
           "id": "GitUI.CommandsDialogs.FormMergeSubmodule",
           "name": "FormMergeSubmodule",
           "level": "N3"
@@ -14014,11 +14302,39 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.CommitBranchChoiceDialog",
+      "name": "CommitBranchChoiceDialog",
+      "source": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
+      "line": 228,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
+          "line": 228
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormCommit",
+          "name": "FormCommit",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.CommitDialog",
       "name": "CommitDialog",
       "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
       "line": 25,
       "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
+          "line": 16
+        },
         {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.IndexFlags.cs",
           "line": 3
@@ -14032,8 +14348,16 @@
           "line": 7
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.Superproject.cs",
+          "line": 6
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
           "line": 15
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.Toolbar.cs",
+          "line": 7
         },
         {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
@@ -14072,11 +14396,11 @@
       "id": "GitExtensions.Linux.Desktop.CommitEmptyDialog",
       "name": "CommitEmptyDialog",
       "source": "src/linux/GitExtensions.Desktop/CommitEmptyDialog.cs",
-      "line": 19,
+      "line": 15,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/CommitEmptyDialog.cs",
-          "line": 19
+          "line": 15
         }
       ],
       "bases": [
@@ -14207,6 +14531,11 @@
       ],
       "abstract": false,
       "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormCommit",
+          "name": "FormCommit",
+          "level": "N2"
+        },
         {
           "id": "GitUI.CommandsDialogs.FormCreateBranch",
           "name": "FormCreateBranch",
@@ -15580,11 +15909,11 @@
       "id": "GitExtensions.Linux.Desktop.PushDialog",
       "name": "PushDialog",
       "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 22,
+      "line": 19,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 22
+          "line": 19
         }
       ],
       "bases": [
@@ -16471,7 +16800,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.CommitDialog",
       "path": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
-      "line": 261,
+      "line": 262,
       "method": "ConfirmCommitWarningAsync",
       "text": "new() { Name = \"CommitValidation\", Title = C(\"_commitValidationCaption\", \"Commit validation\"), Width = 520, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -16661,7 +16990,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 528,
+      "line": 525,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",

@@ -8,4 +8,4 @@ Décision : réemployer les fichiers Git historiques `COMMITMESSAGE`, `MERGE_MSG
 
 L’entrée dans le message peut afficher le fichier staged, sans déplacer le point de saisie. Ctrl+Entrée valide le message tel qu’écrit ; une action de commit en cours interdit une nouvelle soumission.
 
-Repères : `CommitDialog`, `CommitDraftStore`, `CommitPreferencesStore`, `CommitEmptyDialog`, `GitRepository.CommitMessages`. Templates avancés, validation personnalisée, scripts et commit du superprojet restent ouverts.
+Repères : `CommitDialog`, `CommitDraftStore`, `CommitPreferencesStore`, `CommitEmptyDialog`, `GitRepository.CommitMessages`. La bibliothèque applicative suit l’[ADR0103](../../preferences/commit-templates/0103-commit-message-templates.md) ; branche et index du superproject suivent l’[ADR0104](0104-commit-branch-and-superproject.md). Les compléments de validation personnalisée et de scripts restent ouverts.

@@ -471,19 +471,22 @@
       "group": "references",
       "level": "N3",
       "linux": [
-        "CreateBranchDialog"
+        "CreateBranchDialog",
+        "CreateBranchDialog@SuggestInitialNameAsync"
       ],
-      "implemented": "Nom normalisé, révision, checkout/tracking et options de création.",
+      "implemented": "Nom normalisé, révision, checkout/tracking et options de création. Préremplissage depuis la première référence de la révision (branche avant tag, préfixe remote retiré) ; toute saisie commencée et tout nom explicite sont conservés. Route Commit partagée et cas ciblés W06/primaires415 vérifiés séparément ; natif source8872 français/sombre/X11 borné : ouverture depuis débordement, main présélectionné et Cancel vérifiés, sans création native exécutée ; paquet isolé vérifié séparément, sans création native ou interface empaquetée certifiée (ADR0104).",
       "remaining": "Audit complet des combinaisons et de la parité visuelle restant. Première frappe après lecture Git retardée vérifiée en natif sur189 ; retour clavier au navigateur après annulation encore ouvert.",
       "visual": "rapproche",
       "tests": [
         "ReferenceDialogTests",
         "ReferenceMenuTests",
-        "CreateBranchInitializationFocusTests"
+        "CreateBranchInitializationFocusTests",
+        "CommitBranchTests"
       ],
       "adr": [
         "0012",
-        "0077"
+        "0077",
+        "0104"
       ]
     },
     "GitUI.CommandsDialogs.FormCheckoutBranch": {
@@ -693,10 +696,24 @@
         "CommitMessagePreferencesStore",
         "CommitMessageFormatting",
         "CommitTemplateRegistry",
-        "MenuKeyboardSelection"
+        "MenuKeyboardSelection",
+        "CommitDialog@RefreshBranchStatusAsync",
+        "CommitDialog@OpenCommitTrackingAsync",
+        "CommitBranchChoiceDialog",
+        "CreateBranchDialog@SuggestInitialNameAsync",
+        "CheckoutBranchDialog",
+        "file:src/linux/GitExtensions.Desktop/CheckoutBranchConstraint.cs",
+        "CommitPreferencesStore@LoadForSuperprojectStaging",
+        "file:src/linux/GitExtensions.Desktop/CommitPreferencesStore.cs",
+        "GitRepository@GetSuperprojectSnapshotAsync",
+        "GitRepository@StageInSuperprojectAsync",
+        "GitSuperprojectSnapshot",
+        "file:src/linux/GitExtensions.Core/GitSuperprojectSnapshot.cs",
+        "CompactMenuToolbar",
+        "ClassicCommandLink"
       ],
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103).",
-      "remaining": "Ignore occurrence au même texte est une adaptation Linux explicite. Options superproject/branche inline encore incomplètes ; audit étendu des scripts/erreurs/fermetures ouvert. L’audit natif reste borné au source anglais/clair/X11 ; autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. Audit natif étendu, premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif ouverts.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103). Branche/superproject (ADR0104) : bouton/raccourci Create branch, statut→tracking et nom suggéré sans écraser la saisie ; quatre choix en HEAD détachée hors rebase. Stage global mémorisé/relu après commit et push réussis : seul le gitlink associé au HEAD enfant final est indexé ; erreurs et effets restent visibles. Toolbar canonique avec Options à droite/débordement et CommandLink commun. Core20 et Desktop415 ciblés, natif source français/sombre/X11 et paquet isolé vérifiés séparément ; périmètres et preuves dans le TODO, sans nouveau full ni certification de parité.",
+      "remaining": "Ignore occurrence au même texte reste une adaptation Linux explicite. Audit étendu des scripts/erreurs/fermetures et réserves antérieures Commit ouverts. Le paquet du lot branche/superproject est vérifié isolément, sans validation interactive ; commit/push/staging, geste detached et redémarrage restent non exécutés en natif, le parcours source accepté est borné au français/sombre/X11 ; aucun full sur sa source, référence complète069 historique inchangée. Création Worktrees gérée depuis un sous-module absorbé : défaut distinct du linked child natif Core. Premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. N2 conservé, aucune parité globale certifiée.",
       "visual": "rapproche",
       "tests": [
         "CommitDialogTests",
@@ -716,7 +733,9 @@
         "CommitCompletionSpellingRaceTests",
         "CommitMessagePreferencesStoreTests",
         "CommitMessageFormattingTests",
-        "CommitTemplateDialogTests"
+        "CommitTemplateDialogTests",
+        "CommitBranchTests",
+        "CommitSuperprojectTests"
       ],
       "adr": [
         "0018",
@@ -728,7 +747,8 @@
         "0078",
         "0101",
         "0102",
-        "0103"
+        "0103",
+        "0104"
       ],
       "extra_evidence": [
         {
@@ -739,6 +759,11 @@
         {
           "label": "Scénarios Git natifs du corpus et des replis Windows, Core03 11/11 et suite complète de référence",
           "source": "tests/linux/GitExtensions.Core.Tests/CommitCompletionScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "20 scénarios Core de relation réelle, gitlink final, erreurs/effets et annulation ; qualification ciblée distincte du full069",
+          "source": "tests/linux/GitExtensions.Core.Tests/SuperprojectScenarios.cs",
           "line": 1
         }
       ]
