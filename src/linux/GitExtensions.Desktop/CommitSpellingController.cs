@@ -112,6 +112,7 @@ internal sealed class CommitSpellingController
         SpellCheckService created = new(_catalog, dictionary, _userFile);
         _service = created; _services.Add(created);
         _result = null; _error = null;
+        _view.SetRanges(_editor.Text ?? "", []);
         UpdateNotice();
         Track(async () =>
         {

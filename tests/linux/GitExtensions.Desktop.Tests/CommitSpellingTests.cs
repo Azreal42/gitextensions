@@ -66,6 +66,68 @@ public sealed class CommitSpellingTests
     }
 
     [AvaloniaTest]
+    public async Task ChoosingNoneInTheRealDictionaryMenuRemovesRenderedUnderlinesWithoutEditingTheNativeTextBox()
+    {
+        using GitFixture git = await GitFixture.CreateAsync();
+        await using Host host = new(git.Repository, git.Output("profile"), "en-US");
+        TextBox editor = host.Editor;
+        const string text = "hello wrld";
+        await AvatarUiTestDriver.Edit(host.Window, editor, text); await host.Checked(1);
+        Assert.That(host.Controller.Misspellings.Single().Word, Is.EqualTo("wrld"));
+        editor.SelectionStart = 6; editor.SelectionEnd = 10;
+        Control marks = host.View.GetVisualDescendants().OfType<Control>().Single(item => item.Name == "SpellingUnderlines");
+        Rect word;
+        double scale = host.Window.RenderScaling;
+        using (WriteableBitmap before = await AvatarUiTestDriver.Frame(host.Window))
+        {
+            Rect local = host.View.GetRangeRectangles(new(6, 4)).Single();
+            word = new(marks.TranslatePoint(local.Position, host.Window)!.Value, local.Size);
+            Assert.That(CountRedPixels(before, word, scale), Is.GreaterThan(0),
+                "The baseline must contain an actual rendered red underline, not only a misspelling result.");
+        }
+        // Use the genuine context gesture and the populated dictionary MenuItem handler.
+        await host.OpenMenu(position: 7);
+        int caret = editor.CaretIndex, selectionStart = editor.SelectionStart, selectionEnd = editor.SelectionEnd;
+        Assert.That(selectionStart, Is.EqualTo(6)); Assert.That(selectionEnd, Is.EqualTo(10));
+        Assert.That(editor.CanUndo, Is.True);
+        Invoke(host.MenuItem("CommitDictionary_none")); host.Menu.Close();
+        await Until(() => ServiceOrNull(host.Controller)?.DictionaryName == "none");
+        await host.Controller.Completion.WaitAsync(Limit);
+        Assert.That((await git.Repository.ReadEffectiveDictionaryAsync("en-US")).LocalDictionary, Is.EqualTo("none"));
+        Assert.That(host.Controller.Misspellings, Is.Empty);
+        using (WriteableBitmap after = await AvatarUiTestDriver.Frame(host.Window))
+        {
+            Rect local = host.View.GetRangeRectangles(new(6, 4)).Single();
+            Assert.That(new Rect(marks.TranslatePoint(local.Position, host.Window)!.Value, local.Size), Is.EqualTo(word),
+                "The same visible word must occupy the same captured pixels after choosing None.");
+            Assert.That(host.Window.RenderScaling, Is.EqualTo(scale));
+            Assert.That(CountRedPixels(after, word, scale), Is.Zero,
+                "Choosing None must remove the actual red pixels even when the text has not changed.");
+        }
+        Assert.That(host.View.Editor, Is.SameAs(editor)); Assert.That(editor.Text, Is.EqualTo(text));
+        Assert.That(editor.CaretIndex, Is.EqualTo(caret)); Assert.That(editor.SelectionStart, Is.EqualTo(selectionStart));
+        Assert.That(editor.SelectionEnd, Is.EqualTo(selectionEnd)); Assert.That(editor.CanUndo, Is.True);
+        editor.Undo(); Assert.That(editor.Text, Is.Null.Or.Empty,
+            "The native undo entry created before the dictionary change must still be usable.");
+
+        static int CountRedPixels(WriteableBitmap frame, Rect rectangle, double scale)
+        {
+            int left = (int)Math.Floor(rectangle.Left * scale) - 1, top = (int)Math.Floor(rectangle.Top * scale) - 1;
+            int right = (int)Math.Ceiling(rectangle.Right * scale) + 1, bottom = (int)Math.Ceiling(rectangle.Bottom * scale) + 1;
+            Assert.That(left, Is.GreaterThanOrEqualTo(0)); Assert.That(top, Is.GreaterThanOrEqualTo(0));
+            Assert.That(right, Is.LessThanOrEqualTo(frame.PixelSize.Width)); Assert.That(bottom, Is.LessThanOrEqualTo(frame.PixelSize.Height));
+            int count = 0;
+            for (int y = top; y < bottom; y++)
+            for (int x = left; x < right; x++)
+            {
+                Color pixel = AvatarUiTestDriver.Pixel(frame, x, y);
+                if (pixel.A > 0 && pixel.R >= 150 && (int)pixel.R - pixel.G >= 80 && (int)pixel.R - pixel.B >= 80) { count++; }
+            }
+            return count;
+        }
+    }
+
+    [AvaloniaTest]
     public async Task ActualSavedProfilePublicationChangesOnlyItsEditorsAndKeepsTheirNativeTextSelectionAndFocus()
     {
         using GitFixture git = await GitFixture.CreateAsync();
