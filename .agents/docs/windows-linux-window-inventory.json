@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-  "source_digest_sha256": "e9f5f804d2161da099cfe63c0adbd41a75c0938bd3de889df784e6efccae26c0",
-  "scanned_csharp_files": 2153,
+  "code_reference_commit": "3954cfc6ad666861957cec680724acee0420819c",
+  "source_digest_sha256": "819242a5496e937ac922ca1aa3d9ccc23c9717cf00c8018a131853a90f00037b",
+  "scanned_csharp_files": 2178,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/appearance-settings-20261018/full-04/desktop.trx",
-    "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-    "trx_sha256": "2f81f1d5d5e73e7ec1d8a20ecb3f9c7bddcf166fb17800c386b23cf553af2212",
+    "trx": "artifacts/linux/shared-avatars-20261018/full-01/desktop.trx",
+    "source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+    "trx_sha256": "6b2b5edf5af927741bd979e0ade57d7100c735d369eeec87cdd0dca44bc74ca5",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-        "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-        "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+        "source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+        "execution_source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+        "candidate_sha": "3954cfc6ad666861957cec680724acee0420819c",
         "passed": 720,
         "total": 720,
-        "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/core-result.json",
-        "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
-        "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
+        "execution_result": "artifacts/linux/shared-avatars-20261018/full-01/core-result.json",
+        "build_result": "artifacts/linux/shared-avatars-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/shared-avatars-20261018/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-        "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-        "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+        "source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+        "execution_source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+        "candidate_sha": "3954cfc6ad666861957cec680724acee0420819c",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/plugins-result.json",
-        "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
-        "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
+        "execution_result": "artifacts/linux/shared-avatars-20261018/full-01/plugins-result.json",
+        "build_result": "artifacts/linux/shared-avatars-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/shared-avatars-20261018/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -180,7 +180,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildHelpMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 98,
+          "line": 99,
           "kind": "window"
         },
         {
@@ -610,19 +610,45 @@
       "feature": "Plugin : Gource",
       "group": "plugins",
       "level": "N3",
-      "implemented": "Options, exécutable/répertoire littéraux, avatars et lancement natif.",
-      "remaining": "Audit visuel/fonctionnel de toutes les options et de l’outil externe restant.",
+      "implemented": "Options, exécutable/répertoire littéraux, avatars et lancement natif. Export Avatar branché sur la politique et les caches partagés, sans repli legacy implicite d’un propriétaire lié non prêt ; génération et tâches réellement drainées à la fermeture. Providers injectés conservés en emprunt. Cette intégration est couverte hors réseau/headless, distinctement du lancement natif historique de l’outil.",
+      "remaining": "Audit visuel/fonctionnel de toutes les options et de l’outil externe restant. Nouveau socle Avatar partagé couvert par full et paquet exact ; aucun parcours Gource natif déduit du natif Browse/Appearance, aucun transfert du natif historique ni certification des services réseau réels.",
       "visual": "adapte",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.GourceDialog",
           "label": "GourceDialog",
           "source": "src/linux/GitExtensions.Desktop/GourceDialog.cs",
-          "line": 13,
+          "line": 14,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarProviderBinding",
+          "label": "AvatarProviderBinding",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarProviderBinding.cs",
+          "line": 5,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarService",
+          "label": "AvatarService",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarService.cs",
+          "line": 7,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarServiceTests.cs",
+          "test_class": "AvatarServiceTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarWindowLifetimeTests.cs",
+          "test_class": "AvatarWindowLifetimeTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GourceAvatarProviderTests.cs",
           "test_class": "GourceAvatarProviderTests",
@@ -972,7 +998,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildHelpMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 98,
+          "line": 99,
           "kind": "window"
         }
       ],
@@ -1283,7 +1309,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildHelpMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 98,
+          "line": 99,
           "kind": "window"
         }
       ],
@@ -1774,15 +1800,15 @@
       "feature": "Attribution des lignes",
       "group": "files",
       "level": "N3",
-      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. File tree du Browse historique réutilise BlameView/options/codec/navigation : Index fournit stage0, WT ses octets, sans faux HEAD ; publication document/identité atomique, erreur native honnête et fermeture drainée. ADR 0085.",
-      "remaining": "Audit natif intégral du lecteur et des multiples modes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. CommitInfo de cet hôte non vérifié en natif.",
+      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. File tree du Browse historique réutilise BlameView/options/codec/navigation : Index fournit stage0, WT ses octets, sans faux HEAD ; publication document/identité atomique, erreur native honnête et fermeture drainée. ADR 0085. Les images visibles et le panneau CommitInfo utilisent le service Avatar partagé et ses caches ; remplacement protégé contre les générations retirées et fermeture attendue, même si un provider ignore temporairement l’annulation. Providers injectés historiques conservés comme emprunts distincts.",
+      "remaining": "Audit natif intégral du lecteur et des multiples modes encore ouvert. Compléments CommitInfo (liens associés, Markdown, mailto) encore ouverts ; nouveau socle Avatar couvert par full Git/headless et paquet exact ; aucun parcours Blame natif déduit du natif Browse/Appearance. CommitInfo de cet hôte non vérifié en natif.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.BlameDialog",
           "label": "BlameDialog",
           "source": "src/linux/GitExtensions.Desktop/BlameDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -1798,9 +1824,42 @@
           "source": "src/linux/GitExtensions.Desktop/FileHistoryBlameController.cs",
           "line": 12,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Desktop.Controls.BlameView",
+          "label": "BlameView",
+          "source": "src/linux/GitExtensions.Desktop/Controls/BlameView.cs",
+          "line": 32,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AvatarImageControl",
+          "label": "AvatarImageControl",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AvatarImageControl.cs",
+          "line": 19,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarService",
+          "label": "AvatarService",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarService.cs",
+          "line": 7,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarWindowLifetimeTests.cs",
+          "test_class": "AvatarWindowLifetimeTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameAvatarTests.cs",
           "test_class": "BlameAvatarTests",
@@ -1910,8 +1969,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué.",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source3954 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; limites et défaut de template long dans ADR0099.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, Markdown, mailto) encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes et défaut de mise en page des templates longs conservé. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -1965,6 +2024,27 @@
           "source": "src/linux/GitExtensions.Desktop/FileHistoryPreferencesStore.cs",
           "line": 21,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AvatarImageControl",
+          "label": "AvatarImageControl",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AvatarImageControl.cs",
+          "line": 19,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarService",
+          "label": "AvatarService",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarService.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.InitializeAvatarLifetime",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Avatars.cs",
+          "line": 10,
+          "kind": "window"
         }
       ],
       "tests": [
@@ -1978,6 +2058,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialHistoryRevisionTests.cs",
           "test_class": "ArtificialHistoryRevisionTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarActivationTests.cs",
+          "test_class": "AvatarActivationTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
@@ -2146,6 +2244,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ParentChildNavigationTests.cs",
           "test_class": "ParentChildNavigationTests",
           "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionAvatarRenderingTests.cs",
+          "test_class": "RevisionAvatarRenderingTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -3661,8 +3765,8 @@
       "feature": "Historique d’un fichier",
       "group": "files",
       "level": "N3",
-      "implemented": "Dialogue dédié conservé : renommages, graphe, image/texte, sauvegarde, liens Blame et CommitInfo partagé (ADR 0083). Son adaptation historique Index/WT avec notice HEAD reste distincte du nouveau Browse. UseBrowseForFileHistory=true lance un Browse indépendant, présélectionne sans borner les ancêtres et garde Diff/navigation de démarrage temporaires. Graphe normal sur les noms suivis depuis HEAD, liste Diff complète/fallback du premier groupe ; endpoints réels Commit/Index/WT/EmptyTree, refresh/grep typés, Blame File tree partagé à publication atomique et fermeture drainée. ADR 0085. Quatre préférences partagées avec Browse : Follow/Exact dans le contexte, Full/Simplify dans le dropdown ; relecture immédiate, valeurs désactivées conservées. ADR0086, vérifications Git/headless, sans certification GUI native complète.",
-      "remaining": "N3 conservé sur le périmètre dédié historique ; le Browse par défaut reste N2. Lecteur dédié direct borné par révision, contexte manipulation/Navigate/View incomplet et autres menus/filtres/plateformes encore ouverts ; audit GUI natif complet ouvert. Le nom historique donné à H ne suit pas un renommage futur absent de son oracle HEAD ; ne pas confondre Path A et Path B. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) ouverts ; CommitInfo du dialogue dédié non vérifié en natif.",
+      "implemented": "Dialogue dédié conservé : renommages, graphe, image/texte, sauvegarde, liens Blame et CommitInfo partagé (ADR 0083). Son adaptation historique Index/WT avec notice HEAD reste distincte du nouveau Browse. UseBrowseForFileHistory=true lance un Browse indépendant, présélectionne sans borner les ancêtres et garde Diff/navigation de démarrage temporaires. Graphe normal sur les noms suivis depuis HEAD, liste Diff complète/fallback du premier groupe ; endpoints réels Commit/Index/WT/EmptyTree, refresh/grep typés, Blame File tree partagé à publication atomique et fermeture drainée. ADR 0085. Quatre préférences partagées avec Browse : Follow/Exact dans le contexte, Full/Simplify dans le dropdown ; relecture immédiate, valeurs désactivées conservées. ADR0086, vérifications Git/headless, sans certification GUI native complète. CommitInfo et Blame utilisent le même socle Avatar que Browse, avec politique sauvegardée, attente de fermeture et publication liée au document ; le ciblé headless reste distinct des preuves natives.",
+      "remaining": "N3 conservé sur le périmètre dédié historique ; le Browse par défaut reste N2. Lecteur dédié direct borné par révision, contexte manipulation/Navigate/View incomplet et autres menus/filtres/plateformes encore ouverts ; audit GUI natif complet ouvert. Le nom historique donné à H ne suit pas un renommage futur absent de son oracle HEAD ; ne pas confondre Path A et Path B. Compléments CommitInfo (liens associés, Markdown, mailto) ouverts ; avatars raccordés au service partagé, audit natif étendu ouvert ; CommitInfo du dialogue dédié non vérifié en natif.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -3681,7 +3785,7 @@
           "id": "GitExtensions.Linux.Desktop.FileHistoryDialog",
           "label": "FileHistoryDialog",
           "source": "src/linux/GitExtensions.Desktop/FileHistoryDialog.cs",
-          "line": 15,
+          "line": 16,
           "kind": "window"
         },
         {
@@ -3718,6 +3822,20 @@
           "source": "src/linux/GitExtensions.Desktop/FileHistoryPreferencesStore.cs",
           "line": 21,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Desktop.Controls.BlameView",
+          "label": "BlameView",
+          "source": "src/linux/GitExtensions.Desktop/Controls/BlameView.cs",
+          "line": 32,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AvatarImageControl",
+          "label": "AvatarImageControl",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AvatarImageControl.cs",
+          "line": 19,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -3725,6 +3843,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialHistoryRevisionTests.cs",
           "test_class": "ArtificialHistoryRevisionTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarWindowLifetimeTests.cs",
+          "test_class": "AvatarWindowLifetimeTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -5210,6 +5340,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -6125,6 +6267,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -6335,6 +6489,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -6502,15 +6668,15 @@
       "feature": "Apparence générale",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Groupes Windows General, Author images et Language ; quatre préférences Windows actives (dates relatives, branche courante des dépôts, visibilité des initiales dans la grille et langue) et thème Linux Light/Dark/System. Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Métadonnées de branche partagées dans Dashboard et récents, prélecture initiale réutilisée, invalidation explicite et fermeture drainée. Langue effective au redémarrage. Full 2180 Desktop / 720 Core / 35 Plugins, paquet exact isolé et parcours source natif anglais/clair/X11 vérifiés sur 81a7aca67 ; Apply, Cancel, premier clic/Haut/Bas et persistance au vrai redémarrage observés.",
-      "remaining": "Neuf préférences Windows indisponibles ou adaptées : branche dans Visual Studio, EnableAutoScale non éditable, TruncatePathMethod, avatar CommitInfo, durée du cache, provider, fallback, template et Dictionary. Quatre actions indisponibles : ClearImageCache, avatarProviderHelp, pictureAvatarHelp et downloadDictionary ; helpTranslate est raccordée. La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée. Initiales locales sans provider/cache configurable partagé ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel : autres consommateurs natifs, langues/thèmes, Wayland/DPI/accessibilité et paquet interactif restent à auditer ; aucune parité globale ni N3/N4.",
+      "implemented": "Groupes Windows General, Author images et Language ; neuf préférences Windows actives et thème Linux Light/Dark/System. Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Le socle Avatar partage provider Default/Custom/None, fallback, template et caches mémoire/disque entre grille, CommitInfo, Blame et Gource. Clear image cache utilise la politique sauvegardée ; les deux aides sont raccordées. Changement de politique et effacement retirent les anciennes générations avant publication ; lectures visibles et fermeture drainée, durée du cache disque capturée au démarrage. Métadonnées de branche partagées dans Dashboard et récents ; langue effective au redémarrage. Source3954 : full 2283/720/35 et paquet exact vérifiés ; natif source anglais/clair/X11 avec fournisseur local, Apply/Cancel/Clear, visibilité CommitInfo, clic/flèches et persistance au vrai redémarrage. Le défaut de mise en page des templates longs reste ouvert.",
+      "remaining": "Quatre préférences Windows indisponibles ou adaptées : branche dans Visual Studio, EnableAutoScale non éditable, TruncatePathMethod et Dictionary ; downloadDictionary reste indisponible. La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel : un template Custom long élargit les colonnes partagées et masque les aides, défaut natif reproduit encore ouvert sur3954. Le parcours fonctionnel source et le paquet vérifiés ne certifient ni tous les providers réels ni Blame/Gource natifs, le chooser/classic, l’identité interne du runtime/TTL ou une sortie réelle avec renderer en attente. Autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif ouverts ; aucune parité globale ni N3/N4.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.AppearanceSettingsPage",
           "label": "AppearanceSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/AppearanceSettingsPage.cs",
-          "line": 14,
+          "line": 16,
           "kind": "component"
         },
         {
@@ -6581,6 +6747,27 @@
           "source": "src/linux/GitExtensions.Desktop/AppearanceFontsSettingsPage.cs",
           "line": 10,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarService",
+          "label": "AvatarService",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarService.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarApplicationLifetime",
+          "label": "AvatarApplicationLifetime",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarApplicationLifetime.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Avatars.AvatarWindowLifetime",
+          "label": "AvatarWindowLifetime",
+          "source": "src/linux/GitExtensions.Desktop/Avatars/AvatarWindowLifetime.cs",
+          "line": 9,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -6600,6 +6787,54 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarActivationTests.cs",
+          "test_class": "AvatarActivationTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCacheTests.cs",
+          "test_class": "AvatarCacheTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarProtocolTests.cs",
+          "test_class": "AvatarProtocolTests",
+          "passed_in_reference_run": 39,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarServiceTests.cs",
+          "test_class": "AvatarServiceTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsPageTests.cs",
+          "test_class": "AvatarSettingsPageTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsPublicationTests.cs",
+          "test_class": "AvatarSettingsPublicationTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         },
         {
@@ -6761,11 +6996,17 @@
           "id": "GitExtensions.Linux.Desktop.BlameDialog",
           "label": "BlameDialog",
           "source": "src/linux/GitExtensions.Desktop/BlameDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarWindowLifetimeTests.cs",
+          "test_class": "AvatarWindowLifetimeTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameAvatarTests.cs",
           "test_class": "BlameAvatarTests",
@@ -6914,7 +7155,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 152,
+          "line": 153,
           "kind": "window"
         }
       ],
@@ -7008,6 +7249,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
@@ -7502,6 +7755,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -7931,7 +8196,7 @@
           "id": "GitExtensions.Linux.Desktop.FileHistoryDialog",
           "label": "FileHistoryDialog",
           "source": "src/linux/GitExtensions.Desktop/FileHistoryDialog.cs",
-          "line": 15,
+          "line": 16,
           "kind": "window"
         },
         {
@@ -7960,6 +8225,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
@@ -8513,6 +8790,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -8704,7 +8993,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 152,
+          "line": 153,
           "kind": "window"
         }
       ],
@@ -8838,6 +9127,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
@@ -9144,6 +9445,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -9421,6 +9734,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
@@ -12744,11 +13069,11 @@
       "id": "GitExtensions.Linux.Desktop.BlameDialog",
       "name": "BlameDialog",
       "source": "src/linux/GitExtensions.Desktop/BlameDialog.cs",
-      "line": 11,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/BlameDialog.cs",
-          "line": 11
+          "line": 12
         }
       ],
       "bases": [
@@ -13431,11 +13756,11 @@
       "id": "GitExtensions.Linux.Desktop.FileHistoryDialog",
       "name": "FileHistoryDialog",
       "source": "src/linux/GitExtensions.Desktop/FileHistoryDialog.cs",
-      "line": 15,
+      "line": 16,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/FileHistoryDialog.cs",
-          "line": 15
+          "line": 16
         }
       ],
       "bases": [
@@ -13818,11 +14143,11 @@
       "id": "GitExtensions.Linux.Desktop.GourceDialog",
       "name": "GourceDialog",
       "source": "src/linux/GitExtensions.Desktop/GourceDialog.cs",
-      "line": 13,
+      "line": 14,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/GourceDialog.cs",
-          "line": 13
+          "line": 14
         }
       ],
       "bases": [
@@ -13895,6 +14220,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ArtificialRevisions.cs",
           "line": 9
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.Avatars.cs",
+          "line": 5
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.BranchFilter.cs",
@@ -14062,7 +14391,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 13
+          "line": 14
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",

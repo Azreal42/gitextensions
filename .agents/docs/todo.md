@@ -307,12 +307,15 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Publication en place, sauvegardes partielles et choix View temporaires ; prélecture Dashboard réutilisée sans modifier l’oracle de réouverture.
 - [x] Appearance N1→N2 partiel ; inventaire régénéré et contrôlé : 99 fenêtres métier, 32 pages Settings dont 15 N2. Treize familles ouvertes, aucun N4.
-- [ ] Neuf préférences Windows indisponibles/adaptées et quatre actions ouvertes : provider/cache/fallback/template/avatar CommitInfo, troncature et dictionnaire notamment. Le lot avatars intégré ci-dessous reste en validation globale ; aucun niveau supplémentaire acquis.
+- [ ] Après le lot avatars ci-dessous, quatre préférences Windows indisponibles/adaptées et downloadDictionary restent ouverts : intégration Visual Studio, AutoScale, troncature et dictionnaire. Aucun niveau supplémentaire acquis.
 - [ ] Colonne de branche Windows, autres consommateurs et variantes natives, langues/thèmes, Wayland/DPI/accessibilité, paquet interactif et macOS.
 
-## Avatars partagés — validation en cours
+## Avatars partagés — périmètre vérifié et écart visuel
 
-[ADR0099](adr/platform/avatars/0099-shared-desktop-runtime.md) : provider/fallback/template/cache Windows et avatar CommitInfo raccordés au runtime partagé, Clear impératif, durée disque de session, lecteurs visibles et fermeture drainée. [Ciblé06 252/252](../../artifacts/linux/appearance-settings-20261018/review/avatar-targeted-06-green.json), dont **103 nouveaux cas et 149 historiques**, zéro skip ; build sans avertissement/erreur. Deux anciennes fixtures Appearance adaptées explicitement aux nouveaux contrôles et callback typé, sans retrait de cas.
+[ADR0099](adr/platform/avatars/0099-shared-desktop-runtime.md), source `3954cfc6a` : provider/fallback/template/cache Windows et avatar CommitInfo raccordés au runtime partagé, Clear impératif, durée disque de session, lecteurs visibles et fermeture drainée. [Full01](../../artifacts/linux/shared-avatars-20261018/full-01/parent-verification.json) : **2283/2283 Desktop (214 classes), 720/720 Core, 35/35 Plugins**, 103 ajouts Desktop sans retrait/skip ; build sans avertissement/erreur. Deux anciennes fixtures Appearance adaptées explicitement, sans retrait de cas.
 
-- [ ] Full frais conservant les 2180 cas Desktop acceptés, paquet exact et parcours natif Avatar. Démarrage/chooser et durée de vie de la vraie App ne sont pas certifiés par les tests headless.
-- [ ] Mettre à jour la ligne Appearance après ces preuves ; troncature, dictionnaire, intégrations Windows et variantes natives restent ouverts. Aucun N4 ou pourcentage global ajouté.
+[Paquet exact](../../artifacts/linux/snapshots/3954cfc6a/proofs/package-parent-verification.json) : **35 611 660 octets**, cinq phases produit à 0, préparation/extraction et backend vérifiés ; installation DPKG isolée. [Natif fonctionnel source](../../artifacts/linux/shared-avatars-20261018/native-source-01/root-operator-review.json), anglais/clair/X11 privé : fournisseur local, grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au vrai redémarrage. Deux sorties normales à 0, quatre requêtes locales avec statut 200, serveur drainé ; aucune installation hôte ni interaction du paquet déduite.
+
+- [x] Inventaire régénéré sur 3954 : mêmes 139 entrées, niveaux et aspects ; Appearance reste N2 partiel, treize familles ouvertes, aucun N4.
+- [ ] Corriger le template Custom long : les colonnes Auto partagées masquent les aides ; défaut reproduit nativement, correction en validation séparée. [Failure](failure.md#avatars-partagés--activation).
+- [ ] Chooser/classic réel, identité runtime/TTL entre familles et renderer en attente à la sortie réelle ; Blame/Gource natifs, providers externes, autres langues/thèmes, Wayland/DPI/accessibilité et macOS.

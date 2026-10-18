@@ -1,11 +1,11 @@
 {
-  "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-  "trx": "artifacts/linux/appearance-settings-20261018/full-04/desktop.trx",
-  "trx_sha256": "2f81f1d5d5e73e7ec1d8a20ecb3f9c7bddcf166fb17800c386b23cf553af2212",
+  "source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+  "trx": "artifacts/linux/shared-avatars-20261018/full-01/desktop.trx",
+  "trx_sha256": "6b2b5edf5af927741bd979e0ade57d7100c735d369eeec87cdd0dca44bc74ca5",
   "counters": {
-    "total": "2180",
-    "executed": "2180",
-    "passed": "2180",
+    "total": "2283",
+    "executed": "2283",
+    "passed": "2283",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -50,6 +50,33 @@
     },
     "AvailableEncodingsDialogTests": {
       "Passed": 24
+    },
+    "AvatarActivationTests": {
+      "Passed": 2
+    },
+    "AvatarCacheTests": {
+      "Passed": 27
+    },
+    "AvatarCommitInfoTests": {
+      "Passed": 1
+    },
+    "AvatarProtocolTests": {
+      "Passed": 39
+    },
+    "AvatarServiceTests": {
+      "Passed": 15
+    },
+    "AvatarSettingsConsumerTests": {
+      "Passed": 4
+    },
+    "AvatarSettingsPageTests": {
+      "Passed": 2
+    },
+    "AvatarSettingsPublicationTests": {
+      "Passed": 10
+    },
+    "AvatarWindowLifetimeTests": {
+      "Passed": 3
     },
     "BlameAvatarTests": {
       "Passed": 4
@@ -639,27 +666,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-      "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-      "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+      "source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+      "execution_source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+      "candidate_sha": "3954cfc6ad666861957cec680724acee0420819c",
       "passed": 720,
       "total": 720,
-      "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/core-result.json",
-      "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
-      "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
+      "execution_result": "artifacts/linux/shared-avatars-20261018/full-01/core-result.json",
+      "build_result": "artifacts/linux/shared-avatars-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/shared-avatars-20261018/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-      "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
-      "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+      "source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+      "execution_source_sha": "3954cfc6ad666861957cec680724acee0420819c",
+      "candidate_sha": "3954cfc6ad666861957cec680724acee0420819c",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/plugins-result.json",
-      "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
-      "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
+      "execution_result": "artifacts/linux/shared-avatars-20261018/full-01/plugins-result.json",
+      "build_result": "artifacts/linux/shared-avatars-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/shared-avatars-20261018/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
