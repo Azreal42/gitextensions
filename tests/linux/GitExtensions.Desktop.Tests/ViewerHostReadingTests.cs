@@ -373,6 +373,8 @@ public class ViewerHostReadingTests
     {
         int index = GitFileEncodingCodec.AvailableEncodings.ToList().FindIndex(choice => choice.Name == name);
         Assert.That(index, Is.GreaterThanOrEqualTo(0), "The real viewer must offer the requested codec.");
+        Assert.That(selector.Items.OfType<DiffViewerEncodingChoice>().Any(choice => choice.Name == name), Is.True,
+            "The isolated legacy profile must include the requested encoding in the real selector: " + name);
         Assert.That(selector.IsEnabled, Is.True); selector.SelectedIndex = index + 1;
     }
     private static void AssertLossless(DiffView view, string encoding)
@@ -442,6 +444,7 @@ public class ViewerHostReadingTests
             try
             {
                 Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(fixture.Temporary, "configuration"));
+                LegacyViewerEncodingPreferences.Seed(Path.Combine(fixture.Temporary, "configuration"));
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
                 fixture.Encoding = GitFileEncodingCodec.GetEncoding(encoding);
                 fixture.InitialBytes = fixture.Encoding.GetBytes(initial); fixture.ChangedBytes = fixture.Encoding.GetBytes(changed);

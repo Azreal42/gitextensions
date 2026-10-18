@@ -245,6 +245,8 @@ public class ViewerHostLoadFailureTests
     {
         int index = GitFileEncodingCodec.AvailableEncodings.ToList().FindIndex(choice => choice.Name == name);
         Assert.That(index, Is.GreaterThanOrEqualTo(0));
+        Assert.That(selector.Items.OfType<DiffViewerEncodingChoice>().Any(choice => choice.Name == name), Is.True,
+            "The isolated legacy profile must include the requested encoding in the real selector: " + name);
         Assert.That(selector.IsEffectivelyVisible && selector.IsEnabled, Is.True);
         selector.SelectedIndex = index + 1;
     }
@@ -276,6 +278,7 @@ public class ViewerHostLoadFailureTests
             try
             {
                 Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(fixture._temporary, "configuration"));
+                LegacyViewerEncodingPreferences.Seed(Path.Combine(fixture._temporary, "configuration"));
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
                 fixture.Repository = await GitRepository.InitAsync(Path.Combine(fixture._temporary, "repository"), new GitInitOptions("main"));
                 await fixture.Repository.SetConfigAsync("user.name", "Viewer Load Tester");

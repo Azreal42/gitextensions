@@ -16,6 +16,7 @@ public class FileEncodingViewTests
     [AvaloniaTest]
     public async Task RealLegacyBlobSelectorRedecodesRememberedBytesInBothThemesWithoutGitMutation()
     {
+        using LegacyViewerEncodingPreferences.TemporaryProfile preferences = new();
         using FileFixture fixture = await FileFixture.CreateAsync("iso-8859-1");
         byte[] bytes = GitFileEncodingCodec.GetEncoding("windows-1252").GetBytes("été € ‘quotes’\r\n42\n");
         File.WriteAllBytes(fixture.File, bytes);

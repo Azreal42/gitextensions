@@ -23,6 +23,7 @@ public class ViewerTruncatedPreviewTests
         try
         {
             Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(temporary, "configuration"));
+            LegacyViewerEncodingPreferences.Seed(Path.Combine(temporary, "configuration"));
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
             GitRepository repository = await GitRepository.InitAsync(Path.Combine(temporary, "repository"), new GitInitOptions("main"));
             await repository.SetConfigAsync("user.name", "Preview Tester");
@@ -110,6 +111,8 @@ public class ViewerTruncatedPreviewTests
     {
         int index = GitFileEncodingCodec.AvailableEncodings.ToList().FindIndex(choice => choice.Name == name);
         Assert.That(index, Is.GreaterThanOrEqualTo(0));
+        Assert.That(selector.Items.OfType<DiffViewerEncodingChoice>().Any(choice => choice.Name == name), Is.True,
+            "The isolated legacy profile must include the requested encoding in the real selector: " + name);
         Assert.That(selector.IsEnabled && selector.IsEffectivelyVisible, Is.True);
         selector.SelectedIndex = index + 1;
     }

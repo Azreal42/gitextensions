@@ -217,7 +217,8 @@ public sealed class DiffViewerToolbarOverflowTests
         internal Window Window { get; }
         internal Fixture()
         {
-            View = new(Source, new DiffViewerPreferencesStore(DirectoryPath)) { SyntaxPath = "file.cs", DocumentIdentity = "fixture/file.cs/HEAD-worktree" };
+            AvailableEncodingsPreferencesStore encodings = LegacyViewerEncodingPreferences.Seed(DirectoryPath);
+            View = new(Source, new DiffViewerPreferencesStore(DirectoryPath), encodings) { SyntaxPath = "file.cs", DocumentIdentity = "fixture/file.cs/HEAD-worktree" };
             Bar.SetNames("Probe"); View.ShowDocument(Document());
             DockPanel content = new(); DockPanel.SetDock(Outside, Dock.Bottom); content.Children.Add(Outside); content.Children.Add(View);
             Window = new() { Width = 850, Height = 320, Content = content }; Window.Show(); Pump();
