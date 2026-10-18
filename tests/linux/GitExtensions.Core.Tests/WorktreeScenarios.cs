@@ -18,6 +18,11 @@ internal static class WorktreeScenarios
         ("worktree prune streams native output and preserves locked missing registrations", PruneAsync),
         ("worktree removal retains native submodule safety unless discard is explicit", SubmodulesAsync),
         ("worktree creation operates from bare and linked repositories without changing their source checkout", BareLinkedAsync),
+        ("worktree creation from absorbed main and linked children preserves absolute native metadata and both indexes", AbsorbedAbsoluteAsync),
+        ("worktree creation from absorbed main and linked children preserves relative native metadata and both indexes", AbsorbedRelativeAsync),
+        ("worktree absorbed child native hook failure retains created branch registration diagnostics and original indexes", AbsorbedHookFailureAsync),
+        ("worktree absorbed main association rejects a foreign configured checkout before creation", AbsorbedForeignRootAsync),
+        ("worktree absorbed main opening rejects byte-identical replacement of its git marker", AbsorbedReplacedMarkerAsync),
         ("worktree post-checkout hook failure retains actual native partial state and output", HookFailureAsync),
         ("worktree cancellation joins native hook processes without inventing rollback", CancellationAsync),
         ("worktree pre-cancellation prevents all native worktree mutations", PreCancellationAsync),
@@ -205,6 +210,134 @@ internal static class WorktreeScenarios
         WorktreeOperationResult another = await linked.CreateWorktreeAsync(new(f.Target("from-linked"), "HEAD", "another"));
         Check(another.Result.Success && (await linked.GetStatusAsync()).Branch == "main" && await f.Repository.ResolveRevisionAsync("HEAD") == f.Initial,
             "Creating from a linked repository preserves both source checkouts.");
+    }
+
+    private static Task AbsorbedAbsoluteAsync() => AbsorbedCreationAsync(relative: false);
+    private static Task AbsorbedRelativeAsync() => AbsorbedCreationAsync(relative: true);
+    private static async Task AbsorbedCreationAsync(bool relative)
+    {
+        using AbsorbedFixture f = await AbsorbedFixture.CreateAsync(relative);
+        string before = await f.OriginalStateAsync();
+        WorktreeSnapshot main = (await f.Child.GetWorktreeSnapshotsAsync()).Single(tree => tree.IsMain);
+        Check(main.Path == f.Child.Path && main.IsCurrent && main.ValidationError is null && !main.CanOpen && !main.CanRemove,
+            "Git's metadata-only main listing must bind to the real absorbed checkout, not expose the common directory as its worktree.");
+        string target = f.Parent.Target(relative ? "relative child λ" : "absolute child λ");
+        string input = relative ? Path.GetRelativePath(f.Child.Path, target) : target;
+        WorktreeOperationResult created = await f.Child.CreateWorktreeAsync(new(input, "HEAD", "first-linked"));
+        Check(created.Result.Success && created.Worktree?.Path == target && created.Worktree.CanOpen && created.Worktree.ValidationError is null,
+            "Managed creation from the actual absorbed checkout succeeds without a native setup workaround.");
+        Check(created.UsesRelativePaths == relative && created.EnabledRelativeWorktreeExtension == relative,
+            "The submodule uses native relative/absolute metadata and reports its compatibility extension accurately.");
+        string marker = await File.ReadAllTextAsync(Path.Combine(target, ".git"));
+        Check(Path.IsPathRooted(marker[8..].TrimEnd('\n')) != relative, "The actual new .git pointer agrees with the requested path mode.");
+        GitRepository linked = await GitRepository.OpenAsync(target);
+        IReadOnlyList<WorktreeSnapshot> fromLinked = await linked.GetWorktreeSnapshotsAsync();
+        WorktreeSnapshot linkedMain = fromLinked.Single(tree => tree.IsMain);
+        Check(linkedMain.Path == f.Child.Path && !linkedMain.IsCurrent && linkedMain.CanOpen && !linkedMain.CanRemove
+            && await linked.ValidateWorktreeOpenAsync(linkedMain) == f.Child.Path,
+            "A linked child can safely reopen its real main checkout rather than its absorbed metadata directory.");
+        WorktreeSnapshot current = fromLinked.Single(tree => tree.IsCurrent);
+        Check(current.Path == target && current.ValidationError is null && !current.CanRemove, "The linked source remains current and protected.");
+        await Expect<WorktreeOperationException>(() => linked.DeleteWorktreeAsync(linkedMain, true, true));
+        await Expect<WorktreeOperationException>(() => linked.DeleteWorktreeAsync(current, true, true));
+        string second = f.Parent.Target("second linked λ");
+        WorktreeOperationResult another = await linked.CreateWorktreeAsync(new(Path.GetRelativePath(linked.Path, second), "HEAD", "second-linked"));
+        Check(another.Result.Success && another.Worktree?.Path == second && another.Worktree.ValidationError is null && another.UsesRelativePaths == relative,
+            "Creation from a linked absorbed child shares the same valid main association and path policy.");
+        Check(await f.OriginalStateAsync() == before && await f.Child.ResolveRevisionAsync("first-linked") == f.Head
+            && await f.Child.ResolveRevisionAsync("second-linked") == f.Head,
+            "Both creations preserve the original child HEAD/index/marker, parent index/HEAD/worktree and existing branches.");
+    }
+
+    private static async Task AbsorbedHookFailureAsync()
+    {
+        using AbsorbedFixture f = await AbsorbedFixture.CreateAsync(relative: false);
+        string hooks = f.Parent.Target("absorbed-hooks"); Directory.CreateDirectory(hooks);
+        string hook = Path.Combine(hooks, "post-checkout");
+        await File.WriteAllTextAsync(hook, "#!/bin/sh\nprintf 'absorbed-native-post-checkout\\n' >&2\nexit 1\n");
+        if (!OperatingSystem.IsWindows()) { File.SetUnixFileMode(hook, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
+        await f.Child.SetConfigAsync("core.hooksPath", hooks);
+        string before = await f.OriginalStateAsync(); Pipes pipes = new();
+        WorktreeOperationResult result = await f.Child.CreateWorktreeAsync(new(f.Parent.Target("absorbed-hook-failure"), "HEAD", "absorbed-hook-failure"), outputReceived: pipes.Receive);
+        Check(!result.Result.Success && result.Worktree?.Exists == true && result.Worktree.ValidationError is null
+            && await f.Child.ResolveRevisionAsync("absorbed-hook-failure") == f.Head
+            && Encoding.UTF8.GetString(pipes.Error).Contains("absorbed-native-post-checkout", StringComparison.Ordinal),
+            "The absorbed source must reach native Git and retain its actual partial branch/registration plus hook diagnostics.");
+        Check(await f.OriginalStateAsync() == before, "A native hook failure does not roll back or change either original checkout/index.");
+    }
+
+    private static async Task AbsorbedForeignRootAsync()
+    {
+        using AbsorbedFixture f = await AbsorbedFixture.CreateAsync(relative: false);
+        using RepositoryFixture unrelated = await RepositoryFixture.CreateAsync();
+        string before = await f.OriginalStateAsync();
+        await f.Child.SetConfigAsync("core.worktree", unrelated.Repository.Path);
+        WorktreeOperationException error = await Expect<WorktreeOperationException>(() => f.Child.CreateWorktreeAsync(new(f.Parent.Target("foreign-refused"), "HEAD", "foreign-refused")));
+        Check(!error.HasRepositoryChanges && !Directory.Exists(f.Parent.Target("foreign-refused"))
+            && (await f.Child.GetReferencesAsync()).All(reference => reference.Name != "refs/heads/foreign-refused")
+            && (await unrelated.Repository.GetReferencesAsync()).All(reference => reference.Name != "refs/heads/foreign-refused"),
+            "A common-directory listing plus core.worktree is insufficient: the target checkout must point back to the same Git/common directory.");
+        Check(await f.OriginalStateAsync() == before, "Refusing a foreign root preserves child and parent checkout/index bytes.");
+    }
+
+    private static async Task AbsorbedReplacedMarkerAsync()
+    {
+        using AbsorbedFixture f = await AbsorbedFixture.CreateAsync(relative: false);
+        WorktreeOperationResult created = await f.Child.CreateWorktreeAsync(new(f.Parent.Target("marker-linked"), "HEAD", "marker-linked"));
+        Check(created.Result.Success, "The linked fixture must be created by the product API itself.");
+        GitRepository linked = await GitRepository.OpenAsync(f.Parent.Target("marker-linked"));
+        WorktreeSnapshot main = (await linked.GetWorktreeSnapshotsAsync()).Single(tree => tree.IsMain);
+        Check(main.CanOpen && main.Path == f.Child.Path, "Capture a valid real main-checkout binding before replacement.");
+        string marker = Path.Combine(f.Child.Path, ".git"); byte[] bytes = await File.ReadAllBytesAsync(marker);
+        string replacement = marker + ".replacement"; await File.WriteAllBytesAsync(replacement, bytes); File.Move(replacement, marker, overwrite: true);
+        WorktreeOperationException error = await Expect<WorktreeOperationException>(() => linked.ValidateWorktreeOpenAsync(main));
+        Check(!error.HasRepositoryChanges && Bytes(bytes, await File.ReadAllBytesAsync(marker)) && Directory.Exists(f.Child.Path),
+            "Even a byte-identical replacement .git file invalidates the previously selected main checkout through the existing identity guard.");
+    }
+
+    private sealed class AbsorbedFixture : IDisposable
+    {
+        private readonly RepositoryFixture _source;
+        private AbsorbedFixture(Fixture parent, RepositoryFixture source, GitRepository child, string gitDirectory, string head)
+        { Parent = parent; _source = source; Child = child; GitDirectory = gitDirectory; Head = head; }
+        internal Fixture Parent { get; }
+        internal GitRepository Child { get; }
+        internal string GitDirectory { get; }
+        internal string Head { get; }
+        internal static async Task<AbsorbedFixture> CreateAsync(bool relative)
+        {
+            Fixture parent = await Fixture.CreateAsync(); RepositoryFixture? source = null;
+            try
+            {
+                source = await RepositoryFixture.CreateAsync();
+                parent.Root.Write("parent-staged.txt", "original parent bytes\n");
+                await parent.Repository.RunAsync(["-c", "protocol.file.allow=always", "submodule", "add", "--name", "absorbed", "--", source.Repository.Path, "modules/child [x]* λ"]);
+                await parent.Repository.StageAllAsync(); await parent.Repository.CommitAsync("Registered absorbed child");
+                GitRepository child = await GitRepository.OpenAsync(parent.Root.File("modules/child [x]* λ"));
+                await RepositoryFixture.ConfigureAsync(child);
+                await child.SetConfigAsync("worktree.useRelativePaths", relative ? "true" : "false");
+                GitRepositoryInfo info = await child.GetInfoAsync();
+                Check(File.Exists(Path.Combine(child.Path, ".git")) && info.GitDirectory == info.CommonDirectory
+                    && info.GitDirectory != Path.Combine(child.Path, ".git"), "A real absorbed Git module is required.");
+                parent.Root.Write("parent-staged.txt", "staged parent bytes\n"); await parent.Repository.StageAsync(["parent-staged.txt"]);
+                parent.Root.Write("parent-staged.txt", "later unstaged parent bytes\n"); parent.Root.Write("parent-untracked.txt", "untracked parent bytes\n");
+                await File.WriteAllTextAsync(Path.Combine(child.Path, "child-staged.txt"), "staged child bytes\n"); await child.StageAsync(["child-staged.txt"]);
+                await File.AppendAllTextAsync(Path.Combine(child.Path, "seed.txt"), "unstaged child bytes\n");
+                await File.WriteAllTextAsync(Path.Combine(child.Path, "child-untracked.txt"), "untracked child bytes\n");
+                return new(parent, source, child, info.GitDirectory, await child.ResolveRevisionAsync("HEAD"));
+            }
+            catch { source?.Dispose(); parent.Dispose(); throw; }
+        }
+        internal async Task<string> OriginalStateAsync()
+        {
+            string[] paths = [Path.Combine(GitDirectory, "HEAD"), Path.Combine(GitDirectory, "index"), Path.Combine(Child.Path, ".git"),
+                Path.Combine(Child.Path, "seed.txt"), Path.Combine(Child.Path, "child-staged.txt"), Path.Combine(Child.Path, "child-untracked.txt"),
+                Parent.Root.File(".git/HEAD"), Parent.Root.File(".git/index"), Parent.Root.File(".git/config"), Parent.Root.File(".gitmodules"),
+                Parent.Root.File("seed.txt"), Parent.Root.File("parent-staged.txt"), Parent.Root.File("parent-untracked.txt")];
+            return string.Join("\n", paths.Select(path => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)))))
+                + "\n" + await Child.ResolveRevisionAsync("main") + "\n" + await Parent.Repository.ResolveRevisionAsync("main");
+        }
+        public void Dispose() { Parent.Dispose(); _source.Dispose(); }
     }
 
     private static async Task HookFailureAsync()

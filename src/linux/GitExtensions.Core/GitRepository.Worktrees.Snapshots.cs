@@ -35,6 +35,23 @@ public sealed partial class GitRepository
                 {
                     if (!root.Identity.Value.IsDirectory) { throw new IOException("The worktree path is not a directory."); }
                     GitRepositoryInfo actual = await DiscoverRepositoryAsync(tree.Path, _runner, token).ConfigureAwait(false);
+                    if (index == 0 && !tree.IsBare && SameWorktreeNode(root, common))
+                    {
+                        // Git lists absorbed modules by their common directory. Bind its real
+                        // checkout only after verifying that checkout points back to this metadata.
+                        WorktreeNode main = await ReadWorktreeNodeAsync(actual.RootPath, token).ConfigureAwait(false);
+                        GitRepositoryInfo checkout = await DiscoverRepositoryAsync(actual.RootPath, _runner, token).ConfigureAwait(false);
+                        if (checkout.IsBare
+                            || !SameWorktreeNode(common, await ReadWorktreeNodeAsync(actual.GitDirectory, token).ConfigureAwait(false))
+                            || !SameWorktreeNode(common, await ReadWorktreeNodeAsync(checkout.GitDirectory, token).ConfigureAwait(false))
+                            || !SameWorktreeNode(common, await ReadWorktreeNodeAsync(checkout.CommonDirectory, token).ConfigureAwait(false))
+                            || !SameWorktreeNode(main, await ReadWorktreeNodeAsync(checkout.RootPath, token).ConfigureAwait(false)))
+                        { throw new IOException("The main checkout does not point back to the listed Git metadata."); }
+                        root = main;
+                        tree = tree with { Path = actual.RootPath };
+                        isCurrent = SameWorktreeNode(root, current);
+                        actual = checkout;
+                    }
                     if (!SameWorktreeNode(common, await ReadWorktreeNodeAsync(actual.CommonDirectory, token).ConfigureAwait(false))
                         || !SameWorktreeNode(root, await ReadWorktreeNodeAsync(actual.RootPath, token).ConfigureAwait(false)) || actual.IsBare != tree.IsBare)
                     { throw new IOException("The directory belongs to a different Git repository or worktree."); }
