@@ -36,6 +36,11 @@
     </ItemGroup>
   </Target>
   <ItemGroup>
+    <!-- Preserve the original completion value, matching, metadata and extraction rules. -->
+    <Compile Include="../../app/GitUI/AutoCompletion/AutoCompleteWord.cs" Link="Shared/AutoCompleteWord.cs" />
+    <Compile Include="../../app/GitUI/AutoCompletion/IAutoCompleteProvider.cs" Link="Shared/IAutoCompleteProvider.cs" />
+    <Compile Include="../../app/GitUI/AutoCompletion/CommitMessageMetadataProvider.cs" Link="Shared/CommitMessageMetadataProvider.cs" />
+    <Compile Include="../../app/GitUI/AutoCompletion/AutoCompleteRegexes.cs" Link="Shared/AutoCompleteRegexes.cs" />
     <!-- Preserve the Windows repository settings XML format without its cache/watchers. -->
     <Compile Include="../../app/GitCommands/XmlSerializableDictionary.cs" Link="Shared/XmlSerializableDictionary.cs" />
     <!-- Keep the upstream pure identity and hosting parsers as the source of truth. -->

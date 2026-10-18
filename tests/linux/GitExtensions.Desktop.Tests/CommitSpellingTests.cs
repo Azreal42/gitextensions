@@ -340,13 +340,13 @@ public sealed class CommitSpellingTests
     }
 
     [AvaloniaTest]
-    public async Task TheMenuWritesOnlyItsGlobalFlagAndDiagnosesTheMissingGitCompletionProviders()
+    public async Task TheMenuWritesOnlyItsGlobalFlagWithoutOverwritingPeerPreferences()
     {
         using GitFixture git = await GitFixture.CreateAsync(); await using Host host = new(git.Repository, git.Output("profile"), "en-US");
         DesktopPreferences peer = host.Desktop.Load() with { Theme = "Dark", HistoryLimit = 713, ShowRepoCurrentBranch = false };
         host.Desktop.Save(peer);
         host.Editor.Text = "wrld"; await host.Checked(1); await host.OpenMenu();
-        Assert.That(ToolTip.GetTip(host.MenuItem("ProvideAutocompletion")) as string, Does.Contain("Git file").And.Contain("not implemented"));
+        Assert.That(ToolTip.GetTip(host.MenuItem("ProvideAutocompletion")), Is.Null, "Git completion now has a real controller; remove its obsolete unavailable-feature diagnostic.");
         Invoke(host.MenuItem("ProvideAutocompletion")); host.Menu.Close();
         DesktopPreferences saved = host.Desktop.Load();
         Assert.That(saved.ProvideAutocompletion, Is.False); Assert.That(saved.Theme, Is.EqualTo("Dark"));

@@ -25,6 +25,7 @@ internal sealed class CommitSpellingController
     private readonly HashSet<Task> _work = [];
     private readonly List<SpellCheckService> _services = [];
     private readonly HashSet<SpellingSpan> _ignored = [];
+    private readonly HashSet<string> _completionWords = new(StringComparer.Ordinal);
     private readonly ContextMenu _menu = new() { Name = "CommitSpellingMenu" };
     private CancellationTokenSource? _debounce;
     private DesktopPreferences? _accepted;
@@ -43,6 +44,7 @@ internal sealed class CommitSpellingController
     private string? _error;
     internal TextBlock Notice { get; } = new() { Name = "CommitSpellingStatus", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(3, 1), IsVisible = false };
     internal Task Completion => _close ?? Task.WhenAll(_work.ToArray());
+    internal event Action<DesktopPreferences>? PreferencesAccepted;
     internal IReadOnlyList<SpellingSpan> Misspellings => _result?.Misspellings.Where(item => !_ignored.Contains(item)).ToArray() ?? [];
 
     internal CommitSpellingController(GitRepository repository, SpellingEditorView view, PreferencesStore preferences,
@@ -75,6 +77,7 @@ internal sealed class CommitSpellingController
         DesktopPreferences accepted;
         try { accepted = _preferences.Load(); _accepted = accepted; }
         catch (Exception error) { Report(error); return; }
+        PreferencesAccepted?.Invoke(accepted);
         Track(() => ReloadSettingsAsync(accepted));
     }
 
@@ -84,6 +87,7 @@ internal sealed class CommitSpellingController
         InvalidateMenu();
         bool dictionaryChanged = _accepted?.Dictionary != value.Dictionary;
         _accepted = value;
+        PreferencesAccepted?.Invoke(value);
         if (!_started) { return; }
         if (dictionaryChanged || _settings is null) { Track(() => ReloadSettingsAsync(value)); }
         else { Schedule(); }
@@ -116,10 +120,32 @@ internal sealed class CommitSpellingController
         UpdateNotice();
         Track(async () =>
         {
-            try { await created.Ready; }
+            try
+            {
+                // Admission happens synchronously, before Schedule can queue another Check.
+                await created.AddCompletionWordsAsync(_completionWords.ToArray(), _lifetime.Token);
+                if (!_closing && ReferenceEquals(created, _service)) { Schedule(); }
+            }
             catch (Exception error)
             { if (!_closing && ReferenceEquals(created, _service)) { Report(error); } }
         });
+    }
+
+
+    internal void AddCompletionWords(IReadOnlyList<string> words)
+    {
+        if (_closing) { return; }
+        bool changed = false;
+        foreach (string word in words) { changed |= _completionWords.Add(word); }
+        if (!changed || _service is not SpellCheckService service) { return; }
+        _revision++; _result = null; _debounce?.Cancel();
+        _view.SetRanges(_editor.Text ?? "", []);
+        string[] snapshot = _completionWords.ToArray();
+        Track(async () =>
+        {
+            await service.AddCompletionWordsAsync(snapshot, _lifetime.Token);
+            if (!_closing && ReferenceEquals(service, _service)) { Schedule(); }
+        }, () => ReferenceEquals(service, _service));
     }
 
     private void EditorChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
@@ -278,7 +304,6 @@ internal sealed class CommitSpellingController
         marks.ToggleType = MenuItemToggleType.CheckBox; marks.IsChecked = _accepted?.MarkIllFormedLinesInCommitMsg == true; items.Add(marks);
         MenuItem completion = Item("ProvideAutocompletion", "Provide auto completion", () => SaveFlag(true), _accepted is not null);
         completion.ToggleType = MenuItemToggleType.CheckBox; completion.IsChecked = _accepted?.ProvideAutocompletion == true;
-        ToolTip.SetTip(completion, T("Spelling suggestions are available. Git file and metadata completion is not implemented."));
         items.Add(completion);
         return items.ToArray();
     }

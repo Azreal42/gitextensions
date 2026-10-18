@@ -47,11 +47,14 @@ public sealed partial class CommitDialog : Window
     private readonly TextBox _message = new() { Name = "Message", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private readonly SpellingEditorView _spellingView;
     private readonly CommitSpellingController _spelling;
+    private readonly CommitCompletionController _completion;
+    private readonly string _completionProfileDirectory;
+    private readonly BlamePreferencesStore _diffAlgorithmPreferences;
     private Task? _spellingClose;
     private bool _spellingDrained;
     private bool _spellingClosing;
     private Window? _spellingClosingOwner;
-    internal Task SpellingCloseCompletion => _spelling.Completion;
+    internal Task SpellingCloseCompletion => Task.WhenAll(_completion.Completion, _spelling.Completion);
     private readonly CheckBox _amend = new() { Name = "Amend", Height = 24, MinHeight = 24 };
     private readonly CheckBox _resetAuthor = new() { Name = "ResetAuthor", IsVisible = false, Height = 24, MinHeight = 24 };
     private readonly TextBox _author = new() { Name = "AuthorOverride", Watermark = "name <mail>", Width = 250 };
@@ -138,7 +141,14 @@ public sealed partial class CommitDialog : Window
         _preferencesStore = preferencesStore ?? new CommitPreferencesStore();
         string profileRoot = Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!;
         _spellingView = new(_message);
-        _spelling = new(repository, _spellingView, new PreferencesStore(profileRoot), readSettingsAsync: readSpellingSettingsAsync);
+        PreferencesStore desktopPreferences = new(profileRoot);
+        _completionProfileDirectory = Path.GetDirectoryName(desktopPreferences.FilePath)!;
+        _diffAlgorithmPreferences = new(profileRoot);
+        _spelling = new(repository, _spellingView, desktopPreferences, readSettingsAsync: readSpellingSettingsAsync);
+        _completion = new(_spellingView);
+        _completion.SetEnabled(false);
+        _spelling.PreferencesAccepted += preferences => _completion.SetEnabled(preferences.ProvideAutocompletion);
+        _completion.CorpusPublished += _spelling.AddCompletionWords;
         _preferences = _preferencesStore.Load();
         Title = C("$this", "Commit");
         Width = 1100;
@@ -282,6 +292,12 @@ public sealed partial class CommitDialog : Window
         };
         AddHandler(KeyDownEvent, (sender, args) =>
         {
+            // The editor's completion owns its navigation/acceptance before form shortcuts.
+            if (_message.IsKeyboardFocusWithin)
+            {
+                _completion.HandleKeyDown(args);
+                if (args.Handled) { return; }
+            }
             // ProcessCmdKey resolves configured commands before native dialog
             // keys. An unassigned Escape still reaches the viewer's selection
             // handler before the form's ordinary Close fallback.
@@ -323,7 +339,7 @@ public sealed partial class CommitDialog : Window
             }
             if (args.Cancel || _spellingDrained) { return; }
             _spellingClosing = true;
-            Task drain = _spelling.BeginClose();
+            Task drain = Task.WhenAll(_completion.BeginClose(), _spelling.BeginClose());
             if (drain.IsCompletedSuccessfully) { _spellingDrained = true; _spellingClosing = false; return; }
             args.Cancel = true;
             if (_spellingClose is null)
@@ -454,6 +470,7 @@ public sealed partial class CommitDialog : Window
         DockPanel.SetDock(_output, Dock.Bottom);
         message.Children.Add(_output);
         DockPanel.SetDock(_spelling.Notice, Dock.Bottom); message.Children.Add(_spelling.Notice);
+        DockPanel.SetDock(_completion.Notice, Dock.Bottom); message.Children.Add(_completion.Notice);
         message.Children.Add(_spellingView);
         Grid.SetColumn(message, 2);
         editor.Children.Add(message);
@@ -543,6 +560,10 @@ public sealed partial class CommitDialog : Window
         _headCommit = history.FirstOrDefault();
         _target.SelectedItem = targets.FirstOrDefault(commit => commit.Hash == selectedTarget?.Hash);
         ApplyFileLists();
+        // Reuse the successful status snapshot; typing never rereads Git or rebuilds these lists.
+        GitCommitAutoCompleteProvider completionProvider = new(_repository, _status.Changes,
+            _completionProfileDirectory, _diffAlgorithmPreferences.Load().UseHistogramDiffAlgorithm);
+        _completion.Refresh(completionProvider.GetAutoCompleteWordsAsync);
         await LoadDiffAsync();
     }
 

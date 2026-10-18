@@ -59,6 +59,11 @@
     <Content Include="../../app/GitUI/Translation/*.xlf" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Pure upstream word-boundary rules shared by Commit spelling and Git completion. -->
+    <Compile Include="../../app/GitUI/SpellChecker/WordAtCursorExtractor.cs" Link="Shared/SpellChecker/WordAtCursorExtractor.cs" />
+    <Compile Include="../../app/GitUI/SpellChecker/SpellCheckerHelper.cs" Link="Shared/SpellChecker/SpellCheckerHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Pure Windows avatar settings and formatter; no WinForms/image provider code. -->
     <Compile Include="../../app/GitCommands/Settings/AvatarProvider.cs" Link="Shared/Avatars/AvatarProvider.cs" />
     <Compile Include="../../app/GitCommands/Settings/AvatarFallbackType.cs" Link="Shared/Avatars/AvatarFallbackType.cs" />

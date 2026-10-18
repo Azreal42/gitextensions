@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Immutable;
 using System.Globalization;
 
 namespace GitExtensions.Linux.Spelling;
@@ -70,6 +71,29 @@ public sealed class SpellCheckService : IAsyncDisposable
         UserDictionaryStore.ValidateWord(word);
         if (maximum < 1) { throw new ArgumentOutOfRangeException(nameof(maximum)); }
         return Enqueue(token => IsEnabled ? Engine(token).Suggest(word, maximum, token) : new(_name, word, []), cancellationToken);
+    }
+
+    /// <summary>
+    /// Appends exact, case-sensitive completion words only to this editor's engine memory.
+    /// The captured words remain until that engine retires; no user dictionary is read or written.
+    /// A canceled waiter may return before admitted raw work has drained.
+    /// </summary>
+    public Task AddCompletionWordsAsync(IEnumerable<string> words, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(words);
+        cancellationToken.ThrowIfCancellationRequested();
+        ImmutableArray<string> captured = words.ToImmutableArray();
+        return Enqueue(token =>
+        {
+            if (IsEnabled)
+            {
+                // Enqueue has awaited Ready. Do not use Engine(token), whose normal
+                // Check/Suggest path refreshes user.dic for other editors' persistent additions.
+                NetSpellEngine engine = _engine ?? throw new InvalidOperationException("Dictionary initialization did not produce an engine.");
+                engine.AddCompletionWords(captured, token);
+            }
+            return true;
+        }, cancellationToken);
     }
 
     /// <summary>

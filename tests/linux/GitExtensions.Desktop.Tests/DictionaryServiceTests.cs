@@ -227,6 +227,145 @@ public class DictionaryServiceTests
         Assert.That(service.CloseCompletion.IsCompletedSuccessfully, Is.True);
     }
 
+    [Test]
+    public async Task CompletionWordsAreCaseSensitiveAppendOnlyAndBelongOnlyToTheirEditorEngine()
+    {
+        using Profile profile = new(); DictionaryCatalog catalog = profile.MinimalCatalog();
+        const string first = "codexCompletionAlphaqqq", wrongCase = "codexcompletionalphaqqq", second = "codexCompletionBetaqqq";
+        byte[] asset = File.ReadAllBytes(catalog.Resolve("en-US").FilePath);
+        await using (SpellCheckService service = new(catalog, "en-US", profile.UserFile))
+        await using (SpellCheckService other = new(catalog, "en-US", profile.UserFile))
+        {
+            Assert.That((await service.CheckAsync(first + " " + wrongCase)).Misspellings.Select(item => item.Word), Is.EqualTo(new[] { first, wrongCase }));
+            await service.AddCompletionWordsAsync([first, first, "file name.cs", "Signed-off-by: ", ""]);
+            await service.AddCompletionWordsAsync([second]);
+            Assert.That((await service.CheckAsync(first + " " + wrongCase + " " + second)).Misspellings.Select(item => item.Word), Is.EqualTo(new[] { wrongCase }),
+                "A later corpus appends to the original case-sensitive HashSet, rather than replacing or normalizing it.");
+            Assert.That((await other.CheckAsync(first + " " + second)).Misspellings.Select(item => item.Word), Is.EqualTo(new[] { first, second }),
+                "Sharing a profile must not share temporary completion exemptions between editor engines.");
+            Assert.That(File.Exists(profile.UserFile), Is.False); Assert.That(Directory.Exists(Path.GetDirectoryName(profile.UserFile)), Is.False);
+            Assert.That(File.ReadAllBytes(catalog.Resolve("en-US").FilePath), Is.EqualTo(asset));
+        }
+        await using SpellCheckService reopened = new(catalog, "en-US", profile.UserFile);
+        Assert.That((await reopened.CheckAsync(first)).Misspellings.Single().Word, Is.EqualTo(first),
+            "A new engine requires explicit corpus reinjection; completion words are never persisted.");
+    }
+
+    [Test]
+    public async Task CompletionPublicationDoesNotReadOrRewriteTheExplicitUserFile()
+    {
+        using Profile profile = new(); DictionaryCatalog catalog = profile.MinimalCatalog();
+        await using SpellCheckService service = new(catalog, "en-US", profile.UserFile);
+        await service.Ready;
+        Directory.CreateDirectory(Path.GetDirectoryName(profile.UserFile)!);
+        byte[] invalid = [0xff, 0xff, 0xff]; File.WriteAllBytes(profile.UserFile, invalid);
+        await service.AddCompletionWordsAsync(["codexcompletionqqq"]);
+        Assert.That(File.ReadAllBytes(profile.UserFile), Is.EqualTo(invalid),
+            "A pure in-memory publication must neither reload invalid user UTF-8 nor rewrite that file.");
+        File.Delete(profile.UserFile);
+        Assert.That((await service.CheckAsync("codexcompletionqqq")).Misspellings, Is.Empty);
+        Assert.That(File.Exists(profile.UserFile), Is.False); Assert.That(Directory.GetFiles(Path.GetDirectoryName(profile.UserFile)!), Is.Empty);
+    }
+
+    [Test]
+    public async Task NoneAcceptsTemporaryCompletionWordsWithoutLoadingAnyEngineAssetOrUserFile()
+    {
+        using Profile profile = new(); string missing = Path.Combine(profile.Root, "missing-assets");
+        bool loaded = false;
+        await using SpellCheckService service = new(new(missing), "None", profile.UserFile, (_, _) =>
+        { loaded = true; throw new AssertionException("None must never invoke an engine loader."); });
+        await service.AddCompletionWordsAsync(["codexcompletionqqq", "Reviewed-by: ", "file name.cs"]);
+        Assert.That((await service.CheckAsync("codexcompletionqqq")).Misspellings, Is.Empty);
+        Assert.That(loaded, Is.False); Assert.That(Directory.Exists(missing), Is.False);
+        Assert.That(Directory.Exists(Path.GetDirectoryName(profile.UserFile)), Is.False);
+    }
+
+    [Test]
+    public async Task CompletionWordsAreCapturedBeforeTheQueueAndPrecedeTheFollowingRealCheck()
+    {
+        using Profile profile = new(); DictionaryCatalog catalog = profile.MinimalCatalog();
+        using ManualResetEventSlim release = new(false);
+        TaskCompletionSource<bool> entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        SpellCheckService service = new(catalog, "en-US", profile.UserFile, (resource, _) =>
+        { entered.TrySetResult(true); release.Wait(); return NetSpellEngine.Load(resource, CancellationToken.None); });
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            List<string> words = ["codexcapturedqqq"];
+            Task publishing = service.AddCompletionWordsAsync(words);
+            words[0] = "codexmutatedqqq"; words.Clear();
+            Task<SpellCheckResult> check = service.CheckAsync("codexcapturedqqq codexmutatedqqq");
+            Assert.That(publishing.IsCompleted, Is.False); Assert.That(check.IsCompleted, Is.False);
+            release.Set(); await publishing.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.That((await check.WaitAsync(TimeSpan.FromSeconds(5))).Misspellings.Select(item => item.Word), Is.EqualTo(new[] { "codexmutatedqqq" }),
+                "The original captured words must be installed before the later serialized check, despite caller mutation.");
+            Assert.That(File.Exists(profile.UserFile), Is.False);
+        }
+        finally { release.Set(); await service.DisposeAsync(); }
+        Assert.That(service.CloseCompletion.IsCompletedSuccessfully, Is.True);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task ACanceledCompletionWaiterCannotAbandonTheOwnedLoaderOrTheQueuedOrder(bool closeWhileLoading)
+    {
+        using Profile profile = new(); DictionaryCatalog catalog = profile.MinimalCatalog();
+        using ManualResetEventSlim release = new(false);
+        TaskCompletionSource<bool> entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> rawReturned = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        SpellCheckService service = new(catalog, "en-US", profile.UserFile, (resource, _) =>
+        {
+            entered.TrySetResult(true); release.Wait();
+            NetSpellEngine engine = NetSpellEngine.Load(resource, CancellationToken.None);
+            rawReturned.TrySetResult(true); return engine;
+        });
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            using CancellationTokenSource consumer = new();
+            Task publishing = service.AddCompletionWordsAsync(["codexcanceledqqq"], consumer.Token);
+            Task<SpellCheckResult> following = service.CheckAsync("codexcanceledqqq");
+            consumer.Cancel();
+            Assert.CatchAsync<OperationCanceledException>(async () => await publishing.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.That(rawReturned.Task.IsCompleted, Is.False); Assert.That(following.IsCompleted, Is.False);
+            Task? closing = closeWhileLoading ? service.BeginClose() : null;
+            if (closing is not null)
+            {
+                Assert.That(closing.IsCompleted, Is.False, "A canceled waiter cannot pretend the real gated loader and queued jobs are drained.");
+                Assert.Throws<ObjectDisposedException>(() => service.AddCompletionWordsAsync(["latewordqqq"]));
+            }
+            release.Set(); await rawReturned.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            if (closing is not null)
+            {
+                Assert.CatchAsync<OperationCanceledException>(async () => await following.WaitAsync(TimeSpan.FromSeconds(5)));
+                await closing.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.That(service.CloseCompletion.IsCompletedSuccessfully, Is.True);
+            }
+            else
+            {
+                Assert.That((await following.WaitAsync(TimeSpan.FromSeconds(5))).Misspellings.Single().Word, Is.EqualTo("codexcanceledqqq"),
+                    "Cancellation before the queued publication starts must not install its words or poison the following check.");
+                await service.AddCompletionWordsAsync(["codexlaterqqq"]);
+                Assert.That((await service.CheckAsync("codexlaterqqq")).Misspellings, Is.Empty);
+            }
+            Assert.That(File.Exists(profile.UserFile), Is.False);
+        }
+        finally { release.Set(); await service.DisposeAsync(); }
+    }
+
+    [Test]
+    public async Task APrecanceledCompletionPublicationDoesNotEnumerateItsInputOrAdmitWork()
+    {
+        using Profile profile = new(); bool enumerated = false;
+        await using SpellCheckService service = new(profile.MinimalCatalog(), "en-US", profile.UserFile);
+        using CancellationTokenSource consumer = new(); consumer.Cancel();
+        IEnumerable<string> Words() { enumerated = true; yield return "codexcanceledqqq"; }
+        Assert.Throws<OperationCanceledException>(() => service.AddCompletionWordsAsync(Words(), consumer.Token));
+        Assert.That(enumerated, Is.False);
+        Assert.That((await service.CheckAsync("codexcanceledqqq")).Misspellings.Single().Word, Is.EqualTo("codexcanceledqqq"));
+        Assert.That(File.Exists(profile.UserFile), Is.False);
+    }
+
     private static DictionaryCatalog Installed() => DictionaryCatalog.FromApplicationDirectory(AppContext.BaseDirectory);
 
     private static readonly IReadOnlyDictionary<string, string> ResourceHashes = new Dictionary<string, string>

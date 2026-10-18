@@ -101,6 +101,30 @@ internal sealed class SpellingEditorView : Grid, IDisposable
             .Select(rect => rect.Translate(new Vector(origin.X, origin.Y))).ToArray();
     }
 
+    /// <summary>The native presenter supplies the completion anchor, including wrapping and scroll offset.</summary>
+    internal Rect? GetCaretRectangle(int index)
+    {
+        if (_presenter is null || IsComposing || index < 0 || index > (Editor.Text?.Length ?? 0)
+            || _presenter.TranslatePoint(default, Editor) is not Point origin) { return null; }
+        var layout = _presenter.TextLayout;
+        if (_presenter.Bounds.Height < layout.Height)
+        {
+            origin = new(origin.X, origin.Y + (_presenter.VerticalAlignment switch
+            {
+                VerticalAlignment.Center => (_presenter.Bounds.Height - layout.Height) / 2,
+                VerticalAlignment.Bottom => _presenter.Bounds.Height - layout.Height,
+                _ => 0
+            }));
+        }
+        Rect character = layout.HitTestTextPosition(index);
+        Rect caret = new(origin.X + character.X, origin.Y + character.Y, 1, character.Height);
+        Rect clip = new(Editor.Bounds.Size);
+        if (_presenter.GetVisualAncestors().OfType<ScrollContentPresenter>().FirstOrDefault() is { } viewport
+            && viewport.TranslatePoint(default, Editor) is Point start)
+        { clip = clip.Intersect(new Rect(start, viewport.Bounds.Size)); }
+        return caret.Height > 0 && clip.Intersects(caret) ? caret : null;
+    }
+
     private void UpdatePresenter(object? sender, EventArgs args)
     {
         if (_disposed) { return; }

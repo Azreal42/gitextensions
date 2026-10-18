@@ -62,6 +62,13 @@ internal sealed class NetSpellEngine : IDisposable
         foreach (string word in words) { _dictionary.UserWords.Add(word, word); }
     }
 
+    internal void AddCompletionWords(ImmutableArray<string> words, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        _spelling.AddAutoCompleteWords(words);
+        token.ThrowIfCancellationRequested();
+    }
+
     internal SpellCheckResult Check(string text, CancellationToken token)
     {
         var spans = ImmutableArray.CreateBuilder<SpellingSpan>();
