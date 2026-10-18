@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "19bbfed707ecded0d2d7832069efbb310041b363",
-  "source_digest_sha256": "d93b58d25974127d81c118524a1266595191d31c6c29d33a474f0633c8a5df6e",
-  "scanned_csharp_files": 2093,
+  "code_reference_commit": "d975adafa9e496824af8984052e8790ce18222f2",
+  "source_digest_sha256": "c7b04d37b8a1cfb5c3065792f6c1fad8214abac83150a183cb68412ad7147236",
+  "scanned_csharp_files": 2101,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,7 +26,7 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 87,
+    "linux_window_types": 88,
     "linux_abstract_bases": 3,
     "linux_dynamic_factories": 33,
     "windows_dynamic_hosts": 2,
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/scripts-runtime-20261018/full-02/desktop.trx",
-    "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-    "trx_sha256": "c8d59658d4d7b59cf114160a883063002173c04c9f869ec451645197b8658413",
+    "trx": "artifacts/linux/tools-config-20261018/full-01/desktop.trx",
+    "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+    "trx_sha256": "7c671d0137497ea6892d8799d86d15f0cf93aadd7c3ef2c27386babc3a8dfca5",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-        "execution_source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-        "candidate_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-        "passed": 689,
-        "total": 689,
-        "execution_result": "artifacts/linux/scripts-runtime-20261018/full-02/core-result.json",
-        "build_result": "artifacts/linux/scripts-runtime-20261018/full-02/build-result.json",
-        "parent_verification": "artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json",
+        "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+        "execution_source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+        "candidate_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+        "passed": 703,
+        "total": 703,
+        "execution_result": "artifacts/linux/tools-config-20261018/full-01/core-result.json",
+        "build_result": "artifacts/linux/tools-config-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/tools-config-20261018/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-        "execution_source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-        "candidate_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+        "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+        "execution_source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+        "candidate_sha": "d975adafa9e496824af8984052e8790ce18222f2",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/scripts-runtime-20261018/full-02/plugins-result.json",
-        "build_result": "artifacts/linux/scripts-runtime-20261018/full-02/build-result.json",
-        "parent_verification": "artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json",
+        "execution_result": "artifacts/linux/tools-config-20261018/full-01/plugins-result.json",
+        "build_result": "artifacts/linux/tools-config-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/tools-config-20261018/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -5164,6 +5164,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -5953,6 +5959,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -6123,6 +6135,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontStreamLifetimeTests.cs",
           "test_class": "FontStreamLifetimeTests",
           "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -6300,6 +6318,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
           "test_class": "FontSettingsTests",
           "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -6557,6 +6581,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
           "test_class": "FontSettingsTests",
           "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -6985,6 +7015,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -7289,6 +7325,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -7421,9 +7463,16 @@
       "feature": "Configuration Git et outils diff/merge",
       "group": "settings-pages",
       "level": "N1",
-      "implemented": "Lecture/écriture de configuration et choix simple de difftool.",
-      "remaining": "Page guidée, catalogue d’outils merge/diff et tous les champs Windows non portés.",
+      "implemented": "Sous-périmètre Diff/Merge : six champs Windows nom/chemin/commande, vraies ComboBox éditables avec catalogue, noms inconnus littéraux, Browse/Suggest explicites. Effective/System readonly, brouillons Local/Global, OK/Apply et Cancel sans rollback des publications ; origines/includes, reçus natifs, readback disponible (inconnu possible après annulation), effets partiels et fermeture drainée. Façade Core typée et consommateurs existants. Full d975, paquet exact et natif T01 ciblé vérifiés (anglais/clair/X11, configuration et redémarrage). ADR0093.",
+      "remaining": "Configuration reste N1 : identité, éditeur, templates, credentials, encoding/autocrlf et autres réglages Windows non portés. Découverte exhaustive, Global hors dépôt dans l’UI et variantes natives encore ouverts. Git inférieur à 2.26 rend seulement cette section outils indisponible à l’édition, sans déclarer les autres réglages indisponibles. Consommateurs externes, picker et audit natif étendu encore ouverts ; aucune parité globale.",
       "visual": "integre",
+      "extra_evidence": [
+        {
+          "label": "Configuration Diff/Merge Git native, scopes, includes et reçus",
+          "source": "tests/linux/GitExtensions.Core.Tests/ToolConfigurationScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
@@ -7438,10 +7487,61 @@
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
           "line": 509,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitToolsSettingsDialog",
+          "label": "GitToolsSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/GitToolsSettingsDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitToolsSettingsPage",
+          "label": "GitToolsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitToolsSettingsPage.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitToolsDraftSession",
+          "label": "GitToolsDraftSession",
+          "source": "src/linux/GitExtensions.Desktop/GitToolsDraftSession.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitToolsCatalog",
+          "label": "GitToolsCatalog",
+          "source": "src/linux/GitExtensions.Desktop/GitToolsCatalog.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRepository",
+          "label": "GitRepository.GetToolConfigurationAsync",
+          "source": "src/linux/GitExtensions.Core/GitRepository.ToolConfiguration.cs",
+          "line": 14,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRepository",
+          "label": "GitRepository.SaveToolConfigurationAsync",
+          "source": "src/linux/GitExtensions.Core/GitRepository.ToolConfiguration.cs",
+          "line": 25,
+          "kind": "component"
         }
       ],
-      "tests": [],
-      "adr": []
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/tools/0093-diff-merge-tool-configuration.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitRootIntroductionPage",
@@ -7627,6 +7727,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
           "test_class": "FontSettingsTests",
           "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -7846,6 +7952,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
           "test_class": "FontSettingsTests",
           "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -8078,6 +8190,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
           "test_class": "FontSettingsTests",
           "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
           "results_present": true
         },
         {
@@ -12256,6 +12374,30 @@
           "id": "GitUI.HelperDialogs.FormStatus",
           "name": "FormStatus",
           "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.GitToolsSettingsDialog",
+      "name": "GitToolsSettingsDialog",
+      "source": "src/linux/GitExtensions.Desktop/GitToolsSettingsDialog.cs",
+      "line": 14,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/GitToolsSettingsDialog.cs",
+          "line": 14
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigSettingsPage",
+          "name": "GitConfigSettingsPage",
+          "level": "N1"
         }
       ],
       "note": ""

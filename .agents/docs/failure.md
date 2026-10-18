@@ -610,3 +610,15 @@ Copy03 ajoute Q15, ses préparations/rapports, une closure calibrée14 corrigée
 Le natif attempt02 complète **77 reçus**, deux GUI à wait0, WM0 et wait externe0 ; Root revoit personnellement sept frames dont Worktrees. Douze checkpoints Git et un contrôle final avec Git stock concordent ; quatre intervalles Settings dédiés ne lancent aucun Git. Le fichier Fonts final est 490 octets, mode0600 ; les acteurs connus sont retirés et le payload reste exact à l’archive. L’opérateur délégué `/root/fonts_native_operator` est explicitement chargé des commandes019–077 ; la revue indépendante Root demeure distincte de cette conduite. Ce résultat borné anglais/clair/X11 ne détermine pas la cause SystemFonts antérieure et ne couvre ni tous les acteurs jamais observés ni toutes les variantes de rendu.
 
 Le défaut post-Closing observé17 et corrigé18 ne doit pas être présenté comme une attribution définitive des 1319 erreurs SystemFonts du full01. Aucun reset global du FontManager ni fallback silencieux n’est revendiqué.
+
+
+## Config outils — intentions à conserver
+
+| Piège | Règle / limite |
+| --- | --- |
+| Confondre AutoComplete et ComboBox Windows | Garder flèche et catalogue d’une vraie ComboBox éditable ; le premier ciblé global rouge reste conservé. |
+| Exit0 pris pour un changement de l’outil effectif | Une include peut encore gagner ; conserver le résultat natif et le readback disponible, sans fermer OK comme si le choix était garanti. |
+| Veto de l’enfant occupé perd la fermeture du propriétaire | Retenir OwnerWindowClosing, annuler/drainer les acteurs connus puis relayer une seule fois, sans second Close réparateur. |
+| Cancel pris pour un rollback après Apply ou erreur partielle | Abandonner les seuls brouillons non publiés. Conserver les reçus ; readback inconnu possible après annulation, aucune transaction multi-portées ni CAS interprocessus. |
+
+[Full01 vérifié](../../artifacts/linux/tools-config-20261018/full-01/parent-verification.json) sur d975 ; paquet exact et natif T01 ciblé vérifiés. Le [ciblé01](../../artifacts/linux/tools-config-20261018/targeted-01-root-ownwait.json) conserve son résultat global rouge ; les rendus headless ne deviennent pas une preuve native. [Portée et limites](todo.md#configuration-des-outils-diffmerge--validation-ciblée).

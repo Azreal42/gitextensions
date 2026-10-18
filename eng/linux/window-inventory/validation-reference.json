@@ -1,11 +1,11 @@
 {
-  "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-  "trx": "artifacts/linux/scripts-runtime-20261018/full-02/desktop.trx",
-  "trx_sha256": "c8d59658d4d7b59cf114160a883063002173c04c9f869ec451645197b8658413",
+  "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+  "trx": "artifacts/linux/tools-config-20261018/full-01/desktop.trx",
+  "trx_sha256": "7c671d0137497ea6892d8799d86d15f0cf93aadd7c3ef2c27386babc3a8dfca5",
   "counters": {
-    "total": "1833",
-    "executed": "1833",
-    "passed": "1833",
+    "total": "1846",
+    "executed": "1846",
+    "passed": "1846",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -303,6 +303,9 @@
     "GitProcessDialogTests": {
       "Passed": 15
     },
+    "GitToolsSettingsDialogTests": {
+      "Passed": 13
+    },
     "GoToCommitDialogTests": {
       "Passed": 15
     },
@@ -573,27 +576,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-      "execution_source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-      "candidate_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-      "passed": 689,
-      "total": 689,
-      "execution_result": "artifacts/linux/scripts-runtime-20261018/full-02/core-result.json",
-      "build_result": "artifacts/linux/scripts-runtime-20261018/full-02/build-result.json",
-      "parent_verification": "artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json",
+      "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+      "execution_source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+      "candidate_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+      "passed": 703,
+      "total": 703,
+      "execution_result": "artifacts/linux/tools-config-20261018/full-01/core-result.json",
+      "build_result": "artifacts/linux/tools-config-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/tools-config-20261018/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-      "execution_source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
-      "candidate_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+      "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+      "execution_source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+      "candidate_sha": "d975adafa9e496824af8984052e8790ce18222f2",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/scripts-runtime-20261018/full-02/plugins-result.json",
-      "build_result": "artifacts/linux/scripts-runtime-20261018/full-02/build-result.json",
-      "parent_verification": "artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json",
+      "execution_result": "artifacts/linux/tools-config-20261018/full-01/plugins-result.json",
+      "build_result": "artifacts/linux/tools-config-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/tools-config-20261018/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true

@@ -2440,13 +2440,30 @@
       "level": "N1",
       "linux": [
         "MainWindow@ShowWorkflowAsync",
-        "MainWindow@DiffToolAsync"
+        "MainWindow@DiffToolAsync",
+        "GitToolsSettingsDialog",
+        "GitToolsSettingsPage",
+        "GitToolsDraftSession",
+        "GitToolsCatalog",
+        "GitRepository@GetToolConfigurationAsync",
+        "GitRepository@SaveToolConfigurationAsync"
       ],
-      "implemented": "Lecture/écriture de configuration et choix simple de difftool.",
-      "remaining": "Page guidée, catalogue d’outils merge/diff et tous les champs Windows non portés.",
+      "implemented": "Sous-périmètre Diff/Merge : six champs Windows nom/chemin/commande, vraies ComboBox éditables avec catalogue, noms inconnus littéraux, Browse/Suggest explicites. Effective/System readonly, brouillons Local/Global, OK/Apply et Cancel sans rollback des publications ; origines/includes, reçus natifs, readback disponible (inconnu possible après annulation), effets partiels et fermeture drainée. Façade Core typée et consommateurs existants. Full d975, paquet exact et natif T01 ciblé vérifiés (anglais/clair/X11, configuration et redémarrage). ADR0093.",
+      "remaining": "Configuration reste N1 : identité, éditeur, templates, credentials, encoding/autocrlf et autres réglages Windows non portés. Découverte exhaustive, Global hors dépôt dans l’UI et variantes natives encore ouverts. Git inférieur à 2.26 rend seulement cette section outils indisponible à l’édition, sans déclarer les autres réglages indisponibles. Consommateurs externes, picker et audit natif étendu encore ouverts ; aucune parité globale.",
       "visual": "integre",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "GitToolsSettingsDialogTests"
+      ],
+      "adr": [
+        "0093"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Configuration Diff/Merge Git native, scopes, includes et reçus",
+          "source": "tests/linux/GitExtensions.Core.Tests/ToolConfigurationScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitRootIntroductionPage": {
       "feature": "Introduction aux réglages Git",
