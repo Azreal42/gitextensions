@@ -265,6 +265,8 @@ internal sealed class CommitSpellingController
         if (CurrentMenu(generation, settingsGeneration)) { _menu.ItemsSource = BuildItems(word, suggestions); }
     }
 
+    internal Func<IEnumerable<object>>? AdditionalItems { get; set; }
+
     private object[] BuildItems(SpellingSpan? word, string[] suggestions)
     {
         List<object> items = [];
@@ -294,6 +296,7 @@ internal sealed class CommitSpellingController
         items.Add(Item("SpellingPaste", "Paste", () => { _editor.Paste(); return Task.CompletedTask; }, !_editor.IsReadOnly));
         items.Add(Item("SpellingDelete", "Delete", () => { _editor.SelectedText = ""; return Task.CompletedTask; }, !_editor.IsReadOnly && _editor.SelectionStart != _editor.SelectionEnd));
         items.Add(Item("SpellingSelectAll", "Select all", () => { _editor.SelectAll(); return Task.CompletedTask; }));
+        if (AdditionalItems is not null) { items.AddRange(AdditionalItems()); }
         items.Add(new Separator());
         MenuItem dictionary = new() { Name = "CommitDictionary", Header = T("Dictionary"), IsEnabled = !_changingDictionary && _menuSettings is not null };
         List<MenuItem> choices = [DictionaryItem(DictionaryCatalog.NoneName, T("None"))];

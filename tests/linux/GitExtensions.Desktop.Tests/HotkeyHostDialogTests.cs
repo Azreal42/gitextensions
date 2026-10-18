@@ -171,7 +171,7 @@ public sealed class HotkeyHostDialogTests
     }
 
     [AvaloniaTest]
-    public async Task CommitRefreshUsesItsRemappedKeyWhileUnavailableConventionalProvidersDoNothing()
+    public async Task CommitRefreshAndConventionalMenusUseTheirRemappedKeysWithoutChangingGit()
     {
         await using Scope f = await Scope.CreateAsync(); await f.SeedChangesAsync();
         HotkeyBindings bindings = new(); Set(bindings, "Commit", "Refresh", Key.F6);
@@ -183,7 +183,17 @@ public sealed class HotkeyHostDialogTests
         Press(dialog, PhysicalKey.F6); await Idle(dialog);
         Assert.That(FileStatusTestHelpers.Changes(Field<TreeView>(dialog, "Unstaged")).Select(change => change.Path), Does.Contain("new-after-open.txt"));
         TextBox message = Field<TextBox>(dialog, "Message"); PushProcessTestDriver.Pointer(message); dialog.KeyTextInput("keep exact message");
-        Press(dialog, PhysicalKey.F7); Press(dialog, PhysicalKey.F8);
+        MenuItem templates = Field<Menu>(dialog, "CommitToolbar").Items.OfType<MenuItem>().Single(item => item.Name == "commitTemplatesToolStripMenuItem");
+        foreach (PhysicalKey key in new[] { PhysicalKey.F7, PhysicalKey.F8 })
+        {
+            Press(dialog, key);
+            MenuItem conventional = templates.Items.OfType<MenuItem>().Single(item => item.Name == "ConventionalCommits");
+            Assert.That(templates.IsSubMenuOpen && conventional.IsSubMenuOpen, Is.True);
+            Assert.That(conventional.Items.OfType<MenuItem>().Single(item => item.Name == "Conventional_feat").IsSelected, Is.True);
+            Assert.That(message.Text, Is.EqualTo("keep exact message"));
+            Press(dialog, PhysicalKey.Escape); Press(dialog, PhysicalKey.Escape);
+            Assert.That(dialog.IsVisible, Is.True);
+        }
         Assert.That(message.Text, Is.EqualTo("keep exact message")); Assert.That(dialog.OwnedWindows, Is.Empty);
         Assert.That(await f.MaterialAsync(), Is.EqualTo(ready));
     }

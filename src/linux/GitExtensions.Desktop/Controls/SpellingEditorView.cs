@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.TextFormatting;
 using Avalonia.VisualTree;
 
 namespace GitExtensions.Linux.Desktop.Controls;
@@ -36,6 +37,13 @@ internal sealed class SpellingEditorView : Grid, IDisposable
         _marks.Ranges = ranges.ToArray();
         _marks.InvalidateVisual();
     }
+
+    // Configurable validation is separate from spelling and the fixed 50/72 ill-formed marks.
+    internal void SetValidationRanges(string text, IEnumerable<SpellingRange> ranges)
+    {
+        _marks.ValidationText = text; _marks.ValidationRanges = ranges.ToArray(); _marks.InvalidateVisual();
+    }
+    internal IReadOnlyList<SpellingRange> ValidationRanges => _marks.ValidationRanges;
 
     internal void SetIllFormedRanges(string text, bool enabled)
     {
@@ -144,7 +152,7 @@ internal sealed class SpellingEditorView : Grid, IDisposable
         if (args.Property == TextPresenter.PreeditTextProperty) { CompositionChanged?.Invoke(this, EventArgs.Empty); }
     }
     private void EditorChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
-    { if (args.Property == TextBox.TextProperty) { _marks.InvalidateVisual(); } }
+    { if (args.Property == TextBox.TextProperty || args.Property == TextBox.SelectionStartProperty || args.Property == TextBox.SelectionEndProperty) { _marks.InvalidateVisual(); } }
 
     public void Dispose()
     {
@@ -163,6 +171,48 @@ internal sealed class SpellingEditorView : Grid, IDisposable
         internal string IllFormedText = "";
         internal SpellingRange[] IllFormed = [];
         internal bool MarkBlankSubject;
+        internal string ValidationText = "";
+        internal SpellingRange[] ValidationRanges = [];
+
+        private void DrawValidation(DrawingContext context)
+        {
+            if (ValidationRanges.Length == 0 || ValidationText != (owner.Editor.Text ?? "") || owner._presenter is not { } presenter
+                || presenter.TranslatePoint(default, this) is not Point origin) { return; }
+            var original = presenter.TextLayout;
+            if (presenter.Bounds.Height < original.Height)
+            {
+                double offset = presenter.VerticalAlignment switch
+                { VerticalAlignment.Center => (presenter.Bounds.Height - original.Height) / 2, VerticalAlignment.Bottom => presenter.Bounds.Height - original.Height, _ => 0 };
+                origin = new(origin.X, origin.Y + offset);
+            }
+            // Shape the complete native text with the same constraints, then clip to the excess characters.
+            // The native presenter still owns caret, selection, IME and scroll; no text is replaced to color it.
+            var layout = new TextLayout(ValidationText, new Typeface(presenter.FontFamily, presenter.FontStyle, presenter.FontWeight, presenter.FontStretch),
+                presenter.FontFeatures, presenter.FontSize, new SolidColorBrush(ClassicTextContrast.AdaptForeground(owner.Editor, Colors.Red)),
+                textAlignment: presenter.TextAlignment, textWrapping: presenter.TextWrapping, flowDirection: owner.Editor.FlowDirection,
+                maxWidth: original.MaxWidth, maxHeight: original.MaxHeight, lineHeight: presenter.LineHeight, letterSpacing: presenter.LetterSpacing);
+            try
+            {
+                int selectedStart = Math.Min(owner.Editor.SelectionStart, owner.Editor.SelectionEnd), selectedEnd = Math.Max(owner.Editor.SelectionStart, owner.Editor.SelectionEnd);
+                foreach (var range in ValidationRanges)
+                {
+                    int end = range.Start + range.Length;
+                    if (selectedStart <= range.Start && selectedEnd >= end) { continue; }
+                    if (selectedStart < end && selectedEnd > range.Start)
+                    {
+                        Draw(range.Start, Math.Max(0, selectedStart - range.Start)); Draw(Math.Max(range.Start, selectedEnd), Math.Max(0, end - selectedEnd));
+                    }
+                    else { Draw(range.Start, range.Length); }
+                }
+                void Draw(int start, int length)
+                {
+                    if (length == 0) { return; }
+                    foreach (Rect rectangle in owner.GetRangeRectangles(new(start, length)))
+                    { using (context.PushClip(rectangle)) { layout.Draw(context, origin); } }
+                }
+            }
+            finally { layout.Dispose(); }
+        }
         public override void Render(DrawingContext context)
         {
             if (owner._disposed || owner.IsComposing) { return; }
@@ -183,6 +233,7 @@ internal sealed class SpellingEditorView : Grid, IDisposable
                     if (first.Height > 0)
                     { context.DrawRectangle(highlight, null, new Rect(clip.Left, first.Top, clip.Width, first.Height)); }
                 }
+                DrawValidation(context);
                 if (CheckedText != (owner.Editor.Text ?? "")) { return; }
                 Pen pen = new(Brushes.Red, 1);
                 foreach (SpellingRange range in Ranges)

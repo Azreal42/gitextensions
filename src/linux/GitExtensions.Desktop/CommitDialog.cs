@@ -44,7 +44,7 @@ public sealed partial class CommitDialog : Window
     private readonly DiffView _diff;
     private readonly FileContentView _content;
     private GitComparisonDiffOptions _viewerOptions = new();
-    private readonly TextBox _message = new() { Name = "Message", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+    private readonly CommitMessageTextBox _message = new() { Name = "Message", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private readonly SpellingEditorView _spellingView;
     private readonly CommitSpellingController _spelling;
     private readonly CommitCompletionController _completion;
@@ -150,6 +150,7 @@ public sealed partial class CommitDialog : Window
         _spelling.PreferencesAccepted += preferences => _completion.SetEnabled(preferences.ProvideAutocompletion);
         _completion.CorpusPublished += _spelling.AddCompletionWords;
         _preferences = _preferencesStore.Load();
+        InitializeMessageTemplates(profileRoot);
         Title = C("$this", "Commit");
         Width = 1100;
         Height = 760;
@@ -238,7 +239,7 @@ public sealed partial class CommitDialog : Window
         };
         _message.PropertyChanged += (_, change) =>
         {
-            if (change.Property == TextBox.TextProperty) { if (!string.IsNullOrEmpty(_message.Text)) { _draftReset = false; } UpdateAvailability(); UpdateStatus(); }
+            if (change.Property == TextBox.TextProperty) { MessageTextChanged(); if (!string.IsNullOrEmpty(_message.Text)) { _draftReset = false; } UpdateAvailability(); UpdateStatus(); }
             else if (change.Property == TextBox.CaretIndexProperty) { UpdateStatus(); }
         };
         _message.GotFocus += async (_, _) =>
@@ -458,8 +459,7 @@ public sealed partial class CommitDialog : Window
         } };
         DockPanel.SetDock(_historyMenu, Dock.Left);
         DockPanel.SetDock(optionsMenu, Dock.Right);
-        MenuItem templates = new() { Header = IconLabel(C("commitTemplatesToolStripMenuItem", "Commit templates"), "CommitTemplates.png"),
-            ItemsSource = new[] { MenuAction("LoadTemplate", T("Load configured template"), LoadTemplateAsync) } };
+        MenuItem templates = BuildTemplatesMenu();
         DockPanel.SetDock(templates, Dock.Left);
         Menu options = new() { Name = "CommitToolbar", Height = 28, HorizontalAlignment = HorizontalAlignment.Stretch,
             ItemsPanel = new FuncTemplate<Panel?>(() => new DockPanel { LastChildFill = false }), ItemsSource = new[] { _historyMenu, optionsMenu, templates } };
@@ -469,6 +469,8 @@ public sealed partial class CommitDialog : Window
         message.Children.Add(options);
         DockPanel.SetDock(_output, Dock.Bottom);
         message.Children.Add(_output);
+        ScrollViewer templateNotice = new() { Content = _templateNotice, MaxHeight = 70 };
+        DockPanel.SetDock(templateNotice, Dock.Bottom); message.Children.Add(templateNotice);
         DockPanel.SetDock(_spelling.Notice, Dock.Bottom); message.Children.Add(_spelling.Notice);
         DockPanel.SetDock(_completion.Notice, Dock.Bottom); message.Children.Add(_completion.Notice);
         message.Children.Add(_spellingView);
@@ -817,6 +819,7 @@ public sealed partial class CommitDialog : Window
             _confirmationOpen = true;
             try
             {
+                if (!await ValidateCommitMessageAsync()) { return; }
                 if (_amend.IsChecked == true)
                 {
                     if (!await Dialogs.ConfirmAsync(this, C("_amendCommitCaption", "Amend commit"), C("_amendCommit", "You are about to rewrite history.\nOnly use Amend if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
@@ -947,13 +950,17 @@ public sealed partial class CommitDialog : Window
         }
     }
 
-    private Task LoadTemplateAsync() => RunAsync(T("Commit templates"), async () =>
+    private async Task LoadTemplateAsync()
     {
-        string? template = await _repository.GetCommitTemplateAsync(cancellationToken: OperationToken);
-        if (template is null) { throw new InvalidOperationException(T("No commit template is configured.")); }
-        _loadedTemplate = template;
-        _message.Text = template;
-    });
+        await RunAsync(T("Commit templates"), async () =>
+        {
+            string? template = await _repository.GetCommitTemplateAsync(cancellationToken: OperationToken);
+            if (template is null) { throw new InvalidOperationException(T("No commit template is configured.")); }
+            _loadedTemplate = template;
+            ReplaceMessageSelection(0, (_message.Text ?? "").Length, template);
+        });
+        if (IsVisible && !_lifetime.IsCancellationRequested && !_closeWhenIdle) { _message.Focus(); }
+    }
     private async Task LoadHistoryAsync()
     {
         if (IsBusy || _lifetime.IsCancellationRequested) { return; }
@@ -1162,7 +1169,8 @@ public sealed partial class CommitDialog : Window
                 _message.SelectionStart = _message.SelectionEnd = _message.CaretIndex;
                 return Task.CompletedTask;
             },
-            // Conventional commit providers are not available in this host.
+            "ConventionalCommit_PrefixMessage" when _message.IsEnabled => () => OpenConventionalMenuAsync(false),
+            "ConventionalCommit_PrefixMessageWithScope" when _message.IsEnabled => () => OpenConventionalMenuAsync(true),
             _ => null
         };
         if (action is not null)
