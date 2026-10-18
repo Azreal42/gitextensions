@@ -129,6 +129,14 @@ public sealed class HistorySortDefaultTests
         DesktopSettingsDialog settings = f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
         settings.UpdateLayout(); Dispatcher.UIThread.RunJobs();
         SettingsNavigationTestDriver.Select(settings, "Appearance");
+        Assert.That(settings.GitEnvironmentSession, Is.Not.Null);
+        GitEnvironmentSettingsSession environment = settings.GitEnvironmentSession!;
+        await environment.OperationCompletion.WaitAsync(TimeSpan.FromSeconds(20));
+        Button save = settings.GetVisualDescendants().OfType<Button>().Single(control => control.Name == "SaveDesktopSettings");
+        await PushProcessTestDriver.UntilAsync(settings, () => !environment.IsBusy && save.IsEffectivelyEnabled,
+            "The initial Settings environment scan must finish before changing the theme and clicking OK.");
+        Assert.That(environment.OperationCompletion.IsCompleted, Is.True); Assert.That(environment.IsBusy, Is.False);
+        Assert.That(save.IsEnabled && save.IsEffectivelyEnabled, Is.True);
         settings.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "SettingsTheme").SelectedItem = "Dark";
         GitCommandLog.Clear();
         PushProcessTestDriver.Pointer(settings.GetVisualDescendants().OfType<Button>().Single(control => control.Name == "SaveDesktopSettings"));
