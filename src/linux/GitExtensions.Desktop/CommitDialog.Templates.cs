@@ -18,6 +18,7 @@ public sealed partial class CommitDialog
     private CommitMessagePreferences _messagePreferences = new();
     private readonly TextBlock _templateNotice = new() { Name = "CommitTemplateNotice", TextWrapping = TextWrapping.Wrap, IsVisible = false };
     private MenuItem _templatesMenu = null!, _conventionalMenu = null!;
+    private MenuKeyboardSelection _templateKeyboardSelection = null!;
     private bool _formattingMessage, _conventionalScope;
     private long _messageFormatGeneration;
 
@@ -51,6 +52,7 @@ public sealed partial class CommitDialog
     private MenuItem BuildTemplatesMenu()
     {
         _templatesMenu = new() { Name = "commitTemplatesToolStripMenuItem", Header = TemplateMenuHeader("commitTemplatesToolStripMenuItem", "Commit &templates", "CommitTemplates.png") };
+        _templateKeyboardSelection = new(this, _templatesMenu);
         _templatesMenu.SubmenuOpened += (_, args) => { if (ReferenceEquals(args.Source, _templatesMenu)) { RefreshTemplatesMenu(); } };
         RefreshTemplatesMenu(); return _templatesMenu;
     }
@@ -211,8 +213,11 @@ public sealed partial class CommitDialog
     }
     private Task OpenConventionalMenuAsync(bool withScope)
     {
-        _conventionalScope = withScope; _templatesMenu.Open(); _conventionalMenu.Open();
-        MenuItem feat = _conventionalMenu.Items.OfType<MenuItem>().Single(item => item.Name == "Conventional_feat"); feat.IsSelected = true; feat.Focus();
+        _conventionalScope = withScope; _templateKeyboardSelection.Begin(); _templatesMenu.Open();
+        if (_templatesMenu.Parent is Menu toolbar) { toolbar.SelectedItem = _templatesMenu; }
+        _templatesMenu.SelectedItem = _conventionalMenu; _conventionalMenu.Open();
+        MenuItem feat = _conventionalMenu.Items.OfType<MenuItem>().Single(item => item.Name == "Conventional_feat");
+        _conventionalMenu.SelectedItem = feat; feat.Focus(NavigationMethod.Directional);
         return Task.CompletedTask;
     }
     private void ApplyConventionalHeader(string keyword)

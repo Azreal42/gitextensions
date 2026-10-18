@@ -85,7 +85,13 @@ public sealed class CommitMessageSettingsDialog : Window
         _validation.PropertyChanged += (_, args) => { if (args.Property == TextBox.TextProperty) { UpdateValidation(); } };
         RefreshSlots(); _slots.SelectedIndex = 0; SelectSlot();
         Opened += (_, _) => { ModalWindowActivation.AfterMapping(this, () => IsVisible); _slots.Focus(); };
-        AddHandler(KeyDownEvent, (_, args) => { if (!args.Handled && args.Key == Key.Escape) { args.Handled = true; Close(false); } }, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Handled || args.Key != Key.Escape) { return; }
+            args.Handled = true;
+            if (_slots.IsDropDownOpen) { _slots.IsDropDownOpen = false; _slots.Focus(); return; }
+            Close(false);
+        }, RoutingStrategies.Tunnel);
 
         void Row(int row, string name, string caption, Control control) { Label(validation, row, name, caption); Place(validation, control, row, 1); }
     }

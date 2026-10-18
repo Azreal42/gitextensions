@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
@@ -60,6 +61,40 @@ public sealed class CommitTemplateDialogTests
         await Until(() => !settings.IsVisible); Assert.That(File.Exists(f.Store.FilePath), Is.False); Assert.That(await f.MaterialAsync(), Is.EqualTo(material));
         settings = await OpenSettings(commit); Assert.That(Field<TextBox>(settings, "_NO_TRANSLATE_textCommitTemplateText").Text, Is.Empty.Or.Null);
         PushProcessTestDriver.Pointer(Field<Button>(settings, "buttonCancel"));
+    }
+
+    [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task EscapeClosesTheRealSlotsPopupBeforeCancellingTheOwnedDialogWithoutSavingItsDraft(bool dark)
+    {
+        await using Scope f = await Scope.CreateAsync();
+        var baseline = f.Store.Load(); f.Store.SaveChanges(baseline, baseline.WithTemplate(9, new("saved name", "saved body")));
+        byte[] profile = File.ReadAllBytes(f.Store.FilePath); DateTime written = File.GetLastWriteTimeUtc(f.Store.FilePath);
+        CommitDialog commit = await f.OpenAsync(dark, owned: true); string material = await f.MaterialAsync();
+        CommitMessageSettingsDialog settings = await OpenSettings(commit);
+        ComboBox slots = Field<ComboBox>(settings, "_NO_TRANSLATE_comboBoxCommitTemplates");
+        await Choose(settings, slots, 9);
+        Edit(settings, "_NO_TRANSLATE_textBoxCommitTemplateName", "unsaved name");
+        Edit(settings, "_NO_TRANSLATE_textCommitTemplateText", "unsaved body λ");
+        CommitMessageTemplate draft = new("unsaved name", "unsaved body λ");
+        Assert.That(settings.Draft.Templates[9], Is.EqualTo(draft));
+        PushProcessTestDriver.Pointer(slots); Pump(settings);
+        Popup popup = slots.GetVisualDescendants().OfType<Popup>().Single(item => item.Name == "PART_Popup");
+        Assert.That(slots.IsDropDownOpen, Is.True); Assert.That(popup.IsOpen, Is.True);
+        Assert.That(popup.Child, Is.Not.Null); Assert.That(popup.Child!.IsEffectivelyVisible, Is.True);
+        Press(settings, PhysicalKey.Escape);
+        Assert.That(settings.IsVisible, Is.True); Assert.That(settings.Owner, Is.SameAs(commit));
+        Assert.That(slots.IsDropDownOpen, Is.False); Assert.That(popup.IsOpen, Is.False);
+        Assert.That(slots.IsFocused, Is.True, "Dismissing the popup must retain keyboard focus in the settings dialog.");
+        Assert.That(slots.SelectedIndex, Is.EqualTo(9)); Assert.That(settings.Draft.Templates[9], Is.EqualTo(draft));
+        Assert.That(Field<TextBox>(settings, "_NO_TRANSLATE_textBoxCommitTemplateName").Text, Is.EqualTo(draft.Name));
+        Assert.That(Field<TextBox>(settings, "_NO_TRANSLATE_textCommitTemplateText").Text, Is.EqualTo(draft.Text));
+        Assert.That(File.ReadAllBytes(f.Store.FilePath), Is.EqualTo(profile));
+        Press(settings, PhysicalKey.Escape); await Until(() => !settings.IsVisible);
+        Assert.That(commit.IsVisible, Is.True); Assert.That(File.ReadAllBytes(f.Store.FilePath), Is.EqualTo(profile));
+        Assert.That(File.GetLastWriteTimeUtc(f.Store.FilePath), Is.EqualTo(written));
+        Assert.That(f.Store.Load().Templates[9], Is.EqualTo(new CommitMessageTemplate("saved name", "saved body")));
+        Assert.That(await f.MaterialAsync(), Is.EqualTo(material));
     }
 
     [AvaloniaTest]
@@ -186,6 +221,95 @@ public sealed class CommitTemplateDialogTests
     }
 
     [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task ConventionalShortcutAfterPointingAtANativeTemplateAndUndoingItsTextSelectsTheFeatAncestorsAndEnter(bool withScope)
+    {
+        await using Scope f = await Scope.CreateAsync(); var baseline = f.Store.Load();
+        f.Store.SaveChanges(baseline, baseline.WithTemplate(0, new("Native template", "Native template body")));
+        CommitDialog commit = await f.OpenAsync(); Edit(commit, "Message", "unstaged title\n\nbody λ");
+        TextBox message = Field<TextBox>(commit, "Message"); string material = await f.MaterialAsync();
+        MenuItem menu = OpenTemplates(commit);
+        MenuItem native = menu.Items.OfType<MenuItem>().Single(item => item.Name == "UserCommitTemplate");
+        PushProcessTestDriver.Pointer(native); await Idle(commit);
+        Assert.That(message.Text, Is.EqualTo("Native template body")); Assert.That(message.IsFocused, Is.True);
+        // The real pointer stays at the selected parent-entry position: only native key input follows.
+        Press(commit, PhysicalKey.Z, RawInputModifiers.Control);
+        Assert.That(message.Text, Is.EqualTo("unstaged title\n\nbody λ")); int caretBeforeShortcut = message.CaretIndex;
+        Press(commit, PhysicalKey.T, RawInputModifiers.Control | (withScope ? RawInputModifiers.Shift : RawInputModifiers.None));
+        Menu toolbar = Field<Menu>(commit, "CommitToolbar"); menu = Templates(commit);
+        MenuItem conventional = menu.Items.OfType<MenuItem>().Single(item => item.Name == "ConventionalCommits");
+        MenuItem feat = conventional.Items.OfType<MenuItem>().Single(item => item.Name == "Conventional_feat");
+        MenuItem reopenedNative = menu.Items.OfType<MenuItem>().Single(item => item.Name == "UserCommitTemplate");
+        Assert.That(toolbar.SelectedItem, Is.SameAs(menu));
+        Assert.That(menu.IsSubMenuOpen && conventional.IsSubMenuOpen, Is.True);
+        Assert.That(menu.SelectedIndex, Is.EqualTo(menu.Items.IndexOf(conventional)));
+        Assert.That(menu.SelectedItem, Is.SameAs(conventional)); Assert.That(reopenedNative.IsSelected, Is.False);
+        Assert.That(conventional.SelectedIndex, Is.EqualTo(conventional.Items.IndexOf(feat)));
+        Assert.That(conventional.SelectedItem, Is.SameAs(feat)); Assert.That(feat.IsSelected && feat.IsFocused, Is.True);
+        Assert.That(message.Text, Is.EqualTo("unstaged title\n\nbody λ"), "Opening the submenu must not reapply the hovered template or change the message.");
+        Press(commit, PhysicalKey.Enter);
+        Assert.That(message.Text, Is.EqualTo(withScope ? "feat(): unstaged title\n\nbody λ" : "feat: unstaged title\n\nbody λ"));
+        Assert.That(message.CaretIndex, Is.EqualTo(withScope ? 5 : caretBeforeShortcut + 6)); Assert.That(message.IsFocused, Is.True);
+        Assert.That(menu.IsSubMenuOpen || conventional.IsSubMenuOpen, Is.False);
+        Assert.That(await f.MaterialAsync(), Is.EqualTo(material));
+    }
+
+    [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task TheFirstRealPointerMotionOrPressAfterTheConventionalShortcutRestoresNormalTemplateChoice(bool moveToAnotherRow)
+    {
+        await using Scope f = await Scope.CreateAsync(); var baseline = f.Store.Load();
+        f.Store.SaveChanges(baseline, baseline.WithTemplate(0, new("Native template", "Native body")).WithTemplate(1, new("Other template", "Other body")));
+        CommitDialog commit = await f.OpenAsync(); Edit(commit, "Message", "subject"); string material = await f.MaterialAsync();
+        MenuItem menu = OpenTemplates(commit); MenuItem native = menu.Items.OfType<MenuItem>().First(item => item.Name == "UserCommitTemplate");
+        PixelPoint stationary = native.PointToScreen(new Point(native.Bounds.Width / 2, native.Bounds.Height / 2));
+        PushProcessTestDriver.Pointer(native); await Idle(commit); Press(commit, PhysicalKey.Z, RawInputModifiers.Control);
+        Press(commit, PhysicalKey.T, RawInputModifiers.Control);
+        MenuKeyboardSelection guard = KeyboardSelection(commit); Assert.That(guard.IsActive, Is.True);
+        menu = Templates(commit); MenuItem chosen = menu.Items.OfType<MenuItem>().Single(item => item.Name == "UserCommitTemplate"
+            && ((CommitMessageTemplate)item.Tag!).Name == (moveToAnotherRow ? "Other template" : "Native template"));
+        if (moveToAnotherRow)
+        {
+            Assert.That(chosen.PointToScreen(new Point(chosen.Bounds.Width / 2, chosen.Bounds.Height / 2)), Is.Not.EqualTo(stationary));
+            Hover(chosen); Assert.That(guard.IsActive, Is.False); Assert.That(menu.SelectedItem, Is.SameAs(chosen));
+        }
+        else { Assert.That(chosen.PointToScreen(new Point(chosen.Bounds.Width / 2, chosen.Bounds.Height / 2)), Is.EqualTo(stationary)); }
+        PushProcessTestDriver.Pointer(chosen); await Idle(commit);
+        Assert.That(guard.IsActive, Is.False); Assert.That(Field<TextBox>(commit, "Message").Text, Is.EqualTo(moveToAnotherRow ? "Other body" : "Native body"));
+        Assert.That(await f.MaterialAsync(), Is.EqualTo(material));
+    }
+
+    [AvaloniaTest]
+    public async Task EscapeAndClosingTheCommitRetireItsKeyboardMenuSelectionGuard()
+    {
+        await using Scope f = await Scope.CreateAsync(); CommitDialog commit = await f.OpenAsync(); Edit(commit, "Message", "subject");
+        string material = await f.MaterialAsync(); Press(commit, PhysicalKey.T, RawInputModifiers.Control);
+        MenuKeyboardSelection guard = KeyboardSelection(commit); Assert.That(guard.IsActive, Is.True);
+        Press(commit, PhysicalKey.Escape); Assert.That(guard.IsActive, Is.False); Assert.That(commit.IsVisible, Is.True);
+        Press(commit, PhysicalKey.T, RawInputModifiers.Control); Assert.That(guard.IsActive, Is.True);
+        commit.Close(); await Until(() => !commit.IsVisible && !commit.IsBusy);
+        Assert.That(guard.IsActive, Is.False); Assert.That(commit.OwnedWindows, Is.Empty); Assert.That(await f.MaterialAsync(), Is.EqualTo(material));
+    }
+
+    [AvaloniaTest]
+    public async Task AFirstKeyboardOnlyConventionalMenuKeepsItsSelectionWithoutAnObservedPointerPosition()
+    {
+        await using Scope f = await Scope.CreateAsync(); CommitDialog commit = await f.OpenAsync();
+        MenuKeyboardSelection guard = KeyboardSelection(commit);
+        Assert.That(typeof(MenuKeyboardSelection).GetField("_lastPointerScreen", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(guard),
+            Is.Null, "This case must start without any Pointer/Edit helper or an observed pointer position.");
+        TextBox message = Field<TextBox>(commit, "Message"); Assert.That(message.Text, Is.Empty.Or.Null);
+        string material = await f.MaterialAsync(); Press(commit, PhysicalKey.T, RawInputModifiers.Control);
+        MenuItem menu = Templates(commit), conventional = menu.Items.OfType<MenuItem>().Single(item => item.Name == "ConventionalCommits");
+        MenuItem feat = conventional.Items.OfType<MenuItem>().Single(item => item.Name == "Conventional_feat");
+        Assert.That(guard.IsActive, Is.True); Assert.That(menu.SelectedItem, Is.SameAs(conventional));
+        Assert.That(conventional.SelectedItem, Is.SameAs(feat)); Assert.That(feat.IsFocused, Is.True);
+        Press(commit, PhysicalKey.Enter); Assert.That(message.Text, Is.EqualTo("feat: "));
+        Assert.That(message.IsFocused, Is.True); Assert.That(guard.IsActive, Is.False);
+        Assert.That(await f.MaterialAsync(), Is.EqualTo(material));
+    }
+
+    [AvaloniaTest]
     public async Task NativeUndoOfAutomaticBlankAndBulletDoesNotTriggerFormattingAgainAndLimitsRemainIndependent()
     {
         await using Scope f = await Scope.CreateAsync(); var baseline = f.Store.Load();
@@ -285,6 +409,17 @@ public sealed class CommitTemplateDialogTests
         var presenter = editor.GetVisualDescendants().OfType<TextPresenter>().Single();
         Assert.That(editor.Text, Is.EqualTo(value)); Assert.That(presenter.IsEffectivelyVisible, Is.True);
         Assert.That(presenter.Bounds.Width, Is.GreaterThanOrEqualTo(presenter.TextLayout.Width), "The actual numeric text must fit beside the compact spinner, not be hidden by arrows.");
+    }
+    private static MenuKeyboardSelection KeyboardSelection(CommitDialog commit)
+        => (MenuKeyboardSelection)typeof(CommitDialog).GetField("_templateKeyboardSelection", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(commit)!;
+    private static void Hover(Control control)
+    {
+        TopLevel top = TopLevel.GetTopLevel(control)!; Pump(top);
+        Point point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), top)!.Value;
+        Visual? hit = top.InputHitTest(point) as Visual;
+        Assert.That(control.IsEffectivelyVisible && control.IsEffectivelyEnabled && new Rect(default, top.ClientSize).Contains(point)
+            && hit?.GetSelfAndVisualAncestors().Contains(control) == true, Is.True, "The real hover target must pass the same visibility/viewport/hit-test prerequisites as Pointer.");
+        top.MouseMove(point); Pump(top);
     }
     private static T Field<T>(TopLevel window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
     private static void Press(Window window, PhysicalKey key, RawInputModifiers mods = RawInputModifiers.None) { window.KeyPressQwerty(key, mods); if (window.IsVisible) { window.KeyReleaseQwerty(key, mods); Pump(window); } }
