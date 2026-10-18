@@ -5,6 +5,7 @@ internal sealed record AppearanceSettingsValues
 {
     public bool RelativeDate { get; init; } = true;
     public bool ShowRepoCurrentBranch { get; init; } = true;
+    public GitCommands.TruncatePathMethod TruncatePathMethod { get; init; } = GitCommands.TruncatePathMethod.None;
     public bool ShowAvatar { get; init; } = true;
     public bool ShowAuthorAvatarInCommitInfo { get; init; } = true;
     public int AvatarImageCacheDays { get; init; } = 13;

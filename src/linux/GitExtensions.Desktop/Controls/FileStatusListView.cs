@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using GitCommands;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -54,6 +55,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private readonly Grid _filterRow = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Height = DesktopFontMetrics.ToolbarHeight };
     private IReadOnlyList<FileStatusListGroup> _groups = [];
     private FileStatusListOptions _options;
+    private TruncatePathMethod _pathPresentation;
     private FileStatusListDiffFilter _diffFilter = new();
     private Regex? _predicate;
     private CancellationTokenSource? _pendingFilter;
@@ -80,6 +82,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         Name = (tree.Name ?? "FileStatus") + "View";
         _fileTreeMode = fileTreeMode;
         _store = preferencesStore ?? new(); _options = fileTreeMode ? new() : _store.Load();
+        _pathPresentation = _store.LoadPathPresentation();
         _fileHeader = fileHeaderFactory ?? DefaultFileHeader;
         _filter.Name = Prefix("Filter"); _filter.ItemsSource = _history.ToArray();
         _filter.PlaceholderText = T("Filter files using a regular expression...");
@@ -144,6 +147,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         Content = layout;
         bar.IsVisible = !fileTreeMode;
         if (!fileTreeMode) { _store.Changed += PreferencesChanged; }
+        _store.PathPresentationChanged += PathPresentationChanged;
         ActualThemeVariantChanged += ThemeChanged;
         AttachedToVisualTree += (_, _) => UpdatePathSelectionColors();
         Tree.SelectionChanged += TreeSelectionChanged;
@@ -224,6 +228,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
     public bool ShowGroupNodesInFlatList { get => _options.ShowGroupNodesInFlatList; set => SetOptions(_options with { ShowGroupNodesInFlatList = value }); }
     public bool FilterFileNameOnly { get => _options.FilterFileNameOnly; set => SetOptions(_options with { FilterFileNameOnly = value }); }
     public event EventHandler? DisplayChanged;
+    internal event EventHandler? PathPresentationFilterChanged;
     public static string IconName(FileStatusListEntry entry) => FileStatusListBuilder.IconName(entry);
 
     public void SetGroups(IReadOnlyList<FileStatusListGroup> groups, bool preserveSelection = true)
@@ -350,6 +355,47 @@ public sealed class FileStatusListView : UserControl, IDisposable
         if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => PreferencesChanged(sender, args)); return; }
         _options = _store.Load(); Rebuild();
     }
+    private void PathPresentationChanged(TruncatePathMethod method)
+    {
+        if (_disposed) { return; }
+        if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => PathPresentationChanged(method)); return; }
+        if (_pathPresentation == method) { return; }
+        bool oldFileNameOnly = FilterFileNameOnly || _pathPresentation == TruncatePathMethod.FileNameOnly;
+        bool newFileNameOnly = FilterFileNameOnly || method == TruncatePathMethod.FileNameOnly;
+        bool membershipChanged = false;
+        if (_predicate is not null && oldFileNameOnly != newFileNameOnly)
+        {
+            try
+            {
+                foreach (FileStatusListEntry entry in Entries.Where(entry => _diffFilter.Matches(entry.DiffStatus)))
+                { membershipChanged |= MatchesName(entry, _predicate, oldFileNameOnly) != MatchesName(entry, _predicate, newFileNameOnly); }
+            }
+            catch (RegexMatchTimeoutException error)
+            {
+                // Keep the last good displayed filter, as for an invalid edit.
+                // A saved presentation must not mask a later workflow-save error.
+                membershipChanged = false; FilterError = error.Message; ApplyFilterPalette();
+            }
+        }
+        _pathPresentation = method;
+        if (membershipChanged)
+        {
+            HashSet<object> selected = [.. SelectedTags];
+            bool hadTreeFocus = Tree.IsKeyboardFocusWithin;
+            Func<bool>? restore = hadTreeFocus ? CaptureSelectedRowFocus() : null;
+            Rebuild(notify: false);
+            if (hadTreeFocus && restore?.Invoke() != true && Tree.IsEffectivelyVisible && Tree.IsEffectivelyEnabled)
+            { Tree.Focus(); }
+            // Commit updates its filtered-count actions without fetching a diff.
+            PathPresentationFilterChanged?.Invoke(this, EventArgs.Empty);
+            if (!selected.SetEquals(SelectedTags)) { DisplayChanged?.Invoke(this, EventArgs.Empty); }
+            return;
+        }
+        foreach (FilePathHeader header in _models.Keys.Select(item => item.Header).OfType<FilePathHeader>())
+        { header.SetMethod(method); }
+        UpdatePathSelectionColors();
+    }
+
     private void FilterPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
         if (_disposed) { return; }
@@ -397,13 +443,19 @@ public sealed class FileStatusListView : UserControl, IDisposable
         _clearFilter.IsVisible = text.Length > 0; ApplyFilterPalette();
     }
     private bool MatchesName(FileStatusListEntry entry, Regex? predicate)
+        // Preserve the older, explicitly persisted Linux filename filter too.
+        => MatchesName(entry, predicate, FilterFileNameOnly || _pathPresentation == TruncatePathMethod.FileNameOnly);
+
+    private static bool MatchesName(FileStatusListEntry entry, Regex? predicate, bool fileNameOnly)
     {
         if (predicate is null) { return true; }
         string path = entry.Path.TrimEnd('/'); string? previous = entry.OriginalPath;
-        if (FilterFileNameOnly) { path = Path.GetFileName(path); previous = previous is null ? null : Path.GetFileName(previous); }
+        if (fileNameOnly) { path = BaseName(path); previous = previous is null ? null : BaseName(previous); }
         return predicate.IsMatch(path) || previous is not null && predicate.IsMatch(previous);
+        // Git names are POSIX; a backslash is a literal filename character.
+        static string BaseName(string value) => value[(value.LastIndexOf('/') + 1)..];
     }
-    private void Rebuild(bool preserveSelection = true, bool selectFirst = false)
+    private void Rebuild(bool preserveSelection = true, bool selectFirst = false, bool notify = true)
     {
         if (_disposed) { return; }
         HashSet<(string Group, FileStatusListNodeKind Kind, string Key)> selected = preserveSelection
@@ -433,7 +485,7 @@ public sealed class FileStatusListView : UserControl, IDisposable
         }
         finally { IsUpdating = false; }
         UpdatePathSelectionColors();
-        DisplayChanged?.Invoke(this, EventArgs.Empty);
+        if (notify) { DisplayChanged?.Invoke(this, EventArgs.Empty); }
 
         TreeViewItem CreateItem(FileStatusListNode node, TreeViewItem? parent)
         {
@@ -500,24 +552,15 @@ public sealed class FileStatusListView : UserControl, IDisposable
     public Control CreateFileHeader(FileStatusListEntry entry, string? icon = null)
     {
         string path = ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path);
-        string suffix = entry.OriginalPath is null ? "" : " (" + ExportDialogControls.DisplayPath(entry.OriginalPath) + ")";
-        int separator = path.LastIndexOf('/');
-        TextBlock text = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0), TextTrimming = TextTrimming.CharacterEllipsis };
-        if (separator >= 0)
+        string? previous = entry.OriginalPath is null ? null : ExportDialogControls.DisplayPath(entry.OriginalPath);
+        FilePathHeader header = new(Icon(icon ?? IconName(entry)), path, previous, _pathPresentation);
+        foreach (Run run in new[] { header.DirectoryRun, header.PreviousRun })
         {
-            Run prefix = new(path[..(separator + 1)]);
-            _mutedPathRuns.Add(prefix);
-            prefix.Bind(TextElement.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush"));
-            text.Inlines!.Add(prefix);
+            _mutedPathRuns.Add(run);
+            run.Bind(TextElement.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush"));
         }
-        text.Inlines!.Add(new Run(path[(separator + 1)..]));
-        if (suffix.Length > 0)
-        {
-            Run previous = new(suffix); _mutedPathRuns.Add(previous); previous.Bind(TextElement.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush")); text.Inlines.Add(previous);
-        }
-        Grid header = new() { ColumnDefinitions = new("16,*"), Height = ClassicTreeViewAppearance.RowHeight };
-        header.Children.Add(Icon(icon ?? IconName(entry))); Grid.SetColumn(text, 1); header.Children.Add(text);
-        ToolTip.SetTip(header, path + suffix); return header;
+        ToolTip.SetTip(header, path + (previous is null ? "" : " (" + previous + ")"));
+        return header;
     }
     private void TreeSelectionChanged(object? sender, SelectionChangedEventArgs args)
     { if (!IsUpdating) { UpdatePathSelectionColors(); } }
@@ -685,7 +728,8 @@ public sealed class FileStatusListView : UserControl, IDisposable
     public void Dispose()
     {
         if (_disposed) { return; } _disposed = true; _modeInputFocus = null; _lastFocusedItem = null; CancelPendingFilter();
-        _store.Changed -= PreferencesChanged; ActualThemeVariantChanged -= ThemeChanged;
+        _store.Changed -= PreferencesChanged; _store.PathPresentationChanged -= PathPresentationChanged;
+        ActualThemeVariantChanged -= ThemeChanged;
         Tree.SelectionChanged -= TreeSelectionChanged;
         Tree.GotFocus -= TreeGotFocus;
         _filter.PropertyChanged -= FilterPropertyChanged; _filter.SelectionChanged -= FilterSelectionChanged;

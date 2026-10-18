@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Platform;
 using Avalonia.LogicalTree;
+using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Avatars;
 
@@ -241,6 +242,9 @@ public sealed partial class MainWindow
                     desktopSaved: acceptedDesktop =>
                     {
                         appearance.DesktopSaved(appearanceDraft);
+                        // Publish only the value actually committed to this Desktop profile,
+                        // even if a later Clone/History workflow profile cannot be saved.
+                        FileStatusListPreferencesStore.PublishPathPresentation(_preferencesStore.FilePath, acceptedDesktop.TruncatePathMethod);
                         // Register from the value actually written, before another workflow profile can
                         // fail. The service owns the mutation even if Settings stops waiting or closes.
                         try { avatarMutation = avatars?.ApplySavedPolicy(AvatarPreferences.From(acceptedDesktop)); }

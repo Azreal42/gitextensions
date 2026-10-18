@@ -47,6 +47,7 @@
   <ItemGroup>
     <!-- Keep the existing translation format and catalogues as the source of truth. -->
     <Compile Include="../../app/GitExtensions.Extensibility/Git/GitPullAction.cs" Link="Shared/GitPullAction.cs" />
+    <Compile Include="../../app/GitCommands/Settings/AppSettings.TruncatePathMethod.cs" Link="Shared/Settings/AppSettings.TruncatePathMethod.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/ITranslation.cs" Link="Localization/Shared/ITranslation.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationSerializer.cs" Link="Localization/Shared/TranslationSerializer.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/Xliff/TranslationFile.cs" Link="Localization/Shared/TranslationFile.cs" />

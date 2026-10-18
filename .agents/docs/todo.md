@@ -307,7 +307,7 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Publication en place, sauvegardes partielles et choix View temporaires ; prélecture Dashboard réutilisée sans modifier l’oracle de réouverture.
 - [x] Appearance N1→N2 partiel ; inventaire régénéré et contrôlé : 99 fenêtres métier, 32 pages Settings dont 15 N2. Treize familles ouvertes, aucun N4.
-- [ ] Après le lot avatars ci-dessous, quatre préférences Windows indisponibles/adaptées et downloadDictionary restent ouverts : intégration Visual Studio, AutoScale, troncature et dictionnaire. Aucun niveau supplémentaire acquis.
+- [ ] Après le lot avatars ci-dessous, intégration Visual Studio, AutoScale et dictionnaire restent ouverts ; troncature implémentée, validation complète en cours ci-dessous. Aucun niveau supplémentaire acquis.
 - [ ] Colonne de branche Windows, autres consommateurs et variantes natives, langues/thèmes, Wayland/DPI/accessibilité, paquet interactif et macOS.
 
 ## Avatars partagés — périmètre vérifié et disposition
@@ -320,3 +320,9 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 - [x] Template Custom long : colonne éditeur bornée par le viewport, place des aides réservée. Deux nouveaux cas rouges sur3954 puis **40/40 ciblés verts** (38 historiques), rendus anglais/clair et français/sombre ; aucun ancien oracle modifié. [Revue](../../artifacts/linux/appearance-settings-20261018/review/appearance-layout-root-review.json).
 - [x] Correction c831 validée : [full01](../../artifacts/linux/appearance-layout-20261018/full-01/parent-verification.json) **2285/2285 Desktop (215 classes), 720/720 Core, 35/35 Plugins**, deux cas Layout ajoutés sans skip/retrait ; [paquet isolé exact](../../artifacts/linux/snapshots/c831b414b/proofs/package-parent-verification.json) **35 607 404 octets** et [natif source](../../artifacts/linux/appearance-layout-20261018/native-source-01/root-operator-review.json) distincts. Anglais/clair/X11, 67 commandes, 4 GET locaux à 200, deux sorties normales à 0 et drain ; draft de 858 caractères dans Settings à 958 pixels, trois aides visibles sans scroll/resize ni clic externe. Les preuves 3954 et les [refus de préparation/bookkeeping](failure.md#avatars-partagés--activation) restent conservés ; mêmes 139 entrées/niveaux/aspects, treize familles ouvertes, aucun N4.
 - [ ] Chooser/classic réel, identité runtime/TTL entre familles et renderer en attente à la sortie réelle ; Blame/Gource natifs, providers externes, autres langues/thèmes, Wayland/DPI/accessibilité et macOS.
+
+## Présentation des chemins — validation en cours
+
+- [x] Quatre choix Windows actifs dans Appearance, préférence par profil et publication en place aux listes communes ; chemin Git et tooltip complets conservés. [ADR0100](adr/preferences/appearance/0100-file-path-presentation.md).
+- [x] [Ciblé02](../../artifacts/linux/truncate-path-20261018/review/root-targeted-import-01.json) : **278/278**, 192 historiques et 86 nouveaux, build sans avertissement. Rendus clair/sombre revus ; deux attentes historiques adaptées précisément. Les sorties du banc sont distinctes du vrai retour des tests.
+- [ ] Full du nouveau commit, paquet exact et parcours natif ; Compact reste une adaptation portable, suffixe submodule manquant. Inventaire et niveaux inchangés, treize familles ouvertes, aucun N4.

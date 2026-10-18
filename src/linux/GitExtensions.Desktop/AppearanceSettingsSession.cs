@@ -31,6 +31,7 @@ internal sealed class AppearanceSettingsSession
             Theme = Pick(_baseline.Theme, draft.Theme, latest.Theme),
             Language = Pick(_baseline.Language, draft.Language, latest.Language),
             ShowRepoCurrentBranch = Pick(_baseline.ShowRepoCurrentBranch, draft.ShowRepoCurrentBranch, latest.ShowRepoCurrentBranch),
+            TruncatePathMethod = Pick(_baseline.TruncatePathMethod, draft.TruncatePathMethod, latest.TruncatePathMethod),
             ShowAuthorAvatarInCommitInfo = Pick(_baseline.ShowAuthorAvatarInCommitInfo, draft.ShowAuthorAvatarInCommitInfo, latest.ShowAuthorAvatarInCommitInfo),
             AvatarImageCacheDays = Pick(_baseline.AvatarImageCacheDays, draft.AvatarImageCacheDays, latest.AvatarImageCacheDays),
             AvatarProvider = Pick(_baseline.AvatarProvider, draft.AvatarProvider, latest.AvatarProvider),
@@ -47,6 +48,7 @@ internal sealed class AppearanceSettingsSession
         _baseline = _baseline with
         {
             Theme = draft.Theme, Language = draft.Language, ShowRepoCurrentBranch = draft.ShowRepoCurrentBranch,
+            TruncatePathMethod = draft.TruncatePathMethod,
             ShowAuthorAvatarInCommitInfo = draft.ShowAuthorAvatarInCommitInfo, AvatarImageCacheDays = draft.AvatarImageCacheDays,
             AvatarProvider = draft.AvatarProvider, AvatarFallbackType = draft.AvatarFallbackType,
             CustomAvatarTemplate = draft.CustomAvatarTemplate
@@ -102,6 +104,7 @@ internal sealed class AppearanceSettingsSession
 
     private static void Validate(AppearanceSettingsValues draft)
     {
+        if (!Enum.IsDefined(draft.TruncatePathMethod)) { throw new ArgumentException("Select a valid path truncation method.", nameof(draft)); }
         if (draft.Theme is not ("Light" or "Dark" or "System")) { throw new ArgumentException("Select a valid theme.", nameof(draft)); }
         if (draft.AvatarImageCacheDays is < 0 or > 400 || !Enum.IsDefined(draft.AvatarProvider) || !Enum.IsDefined(draft.AvatarFallbackType))
         { throw new ArgumentException("Select valid author image settings.", nameof(draft)); }
@@ -111,6 +114,7 @@ internal sealed class AppearanceSettingsSession
     private static AppearanceSettingsValues Read(DesktopPreferences desktop, HistoryViewPreferences active) => new()
     {
         Theme = desktop.Theme, Language = desktop.Language, ShowRepoCurrentBranch = desktop.ShowRepoCurrentBranch,
+        TruncatePathMethod = desktop.TruncatePathMethod,
         RelativeDate = active.RelativeDate, ShowAvatar = active.ShowAvatar,
         ShowAuthorAvatarInCommitInfo = desktop.ShowAuthorAvatarInCommitInfo, AvatarImageCacheDays = desktop.AvatarImageCacheDays,
         AvatarProvider = desktop.AvatarProvider, AvatarFallbackType = desktop.AvatarFallbackType,

@@ -8,6 +8,7 @@ public sealed record DesktopPreferences
     public string Theme { get; init; } = "Light";
     public string? Language { get; init; }
     public bool ShowRepoCurrentBranch { get; init; } = true;
+    public GitCommands.TruncatePathMethod TruncatePathMethod { get; init; } = GitCommands.TruncatePathMethod.None;
     public bool ShowAuthorAvatarInCommitInfo { get; init; } = true;
     public int AvatarImageCacheDays { get; init; } = 13;
     public GitCommands.AvatarProvider AvatarProvider { get; init; } = GitCommands.AvatarProvider.None;
@@ -57,6 +58,7 @@ public sealed class PreferencesStore
         GitReferenceSorting sorting = value.ReferenceSorting ?? new();
         return value with
         {
+            TruncatePathMethod = Enum.IsDefined(value.TruncatePathMethod) ? value.TruncatePathMethod : GitCommands.TruncatePathMethod.None,
             AvatarImageCacheDays = Math.Clamp(value.AvatarImageCacheDays, 0, 400),
             AvatarProvider = Enum.IsDefined(value.AvatarProvider) ? value.AvatarProvider : GitCommands.AvatarProvider.None,
             AvatarFallbackType = Enum.IsDefined(value.AvatarFallbackType) ? value.AvatarFallbackType : GitCommands.AvatarFallbackType.AuthorInitials,

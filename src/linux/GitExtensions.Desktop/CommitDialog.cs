@@ -148,8 +148,8 @@ public sealed partial class CommitDialog : Window
         _content = new FileContentView(_source, _diff);
         _diff.ContextMenu = new ContextMenu { ItemsSource = _diff.CreateContextMenuItems("CommitDiff") };
         FileStatusListPreferencesStore fileListPreferences = new(Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!);
-        _unstagedView = new FileStatusListView(_unstaged, FileHeader, fileListPreferences) { Name = "UnstagedFileStatusList" };
-        _stagedView = new FileStatusListView(_staged, FileHeader, fileListPreferences) { Name = "StagedFileStatusList" };
+        _unstagedView = new FileStatusListView(_unstaged, entry => FileHeader(_unstagedView!, entry), fileListPreferences) { Name = "UnstagedFileStatusList" };
+        _stagedView = new FileStatusListView(_staged, entry => FileHeader(_stagedView!, entry), fileListPreferences) { Name = "StagedFileStatusList" };
         ConfigureRulesFileList(_unstagedView);
         ConfigureRulesFileList(_stagedView);
         ConfigureIndexFlagFiles();
@@ -417,12 +417,10 @@ public sealed partial class CommitDialog : Window
         return root;
     }
 
-    private Control FileHeader(FileStatusListEntry entry)
+    private Control FileHeader(FileStatusListView view, FileStatusListEntry entry)
     {
         GitChange change = (GitChange)entry.Tag;
-        string icon = FileStatusListView.IconName(entry);
-        string path = ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path);
-        Control label = IconLabel(change.OriginalPath is null ? path : $"{ExportDialogControls.DisplayPath(change.OriginalPath)} → {path}", icon);
+        Control label = view.CreateFileHeader(entry, FileStatusListView.IconName(entry));
         ToolTip.SetTip(label, change.Path + (change.IsConflict ? " — " + T("There are unresolved merge conflicts") : ""));
         return label;
     }
@@ -450,6 +448,12 @@ public sealed partial class CommitDialog : Window
             if (ReferenceEquals(args.Source, list) && !view.IsUpdating && !_refreshing && !_busy) { await SelectFileAsync(view, staged); }
         };
         list.DoubleTapped += async (_, _) => { if (!_busy) { if (staged) { await UnstageAsync(false); } else { await StageAsync(false); } } };
+        view.PathPresentationFilterChanged += (_, _) =>
+        {
+            UpdateAllButton(_stageAll, _unstagedView, false);
+            UpdateAllButton(_unstageAll, _stagedView, true);
+            UpdateAvailability(); UpdateStatus();
+        };
         view.DisplayChanged += async (_, _) =>
         {
             UpdateAllButton(_stageAll, _unstagedView, false);

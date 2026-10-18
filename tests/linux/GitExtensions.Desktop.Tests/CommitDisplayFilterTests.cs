@@ -288,7 +288,7 @@ public class CommitDisplayFilterTests
                 foreach (TreeViewItem leaf in FileStatusTestHelpers.Rows(tree).Where(item => item.Tag is GitChange && item.IsEffectivelyVisible))
                 {
                     Assert.That(leaf.Bounds.Height, Is.EqualTo(18));
-                    Assert.That(leaf.Header, Is.TypeOf<Grid>());
+                    Assert.That(leaf.Header, Is.TypeOf<GitExtensions.Linux.Desktop.Controls.FilePathHeader>());
                     Assert.That(((Grid)leaf.Header!).Children.OfType<Image>().Single().Width, Is.EqualTo(16));
                 }
                 Assert.That(Field<ComboBox>(dialog, isStaged ? "StagedFilter" : "UnstagedFilter").Bounds.Height, Is.EqualTo(24));

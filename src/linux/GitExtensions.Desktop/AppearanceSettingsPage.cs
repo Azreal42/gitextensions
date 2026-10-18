@@ -23,7 +23,7 @@ internal sealed class AppearanceSettingsPage : UserControl
     private readonly LanguageCatalog _languages;
     private readonly Func<Window, Task>? _helpTranslateAsync;
     private readonly CheckBox _relativeDate, _repoBranch, _avatar, _avatarCommitInfo;
-    private readonly ComboBox _theme, _language, _provider, _fallback;
+    private readonly ComboBox _theme, _language, _provider, _fallback, _truncatePath;
     private readonly NumericUpDown _cacheDays;
     private readonly TextBox _customTemplate;
     private readonly TextBlock _customTemplateLabel;
@@ -45,6 +45,7 @@ internal sealed class AppearanceSettingsPage : UserControl
     {
         RelativeDate = _relativeDate.IsChecked == true,
         ShowRepoCurrentBranch = _repoBranch.IsChecked == true,
+        TruncatePathMethod = _truncatePath.SelectedItem is TruncatePathMethod method ? method : _accepted.TruncatePathMethod,
         ShowAvatar = _avatar.IsChecked == true,
         ShowAuthorAvatarInCommitInfo = _avatarCommitInfo.IsChecked == true,
         AvatarImageCacheDays = (int)(_cacheDays.Value ?? _accepted.AvatarImageCacheDays),
@@ -76,9 +77,9 @@ internal sealed class AppearanceSettingsPage : UserControl
             "Avalonia scales the Linux interface automatically. The Windows auto-scale setting is not available.");
         scaling.IsChecked = true;
         AddWide(general, scaling);
-        AddField(general, Caption("truncateLongFilenames", "Truncate long filenames"),
-            UnavailableChoice("truncatePathMethod",
-                "The Windows path truncation choices and their file-name filter behavior are not connected on Linux."));
+        _truncatePath = Choice("truncatePathMethod", Enum.GetValues<TruncatePathMethod>());
+        _truncatePath.ItemTemplate = new FuncDataTemplate<TruncatePathMethod>((method, _) => new TextBlock { Text = TruncatePathText(method) });
+        AddField(general, Caption("truncateLongFilenames", "Truncate long filenames"), _truncatePath);
         _theme = Choice("SettingsTheme", Themes);
         _theme.ItemTemplate = new FuncDataTemplate<string>((theme, _) => new TextBlock { Text = _translations.Translate(theme ?? "") });
         AddField(general, new TextBlock { Name = "SettingsThemeLabel", Text = _translations.Translate("Theme") + " (Linux)",
@@ -164,6 +165,8 @@ internal sealed class AppearanceSettingsPage : UserControl
 
     internal bool Validate(out string? error)
     {
+        if (_truncatePath.SelectedItem is not TruncatePathMethod method || !Enum.IsDefined(method))
+        { return Invalid(_truncatePath, "Select a path truncation method.", out error); }
         if (_theme.SelectedItem is not string theme || !Themes.Contains(theme))
         { return Invalid(_theme, "Select a theme.", out error); }
         if (_language.SelectedItem is LanguageChoice choice)
@@ -200,6 +203,7 @@ internal sealed class AppearanceSettingsPage : UserControl
         {
             _accepted = published; _languageEdited = false;
             _relativeDate.IsChecked = published.RelativeDate; _repoBranch.IsChecked = published.ShowRepoCurrentBranch;
+            _truncatePath.SelectedItem = published.TruncatePathMethod;
             _avatar.IsChecked = published.ShowAvatar;
             _avatarCommitInfo.IsChecked = published.ShowAuthorAvatarInCommitInfo;
             _cacheDays.Value = Math.Clamp(published.AvatarImageCacheDays, 0, 400);
@@ -332,6 +336,11 @@ internal sealed class AppearanceSettingsPage : UserControl
     private static void Put(Grid grid, Control control, int row, int column, int span = 1)
     { Grid.SetRow(control, row); Grid.SetColumn(control, column); Grid.SetColumnSpan(control, span); grid.Children.Add(control); }
     private string Text(string name, string source) => _translations.Translate("AppearanceSettingsPage", name, "Text", source);
+    private string TruncatePathText(TruncatePathMethod method)
+    {
+        string source = method switch { TruncatePathMethod.None => "None", TruncatePathMethod.Compact => "Compact", TruncatePathMethod.TrimStart => "Trim start", TruncatePathMethod.FileNameOnly => "Filename only", _ => method.ToString() };
+        return _translations.Translate("AppearanceSettingsPage", "truncatePathMethod", "Item" + (int)method, source);
+    }
     private bool Invalid(Control control, string message, out string? error)
     { error = _translations.Translate(message); ShowError(error); control.Focus(); return false; }
     private void ShowError(string? error) { _notice.Text = error; _notice.IsVisible = !string.IsNullOrEmpty(error); }

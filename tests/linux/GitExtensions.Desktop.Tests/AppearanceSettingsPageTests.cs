@@ -131,12 +131,12 @@ public sealed class AppearanceSettingsPageTests
             Grid group = f.Field<Grid>(name); double y = group.TranslatePoint(default, f.Page)!.Value.Y;
             Assert.That(y, Is.GreaterThan(previous)); previous = y;
         }
-        foreach (string name in new[] { "chkShowRelativeDate", "chkShowRepoCurrentBranch", "ShowAuthorAvatarInCommitGraph", "Language", "SettingsTheme",
+        foreach (string name in new[] { "chkShowRelativeDate", "chkShowRepoCurrentBranch", "ShowAuthorAvatarInCommitGraph", "Language", "SettingsTheme", "truncatePathMethod",
             "ShowAuthorAvatarInCommitInfo", "_NO_TRANSLATE_DaysToCacheImages", "AvatarProvider", "_NO_TRANSLATE_NoImageService" })
         {
             Control control = f.Field<Control>(name); f.Show(control); AssertReachable(f.Window, control);
         }
-        foreach (string name in new[] { "chkShowCurrentBranchInVisualStudio", "chkEnableAutoScale", "truncatePathMethod", "ClearImageCache",
+        foreach (string name in new[] { "chkShowCurrentBranchInVisualStudio", "chkEnableAutoScale", "ClearImageCache",
             "avatarProviderHelp", "pictureAvatarHelp", "Dictionary", "downloadDictionary" })
         {
             Control control = f.Field<Control>(name); Assert.That(control.IsEffectivelyVisible, Is.True, name);
