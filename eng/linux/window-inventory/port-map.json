@@ -1778,7 +1778,7 @@
     "GitUI.CommandsDialogs.FormSettings": {
       "feature": "Paramètres de l’application",
       "group": "settings",
-      "level": "N1",
+      "level": "N2",
       "linux": [
         "DesktopSettingsDialog",
         "NativeDiffViewerSettingsDialog",
@@ -1788,11 +1788,12 @@
         "FontPickerDialog",
         "GitEnvironmentSettingsPage",
         "ChecklistSettingsPage",
-        "GitHomeDirectoryDialog"
+        "GitHomeDirectoryDialog",
+        "SettingsNavigationView"
       ],
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092. Pages Git/Paths et Checklist raccordées, correction HOME enfant et Config Global hors dépôt ; Save and rescan publie les pages avant les observations, case de démarrage publiée séparément et Cancel sans rollback des publications acquises, ADR0095. Parcours natif source 1deed borné : correction Git, reprise de la demande CLI, HOME enfant, case instantanée puis auto-off, Cancel et redémarrage du profil.",
-      "remaining": "FormSettings reste N1 : arbre Windows très incomplet, onglets Avalonia et sous-pages évaluées séparément. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale.",
-      "visual": "adapte",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page.",
+      "remaining": "N2 : pages Windows absentes, Plugins/CI et sources Global/Local/distribuées de toutes les pages encore ouverts. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
+      "visual": "rapproche",
       "tests": [
         "ClassicMenuTests",
         "NativeDiffViewerSettingsDialogTests",
@@ -1803,7 +1804,8 @@
         "GitEnvironmentSettingsHostTests",
         "GitEnvironmentSettingsPagesTests",
         "GitEnvironmentSettingsSessionTests",
-        "GitEnvironmentStartupTests"
+        "GitEnvironmentStartupTests",
+        "SettingsNavigationTests"
       ],
       "adr": [
         "0060",
@@ -1812,7 +1814,8 @@
         "0090",
         "0091",
         "0092",
-        "0095"
+        "0095",
+        "0096"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2244,14 +2247,16 @@
       "linux": [
         "DesktopSettingsDialog"
       ],
-      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes.",
-      "remaining": "Page avancée absente : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options à porter.",
+      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes. Page Advanced dédiée dans l’arbre, brouillons conservés et publication Apply/OK commune ; ADR0096.",
+      "remaining": "Page partielle N1 : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options Windows à porter.",
       "visual": "integre",
       "tests": [
-        "RemotesDialogTests"
+        "RemotesDialogTests",
+        "SettingsNavigationTests"
       ],
       "adr": [
-        "0067"
+        "0067",
+        "0096"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage": {
@@ -2267,19 +2272,21 @@
         "DesktopFontResolver",
         "DesktopFontMetrics"
       ],
-      "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée.",
-      "remaining": "Import Windows, arbre/Apply global de Settings, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
+      "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée. Sous-page Appearance/Fonts dans l’arbre ; Apply global, retry et AcceptSaved reprennent la référence fusionnée sans écraser une préférence concurrente déjà publiée, ADR0096.",
+      "remaining": "Import Windows, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
       "visual": "rapproche",
       "tests": [
         "FontPreferencesStoreTests",
         "DesktopFontsTests",
         "FontSettingsTests",
         "FontConsumerTests",
-        "FontStreamLifetimeTests"
+        "FontStreamLifetimeTests",
+        "SettingsNavigationTests"
       ],
       "adr": [
         "0091",
-        "0092"
+        "0092",
+        "0096"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage": {
@@ -2292,16 +2299,18 @@
         "DesktopSettingsDialog",
         "AppearanceFontsSettingsPage"
       ],
-      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO. Les polices et EOL sont traités dans la page Fonts dédiée (ADR0091) ; la page Appearance globale reste N1.",
-      "remaining": "Page Appearance globale absente ; dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; page N1 inchangée.",
+      "implemented": "Page Appearance dans l’arbre : thème et langue persistants, libellé de redémarrage requis, brouillons et Apply/Cancel communs. Priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservés. Dates relatives/avatars restent exposés dans certaines vues ; Fonts/EOL dans la sous-page dédiée. ADR0090/0091/0096 ; Appearance reste N1, seuls ces choix sont portés.",
+      "remaining": "Dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; N1 inchangé.",
       "visual": "integre",
       "tests": [
         "LanguagePreferencesTests",
-        "FontConsumerTests"
+        "FontConsumerTests",
+        "SettingsNavigationTests"
       ],
       "adr": [
         "0090",
-        "0091"
+        "0091",
+        "0096"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.BlameViewerSettingsPage": {
@@ -2463,17 +2472,19 @@
         "FileHistoryWorkflow",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085. Follow/Exact exposés côte à côte, OK sauvegarde/recharge et Cancel ne change rien ; réglages partagés ADR0086.",
+      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085. Follow/Exact exposés côte à côte, OK sauvegarde/recharge et Cancel ne change rien ; réglages partagés ADR0086. Page General dans l’arbre ; Apply sans fermeture puis Cancel des brouillons ultérieurs et persistance de la limite au vrai redémarrage vérifiés en natif source7c52 anglais/clair/X11 (ADR0096).",
       "remaining": "Page générale Windows complète absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
       "visual": "integre",
       "tests": [
         "BrowseStartupTests",
         "FileHistoryWorkflowTests",
-        "FileHistoryPreferencesTests"
+        "FileHistoryPreferencesTests",
+        "SettingsNavigationTests"
       ],
       "adr": [
         "0085",
-        "0086"
+        "0086",
+        "0096"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigAdvancedSettingsPage": {
@@ -2538,13 +2549,20 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitRootIntroductionPage": {
       "feature": "Introduction aux réglages Git",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de page d’introduction correspondante.",
-      "remaining": "Navigation et contenu d’aide dans l’arbre des réglages absents.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "DesktopSettingsDialog",
+        "SettingsNavigationView"
+      ],
+      "implemented": "Racine Git avec icône et texte d’introduction Windows, titre Git Settings et accès aux enfants Paths/Config ; sélection et navigation clavier conservées. Suites et parcours natif source ciblé ADR0096.",
+      "remaining": "Seuls les enfants effectivement portés sont exposés ; autres pages Git et sources de configuration encore incomplètes. Audit natif étendu ouvert.",
+      "visual": "rapproche",
+      "tests": [
+        "SettingsNavigationTests"
+      ],
+      "adr": [
+        "0096"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitSettingsPage": {
       "feature": "Chemins/exécutable Git",

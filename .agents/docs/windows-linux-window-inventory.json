@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-  "source_digest_sha256": "aaebb9d27ac0ecb1ab7b282dd8cfbc4dfca2f91a0305b660f7b60832125321a3",
-  "scanned_csharp_files": 2127,
+  "code_reference_commit": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+  "source_digest_sha256": "9306e378825e7555383b9e35373e4c543209e410301d4a03de2ca4c5ea221d3d",
+  "scanned_csharp_files": 2130,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -32,15 +32,15 @@
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 5,
-      "N1": 15,
-      "N2": 29,
+      "N1": 14,
+      "N2": 30,
       "N3": 49,
       "NA": 1
     },
     "settings_levels": {
-      "N0": 11,
+      "N0": 10,
       "N1": 7,
-      "N2": 13,
+      "N2": 14,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/git-environment-20261018/full-01/desktop.trx",
-    "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-    "trx_sha256": "11b0ffe71afe15de352c8c97f0438afc2b8e6fa574661be6208481fb64cf34d2",
+    "trx": "artifacts/linux/settings-navigation-20261018/full-01/desktop.trx",
+    "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+    "trx_sha256": "f8cd21bb7ec6b7490a514351fee1393247b1e29f67fbf7ecd7d9c8691063e20b",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-        "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-        "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+        "execution_source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+        "candidate_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
         "passed": 720,
         "total": 720,
-        "execution_result": "artifacts/linux/git-environment-20261018/full-01/core-result.json",
-        "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
+        "execution_result": "artifacts/linux/settings-navigation-20261018/full-01/core-result.json",
+        "build_result": "artifacts/linux/settings-navigation-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-        "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-        "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+        "execution_source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+        "candidate_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/git-environment-20261018/full-01/plugins-result.json",
-        "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
-        "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
+        "execution_result": "artifacts/linux/settings-navigation-20261018/full-01/plugins-result.json",
+        "build_result": "artifacts/linux/settings-navigation-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -5072,16 +5072,16 @@
       "category": "windows",
       "feature": "Paramètres de l’application",
       "group": "settings",
-      "level": "N1",
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092. Pages Git/Paths et Checklist raccordées, correction HOME enfant et Config Global hors dépôt ; Save and rescan publie les pages avant les observations, case de démarrage publiée séparément et Cancel sans rollback des publications acquises, ADR0095. Parcours natif source 1deed borné : correction Git, reprise de la demande CLI, HOME enfant, case instantanée puis auto-off, Cancel et redémarrage du profil.",
-      "remaining": "FormSettings reste N1 : arbre Windows très incomplet, onglets Avalonia et sous-pages évaluées séparément. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale.",
-      "visual": "adapte",
+      "level": "N2",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page.",
+      "remaining": "N2 : pages Windows absentes, Plugins/CI et sources Global/Local/distribuées de toutes les pages encore ouverts. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
+      "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -5139,6 +5139,13 @@
           "source": "src/linux/GitExtensions.Desktop/GitHomeDirectoryDialog.cs",
           "line": 10,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.SettingsNavigationView",
+          "label": "SettingsNavigationView",
+          "source": "src/linux/GitExtensions.Desktop/Controls/SettingsNavigationView.cs",
+          "line": 22,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -5267,6 +5274,12 @@
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
         }
       ],
       "adr": [
@@ -5276,7 +5289,8 @@
         ".agents/docs/adr/preferences/language/0090-language-selection.md",
         ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
         ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md",
-        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md"
+        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md",
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
       ]
     },
     {
@@ -6007,15 +6021,15 @@
       "feature": "Paramètres avancés",
       "group": "settings-pages",
       "level": "N1",
-      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes.",
-      "remaining": "Page avancée absente : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options à porter.",
+      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes. Page Advanced dédiée dans l’arbre, brouillons conservés et publication Apply/OK commune ; ADR0096.",
+      "remaining": "Page partielle N1 : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options Windows à porter.",
       "visual": "integre",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         }
       ],
@@ -6109,10 +6123,17 @@
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/remotes/0067-remote-settings.md"
+        ".agents/docs/adr/workflows/remotes/0067-remote-settings.md",
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
       ]
     },
     {
@@ -6138,8 +6159,8 @@
       "feature": "Polices des vues",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée.",
-      "remaining": "Import Windows, arbre/Apply global de Settings, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
+      "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée. Sous-page Appearance/Fonts dans l’arbre ; Apply global, retry et AcceptSaved reprennent la référence fusionnée sans écraser une préférence concurrente déjà publiée, ADR0096.",
+      "remaining": "Import Windows, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
       "visual": "rapproche",
       "linux": [
         {
@@ -6160,7 +6181,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -6306,11 +6327,18 @@
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
-        ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md"
+        ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md",
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
       ]
     },
     {
@@ -6336,8 +6364,8 @@
       "feature": "Apparence générale",
       "group": "settings-pages",
       "level": "N1",
-      "implemented": "Dates relatives et avatars dans certaines vues ; réglages dispersés. Langue persistante dans General, libellé redémarrage requis, brouillon Cancel/OK ; priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservé. ADR0090, périmètres ciblés dans le TODO. Les polices et EOL sont traités dans la page Fonts dédiée (ADR0091) ; la page Appearance globale reste N1.",
-      "remaining": "Page Appearance globale absente ; dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; page N1 inchangée.",
+      "implemented": "Page Appearance dans l’arbre : thème et langue persistants, libellé de redémarrage requis, brouillons et Apply/Cancel communs. Priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservés. Dates relatives/avatars restent exposés dans certaines vues ; Fonts/EOL dans la sous-page dédiée. ADR0090/0091/0096 ; Appearance reste N1, seuls ces choix sont portés.",
+      "remaining": "Dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; N1 inchangé.",
       "visual": "integre",
       "linux": [
         {
@@ -6358,7 +6386,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -6507,11 +6535,18 @@
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/preferences/language/0090-language-selection.md",
-        ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md"
+        ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
       ]
     },
     {
@@ -6770,7 +6805,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -6870,6 +6905,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
           "results_present": true
         }
       ],
@@ -7226,7 +7267,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         }
       ],
@@ -7319,6 +7360,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
           "results_present": true
         }
       ],
@@ -7513,7 +7560,7 @@
       "feature": "Réglages généraux",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085. Follow/Exact exposés côte à côte, OK sauvegarde/recharge et Cancel ne change rien ; réglages partagés ADR0086.",
+      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085. Follow/Exact exposés côte à côte, OK sauvegarde/recharge et Cancel ne change rien ; réglages partagés ADR0086. Page General dans l’arbre ; Apply sans fermeture puis Cancel des brouillons ultérieurs et persistance de la limite au vrai redémarrage vérifiés en natif source7c52 anglais/clair/X11 (ADR0096).",
       "remaining": "Page générale Windows complète absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
       "visual": "integre",
       "linux": [
@@ -7521,7 +7568,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -7731,6 +7778,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
           "test_class": "SubmoduleConflictDialogTests",
           "passed_in_reference_run": 14,
@@ -7745,7 +7798,8 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/files/0085-browse-file-history.md",
-        ".agents/docs/adr/workflows/files/0086-shared-file-history-settings.md"
+        ".agents/docs/adr/workflows/files/0086-shared-file-history-settings.md",
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
       ]
     },
     {
@@ -7969,13 +8023,127 @@
       "category": "settings",
       "feature": "Introduction aux réglages Git",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Pas de page d’introduction correspondante.",
-      "remaining": "Navigation et contenu d’aide dans l’arbre des réglages absents.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Racine Git avec icône et texte d’introduction Windows, titre Git Settings et accès aux enfants Paths/Config ; sélection et navigation clavier conservées. Suites et parcours natif source ciblé ADR0096.",
+      "remaining": "Seuls les enfants effectivement portés sont exposés ; autres pages Git et sources de configuration encore incomplètes. Audit natif étendu ouvert.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.SettingsNavigationView",
+          "label": "SettingsNavigationView",
+          "source": "src/linux/GitExtensions.Desktop/Controls/SettingsNavigationView.cs",
+          "line": 22,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
+          "test_class": "FileHistoryPreferencesTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
+          "test_class": "GitConfigurationPageTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
+          "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitSettingsPage",
@@ -8127,7 +8295,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -8311,6 +8479,12 @@
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
         }
       ],
       "adr": [
@@ -8422,7 +8596,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -8547,6 +8721,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
           "results_present": true
         }
       ],
@@ -8673,7 +8853,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -8785,6 +8965,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
           "results_present": true
         }
       ],
@@ -12550,11 +12736,11 @@
       "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
       "name": "DesktopSettingsDialog",
       "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-      "line": 12,
+      "line": 14,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 12
+          "line": 14
         }
       ],
       "bases": [
@@ -12565,7 +12751,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AdvancedSettingsPage",
@@ -12595,6 +12781,11 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GeneralSettingsPage",
           "name": "GeneralSettingsPage",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitRootIntroductionPage",
+          "name": "GitRootIntroductionPage",
           "level": "N2"
         },
         {
@@ -12793,7 +12984,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
@@ -12875,7 +13066,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.FormFixHome",
@@ -13353,7 +13544,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.FormSubmodules",
@@ -13505,7 +13696,7 @@
         {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.DiffViewerSettingsPage",
@@ -19039,8 +19230,8 @@
       "N2": 4
     },
     "settings": {
-      "N1": 2,
-      "N2": 2
+      "N1": 1,
+      "N2": 3
     },
     "hosting": {
       "N0": 3,
@@ -19063,9 +19254,9 @@
       "N3": 5
     },
     "settings-pages": {
-      "N0": 5,
+      "N0": 4,
       "N1": 7,
-      "N2": 13,
+      "N2": 14,
       "NA": 1
     },
     "ci-settings": {

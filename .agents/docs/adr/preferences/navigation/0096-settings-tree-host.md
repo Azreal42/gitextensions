@@ -1,6 +1,6 @@
 # ADR 0096 · Arbre de navigation Settings
 
-Statut : ciblés vérifiés ; full, paquet et natif encore ouverts, aucune parité globale acquise.
+Statut : source `7c52b3974`, suites complètes et paquet exact vérifiés ; natif source borné anglais/clair/X11. FormSettings et introduction Git N2, aucune parité globale acquise.
 
 Retrouver les réglages comme dans Windows, sans perdre les brouillons en naviguant. Reprendre la hiérarchie, l’ordre relatif et les icônes d’origine des seules pages réellement implémentées. La racine Git Extensions héberge Checklist lorsqu’elle est disponible ; Git affiche son introduction, puis Paths et Config. Thème et langue rejoignent Appearance ; normalisation des branches et options avancées rejoignent Advanced.
 
@@ -10,6 +10,6 @@ Apply et SaveAll publient toutes les pages sans fermer. Après réussite, Cancel
 
 Un panneau défilable horizontalement garde les pages accessibles sur fenêtre étroite. Effacer l’erreur générale après Save réussi. Fonts AcceptSaved reprend le résultat fusionné publié et sa nouvelle référence, pour qu’un Apply répété n’écrase pas une préférence concurrente déjà conservée.
 
-Config reste un dialogue enfant avec ses propres brouillons et portées. Plugins, intégration CI, autres pages absentes et sources Global/Local de toutes les pages ne deviennent pas disponibles par ce changement d’hôte. Le code et les preuves à venir restent les références ; aucun résultat vert ni niveau relevé n’est supposé.
+Config reste un dialogue enfant avec ses propres brouillons et portées. Plugins, intégration CI, autres pages absentes et sources Global/Local de toutes les pages ne deviennent pas disponibles par ce changement d’hôte. Preuves et limites dans le [TODO](../../../todo.md) : 2006/720/35 sans skip, deux fermetures natives normales et persistance après redémarrage. Le paquet a été installé/lancé dans un banc isolé ; son interface métier n’est pas certifiée interactivement.
 
 Repères : DesktopSettingsDialog, Controls/SettingsNavigationView, MainWindow.ToolsHelp, AppearanceFontsSettingsPage.

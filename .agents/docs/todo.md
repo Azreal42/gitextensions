@@ -6,14 +6,16 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `1deed8d34`, suites complètes 1986/1986 Desktop (193 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=15, N2=29, N3=49, NA=1 ; 32 pages : N0=11, N1=7, N2=13, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `7c52b3974`, suites complètes 2006/2006 Desktop (194 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=7, N2=14, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
 
-**Recensement actuel : 2127 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
+**Recensement actuel : 2130 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
 
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] Settings : arbre/icônes Windows, recherche, mémoire, focus et Apply commun ; suites complètes, paquet exact et natif source ciblé avec redémarrage vérifiés. ADR0096 ; FormSettings N2, pages/portées absentes encore ouvertes.
 
 - [x] Config : treize champs Windows, brouillons Local/Global et encodages partagés à deux listes ; suites complètes et paquet exact vérifiés, parcours natif source ciblé avec redémarrage. ADR0094 ; page Config et AvailableEncodings N2, audit étendu ouvert.
 
@@ -272,11 +274,14 @@ Le [full01 vérifié](../../artifacts/linux/git-environment-20261018/full-01/par
 - [ ] Compléter l’arbre Settings et l’audit natif des pickers, erreurs, thèmes/langues, Wayland/DPI/accessibilité ; aucune parité globale certifiée.
 
 
-## Validation en cours — Settings tree
+## Validation courante — Arbre Settings
 
-Statut : ciblés vérifiés ; [ADR0096](adr/preferences/navigation/0096-settings-tree-host.md). Référence globale et niveaux inchangés en attente du full, du paquet et du parcours natif.
+Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/navigation/0096-settings-tree-host.md). Arbre/icônes Windows des pages présentes, recherche AND/Entrée, mémoire/Goto, focus conservé et Apply/SaveAll commun. Les pages gardent leurs brouillons ; Cancel conserve les publications déjà acquises.
 
-- [x] Arbre/icônes, recherche AND/Entrée, mémoire/Goto, focus, pages étroites et scripts préchargés : [ciblé03 223/223](../../artifacts/linux/settings-navigation-20261018/targeted-03/desktop.trx), sans skip. Après alignement final en haut, [04 20/20](../../artifacts/linux/settings-navigation-20261018/targeted-final-04/desktop.trx) reprend les nouveaux cas ; build04 à 0, sans avertissement.
-- [x] Apply/SaveAll puis Cancel, retry, fusion Fonts et anciennes fermetures testés dans ces périmètres ; les échecs antérieurs restent dans failure. Un seul oracle historique change : Cancel après SaveAll rend true comme FormSettings Windows ; les autres gestes/assertions sont conservés.
-- [ ] Attendre les preuves de build, suites et parcours natifs ; finaliser ensuite les références sans transférer les preuves des lots précédents.
-- [ ] Poursuivre les pages Windows absentes, Plugins/CI et sources Global/Local ; Config demeure un dialogue enfant, sans parité globale de Settings.
+[Full01 vérifié](../../artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json) : **2006/2006 Desktop (194 classes), 720/720 Core, 35/35 Plugins**, sans skip, build sans avertissement/erreur, sorties réelles à 0. **1986 anciens cas UI conservés, 20 ajoutés, aucun retrait** ; adaptations des gestes de navigation revues, un seul oracle historique change pour le résultat Cancel après SaveAll comme Windows. Sources/runtimes stables. Ciblés03 223/223 et final04 20/20, échecs et [sonde complémentaire 2/2](../../artifacts/linux/settings-navigation-20261018/owner-close-probe-01/root-review.json) séparés dans failure.
+
+[Paquet exact](../../artifacts/linux/snapshots/7c52b3974/proofs/package-parent-verification.json) : **35 545 172 octets**, cinq phases à 0, 442 entrées/386 fichiers et extraction complète vérifiés ; [backend/helper](../../artifacts/linux/snapshots/7c52b3974/proofs/package-backend-environment-verification.json) contrôlés. Installation/lancement isolés. [Revue native source](../../artifacts/linux/settings-navigation-20261018/native-source-01/root-review.json) : premier clic/flèches, recherche/cycle sans publication, Apply/Cancel, mémoire de page, Config enfant et limite retrouvée après vrai redémarrage ; deux sorties normales à 0, anglais/clair/X11 seulement. Aucun transfert de cette preuve à l’interface du paquet.
+
+**FormSettings N1→N2 ; introduction Git N0→N2. Treize familles ouvertes, aucun N4.**
+
+- [ ] Pages Windows absentes, Plugins/CI, sources Global/Local/distribuées et audit natif étendu ; Config demeure un dialogue enfant. Aucun isomorphisme global de Settings acquis.

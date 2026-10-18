@@ -1,11 +1,11 @@
 {
-  "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-  "trx": "artifacts/linux/git-environment-20261018/full-01/desktop.trx",
-  "trx_sha256": "11b0ffe71afe15de352c8c97f0438afc2b8e6fa574661be6208481fb64cf34d2",
+  "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+  "trx": "artifacts/linux/settings-navigation-20261018/full-01/desktop.trx",
+  "trx_sha256": "f8cd21bb7ec6b7490a514351fee1393247b1e29f67fbf7ecd7d9c8691063e20b",
   "counters": {
-    "total": "1986",
-    "executed": "1986",
-    "passed": "1986",
+    "total": "2006",
+    "executed": "2006",
+    "passed": "2006",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -552,6 +552,9 @@
     "ScriptsSettingsPageTests": {
       "Passed": 15
     },
+    "SettingsNavigationTests": {
+      "Passed": 20
+    },
     "StashMenuTests": {
       "Passed": 19
     },
@@ -603,27 +606,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-      "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-      "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+      "execution_source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+      "candidate_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
       "passed": 720,
       "total": 720,
-      "execution_result": "artifacts/linux/git-environment-20261018/full-01/core-result.json",
-      "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
+      "execution_result": "artifacts/linux/settings-navigation-20261018/full-01/core-result.json",
+      "build_result": "artifacts/linux/settings-navigation-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-      "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
-      "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+      "execution_source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+      "candidate_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/git-environment-20261018/full-01/plugins-result.json",
-      "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
+      "execution_result": "artifacts/linux/settings-navigation-20261018/full-01/plugins-result.json",
+      "build_result": "artifacts/linux/settings-navigation-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
