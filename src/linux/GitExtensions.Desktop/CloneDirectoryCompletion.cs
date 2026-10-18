@@ -1,15 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using GitExtensions.Linux.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -35,14 +33,7 @@ internal sealed class CloneDirectoryCompletion : IDisposable
         _editor = editor;
         _suggestions.Name = controlNamePrefix + "DirectorySuggestions";
         _error.Name = controlNamePrefix + "DirectoryCompletionError";
-        foreach (string state in new[] { ":selected", ":pointerover", ":pressed" })
-        {
-            _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>().Class(state))
-            { Setters = { new Setter(TemplatedControl.ForegroundProperty, new DynamicResourceExtension("ClassicHighlightTextBrush")) } });
-            _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>().Class(state).Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"))
-            { Setters = { new Setter(ContentPresenter.BackgroundProperty, new DynamicResourceExtension("ClassicHighlightBrush")),
-                new Setter(ContentPresenter.ForegroundProperty, new DynamicResourceExtension("ClassicHighlightTextBrush")) } });
-        }
+        ClassicCompletionList.Apply(_suggestions);
         ScrollViewer.SetHorizontalScrollBarVisibility(_suggestions, ScrollBarVisibility.Disabled);
         _suggestions.ItemTemplate = new FuncDataTemplate<string>((path, _) =>
         {

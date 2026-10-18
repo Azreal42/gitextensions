@@ -2,11 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Primitives.PopupPositioning;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -55,14 +53,7 @@ internal sealed class CommitCompletionController
         { Text = word?.Word, Margin = new Thickness(4, 1), TextTrimming = TextTrimming.CharacterEllipsis });
         _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         { Setters = { new Setter(InputElement.FocusableProperty, false), new Setter(InputElement.IsTabStopProperty, false) } });
-        foreach (string state in new[] { ":selected", ":pointerover", ":pressed" })
-        {
-            _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>().Class(state))
-            { Setters = { new Setter(TemplatedControl.ForegroundProperty, new DynamicResourceExtension("ClassicHighlightTextBrush")) } });
-            _suggestions.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>().Class(state).Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"))
-            { Setters = { new Setter(ContentPresenter.BackgroundProperty, new DynamicResourceExtension("ClassicHighlightBrush")),
-                new Setter(ContentPresenter.ForegroundProperty, new DynamicResourceExtension("ClassicHighlightTextBrush")) } });
-        }
+        ClassicCompletionList.Apply(_suggestions);
         ScrollViewer.SetHorizontalScrollBarVisibility(_suggestions, ScrollBarVisibility.Disabled);
         _popup = new()
         {
