@@ -5,7 +5,7 @@ But : proposer les workflows Git Extensions sur un bureau Linux, installables en
 - [C4](c4.md) : périmètre et points d'entrée.
 - [Décisions](adr/) : classées par sujet/sous-sujet.
 - [TODO](todo.md) : périmètre restant et état de livraison.
-- [Inventaire Windows → Linux](windows-linux-window-inventory.md) : chaque fenêtre/page, équivalent réel, niveau N0–N4, écarts et preuves ; CSV/JSON et contrôle reproductible ; dialogues de l’installateur et travaux non validés séparés.
+- [Matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) : chaque fenêtre/page, équivalent réel, niveau N0–N4, écarts et preuves ; CSV/JSON et contrôle reproductible ; dialogues de l’installateur et travaux non validés séparés.
 - [Failures](failure.md) : causes et pièges à ne pas reproduire.
 - [Menus de fichiers et récupération Skip/Assume](../../artifacts/linux/snapshots/a0ba1c140/proofs/source-validation.json) et [paquet isolé](../../artifacts/linux/snapshots/a0ba1c140/proofs/package-runtime-verification.json) : Desktop complet et références Core/Plugins distinctes ; périmètre natif dans le TODO. FormCommit/Browse/FormDiff restent N2, aucun N4 ; installation hôte distincte.
 - [Tri et priorités](adr/preferences/sorting/0082-native-reference-sorting.md) : cinq réglages Windows et GitDefault sans flag ; page Sorting N2, validations et limites dans le TODO.
@@ -30,3 +30,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [Flux natif des fontes](adr/platform/rendering/0092-skia-stream-lifetime.md) : backend Avalonia.Skia exact avec durée de vie explicite ; calibration bornée sur les octets d’une vraie fonte, sans certification de tout le catalogue.
 
 - [Environnement Git et Checklist](adr/preferences/environment/0095-git-environment-and-checklist.md) : choix Git/HOME enfant, diagnostics et récupération du démarrage, Config Global sans dépôt ; suites/paquet vérifiés, natif source borné, niveaux et limites dans la matrice.
+
+- [Dictionary et message Commit](adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md) : XML local/distribué/global et NetSpell partagé ; suites complètes, paquet isolé et natif source ciblé vérifiés ; périmètres et limites dans le [TODO](todo.md#dictionary--périmètre-vérifié). Niveaux et matrice inchangés.

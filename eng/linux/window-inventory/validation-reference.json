@@ -1,11 +1,11 @@
 {
-  "source_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
-  "trx": "artifacts/linux/truncate-path-20261018/full-02/desktop.trx",
-  "trx_sha256": "7fa38fa5a64fffe02814f91a1ee13c697f859fd9dbb001b757caad2bb471e035",
+  "source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+  "trx": "artifacts/linux/dictionary-20261018/full-03/desktop.trx",
+  "trx_sha256": "ec1009305aa1dbe773da8f38bec8e657b37902cd031d0fda26f544c8ff5f8a39",
   "counters": {
-    "total": "2371",
-    "executed": "2371",
-    "passed": "2371",
+    "total": "2476",
+    "executed": "2476",
+    "passed": "2476",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -26,6 +26,9 @@
     },
     "AnnotatedReferencePresentationTests": {
       "Passed": 5
+    },
+    "AppearanceDictionaryTests": {
+      "Passed": 15
     },
     "AppearanceSettingsConsumerTests": {
       "Passed": 7
@@ -198,6 +201,9 @@
     "CommitSelectionFilterTests": {
       "Passed": 6
     },
+    "CommitSpellingTests": {
+      "Passed": 30
+    },
     "CompactNavigationTreeTests": {
       "Passed": 4
     },
@@ -227,6 +233,12 @@
     },
     "DialogAccessKeyTests": {
       "Passed": 4
+    },
+    "DictionaryPreferencesTests": {
+      "Passed": 22
+    },
+    "DictionaryServiceTests": {
+      "Passed": 32
     },
     "DiffFormatsTests": {
       "Passed": 8
@@ -468,6 +480,9 @@
     "NativeRebaseEditorTests": {
       "Passed": 7
     },
+    "NetSpellUnicodeTests": {
+      "Passed": 6
+    },
     "OriginalCommandHelpTests": {
       "Passed": 5
     },
@@ -678,27 +693,37 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
-      "execution_source_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
-      "candidate_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
-      "passed": 720,
-      "total": 720,
-      "execution_result": "artifacts/linux/truncate-path-20261018/full-02/core-result.json",
-      "build_result": "artifacts/linux/truncate-path-20261018/full-02/build-result.json",
-      "parent_verification": "artifacts/linux/truncate-path-20261018/recovery/full-02/parent-verification.json",
+      "source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+      "execution_source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+      "candidate_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+      "passed": 728,
+      "total": 728,
+      "execution_result": "artifacts/linux/dictionary-20261018/full-03/core-result.json",
+      "execution_result_sha256": "3b927f2de6c308ddeef24c26c7c5c5d3318b6646ab4230f3866dcbd68d52e487",
+      "execution_exit_code": 0,
+      "build_result": "artifacts/linux/dictionary-20261018/full-03/build-result.json",
+      "build_result_sha256": "668cf861b68b9b358ca9326a7b541e264ca3aff0fa5e0025378219c9289b3ee4",
+      "build_exit_code": 0,
+      "parent_verification": "artifacts/linux/dictionary-20261018/full-03/parent-verification.json",
+      "parent_verification_sha256": "ce5c83548fdaf1906de3c3c23958cbcd6e97d7c921d1c431fe49d5bc3e6cc68c",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
-      "execution_source_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
-      "candidate_sha": "5a61ab43c2c8c36ffec0560293865c90537de167",
+      "source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+      "execution_source_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
+      "candidate_sha": "014c7e53492c32896e7158e3e105a18adf3687c0",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/truncate-path-20261018/full-02/plugins-result.json",
-      "build_result": "artifacts/linux/truncate-path-20261018/full-02/build-result.json",
-      "parent_verification": "artifacts/linux/truncate-path-20261018/recovery/full-02/parent-verification.json",
+      "execution_result": "artifacts/linux/dictionary-20261018/full-03/plugins-result.json",
+      "execution_result_sha256": "202e6bf70f0e20fea4785ca2f41097f73aee4ea675fabf7da6003a2ebb092a7e",
+      "execution_exit_code": 0,
+      "build_result": "artifacts/linux/dictionary-20261018/full-03/build-result.json",
+      "build_result_sha256": "668cf861b68b9b358ca9326a7b541e264ca3aff0fa5e0025378219c9289b3ee4",
+      "build_exit_code": 0,
+      "parent_verification": "artifacts/linux/dictionary-20261018/full-03/parent-verification.json",
+      "parent_verification_sha256": "ce5c83548fdaf1906de3c3c23958cbcd6e97d7c921d1c431fe49d5bc3e6cc68c",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true

@@ -6,9 +6,9 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `5a61ab43c`, suites complètes 2371/2371 Desktop (218 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=6, N2=15, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `014c7e534`, suites complètes 2476/2476 Desktop (223 classes), 728/728 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=6, N2=15, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
 
-**Recensement actuel : 2184 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
+**Relevé Roslyn `014c7e534` : 2200 fichiers C#, zéro diagnostic**. La matrice distingue 90 classes Window Linux et 33 fabriques Linux, 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
 
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
@@ -167,7 +167,7 @@ Aucune validation native de FileHistory/Blame, des autres dispositions/thèmes/l
 
 ## Livraison et preuves
 
-Dernier candidat vérifié isolément : [`5a61ab43c`](../../artifacts/linux/truncate-path-20261018/review/package-root-review-01.json), `7.2.1-linux-alpha`, **35 626 068 octets**, SHA256 `133943068fc70c3f0c500713a681c3f939b69ff129543efa5b35d9e7daa750f3` ; cinq phases à 0, extraction complète et backend vérifiés.
+Dernier candidat vérifié isolément : [`014c7e534`](../../artifacts/linux/dictionary-20261018/review/package-03-root-review.json), `7.2.1-linux-alpha`, **39 655 556 octets**, SHA256 `2daa11e2999ad84585ab3c2278d47548fc7f903dd505f5051522c4cda5da5606` ; cinq phases à 0, extraction complète et backend vérifiés.
 
 Le paquet installé sur l’hôte reste `7.2.1-linux-alpha+879f7bae3…` : [version relue le 17 octobre](../../artifacts/linux/snapshots/5a52db1a9/proofs/host-application-version-observation.json), sortie réelle 0 ; [installation antérieure vérifiée](../../artifacts/linux/snapshots/879f7bae3/proofs/host-installation-verification-20261016-01.json). Aucun nouveau paquet installé sur l’hôte ; les candidats restent distincts en isolation, aucune application utilisateur arrêtée et aucun push.
 
@@ -309,7 +309,7 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Publication en place, sauvegardes partielles et choix View temporaires ; prélecture Dashboard réutilisée sans modifier l’oracle de réouverture.
 - [x] Appearance N1→N2 partiel ; inventaire régénéré et contrôlé : 99 fenêtres métier, 32 pages Settings dont 15 N2. Treize familles ouvertes, aucun N4.
-- [ ] Intégration Visual Studio et AutoScale restent ouvertes ; Dictionary est le prochain lot, sources W non validées et non livrées. Troncature vérifiée sur le périmètre ci-dessous, sans niveau supplémentaire acquis.
+- [ ] Intégration Visual Studio et AutoScale restent ouvertes. Troncature vérifiée sur le périmètre ci-dessous, sans niveau supplémentaire acquis.
 - [ ] Colonne de branche Windows, autres consommateurs et variantes natives, langues/thèmes, Wayland/DPI/accessibilité, paquet interactif et macOS.
 
 ## Avatars partagés — périmètre vérifié et disposition
@@ -331,3 +331,11 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 - [x] [Paquet exact isolé](../../artifacts/linux/snapshots/5a61ab43c/proofs/package-parent-verification.json) et [backend](../../artifacts/linux/snapshots/5a61ab43c/proofs/package-backend-environment-verification.json) vérifiés ; état du dernier candidat ci-dessus, aucune installation hôte.
 - [x] [Natif source ciblé](../../artifacts/linux/truncate-path-20261018/native-source-02/root-operator-review.json), anglais/clair/X11 privé : 39 commandes, quatre choix et Cancel/Apply/OK dans Appearance, rendus Diff/File tree, premier clic/Haut/Bas sans réparation et persistance au vrai redémarrage. Deux sorties normales et owner à 0 ; sources, runtime et dépôt inchangés.
 - [ ] Resize et transitions regex natifs, Commit/Compare/Stash natifs, sombre/autres langues, Wayland/DPI/accessibilité et paquet interactif restent ouverts. Compact est portable, suffixe submodule absent ; inventaire régénéré et contrôlé, niveaux inchangés, treize familles ouvertes, aucun N4.
+
+## Dictionary — périmètre vérifié
+
+- [x] [ADR0101](adr/preferences/dictionary/0101-dictionary-and-commit-spelling.md) : choix global Appearance, priorité XML local/distribué puis global XDG, correction NetSpell dans le TextBox natif et fermeture drainée ; None retire les marques sans modifier le texte.
+- [x] Source `014c7e53492c32896e7158e3e105a18adf3687c0` : [ciblé05](../../artifacts/linux/dictionary-20261018/review/targeted-05-root-review.json) **297/297 Desktop (192 historiques + 105 nouveaux), 8/8 Core** ; [full03](../../artifacts/linux/dictionary-20261018/full-03/parent-verification.json) **2476/2476 Desktop (223 classes), 728/728 Core, 35/35 Plugins**, build/suites/runner/vérification à 0, sans skip/retrait, entrées stables. [Native01 et full02 rejetés](failure.md#dictionary--catalogue-et-fermeture) conservés.
+- [x] [Paquet03 exact](../../artifacts/linux/dictionary-20261018/review/package-03-root-review.json) : cinq phases à 0 ; extraction complète **460 entrées / 402 fichiers**, modes et octets conformes, backend exact vérifié. Installation isolée ; aucune installation hôte ni validation interactive du paquet.
+- [x] [Natif03 ciblé](../../artifacts/linux/dictionary-20261018/review/native-source-03-root-review.json), anglais/clair/X11 privé : catalogue de 14 choix, Cancel/Apply/OK, suggestions, remplacement et Undo ; None retire immédiatement les marques à texte inchangé et persiste au vrai redémarrage. Deux sorties normales et owner à 0 ; sources/runtime stables, seuls le draft et le XML local déclarés sont ajoutés au dépôt de test.
+- [ ] Complétion Windows : noms/stems actuels et anciens, symboles et cinq préfixes fixes (`Co-authored-by: `, `Signed-off-by: `, `BREAKING CHANGE: `, `Reviewed-by: `, `Tested-by: `), exemptions NetSpell temporaires en mémoire ; popup et cycle de vie restent ouverts. Ignore conserve une occurrence au même texte, adaptation Linux explicite. Audit GUI étendu et variantes de plateforme ouverts ; niveaux inchangés, treize familles ouvertes, aucun N4.
