@@ -6,14 +6,16 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `7c52b3974`, suites complètes 2006/2006 Desktop (194 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=7, N2=14, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `2ceb059bc`, suites complètes 2117/2117 Desktop (201 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=7, N2=14, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
 
-**Recensement actuel : 2130 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
+**Recensement actuel : 2145 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
 
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
 ## Livré et vérifié
+
+- [x] General : groupes et dépendances Windows, profils partagés et consommateurs réels ; suites complètes, paquet exact et natif source ciblé avec redémarrage vérifiés. ADR0097 ; console et télémétrie indisponibles, niveau N2 et audit étendu ouvert.
 
 - [x] Settings : arbre/icônes Windows, recherche, mémoire, focus et Apply commun ; suites complètes, paquet exact et natif source ciblé avec redémarrage vérifiés. ADR0096 ; FormSettings N2, pages/portées absentes encore ouvertes.
 
@@ -286,10 +288,17 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [ ] Pages Windows absentes, Plugins/CI, sources Global/Local/distribuées et audit natif étendu ; Config demeure un dialogue enfant. Aucun isomorphisme global de Settings acquis.
 
-## En cours — General et effets des préférences
+## General — périmètre vérifié
 
-[ADR0097](adr/preferences/general/0097-general-settings-policies.md) : groupes Windows et brouillons reliés aux profils existants, plafond global distinct des lots, recherche, démarrage optionnel, autostash commun, histogram et compteurs/statuts réels. Console séparée et télémétrie restent des adaptations explicites. Aucun nouveau full ni paquet accepté pour ce code en cours ; la référence vérifiée reste 7c52b3974.
+[ADR0097](adr/preferences/general/0097-general-settings-policies.md) : groupes Windows et brouillons reliés aux profils existants, plafond global distinct des lots, recherche, démarrage optionnel, autostash commun, histogram et compteurs/statuts réels. Console séparée et télémétrie restent indisponibles. Le [full03 accepté](../../artifacts/linux/general-settings-20261018/full-03/parent-verification.json), source `2ceb059bc`, compte **2117/2117 Desktop (201 classes), 720/720 Core, 35/35 Plugins**, sans retrait ni skip : **111 cas Desktop ajoutés**, dont 105 General et six régressions avatar/montage Checkout.
+
+[Paquet exact](../../artifacts/linux/snapshots/2ceb059bc/proofs/package-parent-verification.json) : cinq phases attendues à 0, extraction complète et backend contrôlés, **35 567 676 octets** ; installation DPKG isolée. [Natif source ciblé](../../artifacts/linux/general-settings-20261018/native-source-01/root-review.json), anglais/clair/X11 privé : dépendance sous-modules, Apply avec plafond 321 et délai 200 ms (lot 300 inchangé), brouillon 654 annulé, Entrée sans OK, vrai diff `--histogram`, défaut Clone, premier clic et Haut/Bas sans réparation, puis persistance au vrai redémarrage. Deux sorties normales à 0 ; dépôt, sources et runtime inchangés. Cette preuve ne certifie pas les autres consommateurs natifs, le paquet interactif, Wayland/DPI/accessibilité ou la parité globale.
 
 - [x] Ciblé03 : 145/145 dont 105 nouveaux cas General ; Git réel, profils concurrents/échecs, clavier et rendus EN/FR clair/sombre. Plafond Windows séparé des lots ; deux fixtures historiques adaptées explicitement à cette distinction, sans retrait de cas.
 - [x] Garde de rendu des avatars repliés : défaut du full01 reproduit par trois cas rouges puis corrigé, ancien parcours View inchangé ; ciblé04 155/155.
-- [ ] Full03 frais sur la source corrigée, paquet exact et parcours natifs General ; full01 interrompu/rejeté, full02 terminé avec un échec Checkout, niveaux inchangés jusque-là.
+- [x] Full03 frais, paquet exact et parcours natif General ciblé ; full01 interrompu/rejeté et full02 avec un échec Checkout conservés. Niveaux inchangés.
+- [ ] Compléments General natifs, erreurs et autres langues/thèmes ; console et télémétrie restent indisponibles. Les treize familles globales restent ouvertes.
+
+## En préparation — Appearance
+
+Worktree isolé : cinq réglages reliés au host et aux consommateurs, reprise après sauvegarde partielle, branches récentes sans bloquer la grille et fermeture drainée. [Compilation et fixtures préparées](../../artifacts/linux/general-settings-20261018/next-appearance-validation/build-03/result.json) : zéro avertissement/erreur, **62 nouveaux cas non exécutés**. Code non intégré à cette référence ; Appearance reste N1. Aucun résultat General ne vaut validation Appearance.

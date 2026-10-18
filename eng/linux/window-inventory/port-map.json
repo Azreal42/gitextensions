@@ -2465,26 +2465,46 @@
       "level": "N2",
       "linux": [
         "DesktopSettingsDialog",
+        "GeneralSettingsPage",
+        "GeneralSettingsSession",
+        "file:src/linux/GitExtensions.Desktop/GeneralSettingsValues.cs",
+        "file:src/linux/GitExtensions.Desktop/HistoryLoadingPolicy.cs",
+        "GlobalDiffPreferences",
+        "MainWindow@ApplyGeneralHistoryPolicy",
+        "MainWindow@RefreshGeneralPresentationFromSettingsAsync",
+        "GitRepository@GetBranchTrackingStatusAsync",
+        "GitRepository@GetSubmoduleBrowseStatusesAsync",
+        "RevisionQuickSearch",
+        "file:src/linux/GitExtensions.Desktop/RepositoryHistoryStore.cs",
         "MainWindow@BuildPullButton",
+        "CheckoutBranchDialog",
         "CheckoutSubmodulePrompt",
         "GitProcessDialog",
+        "CloneDialog",
         "FileHistoryDialog",
         "FileHistoryWorkflow",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Limite d’historique, défaut Pull, fermeture Process et préférences de sous-modules/historique répartis dans les workflows. UseBrowseForFileHistory est exposé, vrai par défaut, et conserve le dialogue dédié si désactivé ; ADR 0085. Follow/Exact exposés côte à côte, OK sauvegarde/recharge et Cancel ne change rien ; réglages partagés ADR0086. Page General dans l’arbre ; Apply sans fermeture puis Cancel des brouillons ultérieurs et persistance de la limite au vrai redémarrage vérifiés en natif source7c52 anglais/clair/X11 (ADR0096).",
-      "remaining": "Page générale Windows complète absente ; comparer les 20 réglages Windows, leur portée et leur exposition dans les menus/dialogues.",
+      "implemented": "Groupes, clés XLF et dépendances de General Windows : compteurs, sous-modules à trois états, Follow/Exact indépendants. Brouillons Apply/OK/Cancel ; fusion des seuls champs modifiés dans les profils existants, erreurs et effets partiels explicites, retry sans écraser les publications suivantes. Plafond global distinct du lot, zéro illimité ; pagination/préselection bornées, délai de recherche relu au prochain usage et dernière visite indépendante des ancres/du tri. Défaut Clone distinct de sa dernière destination ; autostash partagé Pull/checkout et histogram commun à Blame et aux vrais lecteurs. Statuts push/upstream et sous-modules optionnels ; UseBrowseForFileHistory conservé. Suites complètes 2117/720/35 et paquet exact vérifiés sur la source 2ceb059bc. Natif source anglais/clair/X11 ciblé : dépendance sous-modules, Apply avec plafond 321 et délai 200 ms (lot 300 inchangé), brouillon 654 annulé, Entrée sans OK, vrai diff --histogram, défaut Clone, premier clic/Haut/Bas et persistance au vrai redémarrage ; deux sorties normales à 0.",
+      "remaining": "Console Windows et télémétrie visibles, désactivées et expliquées. Niveau N2 inchangé : audit natif étendu des consommateurs, erreurs, langues/thèmes, Wayland/DPI/accessibilité et interface du paquet encore ouvert ; aucune parité globale revendiquée.",
       "visual": "integre",
       "tests": [
         "BrowseStartupTests",
         "FileHistoryWorkflowTests",
         "FileHistoryPreferencesTests",
-        "SettingsNavigationTests"
+        "SettingsNavigationTests",
+        "GeneralSettingsPageTests",
+        "GeneralSettingsSessionTests",
+        "GeneralSettingsBehaviorTests",
+        "GeneralDiffAlgorithmTests",
+        "GeneralBrowseStatusTests",
+        "CheckoutInitialLayoutTests"
       ],
       "adr": [
         "0085",
         "0086",
-        "0096"
+        "0096",
+        "0097"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigAdvancedSettingsPage": {

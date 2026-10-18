@@ -1,11 +1,11 @@
 {
-  "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
-  "trx": "artifacts/linux/settings-navigation-20261018/full-01/desktop.trx",
-  "trx_sha256": "f8cd21bb7ec6b7490a514351fee1393247b1e29f67fbf7ecd7d9c8691063e20b",
+  "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+  "trx": "artifacts/linux/general-settings-20261018/full-03/desktop.trx",
+  "trx_sha256": "e7ab8d02d1713bf7fdd685f682f9118a6104fc404b84118362cd30cd78d310c7",
   "counters": {
-    "total": "2006",
-    "executed": "2006",
-    "passed": "2006",
+    "total": "2117",
+    "executed": "2117",
+    "passed": "2117",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -86,6 +86,9 @@
     },
     "BrowserSelectionTests": {
       "Passed": 7
+    },
+    "CheckoutInitialLayoutTests": {
+      "Passed": 3
     },
     "CheckoutSubmoduleTests": {
       "Passed": 12
@@ -303,6 +306,21 @@
     "FontStreamLifetimeTests": {
       "Passed": 1
     },
+    "GeneralBrowseStatusTests": {
+      "Passed": 28
+    },
+    "GeneralDiffAlgorithmTests": {
+      "Passed": 10
+    },
+    "GeneralSettingsBehaviorTests": {
+      "Passed": 24
+    },
+    "GeneralSettingsPageTests": {
+      "Passed": 20
+    },
+    "GeneralSettingsSessionTests": {
+      "Passed": 23
+    },
     "GitConfigurationPageTests": {
       "Passed": 19
     },
@@ -507,6 +525,9 @@
     "RevisionAdvancedTests": {
       "Passed": 10
     },
+    "RevisionAvatarRenderingTests": {
+      "Passed": 3
+    },
     "RevisionContextFocusTests": {
       "Passed": 11
     },
@@ -606,27 +627,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
-      "execution_source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
-      "candidate_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+      "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+      "execution_source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+      "candidate_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
       "passed": 720,
       "total": 720,
-      "execution_result": "artifacts/linux/settings-navigation-20261018/full-01/core-result.json",
-      "build_result": "artifacts/linux/settings-navigation-20261018/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json",
+      "execution_result": "artifacts/linux/general-settings-20261018/full-03/core-result.json",
+      "build_result": "artifacts/linux/general-settings-20261018/full-03/build-result.json",
+      "parent_verification": "artifacts/linux/general-settings-20261018/full-03/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
-      "execution_source_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
-      "candidate_sha": "7c52b39742abaf2a4b11635f910bf78f4a70edca",
+      "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+      "execution_source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+      "candidate_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/settings-navigation-20261018/full-01/plugins-result.json",
-      "build_result": "artifacts/linux/settings-navigation-20261018/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/settings-navigation-20261018/full-01/parent-verification.json",
+      "execution_result": "artifacts/linux/general-settings-20261018/full-03/plugins-result.json",
+      "build_result": "artifacts/linux/general-settings-20261018/full-03/build-result.json",
+      "parent_verification": "artifacts/linux/general-settings-20261018/full-03/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
