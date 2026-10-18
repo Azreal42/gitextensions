@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-  "source_digest_sha256": "5a13413ba6b6d31d43fb4482a26b6524239274505e446f141629cb2ee2a6d954",
-  "scanned_csharp_files": 2075,
+  "code_reference_commit": "19bbfed707ecded0d2d7832069efbb310041b363",
+  "source_digest_sha256": "d93b58d25974127d81c118524a1266595191d31c6c29d33a474f0633c8a5df6e",
+  "scanned_csharp_files": 2093,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -28,7 +28,7 @@
     "settings_support_classes": 4,
     "linux_window_types": 87,
     "linux_abstract_bases": 3,
-    "linux_dynamic_factories": 32,
+    "linux_dynamic_factories": 33,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 5,
@@ -38,9 +38,9 @@
       "NA": 2
     },
     "settings_levels": {
-      "N0": 14,
+      "N0": 13,
       "N1": 8,
-      "N2": 9,
+      "N2": 10,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/fonts-preferences-20261017/full-02/desktop.trx",
-    "source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-    "trx_sha256": "2237d71dda46ddf39234d0a8fdcdcbd256d423df26aec13730502e7ef5de62c5",
+    "trx": "artifacts/linux/scripts-runtime-20261018/full-02/desktop.trx",
+    "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+    "trx_sha256": "c8d59658d4d7b59cf114160a883063002173c04c9f869ec451645197b8658413",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-        "execution_source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-        "candidate_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-        "passed": 675,
-        "total": 675,
-        "execution_result": "artifacts/linux/fonts-preferences-20261017/full-02/core-result.json",
-        "build_result": "artifacts/linux/fonts-preferences-20261017/full-02/build-result.json",
-        "parent_verification": "artifacts/linux/fonts-preferences-20261017/full-02/parent-verification.json",
+        "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+        "execution_source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+        "candidate_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+        "passed": 689,
+        "total": 689,
+        "execution_result": "artifacts/linux/scripts-runtime-20261018/full-02/core-result.json",
+        "build_result": "artifacts/linux/scripts-runtime-20261018/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-        "execution_source_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
-        "candidate_sha": "b74bb452223a125fdcc1ee052e18e827fcacd20f",
+        "source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+        "execution_source_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
+        "candidate_sha": "19bbfed707ecded0d2d7832069efbb310041b363",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/fonts-preferences-20261017/full-02/plugins-result.json",
-        "build_result": "artifacts/linux/fonts-preferences-20261017/full-02/build-result.json",
-        "parent_verification": "artifacts/linux/fonts-preferences-20261017/full-02/parent-verification.json",
+        "execution_result": "artifacts/linux/scripts-runtime-20261018/full-02/plugins-result.json",
+        "build_result": "artifacts/linux/scripts-runtime-20261018/full-02/build-result.json",
+        "parent_verification": "artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -540,6 +540,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/StatisticsDialogTests.cs",
           "test_class": "StatisticsDialogTests",
           "passed_in_reference_run": 4,
@@ -853,7 +859,7 @@
           "id": "GitExtensions.Linux.Desktop.BisectDialog",
           "label": "BisectDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 217,
+          "line": 235,
           "kind": "window"
         },
         {
@@ -1164,7 +1170,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 343,
+          "line": 344,
           "kind": "window"
         },
         {
@@ -1324,7 +1330,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 847,
+          "line": 872,
           "kind": "window"
         }
       ],
@@ -1425,7 +1431,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 23,
+          "line": 24,
           "kind": "window"
         }
       ],
@@ -1506,6 +1512,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -1886,8 +1904,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject, scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Scripts/Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué.",
+      "remaining": "Browse reste N2 : menus secondaires, CI/superproject ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, avatar, Markdown, mailto) encore ouverts. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -1972,6 +1990,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserHotkeysTests.cs",
           "test_class": "BrowserHotkeysTests",
           "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserScriptCommandsTests.cs",
+          "test_class": "BrowserScriptCommandsTests",
+          "passed_in_reference_run": 2,
           "results_present": true
         },
         {
@@ -2131,6 +2155,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptHotkeysTests.cs",
+          "test_class": "ScriptHotkeysTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/WindowsBrowseReferenceTests.cs",
           "test_class": "WindowsBrowseReferenceTests",
           "passed_in_reference_run": 8,
@@ -2156,7 +2186,9 @@
         ".agents/docs/adr/workflows/files/0086-shared-file-history-settings.md",
         ".agents/docs/adr/ui/history/0087-revision-quick-search.md",
         ".agents/docs/adr/ui/history/0088-parent-child-navigation.md",
-        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md"
+        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -2182,7 +2214,7 @@
       "feature": "Checkout de branche",
       "group": "references",
       "level": "N3",
-      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules. Mode contraint de résolution gitlink : branches contenant les deux côtés, revalidation et succès complet distinct du résultat natif.",
+      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules. Mode contraint de résolution gitlink : branches contenant les deux côtés, revalidation et succès complet distinct du résultat natif. Stash préparé avant BeforeCheckout, veto conservant le stash ; AfterCheckout aux frontières du workflow. Gitlink via paire Prepare/Complete revalidée sans UI sous mutex.",
       "remaining": "Parité complète de toutes les combinaisons et de leur rendu non certifiée.",
       "visual": "rapproche",
       "linux": [
@@ -2190,7 +2222,7 @@
           "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
           "label": "CheckoutBranchDialog",
           "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -2264,6 +2296,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
           "test_class": "SubmoduleConflictDialogTests",
           "passed_in_reference_run": 14,
@@ -2274,7 +2312,9 @@
         ".agents/docs/adr/workflows/references/0012-reference-dialogs.md",
         ".agents/docs/adr/workflows/submodules/0019-checkout-update.md",
         ".agents/docs/adr/workflows/references/0034-current-branch-menu.md",
-        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -2300,7 +2340,7 @@
       "feature": "Checkout d’une révision, HEAD détachée",
       "group": "references",
       "level": "N1",
-      "implemented": "Confirmation puis checkout réel de la révision sélectionnée.",
+      "implemented": "Confirmation puis checkout réel de la révision sélectionnée. BeforeCheckout puis résultat natif ; After aussi après nonzero terminé, pas après lancement échoué/cancellation. Fenêtre dédiée et limites précédentes inchangées.",
       "remaining": "Fenêtre et options originales dédiées non reproduites ; variantes du checkout à auditer.",
       "visual": "generique",
       "linux": [
@@ -2325,10 +2365,18 @@
           "test_class": "RevisionContextMenuTests",
           "passed_in_reference_run": 8,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/desktop/browse/0058-revision-context-menu.md"
+        ".agents/docs/adr/desktop/browse/0058-revision-context-menu.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -2486,7 +2534,7 @@
       "group": "repositories",
       "level": "N2",
       "implemented": "Branches, profondeur, sans checkout/bare, suggestions/MRU, progression et annulation.",
-      "remaining": "Succès/Keep/OK/Open, aide et autocomplétion demandent encore un audit natif étendu ; événements de scripts non portés.",
+      "remaining": "Succès/Keep/OK/Open, aide et autocomplétion demandent encore un audit natif étendu. Aucun événement Clone n’existe dans l’oracle Windows ; ne pas présenter son absence comme une fonction non portée.",
       "visual": "rapproche",
       "linux": [
         {
@@ -2545,7 +2593,9 @@
       "adr": [
         ".agents/docs/adr/workflows/repositories/0010-create-and-clone.md",
         ".agents/docs/adr/workflows/repositories/0020-clone-suggestions.md",
-        ".agents/docs/adr/workflows/repositories/0056-owned-clone-process.md"
+        ".agents/docs/adr/workflows/repositories/0056-owned-clone-process.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -2617,15 +2667,15 @@
       "feature": "Préparation et création de commit",
       "group": "operations",
       "level": "N2",
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
-      "remaining": "Templates multiples/éditeur, validation personnalisée, scripts et options superproject/branche inline encore incomplets.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé.",
+      "remaining": "Templates multiples/éditeur, validation personnalisée et options superproject/branche inline encore incomplets ; audit étendu des scripts/erreurs/fermetures ouvert.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 23,
+          "line": 24,
           "kind": "window"
         },
         {
@@ -2710,6 +2760,24 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptHotkeysTests.cs",
+          "test_class": "ScriptHotkeysTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/UndoBisectWorkflowTests.cs",
           "test_class": "UndoBisectWorkflowTests",
           "passed_in_reference_run": 19,
@@ -2745,7 +2813,9 @@
         ".agents/docs/adr/platform/git/0021-commit-encoding.md",
         ".agents/docs/adr/workflows/commits/0046-commit-and-push.md",
         ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md",
-        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md"
+        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -2993,7 +3063,7 @@
       "feature": "Création de tag",
       "group": "references",
       "level": "N3",
-      "implemented": "Tag léger/annoté/signé, révision et validation.",
+      "implemented": "Tag léger/annoté/signé, révision et validation. Mutation locale avant la phase distante ; Before/AfterPush autour du push réel, sans rollback local après veto/échec.",
       "remaining": "Toutes les variantes de push/signature et leur présentation restent à auditer.",
       "visual": "rapproche",
       "linux": [
@@ -3001,7 +3071,7 @@
           "id": "GitExtensions.Linux.Desktop.CreateTagDialog",
           "label": "CreateTagDialog",
           "source": "src/linux/GitExtensions.Desktop/CreateTagDialog.cs",
-          "line": 9,
+          "line": 10,
           "kind": "window"
         }
       ],
@@ -3035,10 +3105,18 @@
           "test_class": "RevisionContextMenuTests",
           "passed_in_reference_run": 8,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/references/0012-reference-dialogs.md"
+        ".agents/docs/adr/workflows/references/0012-reference-dialogs.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -3129,15 +3207,15 @@
       "feature": "Suppression de branches distantes",
       "group": "references",
       "level": "N3",
-      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts. Destinations effectives et rewrites relus par Git ; destinations multiples refusées avant tout push, sans nettoyage local.",
-      "remaining": "Événements de scripts Before/AfterPush et audit natif étendu/traductions longues ouverts. Process unique pour toute la sélection ; serveurs sans atomic et remotes à plusieurs destinations push effectives refusés explicitement.",
+      "implemented": "Dialogue compact, combo éditable et sélecteur partagé ; branches non fusionnées confirmées, suppression réelle de plusieurs remotes et proposition distincte des branches locales de suivi après succès. Annulation et échecs partiels couverts. Destinations effectives et rewrites relus par Git ; destinations multiples refusées avant tout push, sans nettoyage local. Avec scripts configurés : sélection prévalidée puis Before/AfterPush et Process par remote ; hashes/URL/leases relus avant chaque batch, succès antérieurs conservés.",
+      "remaining": "Audit natif/traductions longues/variantes événements ouvert. Sans scripts configurés, Process unique legacy conservé. Atomic absent/multi-pushURL refusés ; pas de verrou universel contre retargeting externe.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.DeleteRemoteBranchDialog",
           "label": "DeleteRemoteBranchDialog",
           "source": "src/linux/GitExtensions.Desktop/DeleteRemoteBranchDialog.cs",
-          "line": 13,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -3179,10 +3257,18 @@
           "test_class": "RemoteBranchDeletionDialogTests",
           "passed_in_reference_run": 14,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/references/0065-remote-branch-deletion.md"
+        ".agents/docs/adr/workflows/references/0065-remote-branch-deletion.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -3208,7 +3294,7 @@
       "feature": "Suppression de tags",
       "group": "references",
       "level": "N3",
-      "implemented": "Choix et suppression locale/distante avec confirmations.",
+      "implemented": "Choix et suppression locale/distante avec confirmations. Mutation locale avant la phase distante ; Before/AfterPush autour du push réel, sans rollback local après veto/échec.",
       "remaining": "Audit intégral des choix multiples/remotes et du rendu restant.",
       "visual": "rapproche",
       "linux": [
@@ -3216,7 +3302,7 @@
           "id": "GitExtensions.Linux.Desktop.DeleteTagDialog",
           "label": "DeleteTagDialog",
           "source": "src/linux/GitExtensions.Desktop/DeleteTagDialog.cs",
-          "line": 7,
+          "line": 8,
           "kind": "window"
         }
       ],
@@ -3238,10 +3324,18 @@
           "test_class": "ReferenceMenuTests",
           "passed_in_reference_run": 4,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/references/0012-reference-dialogs.md"
+        ".agents/docs/adr/workflows/references/0012-reference-dialogs.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -3267,8 +3361,8 @@
       "feature": "Comparaison/diff autonome",
       "group": "files",
       "level": "N2",
-      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert.",
-      "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Scripts/Visual Studio, découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
+      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque.",
+      "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Audit étendu des scripts ouvert ; Visual Studio indisponible. Découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
       "visual": "integre",
       "extra_evidence": [
         {
@@ -3303,6 +3397,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserHotkeysTests.cs",
           "test_class": "BrowserHotkeysTests",
           "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserScriptCommandsTests.cs",
+          "test_class": "BrowserScriptCommandsTests",
+          "passed_in_reference_run": 2,
           "results_present": true
         },
         {
@@ -3408,6 +3508,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ViewerHostReadingTests.cs",
           "test_class": "ViewerHostReadingTests",
           "passed_in_reference_run": 9,
@@ -3418,7 +3524,9 @@
         ".agents/docs/adr/workflows/references/0016-revision-comparisons.md",
         ".agents/docs/adr/workflows/files/diffs/0023-multiple-revisions.md",
         ".agents/docs/adr/ui/0080-shared-file-menus.md",
-        ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md"
+        ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -4040,7 +4148,7 @@
       "feature": "Fusion de branche",
       "group": "operations",
       "level": "N3",
-      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits.",
+      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique.",
       "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso.",
       "visual": "rapproche",
       "linux": [
@@ -4048,7 +4156,7 @@
           "id": "GitExtensions.Linux.Desktop.MergeBranchDialog",
           "label": "MergeBranchDialog",
           "source": "src/linux/GitExtensions.Desktop/MergeBranchDialog.cs",
-          "line": 12,
+          "line": 13,
           "kind": "window"
         },
         {
@@ -4077,10 +4185,18 @@
           "test_class": "MergeBranchDialogTests",
           "passed_in_reference_run": 7,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/merges/0043-merge-and-conflicts.md"
+        ".agents/docs/adr/workflows/merges/0043-merge-and-conflicts.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -4106,7 +4222,7 @@
       "feature": "Résolution d’un conflit de sous-module",
       "group": "repositories",
       "level": "N3",
-      "implemented": "Assistant Windows dédié Base/Local/Remote/Current, Refresh et boutons/icônes originaux ; Browse dans un processus indépendant. Vraie racine enfant, stages/index et identités revalidés, Current arbitraire accepté après lecture. Checkout partagé sur intersection Local/Remote avec ref/hash revalidés, unique choix ou mode distant ; staging parent seulement après succès complet. Un seul add littéral vérifié stage0, sans commit/Continue. Routage partagé Pull/Stash/Cherry-pick/Apply Patch/resolver, erreurs et effets partiels conservés, fermeture annulable et drainée.",
+      "implemented": "Assistant Windows dédié Base/Local/Remote/Current, Refresh et boutons/icônes originaux ; Browse dans un processus indépendant. Vraie racine enfant, stages/index et identités revalidés, Current arbitraire accepté après lecture. Checkout partagé sur intersection Local/Remote avec ref/hash revalidés, unique choix ou mode distant ; staging parent seulement après succès complet. Un seul add littéral vérifié stage0, sans commit/Continue. Routage partagé Pull/Stash/Cherry-pick/Apply Patch/resolver, erreurs et effets partiels conservés, fermeture annulable et drainée. Checkout contraint Prepare/Before/Complete : revalidation parent/index/child/ref après scripts et HEAD final ; effets partiels conservés.",
       "remaining": "Audit GUI natif complet, DPI/accessibilité et variantes de traductions longues restent ouverts. Libellés longs tronqués avec tooltip dans la disposition fixe. Après annulation d’un workflow imbriqué ayant déjà changé le checkout, fermer/reprendre le sélecteur pour relire sa sélection. Mutation externe après dernier guard détectée par vérification du résultat, sans rollback automatique ni promesse de transaction globale.",
       "visual": "rapproche",
       "extra_evidence": [
@@ -4135,7 +4251,7 @@
           "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
           "label": "CheckoutBranchDialog",
           "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
@@ -4189,6 +4305,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
           "test_class": "SubmoduleConflictDialogTests",
           "passed_in_reference_run": 14,
@@ -4196,7 +4318,9 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -4222,15 +4346,15 @@
       "feature": "Pull et Fetch",
       "group": "network",
       "level": "N2",
-      "implemented": "Remote/URL, branches, merge/rebase/fetch, tags/prune, autostash, sous-modules et sortie continue.",
-      "remaining": "Scripts Before/After, toutes les reprises et la matrice native des variantes/fermetures restent ouverts.",
+      "implemented": "Remote/URL, branches, merge/rebase/fetch, tags/prune, autostash, sous-modules et sortie continue. BeforePull/Fetch puis AfterFetch/Pull aux frontières Windows après autostash ; paire différée consommée une fois après reprise. QuickFetch/FetchAll de Browse raccordés aussi. Le conflit reconnu conserve son résultat nonzero après les After ; sa question de résolution peut être reportée explicitement. Le bouton legacy Fetch all câblé hors disposition visible n’est pas une route native disponible.",
+      "remaining": "Toutes les reprises et variantes natives/fermetures restent ouvertes ; étendre scripts, conflits et paires différées. Pas de transfert du natif Pull antérieur.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.PullDialog",
           "label": "PullDialog",
           "source": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-          "line": 14,
+          "line": 15,
           "kind": "window"
         },
         {
@@ -4297,6 +4421,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmodulesDialogTests.cs",
           "test_class": "SubmodulesDialogTests",
           "passed_in_reference_run": 13,
@@ -4308,7 +4438,9 @@
         ".agents/docs/adr/workflows/remotes/0039-pull-options.md",
         ".agents/docs/adr/workflows/remotes/0054-owned-pull-process.md",
         ".agents/docs/adr/workflows/remotes/0059-pull-window-appearance.md",
-        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md"
+        ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -4334,15 +4466,15 @@
       "feature": "Push",
       "group": "network",
       "level": "N2",
-      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet.",
-      "remaining": "Scripts/PR hébergeurs, grille ls-remote directe et toutes les variantes Abort/fermeture encore ouvertes.",
+      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow.",
+      "remaining": "PR hébergeurs, grille ls-remote directe, Abort/fermetures et audit étendu des scripts/reprises ouverts.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.PushDialog",
           "label": "PushDialog",
           "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 21,
+          "line": 22,
           "kind": "window"
         },
         {
@@ -4396,12 +4528,20 @@
           "test_class": "RemotesTrackingValidationTests",
           "passed_in_reference_run": 2,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/remotes/0036-push-dialog.md",
         ".agents/docs/adr/workflows/remotes/0038-quick-push.md",
-        ".agents/docs/adr/workflows/remotes/0055-owned-push-process.md"
+        ".agents/docs/adr/workflows/remotes/0055-owned-push-process.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -4512,6 +4652,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RebaseUnreadableTodoTests.cs",
           "test_class": "RebaseUnreadableTodoTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -4935,7 +5081,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -4949,7 +5095,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         },
         {
@@ -5058,6 +5204,12 @@
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
         }
       ],
       "adr": [
@@ -5096,7 +5248,7 @@
           "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
           "label": "SparseCheckoutDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 404,
+          "line": 422,
           "kind": "window"
         }
       ],
@@ -5227,7 +5379,7 @@
       "feature": "Gestion des sous-modules",
       "group": "repositories",
       "level": "N3",
-      "implemented": "Gestionnaire Windows dédié et partagé avec Remove : grille Name/Status, six détails readonly, Pull24px, Add, Synchronize/Update/Remove et séparateur absolu persistant. Snapshots revalidés, Update récursif sélectionné, Sync sélectionné non récursif, vrai Pull du module avec runner conservé, Add/Remove communs ; statuts/descriptions natifs, conflits sans SHA inventé, sélection et effets partiels conservés, fermeture drainée. Grille redimensionnable et copie AutoHeader WinForms.",
+      "implemented": "Gestionnaire Windows dédié et partagé avec Remove : grille Name/Status, six détails readonly, Pull24px, Add, Synchronize/Update/Remove et séparateur absolu persistant. Snapshots revalidés, Update récursif sélectionné, Sync sélectionné non récursif, vrai Pull du module avec runner conservé, Add/Remove communs ; statuts/descriptions natifs, conflits sans SHA inventé, sélection et effets partiels conservés, fermeture drainée. Grille redimensionnable et copie AutoHeader WinForms. Le vrai Pull du module réutilise hooks/runner du Pull partagé ; aucun événement Submodule ou Clone ajouté.",
       "remaining": "Audit GUI natif exhaustif, DPI/accessibilité et toutes les interactions de DataGridView restent ouverts. Une largeur minimale gauche protège Add ; corrections volontaires des défauts Windows de conflit, worker et restauration de sélection. Aucune promesse de transaction contre toutes les mutations externes concurrentes.",
       "visual": "rapproche",
       "extra_evidence": [
@@ -5261,6 +5413,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleRemovalDialogTests.cs",
           "test_class": "SubmoduleRemovalDialogTests",
           "passed_in_reference_run": 8,
@@ -5275,7 +5433,9 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/submodules/0041-remove-registration.md",
-        ".agents/docs/adr/workflows/submodules/0070-submodule-manager.md"
+        ".agents/docs/adr/workflows/submodules/0070-submodule-manager.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -5763,7 +5923,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
@@ -5827,6 +5987,12 @@
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
         }
       ],
       "adr": [
@@ -5878,7 +6044,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -5994,6 +6160,12 @@
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
         }
       ],
       "adr": [
@@ -6046,7 +6218,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -6164,6 +6336,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         }
       ],
@@ -6345,7 +6523,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -6416,6 +6594,12 @@
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
         }
       ],
       "adr": []
@@ -6451,7 +6635,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 23,
+          "line": 24,
           "kind": "window"
         }
       ],
@@ -6526,6 +6710,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -6759,7 +6955,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
@@ -6822,6 +7018,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         }
       ],
@@ -6955,14 +7157,14 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildPullButton",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Pull.cs",
-          "line": 23,
+          "line": 24,
           "kind": "window"
         },
         {
@@ -7135,6 +7337,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
           "test_class": "SubmoduleConflictDialogTests",
           "passed_in_reference_run": 14,
@@ -7183,7 +7391,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         }
       ],
@@ -7221,14 +7429,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 402,
+          "line": 403,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 491,
+          "line": 509,
           "kind": "window"
         }
       ],
@@ -7318,22 +7526,22 @@
       "feature": "Raccourcis personnalisables",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Éditeur Settings compact par neuf contextes et 171 presets fixes Windows : identités/alternatives/None conservés, capture et avertissement global non bloquant, Apply/Clear/Reset en brouillon, OK publie et sauvegarde le profil XDG. Menus/tooltips et dispatcher partagent un instantané actif ; raccords aux commandes existantes Browse/Grid/LeftPanel/FileViewer/BrowseDiff/Commit/Stash/Resolve. Tests de vrais gestes, capacité, erreurs JSON et effets Git natifs ; ADR0089, périmètres de validation dans le TODO.",
-      "remaining": "Page partielle : Scripts reste vide sans moteur/import. Commandes CI/output/superproject, sélection multiple LeftPanel, fork-point Grid et ConventionalCommit sans fournisseur ; Visual Studio indisponible. TreatFileAsText sans consommateur et ResetLines limité à Commit. Import de réglages Windows et audit natif étendu de tous les contextes/hôtes/variantes ouverts. ToggleOrderRevisionsByDate est sans case dans la source Windows actuelle.",
+      "implemented": "Éditeur Settings compact par neuf contextes et 171 presets fixes Windows : identités/alternatives/None conservés, capture et avertissement global non bloquant, Apply/Clear/Reset en brouillon, OK publie et sauvegarde le profil XDG. Menus/tooltips et dispatcher partagent un instantané actif ; raccords aux commandes existantes Browse/Grid/LeftPanel/FileViewer/BrowseDiff/Commit/Stash/Resolve. Tests de vrais gestes, capacité, erreurs JSON et effets Git natifs ; ADR0089, périmètres de validation dans le TODO. Contexte Scripts dynamique depuis noms/IDs ; renommage et déplacement conservent les gestes et les IDs temporairement absents.",
+      "remaining": "Page partielle : audit étendu du contexte Scripts ouvert. Commandes CI/output/superproject, sélection multiple LeftPanel, fork-point Grid et ConventionalCommit sans fournisseur ; Visual Studio indisponible. TreatFileAsText sans consommateur et ResetLines limité à Commit. Import de réglages Windows et audit natif étendu de tous les contextes/hôtes/variantes ouverts. ToggleOrderRevisionsByDate est sans case dans la source Windows actuelle.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.HotkeysSettingsPage",
           "label": "HotkeysSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/HotkeysSettingsPage.cs",
-          "line": 11,
+          "line": 12,
           "kind": "component"
         },
         {
@@ -7354,14 +7562,14 @@
           "id": "GitExtensions.Linux.Desktop.HotkeyBindings",
           "label": "HotkeyBindings",
           "source": "src/linux/GitExtensions.Desktop/HotkeyBindings.cs",
-          "line": 6,
+          "line": 7,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.HotkeyPreferencesStore",
           "label": "HotkeyPreferencesStore",
           "source": "src/linux/GitExtensions.Desktop/HotkeyPreferencesStore.cs",
-          "line": 8,
+          "line": 9,
           "kind": "component"
         },
         {
@@ -7389,6 +7597,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserHotkeysTests.cs",
           "test_class": "BrowserHotkeysTests",
           "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowserScriptCommandsTests.cs",
+          "test_class": "BrowserScriptCommandsTests",
+          "passed_in_reference_run": 2,
           "results_present": true
         },
         {
@@ -7468,10 +7682,24 @@
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptHotkeysTests.cs",
+          "test_class": "ScriptHotkeysTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md"
+        ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -7505,7 +7733,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 283,
+          "line": 284,
           "kind": "window"
         }
       ],
@@ -7568,13 +7796,123 @@
       "category": "settings",
       "feature": "Scripts et événements",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Modèles, configuration et expansion purs dans Core ; store de profil XDG et préparation des demandes dans Desktop (confirmation, saisie/fichiers et choix de référence/remote). Aucun éditeur Settings de scripts ni exécuteur d’événements intégré.",
-      "remaining": "Page Settings d’édition du catalogue/propriétés, lancement des scripts, événements et raccords des workflows non portés. Les dialogues Desktop de préparation des demandes existent déjà ; ils ne remplacent pas ces intégrations.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Page Settings Scripts compacte : catalogue et propriétés Windows en brouillon, Cancel/OK, ordre et IDs stables ; OwnScripts XML dans le profil XDG, conflits observables et profil illisible refusés sans remplacement silencieux. Contexte figé, plan RAW/opaque avant Quote, runner supervisé, toolbar/menus/touches dynamiques et événements intégrés. L’aide Arguments dédiée est détenue par Settings. Présentation adaptée, sans reproduction du PropertyGrid Windows.",
+      "remaining": "Audit natif étendu des hôtes et événements, import global Windows, icônes associées, outils/consoles/OS indisponibles et programmes shell complexes. Pas de transaction globale entre stores ni CAS interprocessus. Le parcours S01 ne prouve aucun hook Before/After natif.",
+      "visual": "adapte",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 12,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptsSettingsPage",
+          "label": "ScriptsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ScriptsSettingsPage.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptsPreferencesStore",
+          "label": "ScriptsPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/ScriptsPreferencesStore.cs",
+          "line": 14,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
+          "test_class": "FileHistoryPreferencesTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
+          "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsPreferencesConcurrencyTests.cs",
+          "test_class": "ScriptsPreferencesConcurrencyTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ShellExtensionSettingsPage",
@@ -7694,7 +8032,7 @@
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -7776,6 +8114,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         }
       ],
@@ -7943,8 +8287,8 @@
       "feature": "Affichage d’aide de paramètres",
       "group": "settings",
       "level": "N1",
-      "implemented": "Aide de commandes et fenêtres d’information disponibles dans certains workflows.",
-      "remaining": "Pas de composant commun reproduisant tous les contextes d’aide des paramètres.",
+      "implemented": "Aide de commandes et fenêtres d’information disponibles dans certains workflows. La page Settings Scripts ouvre aussi son aide Arguments dédiée : texte readonly traduit avec fallback local, une fenêtre non modale détenue par Settings et réutilisée tant qu’elle reste visible, fermée avec son propriétaire.",
+      "remaining": "Audit natif étendu de cette aide Scripts et des autres contextes ouvert. Cette factory locale ne constitue pas un composant universel de tous les contextes d’aide de paramètres.",
       "visual": "integre",
       "linux": [
         {
@@ -7960,6 +8304,13 @@
           "source": "src/linux/GitExtensions.Desktop/DesktopInformationWindow.cs",
           "line": 8,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptsSettingsPage",
+          "label": "ScriptsSettingsPage.ShowHelp",
+          "source": "src/linux/GitExtensions.Desktop/ScriptsSettingsPage.cs",
+          "line": 286,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -7968,9 +8319,18 @@
           "test_class": "OriginalCommandHelpTests",
           "passed_in_reference_run": 5,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SubmodulesDialog.FormAddSubmodule",
@@ -8017,7 +8377,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddSubmoduleAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 389,
+          "line": 407,
           "kind": "window"
         }
       ],
@@ -8428,7 +8788,7 @@
           "id": "GitExtensions.Linux.Desktop.RepositoryDialog",
           "label": "RepositoryDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
@@ -8617,6 +8977,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -8691,7 +9057,7 @@
           "id": "GitExtensions.Linux.Desktop.RepositoryDialog",
           "label": "RepositoryDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
@@ -8880,6 +9246,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -8949,7 +9321,7 @@
       "feature": "Infrastructure de fenêtres",
       "group": "infrastructure",
       "level": "BASE",
-      "implemented": "Classe de base, sans écran métier autonome.",
+      "implemented": "Classe de base, sans écran métier autonome. RepositoryDialog raccorde les gestes Scripts au même exécuteur sous busy/token/fermeture ; support BASE, pas une fenêtre métier supplémentaire.",
       "remaining": "Ne pas compter comme une fenêtre utilisateur.",
       "visual": "base",
       "linux": [
@@ -8957,7 +9329,7 @@
           "id": "GitExtensions.Linux.Desktop.RepositoryDialog",
           "label": "RepositoryDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         }
       ],
@@ -9149,6 +9521,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptHotkeysTests.cs",
+          "test_class": "ScriptHotkeysTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/StashMenuTests.cs",
           "test_class": "StashMenuTests",
           "passed_in_reference_run": 19,
@@ -9191,7 +9575,10 @@
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+      ]
     },
     {
       "id": "GitUI.HelperDialogs.FormBuildServerCredentials",
@@ -9484,7 +9871,7 @@
           "id": "GitExtensions.Linux.Desktop.NoteDialog",
           "label": "NoteDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 149,
+          "line": 167,
           "kind": "window"
         }
       ],
@@ -9517,7 +9904,7 @@
       "feature": "Exécution de commande Git",
       "group": "helpers",
       "level": "N2",
-      "implemented": "Sortie continue, Keep/OK/Abort et arrêt du groupe de processus.",
+      "implemented": "Sortie continue, Keep/OK/Abort et arrêt du groupe de processus. Consommateur scripts externes via délégué ; bytes natifs séparés, résultat, Keep/OK/Abort et propriétaire, sans texte Git fabriqué.",
       "remaining": "Tous les consommateurs, consoles intégrées et fermetures natives de propriétaire restent à auditer.",
       "visual": "rapproche",
       "linux": [
@@ -9541,13 +9928,21 @@
           "test_class": "GitProcessDialogTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/platform/git/0052-graceful-git-interruption.md",
         ".agents/docs/adr/workflows/remotes/0054-owned-pull-process.md",
         ".agents/docs/adr/workflows/remotes/0055-owned-push-process.md",
-        ".agents/docs/adr/workflows/repositories/0056-owned-clone-process.md"
+        ".agents/docs/adr/workflows/repositories/0056-owned-clone-process.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -9573,8 +9968,8 @@
       "feature": "Processus de fetch/pull/push/clone",
       "group": "helpers",
       "level": "N2",
-      "implemented": "Progression réseau, erreurs, reprise, sortie et annulation partagées.",
-      "remaining": "Matrice complète des opérations/remotes et scripts Before/After encore ouverte.",
+      "implemented": "Progression réseau, erreurs, reprise, sortie et annulation partagées. Les consommateurs Fetch/Pull/Push raccordent leurs événements Before/After autour des phases métier ; le dialogue Process partagé conserve sortie native, résultat et acquittement.",
+      "remaining": "Matrice complète des opérations/remotes et des variantes d’événements Fetch/Pull/Push à auditer ; leurs raccords existent dans les consommateurs. Aucun événement Clone ne figure dans l’oracle Windows.",
       "visual": "rapproche",
       "linux": [
         {
@@ -9603,12 +9998,20 @@
           "test_class": "PushProcessDialogTests",
           "passed_in_reference_run": 0,
           "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
+          "test_class": "ScriptEventWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/remotes/0054-owned-pull-process.md",
         ".agents/docs/adr/workflows/remotes/0055-owned-push-process.md",
-        ".agents/docs/adr/workflows/repositories/0056-owned-clone-process.md"
+        ".agents/docs/adr/workflows/repositories/0056-owned-clone-process.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -9849,8 +10252,8 @@
       "feature": "Choix de fichier demandé par un script",
       "group": "helpers",
       "level": "N1",
-      "implemented": "Fenêtre dédiée présente, sans caller scripts : saisie exacte, seule chaîne vide annulée par OK ; Browse multisélection depuis « . », fichiers locaux existants cités selon Windows, remplacement complet et CancelBrowse conservant le texte ; erreurs et réponses tardives gardées. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion.",
-      "remaining": "Raccorder UserFiles et le futur routeur ; auditer le picker natif. OpenFilePickerAsync ne prend pas de CancellationToken : les gardes empêchent une publication tardive et BrowseCompletion expose le drainage, mais la fermeture/annulation du picker natif n’est pas garantie. Scripts complets et audit OS/DPI ouverts.",
+      "implemented": "Fenêtre dédiée présente, avec consommateur Scripts : saisie exacte, seule chaîne vide annulée par OK ; Browse multisélection depuis « . », fichiers locaux existants cités selon Windows, remplacement complet et CancelBrowse conservant le texte ; erreurs et réponses tardives gardées. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. UserFiles consommé par le runtime ; chaîne exacte, Browse et résultat explicite conservés, drainage BrowseCompletion attendu.",
+      "remaining": "Picker natif à auditer : API sans CancellationToken, réponses tardives gardées mais arrêt/fermeture native non garantis. Variantes OS/DPI ouvertes.",
       "visual": "rapproche",
       "linux": [
         {
@@ -9869,6 +10272,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPreparationDispatcherTests.cs",
           "test_class": "ScriptPreparationDispatcherTests",
           "passed_in_reference_run": 21,
@@ -9876,7 +10285,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
       ]
     },
     {
@@ -9903,8 +10313,8 @@
       "feature": "Saisie demandée par un script",
       "group": "helpers",
       "level": "N1",
-      "implemented": "Fenêtre dédiée présente, sans caller scripts : titre/label littéraux, défaut non trimé, vide accepté, un seul bouton OK. Échap est traité uniquement dans txtUserInput : désélection puis annulation ; Tab vers OK puis Échap laisse la fenêtre ouverte. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion.",
-      "remaining": "Raccorder UserInput au contexte et au moteur de scripts ; consommateur des résultats explicites absent. Exécution, événements, menus et préférences restent ouverts ; audit natif, Wayland et DPI non réalisés.",
+      "implemented": "Fenêtre dédiée présente, avec consommateur Scripts : titre/label littéraux, défaut non trimé, vide accepté, un seul bouton OK. Échap est traité uniquement dans txtUserInput : désélection puis annulation ; Tab vers OK puis Échap laisse la fenêtre ouverte. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. UserInput consommé par le runtime ; libellé/défaut exacts, vide accepté et règles Échap du champ conservés.",
+      "remaining": "Audit natif des hôtes/retours clavier, Wayland et DPI ouvert ; aucun Cancel global inventé.",
       "visual": "rapproche",
       "linux": [
         {
@@ -9923,6 +10333,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPreparationDispatcherTests.cs",
           "test_class": "ScriptPreparationDispatcherTests",
           "passed_in_reference_run": 21,
@@ -9930,7 +10346,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
       ]
     },
     {
@@ -9952,8 +10369,8 @@
       "feature": "Sélection rapide de référence",
       "group": "navigation",
       "level": "N3",
-      "implemented": "Sélecteur compact Windows sans bordure : groupes local/remote/tag, tri culturel, huit lignes, première référence, recherche par frappe native, Entrée/double-clic et annulation. F2/Suppr sur le commit focalisé : zéro/une/plusieurs références, types et hash bruts conservés, revalidation après choix, dialogues métier partagés. Activation avant la première touche et retour aux flèches/F2 vérifiés sous X11/Openbox ; homonymes branche/tag, refus distant explicite, renommage et suppression d’un tag annoté réellement exécutés.",
-      "remaining": "Mode Select prêt dans la fenêtre, mais lanceur, menus et événements scripts non raccordés ; pont de préparation typée présent ; FormQuickStringSelector est une UI N1 distincte. Audit natif étendu (en-tête sélectionné, Select, toutes traductions/thèmes), Wayland, DPI/accessibilité encore ouverts. Les en-têtes sélectionnables et leur choix nul sont couverts en headless, sans certification native de cette variante.",
+      "implemented": "Sélecteur compact Windows sans bordure : groupes local/remote/tag, tri culturel, huit lignes, première référence, recherche par frappe native, Entrée/double-clic et annulation. F2/Suppr sur le commit focalisé : zéro/une/plusieurs références, types et hash bruts conservés, revalidation après choix, dialogues métier partagés. Activation avant la première touche et retour aux flèches/F2 vérifiés sous X11/Openbox ; homonymes branche/tag, refus distant explicite, renommage et suppression d’un tag annoté réellement exécutés. Mode Select consommé par le runtime via ScriptPreparationDispatcher ; nom/type recoupés avec les métadonnées capturées, acceptation explicite.",
+      "remaining": "Audit natif étendu des en-têtes/Select/choix nuls/traductions/thèmes, Wayland et DPI ouvert ; QuickStringSelector conserve son propre contrat.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -9998,6 +10415,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPreparationDispatcherTests.cs",
           "test_class": "ScriptPreparationDispatcherTests",
           "passed_in_reference_run": 21,
@@ -10005,7 +10428,9 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/references/0074-quick-reference-selector.md"
+        ".agents/docs/adr/workflows/references/0074-quick-reference-selector.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
       ]
     },
     {
@@ -10032,7 +10457,7 @@
       "group": "infrastructure",
       "level": "BASE",
       "implemented": "Base Avalonia commune aux sélecteurs de références et de chaînes : liste compacte, cadre/palette, limites de mesure et de lignes, pied de fenêtre, focus/activation et validation explicite. Aucun écran autonome.",
-      "remaining": "Support BASE exclu des comptes des fenêtres métier ; routage scripts et audit natif étendu des nouveaux consommateurs restent ouverts.",
+      "remaining": "Support BASE exclu des comptes des fenêtres métier ; routage scripts présent via les sélecteurs de chaînes et de références du dispatcher. Audit natif étendu de ces nouveaux consommateurs, variantes/hôtes, Wayland et DPI ouverts.",
       "visual": "base",
       "linux": [
         {
@@ -10061,11 +10486,24 @@
           "test_class": "ScriptInputDialogTests",
           "passed_in_reference_run": 23,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPreparationDispatcherTests.cs",
+          "test_class": "ScriptPreparationDispatcherTests",
+          "passed_in_reference_run": 21,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/references/0074-quick-reference-selector.md",
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
       ]
     },
     {
@@ -10087,8 +10525,8 @@
       "feature": "Choix rapide de texte utilisé par les scripts",
       "group": "navigation",
       "level": "N1",
-      "implemented": "Fenêtre de saisie dédiée présente, sans caller scripts : tri CurrentCulture, doublons et chaînes vides conservés, première sélection, huit lignes, mesure bornée à 100 caractères ; Select/Entrée/double-clic et résultat Accepted/Cancelled explicite. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion.",
-      "remaining": "Raccorder les demandes de choix au contexte et au moteur de scripts ; consommer l’acceptation explicite sans réutiliser une sélection conservée après Échap. Exécution, événements, menus et préférences scripts restent ouverts ; audit natif, Wayland et DPI non réalisés.",
+      "implemented": "Fenêtre de saisie dédiée présente, avec consommateur Scripts : tri CurrentCulture, doublons et chaînes vides conservés, première sélection, huit lignes, mesure bornée à 100 caractères ; Select/Entrée/double-clic et résultat Accepted/Cancelled explicite. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. Choix de remote consommé par le runtime, avec le contrat UI existant et acceptation explicite.",
+      "remaining": "Autres hôtes et variantes natives, Wayland et DPI ouverts ; anciennes preuves du pont distinctes du nouveau runtime.",
       "visual": "rapproche",
       "linux": [
         {
@@ -10107,6 +10545,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptLaunchIntegrationTests.cs",
+          "test_class": "ScriptLaunchIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPreparationDispatcherTests.cs",
           "test_class": "ScriptPreparationDispatcherTests",
           "passed_in_reference_run": 21,
@@ -10114,7 +10558,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
       ]
     },
     {
@@ -10280,7 +10725,7 @@
           "id": "GitExtensions.Linux.Desktop.RepositoryDialog",
           "label": "RepositoryDialog",
           "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 11,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -10476,6 +10921,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
           "test_class": "RulesFileEditorDialogTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptPluginOwnershipTests.cs",
+          "test_class": "ScriptPluginOwnershipTests",
+          "passed_in_reference_run": 3,
           "results_present": true
         },
         {
@@ -10807,11 +11258,11 @@
       "id": "GitExtensions.Linux.Desktop.BisectDialog",
       "name": "BisectDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 217,
+      "line": 235,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 217
+          "line": 235
         }
       ],
       "bases": [
@@ -10865,11 +11316,11 @@
       "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
       "name": "CheckoutBranchDialog",
       "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
-      "line": 11,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
-          "line": 11
+          "line": 12
         }
       ],
       "bases": [
@@ -11053,7 +11504,7 @@
       "id": "GitExtensions.Linux.Desktop.CommitDialog",
       "name": "CommitDialog",
       "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-      "line": 23,
+      "line": 24,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.IndexFlags.cs",
@@ -11064,8 +11515,12 @@
           "line": 7
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.Scripts.cs",
+          "line": 7
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 23
+          "line": 24
         }
       ],
       "bases": [
@@ -11218,11 +11673,11 @@
       "id": "GitExtensions.Linux.Desktop.CreateTagDialog",
       "name": "CreateTagDialog",
       "source": "src/linux/GitExtensions.Desktop/CreateTagDialog.cs",
-      "line": 9,
+      "line": 10,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/CreateTagDialog.cs",
-          "line": 9
+          "line": 10
         }
       ],
       "bases": [
@@ -11319,11 +11774,11 @@
       "id": "GitExtensions.Linux.Desktop.DeleteRemoteBranchDialog",
       "name": "DeleteRemoteBranchDialog",
       "source": "src/linux/GitExtensions.Desktop/DeleteRemoteBranchDialog.cs",
-      "line": 13,
+      "line": 14,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/DeleteRemoteBranchDialog.cs",
-          "line": 13
+          "line": 14
         }
       ],
       "bases": [
@@ -11343,11 +11798,11 @@
       "id": "GitExtensions.Linux.Desktop.DeleteTagDialog",
       "name": "DeleteTagDialog",
       "source": "src/linux/GitExtensions.Desktop/DeleteTagDialog.cs",
-      "line": 7,
+      "line": 8,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/DeleteTagDialog.cs",
-          "line": 7
+          "line": 8
         }
       ],
       "bases": [
@@ -11401,11 +11856,11 @@
       "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
       "name": "DesktopSettingsDialog",
       "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-      "line": 11,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 11
+          "line": 12
         }
       ],
       "bases": [
@@ -11451,6 +11906,11 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.HotkeysSettingsPage",
           "name": "HotkeysSettingsPage",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ScriptsSettingsPage",
+          "name": "ScriptsSettingsPage",
           "level": "N2"
         },
         {
@@ -12000,7 +12460,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Pull.cs",
-          "line": 12
+          "line": 13
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
@@ -12043,6 +12503,10 @@
           "line": 7
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.Scripts.cs",
+          "line": 11
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Shortcuts.cs",
           "line": 8
         },
@@ -12064,7 +12528,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 10
+          "line": 11
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Worktrees.cs",
@@ -12236,11 +12700,11 @@
       "id": "GitExtensions.Linux.Desktop.MergeBranchDialog",
       "name": "MergeBranchDialog",
       "source": "src/linux/GitExtensions.Desktop/MergeBranchDialog.cs",
-      "line": 12,
+      "line": 13,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/MergeBranchDialog.cs",
-          "line": 12
+          "line": 13
         }
       ],
       "bases": [
@@ -12318,11 +12782,11 @@
       "id": "GitExtensions.Linux.Desktop.NoteDialog",
       "name": "NoteDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 149,
+      "line": 167,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 149
+          "line": 167
         }
       ],
       "bases": [
@@ -12453,7 +12917,7 @@
       "id": "GitExtensions.Linux.Desktop.PullDialog",
       "name": "PullDialog",
       "source": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 14,
+      "line": 15,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/PullDialog.Layout.cs",
@@ -12465,7 +12929,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-          "line": 14
+          "line": 15
         }
       ],
       "bases": [
@@ -12485,11 +12949,11 @@
       "id": "GitExtensions.Linux.Desktop.PushDialog",
       "name": "PushDialog",
       "source": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 21,
+      "line": 22,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-          "line": 21
+          "line": 22
         }
       ],
       "bases": [
@@ -12800,11 +13264,11 @@
       "id": "GitExtensions.Linux.Desktop.RepositoryDialog",
       "name": "RepositoryDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 11,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 11
+          "line": 12
         }
       ],
       "bases": [
@@ -13080,11 +13544,11 @@
       "id": "GitExtensions.Linux.Desktop.SparseCheckoutDialog",
       "name": "SparseCheckoutDialog",
       "source": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 404,
+      "line": 422,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-          "line": 404
+          "line": 422
         }
       ],
       "bases": [
@@ -13446,7 +13910,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 420,
+      "line": 421,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -13456,7 +13920,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
-      "line": 121,
+      "line": 154,
       "method": "ConfirmSubmoduleBuildOnUiAsync",
       "text": "new() { Title = T(\"Auto compile submodules\"), Width = 560, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner }",
       "platform": "linux",
@@ -13496,7 +13960,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 327,
+      "line": 356,
       "method": "UpdateSubmodulesAfterPullAsync",
       "text": "new() { Name = \"ConfirmInitializePullSubmodules\", Title = C(\"_questionInitSubmodulesCaption\", \"Submodules\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocatio",
       "platform": "linux",
@@ -13506,7 +13970,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 357,
+      "line": 386,
       "method": "OfferAutoStashPopAsync",
       "text": "new() { Name = \"ConfirmPopPullAutoStash\", Title = C(\"_applyStashedItemsAgainCaption\", \"Auto stash\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = Wind",
       "platform": "linux",
@@ -13516,7 +13980,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 400,
+      "line": 429,
       "method": "ConfirmMismatchAsync",
       "text": "new() { Name = \"ConfirmPullRemoteMismatch\", Title = T(\"Remote branch not specified\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocati",
       "platform": "linux",
@@ -13526,7 +13990,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 411,
+      "line": 440,
       "method": "ConfirmRebaseAsync",
       "text": "new() { Name = \"ConfirmRebasePull\", Title = T(\"Rebase merge commit?\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner ",
       "platform": "linux",
@@ -13536,7 +14000,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 427,
+      "line": 456,
       "method": "ConfirmDetachedAsync",
       "text": "new() { Name = \"ConfirmDetachedPull\", Title = T(\"Pull\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner }",
       "platform": "linux",
@@ -13546,7 +14010,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 444,
+      "line": 473,
       "method": "ConfirmPruneAsync",
       "text": "new() { Name = \"ConfirmFetchPruneAll\", Title = T(\"Fetch and prune all\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwne",
       "platform": "linux",
@@ -13556,7 +14020,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 518,
+      "line": 528,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",
@@ -13636,7 +14100,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 309,
+      "line": 327,
       "method": "ConfirmRangeAsync",
       "text": "new() { Name = \"BisectRangeConfirmation\", Title = Title, Width = 470, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -13646,7 +14110,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.BisectDialog",
       "path": "src/linux/GitExtensions.Desktop/RepositoryDialogs.cs",
-      "line": 359,
+      "line": 377,
       "method": "ShowNativeErrorAsync",
       "text": "new() { Name = \"BisectNativeError\", Title = T(\"Error\"), Width = 520, MaxHeight = 540, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -13669,6 +14133,16 @@
       "line": 208,
       "method": "AskSaveAsync",
       "text": "new() { Name = \"SaveRulesFileQuestion\", Title = T(\"Save changes?\"), Width = 420,",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.ScriptsSettingsPage",
+      "path": "src/linux/GitExtensions.Desktop/ScriptsSettingsPage.cs",
+      "line": 293,
+      "method": "ShowHelp",
+      "text": "new() { Name = \"ScriptArgumentsHelp\", Title = Text(\"_scriptSettingsPageHelpDisplayArgumentsHelp\", \"Arguments help\"), Width = 620, Height = 500,",
       "platform": "linux",
       "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
     },
@@ -17822,9 +18296,9 @@
       "N3": 5
     },
     "settings-pages": {
-      "N0": 8,
+      "N0": 7,
       "N1": 8,
-      "N2": 9,
+      "N2": 10,
       "NA": 1
     },
     "ci-settings": {

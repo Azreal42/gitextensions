@@ -392,6 +392,32 @@ Les correctifs locaux du lecteur/Blame sont inclus dans les paquets livrés ; le
 - Défaut UserInput terminé par des espaces : le remplacement générique trimait son nom et ne consommait plus le jeton. Remplacer le jeton littéral ; deux régressions bornées conservent les refus/annulations et les autres variables.
 - Ordre des demandes : UserInput précède UserFiles, même si le texte place UserFiles en premier. Les fixtures doivent suivre ce contrat hérité, sans changer silencieusement le parseur.
 
+## Runtime des scripts — points à conserver
+
+| Piège | Règle retenue / limite |
+| --- | --- |
+| Reconstituer argv depuis Quote, non injectif | Conserver les fragments RAW et valeurs doubles opaques avant Quote ; l’aperçu historique n’est pas un sérialiseur. |
+| Splicer les fichiers dans le programme bash -c du modèle VS Code | Reconnaître le shell explicite et garder un seul programme auteur ; citer les doubles marqueurs nus par valeur. Quotes internes refusées, modèles inchangés. Le RAW des tests -f/-d garde sa limite avec l’apostrophe. |
+| Fixture « custom » sans révision courante | La garde héritée c*/HEAD s’applique aussi aux providers ; donner les vrais faits au fixture, afficher Error/Option, sans affaiblir la production pour faire passer le test. |
+| Background Started pris pour un succès final | Started suit le vrai exec ; garder la Task possédée jusqu’au wait/drain. Fermer le propriétaire scelle les continuations et annule ses acteurs connus. |
+| Appliquer After uniquement après exit0 partout | Garder les frontières Windows propres au checkout révision, merge/conflit et Pull/reprise/autostash ; pas de nouvel événement Clone ni de rollback implicite. |
+| Un batch distant réussi efface une suite veto/échouée | Prévalider tout, revalider hash/URL/leases par batch, conserver les succès précédents et les résultats partiels. Mutex par instance ≠ transaction avec tout éditeur externe. |
+
+Le full01 réel de cette tranche rejette 20 cas, [classifiés par Root](../../artifacts/linux/scripts-runtime-20261018/full-01/root-cause-review.json) :
+
+| Cause | Cas | Correction / oracle conservé |
+| --- | ---: | --- |
+| Menu Scripts Commit remplace index/règles | 11 | Composer le menu existant et ses commandes ; ne pas retirer leurs assertions. |
+| Ancien snapshot du menu révision efface les ajouts tardifs | 1 | Modifier seulement la contribution Scripts, préserver les autres contributeurs. |
+| Deux overflows partagent la même identité | 2 | Identités qualifiées, sans changer les commandes ni les attentes de disposition. |
+| Ancien test choisit l’unique toolbar par type | 1 | Cibler la toolbar Repository par son identité. |
+| Cancel de récupération empêche les options Push | 3 | Distinguer choix de récupération et arrêt owner/token ; restituer les options comme Windows. |
+| Question de conflit Pull nouvelle puis erreur native perdue | 2 | Vrai geste négatif conforme Windows, puis erreur Git d’origine conservée après After ; aucun replay à Abort. |
+
+Les identités historiques restent présentes. Les seules adaptations d’oracle portent sur le catalogue Scripts dynamique, la toolbar qualifiée et les deux réponses explicites au nouveau parcours Windows ; aucun assert métier n’est retiré pour masquer un rouge. Les ciblés06 71/71 et07 81/81 recouvrants restent séparés du [full02 accepté sur 19bb](../../artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json) : 1833/1833 Desktop, 689/689 Core, 35/35 Plugins, aucun cas retiré. Le full01 rejeté reste attribué à 135729236 ; son rouge ne devient pas un succès historique. Les captures01–03 nommées Dark étaient Light ; le ciblé04 affirme le thème réel, sans valider son lot globalement ni créer une preuve native. Les détails de validation restent dans les JSON et le [TODO](todo.md#validation-courante--scripts-runtime).
+
+Le [premier lecteur de traces S01](../../artifacts/linux/scripts-runtime-20261018/kernel-read-01/report.json) reste refusé : il décodait l’argv du helper avant de filtrer l’exécutable Python, et butait sur son PATH tronqué par strace. Le [second lecteur](../../artifacts/linux/scripts-runtime-20261018/native-root-kernel-review.json) vérifie les six chaînes sur les mêmes traces. Filtrer d’abord le chemin complet, puis exiger l’argv Python exact ; ne jamais reconstituer un argument tronqué ni confondre cette erreur d’analyse avec un échec applicatif.
+
 ## Comparaisons et listes partagées
 
 | Piège | Règle retenue |
