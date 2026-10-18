@@ -6,9 +6,9 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `a79bc9c08`, suites complètes 1889/1889 Desktop (186 classes), 714/714 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=15, N2=28, N3=49, NA=2 ; 32 pages : N0=13, N1=7, N2=11, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `1deed8d34`, suites complètes 1986/1986 Desktop (193 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=15, N2=29, N3=49, NA=1 ; 32 pages : N0=11, N1=7, N2=13, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
 
-**Recensement actuel : 2108 fichiers C#, 89 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
+**Recensement actuel : 2127 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
 
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
