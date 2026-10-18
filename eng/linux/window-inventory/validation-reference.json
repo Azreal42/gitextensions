@@ -1,11 +1,11 @@
 {
-  "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
-  "trx": "artifacts/linux/tools-config-20261018/full-01/desktop.trx",
-  "trx_sha256": "7c671d0137497ea6892d8799d86d15f0cf93aadd7c3ef2c27386babc3a8dfca5",
+  "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+  "trx": "artifacts/linux/git-config-20261018/full-03/desktop.trx",
+  "trx_sha256": "4f9b6a2e184611e8eaf33212bf66b9c0bfb67ef3be102263ea38d18c969df8fc",
   "counters": {
-    "total": "1846",
-    "executed": "1846",
-    "passed": "1846",
+    "total": "1889",
+    "executed": "1889",
+    "passed": "1889",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -38,6 +38,9 @@
     },
     "AskpassTests": {
       "Passed": 11
+    },
+    "AvailableEncodingsDialogTests": {
+      "Passed": 24
     },
     "BlameAvatarTests": {
       "Passed": 4
@@ -299,6 +302,9 @@
     },
     "FontStreamLifetimeTests": {
       "Passed": 1
+    },
+    "GitConfigurationPageTests": {
+      "Passed": 19
     },
     "GitProcessDialogTests": {
       "Passed": 15
@@ -576,27 +582,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
-      "execution_source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
-      "candidate_sha": "d975adafa9e496824af8984052e8790ce18222f2",
-      "passed": 703,
-      "total": 703,
-      "execution_result": "artifacts/linux/tools-config-20261018/full-01/core-result.json",
-      "build_result": "artifacts/linux/tools-config-20261018/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/tools-config-20261018/full-01/parent-verification.json",
+      "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+      "execution_source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+      "candidate_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+      "passed": 714,
+      "total": 714,
+      "execution_result": "artifacts/linux/git-config-20261018/full-03/core-result.json",
+      "build_result": "artifacts/linux/git-config-20261018/full-03/build-result.json",
+      "parent_verification": "artifacts/linux/git-config-20261018/full-03/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
-      "execution_source_sha": "d975adafa9e496824af8984052e8790ce18222f2",
-      "candidate_sha": "d975adafa9e496824af8984052e8790ce18222f2",
+      "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+      "execution_source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+      "candidate_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/tools-config-20261018/full-01/plugins-result.json",
-      "build_result": "artifacts/linux/tools-config-20261018/full-01/build-result.json",
-      "parent_verification": "artifacts/linux/tools-config-20261018/full-01/parent-verification.json",
+      "execution_result": "artifacts/linux/git-config-20261018/full-03/plugins-result.json",
+      "build_result": "artifacts/linux/git-config-20261018/full-03/build-result.json",
+      "parent_verification": "artifacts/linux/git-config-20261018/full-03/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true

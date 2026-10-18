@@ -622,3 +622,16 @@ Le défaut post-Closing observé17 et corrigé18 ne doit pas être présenté co
 | Cancel pris pour un rollback après Apply ou erreur partielle | Abandonner les seuls brouillons non publiés. Conserver les reçus ; readback inconnu possible après annulation, aucune transaction multi-portées ni CAS interprocessus. |
 
 [Full01 vérifié](../../artifacts/linux/tools-config-20261018/full-01/parent-verification.json) sur d975 ; paquet exact et natif T01 ciblé vérifiés. Le [ciblé01](../../artifacts/linux/tools-config-20261018/targeted-01-root-ownwait.json) conserve son résultat global rouge ; les rendus headless ne deviennent pas une preuve native. [Portée et limites](todo.md#configuration-des-outils-diffmerge--validation-ciblée).
+
+
+## Config complète et encodages — intentions à conserver
+
+| Piège | Règle |
+| --- | --- |
+| « Sans valeur » confondu avec Unset | Revenir au choix publié sans valeur restaure le brouillon ; seul Not set demande une suppression. |
+| Exit128 pris pour un dépôt absent | Garder le stderr et, si leur lecture réussit, les valeurs raw locales ; aucune destination déduite ni édition si la découverte échoue. |
+| Catalogue supposé exhaustif via GetEncodings | .NET 10 omet des codecs qu’il résout, dont GB18030. Complément borné, alias canoniques et codec strict conservé. |
+| Favoris implicites dans un test de codec | Initialiser explicitement le profil isolé attendu avant les vrais viewers ; ne pas changer les codecs ni affaiblir les contrôles d’octets pour satisfaire le test. |
+| Global pris pour la valeur effective | Local ou une include peuvent gagner après publication ; vérifier et conserver l’avertissement. |
+
+Les ciblés UI01 **59/65** et UI02 **63/66** restent rouges et conservés dans `artifacts/linux/git-config-20261018`. UI03 **32/32** couvre les deux classes touchées, sans réexécuter artificiellement les autres cas déjà verts. La compilation initiale des nouveaux scénarios Core a aussi échoué avant correction ; ses logs restent conservés. Le [full01 refusé](../../artifacts/linux/git-config-20261018/full-01/parent-verification.json) conserve **1881/1889** réussites UI : huit anciens scénarios supposaient l’ancien menu fixe. Leurs profils explicites gardent toutes les assertions/interactions historiques ; les cinq classes corrigées passent **25/25** dans `legacy-encodings-01`. Le [full03](../../artifacts/linux/git-config-20261018/full-03/parent-verification.json) réexécute ensuite la suite entière, sans retrait de cas ni transfert des ciblés. Entre les deux, [full02](../../artifacts/linux/git-config-20261018/full-02/environment-rejection.json) est refusé : sockets interdites par le bac à sable, 0 test UI exécuté, Core 62/714 et Plugins 0/35 ; aucun résultat accepté ni modification produit. [Parcours natif source](../../artifacts/linux/git-config-20261018/native-source-01/root-review.json) limité à son scénario, sans certification du paquet interactif.

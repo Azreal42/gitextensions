@@ -1684,18 +1684,23 @@
     "GitUI.CommandsDialogs.SettingsDialog.FormAvailableEncodings": {
       "feature": "Choix des encodages disponibles",
       "group": "settings",
-      "level": "N1",
+      "level": "N2",
       "linux": [
+        "AvailableEncodingsDialog",
+        "AvailableEncodingsCatalog",
+        "AvailableEncodingsPreferencesStore",
         "DiffViewerReadingMenu"
       ],
-      "implemented": "Choix d’encodage dans les menus de lecture et gestion stricte des codecs.",
-      "remaining": "Fenêtre de sélection/personnalisation de la liste des encodages absente.",
-      "visual": "integre",
+      "implemented": "Dialogue à deux listes Selected/Available reprenant les libellés XLF Windows et les boutons >/<, ajout/retrait conservant l’ordre inclus, protection des encodages de base déjà inclus (ASCII, UTF-16 LE/BE, UTF-8 et encodage système), UTF-7 exclu et UTF-8 sans BOM. Catalogue des encodages .NET 10/CodePages connus et réellement disponibles, y compris multioctets, indépendant des règles strictes de décodage et de patch du Core. Préférences partagées entre FilesEncoding de Config et les sélecteurs diff/viewer ; une sélection courante retirée des favoris reste présente. Defaults Windows adaptés à la plateforme (Default, ASCII, Unicode, UTF-8, OEM et code page active). OK publie la préférence du dialogue enfant ; Cancel/Escape/fermeture du propriétaire abandonnent son brouillon.",
+      "remaining": "Préférence Linux XDG indépendante, sans import implicite du profil Windows. Catalogue dépendant des codecs de la plateforme ; complément borné des métadonnées .NET 10 omettant notamment GB18030, sans promesse de codecs futurs. Parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : ajout puis Cancel, ajout puis OK, Cancel parent et liste incluse retrouvée après redémarrage. Audit natif étendu (retrait/protection/clavier/erreurs/owner-close, autres thèmes/langues, Wayland/DPI/accessibilité) et nouveau paquet interactif encore ouverts. Écart connu : une liste préférée enregistrée vide reste vide sur Linux ; Windows reprend ses défauts. Les bases absentes ne sont pas réintroduites automatiquement, leur protection concerne seulement celles déjà incluses.",
+      "visual": "rapproche",
       "tests": [
+        "AvailableEncodingsDialogTests",
         "DiffViewerReadingTests"
       ],
       "adr": [
-        "0026"
+        "0026",
+        "0094"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.FormChooseTranslation": {
@@ -2437,7 +2442,7 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigSettingsPage": {
       "feature": "Configuration Git et outils diff/merge",
       "group": "settings-pages",
-      "level": "N1",
+      "level": "N2",
       "linux": [
         "MainWindow@ShowWorkflowAsync",
         "MainWindow@DiffToolAsync",
@@ -2446,21 +2451,31 @@
         "GitToolsDraftSession",
         "GitToolsCatalog",
         "GitRepository@GetToolConfigurationAsync",
-        "GitRepository@SaveToolConfigurationAsync"
+        "GitRepository@SaveToolConfigurationAsync",
+        "AvailableEncodingsDialog",
+        "AvailableEncodingsPreferencesStore"
       ],
-      "implemented": "Sous-périmètre Diff/Merge : six champs Windows nom/chemin/commande, vraies ComboBox éditables avec catalogue, noms inconnus littéraux, Browse/Suggest explicites. Effective/System readonly, brouillons Local/Global, OK/Apply et Cancel sans rollback des publications ; origines/includes, reçus natifs, readback disponible (inconnu possible après annulation), effets partiels et fermeture drainée. Façade Core typée et consommateurs existants. Full d975, paquet exact et natif T01 ciblé vérifiés (anglais/clair/X11, configuration et redémarrage). ADR0093.",
-      "remaining": "Configuration reste N1 : identité, éditeur, templates, credentials, encoding/autocrlf et autres réglages Windows non portés. Découverte exhaustive, Global hors dépôt dans l’UI et variantes natives encore ouverts. Git inférieur à 2.26 rend seulement cette section outils indisponible à l’édition, sans déclarer les autres réglages indisponibles. Consommateurs externes, picker et audit natif étendu encore ouverts ; aucune parité globale.",
-      "visual": "integre",
+      "implemented": "Treize champs de la page Windows dans une grille unique, avec libellés XLF et ComboBox éditables. Identité, helper, éditeur, template avec Browse, quatre choix autocrlf et encoding avec Configure rejoignent les six champs Diff/Merge. Moteur natif commun, brouillons Local/Global, Effective/System readonly, Apply/OK explicites, Cancel sans rollback des publications, origines/includes et effets partiels conservés. Absence, vide, valueless, aliases et encodages inconnus restent distincts. Retour au valueless publié sans unset ; helper vide explicite pour reset. Diagnostic natif conservé, sans destination devinée ni édition ; valeurs raw readonly conservées lorsque leur lecture réussit malgré l’échec de rev-parse. Une configuration illisible reste indisponible, sans valeurs inventées. Sélecteur d’encodages partagé avec les lecteurs ; fermeture possédée et focus de validation. Suites fraîches et parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : Apply nom Local, Cancel, encodages indépendants et redémarrage normal.",
+      "remaining": "Page N2 : Global hors dépôt dans l’UI et découverte exhaustive des outils/éditeurs encore ouverts. Le lecteur guidé à origines requiert Git 2.26 ; édition brute séparée conservée pour les autres clés et la réparation des configurations natives invalides. Browse template, autres champs et Global en natif étendu, multivaleurs modifiables, tous consommateurs, thèmes/localisations/Wayland/DPI/accessibilité non certifiés iso. Le parcours natif du binaire Release source ne valide pas le nouveau paquet interactivement. La validation T01 d975 reste limitée au lot Diff/Merge précédent.",
+      "visual": "rapproche",
       "tests": [
-        "GitToolsSettingsDialogTests"
+        "GitToolsSettingsDialogTests",
+        "GitConfigurationPageTests",
+        "AvailableEncodingsDialogTests"
       ],
       "adr": [
-        "0093"
+        "0093",
+        "0094"
       ],
       "extra_evidence": [
         {
           "label": "Configuration Diff/Merge Git native, scopes, includes et reçus",
           "source": "tests/linux/GitExtensions.Core.Tests/ToolConfigurationScenarios.cs",
+          "line": 1
+        },
+        {
+          "label": "Champs Config Git natifs, valeurs littérales et batch commun protégé",
+          "source": "tests/linux/GitExtensions.Core.Tests/ConfigurationFieldsScenarios.cs",
           "line": 1
         }
       ]
