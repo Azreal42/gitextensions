@@ -6,9 +6,9 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `2ceb059bc`, suites complètes 2117/2117 Desktop (201 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=7, N2=14, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `c831b414b`, suites complètes 2285/2285 Desktop (215 classes), 720/720 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=14, N2=30, N3=49, NA=1 ; 32 pages : N0=10, N1=6, N2=15, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
 
-**Recensement actuel : 2145 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
+**Recensement actuel : 2179 fichiers C#, 90 classes Window Linux et 33 fabriques Linux ; 366 sites de boîtes système, 189 Designer, 13 dialogues WiX du dépôt et 9 de bibliothèque**. Les classes de base et l’installateur restent séparés des fenêtres métier ; les tests associés sont ceux de la vraie suite de référence, sans certification de chaque écran.
 
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
@@ -310,7 +310,7 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 - [ ] Après le lot avatars ci-dessous, quatre préférences Windows indisponibles/adaptées et downloadDictionary restent ouverts : intégration Visual Studio, AutoScale, troncature et dictionnaire. Aucun niveau supplémentaire acquis.
 - [ ] Colonne de branche Windows, autres consommateurs et variantes natives, langues/thèmes, Wayland/DPI/accessibilité, paquet interactif et macOS.
 
-## Avatars partagés — périmètre vérifié et écart visuel
+## Avatars partagés — périmètre vérifié et disposition
 
 [ADR0099](adr/platform/avatars/0099-shared-desktop-runtime.md), source `3954cfc6a` : provider/fallback/template/cache Windows et avatar CommitInfo raccordés au runtime partagé, Clear impératif, durée disque de session, lecteurs visibles et fermeture drainée. [Full01](../../artifacts/linux/shared-avatars-20261018/full-01/parent-verification.json) : **2283/2283 Desktop (214 classes), 720/720 Core, 35/35 Plugins**, 103 ajouts Desktop sans retrait/skip ; build sans avertissement/erreur. Deux anciennes fixtures Appearance adaptées explicitement, sans retrait de cas.
 
@@ -318,5 +318,5 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Inventaire régénéré sur 3954 : mêmes 139 entrées, niveaux et aspects ; Appearance reste N2 partiel, treize familles ouvertes, aucun N4.
 - [x] Template Custom long : colonne éditeur bornée par le viewport, place des aides réservée. Deux nouveaux cas rouges sur3954 puis **40/40 ciblés verts** (38 historiques), rendus anglais/clair et français/sombre ; aucun ancien oracle modifié. [Revue](../../artifacts/linux/appearance-settings-20261018/review/appearance-layout-root-review.json).
-- [ ] Full, paquet et nouveau parcours natif de cette correction de mise en page ; les preuves3954 ci-dessus gardent leur défaut observé. [Failure](failure.md#avatars-partagés--activation).
+- [x] Correction c831 validée : [full01](../../artifacts/linux/appearance-layout-20261018/full-01/parent-verification.json) **2285/2285 Desktop (215 classes), 720/720 Core, 35/35 Plugins**, deux cas Layout ajoutés sans skip/retrait ; [paquet isolé exact](../../artifacts/linux/snapshots/c831b414b/proofs/package-parent-verification.json) **35 607 404 octets** et [natif source](../../artifacts/linux/appearance-layout-20261018/native-source-01/root-operator-review.json) distincts. Anglais/clair/X11, 67 commandes, 4 GET locaux à 200, deux sorties normales à 0 et drain ; draft de 858 caractères dans Settings à 958 pixels, trois aides visibles sans scroll/resize ni clic externe. Les preuves 3954 et les [refus de préparation/bookkeeping](failure.md#avatars-partagés--activation) restent conservés ; mêmes 139 entrées/niveaux/aspects, treize familles ouvertes, aucun N4.
 - [ ] Chooser/classic réel, identité runtime/TTL entre familles et renderer en attente à la sortie réelle ; Blame/Gource natifs, providers externes, autres langues/thèmes, Wayland/DPI/accessibilité et macOS.
