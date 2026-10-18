@@ -299,6 +299,10 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 - [x] Full03 frais, paquet exact et parcours natif General ciblé ; full01 interrompu/rejeté et full02 avec un échec Checkout conservés. Niveaux inchangés.
 - [ ] Compléments General natifs, erreurs et autres langues/thèmes ; console et télémétrie restent indisponibles. Les treize familles globales restent ouvertes.
 
-## En préparation — Appearance
+## Appearance — socle intégré, validation en cours
 
-Worktree isolé : cinq réglages reliés au host et aux consommateurs, reprise après sauvegarde partielle, branches récentes sans bloquer la grille et fermeture drainée. [Compilation et fixtures préparées](../../artifacts/linux/general-settings-20261018/next-appearance-validation/build-03/result.json) : zéro avertissement/erreur, **62 nouveaux cas non exécutés**. Code non intégré à cette référence ; Appearance reste N1. Aucun résultat General ne vaut validation Appearance.
+Source `192069d34` : groupes Windows et cinq choix actifs (quatre préférences Windows + thème Linux), Help translate, fusion après sauvegarde partielle, branches récentes sans bloquer l'historique et fermeture drainée. [Ciblé04](../../artifacts/linux/appearance-settings-20261018/targeted-new-04/result.json) : **63/63**, zéro skip/échec ; build sans avertissement/erreur. Dates et avatars mettent à jour les lignes existantes ; les choix View inchangés restent temporaires. [ADR0098](adr/preferences/appearance/0098-appearance-shared-settings.md).
+
+- [x] Reproduire puis corriger la fermeture Settings bloquée pendant une lecture Git facultative ; lecteur partagé conservé, même test vert.
+- [ ] Reprendre le [full01 interrompu après deux échecs Checkout](../../artifacts/linux/appearance-settings-20261018/review/full-01-rejection.json) : publication du hit-test après redimensionnement à diagnostiquer, sans assouplir le premier clic. Core720/720 et Plugins35/35 à 0 ; aucun full Desktop accepté. Les trois cas Checkout isolés passent sans changement, ce qui ne résout pas ces échecs.
+- [ ] Full frais, paquet exact et natif Appearance avec redémarrage. Neuf préférences Windows indisponibles/adaptées ; fournisseurs/cache/avatar CommitInfo, troncature et dictionnaire restent ouverts. Appearance reste N1 dans la matrice acceptée ; treize familles ouvertes, aucun N4.
