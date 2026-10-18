@@ -84,7 +84,8 @@ public sealed partial class MainWindow : Window
         LoadRepositoryHistory();
         _historyView = _historyViewStore.Load();
         _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog };
-        _historyWindow = _historyQuery.Count;
+        _appliedHistoryMaximum = _preferences.MaxRevisionGraphCommits; _appliedHistoryBatchSize = _historyQuery.Count;
+        _historyWindow = HistoryPolicy.InitialWindow(_historyQuery.Count);
         _commits.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
             Setters =
@@ -183,9 +184,11 @@ public sealed partial class MainWindow : Window
 
             _opened = true;
             GitEnvironmentStartup? environmentStartup = Program.TakeEnvironmentStartup();
-            string? path = environmentStartup is { PreparationError: not null, Arguments.BrowseRequest: not null }
+            string? explicitPath = environmentStartup is { PreparationError: not null, Arguments.BrowseRequest: not null }
                 ? environmentStartup.Arguments.RepositoryArgument ?? environmentStartup.CurrentDirectory ?? Environment.CurrentDirectory
-                : _browseRequest.RepositoryPath ?? environmentStartup?.Arguments.RepositoryArgument ?? Program.RepositoryPath ?? _repositoryHistory.Recent.FirstOrDefault()?.Path;
+                : _browseRequest.RepositoryPath ?? environmentStartup?.Arguments.RepositoryArgument ?? Program.RepositoryPath;
+            string? path = explicitPath ?? (_preferences.StartWithRecentWorkingDir ? _repositoryHistory.StartupRepositoryPath : null);
+            bool reopenRecent = explicitPath is null && path is not null;
             if (environmentStartup is not null && path is not null)
             {
                 _startupArgumentsToRetry = environmentStartup.Arguments with
@@ -197,7 +200,8 @@ public sealed partial class MainWindow : Window
             }
             if (path is not null && environmentStartup?.PreparationError is null)
             {
-                await OpenRepositoryAsync(path);
+                if (reopenRecent) { await OpenLastVisitedRepositoryAsync(path); }
+                else { await OpenRepositoryAsync(path); }
                 if (_repository is not null) { _startupArgumentsToRetry = null; }
             }
 
@@ -359,10 +363,34 @@ public sealed partial class MainWindow : Window
 
     private async Task ChooseRepositoryAsync()
     {
-        IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Open Git repository", AllowMultiple = false });
-        if (folders.FirstOrDefault()?.TryGetLocalPath() is string path)
+        string? path = await ExportDialogControls.FolderAsync(this, T("Open Git repository"), new ClonePreferencesStore().Load().EffectiveDestination);
+        if (path is not null)
         {
             await OpenRepositoryAsync(path);
+        }
+    }
+
+    private async Task OpenLastVisitedRepositoryAsync(string path)
+    {
+        // A stale recorded root must never discover an unrelated parent repository.
+        if (!Path.IsPathFullyQualified(path) || !Directory.Exists(path)) { return; }
+        using WindowWork work = TrackWindowWork();
+        try
+        {
+            GitRepository candidate = await GitRepository.OpenAsync(path, _lifetime.Token);
+            bool sameRoot = string.Equals(Path.TrimEndingDirectorySeparator(candidate.Path), Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)), StringComparison.Ordinal);
+            bool ownMetadata = File.Exists(Path.Combine(path, ".git")) || Directory.Exists(Path.Combine(path, ".git"))
+                || candidate.IsBare && File.Exists(Path.Combine(path, "HEAD")) && Directory.Exists(Path.Combine(path, "objects"));
+            if (!sameRoot && !ownMetadata) { return; }
+            await OpenRepositoryAsync(candidate.Path);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (GitCommandException error) when (error.Result.ExitCode == 128
+            && error.Result.StandardError.StartsWith("fatal: not a git repository", StringComparison.Ordinal)) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or GitCommandException)
+        {
+            LastException = error;
+            AppendOutput("Unable to reopen the last working directory: " + error.Message);
         }
     }
 
@@ -431,7 +459,8 @@ public sealed partial class MainWindow : Window
             GitLogQuery configuredQuery = opening ? new GitLogQuery
             { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog,
                 Path = _browseRequest.PathFilter?.Path } : _historyQuery;
-            int historyWindow = opening ? configuredQuery.Count : _historyWindow;
+            HistoryLoadingPolicy policy = HistoryPolicy;
+            int historyWindow = policy.ClampWindow(opening ? configuredQuery.Count : _historyWindow);
             // The toolbar editor is a draft. Refresh/background fetch/load more
             // may only query the expression explicitly accepted by the user.
             string? revision = configuredQuery.BranchFilter ?? configuredQuery.Revision;
@@ -442,12 +471,12 @@ public sealed partial class MainWindow : Window
             {
                 revision = null;
                 configuredQuery = configuredQuery with { All = true, Revision = null, BranchFilter = null };
-                historyWindow = configuredQuery.Count;
+                historyWindow = policy.InitialWindow(configuredQuery.Count);
             }
             configuredQuery = ConfigureHistoryViewQuery(configuredQuery);
             GitLogQuery query = configuredQuery with
             {
-                Count = historyWindow + 1,
+                Count = policy.ReadCount(historyWindow),
                 Skip = 0,
                 Revision = configuredQuery.Revision,
                 BranchFilter = configuredQuery.BranchFilter
@@ -456,10 +485,10 @@ public sealed partial class MainWindow : Window
             IReadOnlyList<GitCommit> history = historyRead.Commits;
             // -commit selects a row. Expand from the newest page; it must never become a revision/ancestor filter.
             while (requiredSelectionHashes.Any(hash => !history.Take(historyWindow).Any(commit => commit.Hash == hash))
-                && history.Count > historyWindow && historyWindow < 100000)
+                && policy.HasMore(history.Count, historyWindow))
             {
-                historyWindow = (int)Math.Min(100000L, (long)historyWindow + configuredQuery.Count);
-                query = query with { Count = historyWindow + 1 };
+                historyWindow = policy.NextWindow(historyWindow, configuredQuery.Count);
+                query = query with { Count = policy.ReadCount(historyWindow) };
                 historyRead = await ReadBrowseHistoryAsync(repository, query, status.IsUnborn, Token);
                 history = historyRead.Commits;
             }
@@ -468,6 +497,7 @@ public sealed partial class MainWindow : Window
             _supportsStashStaged ??= await repository.SupportsStashStagedAsync(Token);
             IReadOnlyList<GitWorktree> worktrees = await repository.GetWorktreesAsync(Token);
             IReadOnlyList<GitSubmodule> submodules = await repository.GetSubmodulesAsync(Token);
+            await ReadGeneralStatusDetailsAsync(repository, status, submodules, Token);
             var configuration = await repository.GetConfigAsync(cancellationToken: Token);
             if (_fileMenuAdditionalOperations is not null) { await _fileMenuAdditionalOperations.RefreshAsync(repository, Token); }
             GitCommit[] visibleHistory = history.Take(historyWindow).ToArray();
@@ -504,8 +534,7 @@ public sealed partial class MainWindow : Window
             _historyQuery = configuredQuery;
             _historyWindow = historyWindow;
             UpdateBranchFilterReferences(references, opening);
-            _repositorySummary = $"{(repository.IsBare ? T("Bare repository") + "  ·  " : "")}{status.Branch ?? "detached"}  ·  {status.Changes.Count} changes  ·  ↑{status.Ahead} ↓{status.Behind}";
-            _state.Text = _repositorySummary;
+            RefreshGeneralStatusPresentation(status, stashes);
             UpdateBrowserToolbar(status);
             UpdateVirtualRevisionRows(status);
             SetWorkingFiles(status.Changes, selectedPath, preserveSelection: !changedRepository);
@@ -523,7 +552,7 @@ public sealed partial class MainWindow : Window
             { SetComparisonFileTreePaths(repository, artificialSelection, artificialTree); }
             else { SetFileTreePaths(repository, treeRevision, tree); }
             UpdateBrowserNavigation(references, stashes, submodules, worktrees);
-            _historyHasMore = history.Count > _historyWindow && _historyWindow < 100000;
+            _historyHasMore = policy.HasMore(history.Count, _historyWindow);
             _history = visibleHistory;
             if (changedRepository) { _browseInitialComparison = null; }
             if (startupFirst is not null && startupSelection is not null)

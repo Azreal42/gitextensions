@@ -17,7 +17,19 @@ internal sealed class PullPreferencesStore
     {
         try
         {
-            PullPreferences value = File.Exists(FilePath) ? JsonSerializer.Deserialize<PullPreferences>(File.ReadAllText(FilePath), Json) ?? new() : new();
+            PullPreferences value = new();
+            bool hasIncludeUntracked = false;
+            if (File.Exists(FilePath))
+            {
+                using JsonDocument profile = JsonDocument.Parse(File.ReadAllText(FilePath));
+                value = profile.RootElement.Deserialize<PullPreferences>(Json) ?? new();
+                hasIncludeUntracked = profile.RootElement.ValueKind == JsonValueKind.Object
+                    && profile.RootElement.TryGetProperty(nameof(PullPreferences.IncludeUntrackedFilesInAutoStash), out _);
+            }
+            // This used to be a checkout-only choice. Honor only an explicitly
+            // saved legacy value; an untouched profile now uses Windows' false.
+            if (!hasIncludeUntracked)
+            { value = value with { IncludeUntrackedFilesInAutoStash = ReadLegacyIncludeUntracked() }; }
             return value with
             {
                 DefaultAction = IsToolbarAction(value.DefaultAction) ? value.DefaultAction : GitPullAction.Merge,
@@ -28,6 +40,20 @@ internal sealed class PullPreferencesStore
     }
 
     internal static bool IsToolbarAction(GitPullAction action) => action is >= GitPullAction.None and <= GitPullAction.FetchPruneAll;
+
+    private static bool ReadLegacyIncludeUntracked()
+    {
+        string legacy = Path.Combine(Path.GetDirectoryName(new PreferencesStore().FilePath)!, "reference-preferences.json");
+        try
+        {
+            if (!File.Exists(legacy)) { return false; }
+            using JsonDocument profile = JsonDocument.Parse(File.ReadAllText(legacy));
+            return profile.RootElement.ValueKind == JsonValueKind.Object
+                && profile.RootElement.TryGetProperty(nameof(ReferencePreferences.IncludeUntracked), out JsonElement value)
+                && (value.ValueKind is JsonValueKind.True or JsonValueKind.False) && value.GetBoolean();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException) { return false; }
+    }
 
     internal void Save(PullPreferences value)
     {

@@ -24,6 +24,16 @@ public sealed record RepositoryHistoryEntry(string Path, string? Category = null
 
 public sealed record RepositoryHistoryState
 {
+    private string? _lastVisitedRepositoryPath;
+    private bool _lastVisitRecorded;
+    public string? LastVisitedRepositoryPath
+    {
+        get => _lastVisitedRepositoryPath;
+        init { _lastVisitedRepositoryPath = value; _lastVisitRecorded = true; }
+    }
+    // A missing legacy field can fall back once. An explicitly empty/null or
+    // invalid recorded last visit must not select another repository instead.
+    internal string? StartupRepositoryPath => _lastVisitRecorded ? LastVisitedRepositoryPath : Recent.FirstOrDefault()?.Path;
     public List<RepositoryHistoryEntry> Recent { get; init; } = [];
     public List<RepositoryHistoryEntry> Favorites { get; init; } = [];
     public int HistorySize { get; init; } = 30;
@@ -39,7 +49,7 @@ public sealed record RepositoryHistoryState
     {
         RepositoryHistoryEntry entry = Recent.FirstOrDefault(item => item.Path == path) ?? new(path);
         List<RepositoryHistoryEntry> recent = [entry, .. Recent.Where(item => item.Path != path)];
-        return (this with { Recent = recent }).TrimRecent();
+        return (this with { Recent = recent, LastVisitedRepositoryPath = path }).TrimRecent();
     }
 
     public RepositoryHistoryState Anchor(string path, RepositoryHistoryAnchor anchor)
@@ -80,14 +90,21 @@ public sealed record RepositoryHistoryState
                     RepositoryHistoryEntry? anchored = group.FirstOrDefault(item => item.EffectiveAnchor != RepositoryHistoryAnchor.None);
                     return anchored is not null && first.EffectiveAnchor == RepositoryHistoryAnchor.None ? first.WithAnchor(anchored.EffectiveAnchor) : first;
                 }).ToList();
-        return (this with
+        RepositoryHistoryState normalized = this with
         {
             Recent = Clean(Recent), Favorites = Clean(Favorites), HistorySize = Math.Clamp(HistorySize, 1, 5000),
             MaxTopRepositories = Math.Clamp(MaxTopRepositories, 0, 1_000_000),
             RecentReposComboMinWidth = RecentReposComboMinWidth <= 0 ? 0 : Math.Clamp(RecentReposComboMinWidth, 30, 800),
             ShorteningStrategy = Enum.IsDefined(ShorteningStrategy) ? ShorteningStrategy : RepositoryPathShorteningStrategy.None
-        }).TrimRecent();
+        };
+        if (LastVisitedRepositoryPath is not null && (string.IsNullOrEmpty(LastVisitedRepositoryPath)
+            || !Path.IsPathFullyQualified(LastVisitedRepositoryPath) || LastVisitedRepositoryPath.Contains('\0')))
+        { normalized = normalized with { LastVisitedRepositoryPath = null }; }
+        return normalized.TrimRecent();
     }
+
+    internal RepositoryHistoryState RecordLegacyLastVisit()
+        => _lastVisitRecorded ? this : this with { LastVisitedRepositoryPath = Recent.FirstOrDefault()?.Path };
 }
 
 public sealed class RepositoryHistoryStore
@@ -112,7 +129,7 @@ public sealed class RepositoryHistoryStore
         string temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            File.WriteAllText(temporary, JsonSerializer.Serialize(state.Normalize(), new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(temporary, JsonSerializer.Serialize(state.Normalize().RecordLegacyLastVisit(), new JsonSerializerOptions { WriteIndented = true }));
             File.Move(temporary, FilePath, overwrite: true);
         }
         finally { File.Delete(temporary); }

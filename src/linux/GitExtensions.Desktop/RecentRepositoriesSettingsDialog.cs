@@ -224,38 +224,7 @@ public sealed class RecentRepositoriesSettingsDialog : Window
 
     private string L(string item, string source) => _translations.Translate("FormRecentReposSettings", item, "Text", source);
     private static NumericUpDown Number(string name, int minimum, int maximum)
-        => new()
-        {
-            Name = name, Minimum = minimum, Maximum = maximum, Increment = 1, Width = 61, Height = 24, MinHeight = 24,
-            FormatString = "0", ClipValueToMinMax = true,
-            Template = new FuncControlTemplate<NumericUpDown>((owner, scope) =>
-            {
-                TextBox text = new() { Name = "PART_TextBox", Height = 22, MinHeight = 0, MinWidth = 0, Padding = new Thickness(2, 0), BorderThickness = new Thickness(0), VerticalContentAlignment = VerticalAlignment.Center };
-                ButtonSpinner spinner = new()
-                {
-                    Name = "PART_Spinner", Content = text, AllowSpin = true, MinWidth = 0, MinHeight = 0, Padding = new Thickness(0), Margin = new Thickness(0),
-                    Template = new FuncControlTemplate<ButtonSpinner>((host, spinnerScope) =>
-                    {
-                        RepeatButton increase = Arrow("PART_IncreaseButton", "▴"), decrease = Arrow("PART_DecreaseButton", "▾");
-                        spinnerScope.Register(increase.Name!, increase); spinnerScope.Register(decrease.Name!, decrease);
-                        StackPanel arrows = new() { Width = 14, Children = { increase, decrease } };
-                        Grid panel = new() { ColumnDefinitions = new ColumnDefinitions("*,14") };
-                        panel.Children.Add(new ContentPresenter { Content = host.Content, HorizontalContentAlignment = HorizontalAlignment.Stretch });
-                        Grid.SetColumn(arrows, 1); panel.Children.Add(arrows); return panel;
-                    })
-                };
-                scope.Register(text.Name!, text); scope.Register(spinner.Name!, spinner);
-                Border border = ClassicChrome.Border(spinner, new Thickness(1));
-                border.Bind(Border.BackgroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ClassicWindowBrush"));
-                return border;
-                static RepeatButton Arrow(string part, string glyph) => new()
-                {
-                    Name = part, Content = glyph, Height = 11, MinHeight = 0, MinWidth = 0, FontSize = 8,
-                    Padding = new Thickness(0), Margin = new Thickness(0), Focusable = false,
-                    HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center
-                };
-            })
-        };
+        => ClassicNumericInput.Create(name, minimum, maximum);
     private static void Add(Grid grid, Control control, int row) { Grid.SetRow(control, row); grid.Children.Add(control); }
     private static void Field(Grid grid, string caption, Control field)
     {

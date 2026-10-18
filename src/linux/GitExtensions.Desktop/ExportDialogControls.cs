@@ -75,8 +75,17 @@ internal static class ExportDialogControls
 
     internal static string DisplayPath(string path) => path.Replace("\r", "\\r", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal).Replace("\t", "\\t", StringComparison.Ordinal);
 
-    internal static async Task<string?> FolderAsync(Window owner, string title)
-        => (await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = title, AllowMultiple = false })).FirstOrDefault()?.TryGetLocalPath();
+    internal static async Task<string?> FolderAsync(Window owner, string title, string? initialPath = null)
+    {
+        IStorageFolder? folder = null;
+        if (!string.IsNullOrEmpty(initialPath) && Path.IsPathFullyQualified(initialPath))
+        {
+            try { folder = await owner.StorageProvider.TryGetFolderFromPathAsync(initialPath); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException) { }
+        }
+        return (await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        { Title = title, AllowMultiple = false, SuggestedStartLocation = folder })).FirstOrDefault()?.TryGetLocalPath();
+    }
 }
 
 internal sealed class ExportRevisionList : UserControl

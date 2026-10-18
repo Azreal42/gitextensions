@@ -68,7 +68,7 @@ public sealed partial class GitRepository
         ArgumentNullException.ThrowIfNull(comparison.First);
         ArgumentNullException.ThrowIfNull(comparison.Second);
         options ??= new();
-        GitComparisonDiffOptions display = new(options.IgnoreWhitespace, options.ContextLines, options.ShowEntireFile, options.TreatAllFilesAsText);
+        GitComparisonDiffOptions display = new(options.IgnoreWhitespace, options.ContextLines, options.ShowEntireFile, options.TreatAllFilesAsText, options.UseHistogram);
         ValidateComparisonOptions(display);
         if (options.CreationFactor is < 0 or > 10000) { throw new ArgumentOutOfRangeException(nameof(options), "Creation factor must be between zero and 10000."); }
         string[] paths = options.Paths is null || options.Paths.Count == 0 ? [] : ValidatePaths(options.Paths);
@@ -79,7 +79,6 @@ public sealed partial class GitRepository
         if (paths.Length > 0 && version < new Version(2, 38)) { throw new NotSupportedException("Literal range-diff path filters require Git 2.38 or newer."); }
         List<string> arguments = ["--literal-pathspecs", "range-diff", "--find-renames", "--find-copies", "--no-ext-diff", "--no-textconv",
             options.UseGitColoring ? "--color=always" : "--no-color"];
-        if (options.UseHistogram) { arguments.Add("--histogram"); }
         AddComparisonOptions(arguments, display);
         // FileViewer.GetExtraDiffArguments: zero context means summary only for range-diff.
         if (options.ContextLines == 0) { arguments.Add("--no-patch"); }

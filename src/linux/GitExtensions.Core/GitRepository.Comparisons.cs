@@ -227,6 +227,7 @@ public sealed partial class GitRepository
     private static void AddComparisonOptions(List<string> arguments, GitComparisonDiffOptions options)
     {
         ValidateComparisonOptions(options);
+        if (options.UseHistogram) { arguments.Add("--histogram"); }
         switch (options.IgnoreWhitespace)
         {
             case IgnoreWhitespaceKind.Eol: arguments.Add("--ignore-space-at-eol"); break;

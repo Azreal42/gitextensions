@@ -2,11 +2,15 @@ using System.Text.Json;
 
 namespace GitExtensions.Linux.Desktop;
 
-internal sealed record ClonePreferences(string Destination = "", bool InitializeSubmodules = true);
+internal sealed record ClonePreferences(string Destination = "", bool InitializeSubmodules = true, string? DefaultDestination = null)
+{
+    internal string EffectiveDestination => DefaultDestination ?? Destination;
+}
 
 internal sealed class ClonePreferencesStore
 {
     private readonly string _file = Path.Combine(Path.GetDirectoryName(new PreferencesStore().FilePath)!, "clone-preferences.json");
+    internal string FilePath => _file;
 
     internal ClonePreferences Load()
     {
@@ -16,6 +20,13 @@ internal sealed class ClonePreferencesStore
 
     internal void Save(ClonePreferences preferences)
     {
+        try { SaveStrict(preferences); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
+    }
+
+    internal void SaveStrict(ClonePreferences preferences)
+    {
+        ArgumentNullException.ThrowIfNull(preferences);
         string temporary = _file + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
@@ -23,7 +34,6 @@ internal sealed class ClonePreferencesStore
             File.WriteAllText(temporary, JsonSerializer.Serialize(preferences));
             File.Move(temporary, _file, overwrite: true);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         finally { try { File.Delete(temporary); } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { } }
     }
 }

@@ -64,12 +64,28 @@ public sealed partial class MainWindow
         if (!_busy) { Dispatcher.UIThread.Post(async () => await ReloadDiffAppearancesAsync()); }
     }
 
+    internal Task ReloadGeneralDiffAlgorithmAsync()
+    {
+        if (_lifetime.IsCancellationRequested) { return Task.CompletedTask; }
+        _revisionDiffRead.Cancel(); _workingDiffRead.Cancel();
+        _commitContent?.TextView.BeginDocumentLoad(); _changesDiffView?.BeginDocumentLoad();
+        _selectedPatch = null; _hunks.ItemsSource = null;
+        _pendingDiffAppearance = true;
+        UpdatePartialStageActions();
+        return ReloadDiffAppearancesAsync();
+    }
+
     private async Task ReloadDiffAppearancesAsync()
     {
         if (!_pendingDiffAppearance || _busy || _lifetime.IsCancellationRequested) { return; }
         _pendingDiffAppearance = false;
         if (_revisionFiles.SelectedItem is TreeViewItem item)
         { await ReadRevisionDiffAsync(item); }
+        else if (_loadedDiffSelection == RevisionSelectionIdentity && _commits.SelectedItem is GitCommit commit)
+        {
+            _revisionRead.Cancel();
+            await ReadBrowserAsync(_revisionDiffRead, "Commit diff", (repository, token) => LoadCommitDiffSummaryAsync(repository, commit.Hash, token));
+        }
         if (SelectedWorkingChange is not null) { await LoadSelectedDiffAsync(); }
     }
 
@@ -236,13 +252,25 @@ public sealed partial class MainWindow
         }
         else
         {
-            string patch = _revisionFilesView!.FilterText.Length == 0
-                ? await repository.GetCommitDiffAsync(revision, cancellationToken: token) : "";
-            token.ThrowIfCancellationRequested();
-            _commitContent?.ClearImage();
-            if (_commitContent is not null) { _commitContent.TextView.Mode = DiffViewMode.Auto; }
-            _diff.Text = patch;
+            await LoadCommitDiffSummaryAsync(repository, revision, token);
         }
+    }
+
+    private async Task LoadCommitDiffSummaryAsync(GitRepository repository, string revision, CancellationToken token)
+    {
+        GitComparisonDiffOptions options = _commitContent?.TextView.ComparisonMenu.Options ?? GlobalDiffPreferences.Apply(_revisionViewerOptions);
+        string patch = _revisionFilesView!.FilterText.Length == 0
+            ? await repository.GetCommitDiffAsync(revision, options, cancellationToken: token) : "";
+        token.ThrowIfCancellationRequested();
+        _commitContent?.ClearImage();
+        if (_commitContent is not null)
+        {
+            _commitContent.TextView.BeginDocumentLoad();
+            _commitContent.TextView.DocumentIdentity = string.Join('\0', repository.Path, revision, "summary");
+            _commitContent.TextView.SyntaxPath = null;
+            _commitContent.TextView.Mode = DiffViewMode.Auto;
+        }
+        _diff.Text = patch;
     }
 
     private TreeViewItem? SetRevisionFileGroups(IReadOnlyList<GitRevisionDiffGroup> groups, object? previous)
@@ -338,7 +366,7 @@ public sealed partial class MainWindow
         }
         CancellationToken token = cancellationToken ?? Token;
         DiffView viewer = _commitContent.TextView;
-        GitComparisonDiffOptions options = _revisionViewerOptions;
+        GitComparisonDiffOptions options = _revisionViewerOptions = viewer.ComparisonMenu.Options;
         GitDiffDisplayOptions display = viewer.DisplayOptions;
         string? folder = _revisionFilesView?.SelectedFolderDescription;
         Action publish;
@@ -354,7 +382,8 @@ public sealed partial class MainWindow
                 GitDiffDocument document = await repository.GetRangeDiffDocumentAsync(group.RangeDiff, new GitRangeDiffOptions
                 {
                     ContextLines = options.ContextLines, ShowEntireFile = options.ShowEntireFile,
-                    IgnoreWhitespace = options.IgnoreWhitespace, TreatAllFilesAsText = options.TreatAllFilesAsText
+                    IgnoreWhitespace = options.IgnoreWhitespace, TreatAllFilesAsText = options.TreatAllFilesAsText,
+                    UseHistogram = options.UseHistogram
                 }, display, token);
                 publish = () => viewer.ShowDocument(document);
             }
@@ -437,7 +466,7 @@ public sealed partial class MainWindow
         // actionable immediately, including when the replacement read fails.
         viewer.BeginDocumentLoad();
         viewer.DocumentIdentity = string.Join('\0', repository.Path, change.Path, change.OriginalPath, _historyGraph.CurrentHead, staged ? "index" : "worktree");
-        GitComparisonDiffOptions options = _workingViewerOptions;
+        GitComparisonDiffOptions options = _workingViewerOptions = viewer.ComparisonMenu.Options;
         Action publish;
         if (!change.IsSubmodule && !change.IsConflict && FileContentView.IsImagePath(change.Path))
         {

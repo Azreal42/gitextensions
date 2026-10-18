@@ -29,6 +29,13 @@ internal sealed class DesktopSettingsDialog : Window
     public bool OpenGitConfiguration { get; private set; }
     internal FontPreferences FontsResult { get; private set; }
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
+    internal GeneralSettingsValues GeneralSettingsResult { get; private set; }
+    private readonly GeneralSettingsPage _generalSettingsPage;
+    internal void AcceptGeneralSaved(GeneralSettingsPublication publication)
+    {
+        Result = publication.Desktop; FileHistoryResult = publication.FileHistory;
+        GeneralSettingsResult = publication.Values; _generalSettingsPage.AcceptSaved(publication.Values);
+    }
     private static string? _lastSelectedPage;
     internal SettingsNavigationView Navigation { get; private set; } = null!;
     internal GitEnvironmentSettingsSession? GitEnvironmentSession { get; private set; }
@@ -47,11 +54,14 @@ internal sealed class DesktopSettingsDialog : Window
         GitEnvironmentSettingsSession? gitEnvironment = null,
         Func<DesktopSettingsDialog, Task>? publishSettings = null,
         Func<GitEnvironmentCheckId, Window, Task>? repairEnvironment = null,
-        bool showChecklist = false, string? initialPage = null)
+        bool showChecklist = false, string? initialPage = null, GeneralSettingsValues? generalSettings = null,
+        IReadOnlyList<string>? cloneDestinations = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
+        GeneralSettingsResult = generalSettings ?? new GeneralSettingsSession(initial, FileHistoryResult).Initial;
+        _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
         HotkeyBindings activeHotkeys = hotkeys ?? new(); HotkeysResult = activeHotkeys.Clone();
         DesktopFontSession? fontSession = fonts is null ? DesktopFonts.CreateSession() : null;
         FontPreferences fontBaseline = fonts ?? fontSession!.Preferences; FontsResult = fontBaseline;
@@ -80,25 +90,15 @@ internal sealed class DesktopSettingsDialog : Window
             ItemTemplate = new FuncDataTemplate<LanguageChoice>((choice, _) => new TextBlock { Text = choice?.Name }) };
         if (initialLanguage is null)
         { ToolTip.SetTip(language, initial.Language + "\n" + translations.Translate("Translation unavailable; using English")); }
-        NumericUpDown history = new() { Name = "SettingsHistoryLimit", Minimum = 1, Maximum = 5000, Value = Math.Clamp(initial.HistoryLimit, 1, 5000), FormatString = "0", Width = 150 };
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
         CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
-        CheckBox fileHistory = new() { Name = "SettingsUseBrowseForFileHistory", Content = translations.Translate("Show file history in the main window"), IsChecked = initial.UseBrowseForFileHistory };
-        CheckBox follow = new() { Name = "chkFollowRenamesInFileHistory", Content = new TextBlock { Text = translations.Translate("GeneralSettingsPage", "chkFollowRenamesInFileHistory", "Text", "Follow renames in file history"), TextWrapping = TextWrapping.Wrap }, IsChecked = FileHistoryResult.FollowRenames };
-        CheckBox exact = new() { Name = "chkFollowRenamesInFileHistoryExact", Content = new TextBlock { Text = translations.Translate("GeneralSettingsPage", "chkFollowRenamesInFileHistoryExact", "Text", "Follow exact renames and copies only"), TextWrapping = TextWrapping.Wrap }, IsChecked = FileHistoryResult.ExactRenames };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
-        StackPanel fields = new() { Name = "GeneralSettingsPage", Margin = new Thickness(12), Spacing = 10 };
         StackPanel appearanceFields = new() { Name = "AppearanceSettingsPage", Margin = new Thickness(12), Spacing = 10 };
         StackPanel advancedFields = new() { Name = "AdvancedSettingsPage", Margin = new Thickness(12), Spacing = 10 };
         GeneralField(appearanceFields, "Theme", theme);
         GeneralField(appearanceFields, translations.Translate("AppearanceSettingsPage", "lblLanguage", "Text", "Language (restart required)"), language);
-        GeneralField(fields, "Number of commits to load", history);
         advancedFields.Children.Add(normalise); GeneralField(advancedFields, "Replacement symbol", symbol); advancedFields.Children.Add(advanced);
-        fields.Children.Add(fileHistory);
-        Grid fileHistoryOptions = new() { ColumnDefinitions = new ColumnDefinitions("*,*") };
-        fileHistoryOptions.Children.Add(follow); Grid.SetColumn(exact, 1); fileHistoryOptions.Children.Add(exact); fields.Children.Add(fileHistoryOptions);
-        fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); };
         Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
@@ -135,7 +135,7 @@ internal sealed class DesktopSettingsDialog : Window
         hotkeysPage.UpdateScripts(scriptsPage.Draft);
         scriptsPage.DraftChanged += draft => hotkeysPage.UpdateScripts(draft);
         string PageTitle(string category, string fallback) => translations.Translate(category, "$this", "Text", fallback);
-        SettingsNavigationPage generalPage = new("General", PageTitle("GeneralSettingsPage", "General"), fields, "GeneralSettings.png");
+        SettingsNavigationPage generalPage = new("General", PageTitle("GeneralSettingsPage", "General"), _generalSettingsPage, "GeneralSettings.png");
         SettingsNavigationPage appearancePage = new("Appearance", PageTitle("AppearanceSettingsPage", "Appearance"), appearanceFields, "Appearance.png", Children:
         [
             new("Sorting", PageTitle("SortingSettingsPage", "Sorting"), sorting, "SortBy.png"),
@@ -184,8 +184,8 @@ internal sealed class DesktopSettingsDialog : Window
             saving = true; save.IsEnabled = apply.IsEnabled = false;
             try
             {
-                if (history.Value is null || history.Value < 1 || history.Value > 5000)
-                { Navigation.SelectPage("General", true); notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); history.Focus(); return false; }
+                if (!_generalSettingsPage.Validate(out string? generalValidation))
+                { Navigation.SelectPage("General", true); notice.Text = generalValidation; return false; }
                 if (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text))
                 { Navigation.SelectPage("Advanced", true); notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); symbol.Focus(); return false; }
                 foreach (TextBox input in new[] { branches, remotes })
@@ -226,17 +226,28 @@ internal sealed class DesktopSettingsDialog : Window
                 { Navigation.SelectPage("Fonts", true); fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return false; }
                 if (gitEnvironment is not null && !gitEnvironment.TrySave())
                 { Navigation.SelectPage("GitPaths", true); return false; }
+                GeneralSettingsResult = _generalSettingsPage.Draft;
                 Result = initial with
                 {
-                    Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
+                    Theme = theme.SelectedItem as string ?? "Light",
                     Language = (language.SelectedItem as LanguageChoice)?.Name ?? initial.Language,
                     AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
-                    UseBrowseForFileHistory = fileHistory.IsChecked == true,
+                    UseBrowseForFileHistory = GeneralSettingsResult.UseBrowseForFileHistory,
+                    MaxRevisionGraphCommits = GeneralSettingsResult.MaxRevisionGraphCommits,
+                    RevisionGridQuickSearchTimeout = GeneralSettingsResult.RevisionGridQuickSearchTimeout,
+                    CheckForUncommittedChangesInCheckoutBranch = GeneralSettingsResult.CheckForUncommittedChangesInCheckoutBranch,
+                    StartWithRecentWorkingDir = GeneralSettingsResult.StartWithRecentWorkingDir,
+                    ShowGitStatusInBrowseToolbar = GeneralSettingsResult.ShowGitStatusInBrowseToolbar,
+                    ShowGitStatusForArtificialCommits = GeneralSettingsResult.ShowGitStatusForArtificialCommits,
+                    ShowSubmoduleStatus = GeneralSettingsResult.ShowSubmoduleStatus,
+                    ShowStashCount = GeneralSettingsResult.ShowStashCount,
+                    ShowAheadBehindData = GeneralSettingsResult.ShowAheadBehindData,
                     ReferenceSorting = new((GitRefsSortBy)references.SelectedItem!, (GitRefsSortOrder)order.SelectedItem!),
                     PrioritizedBranchNames = branches.Text ?? "", PrioritizedRemoteNames = remotes.Text ?? ""
                 };
                 HistorySortResult = (GitLogSort)revisions.SelectedItem!;
-                FileHistoryResult = FileHistoryResult with { FollowRenames = follow.IsChecked == true, ExactRenames = exact.IsChecked == true };
+                FileHistoryResult = FileHistoryResult with
+                { FollowRenames = GeneralSettingsResult.FollowRenamesInFileHistory, ExactRenames = GeneralSettingsResult.FollowRenamesInFileHistoryExact };
                 HotkeysResult = acceptedHotkeys;
                 if (publishSettings is not null)
                 {

@@ -44,7 +44,7 @@ public sealed partial class MainWindow
     private async Task InitializeAsync()
     {
         if (_busy) { return; }
-        InitDialog dialog = new(string.IsNullOrEmpty(_repositoryPath.Text) ? new ClonePreferencesStore().Load().Destination : _repositoryPath.Text);
+        InitDialog dialog = new(string.IsNullOrEmpty(_repositoryPath.Text) ? new ClonePreferencesStore().Load().EffectiveDestination : _repositoryPath.Text);
         await RunAsync("Create new repository", async _ => await dialog.ShowDialog(WorkflowOwner), requireRepository: false, refresh: false);
         if (dialog.CreatedRepository is GitRepository initialized) { await OpenRepositoryAsync(initialized.Path); }
     }

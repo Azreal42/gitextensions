@@ -633,6 +633,7 @@ public sealed partial class CommitDialog : Window
 
     private async Task LoadDiffAsync()
     {
+        _viewerOptions = _diff.ComparisonMenu.Options;
         _content.ClearImage();
         _diff.BeginDocumentLoad();
         _patch = null;

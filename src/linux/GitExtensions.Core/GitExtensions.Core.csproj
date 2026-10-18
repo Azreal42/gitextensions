@@ -50,6 +50,7 @@
     <Compile Include="../../app/GitCommands/Git/CleanMode.cs" Link="Shared/CleanMode.cs" />
     <Compile Include="../../app/GitCommands/Git/Tag/TagOperation.cs" Link="Shared/TagOperation.cs" />
     <Compile Include="../../app/GitCommands/Git/CheckoutNewBranchMode.cs" Link="Shared/CheckoutNewBranchMode.cs" />
+    <Compile Include="../../app/GitCommands/Git/AheadBehindData.cs" Link="Shared/AheadBehindData.cs" />
     <Compile Include="../../app/GitCommands/Settings/AppSettings.LocalChangesAction.cs" Link="Shared/LocalChangesAction.cs" />
     <Compile Include="../../app/GitCommands/Git/GitBranchNameNormaliser.cs" Link="Shared/GitBranchNameNormaliser.cs" />
     <Compile Include="../../app/GitCommands/Git/GitBranchNameOptions.cs" Link="Shared/GitBranchNameOptions.cs" />

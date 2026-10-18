@@ -28,12 +28,14 @@ public sealed class DiffViewerPreferencesStore
 {
     private static readonly ConcurrentDictionary<string, SharedState> States = new(StringComparer.Ordinal);
     private readonly SharedState _state;
+    private readonly string _configurationRoot;
     public string FilePath { get; }
     public event EventHandler? Changed { add => _state.Changed += value; remove => _state.Changed -= value; }
 
     public DiffViewerPreferencesStore(string? directory = null)
     {
         FilePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(new PreferencesStore(directory).FilePath)!, "diff-viewer-preferences.json"));
+        _configurationRoot = Path.GetDirectoryName(Path.GetDirectoryName(FilePath))!;
         _state = States.GetOrAdd(FilePath, _ => new());
     }
 
@@ -67,9 +69,12 @@ public sealed class DiffViewerPreferencesStore
                 ContextLines = current.RememberContextLines ? persisted.ContextLines : 3
             };
             _state.Current = snapshot;
-            return new(snapshot.IgnoreWhitespace, snapshot.ContextLines, snapshot.ShowEntireFile);
+            return ApplyGeneralAlgorithm(new(snapshot.IgnoreWhitespace, snapshot.ContextLines, snapshot.ShowEntireFile));
         }
     }
+
+    internal GitComparisonDiffOptions ApplyGeneralAlgorithm(GitComparisonDiffOptions options)
+        => GlobalDiffPreferences.Apply(options, _configurationRoot);
 
     public DiffViewerPreferences BeginViewerSession()
     {

@@ -13,6 +13,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
 {
     private readonly GitReference? _initial;
     private readonly ReferencePreferencesStore _preferences = new();
+    private readonly PullPreferencesStore _autoStashPreferences = new();
     private readonly RadioButton _local = new() { Name = "CheckoutLocalBranch", GroupName = "CheckoutKind", IsChecked = true };
     private readonly RadioButton _remote = new() { Name = "CheckoutRemoteBranch", GroupName = "CheckoutKind" };
     private readonly RadioButton _detached = new() { Name = "CheckoutRevisionMode", GroupName = "CheckoutKind" };
@@ -28,7 +29,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly RadioButton _stash = new() { Name = "CheckoutStashChanges", GroupName = "CheckoutChanges" };
     private readonly RadioButton _discard = new() { Name = "CheckoutDiscardChanges", GroupName = "CheckoutChanges" };
     private readonly CheckBox _default = new() { Name = "CheckoutChangesDefault" };
-    private readonly CheckBox _includeUntracked = new() { Name = "CheckoutStashUntracked", IsChecked = true };
+    private readonly CheckBox _includeUntracked = new() { Name = "CheckoutStashUntracked" };
     private readonly CheckBox _reapply = new() { Name = "ReapplyCheckoutStash" };
     private readonly TextBlock _current = new() { Name = "CheckoutCurrentBranch", TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _saved = new() { Name = "CheckoutSavedChanges", TextWrapping = TextWrapping.Wrap };
@@ -37,6 +38,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private readonly Button _checkout;
     private readonly bool _autoNormalize;
     private readonly string _replacement;
+    private readonly bool _includeUntrackedBaseline;
     private readonly Func<CancellationToken, Task>? _afterSubmoduleUpdateAsync;
     private readonly CheckoutBranchConstraint? _constraint;
     private readonly SubmoduleCheckoutPreferencesStore _submodulePreferences = new();
@@ -44,7 +46,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private Window? _defaultOwner;
     private bool _closeOwnerWhenIdle;
     private IReadOnlyList<GitReference> _references = [];
-    private bool _dirty;
+    private bool? _dirty;
     private bool _bare;
     private string? _originalStash;
     public GitCheckoutResult? LastResult { get; private set; }
@@ -83,7 +85,8 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         _newMode.ItemsSource = new[] { T("Don't create a local branch"), T("Create local branch"), T("Reset local branch") };
         ReferencePreferences preferences = _preferences.Load();
         _newMode.SelectedIndex = (int)preferences.RemoteCheckoutMode;
-        _includeUntracked.IsChecked = preferences.IncludeUntracked;
+        _includeUntrackedBaseline = _autoStashPreferences.Load().IncludeUntrackedFilesInAutoStash;
+        _includeUntracked.IsChecked = _includeUntrackedBaseline;
         _reapply.IsChecked = preferences.ReapplyStash;
         (_keep.IsChecked, _merge.IsChecked, _stash.IsChecked) = (preferences.CheckoutChanges == LocalChangesAction.DontChange, preferences.CheckoutChanges == LocalChangesAction.Merge, preferences.CheckoutChanges == LocalChangesAction.Stash);
         if (reference?.IsRemote == true) { _remote.IsChecked = true; }
@@ -147,8 +150,11 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         await RunAsync("Checkout branch", async token =>
         {
             _bare = (await Repository.GetInfoAsync(token)).IsBare;
-            GitStatus status = await Repository.GetStatusAsync(token);
-            _dirty = status.Changes.Count > 0;
+            bool checkForChanges = true;
+            try { checkForChanges = new PreferencesStore().Load().CheckForUncommittedChangesInCheckoutBranch; }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { }
+            GitStatus? status = checkForChanges ? await Repository.GetStatusAsync(token) : null;
+            _dirty = status is null ? null : status.Changes.Count > 0;
             _references = _constraint is null ? await Repository.GetReferencesAsync(token) : await _constraint.ReadReferencesAsync(token);
             _originalStash = (await Repository.GetStashesAsync(token)).FirstOrDefault()?.Hash;
             if (_constraint is not null && !_references.Any(branch => branch.IsBranch && branch.SymbolicTarget is null)) { _remote.IsChecked = true; }
@@ -158,7 +164,13 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                 _branches.SelectedItem = _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault(branch => branch.Name == _initial?.Name || _initial is null && branch.IsCurrent)
                     ?? (_initial is null ? _branches.ItemsSource?.Cast<GitReference>().FirstOrDefault() : null);
             }
-            _current.Text = T("Current branch:") + " " + status.Branch + (_dirty ? "    " + status.Changes.Count + " " + T("Local changes") : "");
+            string? branch = status?.Branch ?? _references.FirstOrDefault(reference => reference.IsCurrent)?.ShortName;
+            if (branch is null)
+            {
+                try { branch = (await Repository.RunAsync(["symbolic-ref", "--quiet", "--short", "HEAD"], token)).StandardOutput.TrimEnd('\r', '\n'); }
+                catch (GitCommandException exception) when (exception.Result.ExitCode == 1) { branch = T("detached"); }
+            }
+            _current.Text = T("Current branch:") + " " + branch + (_dirty == true ? "    " + status!.Changes.Count + " " + T("Local changes") : "");
             Status.Text = _bare ? T("This operation requires a working tree.") : T("Select branch");
         }, cancellationToken: cancellationToken);
         if (IsVisible && !IsKeyboardFocusWithin)
@@ -198,7 +210,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
             ReferencePreferences preferences = _preferences.Load();
             return _constraint is null && LastError is null && !_bare && !preferences.AlwaysShowCheckoutDialog && _initial?.IsBranch == true
                 && (_branches.SelectedItem as GitReference)?.Name == _initial.Name
-                && (!_dirty || preferences.UseDefaultCheckoutChanges);
+                && (_dirty == false || preferences.UseDefaultCheckoutChanges);
         }
     }
 
@@ -221,9 +233,9 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         GitCheckoutOptions options = ReadOptions();
         GitReference? selected = _branches.SelectedItem as GitReference;
         if (_constraint is not null && selected is null) { Status.Text = T("Select branch"); return; }
-        if (_defaultOwner is not null && !_dirty) { options = options with { Changes = LocalChangesAction.DontChange }; }
+        if (_defaultOwner is not null && _dirty == false) { options = options with { Changes = LocalChangesAction.DontChange }; }
         Window operationOwner = _defaultOwner ?? this;
-        if (options.Changes == LocalChangesAction.Reset && _dirty && !await Dialogs.ConfirmAsync(this, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
+        if (options.Changes == LocalChangesAction.Reset && _dirty != false && !await Dialogs.ConfirmAsync(this, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
         if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(this, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }
         await RunAsync("Checkout", async token =>
         {
@@ -269,6 +281,13 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                 RemoteCheckoutMode = _remote.IsChecked == true ? options.NewBranchMode : preferences.RemoteCheckoutMode,
                 IncludeUntracked = _includeUntracked.IsChecked == true, ReapplyStash = _reapply.IsChecked == true
             });
+            if ((_includeUntracked.IsChecked == true) != _includeUntrackedBaseline)
+            {
+                // Checkout has already succeeded. A profile failure must not skip its
+                // submodule handling or AfterCheckout scripts, as with legacy choices.
+                try { _autoStashPreferences.Save(_autoStashPreferences.Load() with { IncludeUntrackedFilesInAutoStash = _includeUntracked.IsChecked == true }); }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
+            }
             if (previousHead != (await Repository.GetStatusAsync(token)).Head && (await Repository.GetSubmodulesAsync(token)).Count > 0)
             {
                 bool? update = _submodulePreferences.Load().Decision;
@@ -304,7 +323,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         _revision.IsVisible = revision;
         _remoteOptions.IsVisible = _remote.IsChecked == true;
         _newName.IsEnabled = !IsBusy && _remote.IsChecked == true && _newMode.SelectedIndex > 0;
-        _changes.IsVisible = _dirty;
+        _changes.IsVisible = _dirty != false;
         _includeUntracked.IsVisible = _reapply.IsVisible = _stash.IsChecked == true;
         _default.IsEnabled = !IsBusy && Changes != LocalChangesAction.Reset;
         if (Changes == LocalChangesAction.Reset) { _default.IsChecked = false; }

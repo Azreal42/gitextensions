@@ -93,6 +93,7 @@ public sealed partial class MainWindow
         }
         Button pushButton = ToolbarButton("BrowsePush", "Push", "Push.png", PushFromToolbarAsync);
         MenuItem pushOverflow = MenuAction("Push", PushFromToolbarAsync, "Push.png");
+        _pushToolbarButton = pushButton; _pushOverflow = pushOverflow;
         foreach (Control control in new Control[] { pushButton, pushOverflow })
         {
             control.AddHandler(PointerPressedEvent, (_, args) => quickPush = args.KeyModifiers.HasFlag(KeyModifiers.Shift),
@@ -105,7 +106,8 @@ public sealed partial class MainWindow
         toolbar.Add(pushButton, pushOverflow);
         _commitToolbarButton = ToolbarButton("BrowseCommit", "Commit", "RepoStateClean.png", () => ShowWorkflowAsync("Changes"), text: true);
         toolbar.Add(_commitToolbarButton, MenuAction("Commit…", () => ShowWorkflowAsync("Changes"), "RepoStateClean.png"));
-        toolbar.Add(BuildStashButton(), new MenuItem { Name = "StashOverflow", Header = T("Stash"), Icon = OriginalIconImage("stash.png"), ItemsSource = CreateStashMenu("StashOverflow") });
+        _stashOverflow = new MenuItem { Name = "StashOverflow", Header = T("Stash"), Icon = OriginalIconImage("stash.png"), ItemsSource = CreateStashMenu("StashOverflow") };
+        toolbar.Add(BuildStashButton(), _stashOverflow);
         Command("BrowseFileExplorer", "Open repository in file manager", "BrowseFileExplorer.png", OpenRepositoryFolderAsync);
         Command("BrowseConsole", "Console", "Console.png", OpenTerminalAsync);
         Command("BrowseSettings", "Settings", "Settings.png", () => ShowWorkflowAsync("Configuration"));
@@ -158,7 +160,10 @@ public sealed partial class MainWindow
         { ToolbarInput("RevisionQuickFilterOverflow", "Filter:", _quickHistoryFilter, ApplyQuickHistoryFilterAsync), overflowTypes } };
         toolbar.Add(quick, quickOverflow);
         _historyMore = ToolbarButton("BrowseLoadMore", "Load more", "ArrowDown.png", LoadMoreHistoryAsync);
-        _historyMore.IsVisible = false; toolbar.Add(_historyMore, MenuAction("Load more", LoadMoreHistoryAsync));
+        _historyMore.IsVisible = false;
+        MenuItem moreOverflow = MenuAction("Load more", LoadMoreHistoryAsync);
+        moreOverflow.Bind(MenuItem.IsVisibleProperty, new Binding(nameof(Control.IsVisible)) { Source = _historyMore });
+        toolbar.Add(_historyMore, moreOverflow);
         SizeChanged += (_, _) =>
         { _repositoryPath.Width = Math.Clamp(Bounds.Width * .17, 120, 260); toolbar.Place(); };
         return toolbar;
@@ -261,7 +266,7 @@ public sealed partial class MainWindow
         {
             int count = status.Changes.Count;
             string icon = count == 0 ? "RepoStateClean.png" : status.Changes.Any(change => change.IsStaged) ? "RepoStateStaged.png" : "RepoStateDirty.png";
-            _commitToolbarButton.Content = IconLabel(T("Commit") + " (" + count + ")", icon);
+            _commitToolbarButton.Content = IconLabel(T("Commit") + (_preferences.ShowGitStatusInBrowseToolbar ? " (" + count + ")" : ""), icon);
         }
         UpdateHistoryScopePresentation();
         _quickHistoryFilter.Text = QuickFilterValue();

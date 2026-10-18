@@ -13,6 +13,18 @@ public sealed record GitRevisionChanges(string Revision, string? BaseRevision, I
 
 public sealed partial class GitRepository
 {
+    public async Task<string> GetCommitDiffAsync(string revision, GitComparisonDiffOptions options,
+        string? path = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ValidateComparisonOptions(options);
+        List<string> arguments = ["show", "--encoding=UTF-8", "--format=fuller", "--no-ext-diff", "--no-textconv"];
+        AddComparisonOptions(arguments, options);
+        arguments.AddRange([await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false), "--"]);
+        if (path is not null) { arguments.Add(ValidatePath(path)); }
+        return (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+    }
+
     public async Task<GitRevisionChanges> GetRevisionChangesAsync(string revision, string? baseRevision = null, CancellationToken cancellationToken = default)
     {
         string target = await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);

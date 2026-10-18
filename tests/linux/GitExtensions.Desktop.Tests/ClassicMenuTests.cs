@@ -203,17 +203,18 @@ public sealed class ClassicMenuTests
         Click(Find(f.Window, "settingsToolStripMenuItem")); await Until(() => f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
         DesktopSettingsDialog dialog = f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
         SettingsNavigationTestDriver.Select(dialog, "General");
-        dialog.GetVisualDescendants().OfType<NumericUpDown>().Single().Value = 150;
+        dialog.GetVisualDescendants().OfType<NumericUpDown>().Single(input => input.Name == "_NO_TRANSLATE_MaxCommits").Value = 150;
         dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "SaveDesktopSettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        await Until(() => !dialog.IsVisible && !f.Window.IsBusy && store.Load().HistoryLimit == 150);
+        await Until(() => !dialog.IsVisible && !f.Window.IsBusy && store.Load().MaxRevisionGraphCommits == 150);
+        Assert.That(store.Load().HistoryLimit, Is.EqualTo(initial.HistoryLimit), "General edits the total ceiling, independently of the existing incremental batch size.");
         Assert.That(store.Load().AutoNormaliseSymbol, Is.EqualTo(initial.AutoNormaliseSymbol));
         Click(Find(f.Window, "tsmiTelemetryEnabled")); await Until(() => f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
         dialog = f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
         SettingsNavigationTestDriver.Select(dialog, "General");
         Assert.That(dialog.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "TelemetryStatus").Text, Does.Contain("disabled"));
-        dialog.GetVisualDescendants().OfType<NumericUpDown>().Single().Value = 350;
+        dialog.GetVisualDescendants().OfType<NumericUpDown>().Single(input => input.Name == "_NO_TRANSLATE_MaxCommits").Value = 350;
         dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CancelDesktopSettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Assert.That(store.Load().HistoryLimit, Is.EqualTo(150));
+        Assert.That(store.Load().MaxRevisionGraphCommits, Is.EqualTo(150));
         Click(Find(f.Window, "settingsToolStripMenuItem")); await Until(() => f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
         dialog = f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
         SettingsNavigationTestDriver.Select(dialog, "Config");
@@ -222,7 +223,7 @@ public sealed class ClassicMenuTests
         Window configuration = f.Window.OwnedWindows.Single(window => window.Title == "Configuration — Git Extensions");
         Assert.That(configuration.GetVisualDescendants().OfType<ListBox>().Any(), Is.True);
         configuration.Close();
-        Assert.That(store.Load().HistoryLimit, Is.EqualTo(150));
+        Assert.That(store.Load().MaxRevisionGraphCommits, Is.EqualTo(150));
     }
 
     [AvaloniaTest]

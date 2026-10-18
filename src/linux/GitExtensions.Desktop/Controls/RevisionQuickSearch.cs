@@ -13,15 +13,19 @@ internal sealed class RevisionQuickSearch : IDisposable
     private readonly Func<int> _count, _current;
     private readonly Func<int, string, bool> _matches;
     private readonly string _prefix;
+    private readonly Func<int> _timeoutMilliseconds;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(4000) };
     private readonly TextBlock _text = new() { Name = "RevisionQuickSearchText", FontFamily = FontFamily.Default, FontSize = 44d / 3, FontWeight = FontWeight.Bold, FontStyle = FontStyle.Normal };
     private string _active = "", _last = "";
     private bool _found = true;
+    private int _lastTimeoutMilliseconds = 4000;
     private IDisposable? _foregroundBinding;
 
-    internal RevisionQuickSearch(Func<int> count, Func<int> current, Func<int, string, bool> matches, string prefix)
+    internal RevisionQuickSearch(Func<int> count, Func<int> current, Func<int, string, bool> matches, string prefix,
+        Func<int>? timeoutMilliseconds = null)
     {
         _count = count; _current = current; _matches = matches; _prefix = prefix;
+        _timeoutMilliseconds = timeoutMilliseconds ?? (() => 4000);
         Notice = new Border
         {
             Name = "RevisionQuickSearchNotice", Child = _text, Padding = new Thickness(7, 5, 5, 5),
@@ -80,8 +84,15 @@ internal sealed class RevisionQuickSearch : IDisposable
         if (count > 0) { _found = found.HasValue; }
         _text.Text = _prefix + _active;
         UpdateColor(); Notice.IsVisible = true;
-        _timer.Stop(); _timer.Start();
+        _timer.Stop(); _timer.Interval = TimeSpan.FromMilliseconds(ReadTimeout()); _timer.Start();
         return found;
+    }
+
+    private int ReadTimeout()
+    {
+        try { return _lastTimeoutMilliseconds = Math.Clamp(_timeoutMilliseconds(), 100, 1000000); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        { return _lastTimeoutMilliseconds; }
     }
 
     private void ThemeChanged(object? sender, EventArgs args) => UpdateColor();

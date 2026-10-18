@@ -35,7 +35,7 @@ public sealed partial class GitRepository
         List<string> arguments = ["--literal-pathspecs", "diff-tree"];
         arguments.AddRange(options.OmitUninterestingDiff ? ["--cc"] : ["-c", "-p"]);
         arguments.AddRange(["--no-commit-id", "--no-ext-diff", "--no-textconv", options.UseGitColoring ? "--color=always" : "--no-color"]);
-        if (options.UseHistogram) { arguments.Add("--histogram"); }
+        if (options.UseHistogram && !display.UseHistogram) { arguments.Add("--histogram"); }
         AddComparisonOptions(arguments, display);
         arguments.AddRange([target, "--", path]);
         return new(arguments);

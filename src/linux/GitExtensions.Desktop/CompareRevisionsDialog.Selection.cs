@@ -6,7 +6,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class CompareRevisionsDialog
 {
-    private sealed record SelectionRead(GitComparisonGroup Group, GitRevisionFile? File, int Tab)
+    private sealed record SelectionRead(GitComparisonGroup Group, GitRevisionFile? File, int Tab, GitComparisonDiffOptions DiffOptions)
     { public GitComparison Comparison => Group.Comparison; }
     private readonly CancellationTokenSource _selectionLifetime = new();
     private readonly HashSet<Task> _selectionTasks = [];
@@ -78,7 +78,7 @@ public sealed partial class CompareRevisionsDialog
             { view.ShowDiff(""); view.TextView.DocumentIdentity = null; }
             return Task.CompletedTask;
         }
-        SelectionRead selection = new(group, file, _tabs.SelectedIndex);
+        SelectionRead selection = new(group, file, _tabs.SelectedIndex, ReadDiffOptions());
         if (!force && SameSelection(selection, _requestedSelection) && _selectionTask is { IsCompleted: false } current) { return current; }
         if (!force && SameSelection(selection, _loadedSelection)) { return Task.CompletedTask; }
         CancelSelectionRead(); _loadedSelection = null;
@@ -94,7 +94,8 @@ public sealed partial class CompareRevisionsDialog
     { try { await task; } finally { _selectionTasks.Remove(task); } }
 
     private static bool SameSelection(SelectionRead current, SelectionRead? other)
-        => other is not null && ReferenceEquals(current.Group, other.Group) && current.File == other.File && current.Tab == other.Tab;
+        => other is not null && ReferenceEquals(current.Group, other.Group) && current.File == other.File && current.Tab == other.Tab
+            && current.DiffOptions == other.DiffOptions;
 
     private bool IsCurrentSelection(SelectionRead selection, CancellationTokenSource read)
         => !_selectionClosing && !read.IsCancellationRequested && ReferenceEquals(_selectionRead, read)
@@ -117,10 +118,10 @@ public sealed partial class CompareRevisionsDialog
                 _diff.TextView.BeginDocumentLoad();
                 await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
                 if (!IsCurrentSelection(selection, read)) { return; }
-                GitComparisonDiffOptions options = ReadDiffOptions();
+                GitComparisonDiffOptions options = selection.DiffOptions;
                 var document = await Repository.GetRangeDiffDocumentAsync(range, new GitRangeDiffOptions
                 { ContextLines = options.ContextLines, IgnoreWhitespace = options.IgnoreWhitespace, ShowEntireFile = options.ShowEntireFile,
-                    TreatAllFilesAsText = options.TreatAllFilesAsText }, _diff.TextView.DisplayOptions, token);
+                    TreatAllFilesAsText = options.TreatAllFilesAsText, UseHistogram = options.UseHistogram }, _diff.TextView.DisplayOptions, token);
                 if (!IsCurrentSelection(selection, read)) { return; }
                 _diff.ShowDiff(document); _diff.TextView.Mode = DiffViewMode.RangeDiff;
             }
@@ -130,7 +131,7 @@ public sealed partial class CompareRevisionsDialog
                 _diff.TextView.BeginDocumentLoad();
                 await _diff.TextView.ConfigureRepositoryAsync(Repository, token);
                 if (!IsCurrentSelection(selection, read)) { return; }
-                var document = await Repository.GetComparisonFileDiffDocumentAsync(comparison, file, ReadDiffOptions(), _diff.TextView.DisplayOptions, token);
+                var document = await Repository.GetComparisonFileDiffDocumentAsync(comparison, file, selection.DiffOptions, _diff.TextView.DisplayOptions, token);
                 if (!IsCurrentSelection(selection, read)) { return; }
                 _diff.ShowDiff(document, file.Path);
             }

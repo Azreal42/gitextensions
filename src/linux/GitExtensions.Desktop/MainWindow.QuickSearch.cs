@@ -35,7 +35,8 @@ public sealed partial class MainWindow
     private Control WithQuickSearchNotice(Control table)
     {
         string prefix = _translations.Translate("TranslatedStrings", "_searchingFor", "Text", "Searching for: ");
-        _quickSearch = new(() => _commits.Items.Count + QuickSearchArtificialCount, QuickSearchCurrentIndex, QuickSearchMatches, prefix);
+        _quickSearch = new(() => _commits.Items.Count + QuickSearchArtificialCount, QuickSearchCurrentIndex, QuickSearchMatches, prefix,
+            () => _preferencesStore.Load().RevisionGridQuickSearchTimeout);
         Grid overlay = new() { Name = "RevisionQuickSearchSurface", ClipToBounds = true };
         overlay.Children.Add(table); overlay.Children.Add(_quickSearch.Notice);
         return overlay;

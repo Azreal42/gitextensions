@@ -202,7 +202,13 @@ public sealed partial class MainWindow
             Group("Branches", "LocalBranchRoot.png", References("Branches", GitReferencePriorities.OrderByPriority(_navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName)), reference => reference.ShortName, _preferences.PrioritizedBranchNames)));
             Group("Remotes", "RemoteBranchRoot.png", ReferenceRemoteNodes(_navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName)), References, Node));
             Group("Tags", "TagHorizontal.png", References("Tags", _navigationReferences.Where(reference => reference.IsTag && Matches(reference.ShortName))));
-            Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Where(module => Matches(module.Path)).Select(module => Node("submodule:" + module.Path, module.Path, "FolderSubmodule.png", "Submodules")));
+            Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Where(module => Matches(module.Path)).Select(module =>
+            {
+                GitSubmoduleBrowseStatus? status = GeneralSubmoduleStatus(module);
+                TreeViewItem node = Node("submodule:" + module.Path, module.Path + status?.CountSuffix, GeneralSubmoduleIcon(status), "Submodules");
+                if (status is not null) { ToolTip.SetTip(node, status.Error ?? T(status.State.ToString()) + (status.IsDirty ? " · " + T("Local changes") : "")); }
+                return node;
+            }));
             Group("Stashes", "stash.png", _navigationStashes.Where(stash => Matches(stash.Subject)).Select(stash => Node("stash:" + stash.Reference, stash.Subject, "stash.png", "Stashes")));
             Group("Worktrees", "WorkTree.png", Worktrees());
             _navigationAppliedFilter = filter;

@@ -8,5 +8,5 @@ public sealed record GitCompareRevision(string Revision = "HEAD", GitCompareRevi
 public sealed record GitComparison(GitCompareRevision Base, GitCompareRevision Compare,
     IReadOnlyList<GitRevisionFile> Files, IReadOnlyList<string> UntrackedPaths);
 public sealed record GitComparisonDiffOptions(IgnoreWhitespaceKind IgnoreWhitespace = IgnoreWhitespaceKind.None,
-    int ContextLines = 3, bool ShowEntireFile = false, bool TreatAllFilesAsText = false);
+    int ContextLines = 3, bool ShowEntireFile = false, bool TreatAllFilesAsText = false, bool UseHistogram = false);
 public sealed record GitComparisonCommitCounts(int BaseOnly, int CompareOnly);

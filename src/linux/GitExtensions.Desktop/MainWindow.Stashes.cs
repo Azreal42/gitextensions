@@ -25,6 +25,7 @@ public sealed partial class MainWindow
         _stashFlyout.ItemsSource = CreateStashMenu("StashMenu"); _stashDropdown.Flyout = _stashFlyout;
         ConfigureBrowserFlyout(_stashFlyout, _stashDropdown); _stashFlyout.Opened += (_, _) => RefreshStashMenu();
         Grid split = new() { Name = "BrowseStashControl", ColumnDefinitions = new("24,10"), Width = 34, Height = 24 };
+        _stashControl = split;
         split.Children.Add(_stashButton); Grid.SetColumn(_stashDropdown, 1); split.Children.Add(_stashDropdown); return split;
     }
 

@@ -8,6 +8,17 @@ public sealed record DesktopPreferences
     public string Theme { get; init; } = "Light";
     public string? Language { get; init; }
     public int HistoryLimit { get; init; } = 300;
+    // HistoryLimit is the incremental batch size retained for existing profiles.
+    // The Windows General policy is an independent total cap; zero is unlimited.
+    public int MaxRevisionGraphCommits { get; init; } = 100_000;
+    public int RevisionGridQuickSearchTimeout { get; init; } = 4000;
+    public bool CheckForUncommittedChangesInCheckoutBranch { get; init; } = true;
+    public bool StartWithRecentWorkingDir { get; init; }
+    public bool ShowGitStatusInBrowseToolbar { get; init; } = true;
+    public bool ShowGitStatusForArtificialCommits { get; init; } = true;
+    public bool ShowSubmoduleStatus { get; init; }
+    public bool ShowStashCount { get; init; }
+    public bool ShowAheadBehindData { get; init; } = true;
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";
     public bool AlwaysShowAdvancedOptions { get; init; }
@@ -40,6 +51,9 @@ public sealed class PreferencesStore
         GitReferenceSorting sorting = value.ReferenceSorting ?? new();
         return value with
         {
+            MaxRevisionGraphCommits = Math.Clamp(value.MaxRevisionGraphCommits, 0, 1_000_000),
+            RevisionGridQuickSearchTimeout = Math.Clamp(value.RevisionGridQuickSearchTimeout, 100, 1_000_000),
+            ShowSubmoduleStatus = (value.ShowGitStatusInBrowseToolbar || value.ShowGitStatusForArtificialCommits) && value.ShowSubmoduleStatus,
             ReferenceSorting = new(Enum.IsDefined(sorting.By) ? sorting.By : GitRefsSortBy.GitDefault,
                 Enum.IsDefined(sorting.Order) ? sorting.Order : GitRefsSortOrder.Descending),
             PrioritizedBranchNames = value.PrioritizedBranchNames ?? GitReferencePriorities.DefaultBranchPatterns,

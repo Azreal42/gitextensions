@@ -132,8 +132,9 @@ public sealed class CloneDialog : StartupRepositoryDialog
         PropertyChanged += (_, change) => { if (change.Property == ActualThemeVariantProperty) { UpdateLocation(); } };
         ClonePreferences preferences = _preferences.Load();
         _recursive.IsChecked = preferences.InitializeSubmodules;
-        _destination.Text = string.IsNullOrEmpty(destination) ? preferences.Destination : destination;
-        if (string.IsNullOrWhiteSpace(_destination.Text) && repository is not null) { _destination.Text = Path.GetDirectoryName(repository.Path); }
+        _destination.Text = string.IsNullOrEmpty(destination) ? preferences.EffectiveDestination : destination;
+        if (string.IsNullOrWhiteSpace(_destination.Text) && preferences.DefaultDestination is null && repository is not null)
+        { _destination.Text = Path.GetDirectoryName(repository.Path); }
         _source.Text = _explicitSource ? source : _sourcesStore.Load().FirstOrDefault() ?? "";
         Grid fields = ExportDialogControls.Fields();
         fields.ColumnDefinitions = new ColumnDefinitions("150,*,Auto");
@@ -347,7 +348,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
         GitRepository cloned = await GitRepository.OpenAsync(path, token, runner);
         token.ThrowIfCancellationRequested();
         if (!IsVisible) { throw new OperationCanceledException(token); }
-        _preferences.Save(new(directory, options.RecurseSubmodules));
+        _preferences.Save(_preferences.Load() with { Destination = directory, InitializeSubmodules = options.RecurseSubmodules });
         RepositoryHistoryState history = LoadLocalHistory();
         _sourcesStore.Visit(source, history.HistorySize);
         try { _localHistoryStore.Save(history.Visit(cloned.Path)); }

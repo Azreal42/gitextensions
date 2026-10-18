@@ -27,6 +27,7 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     private readonly List<Image> _images = [];
     private readonly List<(Image Image, EventHandler Handler)> _themeHandlers = [];
     private DiffViewerPreferences _preferences;
+    private GitComparisonDiffOptions _options = new();
     private bool _supportsContext = true, _supportsWhitespace = true, _supportsEolWhitespace = true, _busy, _hostBusy, _disposed;
 
     public DiffViewerComparisonMenu(DiffViewerPreferencesStore? store = null)
@@ -37,7 +38,11 @@ public sealed class DiffViewerComparisonMenu : IDisposable
         _store.Changed += StoreChanged;
     }
 
-    public GitComparisonDiffOptions Options { get; private set; }
+    public GitComparisonDiffOptions Options
+    {
+        get => _store.ApplyGeneralAlgorithm(_options);
+        private set => _options = value;
+    }
     public bool RememberWhitespace => _preferences.RememberWhitespace;
     public bool RememberContextLines => _preferences.RememberContextLines;
     public bool RememberWholeFile => _preferences.RememberWholeFile;
@@ -54,23 +59,26 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     {
         ArgumentNullException.ThrowIfNull(options); ObjectDisposedException.ThrowIf(_disposed, this);
         if (!Enum.IsDefined(options.IgnoreWhitespace) || options.ContextLines is < 0 or > 100000) { throw new ArgumentOutOfRangeException(nameof(options)); }
-        if (IsBlocked || options == Options) { return false; }
-        if (options.ContextLines != Options.ContextLines && (!_supportsContext || Options.ShowEntireFile || options.ShowEntireFile)) { return false; }
-        if (options.ShowEntireFile != Options.ShowEntireFile && !_supportsContext) { return false; }
-        if (options.IgnoreWhitespace != Options.IgnoreWhitespace && !WhitespaceAvailable(options.IgnoreWhitespace)) { return false; }
-        bool changesSharedOptions = Options.IgnoreWhitespace != options.IgnoreWhitespace || Options.ContextLines != options.ContextLines || Options.ShowEntireFile != options.ShowEntireFile;
-        if (changesSharedOptions && !_store.SaveComparisonOptions(Options, options)) { Refresh(); return false; }
+        if (IsBlocked) { return false; }
+        GitComparisonDiffOptions previous = Options;
+        options = options with { UseHistogram = previous.UseHistogram };
+        if (options == previous) { return false; }
+        if (options.ContextLines != previous.ContextLines && (!_supportsContext || previous.ShowEntireFile || options.ShowEntireFile)) { return false; }
+        if (options.ShowEntireFile != previous.ShowEntireFile && !_supportsContext) { return false; }
+        if (options.IgnoreWhitespace != previous.IgnoreWhitespace && !WhitespaceAvailable(options.IgnoreWhitespace)) { return false; }
+        bool changesSharedOptions = previous.IgnoreWhitespace != options.IgnoreWhitespace || previous.ContextLines != options.ContextLines || previous.ShowEntireFile != options.ShowEntireFile;
+        if (changesSharedOptions && !_store.SaveComparisonOptions(previous, options)) { Refresh(); return false; }
         Options = options; Refresh(); OptionsChanged?.Invoke(this, EventArgs.Empty); return true;
     }
 
-    public bool ToggleWholeFile() => !_disposed && !IsBlocked && _supportsContext && SetOptions(Options with { ShowEntireFile = !Options.ShowEntireFile });
-    public bool IncreaseContext() => CanChangeContext && SetOptions(Options with { ContextLines = Math.Min(100000, Options.ContextLines + 1) });
-    public bool DecreaseContext() => CanChangeContext && SetOptions(Options with { ContextLines = Math.Max(0, Options.ContextLines - 1) });
+    public bool ToggleWholeFile() => !_disposed && !IsBlocked && _supportsContext && SetOptions(_options with { ShowEntireFile = !_options.ShowEntireFile });
+    public bool IncreaseContext() => CanChangeContext && SetOptions(_options with { ContextLines = Math.Min(100000, _options.ContextLines + 1) });
+    public bool DecreaseContext() => CanChangeContext && SetOptions(_options with { ContextLines = Math.Max(0, _options.ContextLines - 1) });
     public bool SelectWhitespace(IgnoreWhitespaceKind value)
     {
         if (!Enum.IsDefined(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }
         if (_disposed || IsBlocked || !WhitespaceAvailable(value)) { return false; }
-        return SetOptions(Options with { IgnoreWhitespace = Options.IgnoreWhitespace == value ? IgnoreWhitespaceKind.None : value });
+        return SetOptions(_options with { IgnoreWhitespace = _options.IgnoreWhitespace == value ? IgnoreWhitespaceKind.None : value });
     }
     public bool SetRememberWhitespace(bool value) => !_disposed && !IsBlocked && _store.SaveComparisonRememberFlags(whitespace: value);
     public bool SetRememberContextLines(bool value) => !_disposed && !IsBlocked && _store.SaveComparisonRememberFlags(contextLines: value);
@@ -117,15 +125,16 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     public void Refresh()
     {
         if (_disposed) { return; }
+        GitComparisonDiffOptions options = _options;
         foreach ((MenuItem item, Command command) in _items)
         {
             item.IsVisible = Visible(command); item.IsEnabled = Enabled(command);
             item.IsChecked = command switch
             {
-                Command.Eol => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Eol,
-                Command.Change => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Change,
-                Command.All => Options.IgnoreWhitespace == IgnoreWhitespaceKind.AllSpace,
-                Command.Whole => Options.ShowEntireFile,
+                Command.Eol => (int)options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Eol,
+                Command.Change => (int)options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Change,
+                Command.All => options.IgnoreWhitespace == IgnoreWhitespaceKind.AllSpace,
+                Command.Whole => options.ShowEntireFile,
                 _ => false
             };
         }
@@ -136,10 +145,10 @@ public sealed class DiffViewerComparisonMenu : IDisposable
             {
                 toggle.IsChecked = command switch
                 {
-                    Command.Whole => Options.ShowEntireFile,
-                    Command.Eol => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Eol,
-                    Command.Change => (int)Options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Change,
-                    Command.All => Options.IgnoreWhitespace == IgnoreWhitespaceKind.AllSpace,
+                    Command.Whole => options.ShowEntireFile,
+                    Command.Eol => (int)options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Eol,
+                    Command.Change => (int)options.IgnoreWhitespace >= (int)IgnoreWhitespaceKind.Change,
+                    Command.All => options.IgnoreWhitespace == IgnoreWhitespaceKind.AllSpace,
                     _ => false
                 };
             }
@@ -147,7 +156,7 @@ public sealed class DiffViewerComparisonMenu : IDisposable
     }
 
     private bool IsBlocked => _busy || _hostBusy;
-    private bool CanChangeContext => !_disposed && !IsBlocked && _supportsContext && !Options.ShowEntireFile;
+    private bool CanChangeContext => !_disposed && !IsBlocked && _supportsContext && !_options.ShowEntireFile;
     private bool WhitespaceAvailable(IgnoreWhitespaceKind kind) => kind is IgnoreWhitespaceKind.None or IgnoreWhitespaceKind.Eol ? _supportsEolWhitespace : _supportsWhitespace;
     private bool Visible(Command command) => command switch
     {

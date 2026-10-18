@@ -155,6 +155,7 @@ public sealed partial class MainWindow
         FileHistoryPreferences fileHistory = _fileHistoryPreferencesStore.Load();
         HotkeyBindings hotkeys = DesktopHotkeys.Reload();
         DesktopPreferences initial = _preferencesStore.Load();
+        GeneralSettingsSession general = new(initial, fileHistory);
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         GitRepository? settingsRepository = _repository;
         using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
@@ -163,7 +164,10 @@ public sealed partial class MainWindow
             (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError, new ScriptsPreferencesStore().Load(), (baseline, draft) => new ScriptsPreferencesStore().SaveChanges(baseline, draft),
             owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
                 ? ShowGitToolsSettingsAsync(owner) : Task.CompletedTask,
-            environment, ApplySettingsAsync, RepairEnvironmentAsync, showChecklist);
+            environment, ApplySettingsAsync, RepairEnvironmentAsync, showChecklist,
+            generalSettings: general.Initial,
+            cloneDestinations: _repositoryHistory.Recent.Select(entry => Path.GetDirectoryName(entry.Path))
+                .Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray());
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
@@ -215,14 +219,21 @@ public sealed partial class MainWindow
                     Language = settings.Result.Language == initial.Language ? latest.Language : settings.Result.Language,
                     RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
                 };
-                _preferencesStore.Save(preferences);
+                bool histogramChanged = settings.GeneralSettingsResult.UseHistogramDiffAlgorithm != general.Initial.UseHistogramDiffAlgorithm;
+                GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences);
+                preferences = publication.Desktop;
+                settings.AcceptGeneralSaved(publication);
+                bool presentationChanged = preferences.ShowGitStatusInBrowseToolbar != _preferences.ShowGitStatusInBrowseToolbar
+                    || preferences.ShowGitStatusForArtificialCommits != _preferences.ShowGitStatusForArtificialCommits
+                    || preferences.ShowAheadBehindData != _preferences.ShowAheadBehindData
+                    || preferences.ShowStashCount != _preferences.ShowStashCount
+                    || preferences.ShowSubmoduleStatus != _preferences.ShowSubmoduleStatus;
+                static bool SubmoduleStatusVisible(DesktopPreferences value) => value.ShowSubmoduleStatus
+                    && (value.ShowGitStatusInBrowseToolbar || value.ShowGitStatusForArtificialCommits);
+                bool submodulePresentationChanged = SubmoduleStatusVisible(preferences) != SubmoduleStatusVisible(_preferences);
                 bool reload = preferences.HistoryLimit != _preferences.HistoryLimit || settings.HistorySortResult != _historyView.Sort;
                 if (settings.FileHistoryResult.FollowRenames != fileHistory.FollowRenames || settings.FileHistoryResult.ExactRenames != fileHistory.ExactRenames)
-                {
-                    _fileHistoryPreferencesStore.Save(_fileHistoryPreferencesStore.Load() with
-                    { FollowRenames = settings.FileHistoryResult.FollowRenames, ExactRenames = settings.FileHistoryResult.ExactRenames });
-                    reload |= _historyQuery.Path is not null;
-                }
+                { reload |= _historyQuery.Path is not null; }
                 bool referencesChanged = preferences.ReferenceSorting != _preferences.ReferenceSorting
                     || preferences.PrioritizedBranchNames != _preferences.PrioritizedBranchNames
                     || preferences.PrioritizedRemoteNames != _preferences.PrioritizedRemoteNames;
@@ -231,6 +242,7 @@ public sealed partial class MainWindow
                 _historyViewStore.Save(_historyViewStore.Load() with { Sort = settings.HistorySortResult });
                 _historyView = _historyView with { Sort = settings.HistorySortResult };
                 _preferences = preferences;
+                reload |= ApplyGeneralHistoryPolicy();
                 ApplyTheme(_preferences.Theme);
                 if (reload)
                 {
@@ -239,6 +251,10 @@ public sealed partial class MainWindow
                     if (_repository is not null) { await RefreshAsync(); }
                 }
                 else if (referencesChanged) { await ApplyReferenceSortingPreferencesAsync(); }
+                if (presentationChanged && !reload)
+                { await RefreshGeneralPresentationFromSettingsAsync(token, submodulePresentationChanged); }
+                _pullPreferences = _pullPreferencesStore.Load(); RefreshPullMenu();
+                if (histogramChanged) { await ReloadGeneralDiffAlgorithmAsync(); }
                 RefreshHistoryMenuStates();
                 initial = preferences; fileHistory = settings.FileHistoryResult;
                 if (_repository is null && _startupArgumentsToRetry is not null)

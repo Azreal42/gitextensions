@@ -340,7 +340,7 @@ public sealed class RebaseDialog : RepositoryDialog
         else if (patch.CommitHash is not null || patch.PatchPath is string)
         {
             FileHistoryContentView viewer = new() { Name = "RebasePatchContent" };
-            string text = patch.CommitHash is string hash ? await Repository.GetCommitDiffAsync(hash, cancellationToken: _token)
+            string text = patch.CommitHash is string hash ? await Repository.GetCommitDiffAsync(hash, viewer.TextView.ComparisonMenu.Options, cancellationToken: _token)
                 : GitFileEncodingCodec.DecodeFile(await File.ReadAllBytesAsync(patch.PatchPath!, _token), "utf-8").Text;
             viewer.ShowDiff(text);
             Window diff = new() { Name = "RebasePatchDiff", Title = T("Diff"), Width = 900, Height = 600,

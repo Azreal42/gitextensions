@@ -114,7 +114,8 @@ public sealed partial class MainWindow
         foreach ((Button? button, TextBlock? state, int count) in new[] { (_workingRevision, _workingRevisionState, working), (_indexRevision, _indexRevisionState, indexed) })
         {
             if (button is null || state is null) { continue; }
-            ToolTip.SetTip(button, count + " " + T("changes"));
+            state.IsVisible = _preferences.ShowGitStatusForArtificialCommits;
+            ToolTip.SetTip(button, _preferences.ShowGitStatusForArtificialCommits ? count + " " + T("changes") : null);
             state.Text = count == 0 ? "✓" : count.ToString(System.Globalization.CultureInfo.CurrentCulture);
             state.Foreground = count == 0 ? Brush.Parse("#24c221") : Brushes.DarkOrange;
         }

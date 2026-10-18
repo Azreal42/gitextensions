@@ -72,7 +72,8 @@ internal static class ResetDialogControls
     {
         token.ThrowIfCancellationRequested();
         if (!owner.IsVisible || (await repository.GetSubmodulesAsync(token)).Count == 0 || !owner.IsVisible) { return false; }
-        SubmoduleCheckoutPreferencesStore store = new(); bool? update = store.Load().Decision;
+        SubmoduleCheckoutPreferencesStore store = new(); SubmoduleCheckoutPreferences preferences = store.Load();
+        bool? update = promptIfUnset ? preferences.Decision : preferences.UpdateSubmodulesOnCheckout;
         if (update is null && promptIfUnset)
         {
             CheckoutSubmodulePrompt prompt = new() { RequestedThemeVariant = owner.ActualThemeVariant };

@@ -162,13 +162,14 @@ public sealed class SettingsNavigationTests
     {
         await using Scope f = new(); (DesktopSettingsDialog dialog, Task<bool> result) = f.Open();
         EditHistory(dialog, "321"); PushProcessTestDriver.Pointer(Field<Button>(dialog, "ApplyDesktopSettings")); Pump(dialog);
-        Assert.That(dialog.IsVisible, Is.True); Assert.That(result.IsCompleted, Is.False); Assert.That(f.Publications.Select(value => value.HistoryLimit), Is.EqualTo(new[] { 321 }));
-        Assert.That(dialog.Result.HistoryLimit, Is.EqualTo(321));
+        Assert.That(dialog.IsVisible, Is.True); Assert.That(result.IsCompleted, Is.False); Assert.That(f.Publications.Select(value => value.MaxRevisionGraphCommits), Is.EqualTo(new[] { 321 }));
+        Assert.That(dialog.Result.MaxRevisionGraphCommits, Is.EqualTo(321));
+        Assert.That(dialog.Result.HistoryLimit, Is.EqualTo(300), "The General ceiling does not change the internal batch size.");
         EditHistory(dialog, "654"); SettingsNavigationTestDriver.Select(dialog, "Advanced");
         Edit(dialog, Field<TextBox>(dialog, "SettingsNormaliseSymbol"), "later-draft");
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "CancelDesktopSettings"));
         Assert.That(await result, Is.True, "Windows FormSettings reports OK on closing after a successful Apply.");
-        Assert.That(f.Publications.Count, Is.EqualTo(1)); Assert.That(dialog.Result.HistoryLimit, Is.EqualTo(321));
+        Assert.That(f.Publications.Count, Is.EqualTo(1)); Assert.That(dialog.Result.MaxRevisionGraphCommits, Is.EqualTo(321));
         Assert.That(dialog.Result.AutoNormaliseSymbol, Is.EqualTo("_"));
     }
 
@@ -190,7 +191,7 @@ public sealed class SettingsNavigationTests
         else { Edit(dialog, Field<TextBox>(dialog, "SettingsNormaliseSymbol"), "_"); }
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "ApplyDesktopSettings")); Pump(dialog);
         Assert.That(Field<TextBlock>(dialog, "SettingsNotice").Text, Is.Null.Or.Empty);
-        Assert.That(f.Publications.Select(value => value.HistoryLimit), Is.EqualTo(new[] { 321 }));
+        Assert.That(f.Publications.Select(value => value.MaxRevisionGraphCommits), Is.EqualTo(new[] { 321 }));
         Assert.That(dialog.IsVisible, Is.True); PushProcessTestDriver.Pointer(Field<Button>(dialog, "CancelDesktopSettings")); Assert.That(await result, Is.True);
     }
 
@@ -318,7 +319,7 @@ public sealed class SettingsNavigationTests
 
     private static void EditHistory(DesktopSettingsDialog dialog, string value)
     {
-        SettingsNavigationTestDriver.Select(dialog, "General"); NumericUpDown history = Field<NumericUpDown>(dialog, "SettingsHistoryLimit");
+        SettingsNavigationTestDriver.Select(dialog, "General"); NumericUpDown history = Field<NumericUpDown>(dialog, "_NO_TRANSLATE_MaxCommits");
         Edit(dialog, history.GetVisualDescendants().OfType<TextBox>().Single(), value);
     }
     private static string Id(TreeViewItem node) => ((SettingsNavigationPage)node.Tag!).Id;

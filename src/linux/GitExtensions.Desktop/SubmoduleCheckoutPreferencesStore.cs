@@ -19,14 +19,20 @@ internal sealed class SubmoduleCheckoutPreferencesStore
 
     internal void Remember(bool update)
     {
+        try { SaveStrict(new(update, update)); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
+    }
+
+    internal void SaveStrict(SubmoduleCheckoutPreferences preferences)
+    {
+        ArgumentNullException.ThrowIfNull(preferences);
         string temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(temporary, JsonSerializer.Serialize(new SubmoduleCheckoutPreferences(update, update)));
+            File.WriteAllText(temporary, JsonSerializer.Serialize(preferences));
             File.Move(temporary, FilePath, overwrite: true);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         finally { try { File.Delete(temporary); } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { } }
     }
 }

@@ -57,7 +57,12 @@ public sealed class BlameView : UserControl, IDisposable
     public event EventHandler<BlameCommandEventArgs>? CommandRequested;
     public event Action<string>? InteractionError;
     public event Action<BlamePreferences>? PreferencesChanged;
-    public BlamePreferences Preferences { get; private set; } = new();
+    private BlamePreferences _preferences = new();
+    public BlamePreferences Preferences
+    {
+        get => _preferences with { UseHistogramDiffAlgorithm = _preferencesStore.Load().UseHistogramDiffAlgorithm };
+        private set => _preferences = value;
+    }
     public string? PreferenceError { get; private set; }
     public Func<GitFileBlameLine, CancellationToken, Task<string>>? CommitInformationProvider { get; set; }
     public Task TooltipLoading { get; private set; } = Task.CompletedTask;
