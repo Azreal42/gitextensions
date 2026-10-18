@@ -1,6 +1,6 @@
 # ADR 0098 · Appearance et préférences partagées
 
-Statut : intégré sur `192069d34`, ciblé 63/63. Appearance reste N1 dans la matrice de référence ; full frais, paquet et natif restent à accepter.
+Statut : Appearance N2 partiel sur `81a7aca67` ; full frais, paquet exact isolé et parcours natif source ciblé acceptés. Aucun N4 ni isomorphisme global acquis.
 
 Retrouver les groupes et clés XLF Windows avec des réglages ayant un effet réel. Dates relatives, branche dashboard/récents, visibilité de l'avatar du graphe et langue sont raccordées ; le thème reste un ajout Linux. Les neuf autres préférences Windows restent désactivées ou adaptées, avec explication. L'avatar du graphe reste une initiale locale. Help translate utilise le launcher existant ; les quatre autres actions restent indisponibles.
 
@@ -10,4 +10,4 @@ Dashboard et récents partagent les métadonnées par dépôt et contexte Git ca
 
 La branche est affichée par défaut comme Windows ; le caption raccourci et le chemin cible restent indépendants. Linux l'ajoute en suffixe, alors que Windows réserve une colonne : rapprochement visuel encore ouvert.
 
-Portée et résultats dans [TODO](../../../todo.md#appearance--socle-intégré-validation-en-cours) et [failure](../../../failure.md#appearance--brouillons-et-consommateurs). Aucun ciblé ne certifie la parité globale.
+Portée et preuves dans [TODO](../../../todo.md#appearance--périmètre-vérifié) et [failure](../../../failure.md#appearance--brouillons-et-consommateurs). Natif anglais/clair/X11 privé : Apply/Cancel, premier clic/Haut/Bas et vrai redémarrage ; aucune validation interactive du paquet ou des autres variantes déduite.

@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-  "source_digest_sha256": "ec13ddcba2dbb8b48444c95fb1c046dcf78cf85bf1b162b08ca3e80eac84aa2d",
-  "scanned_csharp_files": 2145,
+  "code_reference_commit": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+  "source_digest_sha256": "e9f5f804d2161da099cfe63c0adbd41a75c0938bd3de889df784e6efccae26c0",
+  "scanned_csharp_files": 2153,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -39,8 +39,8 @@
     },
     "settings_levels": {
       "N0": 10,
-      "N1": 7,
-      "N2": 14,
+      "N1": 6,
+      "N2": 15,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/general-settings-20261018/full-03/desktop.trx",
-    "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-    "trx_sha256": "e7ab8d02d1713bf7fdd685f682f9118a6104fc404b84118362cd30cd78d310c7",
+    "trx": "artifacts/linux/appearance-settings-20261018/full-04/desktop.trx",
+    "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+    "trx_sha256": "2f81f1d5d5e73e7ec1d8a20ecb3f9c7bddcf166fb17800c386b23cf553af2212",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-        "execution_source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-        "candidate_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+        "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+        "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+        "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
         "passed": 720,
         "total": 720,
-        "execution_result": "artifacts/linux/general-settings-20261018/full-03/core-result.json",
-        "build_result": "artifacts/linux/general-settings-20261018/full-03/build-result.json",
-        "parent_verification": "artifacts/linux/general-settings-20261018/full-03/parent-verification.json",
+        "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/core-result.json",
+        "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
+        "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-        "execution_source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-        "candidate_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+        "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+        "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+        "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/general-settings-20261018/full-03/plugins-result.json",
-        "build_result": "artifacts/linux/general-settings-20261018/full-03/build-result.json",
-        "parent_verification": "artifacts/linux/general-settings-20261018/full-03/parent-verification.json",
+        "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/plugins-result.json",
+        "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
+        "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -5198,6 +5198,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -5327,6 +5339,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -6095,6 +6113,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -6191,6 +6221,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
@@ -6232,7 +6268,7 @@
       "group": "settings-pages",
       "level": "N2",
       "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée. Sous-page Appearance/Fonts dans l’arbre ; Apply global, retry et AcceptSaved reprennent la référence fusionnée sans écraser une préférence concurrente déjà publiée, ADR0096.",
-      "remaining": "Import Windows, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
+      "remaining": "Import Windows, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Le niveau de la page Appearance est décrit dans son entrée dédiée ; aucune parité globale certifiée.",
       "visual": "rapproche",
       "linux": [
         {
@@ -6286,6 +6322,18 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
@@ -6407,6 +6455,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
@@ -6447,30 +6501,78 @@
       "category": "settings",
       "feature": "Apparence générale",
       "group": "settings-pages",
-      "level": "N1",
-      "implemented": "Page Appearance dans l’arbre : thème et langue persistants, libellé de redémarrage requis, brouillons et Apply/Cancel communs. Priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservés. Dates relatives/avatars restent exposés dans certaines vues ; Fonts/EOL dans la sous-page dédiée. ADR0090/0091/0096 ; Appearance reste N1, seuls ces choix sont portés.",
-      "remaining": "Dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; N1 inchangé.",
-      "visual": "integre",
+      "level": "N2",
+      "implemented": "Groupes Windows General, Author images et Language ; quatre préférences Windows actives (dates relatives, branche courante des dépôts, visibilité des initiales dans la grille et langue) et thème Linux Light/Dark/System. Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Métadonnées de branche partagées dans Dashboard et récents, prélecture initiale réutilisée, invalidation explicite et fermeture drainée. Langue effective au redémarrage. Full 2180 Desktop / 720 Core / 35 Plugins, paquet exact isolé et parcours source natif anglais/clair/X11 vérifiés sur 81a7aca67 ; Apply, Cancel, premier clic/Haut/Bas et persistance au vrai redémarrage observés.",
+      "remaining": "Neuf préférences Windows indisponibles ou adaptées : branche dans Visual Studio, EnableAutoScale non éditable, TruncatePathMethod, avatar CommitInfo, durée du cache, provider, fallback, template et Dictionary. Quatre actions indisponibles : ClearImageCache, avatarProviderHelp, pictureAvatarHelp et downloadDictionary ; helpTranslate est raccordée. La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée. Initiales locales sans provider/cache configurable partagé ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel : autres consommateurs natifs, langues/thèmes, Wayland/DPI/accessibilité et paquet interactif restent à auditer ; aucune parité globale ni N3/N4.",
+      "visual": "rapproche",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.ViewHistoryCommands",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.HistoryMenus.cs",
-          "line": 41,
-          "kind": "window"
+          "id": "GitExtensions.Linux.Desktop.AppearanceSettingsPage",
+          "label": "AppearanceSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AppearanceSettingsPage.cs",
+          "line": 14,
+          "kind": "component"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.BlameDialog",
-          "label": "BlameDialog",
-          "source": "src/linux/GitExtensions.Desktop/BlameDialog.cs",
-          "line": 11,
-          "kind": "window"
+          "id": "GitExtensions.Linux.Desktop.AppearanceSettingsSession",
+          "label": "AppearanceSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/AppearanceSettingsSession.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "label": "AppearanceSettingsValues.cs",
+          "source": "src/linux/GitExtensions.Desktop/AppearanceSettingsValues.cs",
+          "line": 1,
+          "kind": "source"
         },
         {
           "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
           "label": "DesktopSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
           "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ApplyHistoryViewPresentation",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs",
+          "line": 67,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ApplyRepositoryBranchVisibilityAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Repositories.cs",
+          "line": 227,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.RepositoryBranchMetadataService",
+          "label": "RepositoryBranchMetadataService",
+          "source": "src/linux/GitExtensions.Desktop/RepositoryBranchMetadataService.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DashboardControl",
+          "label": "DashboardControl",
+          "source": "src/linux/GitExtensions.Desktop/Controls/DashboardControl.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.RepositoryHistoryPresentation",
+          "label": "RepositoryHistoryPresentation",
+          "source": "src/linux/GitExtensions.Desktop/RepositoryHistoryPresentation.cs",
+          "line": 12,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ApplyTheme",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
+          "line": 565,
           "kind": "window"
         },
         {
@@ -6483,33 +6585,21 @@
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BlameAvatarTests.cs",
-          "test_class": "BlameAvatarTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BlameDialogTests.cs",
-          "test_class": "BlameDialogTests",
-          "passed_in_reference_run": 3,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BlameEncodingPositionTests.cs",
-          "test_class": "BlameEncodingPositionTests",
-          "passed_in_reference_run": 8,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BlameNavigationTests.cs",
-          "test_class": "BlameNavigationTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
-          "test_class": "BlameOptionsTests",
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsPageTests.cs",
+          "test_class": "AppearanceSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6522,18 +6612,6 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
-          "test_class": "CommitInformationIntegrationTests",
-          "passed_in_reference_run": 10,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryDialogTests.cs",
-          "test_class": "FileHistoryDialogTests",
-          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -6627,6 +6705,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
@@ -6642,7 +6726,8 @@
       "adr": [
         ".agents/docs/adr/preferences/language/0090-language-selection.md",
         ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
-        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
+        ".agents/docs/adr/preferences/appearance/0098-appearance-shared-settings.md"
       ]
     },
     {
@@ -6914,6 +6999,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -7007,6 +7104,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -7387,6 +7490,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -7480,6 +7595,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -7830,6 +7951,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameAvatarTests.cs",
           "test_class": "BlameAvatarTests",
           "passed_in_reference_run": 4,
@@ -8073,6 +8206,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -8362,6 +8501,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -8455,6 +8606,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -8672,6 +8829,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseDiffHotkeysTests.cs",
           "test_class": "BrowseDiffHotkeysTests",
           "passed_in_reference_run": 11,
@@ -8807,6 +8976,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -8957,6 +9132,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -9050,6 +9237,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -9219,6 +9412,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
           "test_class": "BrowseStartupTests",
           "passed_in_reference_run": 14,
@@ -9324,6 +9529,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
           "results_present": true
         },
         {
@@ -12551,11 +12762,6 @@
           "level": "N3"
         },
         {
-          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage",
-          "name": "AppearanceSettingsPage",
-          "level": "N1"
-        },
-        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.BlameViewerSettingsPage",
           "name": "BlameViewerSettingsPage",
           "level": "N2"
@@ -13147,7 +13353,7 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage",
           "name": "AppearanceSettingsPage",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ColorsSettingsPage",
@@ -13939,7 +14145,7 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage",
           "name": "AppearanceSettingsPage",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ChecklistSettingsPage",
@@ -19640,8 +19846,8 @@
     },
     "settings-pages": {
       "N0": 4,
-      "N1": 7,
-      "N2": 14,
+      "N1": 6,
+      "N2": 15,
       "NA": 1
     },
     "ci-settings": {

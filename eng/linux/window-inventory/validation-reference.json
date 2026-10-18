@@ -1,11 +1,11 @@
 {
-  "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-  "trx": "artifacts/linux/general-settings-20261018/full-03/desktop.trx",
-  "trx_sha256": "e7ab8d02d1713bf7fdd685f682f9118a6104fc404b84118362cd30cd78d310c7",
+  "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+  "trx": "artifacts/linux/appearance-settings-20261018/full-04/desktop.trx",
+  "trx_sha256": "2f81f1d5d5e73e7ec1d8a20ecb3f9c7bddcf166fb17800c386b23cf553af2212",
   "counters": {
-    "total": "2117",
-    "executed": "2117",
-    "passed": "2117",
+    "total": "2180",
+    "executed": "2180",
+    "passed": "2180",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -26,6 +26,15 @@
     },
     "AnnotatedReferencePresentationTests": {
       "Passed": 5
+    },
+    "AppearanceSettingsConsumerTests": {
+      "Passed": 7
+    },
+    "AppearanceSettingsPageTests": {
+      "Passed": 15
+    },
+    "AppearanceSettingsSessionTests": {
+      "Passed": 14
     },
     "ArtificialHistoryRevisionTests": {
       "Passed": 7
@@ -516,6 +525,9 @@
     "RenameCompareMenuTests": {
       "Passed": 5
     },
+    "RepositoryBranchVisibilityTests": {
+      "Passed": 27
+    },
     "RepositoryDialogTests": {
       "Passed": 5
     },
@@ -627,27 +639,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-      "execution_source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-      "candidate_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+      "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+      "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+      "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
       "passed": 720,
       "total": 720,
-      "execution_result": "artifacts/linux/general-settings-20261018/full-03/core-result.json",
-      "build_result": "artifacts/linux/general-settings-20261018/full-03/build-result.json",
-      "parent_verification": "artifacts/linux/general-settings-20261018/full-03/parent-verification.json",
+      "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/core-result.json",
+      "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
+      "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-      "execution_source_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
-      "candidate_sha": "2ceb059bcce343e1d9255fd5d50449082e7b34ca",
+      "source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+      "execution_source_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
+      "candidate_sha": "81a7aca6735344fc78c8419ce0d99c23d5a0cda2",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/general-settings-20261018/full-03/plugins-result.json",
-      "build_result": "artifacts/linux/general-settings-20261018/full-03/build-result.json",
-      "parent_verification": "artifacts/linux/general-settings-20261018/full-03/parent-verification.json",
+      "execution_result": "artifacts/linux/appearance-settings-20261018/full-04/plugins-result.json",
+      "build_result": "artifacts/linux/appearance-settings-20261018/full-04/build-result.json",
+      "parent_verification": "artifacts/linux/appearance-settings-20261018/full-04/parent-verification.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true

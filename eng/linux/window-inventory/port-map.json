@@ -2273,7 +2273,7 @@
         "DesktopFontMetrics"
       ],
       "implemented": "Quatre rôles indépendants famille/points/gras/italique et ShowEolMarkerAsGlyph, picker possédé et brouillons Cancel/OK. Store Fonts XDG séparé, intentions absentes/replis explicites, fusion des seuls rôles modifiés et snapshot actif jusqu’au vrai redémarrage. Full b74 et paquet exact vérifiés ; natif privé anglais/clair/X11 lié à ce paquet : annulations, sauvegarde/relecture, vrai redémarrage, effets Application/Code/Commit/Monospace, EOL on/off et grille/Worktrees SHA. ADR0091/0092 ; portée N2 bornée. Sous-page Appearance/Fonts dans l’arbre ; Apply global, retry et AcceptSaved reprennent la référence fusionnée sans écraser une préférence concurrente déjà publiée, ADR0096.",
-      "remaining": "Import Windows, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Appearance reste N1 ; aucune parité globale certifiée.",
+      "remaining": "Import Windows, fournisseurs et couverture de tous les glyphes/consommateurs restent ouverts. Le natif ne couvre ni plusieurs Browse, ConEmu, français/sombre, Wayland, DPI ni accessibilité ; il ne certifie pas toutes les fontes, styles ou TTC, ni le confinement universel de l’encre des badges. Le niveau de la page Appearance est décrit dans son entrée dédiée ; aucune parité globale certifiée.",
       "visual": "rapproche",
       "tests": [
         "FontPreferencesStoreTests",
@@ -2292,25 +2292,37 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage": {
       "feature": "Apparence générale",
       "group": "settings-pages",
-      "level": "N1",
+      "level": "N2",
       "linux": [
-        "MainWindow@ViewHistoryCommands",
-        "BlameDialog",
+        "AppearanceSettingsPage",
+        "AppearanceSettingsSession",
+        "file:src/linux/GitExtensions.Desktop/AppearanceSettingsValues.cs",
         "DesktopSettingsDialog",
+        "MainWindow@ApplyHistoryViewPresentation",
+        "MainWindow@ApplyRepositoryBranchVisibilityAsync",
+        "RepositoryBranchMetadataService",
+        "DashboardControl",
+        "RepositoryHistoryPresentation",
+        "MainWindow@ApplyTheme",
         "AppearanceFontsSettingsPage"
       ],
-      "implemented": "Page Appearance dans l’arbre : thème et langue persistants, libellé de redémarrage requis, brouillons et Apply/Cancel communs. Priorité de session GITEXTENSIONS_UI_CULTURE et formatage OS préservés. Dates relatives/avatars restent exposés dans certaines vues ; Fonts/EOL dans la sous-page dédiée. ADR0090/0091/0096 ; Appearance reste N1, seuls ces choix sont portés.",
-      "remaining": "Dictionnaire, fournisseurs/cache avatars, chemins et autres choix Windows non portés. Browse ne se retraduit pas à chaud. Audit natif étendu ouvert ; N1 inchangé.",
-      "visual": "integre",
+      "implemented": "Groupes Windows General, Author images et Language ; quatre préférences Windows actives (dates relatives, branche courante des dépôts, visibilité des initiales dans la grille et langue) et thème Linux Light/Dark/System. Brouillons Apply/Cancel et fusion des seules intentions après sauvegarde partielle ; lignes existantes mises à jour sans reconstruire la grille. Métadonnées de branche partagées dans Dashboard et récents, prélecture initiale réutilisée, invalidation explicite et fermeture drainée. Langue effective au redémarrage. Full 2180 Desktop / 720 Core / 35 Plugins, paquet exact isolé et parcours source natif anglais/clair/X11 vérifiés sur 81a7aca67 ; Apply, Cancel, premier clic/Haut/Bas et persistance au vrai redémarrage observés.",
+      "remaining": "Neuf préférences Windows indisponibles ou adaptées : branche dans Visual Studio, EnableAutoScale non éditable, TruncatePathMethod, avatar CommitInfo, durée du cache, provider, fallback, template et Dictionary. Quatre actions indisponibles : ClearImageCache, avatarProviderHelp, pictureAvatarHelp et downloadDictionary ; helpTranslate est raccordée. La branche est en suffixe dans les récents et sous le chemin dans Dashboard, au lieu de la colonne Windows dédiée. Initiales locales sans provider/cache configurable partagé ; aucune retraduction globale à chaud. Fonts et Colors restent distincts. N2 partiel : autres consommateurs natifs, langues/thèmes, Wayland/DPI/accessibilité et paquet interactif restent à auditer ; aucune parité globale ni N3/N4.",
+      "visual": "rapproche",
       "tests": [
         "LanguagePreferencesTests",
         "FontConsumerTests",
-        "SettingsNavigationTests"
+        "SettingsNavigationTests",
+        "AppearanceSettingsPageTests",
+        "AppearanceSettingsSessionTests",
+        "AppearanceSettingsConsumerTests",
+        "RepositoryBranchVisibilityTests"
       ],
       "adr": [
         "0090",
         "0091",
-        "0096"
+        "0096",
+        "0098"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.BlameViewerSettingsPage": {
