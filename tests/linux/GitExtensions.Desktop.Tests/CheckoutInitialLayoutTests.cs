@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using GitExtensions.Linux;
@@ -36,7 +37,7 @@ public sealed class CheckoutInitialLayoutTests
         // A fresh repository object guarantees discovery reaches the native gate
         // even if setup already populated the fixture repository's Info cache.
         GitRepository repository = new(git.Repository.Path, new GitRunner(gate.Helper));
-        Window owner = new() { Width = 800, Height = 600 }; owner.Show(); PublishFrame(owner);
+        Window owner = new() { Width = 800, Height = 600 }; owner.Show(); await PublishFrameAsync(owner);
         CheckoutBranchDialog dialog = new(repository, target);
         Task? initialization = null;
         dialog.Opened += (_, _) => initialization = dialog.InitializeAsync();
@@ -49,7 +50,7 @@ public sealed class CheckoutInitialLayoutTests
             Assert.That(dialog.Owner, Is.SameAs(owner));
             Assert.That(owner.OwnedWindows, Does.Contain(dialog));
             Assert.That(modal.IsCompleted, Is.False);
-            PublishFrame(dialog);
+            await PublishFrameAsync(dialog);
             RadioButton changes = Field<RadioButton>(dialog, "CheckoutKeepChanges");
             Button checkout = Field<Button>(dialog, "CheckoutBranch");
             Assert.That(changes.IsEffectivelyVisible, Is.False,
@@ -57,7 +58,7 @@ public sealed class CheckoutInitialLayoutTests
             Assert.That(checkout.IsEffectivelyEnabled, Is.False);
             Assert.That(Field<ComboBox>(dialog, "CheckoutBranchSelection").IsEffectivelyEnabled, Is.False);
             Size initialSize = dialog.ClientSize; Rect initialButton = Bounds(checkout, dialog);
-            PublishFrame(dialog);
+            await PublishFrameAsync(dialog);
             Assert.That(dialog.ClientSize, Is.EqualTo(initialSize));
             Assert.That(Bounds(checkout, dialog), Is.EqualTo(initialButton),
                 "The initial mapped geometry stays stable while discovery is still pending.");
@@ -75,7 +76,7 @@ public sealed class CheckoutInitialLayoutTests
             // Wait for the completed layout's actual render/hit-test publication.
             // Never poll the hit result, activate the window, move focus as a
             // repair or repeatedly click until the command finally works.
-            PublishFrame(dialog);
+            await PublishFrameAsync(dialog);
             Point point = Center(checkout, dialog); Visual? hit = dialog.InputHitTest(point) as Visual;
             Assert.That(new Rect(default, dialog.ClientSize).Contains(Bounds(checkout, dialog)), Is.True);
             Assert.That(hit?.GetSelfAndVisualAncestors().Contains(checkout), Is.True,
@@ -129,9 +130,27 @@ public sealed class CheckoutInitialLayoutTests
     private static T Field<T>(TopLevel window, string name) where T : Control => PushProcessTestDriver.Field<T>(window, name);
     private static Rect Bounds(Control control, Visual relative) => new(control.TranslatePoint(default, relative)!.Value, control.Bounds.Size);
     private static Point Center(Control control, Visual relative) => control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), relative)!.Value;
-    private static void PublishFrame(TopLevel window)
+    private static async Task PublishFrameAsync(TopLevel window)
     {
-        Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs();
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
+        window.UpdateLayout();
+        // Headless resize notifications are posted at Send priority. Let them and
+        // the preceding UI layout work finish before committing the current size.
+        await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Background, timeout.Token);
+        Size clientSize = window.ClientSize; double renderScaling = window.RenderScaling;
+        var visual = ElementComposition.GetElementVisual(window);
+        Assert.That(visual, Is.Not.Null, "The mapped window must have a composition visual.");
+        var batch = visual!.Compositor.RequestCompositionBatchCommitAsync();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        await batch.Rendered.WaitAsync(timeout.Token);
+        // Rendered may complete inside the render loop; leave that stack before
+        // inspecting the actual frame and performing the test's unique hit-test.
+        await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Background, timeout.Token);
+        using var frame = window.GetLastRenderedFrame();
+        Assert.That(frame, Is.Not.Null, "The completed composition batch must leave an actual rendered frame.");
+        Assert.That(window.ClientSize, Is.EqualTo(clientSize)); Assert.That(window.RenderScaling, Is.EqualTo(renderScaling));
+        Assert.That(frame!.PixelSize, Is.EqualTo(PixelSize.FromSize(window.ClientSize, window.RenderScaling)));
+        Assert.That(window.IsMeasureValid && window.IsArrangeValid, Is.True, "The published window layout must be valid.");
     }
     private static string Diagnostic(Window window, Control intended, Visual? hit)
     {
