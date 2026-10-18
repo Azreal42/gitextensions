@@ -105,7 +105,7 @@ public sealed partial class MainWindow
 
     private void SetDashboardVisible(bool visible)
     {
-        if (_dashboard is not null) { _dashboard.IsVisible = visible; if (visible) { _dashboard.Refresh(); BeginRepositoryBranchRead(); } }
+        if (_dashboard is not null) { _dashboard.IsVisible = visible; if (visible) { _dashboard.Refresh(reload: _opened); BeginRepositoryBranchRead(); } }
         if (_browserBody is not null) { _browserBody.IsVisible = !visible; }
         if (_repositoryToolbars is not null) { _repositoryToolbars.IsVisible = !visible; }
         if (visible) { Title = "Git Extensions"; }
