@@ -142,9 +142,12 @@ public sealed partial class MainWindow
         HotkeyBindings hotkeys = DesktopHotkeys.Reload();
         DesktopPreferences initial = _preferencesStore.Load();
         DesktopFontSession fonts = DesktopFonts.CreateSession();
+        GitRepository? settingsRepository = _repository;
         DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
             hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings), fonts.Preferences,
-            (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError, new ScriptsPreferencesStore().Load(), (baseline, draft) => new ScriptsPreferencesStore().SaveChanges(baseline, draft));
+            (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError, new ScriptsPreferencesStore().Load(), (baseline, draft) => new ScriptsPreferencesStore().SaveChanges(baseline, draft),
+            owner => settingsRepository is not null && ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
+                ? ShowGitToolsSettingsAsync(owner) : Task.CompletedTask);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

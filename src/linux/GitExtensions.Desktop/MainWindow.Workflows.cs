@@ -506,10 +506,31 @@ public sealed partial class MainWindow
         if (values is not null && await Dialogs.ConfirmAsync(this, "Unset local setting", $"Remove local {values[0]}?")) { await RunAsync("Unset setting", r => r.UnsetConfigAsync(values[0], GitConfigScope.Local, Token)); }
     }
 
-    private async Task DiffToolAsync()
+    private Task DiffToolAsync() => ShowGitToolsSettingsAsync(WorkflowOwner, GitToolRole.Diff);
+
+    private async Task ShowGitToolsSettingsAsync(Window owner, GitToolRole? focus = null)
     {
-        string[]? values = await Dialogs.PromptAsync(this, "Configure diff tool", ("Git tool name (for example meld, vimdiff, kdiff3)", "meld"));
-        if (values is not null) { await RunAsync("Configure diff tool", r => r.SetConfigAsync("diff.tool", values[0], GitConfigScope.Global, Token)); }
+        if (_busy || _repository is null || _lifetime.IsCancellationRequested || !owner.IsVisible) { return; }
+        GitRepository repository = _repository;
+        GitToolsSettingsDialog dialog = new(repository, _translations, focus, _lifetime.Token)
+            { RequestedThemeVariant = owner.ActualThemeVariant };
+        try
+        {
+            await RunAsync(T("Diff/Merge tools"), async current =>
+            {
+                if (!ReferenceEquals(current, repository)) { return; }
+                using CancellationTokenRegistration cancellation = Token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.RequestClose));
+                Token.ThrowIfCancellationRequested();
+                await dialog.ShowDialog<bool>(owner);
+            }, refresh: false);
+        }
+        finally
+        {
+            // Apply then Cancel, or a partially failed save, can still have changed Git configuration.
+            if (!dialog.OwnerCloseRequested && owner.IsVisible && dialog.MayHaveChangedConfiguration && IsVisible && !_lifetime.IsCancellationRequested
+                && ReferenceEquals(repository, _repository)) { await RefreshAsync(); }
+            if (!dialog.OwnerCloseRequested && owner.IsVisible && !_lifetime.IsCancellationRequested) { owner.Activate(); }
+        }
     }
 
     private Task OpenTerminalAsync()

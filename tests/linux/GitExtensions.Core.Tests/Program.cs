@@ -63,6 +63,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. ComparisonGroupScenarios.All,
     .. ComparisonFileMenuScenarios.All,
     .. FileMenuDiffToolScenarios.All,
+    .. ToolConfigurationScenarios.All,
     ("unborn status and unstage", UnbornAsync),
     ("repository discovery normalizes subdirectories and metadata to root", DiscoveryAsync),
     ("repository discovery resolves linked worktree files and metadata", LinkedDiscoveryAsync),
@@ -224,6 +225,7 @@ if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptSce
 if (args.Contains("--comparison-groups-only", StringComparer.Ordinal)) { tests = ComparisonGroupScenarios.All.ToArray(); }
 if (args.Contains("--comparison-file-menus-only", StringComparer.Ordinal)) { tests = ComparisonFileMenuScenarios.All.ToArray(); }
 if (args.Contains("--file-menu-difftools-only", StringComparer.Ordinal)) { tests = FileMenuDiffToolScenarios.All.ToArray(); }
+if (args.Contains("--tool-config-only", StringComparer.Ordinal)) { tests = ToolConfigurationScenarios.All.ToArray(); }
 
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)

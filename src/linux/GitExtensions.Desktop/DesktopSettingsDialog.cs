@@ -33,7 +33,8 @@ internal sealed class DesktopSettingsDialog : Window
         HotkeyBindings? hotkeys = null, Action<HotkeyBindings>? saveHotkeys = null,
         FontPreferences? fonts = null, Func<FontPreferences, FontPreferences, FontPreferences>? saveFonts = null, Exception? fontsLoadError = null,
         ScriptsPreferencesLoadResult? scripts = null,
-        Func<ScriptsPreferencesLoadResult, IReadOnlyList<ScriptDefinition>, ScriptsPreferencesLoadResult>? saveScripts = null)
+        Func<ScriptsPreferencesLoadResult, IReadOnlyList<ScriptDefinition>, ScriptsPreferencesLoadResult>? saveScripts = null,
+        Func<Window, Task>? configureGitTools = null)
     {
         Result = initial; HistorySortResult = historySort;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
@@ -45,6 +46,18 @@ internal sealed class DesktopSettingsDialog : Window
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
         Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        if (configureGitTools is not null)
+        {
+            // Preserve Main -> Settings -> busy Config close requests before the child veto.
+            ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
+            Window? closingOwner = null;
+            Closing += (_, args) => { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { closingOwner = Owner as Window; } };
+            Closed += (_, _) =>
+            {
+                if (closingOwner is { } owner)
+                { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+            };
+        }
         ComboBox theme = new() { Name = "SettingsTheme", ItemsSource = new[] { "Light", "Dark", "System" }, SelectedItem = initial.Theme, MinWidth = 150 };
         var languageCatalog = LanguageCatalog.LoadDefault();
         LanguageChoice? initialLanguage = string.IsNullOrEmpty(initial.Language) ? LanguageCatalog.English : languageCatalog.Find(initial.Language);
@@ -72,6 +85,18 @@ internal sealed class DesktopSettingsDialog : Window
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); }; fields.Children.Add(configuration);
+        Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Diff/Merge tools") + "…", IsEnabled = canConfigureGit && configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
+        bool configuringTools = false;
+        tools.Click += async (_, _) =>
+        {
+            if (configuringTools || configureGitTools is null || !IsVisible) { return; }
+            configuringTools = true; tools.IsEnabled = false;
+            try { await configureGitTools(this); }
+            catch (OperationCanceledException) { }
+            catch (Exception error) { if (IsVisible) { notice.Text = error.Message; } }
+            finally { configuringTools = false; if (IsVisible) { tools.IsEnabled = canConfigureGit; } }
+        };
+        fields.Children.Add(tools);
 
         ComboBox revisions = new() { Name = "_NO_TRANSLATE_cmbRevisionsSortBy", ItemsSource = historySort == GitLogSort.Date ? new[] { GitLogSort.GitDefault, GitLogSort.AuthorDate, GitLogSort.Topology, GitLogSort.Date } : new[] { GitLogSort.GitDefault, GitLogSort.AuthorDate, GitLogSort.Topology }, SelectedItem = historySort,
             ItemTemplate = new FuncDataTemplate<GitLogSort>((sort, _) => new TextBlock { Text = sort switch { GitLogSort.GitDefault => "Git default", GitLogSort.AuthorDate => "Author date", GitLogSort.Topology => "Topo (Ancestor)", _ => "Date order" } }) };

@@ -33,6 +33,17 @@
     <AvaloniaResource Include="../../../setup/assets/Logo/git-extensions-logo.ico" Link="Assets/git-extensions-logo.ico" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Reuse upstream pure tool command data; no Windows manager, registry or reflection discovery. -->
+    <Compile Include="../../app/GitCommands/DiffMergeTools/DiffMergeTool.cs" Link="Shared/DiffMergeTools/DiffMergeTool.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/BeyondCompare4.cs" Link="Shared/DiffMergeTools/BeyondCompare4.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/DiffMerge.cs" Link="Shared/DiffMergeTools/DiffMerge.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/Kdiff3.cs" Link="Shared/DiffMergeTools/Kdiff3.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/Meld.cs" Link="Shared/DiffMergeTools/Meld.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/P4Merge.cs" Link="Shared/DiffMergeTools/P4Merge.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/Smerge.cs" Link="Shared/DiffMergeTools/Smerge.cs" />
+    <Compile Include="../../app/GitCommands/DiffMergeTools/VsCode.cs" Link="Shared/DiffMergeTools/VsCode.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Keep the existing translation format and catalogues as the source of truth. -->
     <Compile Include="../../app/GitExtensions.Extensibility/Git/GitPullAction.cs" Link="Shared/GitPullAction.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Translations/ITranslation.cs" Link="Localization/Shared/ITranslation.cs" />

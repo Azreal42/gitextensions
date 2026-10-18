@@ -251,7 +251,7 @@ public sealed partial class MainWindow : Window
             new TabItem { Header = "Worktrees", Content = Panel(_worktrees, Row(Button("Add…", AddWorktreeAsync), Button("Open", OpenWorktreeAsync), Button("Remove…", RemoveWorktreeAsync), Button("Prune", PruneWorktreesAsync))) },
             new TabItem { Header = "Submodules", Content = Panel(_submodules, Row(Button("Add…", AddSubmoduleAsync), Button("Manage…", () => ManageSubmodulesAsync()), BuildSubmoduleRemovalButton(), Button("Open", OpenSubmoduleAsync))) },
             new TabItem { Header = "Files", Content = BuildFileTreePane() },
-            new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button("Diff tool…", DiffToolAsync), Button(_translations.Translate("DiffViewerSettingsPage", "$this", "Text", "Diff viewer") + "…", DiffViewerSettingsAsync))) },
+            new TabItem { Header = "Configuration", Content = Panel(_configuration, Row(Button("Set local…", () => SetConfigurationAsync(GitConfigScope.Local)), Button("Set global…", () => SetConfigurationAsync(GitConfigScope.Global)), Button("Unset…", UnsetConfigurationAsync), Button(_translations.Translate("Diff/Merge tools") + "…", DiffToolAsync), Button(_translations.Translate("DiffViewerSettingsPage", "$this", "Text", "Diff viewer") + "…", DiffViewerSettingsAsync))) },
             new TabItem { Header = "Repository", Content = BuildRepositoryTools() }
         ];
     }

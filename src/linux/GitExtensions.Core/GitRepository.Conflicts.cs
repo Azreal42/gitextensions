@@ -56,7 +56,9 @@ public sealed partial class GitRepository
             GitResult names = await ExecuteAsync(["diff", "--name-only", "--diff-filter=U", "--", path], token).ConfigureAwait(false);
             if (names.StandardOutput != path + "\n")
             { throw new NotSupportedException("Git's merge-tool helper cannot address this pathname. Use the stage choices or edit the file and mark it resolved."); }
-            return await ExecuteAsync(["mergetool", "--no-prompt", "--", path], token,
+            Version version = await GetToolConfigurationGitVersionAsync(token).ConfigureAwait(false);
+            // Windows uses the GUI selector only where Git supports it; older Git keeps merge.tool.
+            return await ExecuteAsync(["mergetool", .. (version >= new Version(2, 20) ? new[] { "--gui" } : []), "--no-prompt", "--", path], token,
                 environment: new Dictionary<string, string?> { ["GIT_LITERAL_PATHSPECS"] = "1" }).ConfigureAwait(false);
         }, cancellationToken);
 }
