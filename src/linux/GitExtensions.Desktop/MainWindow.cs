@@ -61,6 +61,7 @@ public sealed partial class MainWindow : Window
     internal MainWindow(BrowseRequest request)
     {
         _browseRequest = request ?? throw new ArgumentNullException(nameof(request));
+        DetailedGraphSettings.Bind(_historyGraph);
         _desktopFonts.Apply(this, DesktopFontRole.Application);
         _desktopFonts.Apply(_output, DesktopFontRole.Monospace);
         Title = "Git Extensions";

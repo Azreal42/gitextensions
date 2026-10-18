@@ -66,6 +66,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
 
     public FileHistoryDialog(GitRepository repository, string path, string revision = "HEAD", bool initialBlame = false) : base(repository, "File History")
     {
+        DetailedGraphSettings.Bind(_graph);
         _avatarLifetime = AvatarWindowLifetime.For(this, ownerManagesClose: true);
         App.BindExistingAvatarRuntime(this);
         InitialSource = new(revision);

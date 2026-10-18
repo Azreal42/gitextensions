@@ -31,7 +31,13 @@ public sealed class MergeBranchDialog : RepositoryDialog
     private readonly Func<Window, CancellationToken, Task>? _afterSubmodules;
     private readonly CancellationTokenSource _lifetime;
     private string _settingsKey = "";
-    private bool _loaded, _postProcessing;
+    private bool _loaded, _postProcessing, _savingLog, _invalidLogCount;
+    private GitDistributedSettingsSnapshot? _logSettings;
+    private MergePreferences? _legacyLog;
+    private (bool AddLog, int Count) _acceptedLog;
+    private (bool AddLog, int Count)? _pendingLog;
+    private Task _logSaveTask = Task.CompletedTask;
+    internal Task LogPreferencesSettled => _logSaveTask;
     public GitMergeResult? Result { get; private set; }
 
     public MergeBranchDialog(GitRepository repository, string? revision = null,
@@ -71,7 +77,12 @@ public sealed class MergeBranchDialog : RepositoryDialog
         _revision.PropertyChanged += (_, change) => { if (change.Property == ComboBox.TextProperty) { UpdateActions(); } };
         foreach (ToggleButton choice in new ToggleButton[] { _ff, _noff, _advanced, _strategyEnabled, _customMessage, _log })
         { choice.IsCheckedChanged += (_, _) => OptionsChanged(); }
-        _count.ValueChanged += (_, _) => SaveLogPreference();
+        _count.ValueChanged += (_, _) =>
+        {
+            if (_loaded && _count.Value is >= 0 and <= 100)
+            { _invalidLogCount = false; _count.Minimum = 0; _count.Maximum = 100; }
+            SaveLogPreference(); UpdateActions();
+        };
         _help.ExpandedChanged += (_, _) => Width = _help.IsExpanded ? 790 : 500;
         Closed += (_, _) => { _lifetime.Cancel(); _help.Dispose(); };
         OptionsChanged();
@@ -87,8 +98,19 @@ public sealed class MergeBranchDialog : RepositoryDialog
         GitStatus status = await Repository.GetStatusAsync(token); IReadOnlyList<GitReference> refs = await Repository.GetReferencesAsync(token);
         _revision.ItemsSource = refs.Where(reference => reference.IsBranch || reference.IsRemote || reference.IsTag).Select(reference => reference.ShortName).Distinct(StringComparer.Ordinal).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
         _revision.Text = _initialRevision ?? refs.FirstOrDefault(reference => reference.IsCurrent)?.Upstream ?? ""; _branch.Text = status.Branch ?? "HEAD";
-        MergePreferences settings = _store.Load(_settingsKey); _noCommit.IsChecked = settings.NoCommit; _noff.IsChecked = settings.NoFastForward; _ff.IsChecked = !settings.NoFastForward; _log.IsChecked = settings.AddLog; _count.Value = settings.LogCount;
-        _loaded = !info.IsBare; OptionsChanged(); Status.Text = ""; Width = _help.IsExpanded ? 790 : 500;
+        MergePreferences settings = _store.Load(_settingsKey);
+        _legacyLog = await Task.Run(() => _store.LegacyLog(_settingsKey), token);
+        _logSettings = await DetailedRepositorySettings.LoadAsync(Repository, token);
+        (bool log, int count) = ReadLogSettings(_logSettings);
+        _noCommit.IsChecked = settings.NoCommit; _noff.IsChecked = settings.NoFastForward; _ff.IsChecked = !settings.NoFastForward;
+        _log.IsChecked = log;
+        // Detailed accepts every Int32. Keep an unrepresentable saved value visible;
+        // require a deliberate correction here instead of clamping or rewriting it on load.
+        _count.Minimum = Math.Min(0, count); _count.Maximum = Math.Max(100, count); _count.Value = count;
+        _invalidLogCount = count is < 0 or > 100; _acceptedLog = (log, count);
+        _loaded = !info.IsBare; OptionsChanged();
+        Status.Text = _invalidLogCount ? T("The saved merge log count is outside 0–100. Choose a value in this dialog before merging. The saved setting has not been changed.") + " (" + count + ")" : "";
+        Width = _help.IsExpanded ? 790 : 500;
     }, cancellationToken: _lifetime.Token);
     private void OptionsChanged()
     {
@@ -102,20 +124,75 @@ public sealed class MergeBranchDialog : RepositoryDialog
     }
     private void SaveLogPreference()
     {
-        if (!_loaded || IsBusy) { return; }
-        try { MergePreferences previous = _store.Load(_settingsKey); _store.Save(_settingsKey, previous with { AddLog = _log.IsChecked == true, LogCount = (int)(_count.Value ?? 20) }); }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { Status.Text = exception.Message; }
+        if (!_loaded || IsBusy && !_savingLog || _invalidLogCount) { return; }
+        (bool AddLog, int Count) desired = (_log.IsChecked == true, (int)(_count.Value ?? 20));
+        if (desired == _acceptedLog && _pendingLog is null) { return; }
+        _pendingLog = desired;
+        if (_savingLog) { return; }
+        _savingLog = true; _logSaveTask = SaveQueuedLogAsync();
+    }
+    private async Task SaveQueuedLogAsync()
+    {
+        try
+        {
+            await RunAsync("Save merge options", async token =>
+            {
+                while (_pendingLog is { } desired)
+                { _pendingLog = null; await SaveLogAsync(desired, token); }
+                Status.Text = "";
+            }, cancellationToken: _lifetime.Token, disableInputs: false);
+        }
+        finally { _savingLog = false; }
+    }
+    private (bool AddLog, int Count) ReadLogSettings(GitDistributedSettingsSnapshot snapshot)
+    {
+        string? log = snapshot.GetValue(DetailedRepositorySettings.AddMergeLog), count = snapshot.GetValue(DetailedRepositorySettings.MergeLogCount);
+        return (DetailedRepositorySettings.Boolean(log) ?? (log is null ? _legacyLog?.AddLog : null) ?? false,
+            DetailedRepositorySettings.Number(count) ?? (count is null ? _legacyLog?.LogCount : null) ?? 20);
+    }
+    private void AcceptLogSettings(GitDistributedSettingsSnapshot accepted)
+    {
+        _logSettings = accepted;
+        // A later file can fail. Compare subsequent edits with the values really
+        // saved so reverting a control can also undo a completed earlier effect.
+        _acceptedLog = ReadLogSettings(accepted);
+    }
+    private async Task SaveLogAsync((bool AddLog, int Count) desired, CancellationToken token)
+    {
+        GitDistributedSettingsSnapshot snapshot = _logSettings ?? throw new InvalidOperationException("Merge settings have not been loaded.");
+        (bool AddLog, int Count) before = _acceptedLog;
+        if (_legacyLog is not null)
+        {
+            snapshot = await DetailedRepositorySettings.ImportLegacyAsync(snapshot, desired.AddLog, desired.Count,
+                AcceptLogSettings, token); _logSettings = snapshot;
+        }
+        Dictionary<string, string?> changes = new(StringComparer.Ordinal);
+        if (desired.AddLog != before.AddLog || _legacyLog is not null && snapshot.GetValue(DetailedRepositorySettings.AddMergeLog) is null)
+        { changes[DetailedRepositorySettings.AddMergeLog] = DetailedRepositorySettings.BooleanText(desired.AddLog); }
+        if (desired.Count != before.Count || _legacyLog is not null && snapshot.GetValue(DetailedRepositorySettings.MergeLogCount) is null)
+        { changes[DetailedRepositorySettings.MergeLogCount] = DetailedRepositorySettings.NumberText(desired.Count.ToString()); }
+        if (changes.Count > 0)
+        { _logSettings = await DetailedRepositorySettings.SaveEffectiveAsync(snapshot, changes, AcceptLogSettings, token); }
+        if (_legacyLog is not null)
+        {
+            // Import only on an explicit edit or Merge, never on initialization/Cancel.
+            // A marker in the old profile prevents removed XML overrides reviving old JSON values.
+            await Task.Run(() => _store.MarkLogMigrated(_settingsKey), token); _legacyLog = null;
+        }
+        _acceptedLog = desired;
     }
     protected override void UpdateActions()
     {
         if (_merge is null) { return; }
-        _merge.IsEnabled = _loaded && !IsBusy && !_postProcessing && !string.IsNullOrWhiteSpace(_revision.Text);
+        _merge.IsEnabled = _loaded && !_invalidLogCount && !IsBusy && !_postProcessing && !string.IsNullOrWhiteSpace(_revision.Text);
         _squash.IsEnabled = !IsBusy && !_postProcessing && _noff.IsChecked != true;
-        _count.IsEnabled = !IsBusy && !_postProcessing && _log.IsChecked == true;
+        _count.IsEnabled = (!IsBusy || _savingLog) && !_postProcessing && (_log.IsChecked == true || _invalidLogCount);
         _message.IsEnabled = !IsBusy && !_postProcessing && _customMessage.IsChecked == true;
     }
     private async Task ExecuteAsync()
     {
+        await _logSaveTask;
+        if (_invalidLogCount) { return; }
         if (IsBusy || _postProcessing || !_merge.IsEnabled || _lifetime.IsCancellationRequested) { return; }
         GitMergeOptions options = ReadOptions(); _postProcessing = true; UpdateActions();
         try
@@ -125,7 +202,8 @@ public sealed class MergeBranchDialog : RepositoryDialog
                 using ScriptWorkflowScope scripts = new(this, Repository, token);
                 Result = null;
                 if (!await RunScriptEventAsync(scripts, ScriptEvent.BeforeMerge)) { return; }
-                _store.Save(_settingsKey, new(options.NoCommit, !options.AllowFastForward, _log.IsChecked == true, (int)(_count.Value ?? 20)));
+                await SaveLogAsync((_log.IsChecked == true, (int)(_count.Value ?? 20)), scripts.Token);
+                await Task.Run(() => _store.SaveWorkflow(_settingsKey, options.NoCommit, !options.AllowFastForward), scripts.Token);
                 scripts.ThrowIfStopped();
                 MarkRepositoryChanged(); Result = await Repository.MergeAsync(options, scripts.Token);
                 Status.Text = Result.Result.StandardOutput + Result.Result.StandardError;

@@ -32,7 +32,7 @@ public sealed class SettingsNavigationTests
         TreeView tree = Field<TreeView>(dialog, "SettingsNavigationTree");
         Assert.That(tree.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "Checklist", "Git" }));
         TreeViewItem extensions = Nodes(tree).Single(node => Id(node) == "Checklist"), git = Nodes(tree).Single(node => Id(node) == "Git");
-        Assert.That(extensions.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "General", "Appearance", "Scripts", "Hotkeys", "Advanced" }));
+        Assert.That(extensions.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "General", "Appearance", "Scripts", "Hotkeys", "Advanced", "Detailed" }));
         Assert.That(Nodes(tree).Single(node => Id(node) == "Appearance").Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "Sorting", "Fonts" }));
         Assert.That(git.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "GitPaths", "Config" }));
         Assert.That(((Control)extensions.Header!).GetVisualDescendants().OfType<TextBlock>().Single().Text, Is.EqualTo("Git Extensions"));
@@ -41,7 +41,7 @@ public sealed class SettingsNavigationTests
         {
             ["Checklist"] = "git-extensions-logo-16px.png", ["General"] = "GeneralSettings.png", ["Appearance"] = "Appearance.png",
             ["Sorting"] = "SortBy.png", ["Fonts"] = "Font.png", ["Scripts"] = "Console.png", ["Hotkeys"] = "Hotkey.png",
-            ["Advanced"] = "AdvancedSettings.png", ["Git"] = "GitLogo16.png", ["GitPaths"] = "FolderOpen.png", ["Config"] = "GeneralSettings.png"
+            ["Detailed"] = "Settings.png", ["Advanced"] = "AdvancedSettings.png", ["Git"] = "GitLogo16.png", ["GitPaths"] = "FolderOpen.png", ["Config"] = "GeneralSettings.png"
         };
         foreach (TreeViewItem node in Nodes(tree))
         {

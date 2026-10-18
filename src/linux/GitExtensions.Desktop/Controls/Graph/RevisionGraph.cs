@@ -22,7 +22,12 @@ internal class RevisionGraph : IRevisionGraphRowProvider
     private const int _orderSegmentsLookAhead = 50;
     private const int _straightenLanesLookAhead = 20;
 
-    internal RevisionGraphConfig Config { get; private set; } = new();
+    internal RevisionGraphConfig Config { get; }
+
+    public RevisionGraph(RevisionGraphOptions? options = null)
+    {
+        Config = new(options);
+    }
 
     /// <summary>
     /// GitRevision which can be displayed.
@@ -95,7 +100,6 @@ internal class RevisionGraph : IRevisionGraphRowProvider
         _orderedNodesCacheInvalid = true;
         _orderedRowCache.Clear();
         _orderedRowCacheInvalidFromScore = int.MaxValue;
-        Config = new();
     }
 
     public void LoadingCompleted()

@@ -2,12 +2,23 @@ namespace GitExtensions.Desktop.Controls.Graph;
 
 internal sealed record LayoutRevision(string ObjectId, IReadOnlyList<string> ParentIds, string Subject);
 
-internal readonly struct RevisionGraphConfig
+// The three persisted defaults are the same as AppSettings/RevisionGraphConfig on Windows.
+internal sealed record RevisionGraphOptions(
+    bool MergeGraphLanesHavingCommonParent = true,
+    bool RenderGraphWithDiagonals = true,
+    bool StraightenGraphDiagonals = true)
 {
-    public bool MergeGraphLanesHavingCommonParent => false;
-    public bool ReduceGraphCrossings => true;
-    public bool RenderGraphWithDiagonals => true;
-    public bool StraightenGraphDiagonals => true;
+    internal static RevisionGraphOptions Default { get; } = new();
+}
+
+internal readonly struct RevisionGraphConfig(RevisionGraphOptions? options)
+{
+    private readonly RevisionGraphOptions? _options = options;
+    public RevisionGraphOptions Options => _options ?? RevisionGraphOptions.Default;
+    public bool MergeGraphLanesHavingCommonParent => Options.MergeGraphLanesHavingCommonParent;
+    public bool ReduceGraphCrossings => !MergeGraphLanesHavingCommonParent;
+    public bool RenderGraphWithDiagonals => Options.RenderGraphWithDiagonals;
+    public bool StraightenGraphDiagonals => Options.StraightenGraphDiagonals;
     public int StraightenGraphSegmentsLimit => 80;
 }
 

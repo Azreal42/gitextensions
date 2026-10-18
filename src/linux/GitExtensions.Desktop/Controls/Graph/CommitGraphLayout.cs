@@ -7,23 +7,29 @@ internal sealed record GraphStroke(int Row, int CenterLane, int AdjacentLane, bo
 
 internal sealed class CommitGraphLayout
 {
+    private readonly RevisionGraph _graph;
+    public RevisionGraphOptions Options => _graph.Config.Options;
     public IReadOnlyList<GraphNode> Nodes { get; }
     public IReadOnlyList<GraphStroke> Strokes { get; }
     public int LaneCount { get; }
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Children { get; }
 
-    private CommitGraphLayout(IReadOnlyList<GraphNode> nodes, IReadOnlyList<GraphStroke> strokes, int laneCount,
+    private CommitGraphLayout(RevisionGraph graph, IReadOnlyList<GraphNode> nodes, IReadOnlyList<GraphStroke> strokes, int laneCount,
         IReadOnlyDictionary<string, IReadOnlyList<string>> children)
     {
+        _graph = graph;
         Nodes = nodes;
         Strokes = strokes;
         LaneCount = laneCount;
         Children = children;
     }
 
-    public static CommitGraphLayout Build(IReadOnlyList<GitCommit> commits, bool onlyFirstParent = false)
+    internal IReadOnlyList<GraphRenderSegment> RenderSegmentsForRow(int row, double laneWidth, double rowHeight, bool skipSecondarySharedSegments = true, IReadOnlySet<string>? highlightedIds = null)
+        => RevisionGraphRenderer.GetSegmentsForRow(_graph, row, laneWidth, rowHeight, skipSecondarySharedSegments, highlightedIds);
+
+    public static CommitGraphLayout Build(IReadOnlyList<GitCommit> commits, bool onlyFirstParent = false, RevisionGraphOptions? options = null)
     {
-        RevisionGraph graph = new() { OnlyFirstParent = onlyFirstParent };
+        RevisionGraph graph = new(options) { OnlyFirstParent = onlyFirstParent };
         Dictionary<string, GitCommit> byId = new(StringComparer.Ordinal);
         foreach (GitCommit commit in commits)
         {
@@ -90,6 +96,6 @@ internal sealed class CommitGraphLayout
             children[hash] = graph.TryGetNode(hash, out RevisionGraphRevision? node)
                 ? node.Children.Reverse().Select(child => child.Objectid).ToArray() : [];
         }
-        return new(nodes, strokes, laneCount, children);
+        return new(graph, nodes, strokes, laneCount, children);
     }
 }

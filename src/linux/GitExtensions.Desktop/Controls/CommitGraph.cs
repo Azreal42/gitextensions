@@ -41,6 +41,7 @@ public sealed class CommitGraph : Control
 
     private IReadOnlyList<GitCommit> _commits = [];
     private bool _onlyFirstParent;
+    private RevisionGraphOptions _options = RevisionGraphOptions.Default;
     private IReadOnlyList<GitReference> _references = [];
     private CommitGraphLayout _layout = CommitGraphLayout.Build([]);
     private Dictionary<string, GitReference[]> _refsByHash = new(StringComparer.Ordinal);
@@ -71,9 +72,22 @@ public sealed class CommitGraph : Control
         set
         {
             _commits = value ?? [];
-            _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent);
+            _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent, _options);
             InvalidateMeasure();
             InvalidateVisual();
+        }
+    }
+
+    internal RevisionGraphOptions Options
+    {
+        get => _options;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (_options == value) { return; }
+            _options = value;
+            _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent, value);
+            InvalidateMeasure(); InvalidateVisual();
         }
     }
 
@@ -84,7 +98,7 @@ public sealed class CommitGraph : Control
         {
             if (_onlyFirstParent == value) { return; }
             _onlyFirstParent = value;
-            _layout = CommitGraphLayout.Build(_commits, value);
+            _layout = CommitGraphLayout.Build(_commits, value, _options);
             InvalidateMeasure(); InvalidateVisual();
         }
     }
@@ -178,33 +192,45 @@ public sealed class CommitGraph : Control
             }
         }
 
-        foreach (GraphStroke stroke in _layout.Strokes)
+        for (int row = firstRow; row <= lastRow; row++)
         {
-            if (stroke.Row < firstRow || stroke.Row > lastRow)
+            double top = row * LineHeight - _verticalOffset;
+            // Windows paints each row into its own clipped cell. Neighbouring
+            // centers and tangent decisions are shared, so the curves meet exactly.
+            using (context.PushClip(new Rect(0, top, Bounds.Width, LineHeight)))
             {
-                continue;
+                foreach (GraphRenderSegment segment in _layout.RenderSegmentsForRow(row, LaneWidth, LineHeight, _relatedHashes is null, _relatedHashes))
+                {
+                    StreamGeometry geometry = new();
+                    using (StreamGeometryContext path = geometry.Open())
+                    {
+                        Point Translate(Point point) => new(point.X + LeftInset, point.Y + top);
+                        foreach (GraphPathPart part in segment.Path)
+                        {
+                            path.BeginFigure(Translate(part.From), false);
+                            if (part.IsBezier) { path.CubicBezierTo(Translate(part.Control1!.Value), Translate(part.Control2!.Value), Translate(part.To)); }
+                            else { path.LineTo(Translate(part.To)); }
+                            path.EndFigure(false);
+                        }
+                    }
+                    IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(segment.Child) && !_relatedHashes.Contains(segment.Parent)
+                        ? Brushes.Gray : palette[segment.Color];
+                    context.DrawGeometry(null, new Pen(brush, 2), geometry);
+                }
             }
+        }
 
-            double centerY = (stroke.Row + 0.5) * LineHeight - _verticalOffset;
-            double boundaryY = centerY + (stroke.UpperHalf ? -1 : 1) * LineHeight / 2;
-            double centerX = X(stroke.CenterLane);
-            double boundaryX = (centerX + X(stroke.AdjacentLane)) / 2;
-            StreamGeometry geometry = new();
-            using (StreamGeometryContext path = geometry.Open())
-            {
-                path.BeginFigure(new Point(centerX, centerY), false);
-                path.CubicBezierTo(new Point(centerX, (centerY + boundaryY) / 2),
-                    new Point(boundaryX, (centerY + boundaryY) / 2), new Point(boundaryX, boundaryY));
-                path.EndFigure(false);
-            }
-
-            IBrush strokeBrush = _relatedHashes is not null && !_relatedHashes.Contains(stroke.Child) && !_relatedHashes.Contains(stroke.Parent)
+        // The limited log can end before an edge's ancestor is loaded. Preserve
+        // its explicit continuation to the history boundary without inventing a node.
+        foreach (GraphStroke stroke in _layout.Strokes.Where(stroke => stroke.ContinuesOutsideHistory && stroke.Row >= firstRow && stroke.Row <= lastRow))
+        {
+            double centerY = (stroke.Row + .5) * LineHeight - _verticalOffset;
+            double boundaryY = centerY + LineHeight / 2;
+            double x = X(stroke.CenterLane);
+            IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(stroke.Child) && !_relatedHashes.Contains(stroke.Parent)
                 ? Brushes.Gray : palette[stroke.Color];
-            context.DrawGeometry(null, new Pen(strokeBrush, 2), geometry);
-            if (stroke.ContinuesOutsideHistory)
-            {
-                context.DrawEllipse(strokeBrush, null, new Point(boundaryX, boundaryY - 3), 2, 2);
-            }
+            context.DrawLine(new Pen(brush, 2), new Point(x, centerY), new Point(x, boundaryY));
+            context.DrawEllipse(brush, null, new Point(x, boundaryY - 3), 2, 2);
         }
 
         for (int row = firstRow; row <= lastRow; row++)

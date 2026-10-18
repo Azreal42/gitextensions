@@ -164,6 +164,8 @@ public sealed partial class MainWindow
         AvatarService? avatars = _avatarLifetime?.Scope?.Service ?? App.PeekAvatarRuntime()?.Service;
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         GitRepository? settingsRepository = _repository;
+        DetailedSettingsSession detailed = new(settingsRepository, initial);
+        await detailed.InitializeAsync(_lifetime.Token);
         using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
         DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
             hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings), fonts.Preferences,
@@ -185,7 +187,7 @@ public sealed partial class MainWindow
             },
             avatarHelpAsync: (owner, url) => owner.IsVisible && !_lifetime.IsCancellationRequested
                 ? OpenWebAsync(url) : Task.CompletedTask,
-            appearanceCancellationToken: environment.CancellationToken);
+            appearanceCancellationToken: environment.CancellationToken, detailedSettings: detailed);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
@@ -237,11 +239,14 @@ public sealed partial class MainWindow
                 {
                     RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
                 });
+                preferences = detailed.MergeDesktop(preferences);
                 bool histogramChanged = settings.GeneralSettingsResult.UseHistogramDiffAlgorithm != general.Initial.UseHistogramDiffAlgorithm;
                 GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences,
                     desktopSaved: acceptedDesktop =>
                     {
                         appearance.DesktopSaved(appearanceDraft);
+                        detailed.DesktopSaved(acceptedDesktop);
+                        DetailedGraphSettings.PublishSaved(_preferencesStore.FilePath, acceptedDesktop);
                         // Publish only the value actually committed to this Desktop profile,
                         // even if a later Clone/History workflow profile cannot be saved.
                         FileStatusListPreferencesStore.PublishPathPresentation(_preferencesStore.FilePath, acceptedDesktop.TruncatePathMethod);

@@ -11,6 +11,9 @@ public sealed record DesktopPreferences
     public bool ProvideAutocompletion { get; init; } = true;
     public bool MarkIllFormedLinesInCommitMsg { get; init; } = true;
     public bool ShowRepoCurrentBranch { get; init; } = true;
+    public bool MergeGraphLanesHavingCommonParent { get; init; } = true;
+    public bool RenderGraphWithDiagonals { get; init; } = true;
+    public bool StraightenGraphDiagonals { get; init; } = true;
     public GitCommands.TruncatePathMethod TruncatePathMethod { get; init; } = GitCommands.TruncatePathMethod.None;
     public bool ShowAuthorAvatarInCommitInfo { get; init; } = true;
     public int AvatarImageCacheDays { get; init; } = 13;

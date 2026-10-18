@@ -45,7 +45,9 @@ public sealed class PushDialog : RepositoryDialog
     private IReadOnlyList<GitRemote> _remotes = [];
     private IReadOnlyList<KeyValuePair<string, string>> _configuration = [];
     private string? _currentBranch;
-    private bool _bare, _updating, _forceUpdating, _workflowStopRequested;
+    private bool _bare, _updating, _forceUpdating, _workflowStopRequested, _readRemoteHeads;
+    internal bool MultipleRowsReady { get; private set; }
+    internal GitProcessDialogResult? LastRemoteHeadsProcess { get; private set; }
     internal bool IsReady { get; private set; }
     public bool Succeeded { get; private set; }
     public bool Attempted { get; private set; }
@@ -111,7 +113,13 @@ public sealed class PushDialog : RepositoryDialog
         _source.PropertyChanged += (_, change) => { if (change.Property == AutoCompleteBox.TextProperty && !_updating) { UpdateDestination(); UpdateActions(); } };
         foreach (AutoCompleteBox box in new[] { _url, _destination, _tag }) { box.PropertyChanged += (_, change) => { if (change.Property == AutoCompleteBox.TextProperty) { UpdateActions(); } }; }
         foreach (RadioButton option in new[] { _toRemote, _toUrl }) { option.IsCheckedChanged += (_, _) => { if (!_updating) { if (_toUrl.IsChecked == true) { _url.ItemsSource = _destinationHistory.Load(); } UpdateDestination(); UpdateActions(); } }; }
-        _tabs.SelectionChanged += (_, _) => UpdateActions();
+        _tabs.SelectionChanged += async (_, change) =>
+        {
+            if (!ReferenceEquals(change.Source, _tabs)) { return; }
+            if (!_updating && IsReady && !IsBusy && _readRemoteHeads && _tabs.SelectedIndex == 2)
+            { await RunAsync("Read remote branches", RebuildRowsAsync); }
+            UpdateActions();
+        };
         _force.IsCheckedChanged += (_, _) => SyncForce(_force);
         _lease.IsCheckedChanged += (_, _) => SyncForce(_lease);
         _forceTags.IsCheckedChanged += (_, _) => SyncForce(_forceTags);
@@ -185,6 +193,8 @@ public sealed class PushDialog : RepositoryDialog
         _references = await Repository.GetReferencesAsync(token);
         _remotes = await Repository.GetRemotesAsync(token);
         _configuration = await Repository.GetConfigAsync(cancellationToken: token);
+        GitDistributedSettingsSnapshot settings = await DetailedRepositorySettings.LoadAsync(Repository, token);
+        _readRemoteHeads = DetailedRepositorySettings.Boolean(settings.GetValue(DetailedRepositorySettings.RemoteBranches)) ?? false;
     }
     private string? Config(string key) => _configuration.LastOrDefault(pair => pair.Key.Equals(key, StringComparison.OrdinalIgnoreCase)).Value;
 
@@ -265,23 +275,61 @@ public sealed class PushDialog : RepositoryDialog
 
     private async Task RebuildRowsAsync(CancellationToken token)
     {
+        // An unsuccessful new server read must never leave old actionable rows behind.
+        MultipleRowsReady = false; LastRemoteHeadsProcess = null;
         _rows.Clear(); _multipleRows.Children.Clear();
         string prefix = "refs/remotes/" + RemoteName + "/";
         GitReference[] locals = _references.Where(reference => reference.IsBranch).ToArray();
-        GitReference[] remotes = _references.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && reference.Name.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+        bool server = _readRemoteHeads && _tabs.SelectedIndex == 2 && RemoteName is not null;
+        GitReference[] remotes = server ? (await ReadServerHeadsAsync(RemoteName!, token)).ToArray()
+            : _references.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && reference.Name.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+        string Name(GitReference reference) => server ? reference.ShortName : reference.Name[prefix.Length..];
+        List<(string? Source, string Destination, string Ahead)> rows = [];
         foreach (GitReference local in locals)
         {
             string tracked = Config("branch." + local.ShortName + ".remote") == RemoteName ? StripHead(Config("branch." + local.ShortName + ".merge") ?? local.ShortName) : "";
-            GitReference? remote = remotes.FirstOrDefault(reference => reference.Name[prefix.Length..] == (tracked.Length > 0 ? tracked : local.ShortName));
+            // Windows uses cached ahead/behind for a tracked branch. Server hashes
+            // supply only the equality fallback; an unfetched hash is not traversed.
+            GitReference? remote = remotes.FirstOrDefault(reference => Name(reference) == local.ShortName);
             string ahead = remote is null ? "" : remote.Hash == local.Hash ? "=" : "<>";
-            if (tracked.Length > 0 && remote is not null)
+            GitReference? cached = tracked.Length == 0 ? null : _references.FirstOrDefault(reference => reference.Name == prefix + tracked && reference.SymbolicTarget is null);
+            if (cached is not null)
             {
-                string[] counts = (await Repository.RunAsync(["rev-list", "--left-right", "--count", local.Name + "..." + remote.Name, "--"], token)).StandardOutput.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-                if (counts.Length == 2) { ahead = counts[0] == "0" && counts[1] == "0" ? "=" : "+" + counts[0] + " / −" + counts[1]; }
+                GitResult comparison = await Repository.RunAsync(["rev-list", "--left-right", "--count", local.Name + "..." + cached.Name, "--"], token);
+                string[] counts = comparison.StandardOutput.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (comparison.Success && counts.Length == 2) { ahead = counts[0] == "0" && counts[1] == "0" ? "=" : "+" + counts[0] + " / −" + counts[1]; }
             }
-            AddRow(local.ShortName, tracked, ahead);
+            rows.Add((local.ShortName, tracked, ahead));
         }
-        foreach (GitReference remote in remotes.Where(remote => locals.All(local => local.ShortName != remote.Name[prefix.Length..]))) { AddRow(null, remote.Name[prefix.Length..], ""); }
+        foreach (GitReference remote in remotes.Where(remote => locals.All(local => local.ShortName != Name(remote))))
+        { rows.Add((null, Name(remote), "")); }
+        token.ThrowIfCancellationRequested();
+        foreach (var row in rows) { AddRow(row.Source, row.Destination, row.Ahead); }
+        MultipleRowsReady = true;
+    }
+
+    private async Task<IReadOnlyList<GitReference>> ReadServerHeadsAsync(string remote, CancellationToken token)
+    {
+        GitRemoteHeadsResult? read = null;
+        if (!IsVisible)
+        {
+            read = await Repository.ReadRemoteHeadsAsync(remote, token);
+            if (!read.Result.Success) { throw new GitCommandException(["ls-remote", "--heads", "--", remote], read.Result); }
+            return read.Heads;
+        }
+        LastRemoteHeadsProcess = await GitProcessDialog.ShowAsync(this, Repository.Path, "ls-remote --heads " + remote, true,
+            async (cancellation, output) =>
+            {
+                read = await Repository.ReadRemoteHeadsAsync(remote, cancellation, output);
+                return read.Result;
+            }, token);
+        if (LastRemoteHeadsProcess.WasCancelled || LastRemoteHeadsProcess.OwnerCloseRequested || token.IsCancellationRequested)
+        { throw new OperationCanceledException(token); }
+        if (LastRemoteHeadsProcess.CompletionError is Exception completionError) { ExceptionDispatchInfo.Capture(completionError).Throw(); }
+        if (LastRemoteHeadsProcess.Error is Exception error) { ExceptionDispatchInfo.Capture(error).Throw(); }
+        if (read is null) { throw new InvalidOperationException(T("No native Git result was returned.")); }
+        if (!read.Result.Success) { throw new GitCommandException(["ls-remote", "--heads", "--", remote], read.Result); }
+        return read.Heads;
     }
 
     private void AddRow(string? source, string destination, string ahead)
@@ -338,6 +386,7 @@ public sealed class PushDialog : RepositoryDialog
         if (!IsReady || string.IsNullOrWhiteSpace(request.Destination)) { throw new ArgumentException(C("_configureRemote", "Please configure a remote repository first.\nWould you like to do it now?")); }
         if (request.Mode == GitPushMode.Branch && (string.IsNullOrWhiteSpace(request.Source) || !request.Source.Contains(':') && string.IsNullOrWhiteSpace(request.DestinationRef))) { throw new ArgumentException(C("_noCurrentBranch", "No branch is selected, cannot push.")); }
         if (request.Mode == GitPushMode.Tag && string.IsNullOrWhiteSpace(request.Source)) { throw new ArgumentException(C("_selectTag", "You need to select a tag to push or select \"Push all tags\".")); }
+        if (request.Mode == GitPushMode.Multiple && !MultipleRowsReady) { throw new InvalidOperationException(T("Remote branch data is unavailable. Select the multiple branches tab again to retry.")); }
         if (request.Mode == GitPushMode.Multiple && request.Actions?.Count == 0) { return; }
         if (request.Mode == GitPushMode.Branch && _toRemote.IsChecked == true && !_bare && !request.Source!.Contains(':'))
         {
@@ -585,7 +634,7 @@ public sealed class PushDialog : RepositoryDialog
         _pull.IsEnabled = idle && !_bare;
         bool branchValid = Mode != GitPushMode.Branch || !string.IsNullOrWhiteSpace(_source.Text) && (_source.Text.Contains(':') || !string.IsNullOrWhiteSpace(_destination.Text));
         bool tagValid = Mode != GitPushMode.Tag || !string.IsNullOrWhiteSpace(_tag.Text);
-        _push.IsEnabled = idle && !string.IsNullOrWhiteSpace(Destination) && branchValid && tagValid && (Mode != GitPushMode.Multiple || _rows.Any(row => row.Push.IsChecked == true || row.Force.IsChecked == true || row.Delete.IsChecked == true));
+        _push.IsEnabled = idle && !string.IsNullOrWhiteSpace(Destination) && branchValid && tagValid && (Mode != GitPushMode.Multiple || MultipleRowsReady && _rows.Any(row => row.Push.IsChecked == true || row.Force.IsChecked == true || row.Delete.IsChecked == true));
     }
     private sealed record BranchRow(string? Source, TextBox Destination, CheckBox Push, CheckBox Force, CheckBox Delete);
 }

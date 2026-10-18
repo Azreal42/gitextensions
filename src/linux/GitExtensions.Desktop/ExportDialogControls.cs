@@ -95,6 +95,7 @@ internal sealed class ExportRevisionList : UserControl
 
     internal ExportRevisionList(string name, bool multiple)
     {
+        DetailedGraphSettings.Bind(_graph);
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
         DesktopFontSession fonts = DesktopFonts.Active;
         double hashWidth = DesktopFontMetrics.HashWidth(fonts.For(DesktopFontRole.Monospace));
