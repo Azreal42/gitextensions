@@ -181,6 +181,7 @@ public sealed partial class CommitDialog : Window
         ConfigureRulesFileList(_unstagedView);
         ConfigureRulesFileList(_stagedView);
         ConfigureIndexFlagFiles();
+        ConfigureSuperprojectStage();
         _amend.Content = C("Amend", "Amend commit");
         _resetAuthor.Content = C("ResetAuthor", "Reset author");
         _sign.ItemsSource = new[] { T("Git default GPG signing"), T("Do not sign commit"), T("Sign with default GPG"), T("Sign with specific GPG") };
@@ -436,17 +437,25 @@ public sealed partial class CommitDialog : Window
         Grid right = new() { RowDefinitions = new RowDefinitions("68*,5,32*") };
         right.Children.Add(Pane(_content, Row(_stageHunk, _unstageHunk, _stageLines, _unstageLines)));
         right.Children.Add(Splitter(1, true));
-        Grid editor = new() { ColumnDefinitions = new ColumnDefinitions("175,5,*") };
+        Grid editor = new() { ColumnDefinitions = new ColumnDefinitions("Auto,5,*") };
         Button cancel = new() { Name = "Cancel", Content = C("Cancel", "Cancel"), IsCancel = true, Height = 26 };
         cancel.Click += (_, _) => Close();
-        StackPanel actions = new() { Spacing = 4, Children =
+        StackPanel actions = new() { MinWidth = 175, Spacing = 4, Children =
         {
-            _commit, _push, _amend, _resetAuthor,
+            _commit, _push, _stageInSuperproject, _amend, _resetAuthor,
             Action("ResetSoft", "ResetSoft", "Reset soft", "ResetCurrentBranchToHere.png", ResetSoftAsync),
             Action("StashStaged", "StashStaged", "Stash staged changes", "stash.png", StashStagedAsync),
             Action("ResetAll", "btnResetAllChanges", "Reset all changes", "ResetWorkingDirChanges.png", () => ResetChangesAsync(true)),
             Action("ResetUnstaged", "btnResetUnstagedChanges", "Reset unstaged changes", "ResetWorkingDirChanges.png", () => ResetChangesAsync(false)), cancel
         }};
+        // Keep the splitter proportion, but never clip the visible command column
+        // when superproject/amend actions appear or translated fonts grow.
+        actions.LayoutUpdated += (_, _) =>
+        {
+            Control[] visible = actions.Children.Where(control => control.IsVisible).ToArray();
+            double minimum = Math.Ceiling(visible.Sum(control => control.DesiredSize.Height) + Math.Max(0, visible.Length - 1) * actions.Spacing);
+            if (right.RowDefinitions[2].MinHeight != minimum) { right.RowDefinitions[2].MinHeight = minimum; }
+        };
         editor.Children.Add(actions);
         _signingKeyMenu = InputMenu(T("Signing key"), _signingKey);
         MenuItem optionsMenu = new() { Name = "Options", Header = C("tsmiOptions", "Options"), ItemsSource = new MenuItem[]
@@ -461,8 +470,7 @@ public sealed partial class CommitDialog : Window
         DockPanel.SetDock(optionsMenu, Dock.Right);
         MenuItem templates = BuildTemplatesMenu();
         DockPanel.SetDock(templates, Dock.Left);
-        Menu options = new() { Name = "CommitToolbar", Height = 28, HorizontalAlignment = HorizontalAlignment.Stretch,
-            ItemsPanel = new FuncTemplate<Panel?>(() => new DockPanel { LastChildFill = false }), ItemsSource = new[] { _historyMenu, optionsMenu, templates } };
+        Menu options = BuildCommitToolbar(optionsMenu, templates);
         _interactive.Add(options);
         DockPanel message = new() { LastChildFill = true };
         DockPanel.SetDock(options, Dock.Top);
@@ -481,7 +489,7 @@ public sealed partial class CommitDialog : Window
         Grid.SetColumn(right, 2);
         main.Children.Add(right);
         DockPanel root = new();
-        Border status = new() { Child = _state, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(6, 3) };
+        Border status = new() { Child = BuildCommitStatusBar(), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(6, 3) };
         DockPanel.SetDock(status, Dock.Bottom);
         root.Children.Add(status);
         root.Children.Add(main);
@@ -548,6 +556,8 @@ public sealed partial class CommitDialog : Window
     private async Task RefreshDataAsync()
     {
         _status = await _repository.GetStatusAsync(OperationToken);
+        await RefreshSuperprojectAsync();
+        await RefreshBranchStatusAsync();
         await _indexFlagFiles!.RefreshAsync(_repository, OperationToken);
         _mergePending = File.Exists(await GetGitPathAsync("MERGE_HEAD"));
         IReadOnlyList<KeyValuePair<string, string>> configuration = await _repository.GetConfigAsync("^user\\.(name|email)$", cancellationToken: OperationToken);
@@ -864,6 +874,7 @@ public sealed partial class CommitDialog : Window
                     if (!_status!.Changes.Any(change => change.IsStaged)) { throw new InvalidOperationException(C("_noStagedChanges", "There are no staged changes")); }
                     noStaged = false;
                 }
+                if (!await EnsureCommitBranchAsync()) { return; }
                 if (_kind.SelectedIndex != 1)
                 {
                     _preferences = _preferencesStore.Load() with { LastCommitMessage = rawMessage };
@@ -885,6 +896,7 @@ public sealed partial class CommitDialog : Window
                     NoVerify: _noVerify.IsChecked,
                     AmendRevision: _kind.SelectedIndex == (int)TargetedCommitKind.Amend ? target?.Hash : null);
                 bool forceWithLease = (_amend.IsChecked == true || _forcePushAfterSoftReset) && _preferences.CommitAndPushForcedWhenAmend;
+                GitSuperprojectSnapshot? superproject = _superproject;
                 using ScriptWorkflowScope scripts = new(this, _repository, OperationToken);
                 if (!await RunCommitScriptEventAsync(scripts, ScriptEvent.BeforeCommit)) { return; }
                 scripts.ThrowIfStopped();
@@ -906,6 +918,7 @@ public sealed partial class CommitDialog : Window
                 RepositoryChanged?.Invoke(this, EventArgs.Empty);
                 PushCompleted = !push;
                 if (push) { await PushCommittedChangesAsync(forceWithLease); }
+                await StageCommittedSubmoduleAsync(superproject);
                 if (_closeAfterCommit.IsChecked || (_closeWhenClean.IsChecked && _status!.Changes.Count == 0)) { _closeWhenIdle = true; }
             });
         }
@@ -1123,7 +1136,8 @@ public sealed partial class CommitDialog : Window
         int caret = Math.Clamp(_message.CaretIndex, 0, text.Length);
         int line = text[..caret].Count(character => character == '\n') + 1;
         int column = caret - text[..caret].LastIndexOf('\n');
-        _state.Text = $"{_committer}    ·    {_status?.Branch ?? ""}    ·    {C("commitStagedCountLabel", "Staged")}: {_status?.Changes.Count(change => change.IsStaged && !change.IsConflict) ?? 0}    ·    {C("commitCursorLineLabel", "Ln")} {line}    {C("commitCursorColumnLabel", "Col")} {column}";
+        _state.Text = _committer;
+        _commitDetails.Text = $"{C("commitStagedCountLabel", "Staged")}: {_status?.Changes.Count(change => change.IsStaged && !change.IsConflict) ?? 0}    ·    {C("commitCursorLineLabel", "Ln")} {line}    {C("commitCursorColumnLabel", "Col")} {column}";
     }
     private void RelayDiffEscape(object? sender, KeyEventArgs args)
     {
@@ -1218,18 +1232,7 @@ public sealed partial class CommitDialog : Window
         });
     }
 
-    private Task CreateBranchAsync() => RunAsync(T("Create branch"), async () =>
-    {
-        DesktopPreferences preferences = new PreferencesStore().Load();
-        CreateBranchDialog dialog = new(_repository, autoNormalize: preferences.AutoNormaliseBranchName, replacement: preferences.AutoNormaliseSymbol)
-            { RequestedThemeVariant = ActualThemeVariant };
-        Task initialization = Task.CompletedTask;
-        dialog.Opened += (_, _) => initialization = dialog.InitializeAsync();
-        using CancellationTokenRegistration registration = OperationToken.Register(() => Dispatcher.UIThread.Post(dialog.Close));
-        try { await dialog.ShowDialog(this); await initialization; OperationToken.ThrowIfCancellationRequested(); }
-        finally { dialog.Close(); }
-        if (dialog.HasRepositoryChanges) { HasRepositoryChanges = true; await RefreshDataAsync(); RepositoryChanged?.Invoke(this, EventArgs.Empty); }
-    });
+    private Task CreateBranchAsync() => RunAsync(T("Create branch"), async () => { await OpenCreateCommitBranchAsync(); });
 
     private bool HandleDiffCommand(string command)
     {

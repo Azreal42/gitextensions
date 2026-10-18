@@ -210,8 +210,11 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         get
         {
             ReferencePreferences preferences = _preferences.Load();
-            return _constraint is null && LastError is null && !_bare && !preferences.AlwaysShowCheckoutDialog && _initial?.IsBranch == true
-                && (_branches.SelectedItem as GitReference)?.Name == _initial.Name
+            GitReference? selected = _branches.SelectedItem as GitReference;
+            bool selectedLocal = _constraint is { AllowDefaultAction: true }
+                ? _local.IsChecked == true && selected?.IsBranch == true
+                : _constraint is null && _initial?.IsBranch == true && selected?.Name == _initial.Name;
+            return _initialized && LastError is null && !_bare && !preferences.AlwaysShowCheckoutDialog && selectedLocal
                 && (_dirty == false || preferences.UseDefaultCheckoutChanges);
         }
     }
@@ -237,8 +240,8 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         if (_constraint is not null && selected is null) { Status.Text = T("Select branch"); return; }
         if (_defaultOwner is not null && _dirty == false) { options = options with { Changes = LocalChangesAction.DontChange }; }
         Window operationOwner = _defaultOwner ?? this;
-        if (options.Changes == LocalChangesAction.Reset && _dirty != false && !await Dialogs.ConfirmAsync(this, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
-        if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(this, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }
+        if (options.Changes == LocalChangesAction.Reset && _dirty != false && !await Dialogs.ConfirmAsync(operationOwner, T("Discard local changes"), T("Discard changes in the index and working directory while switching branches?"))) { return; }
+        if (options.NewBranchMode == CheckoutNewBranchMode.Reset && !await Dialogs.ConfirmAsync(operationOwner, T("Reset branch"), T("Reset the local branch to the selected remote revision? Existing commits may no longer be referenced by this branch.") + "\n" + options.LocalBranch)) { return; }
         await RunAsync("Checkout", async token =>
         {
             using ScriptWorkflowScope scripts = new(operationOwner, Repository, token);

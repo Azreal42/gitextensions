@@ -22,6 +22,8 @@ public sealed class CreateBranchDialog : RepositoryDialog
     private bool _unborn;
     private bool _bare;
     private bool _hasTargetCommit;
+    private readonly bool _suggestInitialName;
+    private bool _initialNameSuggested;
     public string? CreatedBranch { get; private set; }
 
     public CreateBranchDialog(GitRepository repository, string revision = "HEAD", string? name = null, bool autoNormalize = true, string replacement = "_",
@@ -35,6 +37,7 @@ public sealed class CreateBranchDialog : RepositoryDialog
         MinWidth = 540;
         SizeToContent = SizeToContent.Height;
         _name.Text = name;
+        _suggestInitialName = string.IsNullOrWhiteSpace(name);
         _revision.Text = revision;
         _revision.IsReadOnly = !userAbleToChangeRevision;
         _checkout.IsChecked = checkoutAfterCreation;
@@ -74,11 +77,33 @@ public sealed class CreateBranchDialog : RepositoryDialog
         _hasTargetCommit = !_unborn;
         if (_unborn && ReadOptions().Revision != "HEAD")
         { await Repository.ResolveRevisionAsync(ReadOptions().Revision, token); _hasTargetCommit = true; }
+        await SuggestInitialNameAsync(token);
         if (_bare) { _checkout.IsChecked = false; _orphan.IsChecked = false; }
         else if (_unborn && !_hasTargetCommit && _couldBeOrphan) { _orphan.IsChecked = true; }
         _summary.Text = _unborn && !_hasTargetCommit && _couldBeOrphan ? T("Creating orphan branch (repository has no commits)") : await ReferenceDialogControls.SummaryAsync(Repository, ReadOptions().Revision, token);
         Status.Text = T("Enter branch name.");
     });
+
+    private async Task SuggestInitialNameAsync(CancellationToken token)
+    {
+        if (_initialNameSuggested || !_suggestInitialName || !string.IsNullOrWhiteSpace(_name.Text)) { return; }
+        _initialNameSuggested = true;
+        if (!_hasTargetCommit) { return; }
+        string revision = await Repository.ResolveRevisionAsync(ReadOptions().Revision, token);
+        IReadOnlyList<GitReference> references = await Repository.GetReferencesAsync(token);
+        GitReference[] attached = references.Where(reference => reference.RevisionHash == revision).ToArray();
+        GitReference? first = attached.FirstOrDefault(reference => !reference.IsTag) ?? attached.FirstOrDefault(reference => reference.IsTag);
+        if (first is null) { return; }
+        string suggestion = first.ShortName;
+        if (first.IsRemote)
+        {
+            string? remote = (await Repository.GetRemotesAsync(token)).Select(value => value.Name).OrderByDescending(value => value.Length)
+                .FirstOrDefault(value => suggestion.StartsWith(value + "/", StringComparison.Ordinal));
+            if (remote is not null) { suggestion = suggestion[(remote.Length + 1)..]; }
+        }
+        // Initialization may await Git while the user starts typing. Never overwrite that input.
+        if (string.IsNullOrWhiteSpace(_name.Text)) { _name.Text = suggestion; _name.SelectAll(); }
+    }
 
     public GitCreateBranchOptions ReadOptions() => new((_name.Text ?? "").Trim(), _userAbleToChangeRevision ? _revision.Text ?? "HEAD" : _initialRevision,
         _checkout.IsChecked == true, _couldBeOrphan && _orphan.IsChecked == true, _couldBeOrphan && _clear.IsChecked == true);

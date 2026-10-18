@@ -12,6 +12,8 @@ public sealed record CommitPreferences
     public bool ShowOnlyMyMessages { get; init; }
     public bool RememberAmendCommitState { get; init; } = true;
     public bool CommitAndPushForcedWhenAmend { get; init; }
+    public bool StageInSuperprojectAfterCommit { get; init; } = true;
+    public bool DontConfirmCommitIfNoBranch { get; init; }
     public bool EnsureCommitMessageSecondLineEmpty { get; init; } = true;
     public int NumberOfPreviousMessages { get; init; } = 6;
     public string LastCommitMessage { get; init; } = "";
@@ -29,8 +31,18 @@ public sealed class CommitPreferencesStore
     }
     public CommitPreferences Load()
     {
-        try { return (File.Exists(FilePath) ? JsonSerializer.Deserialize<CommitPreferences>(File.ReadAllText(FilePath)) ?? new() : new()).Normalize(); }
+        try { return Read(); }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException) { return new(); }
+    }
+    // A fresh default must not silently enable parent staging after a profile read failure.
+    internal CommitPreferences LoadForSuperprojectStaging() => Read();
+    private CommitPreferences Read()
+    {
+        string json;
+        try { json = File.ReadAllText(FilePath); }
+        catch (FileNotFoundException) { return new(); }
+        catch (DirectoryNotFoundException) { return new(); }
+        return (JsonSerializer.Deserialize<CommitPreferences>(json) ?? throw new JsonException("Commit preferences must contain an object.")).Normalize();
     }
     public void Save(CommitPreferences preferences)
     {

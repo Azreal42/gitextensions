@@ -213,7 +213,8 @@ public sealed partial class CommitDialog
     }
     private Task OpenConventionalMenuAsync(bool withScope)
     {
-        _conventionalScope = withScope; _templateKeyboardSelection.Begin(); _templatesMenu.Open();
+        _conventionalScope = withScope; _templateKeyboardSelection.Begin();
+        _commitToolbarOverflow?.Reveal(_templatesMenu); _templatesMenu.Open();
         if (_templatesMenu.Parent is Menu toolbar) { toolbar.SelectedItem = _templatesMenu; }
         _templatesMenu.SelectedItem = _conventionalMenu; _conventionalMenu.Open();
         MenuItem feat = _conventionalMenu.Items.OfType<MenuItem>().Single(item => item.Name == "Conventional_feat");

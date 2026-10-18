@@ -397,7 +397,7 @@ public sealed class CommitTemplateDialogTests
         var dialog = commit.OwnedWindows.OfType<CommitMessageSettingsDialog>().Single(w => w.IsVisible); Pump(dialog); return dialog;
     }
     private static MenuItem Templates(CommitDialog commit) => Field<Menu>(commit, "CommitToolbar").Items.OfType<MenuItem>().Single(i => i.Name == "commitTemplatesToolStripMenuItem");
-    private static MenuItem OpenTemplates(CommitDialog commit) { MenuItem menu = Templates(commit); PushProcessTestDriver.Pointer(menu); Pump(commit); Assert.That(menu.IsSubMenuOpen, Is.True); return menu; }
+    private static MenuItem OpenTemplates(CommitDialog commit) => CommitToolbarTestDriver.OpenMenu(commit, Templates(commit));
     private static void OpenTab(Window window, string name) { PushProcessTestDriver.Pointer(Field<TabControl>(window, "tabControl1").Items.OfType<TabItem>().Single(t => t.Name == name)); Pump(window); }
     private static async Task Choose(Window window, ComboBox combo, int index)
     { PushProcessTestDriver.Pointer(combo); Press(window, PhysicalKey.Home); for (int i = 0; i < index; i++) { Press(window, PhysicalKey.ArrowDown); } Press(window, PhysicalKey.Enter); await Task.Yield(); Pump(window); Assert.That(combo.SelectedIndex, Is.EqualTo(index)); Assert.That(combo.IsDropDownOpen, Is.False); }

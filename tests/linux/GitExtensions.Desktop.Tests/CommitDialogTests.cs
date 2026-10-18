@@ -93,7 +93,7 @@ public class CommitDialogTests
         TreeView staged = Find<TreeView>(dialog, "Staged");
         TextBox message = Find<TextBox>(dialog, "Message");
         Button commit = Find<Button>(dialog, "Commit");
-        Assert.That(dialog.Title, Is.EqualTo("Commiter"));
+        Assert.That(dialog.Title, Is.EqualTo($"Commiter sur main {fixture.Repository.Path}"));
         Assert.That(ButtonText(commit), Is.EqualTo("Commiter"));
         Assert.That(ButtonText(Find<Button>(dialog, "Stage")), Is.EqualTo("Indexer"));
         Assert.That(Find<CheckBox>(dialog, "Amend").Content, Is.EqualTo("Rectifier le commit"));

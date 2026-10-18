@@ -10,6 +10,7 @@ using Avalonia.Styling;
 using Avalonia.VisualTree;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
+using GitExtensions.Linux.Desktop.Controls;
 using NUnit.Framework;
 
 namespace GitExtensions.Desktop.Tests;
@@ -174,17 +175,36 @@ public class CommitMessageWorkflowTests
         options = Options(dialog);
         dialog.UpdateLayout();
         var top = toolbar.Items.OfType<MenuItem>().ToArray();
+        CommitToolbarTestDriver.AssertLayout(dialog);
+        CompactMenuToolbar overflow = CommitToolbarTestDriver.Controller(dialog);
         Assert.That(Bounds(dialog, options).Right, Is.EqualTo(Bounds(dialog, toolbar).Right).Within(1));
-        Assert.That(Bounds(dialog, top[0]).Right, Is.LessThan(Bounds(dialog, top[2]).X + 1));
-        Assert.That(Bounds(dialog, top[2]).Right, Is.LessThan(Bounds(dialog, options).X));
+        if (overflow.IsOverflowed(top[2]))
+        {
+            Assert.That(top[2].IsVisible, Is.False);
+            Assert.That(Bounds(dialog, top[0]).Right, Is.LessThan(Bounds(dialog, overflow.Overflow).X + 1));
+            Assert.That(Bounds(dialog, overflow.Overflow).Right, Is.EqualTo(Bounds(dialog, options).X).Within(.5));
+        }
+        else
+        {
+            Assert.That(Bounds(dialog, top[0]).Right, Is.LessThan(Bounds(dialog, top[2]).X + 1));
+            Assert.That(Bounds(dialog, top[2]).Right, Is.LessThan(Bounds(dialog, options).X));
+        }
         Assert.That(toolbar.Bounds.Height, Is.EqualTo(28));
         Assert.That(top[0].GetVisualDescendants().OfType<Image>().Count(image => image.Bounds.Size == new Size(16, 16)), Is.EqualTo(1), "The toolbar must draw its original message icon.");
-        Assert.That(top[2].GetVisualDescendants().OfType<Image>().Count(image => image.Bounds.Size == new Size(16, 16)), Is.EqualTo(1), "The toolbar must draw its original template icon.");
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
             dialog.RequestedThemeVariant = theme;
             await Idle(dialog);
-            options.Open(); dialog.UpdateLayout();
+            CommitToolbarTestDriver.AssertLayout(dialog);
+            MenuItem templates = top[2];
+            MenuItem templatePresentation = CommitToolbarTestDriver.Presentation(dialog, templates, morePopup =>
+            { using var moreFrame = Capture(morePopup, "classic-commit-toolbar-more-fr-" + theme + ".png"); });
+            Assert.That(templatePresentation.GetVisualDescendants().OfType<Image>().Count(image => image.Bounds.Size == new Size(16, 16)), Is.EqualTo(1), "The visible template command must draw its original template icon, inline or in More.");
+            CommitToolbarTestDriver.OpenMenu(dialog, templates);
+            TopLevel templatePopup = (TopLevel)templates.Items.OfType<MenuItem>().First(item => item.IsVisible && item.IsEnabled).GetVisualRoot()!;
+            using (var templateFrame = Capture(templatePopup, "classic-commit-templates-popup-fr-" + theme + ".png")) { }
+            toolbar.Close(); CommitToolbarTestDriver.Pump(dialog);
+            CommitToolbarTestDriver.OpenMenu(dialog, options);
             TopLevel popup = (TopLevel)Option(dialog, "noVerifyToolStripMenuItem").GetVisualRoot()!;
             Assert.That(options.IsSubMenuOpen, Is.True);
             Assert.That(Option(dialog, "noVerifyToolStripMenuItem").Bounds.Height, Is.GreaterThan(0));
