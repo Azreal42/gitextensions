@@ -347,6 +347,7 @@ public static class RevisionHistoryRow
         public override void Render(DrawingContext context)
         {
             base.Render(context);
+            if (Bounds.Width <= 0 || Bounds.Height <= 0) { return; }
             context.FillRectangle(new SolidColorBrush(_background), new Rect(Bounds.Size));
             Typeface face = new(_applicationFont.Family);
             FormattedText estimate = new(_initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20, _foreground);

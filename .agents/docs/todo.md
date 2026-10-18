@@ -291,4 +291,5 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 [ADR0097](adr/preferences/general/0097-general-settings-policies.md) : groupes Windows et brouillons reliés aux profils existants, plafond global distinct des lots, recherche, démarrage optionnel, autostash commun, histogram et compteurs/statuts réels. Console séparée et télémétrie restent des adaptations explicites. Aucun nouveau full ni paquet accepté pour ce code en cours ; la référence vérifiée reste 7c52b3974.
 
 - [x] Ciblé03 : 145/145 dont 105 nouveaux cas General ; Git réel, profils concurrents/échecs, clavier et rendus EN/FR clair/sombre. Plafond Windows séparé des lots ; deux fixtures historiques adaptées explicitement à cette distinction, sans retrait de cas.
-- [ ] Suites complètes fraîches, paquet exact et parcours natifs General ; niveaux inchangés jusque-là.
+- [x] Garde de rendu des avatars repliés : défaut du full01 reproduit par trois cas rouges puis corrigé, ancien parcours View inchangé ; ciblé04 155/155.
+- [ ] Full02 frais sur la source corrigée, paquet exact et parcours natifs General ; full01 interrompu/rejeté, niveaux inchangés jusque-là.
