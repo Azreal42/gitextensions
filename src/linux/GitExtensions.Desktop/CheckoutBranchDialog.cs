@@ -47,6 +47,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private bool _closeOwnerWhenIdle;
     private IReadOnlyList<GitReference> _references = [];
     private bool? _dirty;
+    private bool _initialized;
     private bool _bare;
     private string? _originalStash;
     public GitCheckoutResult? LastResult { get; private set; }
@@ -171,6 +172,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                 catch (GitCommandException exception) when (exception.Result.ExitCode == 1) { branch = T("detached"); }
             }
             _current.Text = T("Current branch:") + " " + branch + (_dirty == true ? "    " + status!.Changes.Count + " " + T("Local changes") : "");
+            _initialized = true;
             Status.Text = _bare ? T("This operation requires a working tree.") : T("Select branch");
         }, cancellationToken: cancellationToken);
         if (IsVisible && !IsKeyboardFocusWithin)
@@ -323,7 +325,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         _revision.IsVisible = revision;
         _remoteOptions.IsVisible = _remote.IsChecked == true;
         _newName.IsEnabled = !IsBusy && _remote.IsChecked == true && _newMode.SelectedIndex > 0;
-        _changes.IsVisible = _dirty != false;
+        _changes.IsVisible = _initialized && _dirty != false;
         _includeUntracked.IsVisible = _reapply.IsVisible = _stash.IsChecked == true;
         _default.IsEnabled = !IsBusy && Changes != LocalChangesAction.Reset;
         if (Changes == LocalChangesAction.Reset) { _default.IsChecked = false; }

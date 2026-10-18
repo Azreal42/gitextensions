@@ -292,4 +292,4 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Ciblé03 : 145/145 dont 105 nouveaux cas General ; Git réel, profils concurrents/échecs, clavier et rendus EN/FR clair/sombre. Plafond Windows séparé des lots ; deux fixtures historiques adaptées explicitement à cette distinction, sans retrait de cas.
 - [x] Garde de rendu des avatars repliés : défaut du full01 reproduit par trois cas rouges puis corrigé, ancien parcours View inchangé ; ciblé04 155/155.
-- [ ] Full02 frais sur la source corrigée, paquet exact et parcours natifs General ; full01 interrompu/rejeté, niveaux inchangés jusque-là.
+- [ ] Full03 frais sur la source corrigée, paquet exact et parcours natifs General ; full01 interrompu/rejeté, full02 terminé avec un échec Checkout, niveaux inchangés jusque-là.
