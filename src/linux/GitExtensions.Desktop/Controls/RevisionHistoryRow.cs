@@ -37,7 +37,7 @@ public static class RevisionHistoryRow
         if (refs.Any(reference => reference.IsCurrent)) { message.Subject.FontWeight = FontWeight.Bold; }
         row.Children.Add(message);
         Grid author = new() { Name = "RevisionAuthor", ColumnDefinitions = new ColumnDefinitions("20,*") };
-        InitialsAvatar avatar = new(commit.AuthorEmail, commit.AuthorName)
+        AvatarImageControl avatar = new(commit.AuthorEmail, commit.AuthorName)
         { Name = "RevisionAuthorAvatar", Width = 16, Height = 16, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         author.Children.Add(avatar);
         TextBlock authorName = Cell("RevisionAuthorName", commit.AuthorName);
@@ -329,36 +329,4 @@ public static class RevisionHistoryRow
         }
     }
 
-    private sealed class InitialsAvatar : Control
-    {
-        private readonly ResolvedDesktopFont _applicationFont = DesktopFonts.For(DesktopFontRole.Application);
-        private static readonly string[] Palette = ["SlateGray", "RoyalBlue", "Purple", "OrangeRed", "Teal", "OliveDrab"];
-        private readonly string _initials;
-        private readonly Color _background;
-        private readonly IBrush _foreground;
-        public InitialsAvatar(string email, string name)
-        {
-            _initials = GourceAvatarProtocol.Initials(email, name);
-            int index = string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(name) ? 0 : GourceAvatarProtocol.InitialsColorIndex(email, Palette.Length);
-            _background = Color.Parse(Palette[index]);
-            _foreground = Luminance(_background) > .185 ? Brushes.Black : Brushes.White;
-            ToolTip.SetTip(this, name + " <" + email + ">");
-        }
-        public override void Render(DrawingContext context)
-        {
-            base.Render(context);
-            if (Bounds.Width <= 0 || Bounds.Height <= 0) { return; }
-            context.FillRectangle(new SolidColorBrush(_background), new Rect(Bounds.Size));
-            Typeface face = new(_applicationFont.Family);
-            FormattedText estimate = new(_initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20, _foreground);
-            double ratio = Math.Min(Bounds.Width, Bounds.Height) / Math.Max(estimate.WidthIncludingTrailingWhitespace, estimate.Height);
-            FormattedText text = new(_initials, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, face, 20 * ratio, _foreground);
-            context.DrawText(text, new Point(Math.Max(0, (Bounds.Width - text.WidthIncludingTrailingWhitespace) / 2), Math.Max(0, (Bounds.Height - text.Height) / 2)));
-        }
-        private static double Luminance(Color color)
-        {
-            static double Linear(byte value) { double c = value / 255d; return c <= .04045 ? c / 12.92 : Math.Pow((c + .055) / 1.055, 2.4); }
-            return .2126 * Linear(color.R) + .7152 * Linear(color.G) + .0722 * Linear(color.B);
-        }
-    }
 }

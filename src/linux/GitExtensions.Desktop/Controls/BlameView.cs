@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Desktop.Avatars;
 using System.Globalization;
 using System.Net.Http;
 using Avalonia;
@@ -34,9 +35,14 @@ public sealed class BlameView : UserControl, IDisposable
     private readonly AuthorMargin _authors;
     private readonly Bitmap? _avatar;
     private readonly IGourceAvatarProvider _avatarProvider;
+    private readonly bool _usesDefaultAvatarProvider;
+    private AvatarWindowLifetime? _avatarWindow;
     private readonly Dictionary<string, Bitmap> _avatars = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _avatarOperation;
+    private readonly HashSet<Task> _avatarReads = [];
+    private Task? _avatarClose;
+    private bool _avatarClosing;
     private bool _disposed;
     private bool _showAvatar = true;
     private GitFileBlame? _blame;
@@ -78,8 +84,12 @@ public sealed class BlameView : UserControl, IDisposable
     public bool DisplayAuthorFirst { get; set; }
     public bool ShowLineNumbers { get; set; }
     public bool ShowOriginalPath { get; set; } = true;
-    public static IGourceAvatarProvider DefaultAvatarProvider { get; set; } = new GourceAvatarProvider();
+    private static readonly IGourceAvatarProvider LegacyDefaultAvatarProvider = new GourceAvatarProvider();
+    internal static IGourceAvatarProvider OriginalDefaultAvatarProvider => LegacyDefaultAvatarProvider;
+    public static IGourceAvatarProvider DefaultAvatarProvider { get; set; } = LegacyDefaultAvatarProvider;
     public Task AvatarLoading { get; private set; } = Task.CompletedTask;
+    internal event Action<Task>? AvatarReadStarted;
+    internal Task AvatarCompletion => Task.WhenAll(_avatarReads.ToArray());
     public bool ShowAvatar
     {
         get => _showAvatar;
@@ -95,9 +105,10 @@ public sealed class BlameView : UserControl, IDisposable
     public BlameView(IGourceAvatarProvider? avatarProvider = null)
     {
         _avatarProvider = avatarProvider ?? DefaultAvatarProvider;
+        _usesDefaultAvatarProvider = avatarProvider is null && ReferenceEquals(_avatarProvider, LegacyDefaultAvatarProvider);
         Uri image = new("avares://GitExtensions/Assets/Icons/User80.png");
         if (AssetLoader.Exists(image)) { using Stream stream = AssetLoader.Open(image); _avatar = new Bitmap(stream); }
-        _authors = new(this) { Name = "BlameAuthorMargin" };
+        _authors = new(this) { Name = "BlameAuthorMargin", ClipToBounds = true };
         TextView.Editor.PropertyChanged += EditorFontChanged;
         Border tooltip = new() { Child = _tooltipText, Padding = new Thickness(8), BorderThickness = new Thickness(1) };
         tooltip.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicTooltipBrush"));
@@ -121,8 +132,19 @@ public sealed class BlameView : UserControl, IDisposable
             if (!_settingBlame && !TextView.IsUpdatingText) { SelectLine(TextView.Editor.TextArea.Caret.Line, moveCaret: false); }
         };
         ActualThemeVariantChanged += (_, _) => RefreshDisplay();
-        AttachedToVisualTree += (_, _) => { SetPreferences(_preferencesStore.Load(), persist: false); StartAvatarLoading(); };
-        DetachedFromVisualTree += (_, _) => { CancelAvatarLoading(); ClearHover(); };
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (TopLevel.GetTopLevel(this) is Window window)
+            { _avatarWindow = AvatarWindowLifetime.For(window); _avatarWindow.Changed += AvatarBindingChanged; }
+            SetPreferences(_preferencesStore.Load(), persist: false); StartAvatarLoading();
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            if (_avatarWindow is not null) { _avatarWindow.Changed -= AvatarBindingChanged; _avatarWindow = null; }
+            CancelAvatarLoading(); _authors.ClearAvatarPresenters(); ClearHover();
+        };
+        TextView.Editor.TextArea.TextView.VisualLinesChanged += (_, _) => _authors.QueueAvatarLayout();
+        TextView.Editor.TextArea.TextView.ScrollOffsetChanged += (_, _) => _authors.QueueAvatarLayout();
         Content = _content;
         SetPreferences(_preferencesStore.Load(), persist: false);
     }
@@ -195,11 +217,20 @@ public sealed class BlameView : UserControl, IDisposable
     private IBrush GroupBrush => Brush.Parse(ActualThemeVariant == ThemeVariant.Dark ? "#414141" : "#e3e3e3");
     private bool IsSelected(GitFileBlameLine line) => (_hoveredHash ?? SelectedLine?.Line.Hash) == line.Line.Hash;
     private static readonly IBrush[] Ages = new[] { "#f7fcf5", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#00441b" }.Select(Brush.Parse).ToArray();
+    private bool UsesSharedAvatars => _usesDefaultAvatarProvider && _avatarWindow?.HasBinding == true;
+    private void AvatarBindingChanged() => StartAvatarLoading();
+    internal void TrackAvatarRead(Task read)
+    {
+        _avatarReads.Add(read); AvatarLoading = read; AvatarReadStarted?.Invoke(read); _ = RetireAvatarReadAsync(read);
+    }
     public void CancelAvatarLoading() { _avatarOperation?.Cancel(); _avatarOperation = null; }
     private void StartAvatarLoading()
     {
         CancelAvatarLoading();
-        if (_disposed || !_showAvatar || _blame is null || this.GetVisualRoot() is null) { return; }
+        if (UsesSharedAvatars && !_disposed && !_avatarClosing)
+        { _authors.QueueAvatarLayout(); return; }
+        _authors.ClearAvatarPresenters();
+        if (_disposed || _avatarClosing || !_showAvatar || _blame is null || this.GetVisualRoot() is null) { return; }
         CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         _avatarOperation = operation;
         int size = Math.Max(1, (int)Math.Ceiling(TextView.Editor.TextArea.TextView.DefaultLineHeight) + 1);
@@ -207,7 +238,19 @@ public sealed class BlameView : UserControl, IDisposable
             .Where(line => !line.Hash.All(character => character == '0') && !string.IsNullOrWhiteSpace(line.AuthorEmail))
             .DistinctBy(line => line.AuthorEmail.Trim(), StringComparer.OrdinalIgnoreCase)
             .Where(line => !_avatars.ContainsKey(line.AuthorEmail.Trim())).ToArray();
-        AvatarLoading = LoadAvatarsAsync(authors, size, operation);
+        TrackAvatarRead(LoadAvatarsAsync(authors, size, operation));
+    }
+    private async Task RetireAvatarReadAsync(Task read)
+    {
+        try { await read; }
+        catch { /* The initiating view owns its optional-image fallback. */ }
+        finally { _avatarReads.Remove(read); }
+    }
+    internal Task BeginAvatarClose()
+    {
+        if (_avatarClose is not null) { return _avatarClose; }
+        _avatarClosing = true; CancelAvatarLoading(); _authors.ClearAvatarPresenters();
+        return _avatarClose = AvatarCompletion;
     }
     private async Task LoadAvatarsAsync(GitBlameLine[] authors, int size, CancellationTokenSource operation)
     {
@@ -239,7 +282,8 @@ public sealed class BlameView : UserControl, IDisposable
     public void Dispose()
     {
         if (_disposed) { return; }
-        _disposed = true; _lifetime.Cancel(); CancelAvatarLoading(); ClearHover();
+        _disposed = true; _lifetime.Cancel(); CancelAvatarLoading(); _authors.ClearAvatarPresenters(); ClearHover();
+        if (_avatarWindow is not null) { _avatarWindow.Changed -= AvatarBindingChanged; _avatarWindow = null; }
         TextView.Editor.PropertyChanged -= EditorFontChanged;
         _content.Dispose(); _avatar?.Dispose();
         foreach (Bitmap avatar in _avatars.Values) { avatar.Dispose(); }
@@ -429,6 +473,77 @@ public sealed class BlameView : UserControl, IDisposable
 
     private sealed class AuthorMargin(BlameView owner) : AbstractMargin
     {
+        private readonly Dictionary<int, (AvatarImageControl Control, Rect Bounds)> _avatarSlots = [];
+        private bool _avatarLayoutQueued;
+
+        internal void QueueAvatarLayout()
+        {
+            if (_avatarLayoutQueued || owner._disposed || owner._avatarClosing) { return; }
+            _avatarLayoutQueued = true;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                _avatarLayoutQueued = false;
+                if (!owner._disposed && !owner._avatarClosing) { UpdateAvatarPresenters(); }
+            });
+        }
+
+        internal void ClearAvatarPresenters()
+        {
+            if (_avatarSlots.Count == 0) { return; }
+            foreach (var slot in _avatarSlots.Values)
+            { _ = slot.Control.BeginClose(); VisualChildren.Remove(slot.Control); }
+            _avatarSlots.Clear(); InvalidateMeasure();
+        }
+
+        private void UpdateAvatarPresenters()
+        {
+            if (!owner.UsesSharedAvatars || !owner.ShowAvatar || !owner.IsEffectivelyVisible
+                || TextView?.VisualLinesValid != true || Bounds.Height <= 0)
+            { ClearAvatarPresenters(); return; }
+            Dictionary<int, (GitBlameLine Line, Rect Bounds)> visible = [];
+            foreach (VisualLine visual in TextView.VisualLines)
+            {
+                int index = visual.FirstDocumentLine.LineNumber - 1;
+                if (index < 0 || index >= owner.Lines.Count) { continue; }
+                GitBlameLine line = owner.Lines[index].Line;
+                if (index > 0 && owner.Lines[index - 1].Line.Hash == line.Hash
+                    || line.Hash.All(character => character == '0') || string.IsNullOrWhiteSpace(line.AuthorEmail)) { continue; }
+                double top = visual.VisualTop - TextView.VerticalOffset, size = Math.Min(visual.Height, 20);
+                if (size <= 0 || top + size <= 0 || top >= Bounds.Height) { continue; }
+                visible[index] = (line, new Rect(6, top, size, size));
+            }
+            bool changed = false;
+            foreach (int index in _avatarSlots.Keys.Where(index => !visible.ContainsKey(index)).ToArray())
+            {
+                AvatarImageControl control = _avatarSlots[index].Control;
+                _ = control.BeginClose(); VisualChildren.Remove(control); _avatarSlots.Remove(index); changed = true;
+            }
+            foreach (var item in visible)
+            {
+                int index = item.Key; var value = item.Value;
+                if (!_avatarSlots.TryGetValue(index, out var slot))
+                {
+                    AvatarImageControl control = new(role: AvatarImageRole.Blame, placeholder: AvatarPlaceholder.User80)
+                    { Name = "BlameAuthorAvatar", Tag = index };
+                    control.ReadStarted += owner.TrackAvatarRead;
+                    control.ImageChanged += InvalidateVisual;
+                    VisualChildren.Add(control); slot = (control, value.Bounds); changed = true;
+                }
+                slot.Control.SetIdentity(value.Line.AuthorEmail, value.Line.AuthorName, value.Line.Hash + ":" + index);
+                slot.Control.Width = value.Bounds.Width; slot.Control.Height = value.Bounds.Height;
+                if (slot.Bounds != value.Bounds) { changed = true; }
+                _avatarSlots[index] = (slot.Control, value.Bounds);
+            }
+            if (changed) { InvalidateMeasure(); InvalidateArrange(); InvalidateVisual(); }
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            foreach (var slot in _avatarSlots.Values) { slot.Control.Measure(slot.Bounds.Size); slot.Control.Arrange(slot.Bounds); }
+            QueueAvatarLayout();
+            return finalSize;
+        }
+
         private (Typeface Face, double Size, int Digits)? _numberMetrics;
         private double _numberWidth;
         private double NumberWidth()
@@ -479,8 +594,9 @@ public sealed class BlameView : UserControl, IDisposable
                     context.DrawText(number, new Point(8 + avatarWidth, textY));
                 }
                 if (!first) { continue; }
-                Bitmap? avatar = owner._avatars.GetValueOrDefault(line.Line.AuthorEmail.Trim()) ?? owner._avatar;
-                if (owner.ShowAvatar && avatar is not null)
+                Bitmap? avatar = owner.UsesSharedAvatars ? owner._avatar
+                    : owner._avatars.GetValueOrDefault(line.Line.AuthorEmail.Trim()) ?? owner._avatar;
+                if (owner.ShowAvatar && avatar is not null && (!owner.UsesSharedAvatars || !_avatarSlots.ContainsKey(index)))
                 { context.DrawImage(avatar, new Rect(avatar.Size), new Rect(6, top, avatarWidth, avatarWidth)); }
                 string text = owner.GetAuthorLine(line);
                 FormattedText author = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,

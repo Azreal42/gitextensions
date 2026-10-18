@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -5,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using GitCommands;
 using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 
@@ -14,12 +16,24 @@ namespace GitExtensions.Linux.Desktop;
 internal sealed class AppearanceSettingsPage : UserControl
 {
     internal const string TranslationHelpUrl = "https://github.com/gitextensions/gitextensions/wiki/Translations";
+    internal const string AvatarProviderHelpUrl = "https://git-extensions-documentation.readthedocs.org/en/main/settings.html#author-images-avatar-provider";
+    internal const string AvatarFallbackHelpUrl = "https://git-extensions-documentation.readthedocs.org/en/main/settings.html#author-images-avatar-fallback";
     private static readonly string[] Themes = ["Light", "Dark", "System"];
     private readonly TranslationCatalog _translations;
     private readonly LanguageCatalog _languages;
     private readonly Func<Window, Task>? _helpTranslateAsync;
-    private readonly CheckBox _relativeDate, _repoBranch, _avatar;
-    private readonly ComboBox _theme, _language;
+    private readonly CheckBox _relativeDate, _repoBranch, _avatar, _avatarCommitInfo;
+    private readonly ComboBox _theme, _language, _provider, _fallback;
+    private readonly NumericUpDown _cacheDays;
+    private readonly TextBox _customTemplate;
+    private readonly TextBlock _customTemplateLabel;
+    private readonly Button _clearCache;
+    private readonly Func<Window, CancellationToken, Task>? _clearAvatarCacheAsync;
+    private readonly Func<Window, string, Task>? _avatarHelpAsync;
+    private readonly CancellationToken _cancellationToken;
+    private readonly HashSet<Button> _avatarHelpBusy = [];
+    private CancellationTokenSource? _clearWait;
+    private bool _clearBusy;
     private readonly HyperlinkButton _helpTranslate;
     private readonly TextBlock _notice = new()
     { Name = "AppearanceSettingsNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
@@ -32,16 +46,24 @@ internal sealed class AppearanceSettingsPage : UserControl
         RelativeDate = _relativeDate.IsChecked == true,
         ShowRepoCurrentBranch = _repoBranch.IsChecked == true,
         ShowAvatar = _avatar.IsChecked == true,
+        ShowAuthorAvatarInCommitInfo = _avatarCommitInfo.IsChecked == true,
+        AvatarImageCacheDays = (int)(_cacheDays.Value ?? _accepted.AvatarImageCacheDays),
+        AvatarProvider = _provider.SelectedItem is AvatarProvider provider ? provider : _accepted.AvatarProvider,
+        AvatarFallbackType = _fallback.SelectedItem is AvatarFallbackType fallback ? fallback : _accepted.AvatarFallbackType,
+        CustomAvatarTemplate = _customTemplate.Text ?? "",
         Theme = _theme.SelectedItem is string theme && Themes.Contains(theme) ? theme : _accepted.Theme,
         Language = _languageEdited && _language.SelectedItem is LanguageChoice choice ? choice.Name : _accepted.Language
     };
 
     internal AppearanceSettingsPage(AppearanceSettingsValues initial, TranslationCatalog translations,
-        Func<Window, Task>? helpTranslateAsync = null, LanguageCatalog? languages = null)
+        Func<Window, Task>? helpTranslateAsync = null, LanguageCatalog? languages = null,
+        Func<Window, CancellationToken, Task>? clearAvatarCacheAsync = null,
+        Func<Window, string, Task>? avatarHelpAsync = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(initial); ArgumentNullException.ThrowIfNull(translations);
         _accepted = initial; _translations = translations; _languages = languages ?? LanguageCatalog.LoadDefault();
-        _helpTranslateAsync = helpTranslateAsync; Name = "AppearanceSettingsPage";
+        _helpTranslateAsync = helpTranslateAsync; _clearAvatarCacheAsync = clearAvatarCacheAsync;
+        _avatarHelpAsync = avatarHelpAsync; _cancellationToken = cancellationToken; Name = "AppearanceSettingsPage";
 
         Grid general = Rows("tlpnlGeneral");
         _relativeDate = Check("chkShowRelativeDate", "Show relative date instead of full date");
@@ -64,28 +86,37 @@ internal sealed class AppearanceSettingsPage : UserControl
 
         Grid author = Rows("tlpnlAuthor");
         _avatar = Check("ShowAuthorAvatarInCommitGraph", "Show author's avatar column in the commit graph");
-        ToolTip.SetTip(_avatar, _translations.Translate("The revision grid currently displays locally generated author initials."));
         AddWide(author, _avatar);
-        AddWide(author, UnavailableCheck("ShowAuthorAvatarInCommitInfo", "Show author's avatar in the commit info view",
-            "Author images in the commit information view are not available in this Linux version."));
-        NumericUpDown cacheDays = ClassicNumericInput.Create("_NO_TRANSLATE_DaysToCacheImages", 0, 400);
-        cacheDays.TextAlignment = TextAlignment.Right; cacheDays.Value = null;
-        Disable(cacheDays, "The configurable Windows avatar cache is not connected on Linux. This field does not change the existing avatar cache.");
-        AddField(author, Caption("lblCacheDays", "Cache images (days)"), cacheDays, UnavailableCaption());
-        const string providerLimit = "Configurable avatar providers are not connected to the Linux revision grid. The grid uses local author initials.";
-        const string fallbackLimit = "Configurable generated avatar styles are not available in the Linux revision grid.";
-        AddField(author, Caption("lblAvatarProvider", "Avatar provider"), UnavailableChoice("AvatarProvider", providerLimit),
-            UnavailableInfo("avatarProviderHelp", providerLimit));
-        AddField(author, Caption("lblNoImageService", "Fallback generated avatar style"),
-            UnavailableChoice("_NO_TRANSLATE_NoImageService", fallbackLimit), UnavailableInfo("pictureAvatarHelp", fallbackLimit));
-        TextBox template = new() { Name = "txtCustomAvatarTemplate", Text = "", Watermark = UnavailableText,
-            Height = 24, MinHeight = 24, Padding = new Thickness(4, 0), VerticalContentAlignment = VerticalAlignment.Center };
-        Disable(template, "Custom avatar templates are not interpreted by the Linux revision grid.");
-        AddField(author, Caption("lblCustomAvatarTemplate", "Custom avatar template"), template);
-        Button clearCache = new() { Name = "ClearImageCache", Content = Text("ClearImageCache", "Clear image cache"),
-            Height = 24, MinHeight = 24, Padding = new Thickness(6, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
-        Disable(clearCache, "There is no shared configurable Appearance avatar cache to clear in this Linux version.");
-        int clearRow = AddRow(author); Put(author, clearCache, clearRow, 1);
+        _avatarCommitInfo = Check("ShowAuthorAvatarInCommitInfo", "Show author's avatar in the commit info view");
+        AddWide(author, _avatarCommitInfo);
+        _cacheDays = ClassicNumericInput.Create("_NO_TRANSLATE_DaysToCacheImages", 0, 400, clipValueToMinMax: false);
+        _cacheDays.TextAlignment = TextAlignment.Right;
+        _cacheDays.HorizontalAlignment = HorizontalAlignment.Left;
+        AddField(author, Caption("lblCacheDays", "Cache images (days)"), _cacheDays);
+        _provider = Choice("AvatarProvider", Enum.GetValues<AvatarProvider>());
+        _provider.ItemTemplate = new FuncDataTemplate<AvatarProvider>((value, _) => new TextBlock { Text = value.ToString() });
+        _provider.SelectionChanged += (_, _) => UpdateAuthorOptions();
+        const string providerHelp = "The avatar provider defines the source for user-defined avatar images.\r\nThe \"Default\" provider uses GitHub and Gravatar,\r\nthe \"Custom\" provider allows you to set custom provider URLs and\r\n\"None\" disables user-defined avatars.\r\n\r\nClick this info icon for more details.";
+        AddField(author, Caption("lblAvatarProvider", "Avatar provider"), _provider,
+            AvatarHelp("avatarProviderHelp", AvatarProviderHelpUrl, providerHelp));
+        _fallback = Choice("_NO_TRANSLATE_NoImageService", Enum.GetValues<AvatarFallbackType>());
+        _fallback.ItemTemplate = new FuncDataTemplate<AvatarFallbackType>((value, _) => new TextBlock
+        { Text = value == AvatarFallbackType.AuthorInitials ? "Author initials" : value.ToString() });
+        const string fallbackHelp = "A default image, if the provider has no image for the email address.\r\n\r\nClick this info icon for more details.";
+        ToolTip.SetTip(_fallback, _translations.Translate(fallbackHelp));
+        AddField(author, Caption("lblNoImageService", "Fallback generated avatar style"), _fallback,
+            AvatarHelp("pictureAvatarHelp", AvatarFallbackHelpUrl, fallbackHelp));
+        _customTemplateLabel = Caption("lblCustomAvatarTemplate", "Custom avatar template");
+        _customTemplate = new() { Name = "txtCustomAvatarTemplate", Height = 24, MinHeight = 24,
+            Padding = new Thickness(4, 0), VerticalContentAlignment = VerticalAlignment.Center };
+        AddField(author, _customTemplateLabel, _customTemplate);
+        _clearCache = new() { Name = "ClearImageCache", Content = Text("ClearImageCache", "Clear image cache"),
+            Height = 24, MinHeight = 24, Padding = new Thickness(6, 0), HorizontalAlignment = HorizontalAlignment.Stretch,
+            IsEnabled = clearAvatarCacheAsync is not null };
+        if (clearAvatarCacheAsync is null)
+        { ToolTip.SetTip(_clearCache, _translations.Translate("The avatar cache is not connected to this settings window.")); }
+        _clearCache.Click += async (_, _) => await ClearAvatarCacheAsync();
+        int clearRow = AddRow(author); Put(author, _clearCache, clearRow, 1);
 
         Grid language = Rows("tlpnlLanguage");
         _language = Choice("Language", _languages.Choices);
@@ -127,7 +158,7 @@ internal sealed class AppearanceSettingsPage : UserControl
             if (args.Key == Key.Enter && args.KeyModifiers == KeyModifiers.None && args.Source is not Button)
             { args.Handled = true; }
         }, RoutingStrategies.Bubble);
-        DetachedFromVisualTree += (_, _) => ++_revision;
+        DetachedFromVisualTree += (_, _) => { ++_revision; _clearWait?.Cancel(); };
         AcceptSaved(initial);
     }
 
@@ -142,6 +173,20 @@ internal sealed class AppearanceSettingsPage : UserControl
         }
         else if (_languageEdited)
         { return Invalid(_language, "Select an installed translation.", out error); }
+        if (_provider.SelectedItem is not AvatarProvider provider || !Enum.IsDefined(provider))
+        { return Invalid(_provider, "Select an avatar provider.", out error); }
+        if (_fallback.SelectedItem is not AvatarFallbackType fallback || !Enum.IsDefined(fallback))
+        { return Invalid(_fallback, "Select a fallback generated avatar style.", out error); }
+        decimal? days = _cacheDays.Value;
+        if (_cacheDays.Text is string cacheText)
+        {
+            if (!decimal.TryParse(cacheText, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal parsed))
+            { return Invalid(_cacheDays, "Enter a whole number of cache days between 0 and 400.", out error); }
+            days = parsed;
+        }
+        if (days is not decimal number || number < 0 || number > 400 || decimal.Truncate(number) != number)
+        { return Invalid(_cacheDays, "Enter a whole number of cache days between 0 and 400.", out error); }
+        _cacheDays.Value = number;
         // An unknown initial language intentionally remains unchanged until the user chooses a replacement.
         // It is diagnosed with the same English fallback used by the existing Settings language selector.
         ShowError(null); error = null; return true;
@@ -156,12 +201,65 @@ internal sealed class AppearanceSettingsPage : UserControl
             _accepted = published; _languageEdited = false;
             _relativeDate.IsChecked = published.RelativeDate; _repoBranch.IsChecked = published.ShowRepoCurrentBranch;
             _avatar.IsChecked = published.ShowAvatar;
+            _avatarCommitInfo.IsChecked = published.ShowAuthorAvatarInCommitInfo;
+            _cacheDays.Value = Math.Clamp(published.AvatarImageCacheDays, 0, 400);
+            _provider.SelectedItem = published.AvatarProvider; _fallback.SelectedItem = published.AvatarFallbackType;
+            _customTemplate.Text = published.CustomAvatarTemplate;
             _theme.SelectedItem = Themes.Contains(published.Theme) ? published.Theme : "Light";
             _language.SelectedItem = string.IsNullOrEmpty(published.Language) ? null : _languages.Find(published.Language);
         }
         finally { _loading = false; }
-        UpdateLanguageDiagnostic(); ShowError(null);
+        UpdateLanguageDiagnostic(); UpdateAuthorOptions(); ShowError(null);
     }
+
+    private void UpdateAuthorOptions()
+    {
+        bool custom = _provider.SelectedItem is AvatarProvider.Custom;
+        // SelectionChanged can run while the constructor is still creating the template fields.
+        if (_customTemplateLabel is not null) { _customTemplateLabel.IsVisible = custom; }
+        if (_customTemplate is not null) { _customTemplate.IsVisible = custom; }
+    }
+
+    private Button AvatarHelp(string name, string url, string tooltip)
+    {
+        Button button = new() { Name = name, Content = OriginalMenuItems.Icon("information.png"),
+            Width = 20, Height = 24, MinWidth = 0, MinHeight = 0, Padding = default,
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
+            IsEnabled = _avatarHelpAsync is not null };
+        ToolTip.SetTip(button, _translations.Translate(tooltip));
+        button.Click += async (_, _) =>
+        {
+            if (_avatarHelpAsync is null || _cancellationToken.IsCancellationRequested || TopLevel.GetTopLevel(this) is not Window { IsVisible: true } owner || !_avatarHelpBusy.Add(button)) { return; }
+            long revision = _revision; button.IsEnabled = false; ShowError(null);
+            try { await _avatarHelpAsync(owner, url); }
+            catch (OperationCanceledException) { }
+            catch (Exception error)
+            { if (Current(owner, revision)) { ShowError(error.Message); } }
+            finally { _avatarHelpBusy.Remove(button); button.IsEnabled = _avatarHelpAsync is not null; }
+        };
+        return button;
+    }
+
+    private async Task ClearAvatarCacheAsync()
+    {
+        if (_clearBusy || _clearAvatarCacheAsync is null || _cancellationToken.IsCancellationRequested
+            || TopLevel.GetTopLevel(this) is not Window { IsVisible: true } owner) { return; }
+        _clearBusy = true; _clearCache.IsEnabled = false;
+        using CancellationTokenSource wait = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken);
+        _clearWait = wait; long revision = _revision; ShowError(null);
+        try { await _clearAvatarCacheAsync(owner, wait.Token); }
+        catch (OperationCanceledException) when (wait.IsCancellationRequested) { }
+        catch (Exception error)
+        { if (Current(owner, revision) && !wait.IsCancellationRequested) { ShowError(error.Message); } }
+        finally
+        {
+            if (ReferenceEquals(_clearWait, wait)) { _clearWait = null; }
+            _clearBusy = false; _clearCache.IsEnabled = _clearAvatarCacheAsync is not null;
+        }
+    }
+
+    private bool Current(Window owner, long revision) => revision == _revision && !_cancellationToken.IsCancellationRequested
+        && owner.IsVisible && TopLevel.GetTopLevel(this) == owner;
 
     private async Task OpenTranslationHelpAsync()
     {
@@ -188,8 +286,6 @@ internal sealed class AppearanceSettingsPage : UserControl
     }
 
     private string UnavailableText => _translations.Translate("unavailable on Linux");
-    private TextBlock UnavailableCaption() => new() { Text = UnavailableText, TextWrapping = TextWrapping.Wrap,
-        VerticalAlignment = VerticalAlignment.Center };
     private CheckBox Check(string name, string source) => new()
     {
         Name = name, Content = new TextBlock { Text = Text(name, source), TextWrapping = TextWrapping.Wrap },
@@ -205,13 +301,6 @@ internal sealed class AppearanceSettingsPage : UserControl
     {
         ComboBox choice = Choice(name, new[] { UnavailableText }); choice.SelectedIndex = 0;
         Disable(choice, explanation); return choice;
-    }
-    private Button UnavailableInfo(string name, string explanation)
-    {
-        Button info = new() { Name = name, Content = OriginalMenuItems.Icon("information.png"),
-            Width = 20, Height = 24, MinWidth = 0, MinHeight = 0, Padding = default,
-            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
-        Disable(info, explanation); return info;
     }
     private void Disable(Control control, string explanation)
     { control.IsEnabled = false; ToolTip.SetTip(control, _translations.Translate(explanation)); }

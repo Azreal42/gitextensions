@@ -156,6 +156,7 @@ public sealed partial class MainWindow
 
     private void InitializeCommitInformation()
     {
+        InitializeAvatarLifetime();
         _commitInfo.InteractionError += message => { if (!_commitInfoClosing) { _state.Text = message; AppendOutput(message); } };
         _commitInfo.CommandRequested += async (command, argument) =>
         {
@@ -190,7 +191,8 @@ public sealed partial class MainWindow
             // Shared branch workers outlive a cancelled consumer wait. Stop their owner before
             // the close snapshot and keep the window alive until the real Git reads have drained.
             Task branchesDispose = DisposeRepositoryBranchReadersAsync();
-            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync(), branchesDispose);
+            Task avatars = CloseAvatarReadersAsync();
+            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync(), branchesDispose, avatars);
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterCommitInformationAsync(pending); }
             else { _commitInfoCloseReady = true; }
         };

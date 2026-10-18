@@ -24,6 +24,9 @@ public sealed class CommitInformationView : UserControl, IDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HashSet<Task> _reads = [];
     private readonly Grid _header = new() { ColumnDefinitions = new("Auto,*"), ColumnSpacing = 12, Margin = new(8, 8, 16, 8) };
+    private readonly Grid _headerLayout = new() { ColumnDefinitions = new("Auto,*") };
+    private readonly AvatarImageControl _authorAvatar = new(role: AvatarImageRole.CommitInfo, placeholder: AvatarPlaceholder.User80)
+    { Name = "CommitInformationAvatar", Width = 80, Height = 80, Margin = new(8, 8, 0, 8), VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
     private readonly Dictionary<string, (TextBlock Label, Control Value)> _fields = [];
     private readonly StackPanel _supplementary = new() { Name = "CommitInformationReferences", Margin = new(8, 8, 16, 8), Spacing = 10 };
     private readonly List<MenuItem> _optionItems = [];
@@ -59,7 +62,7 @@ public sealed class CommitInformationView : UserControl, IDisposable
     public string Text => _headerText + (string.IsNullOrEmpty(MessageControl.Text) ? "" : "\n\n" + MessageControl.Text)
         + (string.IsNullOrEmpty(_referenceText) ? "" : "\n\n" + _referenceText);
     public bool IsLoading => _reads.Any(task => !task.IsCompleted);
-    public Task Completion => Task.WhenAll(_reads.ToArray());
+    public Task Completion => Task.WhenAll(_reads.Append(_authorAvatar.Completion).ToArray());
     public event Action<CommitInformationCommand, string?>? CommandRequested;
     public event Action<string>? InteractionError;
 
@@ -80,7 +83,8 @@ public sealed class CommitInformationView : UserControl, IDisposable
         }
         Border message = new() { Child = MessageControl };
         message.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicMenuBrush"));
-        StackPanel content = new() { Children = { _header, message, _supplementary } };
+        _headerLayout.Children.Add(_authorAvatar); Grid.SetColumn(_header, 1); _headerLayout.Children.Add(_header);
+        StackPanel content = new() { Children = { _headerLayout, message, _supplementary } };
         ScrollViewer viewer = new()
         {
             Name = "CommitInformationScroll", Content = content,
@@ -143,6 +147,7 @@ public sealed class CommitInformationView : UserControl, IDisposable
         _containment = null; _annotations = []; _description = null; _showAllBranches = _showAllTags = false;
         if (repository is null || revision is null) { ClearContent(); return; }
         if (!same) { PublishHeader(KnownDetails(revision)); _supplementary.Children.Clear(); _referenceText = ""; }
+        _authorAvatar.SetActive(true);
     }
 
     public void SetMessage(string text)
@@ -153,12 +158,13 @@ public sealed class CommitInformationView : UserControl, IDisposable
     public void Cancel()
     {
         _generation++; _loadedGeneration = -1; _current?.Cancel(); _current = null;
+        _authorAvatar.SetActive(false);
     }
 
     public void BeginClose()
     {
         if (_closing) { return; }
-        _closing = true; Cancel(); _lifetime.Cancel();
+        _closing = true; Cancel(); _lifetime.Cancel(); _authorAvatar.BeginClose();
     }
 
     public Task LoadAsync(CancellationToken cancellationToken = default)
@@ -232,7 +238,10 @@ public sealed class CommitInformationView : UserControl, IDisposable
         string message = details.Message.TrimEnd('\r', '\n');
         if (!string.IsNullOrEmpty(details.Notes)) { message += "\n\n" + T("Notes") + ":\n" + details.Notes.TrimEnd('\r', '\n'); }
         if (MessageControl.Text != message) { MessageControl.Text = message; }
-        _header.IsVisible = true;
+        _header.IsVisible = _headerLayout.IsVisible = true;
+        _authorAvatar.SetIdentity(string.IsNullOrWhiteSpace(details.Author.Email) ? details.Committer.Email : details.Author.Email,
+            string.IsNullOrWhiteSpace(details.Author.Name) ? details.Committer.Name : details.Author.Name, details.Hash);
+        _authorAvatar.SetActive(true);
 
         void Set(string key, string label, string? value)
         {
@@ -401,7 +410,8 @@ public sealed class CommitInformationView : UserControl, IDisposable
         new(commit.AuthorName, commit.AuthorEmail, commit.AuthoredAt), new(commit.AuthorName, commit.AuthorEmail, commit.AuthoredAt), commit.Subject, commit.Body, null);
     private void ClearContent()
     {
-        _header.IsVisible = false; _headerText = _copyHeaderText = _referenceText = ""; MessageControl.Text = ""; _supplementary.Children.Clear();
+        _authorAvatar.SetActive(false); _authorAvatar.SetIdentity(null, null);
+        _header.IsVisible = _headerLayout.IsVisible = false; _headerText = _copyHeaderText = _referenceText = ""; MessageControl.Text = ""; _supplementary.Children.Clear();
         _contextLink = null; _pointerMenuPending = false;
     }
 

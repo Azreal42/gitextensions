@@ -8,6 +8,11 @@ public sealed record DesktopPreferences
     public string Theme { get; init; } = "Light";
     public string? Language { get; init; }
     public bool ShowRepoCurrentBranch { get; init; } = true;
+    public bool ShowAuthorAvatarInCommitInfo { get; init; } = true;
+    public int AvatarImageCacheDays { get; init; } = 13;
+    public GitCommands.AvatarProvider AvatarProvider { get; init; } = GitCommands.AvatarProvider.None;
+    public GitCommands.AvatarFallbackType AvatarFallbackType { get; init; } = GitCommands.AvatarFallbackType.AuthorInitials;
+    public string CustomAvatarTemplate { get; init; } = "";
     public int HistoryLimit { get; init; } = 300;
     // HistoryLimit is the incremental batch size retained for existing profiles.
     // The Windows General policy is an independent total cap; zero is unlimited.
@@ -52,6 +57,10 @@ public sealed class PreferencesStore
         GitReferenceSorting sorting = value.ReferenceSorting ?? new();
         return value with
         {
+            AvatarImageCacheDays = Math.Clamp(value.AvatarImageCacheDays, 0, 400),
+            AvatarProvider = Enum.IsDefined(value.AvatarProvider) ? value.AvatarProvider : GitCommands.AvatarProvider.None,
+            AvatarFallbackType = Enum.IsDefined(value.AvatarFallbackType) ? value.AvatarFallbackType : GitCommands.AvatarFallbackType.AuthorInitials,
+            CustomAvatarTemplate = value.CustomAvatarTemplate ?? "",
             MaxRevisionGraphCommits = Math.Clamp(value.MaxRevisionGraphCommits, 0, 1_000_000),
             RevisionGridQuickSearchTimeout = Math.Clamp(value.RevisionGridQuickSearchTimeout, 100, 1_000_000),
             ShowSubmoduleStatus = (value.ShowGitStatusInBrowseToolbar || value.ShowGitStatusForArtificialCommits) && value.ShowSubmoduleStatus,

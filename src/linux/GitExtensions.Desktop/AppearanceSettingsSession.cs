@@ -30,7 +30,12 @@ internal sealed class AppearanceSettingsSession
         {
             Theme = Pick(_baseline.Theme, draft.Theme, latest.Theme),
             Language = Pick(_baseline.Language, draft.Language, latest.Language),
-            ShowRepoCurrentBranch = Pick(_baseline.ShowRepoCurrentBranch, draft.ShowRepoCurrentBranch, latest.ShowRepoCurrentBranch)
+            ShowRepoCurrentBranch = Pick(_baseline.ShowRepoCurrentBranch, draft.ShowRepoCurrentBranch, latest.ShowRepoCurrentBranch),
+            ShowAuthorAvatarInCommitInfo = Pick(_baseline.ShowAuthorAvatarInCommitInfo, draft.ShowAuthorAvatarInCommitInfo, latest.ShowAuthorAvatarInCommitInfo),
+            AvatarImageCacheDays = Pick(_baseline.AvatarImageCacheDays, draft.AvatarImageCacheDays, latest.AvatarImageCacheDays),
+            AvatarProvider = Pick(_baseline.AvatarProvider, draft.AvatarProvider, latest.AvatarProvider),
+            AvatarFallbackType = Pick(_baseline.AvatarFallbackType, draft.AvatarFallbackType, latest.AvatarFallbackType),
+            CustomAvatarTemplate = Pick(_baseline.CustomAvatarTemplate, draft.CustomAvatarTemplate, latest.CustomAvatarTemplate)
         };
     }
 
@@ -40,7 +45,12 @@ internal sealed class AppearanceSettingsSession
         // Called synchronously after General's real desktop write, including when a subsequent
         // workflow profile fails. This acknowledgement has no profile IO or background work.
         _baseline = _baseline with
-        { Theme = draft.Theme, Language = draft.Language, ShowRepoCurrentBranch = draft.ShowRepoCurrentBranch };
+        {
+            Theme = draft.Theme, Language = draft.Language, ShowRepoCurrentBranch = draft.ShowRepoCurrentBranch,
+            ShowAuthorAvatarInCommitInfo = draft.ShowAuthorAvatarInCommitInfo, AvatarImageCacheDays = draft.AvatarImageCacheDays,
+            AvatarProvider = draft.AvatarProvider, AvatarFallbackType = draft.AvatarFallbackType,
+            CustomAvatarTemplate = draft.CustomAvatarTemplate
+        };
     }
 
     /// <summary>Save only Appearance's edited View fields; an unchanged active View remains session-only.</summary>
@@ -93,12 +103,17 @@ internal sealed class AppearanceSettingsSession
     private static void Validate(AppearanceSettingsValues draft)
     {
         if (draft.Theme is not ("Light" or "Dark" or "System")) { throw new ArgumentException("Select a valid theme.", nameof(draft)); }
+        if (draft.AvatarImageCacheDays is < 0 or > 400 || !Enum.IsDefined(draft.AvatarProvider) || !Enum.IsDefined(draft.AvatarFallbackType))
+        { throw new ArgumentException("Select valid author image settings.", nameof(draft)); }
     }
     private static T Pick<T>(T baseline, T draft, T current)
         => EqualityComparer<T>.Default.Equals(baseline, draft) ? current : draft;
     private static AppearanceSettingsValues Read(DesktopPreferences desktop, HistoryViewPreferences active) => new()
     {
         Theme = desktop.Theme, Language = desktop.Language, ShowRepoCurrentBranch = desktop.ShowRepoCurrentBranch,
-        RelativeDate = active.RelativeDate, ShowAvatar = active.ShowAvatar
+        RelativeDate = active.RelativeDate, ShowAvatar = active.ShowAvatar,
+        ShowAuthorAvatarInCommitInfo = desktop.ShowAuthorAvatarInCommitInfo, AvatarImageCacheDays = desktop.AvatarImageCacheDays,
+        AvatarProvider = desktop.AvatarProvider, AvatarFallbackType = desktop.AvatarFallbackType,
+        CustomAvatarTemplate = desktop.CustomAvatarTemplate
     };
 }

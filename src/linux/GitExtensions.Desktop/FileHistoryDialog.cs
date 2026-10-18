@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Desktop.Avatars;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
@@ -14,6 +15,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed class FileHistoryDialog : RepositoryDialog
 {
+    private readonly AvatarWindowLifetime _avatarLifetime;
     private readonly TextBox _file = new() { Name = "FileHistoryPath" };
     private readonly TextBox _revision = new() { Name = "FileHistoryRevision" };
     private readonly TextBlock _sourceNotice = new() { Name = "FileHistorySourceNotice", IsVisible = false, Margin = new Avalonia.Thickness(9, 0, 9, 4), TextWrapping = TextWrapping.Wrap };
@@ -64,6 +66,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
 
     public FileHistoryDialog(GitRepository repository, string path, string revision = "HEAD", bool initialBlame = false) : base(repository, "File History")
     {
+        _avatarLifetime = AvatarWindowLifetime.For(this, ownerManagesClose: true);
+        App.BindExistingAvatarRuntime(this);
         InitialSource = new(revision);
         _diff.TextView.ContextMenu = new ContextMenu { ItemsSource = _diff.TextView.CreateContextMenuItems("FileHistoryDiff") };
         _diff.Toolbar.SetNames("FileHistoryDiff");
@@ -175,6 +179,8 @@ public sealed class FileHistoryDialog : RepositoryDialog
             if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingInformationOwner = Owner as Window; }
             _informationClosing = true; _informationLifetime.Cancel(); _commit.BeginClose();
             Task pending = _commit.Completion;
+            if (_avatarLifetime.HasBinding)
+            { pending = Task.WhenAll(pending, _blame.BeginAvatarClose(), _avatarLifetime.BeginClose()); }
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterInformationAsync(pending); }
         };
         Closed += (_, _) =>

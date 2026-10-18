@@ -7,6 +7,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Platform;
 using Avalonia.LogicalTree;
 using GitExtensions.Linux.Desktop.Controls;
+using GitExtensions.Linux.Desktop.Avatars;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -157,6 +158,9 @@ public sealed partial class MainWindow
         DesktopPreferences initial = _preferencesStore.Load();
         GeneralSettingsSession general = new(initial, fileHistory);
         AppearanceSettingsSession appearance = new(initial, _historyView);
+        // Reuse the runtime already bound to this mapped Main, including explicitly bound hosts.
+        // Peeking the App fallback never constructs a service or initiates an avatar read.
+        AvatarService? avatars = _avatarLifetime?.Scope?.Service ?? App.PeekAvatarRuntime()?.Service;
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         GitRepository? settingsRepository = _repository;
         using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
@@ -171,7 +175,16 @@ public sealed partial class MainWindow
                 .Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray(),
             appearanceSettings: appearance.Initial,
             helpTranslateAsync: owner => owner.IsVisible && !_lifetime.IsCancellationRequested
-                ? OpenWebAsync(AppearanceSettingsPage.TranslationHelpUrl) : Task.CompletedTask);
+                ? OpenWebAsync(AppearanceSettingsPage.TranslationHelpUrl) : Task.CompletedTask,
+            clearAvatarCacheAsync: avatars is null ? null : (owner, wait) =>
+            {
+                wait.ThrowIfCancellationRequested();
+                return owner.IsVisible && !_lifetime.IsCancellationRequested
+                    ? avatars.ClearCache().WaitAsync(wait) : Task.CompletedTask;
+            },
+            avatarHelpAsync: (owner, url) => owner.IsVisible && !_lifetime.IsCancellationRequested
+                ? OpenWebAsync(url) : Task.CompletedTask,
+            appearanceCancellationToken: environment.CancellationToken);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
@@ -208,6 +221,8 @@ public sealed partial class MainWindow
             using WindowWork work = TrackWindowWork();
             CancellationToken token = environment.CancellationToken;
             bool publishing = true;
+            AvatarMutation? avatarMutation = null;
+            Exception? avatarMutationError = null;
             using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 if (publishing) { _operation?.Cancel(); CancelBrowserReads(); }
@@ -216,13 +231,21 @@ public sealed partial class MainWindow
             {
                 token.ThrowIfCancellationRequested();
                 DesktopPreferences latest = _preferencesStore.Load();
-                DesktopPreferences preferences = appearance.MergeDesktop(settings.AppearanceSettingsResult, settings.Result with
+                AppearanceSettingsValues appearanceDraft = settings.AppearanceSettingsResult;
+                DesktopPreferences preferences = appearance.MergeDesktop(appearanceDraft, settings.Result with
                 {
                     RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
                 });
                 bool histogramChanged = settings.GeneralSettingsResult.UseHistogramDiffAlgorithm != general.Initial.UseHistogramDiffAlgorithm;
                 GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences,
-                    desktopSaved: () => appearance.DesktopSaved(settings.AppearanceSettingsResult));
+                    desktopSaved: acceptedDesktop =>
+                    {
+                        appearance.DesktopSaved(appearanceDraft);
+                        // Register from the value actually written, before another workflow profile can
+                        // fail. The service owns the mutation even if Settings stops waiting or closes.
+                        try { avatarMutation = avatars?.ApplySavedPolicy(AvatarPreferences.From(acceptedDesktop)); }
+                        catch (Exception error) { avatarMutationError = error; }
+                    });
                 preferences = publication.Desktop;
                 settings.AcceptGeneralSaved(publication);
                 bool presentationChanged = preferences.ShowGitStatusInBrowseToolbar != _preferences.ShowGitStatusInBrowseToolbar
@@ -242,7 +265,7 @@ public sealed partial class MainWindow
                 // The active View is the Appearance baseline, but only explicit Appearance edits
                 // become saved defaults. Sorting retains its existing explicit Settings publication;
                 // other temporary View choices remain in this Browse.
-                AppearanceSettingsPublication appearancePublication = appearance.Save(settings.AppearanceSettingsResult,
+                AppearanceSettingsPublication appearancePublication = appearance.Save(appearanceDraft,
                     preferences, _historyView, settings.HistorySortResult);
                 settings.AcceptAppearanceSaved(appearancePublication);
                 _historyView = appearancePublication.History;
@@ -270,6 +293,11 @@ public sealed partial class MainWindow
                 token.ThrowIfCancellationRequested();
             }
             finally { publishing = false; }
+            // A profile error leaves this block by exception before these awaits, preserving its
+            // original diagnostic while the already-registered service mutation remains owned.
+            if (avatarMutationError is not null)
+            { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(avatarMutationError).Throw(); }
+            if (avatarMutation is not null) { await avatarMutation.WaitAsync(token); }
         }
     }
 }

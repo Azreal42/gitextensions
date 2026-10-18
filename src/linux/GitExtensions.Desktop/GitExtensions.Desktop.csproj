@@ -56,4 +56,10 @@
     <Content Include="../../app/GitUI/Translation/*.gif" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../app/GitUI/Translation/*.xlf" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Pure Windows avatar settings and formatter; no WinForms/image provider code. -->
+    <Compile Include="../../app/GitCommands/Settings/AvatarProvider.cs" Link="Shared/Avatars/AvatarProvider.cs" />
+    <Compile Include="../../app/GitCommands/Settings/AvatarFallbackType.cs" Link="Shared/Avatars/AvatarFallbackType.cs" />
+    <Compile Include="../../app/GitUI/Avatars/TemplateFormatter.cs" Link="Shared/Avatars/TemplateFormatter.cs" />
+  </ItemGroup>
 </Project>

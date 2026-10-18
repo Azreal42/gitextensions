@@ -71,7 +71,7 @@ public sealed class AppearanceSettingsSessionTests
         HistoryViewPreferences active = new() { ShowAuthor = false, ShowId = false, HiddenToolbarItems = ["runtime-only"] };
         AppearanceSettingsSession session = new(f.Desktop.Load(), active); AppearanceSettingsValues draft = session.Initial with { Theme = "Dark" };
         GeneralSettingsSession general = new(f.Desktop.Load());
-        GeneralSettingsPublication desktop = general.Save(general.Initial, session.MergeDesktop(draft, f.Desktop.Load()), () => session.DesktopSaved(draft));
+        GeneralSettingsPublication desktop = general.Save(general.Initial, session.MergeDesktop(draft, f.Desktop.Load()), _ => session.DesktopSaved(draft));
         AppearanceSettingsPublication publication = session.Save(draft, desktop.Desktop, active);
         Assert.That(File.ReadAllBytes(f.History.FilePath), Is.EqualTo(before));
         Assert.That(publication.History, Is.EqualTo(active)); Assert.That(publication.Values.RelativeDate, Is.True);
@@ -202,7 +202,7 @@ public sealed class AppearanceSettingsSessionTests
                 {
                     Attempts++; AppearanceSettingsValues draft = dialog.AppearanceSettingsResult;
                     GeneralSettingsPublication desktop = general.Save(dialog.GeneralSettingsResult, Session.MergeDesktop(draft, dialog.Result),
-                        desktopSaved: () => Session.DesktopSaved(draft));
+                        desktopSaved: _ => Session.DesktopSaved(draft));
                     dialog.AcceptGeneralSaved(desktop);
                     AppearanceSettingsPublication appearance = Session.Save(draft, desktop.Desktop, Active, dialog.HistorySortResult);
                     dialog.AcceptAppearanceSaved(appearance); Active = appearance.History; return Task.CompletedTask;

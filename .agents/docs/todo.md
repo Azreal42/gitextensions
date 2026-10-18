@@ -307,5 +307,12 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 
 - [x] Publication en place, sauvegardes partielles et choix View temporaires ; prélecture Dashboard réutilisée sans modifier l’oracle de réouverture.
 - [x] Appearance N1→N2 partiel ; inventaire régénéré et contrôlé : 99 fenêtres métier, 32 pages Settings dont 15 N2. Treize familles ouvertes, aucun N4.
-- [ ] Neuf préférences Windows indisponibles/adaptées et quatre actions ouvertes : provider/cache/fallback/template/avatar CommitInfo, troncature et dictionnaire notamment. Le lot avatars est en validation dans un checkout séparé et n’est pas compté comme livré.
+- [ ] Neuf préférences Windows indisponibles/adaptées et quatre actions ouvertes : provider/cache/fallback/template/avatar CommitInfo, troncature et dictionnaire notamment. Le lot avatars intégré ci-dessous reste en validation globale ; aucun niveau supplémentaire acquis.
 - [ ] Colonne de branche Windows, autres consommateurs et variantes natives, langues/thèmes, Wayland/DPI/accessibilité, paquet interactif et macOS.
+
+## Avatars partagés — validation en cours
+
+[ADR0099](adr/platform/avatars/0099-shared-desktop-runtime.md) : provider/fallback/template/cache Windows et avatar CommitInfo raccordés au runtime partagé, Clear impératif, durée disque de session, lecteurs visibles et fermeture drainée. [Ciblé06 252/252](../../artifacts/linux/appearance-settings-20261018/review/avatar-targeted-06-green.json), dont **103 nouveaux cas et 149 historiques**, zéro skip ; build sans avertissement/erreur. Deux anciennes fixtures Appearance adaptées explicitement aux nouveaux contrôles et callback typé, sans retrait de cas.
+
+- [ ] Full frais conservant les 2180 cas Desktop acceptés, paquet exact et parcours natif Avatar. Démarrage/chooser et durée de vie de la vraie App ne sont pas certifiés par les tests headless.
+- [ ] Mettre à jour la ligne Appearance après ces preuves ; troncature, dictionnaire, intégrations Windows et variantes natives restent ouverts. Aucun N4 ou pourcentage global ajouté.

@@ -73,7 +73,14 @@ internal static class Program
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
             GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, "gitextensions-askpass");
             GitRunner.AskpassUiCulture = CultureInfo.CurrentUICulture.Name;
-            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            AppBuilder builder = BuildAvaloniaApp();
+            try { return builder.StartWithClassicDesktopLifetime(args); }
+            finally
+            {
+                // The UI loop has actually ended. Never create a runtime or dispatch new UI work here.
+                if ((builder.Instance as App)?.ExistingAvatarRuntime is { } avatars)
+                { avatars.ShutdownAsync().GetAwaiter().GetResult(); }
+            }
         }
         catch (Exception exception)
         {
@@ -82,7 +89,7 @@ internal static class Program
         }
     }
 
-    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure(() => new App(true))
         .UsePlatformDetect()
         .WithInterFont()
         .LogToTrace();

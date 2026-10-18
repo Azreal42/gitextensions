@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Desktop.Avatars;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -10,6 +11,7 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed class BlameDialog : RepositoryDialog
 {
+    private readonly AvatarWindowLifetime _avatarLifetime;
     private readonly TextBox _file = new() { Name = "BlameFilePath" };
     private readonly TextBox _revision = new() { Name = "BlameRevision" };
     private readonly CheckBox _whitespace = new() { Name = "BlameIgnoreWhitespace" };
@@ -36,6 +38,8 @@ public sealed class BlameDialog : RepositoryDialog
     public BlameDialog(GitRepository repository, string path, string? revision = "HEAD", int initialLine = 1,
         IGourceAvatarProvider? avatarProvider = null, string? fileEncodingName = null) : base(repository, "Blame")
     {
+        _avatarLifetime = AvatarWindowLifetime.For(this, ownerManagesClose: true);
+        App.BindExistingAvatarRuntime(this);
         _changes.TextView.ContextMenu = new ContextMenu { ItemsSource = _changes.TextView.CreateContextMenuItems("BlameDiff") };
         _changes.Toolbar.SetNames("BlameDiff");
         _changes.TextView.ComparisonMenu.OptionsChanged += async (_, _) =>
@@ -126,6 +130,8 @@ public sealed class BlameDialog : RepositoryDialog
             if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingInformationOwner = Owner as Window; }
             _informationClosing = true; _informationLifetime.Cancel(); _commit.BeginClose();
             Task pending = _commit.Completion;
+            if (_avatarLifetime.HasBinding)
+            { pending = Task.WhenAll(pending, _view.BeginAvatarClose(), _avatarLifetime.BeginClose()); }
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterInformationAsync(pending); }
         };
         Closed += (_, _) =>

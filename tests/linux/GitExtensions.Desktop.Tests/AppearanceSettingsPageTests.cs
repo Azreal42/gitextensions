@@ -131,18 +131,20 @@ public sealed class AppearanceSettingsPageTests
             Grid group = f.Field<Grid>(name); double y = group.TranslatePoint(default, f.Page)!.Value.Y;
             Assert.That(y, Is.GreaterThan(previous)); previous = y;
         }
-        foreach (string name in new[] { "chkShowRelativeDate", "chkShowRepoCurrentBranch", "ShowAuthorAvatarInCommitGraph", "Language", "SettingsTheme" })
+        foreach (string name in new[] { "chkShowRelativeDate", "chkShowRepoCurrentBranch", "ShowAuthorAvatarInCommitGraph", "Language", "SettingsTheme",
+            "ShowAuthorAvatarInCommitInfo", "_NO_TRANSLATE_DaysToCacheImages", "AvatarProvider", "_NO_TRANSLATE_NoImageService" })
         {
             Control control = f.Field<Control>(name); f.Show(control); AssertReachable(f.Window, control);
         }
-        foreach (string name in new[] { "chkShowCurrentBranchInVisualStudio", "chkEnableAutoScale", "truncatePathMethod", "ShowAuthorAvatarInCommitInfo",
-            "_NO_TRANSLATE_DaysToCacheImages", "AvatarProvider", "_NO_TRANSLATE_NoImageService", "txtCustomAvatarTemplate", "ClearImageCache", "avatarProviderHelp",
-            "pictureAvatarHelp", "Dictionary", "downloadDictionary" })
+        foreach (string name in new[] { "chkShowCurrentBranchInVisualStudio", "chkEnableAutoScale", "truncatePathMethod", "ClearImageCache",
+            "avatarProviderHelp", "pictureAvatarHelp", "Dictionary", "downloadDictionary" })
         {
             Control control = f.Field<Control>(name); Assert.That(control.IsEffectivelyVisible, Is.True, name);
             Assert.That(control.IsEffectivelyEnabled, Is.False, name + " must not imply a provider or desktop integration that is not available.");
             Assert.That(ToolTip.GetTip(control), Is.Not.Null, name + " needs an explanation of its unavailable behavior.");
         }
+        Assert.That(f.Field<Control>("txtCustomAvatarTemplate").IsEffectivelyVisible, Is.False, "The default None provider hides its custom template.");
+        Assert.That(f.Field<Control>("txtCustomAvatarTemplate").IsEffectivelyEnabled, Is.True, "The template is editable when Custom is chosen.");
         Assert.That(f.Field<TextBlock>("AppearanceUnsupportedNotice").Text, Is.Not.Null.And.Not.Empty);
         Assert.That(f.Field<HyperlinkButton>("helpTranslate").IsEffectivelyEnabled, Is.False, "A missing host callback must not leave a dead enabled link.");
         TextBlock author = f.Field<Border>("gbAuthorImagesCaption").GetVisualDescendants().OfType<TextBlock>().Single();

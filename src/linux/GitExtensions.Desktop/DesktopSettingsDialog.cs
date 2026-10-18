@@ -63,7 +63,9 @@ internal sealed class DesktopSettingsDialog : Window
         Func<GitEnvironmentCheckId, Window, Task>? repairEnvironment = null,
         bool showChecklist = false, string? initialPage = null, GeneralSettingsValues? generalSettings = null,
         IReadOnlyList<string>? cloneDestinations = null, AppearanceSettingsValues? appearanceSettings = null,
-        Func<Window, Task>? helpTranslateAsync = null)
+        Func<Window, Task>? helpTranslateAsync = null,
+        Func<Window, CancellationToken, Task>? clearAvatarCacheAsync = null,
+        Func<Window, string, Task>? avatarHelpAsync = null, CancellationToken appearanceCancellationToken = default)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -72,7 +74,9 @@ internal sealed class DesktopSettingsDialog : Window
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
         AppearanceSettingsResult = appearanceSettings
             ?? new AppearanceSettingsSession(initial, new HistoryViewPreferencesStore().Load()).Initial;
-        _appearanceSettingsPage = new(AppearanceSettingsResult, translations, helpTranslateAsync) { Margin = new Thickness(12) };
+        _appearanceSettingsPage = new(AppearanceSettingsResult, translations, helpTranslateAsync,
+            clearAvatarCacheAsync: clearAvatarCacheAsync, avatarHelpAsync: avatarHelpAsync,
+            cancellationToken: appearanceCancellationToken) { Margin = new Thickness(12) };
         HotkeyBindings activeHotkeys = hotkeys ?? new(); HotkeysResult = activeHotkeys.Clone();
         DesktopFontSession? fontSession = fonts is null ? DesktopFonts.CreateSession() : null;
         FontPreferences fontBaseline = fonts ?? fontSession!.Preferences; FontsResult = fontBaseline;
@@ -234,6 +238,11 @@ internal sealed class DesktopSettingsDialog : Window
                 {
                     Theme = AppearanceSettingsResult.Theme, Language = AppearanceSettingsResult.Language,
                     ShowRepoCurrentBranch = AppearanceSettingsResult.ShowRepoCurrentBranch,
+                    ShowAuthorAvatarInCommitInfo = AppearanceSettingsResult.ShowAuthorAvatarInCommitInfo,
+                    AvatarImageCacheDays = AppearanceSettingsResult.AvatarImageCacheDays,
+                    AvatarProvider = AppearanceSettingsResult.AvatarProvider,
+                    AvatarFallbackType = AppearanceSettingsResult.AvatarFallbackType,
+                    CustomAvatarTemplate = AppearanceSettingsResult.CustomAvatarTemplate,
                     AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
                     UseBrowseForFileHistory = GeneralSettingsResult.UseBrowseForFileHistory,
                     MaxRevisionGraphCommits = GeneralSettingsResult.MaxRevisionGraphCommits,

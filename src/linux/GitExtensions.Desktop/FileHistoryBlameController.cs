@@ -39,7 +39,8 @@ internal sealed class FileHistoryBlameController : UserControl
     internal FileHistoryBlameController(FileContentView normal)
     {
         _normal = normal;
-        _blame = new(new TrackedAvatars(BlameView.DefaultAvatarProvider, Track)) { Name = "FileHistoryInlineBlame" };
+        _blame = new() { Name = "FileHistoryInlineBlame" };
+        _blame.AvatarReadStarted += Track;
         _toggle.Content = _translations.Translate("Blame");
         Button options = _blame.CreateOptionsButton(); options.Name = "FileHistoryInlineBlameOptions";
         _tools = new() { Orientation = Orientation.Horizontal, Spacing = 8, Children = { _toggle, options }, IsVisible = false };
@@ -211,15 +212,6 @@ internal sealed class FileHistoryBlameController : UserControl
         }
     }
 
-    private sealed class TrackedAvatars(IGourceAvatarProvider provider, Action<Task> track) : IGourceAvatarProvider
-    {
-        public Task<byte[]?> GetAvatarPngAsync(string email, string authorName, int imageSize, CancellationToken cancellationToken)
-        {
-            Task<byte[]?> read = provider.GetAvatarPngAsync(email, authorName, imageSize, cancellationToken);
-            track(read); return read;
-        }
-    }
-
     internal Task CloseAsync()
     {
         if (_close is not null) { return _close; }
@@ -231,7 +223,7 @@ internal sealed class FileHistoryBlameController : UserControl
         try { await Completion; }
         catch (OperationCanceledException) { }
         catch { /* The initiating reader owns its error. Closing must still drain and dispose. */ }
-        Task avatars = _blame.AvatarLoading, tooltip = _blame.TooltipLoading;
+        Task avatars = _blame.BeginAvatarClose(), tooltip = _blame.TooltipLoading;
         _blame.Dispose();
         try { await Task.WhenAll(avatars, tooltip); }
         catch (OperationCanceledException) { }

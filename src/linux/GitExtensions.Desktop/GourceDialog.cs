@@ -1,3 +1,4 @@
+using GitExtensions.Linux.Desktop.Avatars;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -15,7 +16,9 @@ public sealed class GourceDialog : RepositoryDialog
     private readonly TextBox _path = new() { Name = "GourcePath", Height = 24 };
     private readonly TextBox _directory = new() { Name = "WorkingDir", Height = 24 };
     private readonly TextBox _arguments = new() { Name = "Arguments", Height = 24 };
-    private readonly GourcePlugin _plugin;
+    private readonly AvatarWindowLifetime _avatarLifetime;
+    private readonly IGourceAvatarProvider? _injectedAvatarProvider;
+    private readonly Lazy<IGourceAvatarProvider> _legacyAvatarProvider = new(() => new GourceAvatarProvider());
     private readonly Button _start;
     private readonly List<Button> _links = [];
     private bool _validRepository;
@@ -29,7 +32,9 @@ public sealed class GourceDialog : RepositoryDialog
     public GourceDialog(GitRepository repository, IReadOnlyDictionary<string, string?>? savedValues = null,
         IGourceAvatarProvider? avatarProvider = null) : base(repository, "Gource")
     {
-        _plugin = new(avatarProvider ?? new GourceAvatarProvider());
+        _avatarLifetime = AvatarWindowLifetime.For(this);
+        App.BindExistingAvatarRuntime(this);
+        _injectedAvatarProvider = avatarProvider;
         _path.Text = savedValues?.GetValueOrDefault("executable") ?? "gource";
         _directory.Text = savedValues?.GetValueOrDefault("workingDirectory") is { Length: > 0 } directory ? directory : repository.Path;
         _arguments.Text = savedValues?.GetValueOrDefault("arguments") ?? new GourceOptions().Arguments;
@@ -65,13 +70,21 @@ public sealed class GourceDialog : RepositoryDialog
 
     private async Task StartAsync()
     {
+        AvatarOwnerScope? scope = _avatarLifetime.Scope;
+        // An explicitly bound but unavailable window must never switch to the legacy provider.
+        if (scope is null && _avatarLifetime.HasBinding) { return; }
         GourceOptions options = CurrentOptions;
         string directory = string.IsNullOrWhiteSpace(options.WorkingDirectory) ? Repository.Path : Path.GetFullPath(options.WorkingDirectory);
         string? executable = GourceExecutable.Resolve(options.Executable, directory);
         if (executable is null) { Status.Text = T("Cannot find Gource.") + "\n" + T("Please install Gource and set the correct path."); _path.Focus(); return; }
+        IGourceAvatarProvider provider = scope is not null
+            ? _injectedAvatarProvider is null ? AvatarProviderBinding.ForProduction(scope)
+                : AvatarProviderBinding.ForBorrowed(scope, _injectedAvatarProvider)
+            : _injectedAvatarProvider ?? _legacyAvatarProvider.Value;
+        GourcePlugin plugin = new(provider);
         await RunAsync("Start Gource", async token =>
         {
-            LastLaunch = await _plugin.LaunchAsync(Repository, options with { Executable = executable }, token);
+            LastLaunch = await plugin.LaunchAsync(Repository, options with { Executable = executable }, token);
             Status.Text = T("Gource started");
         });
         if (LastLaunch is not null && LastError is null) Close();

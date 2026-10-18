@@ -23,7 +23,7 @@ internal sealed class GeneralSettingsSession
 
     internal GeneralSettingsValues Initial { get; private set; }
 
-    internal GeneralSettingsPublication Save(GeneralSettingsValues draft, DesktopPreferences desired, Action? desktopSaved = null)
+    internal GeneralSettingsPublication Save(GeneralSettingsValues draft, DesktopPreferences desired, Action<DesktopPreferences>? desktopSaved = null)
     {
         ArgumentNullException.ThrowIfNull(draft); ArgumentNullException.ThrowIfNull(desired);
         if (draft.MaxRevisionGraphCommits is < 0 or > 1_000_000 || draft.RevisionGridQuickSearchTimeout is < 100 or > 1_000_000
@@ -61,8 +61,9 @@ internal sealed class GeneralSettingsSession
             UseBrowseForFileHistory = draft.UseBrowseForFileHistory
         };
         // The Settings host acknowledges its already-published desktop intentions before
-        // a later workflow profile can fail. Production callbacks only update session state.
-        desktopSaved?.Invoke();
+        // a later workflow profile can fail. The accepted value also publishes an already-existing
+        // avatar runtime policy; the host owns mutation error reporting independently of profile IO.
+        desktopSaved?.Invoke(accepted);
         if (draft.DefaultPullAction != _baseline.DefaultPullAction || draft.IncludeUntrackedFilesInAutoStash != _baseline.IncludeUntrackedFilesInAutoStash)
         {
             Readable<PullPreferences>(_pull.FilePath);
