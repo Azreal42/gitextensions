@@ -1,11 +1,11 @@
 {
-  "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-  "trx": "artifacts/linux/git-config-20261018/full-03/desktop.trx",
-  "trx_sha256": "4f9b6a2e184611e8eaf33212bf66b9c0bfb67ef3be102263ea38d18c969df8fc",
+  "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+  "trx": "artifacts/linux/git-environment-20261018/full-01/desktop.trx",
+  "trx_sha256": "11b0ffe71afe15de352c8c97f0438afc2b8e6fa574661be6208481fb64cf34d2",
   "counters": {
-    "total": "1889",
-    "executed": "1889",
-    "passed": "1889",
+    "total": "1986",
+    "executed": "1986",
+    "passed": "1986",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -306,6 +306,27 @@
     "GitConfigurationPageTests": {
       "Passed": 19
     },
+    "GitEnvironmentChecklistTests": {
+      "Passed": 18
+    },
+    "GitEnvironmentPreferencesTests": {
+      "Passed": 36
+    },
+    "GitEnvironmentSettingsHostTests": {
+      "Passed": 7
+    },
+    "GitEnvironmentSettingsPagesTests": {
+      "Passed": 15
+    },
+    "GitEnvironmentSettingsSessionTests": {
+      "Passed": 10
+    },
+    "GitEnvironmentStartupTests": {
+      "Passed": 5
+    },
+    "GitEnvironmentTransportTests": {
+      "Passed": 6
+    },
     "GitProcessDialogTests": {
       "Passed": 15
     },
@@ -582,27 +603,27 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-      "execution_source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-      "candidate_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-      "passed": 714,
-      "total": 714,
-      "execution_result": "artifacts/linux/git-config-20261018/full-03/core-result.json",
-      "build_result": "artifacts/linux/git-config-20261018/full-03/build-result.json",
-      "parent_verification": "artifacts/linux/git-config-20261018/full-03/parent-verification.json",
+      "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "passed": 720,
+      "total": 720,
+      "execution_result": "artifacts/linux/git-environment-20261018/full-01/core-result.json",
+      "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true
     },
     "plugins": {
-      "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-      "execution_source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-      "candidate_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+      "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+      "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/git-config-20261018/full-03/plugins-result.json",
-      "build_result": "artifacts/linux/git-config-20261018/full-03/build-result.json",
-      "parent_verification": "artifacts/linux/git-config-20261018/full-03/parent-verification.json",
+      "execution_result": "artifacts/linux/git-environment-20261018/full-01/plugins-result.json",
+      "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
+      "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
       "runtime_inputs_unchanged": true,
       "fresh_execution_this_tranche": true,
       "reexecuted_on_candidate": true

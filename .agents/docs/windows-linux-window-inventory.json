@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "a79bc9c08e515954169b4f69048828dd76e23674",
-  "source_digest_sha256": "83ff1f39a28d971348678341f27b3665f0126b83f2cfbdd789cd7e4eb730673d",
-  "scanned_csharp_files": 2108,
+  "code_reference_commit": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+  "source_digest_sha256": "aaebb9d27ac0ecb1ab7b282dd8cfbc4dfca2f91a0305b660f7b60832125321a3",
+  "scanned_csharp_files": 2127,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,21 +26,21 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 89,
+    "linux_window_types": 90,
     "linux_abstract_bases": 3,
     "linux_dynamic_factories": 33,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
       "N0": 5,
       "N1": 15,
-      "N2": 28,
+      "N2": 29,
       "N3": 49,
-      "NA": 2
+      "NA": 1
     },
     "settings_levels": {
-      "N0": 13,
+      "N0": 11,
       "N1": 7,
-      "N2": 11,
+      "N2": 13,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,33 +50,33 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/git-config-20261018/full-03/desktop.trx",
-    "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-    "trx_sha256": "4f9b6a2e184611e8eaf33212bf66b9c0bfb67ef3be102263ea38d18c969df8fc",
+    "trx": "artifacts/linux/git-environment-20261018/full-01/desktop.trx",
+    "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+    "trx_sha256": "11b0ffe71afe15de352c8c97f0438afc2b8e6fa574661be6208481fb64cf34d2",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-        "execution_source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-        "candidate_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-        "passed": 714,
-        "total": 714,
-        "execution_result": "artifacts/linux/git-config-20261018/full-03/core-result.json",
-        "build_result": "artifacts/linux/git-config-20261018/full-03/build-result.json",
-        "parent_verification": "artifacts/linux/git-config-20261018/full-03/parent-verification.json",
+        "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "passed": 720,
+        "total": 720,
+        "execution_result": "artifacts/linux/git-environment-20261018/full-01/core-result.json",
+        "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
       },
       "plugins": {
-        "source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-        "execution_source_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
-        "candidate_sha": "a79bc9c08e515954169b4f69048828dd76e23674",
+        "source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "execution_source_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
+        "candidate_sha": "1deed8d3470baba79d44779bde7e45e81684ec5d",
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/git-config-20261018/full-03/plugins-result.json",
-        "build_result": "artifacts/linux/git-config-20261018/full-03/build-result.json",
-        "parent_verification": "artifacts/linux/git-config-20261018/full-03/parent-verification.json",
+        "execution_result": "artifacts/linux/git-environment-20261018/full-01/plugins-result.json",
+        "build_result": "artifacts/linux/git-environment-20261018/full-01/build-result.json",
+        "parent_verification": "artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json",
         "runtime_inputs_unchanged": true,
         "fresh_execution_this_tranche": true,
         "reexecuted_on_candidate": true
@@ -180,7 +180,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildHelpMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 86,
+          "line": 98,
           "kind": "window"
         },
         {
@@ -972,7 +972,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildHelpMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 86,
+          "line": 98,
           "kind": "window"
         }
       ],
@@ -1170,7 +1170,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 344,
+          "line": 360,
           "kind": "window"
         },
         {
@@ -1283,7 +1283,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.BuildHelpMenu",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 86,
+          "line": 98,
           "kind": "window"
         }
       ],
@@ -5073,8 +5073,8 @@
       "feature": "Paramètres de l’application",
       "group": "settings",
       "level": "N1",
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092.",
-      "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092. Pages Git/Paths et Checklist raccordées, correction HOME enfant et Config Global hors dépôt ; Save and rescan publie les pages avant les observations, case de démarrage publiée séparément et Cancel sans rollback des publications acquises, ADR0095. Parcours natif source 1deed borné : correction Git, reprise de la demande CLI, HOME enfant, case instantanée puis auto-off, Cancel et redémarrage du profil.",
+      "remaining": "FormSettings reste N1 : arbre Windows très incomplet, onglets Avalonia et sous-pages évaluées séparément. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale.",
       "visual": "adapte",
       "linux": [
         {
@@ -5117,6 +5117,27 @@
           "label": "FontPickerDialog",
           "source": "src/linux/GitExtensions.Desktop/FontPickerDialog.cs",
           "line": 12,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentSettingsPage",
+          "label": "GitEnvironmentSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentSettingsPage.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ChecklistSettingsPage",
+          "label": "ChecklistSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ChecklistSettingsPage.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHomeDirectoryDialog",
+          "label": "GitHomeDirectoryDialog",
+          "source": "src/linux/GitExtensions.Desktop/GitHomeDirectoryDialog.cs",
+          "line": 10,
           "kind": "window"
         }
       ],
@@ -5167,6 +5188,30 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
           "test_class": "GitConfigurationPageTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsPagesTests.cs",
+          "test_class": "GitEnvironmentSettingsPagesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsSessionTests.cs",
+          "test_class": "GitEnvironmentSettingsSessionTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -5230,7 +5275,8 @@
         ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
         ".agents/docs/adr/preferences/language/0090-language-selection.md",
         ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
-        ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md"
+        ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md",
+        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md"
       ]
     },
     {
@@ -6005,6 +6051,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
@@ -6187,6 +6245,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
           "test_class": "GitConfigurationPageTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -6379,6 +6449,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
@@ -6565,13 +6647,96 @@
       "category": "settings",
       "feature": "Vérifications de la configuration initiale",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Pas de checklist de configuration équivalente.",
-      "remaining": "Diagnostics et corrections guidées de l’environnement à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Neuf observations dans l’ordre Git, identité Global, éditeur, Merge, Diff, sh, SSH, langue et HOME ; couleurs, noms XLF, erreurs et corrections guidées accessibles sans dépôt. SSH sonde sa version locale ; outils configurés sans exécution. Case publiée seule immédiatement, auto-off après neuf Good et publication réussie. Save and rescan sauvegarde les pages avant lecture ; Cancel conserve les publications et fermeture/annulation drainent les acteurs connus. Source1deed : reprise CLI, case instantanée/auto-off et redémarrage vérifiés en anglais/clair/X11.",
+      "remaining": "N2 : aucun test réseau/authentification SSH ni exécution des outils externes déduit de ces observations. États Windows de registre/extensions/PuTTY non simulés. Corrections/pickers/erreurs et variantes natives étendues, arbre Settings complet et paquet interactif restent à auditer. Politique de versions Linux 2.38 et diagnostic Windows 2.43/2.53 à aligner.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Sondes natives Git/sh/SSH : erreurs de lancement et résultats réels sans authentification réseau",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.ChecklistSettingsPage",
+          "label": "ChecklistSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ChecklistSettingsPage.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentSettingsSession",
+          "label": "GitEnvironmentSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentSettingsSession.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentChecklist",
+          "label": "GitEnvironmentChecklist",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentChecklist.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitEnvironmentDiagnostics",
+          "label": "GitEnvironmentDiagnostics",
+          "source": "src/linux/GitExtensions.Core/GitEnvironmentDiagnostics.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.CheckStartupEnvironmentAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.GitEnvironment.cs",
+          "line": 10,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ShowSettingsPageAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
+          "line": 152,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentChecklistTests.cs",
+          "test_class": "GitEnvironmentChecklistTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsPagesTests.cs",
+          "test_class": "GitEnvironmentSettingsPagesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsSessionTests.cs",
+          "test_class": "GitEnvironmentSettingsSessionTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ColorsSettingsPage",
@@ -6645,6 +6810,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
           "test_class": "GitConfigurationPageTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -7085,6 +7262,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
@@ -7222,15 +7411,84 @@
       ],
       "abstract": false,
       "category": "windows",
-      "feature": "Correction du HOME Windows",
+      "feature": "Correction du HOME",
       "group": "platform",
-      "level": "NA",
-      "implemented": "Linux utilise le HOME/XDG de la session.",
-      "remaining": "Assistant spécifique à la configuration Windows ; sans reproduction directe prévue sur Linux.",
-      "visual": "systeme",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "HOME hérité ou personnalisé pour les seuls enfants, dossier accessible, choix OK/Cancel et profil réutilisé au redémarrage. GIT_CONFIG_GLOBAL garde sa priorité, XDG reste observé et aucun .gitconfig n’est requis dans un HOME neuf. Revue source1deed anglais/clair/X11 : saisie HOME et environnement des commandes enfants vérifiés.",
+      "remaining": "Adaptation N2 : ne reproduit pas les réglages USERPROFILE/registre ni un changement HOME de la session ou du système. Pickers, erreurs de permissions, chemins/libellés longs, autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif restent à auditer.",
+      "visual": "adapte",
+      "extra_evidence": [
+        {
+          "label": "HOME enfant, priorité GIT_CONFIG_GLOBAL/XDG et contexte immuable par opération",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHomeDirectoryDialog",
+          "label": "GitHomeDirectoryDialog",
+          "source": "src/linux/GitExtensions.Desktop/GitHomeDirectoryDialog.cs",
+          "line": 10,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentSettingsPage",
+          "label": "GitEnvironmentSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentSettingsPage.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentPreferencesStore",
+          "label": "GitEnvironmentPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentPreferences.cs",
+          "line": 18,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitExecutionEnvironment",
+          "label": "GitExecutionEnvironment",
+          "source": "src/linux/GitExtensions.Core/GitExecutionEnvironment.cs",
+          "line": 15,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentPreferencesTests.cs",
+          "test_class": "GitEnvironmentPreferencesTests",
+          "passed_in_reference_run": 36,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsPagesTests.cs",
+          "test_class": "GitEnvironmentSettingsPagesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsSessionTests.cs",
+          "test_class": "GitEnvironmentSettingsSessionTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentTransportTests.cs",
+          "test_class": "GitEnvironmentTransportTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GeneralSettingsPage",
@@ -7401,6 +7659,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
@@ -7539,8 +7809,8 @@
       "feature": "Configuration Git et outils diff/merge",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Treize champs de la page Windows dans une grille unique, avec libellés XLF et ComboBox éditables. Identité, helper, éditeur, template avec Browse, quatre choix autocrlf et encoding avec Configure rejoignent les six champs Diff/Merge. Moteur natif commun, brouillons Local/Global, Effective/System readonly, Apply/OK explicites, Cancel sans rollback des publications, origines/includes et effets partiels conservés. Absence, vide, valueless, aliases et encodages inconnus restent distincts. Retour au valueless publié sans unset ; helper vide explicite pour reset. Diagnostic natif conservé, sans destination devinée ni édition ; valeurs raw readonly conservées lorsque leur lecture réussit malgré l’échec de rev-parse. Une configuration illisible reste indisponible, sans valeurs inventées. Sélecteur d’encodages partagé avec les lecteurs ; fermeture possédée et focus de validation. Suites fraîches et parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : Apply nom Local, Cancel, encodages indépendants et redémarrage normal.",
-      "remaining": "Page N2 : Global hors dépôt dans l’UI et découverte exhaustive des outils/éditeurs encore ouverts. Le lecteur guidé à origines requiert Git 2.26 ; édition brute séparée conservée pour les autres clés et la réparation des configurations natives invalides. Browse template, autres champs et Global en natif étendu, multivaleurs modifiables, tous consommateurs, thèmes/localisations/Wayland/DPI/accessibilité non certifiés iso. Le parcours natif du binaire Release source ne valide pas le nouveau paquet interactivement. La validation T01 d975 reste limitée au lot Diff/Merge précédent.",
+      "implemented": "Treize champs de la page Windows dans une grille unique, avec libellés XLF et ComboBox éditables. Identité, helper, éditeur, template avec Browse, quatre choix autocrlf et encoding avec Configure rejoignent les six champs Diff/Merge. Moteur natif commun, brouillons Local/Global, Effective/System readonly, Apply/OK explicites, Cancel sans rollback des publications, origines/includes et effets partiels conservés. Absence, vide, valueless, aliases et encodages inconnus restent distincts. Retour au valueless publié sans unset ; helper vide explicite pour reset. Diagnostic natif conservé, sans destination devinée ni édition ; valeurs raw readonly conservées lorsque leur lecture réussit malgré l’échec de rev-parse. Une configuration illisible reste indisponible, sans valeurs inventées. Sélecteur d’encodages partagé avec les lecteurs ; fermeture possédée et focus de validation. Suites fraîches et parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : Apply nom Local, Cancel, encodages indépendants et redémarrage normal. ADR0095 ajoute l’accès UI Global sans dépôt sélectionné par un contexte privé hors dépôt ; redirections de dépôt retirées et origines des chemins hérités relatifs conservées, sans découverte du cwd du lanceur. Parcours natif 05 sur source 1deed, anglais/clair/X11 : Config Global ouvert depuis Settings sans dépôt, UserName Apply réel et readback, Cancel enfant/parent conservant la valeur, fixture config/index/HEAD intacte et sortie normale à 0.",
+      "remaining": "Page N2 : découverte exhaustive des outils/éditeurs encore ouverte. Le lecteur guidé à origines requiert Git 2.26 ; édition brute séparée conservée pour les autres clés et la réparation des configurations natives invalides. Browse template, autres champs et audit Config Global hors dépôt natif étendu, multivaleurs modifiables, tous consommateurs, thèmes/localisations/Wayland/DPI/accessibilité non certifiés iso. Le lot environnement a ses propres suites/paquet vérifiés ; le parcours source Global hors dépôt reste borné. Le parcours natif du binaire Release source ne valide pas le nouveau paquet interactivement. La validation T01 d975 reste limitée au lot Diff/Merge précédent.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -7624,6 +7894,13 @@
           "source": "src/linux/GitExtensions.Desktop/AvailableEncodingsPreferencesStore.cs",
           "line": 13,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitConfigurationContext",
+          "label": "GitConfigurationContext",
+          "source": "src/linux/GitExtensions.Desktop/GitConfigurationContext.cs",
+          "line": 4,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -7640,6 +7917,24 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentChecklistTests.cs",
+          "test_class": "GitEnvironmentChecklistTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsSessionTests.cs",
+          "test_class": "GitEnvironmentSettingsSessionTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
@@ -7648,7 +7943,8 @@
       ],
       "adr": [
         ".agents/docs/adr/preferences/tools/0093-diff-merge-tool-configuration.md",
-        ".agents/docs/adr/preferences/configuration/0094-git-configuration-and-encodings.md"
+        ".agents/docs/adr/preferences/configuration/0094-git-configuration-and-encodings.md",
+        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md"
       ]
     },
     {
@@ -7703,13 +7999,102 @@
       "category": "settings",
       "feature": "Chemins/exécutable Git",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Utilisation du Git système via PATH.",
-      "remaining": "Page de choix d’exécutable, chemins/outils et diagnostics absente.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Groupes Paths/Environment, noms XLF, choix littéraux Git et outils, Browse et HOME enfant. Profil XDG, brouillons/Save/Cancel, rebase champ par champ et résultats tardifs invalidés. Git vide utilise PATH ; outils ajoutés en fin de PATH. Choix publié appliqué à la frontière d’exécution suivante, snapshots aux BeginOperation raccordés et runners injectés conservés. Source1deed : reprise CLI après Save/Rescan, HOME enfant et redémarrage avec dépôt/diff vérifiés en anglais/clair/X11.",
+      "remaining": "N2 : arbre Settings incomplet ; Git for Windows/WSL, USERPROFILE et HOME système non repris. Audit natif étendu des pickers/outils, permissions/profil, thèmes/langues et Wayland/DPI/accessibilité ouvert. ReadBrowserAsync n’encadre pas globalement toutes les lectures successives. Seuils de diagnostic Windows 2.43/2.53 distincts du minimum Linux README/.deb 2.38 ; paquet interactif non certifié.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Git choisi en direct à la prochaine opération et contexte figé pour l’opération engagée",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentSettingsPage",
+          "label": "GitEnvironmentSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentSettingsPage.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHomeDirectoryDialog",
+          "label": "GitHomeDirectoryDialog",
+          "source": "src/linux/GitExtensions.Desktop/GitHomeDirectoryDialog.cs",
+          "line": 10,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentPreferencesStore",
+          "label": "GitEnvironmentPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentPreferences.cs",
+          "line": 18,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitEnvironmentSettingsSession",
+          "label": "GitEnvironmentSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/GitEnvironmentSettingsSession.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitExecutionEnvironment",
+          "label": "GitExecutionEnvironment",
+          "source": "src/linux/GitExtensions.Core/GitExecutionEnvironment.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.ShowSettingsPageAsync",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
+          "line": 152,
+          "kind": "window"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentPreferencesTests.cs",
+          "test_class": "GitEnvironmentPreferencesTests",
+          "passed_in_reference_run": 36,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsPagesTests.cs",
+          "test_class": "GitEnvironmentSettingsPagesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsSessionTests.cs",
+          "test_class": "GitEnvironmentSettingsSessionTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentTransportTests.cs",
+          "test_class": "GitEnvironmentTransportTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.HotkeysSettingsPage",
@@ -7841,6 +8226,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
           "test_class": "GitConfigurationPageTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -8072,6 +8469,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
           "test_class": "GitConfigurationPageTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -8316,6 +8725,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
           "test_class": "GitConfigurationPageTests",
           "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
           "results_present": true
         },
         {
@@ -12436,6 +12857,40 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.GitHomeDirectoryDialog",
+      "name": "GitHomeDirectoryDialog",
+      "source": "src/linux/GitExtensions.Desktop/GitHomeDirectoryDialog.cs",
+      "line": 10,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/GitHomeDirectoryDialog.cs",
+          "line": 10
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormSettings",
+          "name": "FormSettings",
+          "level": "N1"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.FormFixHome",
+          "name": "FormFixHome",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitSettingsPage",
+          "name": "GitSettingsPage",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.GitImpactDialog",
       "name": "GitImpactDialog",
       "source": "src/linux/GitExtensions.Desktop/GitImpactDialog.cs",
@@ -12716,6 +13171,10 @@
           "line": 6
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.GitEnvironment.cs",
+          "line": 5
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Grep.cs",
           "line": 9
         },
@@ -12821,7 +13280,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 12
+          "line": 13
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
@@ -12907,6 +13366,11 @@
           "level": "N1"
         },
         {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ChecklistSettingsPage",
+          "name": "ChecklistSettingsPage",
+          "level": "N2"
+        },
+        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.FormBrowseRepoSettingsPage",
           "name": "FormBrowseRepoSettingsPage",
           "level": "N2"
@@ -12924,6 +13388,11 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitConfigSettingsPage",
           "name": "GitConfigSettingsPage",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GitSettingsPage",
+          "name": "GitSettingsPage",
           "level": "N2"
         },
         {
@@ -18584,8 +19053,9 @@
       "N3": 1
     },
     "platform": {
+      "N2": 1,
       "N3": 1,
-      "NA": 2
+      "NA": 1
     },
     "plugins": {
       "N0": 1,
@@ -18593,9 +19063,9 @@
       "N3": 5
     },
     "settings-pages": {
-      "N0": 7,
+      "N0": 5,
       "N1": 7,
-      "N2": 11,
+      "N2": 13,
       "NA": 1
     },
     "ci-settings": {

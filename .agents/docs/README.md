@@ -28,3 +28,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 
 - [Polices et EOL](adr/preferences/fonts/0091-fonts-and-eol.md) : quatre rôles indépendants et session appliquée au redémarrage ; full b74, [paquet exact](../../artifacts/linux/snapshots/b74bb4522/proofs/package-parent-verification.json) et [natif anglais/clair/X11](../../artifacts/linux/snapshots/b74bb4522/proofs/native-fonts-review.json) vérifiés ; Fonts seul N2, Appearance N1 et autres familles ouvertes.
 - [Flux natif des fontes](adr/platform/rendering/0092-skia-stream-lifetime.md) : backend Avalonia.Skia exact avec durée de vie explicite ; calibration bornée sur les octets d’une vraie fonte, sans certification de tout le catalogue.
+
+- [Environnement Git et Checklist](adr/preferences/environment/0095-git-environment-and-checklist.md) : choix Git/HOME enfant, diagnostics et récupération du démarrage, Config Global sans dépôt ; suites/paquet vérifiés, natif source borné, niveaux et limites dans la matrice.

@@ -1,0 +1,21 @@
+# ADR 0095 · Environnement Git et Checklist
+
+Statut : suites et paquet vérifiés sur 1deed8d34 ; parcours source X11 bornés, audit étendu ouvert.
+
+Retrouver les intentions des pages Windows Git et Checklist : choisir Git, retrouver ses outils, voir les diagnostics et rejoindre une correction même sans dépôt ouvert. Réutiliser les groupes, noms XLF, ordre et couleurs applicables. Le dialogue Settings conserve ses onglets Avalonia ; son arbre Windows complet reste à porter.
+
+Le profil XDG git-environment.json conserve les choix publiés ; les brouillons restent en mémoire. Git vide utilise PATH ; le répertoire d’outils explicite est ajouté en fin de PATH. HOME peut être hérité ou personnalisé pour les seuls enfants, sans modifier la session, le système ou USERPROFILE. Un HOME neuf accessible ne nécessite pas de .gitconfig ; GIT_CONFIG_GLOBAL conserve sa priorité et les emplacements XDG restent observés.
+
+Le choix publié est pris en compte à la prochaine frontière d’exécution. GitExecutionEnvironment fige les frontières BeginOperation raccordées : Main Run/Refresh, clone/init, scripts, configuration, reprise CLI et mutations. Les runners injectés restent épinglés. Les séquences successives de ReadBrowserAsync n’ont pas de garantie globale équivalente ; leur audit reste ouvert. Console interactive et rebase transmettent leur contexte au helper sans recharger les préférences de l’application.
+
+GitConfigurationContext ouvre Config Global sans dépôt : cwd privé, redirections de dépôt retirées et chemins hérités relatifs résolus depuis leur origine. Avec un dépôt sélectionné, conserver son contexte. Brouillons, includes/origines, Apply/readback et effets partiels restent ceux des ADR0093/0094.
+
+La Checklist montre Git, identité Global, éditeur, Merge, Diff, sh, SSH, langue et HOME. SSH ne fait qu’une sonde locale de version ; Diff/Merge attestent une configuration sans exécuter les outils ou leurs commandes. Garder erreurs et indisponibilités visibles. Ne pas inventer de vérifications Linux du registre ou des extensions Windows. Les seuils de diagnostic Windows 2.43/2.53 restent distincts du minimum Linux README/.deb 2.38 ; leur alignement reste ouvert.
+
+La case de démarrage est publiée seule immédiatement. Elle se désactive automatiquement après neuf Good et une publication réussie. Save and rescan sauvegarde les pages avant de relire les choix publiés. Cancel abandonne les seules modifications restantes ; une publication déjà acquise, même avant un échec tardif, demeure acquise. Une fermeture attend le drainage des acteurs connus. Git indisponible au démarrage ouvre la correction ; la sauvegarde reprend la demande initiale avec son cwd, chemin et sélection, tandis que Cancel la laisse pendante.
+
+Repères : GitEnvironmentSettingsPage, GitHomeDirectoryDialog, ChecklistSettingsPage, GitEnvironmentSettingsSession/PreferencesStore/Checklist/Startup, GitConfigurationContext, GitExecutionEnvironment/Diagnostics, MainWindow.GitEnvironment, DesktopSettingsDialog et Program.
+
+[Full vérifié](../../../../../artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json) : 1986 Desktop, 720 Core et 35 Plugins, sans skip ; anciens cas et oracles conservés. Le premier contrôle rejeté est gardé : sa seule hypothèse corrigée concerne neuf conversions CRLF déclarées, sans réexécution des suites. [Paquet exact](../../../../../artifacts/linux/snapshots/1deed8d34/proofs/package-parent-verification.json) et [backend/helper](../../../../../artifacts/linux/snapshots/1deed8d34/proofs/package-backend-environment-verification.json) vérifiés, DPKG/démarrage isolés.
+
+[Revue native source](../../../../../artifacts/linux/git-environment-20261018/native-source-review.json) : Git/HOME, reprise CLI, case instantanée/auto-off, Cancel, redémarrage avec dépôt/diff et Config Global hors dépôt ; quatre fermetures normales à 0, anglais/clair/X11 seulement. Ce parcours ne certifie pas le paquet interactivement, tous les pickers, langues/thèmes, Wayland/DPI/accessibilité ou la parité globale. Git et Checklist passent N0→N2 ; HOME devient une adaptation N2 ; FormSettings reste N1. [Pièges conservés](../../../failure.md#environnement-git-et-checklist--intentions-à-conserver).

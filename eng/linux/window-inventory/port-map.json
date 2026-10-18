@@ -1724,15 +1724,35 @@
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.FormFixHome": {
-      "feature": "Correction du HOME Windows",
+      "feature": "Correction du HOME",
       "group": "platform",
-      "level": "NA",
-      "linux": [],
-      "implemented": "Linux utilise le HOME/XDG de la session.",
-      "remaining": "Assistant spécifique à la configuration Windows ; sans reproduction directe prévue sur Linux.",
-      "visual": "systeme",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "GitHomeDirectoryDialog",
+        "GitEnvironmentSettingsPage",
+        "GitEnvironmentPreferencesStore",
+        "GitExecutionEnvironment"
+      ],
+      "implemented": "HOME hérité ou personnalisé pour les seuls enfants, dossier accessible, choix OK/Cancel et profil réutilisé au redémarrage. GIT_CONFIG_GLOBAL garde sa priorité, XDG reste observé et aucun .gitconfig n’est requis dans un HOME neuf. Revue source1deed anglais/clair/X11 : saisie HOME et environnement des commandes enfants vérifiés.",
+      "remaining": "Adaptation N2 : ne reproduit pas les réglages USERPROFILE/registre ni un changement HOME de la session ou du système. Pickers, erreurs de permissions, chemins/libellés longs, autres langues/thèmes, Wayland/DPI/accessibilité et paquet interactif restent à auditer.",
+      "visual": "adapte",
+      "tests": [
+        "GitEnvironmentSettingsPagesTests",
+        "GitEnvironmentSettingsHostTests",
+        "GitEnvironmentPreferencesTests",
+        "GitEnvironmentSettingsSessionTests",
+        "GitEnvironmentTransportTests"
+      ],
+      "adr": [
+        "0095"
+      ],
+      "extra_evidence": [
+        {
+          "label": "HOME enfant, priorité GIT_CONFIG_GLOBAL/XDG et contexte immuable par opération",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.SimpleHelpDisplayDialog": {
       "feature": "Affichage d’aide de paramètres",
@@ -1765,10 +1785,13 @@
         "MainWindow@ShowWorkflowAsync",
         "FileHistoryPreferencesStore",
         "AppearanceFontsSettingsPage",
-        "FontPickerDialog"
+        "FontPickerDialog",
+        "GitEnvironmentSettingsPage",
+        "ChecklistSettingsPage",
+        "GitHomeDirectoryDialog"
       ],
-      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092.",
-      "remaining": "Arbre complet de pages Windows très incomplet : inventaire détaillé ci-dessous, pas de parité globale.",
+      "implemented": "Thème, limite d’historique, normalisation des branches, paramètres du lecteur et configuration Git. Follow/Exact de l’historique fichier partagés, périmètre partiel ADR0086. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Langue persistante dans General, Cancel/OK et redémarrage requis ; préférences récentes préservées entre fenêtres, ADR0090. Quatre rôles de polices et EOL dans une page Fonts dédiée, brouillons et redémarrage vérifiés ; ADR0091/0092. Pages Git/Paths et Checklist raccordées, correction HOME enfant et Config Global hors dépôt ; Save and rescan publie les pages avant les observations, case de démarrage publiée séparément et Cancel sans rollback des publications acquises, ADR0095. Parcours natif source 1deed borné : correction Git, reprise de la demande CLI, HOME enfant, case instantanée puis auto-off, Cancel et redémarrage du profil.",
+      "remaining": "FormSettings reste N1 : arbre Windows très incomplet, onglets Avalonia et sous-pages évaluées séparément. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale.",
       "visual": "adapte",
       "tests": [
         "ClassicMenuTests",
@@ -1776,7 +1799,11 @@
         "FileHistoryPreferencesTests",
         "HotkeysSettingsPageTests",
         "LanguagePreferencesTests",
-        "FontSettingsTests"
+        "FontSettingsTests",
+        "GitEnvironmentSettingsHostTests",
+        "GitEnvironmentSettingsPagesTests",
+        "GitEnvironmentSettingsSessionTests",
+        "GitEnvironmentStartupTests"
       ],
       "adr": [
         "0060",
@@ -1784,7 +1811,8 @@
         "0089",
         "0090",
         "0091",
-        "0092"
+        "0092",
+        "0095"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2303,13 +2331,35 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.ChecklistSettingsPage": {
       "feature": "Vérifications de la configuration initiale",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de checklist de configuration équivalente.",
-      "remaining": "Diagnostics et corrections guidées de l’environnement à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "ChecklistSettingsPage",
+        "GitEnvironmentSettingsSession",
+        "GitEnvironmentChecklist",
+        "GitEnvironmentDiagnostics",
+        "MainWindow@CheckStartupEnvironmentAsync",
+        "MainWindow@ShowSettingsPageAsync"
+      ],
+      "implemented": "Neuf observations dans l’ordre Git, identité Global, éditeur, Merge, Diff, sh, SSH, langue et HOME ; couleurs, noms XLF, erreurs et corrections guidées accessibles sans dépôt. SSH sonde sa version locale ; outils configurés sans exécution. Case publiée seule immédiatement, auto-off après neuf Good et publication réussie. Save and rescan sauvegarde les pages avant lecture ; Cancel conserve les publications et fermeture/annulation drainent les acteurs connus. Source1deed : reprise CLI, case instantanée/auto-off et redémarrage vérifiés en anglais/clair/X11.",
+      "remaining": "N2 : aucun test réseau/authentification SSH ni exécution des outils externes déduit de ces observations. États Windows de registre/extensions/PuTTY non simulés. Corrections/pickers/erreurs et variantes natives étendues, arbre Settings complet et paquet interactif restent à auditer. Politique de versions Linux 2.38 et diagnostic Windows 2.43/2.53 à aligner.",
+      "visual": "rapproche",
+      "tests": [
+        "GitEnvironmentSettingsPagesTests",
+        "GitEnvironmentSettingsHostTests",
+        "GitEnvironmentSettingsSessionTests",
+        "GitEnvironmentChecklistTests",
+        "GitEnvironmentStartupTests"
+      ],
+      "adr": [
+        "0095"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Sondes natives Git/sh/SSH : erreurs de lancement et résultats réels sans authentification réseau",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.ColorsSettingsPage": {
       "feature": "Personnalisation des couleurs",
@@ -2453,19 +2503,24 @@
         "GitRepository@GetToolConfigurationAsync",
         "GitRepository@SaveToolConfigurationAsync",
         "AvailableEncodingsDialog",
-        "AvailableEncodingsPreferencesStore"
+        "AvailableEncodingsPreferencesStore",
+        "GitConfigurationContext"
       ],
-      "implemented": "Treize champs de la page Windows dans une grille unique, avec libellés XLF et ComboBox éditables. Identité, helper, éditeur, template avec Browse, quatre choix autocrlf et encoding avec Configure rejoignent les six champs Diff/Merge. Moteur natif commun, brouillons Local/Global, Effective/System readonly, Apply/OK explicites, Cancel sans rollback des publications, origines/includes et effets partiels conservés. Absence, vide, valueless, aliases et encodages inconnus restent distincts. Retour au valueless publié sans unset ; helper vide explicite pour reset. Diagnostic natif conservé, sans destination devinée ni édition ; valeurs raw readonly conservées lorsque leur lecture réussit malgré l’échec de rev-parse. Une configuration illisible reste indisponible, sans valeurs inventées. Sélecteur d’encodages partagé avec les lecteurs ; fermeture possédée et focus de validation. Suites fraîches et parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : Apply nom Local, Cancel, encodages indépendants et redémarrage normal.",
-      "remaining": "Page N2 : Global hors dépôt dans l’UI et découverte exhaustive des outils/éditeurs encore ouverts. Le lecteur guidé à origines requiert Git 2.26 ; édition brute séparée conservée pour les autres clés et la réparation des configurations natives invalides. Browse template, autres champs et Global en natif étendu, multivaleurs modifiables, tous consommateurs, thèmes/localisations/Wayland/DPI/accessibilité non certifiés iso. Le parcours natif du binaire Release source ne valide pas le nouveau paquet interactivement. La validation T01 d975 reste limitée au lot Diff/Merge précédent.",
+      "implemented": "Treize champs de la page Windows dans une grille unique, avec libellés XLF et ComboBox éditables. Identité, helper, éditeur, template avec Browse, quatre choix autocrlf et encoding avec Configure rejoignent les six champs Diff/Merge. Moteur natif commun, brouillons Local/Global, Effective/System readonly, Apply/OK explicites, Cancel sans rollback des publications, origines/includes et effets partiels conservés. Absence, vide, valueless, aliases et encodages inconnus restent distincts. Retour au valueless publié sans unset ; helper vide explicite pour reset. Diagnostic natif conservé, sans destination devinée ni édition ; valeurs raw readonly conservées lorsque leur lecture réussit malgré l’échec de rev-parse. Une configuration illisible reste indisponible, sans valeurs inventées. Sélecteur d’encodages partagé avec les lecteurs ; fermeture possédée et focus de validation. Suites fraîches et parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : Apply nom Local, Cancel, encodages indépendants et redémarrage normal. ADR0095 ajoute l’accès UI Global sans dépôt sélectionné par un contexte privé hors dépôt ; redirections de dépôt retirées et origines des chemins hérités relatifs conservées, sans découverte du cwd du lanceur. Parcours natif 05 sur source 1deed, anglais/clair/X11 : Config Global ouvert depuis Settings sans dépôt, UserName Apply réel et readback, Cancel enfant/parent conservant la valeur, fixture config/index/HEAD intacte et sortie normale à 0.",
+      "remaining": "Page N2 : découverte exhaustive des outils/éditeurs encore ouverte. Le lecteur guidé à origines requiert Git 2.26 ; édition brute séparée conservée pour les autres clés et la réparation des configurations natives invalides. Browse template, autres champs et audit Config Global hors dépôt natif étendu, multivaleurs modifiables, tous consommateurs, thèmes/localisations/Wayland/DPI/accessibilité non certifiés iso. Le lot environnement a ses propres suites/paquet vérifiés ; le parcours source Global hors dépôt reste borné. Le parcours natif du binaire Release source ne valide pas le nouveau paquet interactivement. La validation T01 d975 reste limitée au lot Diff/Merge précédent.",
       "visual": "rapproche",
       "tests": [
         "GitToolsSettingsDialogTests",
         "GitConfigurationPageTests",
-        "AvailableEncodingsDialogTests"
+        "AvailableEncodingsDialogTests",
+        "GitEnvironmentSettingsSessionTests",
+        "GitEnvironmentSettingsHostTests",
+        "GitEnvironmentChecklistTests"
       ],
       "adr": [
         "0093",
-        "0094"
+        "0094",
+        "0095"
       ],
       "extra_evidence": [
         {
@@ -2494,13 +2549,36 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.GitSettingsPage": {
       "feature": "Chemins/exécutable Git",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Utilisation du Git système via PATH.",
-      "remaining": "Page de choix d’exécutable, chemins/outils et diagnostics absente.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "GitEnvironmentSettingsPage",
+        "GitHomeDirectoryDialog",
+        "GitEnvironmentPreferencesStore",
+        "GitEnvironmentSettingsSession",
+        "GitExecutionEnvironment",
+        "MainWindow@ShowSettingsPageAsync"
+      ],
+      "implemented": "Groupes Paths/Environment, noms XLF, choix littéraux Git et outils, Browse et HOME enfant. Profil XDG, brouillons/Save/Cancel, rebase champ par champ et résultats tardifs invalidés. Git vide utilise PATH ; outils ajoutés en fin de PATH. Choix publié appliqué à la frontière d’exécution suivante, snapshots aux BeginOperation raccordés et runners injectés conservés. Source1deed : reprise CLI après Save/Rescan, HOME enfant et redémarrage avec dépôt/diff vérifiés en anglais/clair/X11.",
+      "remaining": "N2 : arbre Settings incomplet ; Git for Windows/WSL, USERPROFILE et HOME système non repris. Audit natif étendu des pickers/outils, permissions/profil, thèmes/langues et Wayland/DPI/accessibilité ouvert. ReadBrowserAsync n’encadre pas globalement toutes les lectures successives. Seuils de diagnostic Windows 2.43/2.53 distincts du minimum Linux README/.deb 2.38 ; paquet interactif non certifié.",
+      "visual": "rapproche",
+      "tests": [
+        "GitEnvironmentSettingsPagesTests",
+        "GitEnvironmentSettingsHostTests",
+        "GitEnvironmentPreferencesTests",
+        "GitEnvironmentSettingsSessionTests",
+        "GitEnvironmentTransportTests",
+        "GitEnvironmentStartupTests"
+      ],
+      "adr": [
+        "0095"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Git choisi en direct à la prochaine opération et contexte figé pour l’opération engagée",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.HotkeysSettingsPage": {
       "feature": "Raccourcis personnalisables",
