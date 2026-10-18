@@ -218,8 +218,12 @@ public class DashboardTests
         RepositoryHistoryRow item = recent.Items.OfType<RepositoryHistoryRow>().Single();
         Assert.That(item.Caption, Is.EqualTo("repository"));
         Assert.That(item.Path, Is.EqualTo(fixture.Repository));
+        await main.RepositoryBranchLoading.WaitAsync(TimeSpan.FromSeconds(10));
         MenuItem recentMenu = Group(main, "Start").Items.OfType<MenuItem>().Single(menu => menu.Header as string == "Recent repositories");
-        Assert.That(recentMenu.Items.OfType<MenuItem>().Single().Header, Is.EqualTo("repository"));
+        MenuItem recentEntry = recentMenu.Items.OfType<MenuItem>().Single();
+        Assert.That(recentEntry.Header, Is.EqualTo("repository (main)"));
+        Assert.That(recentEntry.Tag, Is.EqualTo(fixture.Repository));
+        Assert.That(ToolTip.GetTip(recentEntry), Is.EqualTo(fixture.Repository));
         ClickMenu(main, "Start", "Close"); DashboardControl dashboard = await DashboardAsync(main);
         Assert.That(((DashboardRepository)Tile(dashboard, fixture.Repository, false).Tag!).Caption, Is.EqualTo("repository"));
         ClickContext(Tile(dashboard, fixture.Repository, false), "Open repository");

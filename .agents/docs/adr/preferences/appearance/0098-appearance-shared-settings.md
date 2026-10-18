@@ -8,4 +8,6 @@ Retrouver les groupes et clés XLF Windows avec des réglages ayant un effet ré
 
 Dashboard et récents partagent les métadonnées par dépôt et contexte Git capturé. Une décoration d'un autre dépôt ne bloque pas l'historique actif. Settings peut cesser d'attendre sans tuer un worker utilisé par Browse ; Main annule et draine ses workers avant Closed. Même test de fermeture rouge puis vert après ajout du token consommateur.
 
+La branche est affichée par défaut comme Windows ; le caption raccourci et le chemin cible restent indépendants. Linux l'ajoute en suffixe, alors que Windows réserve une colonne : rapprochement visuel encore ouvert.
+
 Portée et résultats dans [TODO](../../../todo.md#appearance--socle-intégré-validation-en-cours) et [failure](../../../failure.md#appearance--brouillons-et-consommateurs). Aucun ciblé ne certifie la parité globale.
