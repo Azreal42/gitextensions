@@ -4,6 +4,7 @@ namespace GitExtensions.Linux.Desktop;
 internal sealed record AppearanceSettingsValues
 {
     public bool RelativeDate { get; init; } = true;
+    public string Dictionary { get; init; } = GitDictionaryName.Default;
     public bool ShowRepoCurrentBranch { get; init; } = true;
     public GitCommands.TruncatePathMethod TruncatePathMethod { get; init; } = GitCommands.TruncatePathMethod.None;
     public bool ShowAvatar { get; init; } = true;

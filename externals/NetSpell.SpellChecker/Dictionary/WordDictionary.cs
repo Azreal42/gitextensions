@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+#if !NETSPELL_PORTABLE
 using System.Drawing;
+#endif
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -20,7 +22,9 @@ using PhoneticRuleCollection = List<PhoneticRule>;
 /// <summary>
 /// The WordDictionary class contains all the logic for managing the word list.
 /// </summary>
+#if !NETSPELL_PORTABLE
 [ToolboxBitmap(typeof(WordDictionary), "Dictionary.bmp")]
+#endif
 public partial class WordDictionary : Component
 {
     private string _dictionaryFile = Thread.CurrentThread.CurrentCulture.Name + ".dic";
@@ -564,6 +568,10 @@ public partial class WordDictionary : Component
                     for (int i = 0; i < rule.ConditionCount; i++)
                     {
                         int charCode = tempWord[i];
+#if NETSPELL_PORTABLE
+                        // No character entry means this rule does not match; try the remaining rules.
+                        if (charCode >= rule.Condition.Length) { break; }
+#endif
                         if ((rule.Condition[charCode] & (1 << i)) == (1 << i))
                         {
                             passCount++; // condition passed

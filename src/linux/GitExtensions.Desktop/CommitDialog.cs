@@ -13,6 +13,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Desktop.Controls;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -44,6 +45,13 @@ public sealed partial class CommitDialog : Window
     private readonly FileContentView _content;
     private GitComparisonDiffOptions _viewerOptions = new();
     private readonly TextBox _message = new() { Name = "Message", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+    private readonly SpellingEditorView _spellingView;
+    private readonly CommitSpellingController _spelling;
+    private Task? _spellingClose;
+    private bool _spellingDrained;
+    private bool _spellingClosing;
+    private Window? _spellingClosingOwner;
+    internal Task SpellingCloseCompletion => _spelling.Completion;
     private readonly CheckBox _amend = new() { Name = "Amend", Height = 24, MinHeight = 24 };
     private readonly CheckBox _resetAuthor = new() { Name = "ResetAuthor", IsVisible = false, Height = 24, MinHeight = 24 };
     private readonly TextBox _author = new() { Name = "AuthorOverride", Watermark = "name <mail>", Width = 250 };
@@ -103,6 +111,12 @@ public sealed partial class CommitDialog : Window
     public CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore = null,
         Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
         TargetedCommitKind initialKind = TargetedCommitKind.Normal, GitCommit? targetCommit = null)
+        : this(repository, preferencesStore, afterSubmoduleUpdateAsync, initialKind, targetCommit, null) { }
+
+    internal CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore,
+        Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync,
+        TargetedCommitKind initialKind, GitCommit? targetCommit,
+        Func<string, CancellationToken, Task<GitDictionarySettingsSnapshot>>? readSpellingSettingsAsync)
     {
         ArgumentNullException.ThrowIfNull(repository);
         if (!Enum.IsDefined(initialKind)) { throw new ArgumentOutOfRangeException(nameof(initialKind)); }
@@ -122,6 +136,9 @@ public sealed partial class CommitDialog : Window
         _initialTarget = targetCommit;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferencesStore = preferencesStore ?? new CommitPreferencesStore();
+        string profileRoot = Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!;
+        _spellingView = new(_message);
+        _spelling = new(repository, _spellingView, new PreferencesStore(profileRoot), readSettingsAsync: readSpellingSettingsAsync);
         _preferences = _preferencesStore.Load();
         Title = C("$this", "Commit");
         Width = 1100;
@@ -276,6 +293,7 @@ public sealed partial class CommitDialog : Window
         Opened += async (_, _) =>
         {
             ModalWindowActivation.AfterMapping(this, () => !_lifetime.IsCancellationRequested && !_closeWhenIdle);
+            _spelling.Start();
             await InitializeAsync();
             if (IsVisible && !_lifetime.IsCancellationRequested && !_closeWhenIdle && !OwnedWindows.Any(child => child.IsVisible)) { _unstaged.Focus(); }
         };
@@ -285,6 +303,7 @@ public sealed partial class CommitDialog : Window
         };
         Closing += (_, args) =>
         {
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _spellingClosingOwner = Owner as Window; }
             if (_busy)
             {
                 args.Cancel = true;
@@ -298,12 +317,29 @@ public sealed partial class CommitDialog : Window
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
                 {
                     args.Cancel = true;
-                    _closeWhenIdle = false;
+                    _closeWhenIdle = false; _spellingClosingOwner = null;
                     ShowFailure(T("Cannot save commit message"), exception);
                 }
             }
+            if (args.Cancel || _spellingDrained) { return; }
+            _spellingClosing = true;
+            Task drain = _spelling.BeginClose();
+            if (drain.IsCompletedSuccessfully) { _spellingDrained = true; _spellingClosing = false; return; }
+            args.Cancel = true;
+            if (_spellingClose is null)
+            {
+                _closeWhenIdle = true;
+                UpdateAvailability();
+                _spellingClose = FinishSpellingCloseAsync(drain);
+            }
         };
-        Closed += (_, _) => { _lifetime.Cancel(); _selectionFilterOperation?.Cancel(); _historyOperation?.Cancel(); _unstagedView.Dispose(); _stagedView.Dispose(); _content.Dispose(); };
+        Closed += (_, _) =>
+        {
+            _lifetime.Cancel(); _selectionFilterOperation?.Cancel(); _historyOperation?.Cancel();
+            _unstagedView.Dispose(); _stagedView.Dispose(); _content.Dispose();
+            Window? owner = _spellingClosingOwner; _spellingClosingOwner = null;
+            if (owner is not null) { Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
         InitializeFileScripts();
         UpdateAvailability();
     }
@@ -314,7 +350,22 @@ public sealed partial class CommitDialog : Window
     public bool ScriptMayHaveChangedRepository { get; private set; }
     public string? LastError { get; private set; }
     public event EventHandler? RepositoryChanged;
-    internal bool IsBusy => _busy || _commitRequested;
+    internal bool IsBusy => _busy || _commitRequested || _spellingClosing;
+    private async Task FinishSpellingCloseAsync(Task drain)
+    {
+        // Defer the second Close until the current cancellable Closing notification has returned.
+        await Task.Yield();
+        try { await drain; }
+        catch (Exception error)
+        {
+            _spellingDrained = true; _spellingClosing = false; _closeWhenIdle = false;
+            ShowFailure(T("Spelling checker"), error); UpdateAvailability();
+            return; // Keep the drained window visible so the closure error can be read.
+        }
+        _spellingDrained = true; _spellingClosing = false;
+        Close();
+    }
+
     public Task InitializeAsync() => _initialization ??= RunAsync(T("Refresh"), async () =>
     {
         await RefreshDataAsync();
@@ -402,7 +453,8 @@ public sealed partial class CommitDialog : Window
         message.Children.Add(options);
         DockPanel.SetDock(_output, Dock.Bottom);
         message.Children.Add(_output);
-        message.Children.Add(_message);
+        DockPanel.SetDock(_spelling.Notice, Dock.Bottom); message.Children.Add(_spelling.Notice);
+        message.Children.Add(_spellingView);
         Grid.SetColumn(message, 2);
         editor.Children.Add(message);
         Grid.SetRow(editor, 2);
@@ -730,7 +782,7 @@ public sealed partial class CommitDialog : Window
 
     private async Task CommitAsync(bool push)
     {
-        if (_busy || _commitRequested || _confirmationOpen || _status is null) { return; }
+        if (IsBusy || _confirmationOpen || _status is null) { return; }
         _commitRequested = true;
         try
         {
@@ -883,7 +935,7 @@ public sealed partial class CommitDialog : Window
     });
     private async Task LoadHistoryAsync()
     {
-        if (_busy) { return; }
+        if (IsBusy || _lifetime.IsCancellationRequested) { return; }
         _historyOperation?.Cancel();
         CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         _historyOperation = operation;
@@ -905,7 +957,7 @@ public sealed partial class CommitDialog : Window
                 if (label.Length > 72) { label = label[..69] + "..."; }
                 MenuItem item = new() { Name = "PreviousMessage", Header = label, Tag = message };
                 ToolTip.SetTip(item, message);
-                item.Click += (_, _) => { if (!_busy) { _message.SelectAll(); _message.SelectedText = message.Trim(); _message.Focus(); } };
+                item.Click += (_, _) => { if (!IsBusy) { _message.SelectAll(); _message.SelectedText = message.Trim(); _message.Focus(); } };
                 items.Add(item);
             }
             items.Add(new MenuItem { Header = "-" });
@@ -956,7 +1008,9 @@ public sealed partial class CommitDialog : Window
     });
     private async Task RunAsync(string label, Func<Task> action)
     {
-        if (_busy) { return; }
+        // CommitAsync intentionally calls this while _commitRequested is true.
+        // A closing spell owner, however, cannot admit a new Git operation.
+        if (_busy || _spellingClosing || _lifetime.IsCancellationRequested) { return; }
         _busy = true;
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         LastError = null;
@@ -1004,12 +1058,13 @@ public sealed partial class CommitDialog : Window
 
     private void UpdateAvailability()
     {
-        foreach (Control control in _interactive) { control.IsEnabled = !_busy && !_commitRequested; }
-        _diff.ComparisonMenu.SetHostBusy(_busy || _commitRequested);
-        _diff.RenderingMenu.SetHostBusy(_busy || _commitRequested);
+        bool unavailable = IsBusy;
+        foreach (Control control in _interactive) { control.IsEnabled = !unavailable; }
+        _diff.ComparisonMenu.SetHostBusy(unavailable);
+        _diff.RenderingMenu.SetHostBusy(unavailable);
         _indexFlagFiles?.UpdateAvailability();
         foreach (Action update in _updateRulesFileContexts) { update(); }
-        if (_busy || _commitRequested) { return; }
+        if (unavailable) { return; }
         _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
         _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();
         _target.IsEnabled = _kind.SelectedIndex != 0;
@@ -1055,7 +1110,7 @@ public sealed partial class CommitDialog : Window
     private async void HandleShortcut(object? sender, KeyEventArgs args)
     {
         if (args.Handled) { return; }
-        if (_busy || _commitRequested || _confirmationOpen || _lifetime.IsCancellationRequested || !IsVisible
+        if (IsBusy || _confirmationOpen || _lifetime.IsCancellationRequested || !IsVisible
             || OwnedWindows.Any(window => window.IsVisible)) { return; }
         // Windows routes ProcessCmdKey through the focused child before its
         // form. A capable FileViewer binding therefore wins a form collision.
@@ -1117,7 +1172,7 @@ public sealed partial class CommitDialog : Window
     {
         FileStatusListView view = _viewStaged ? _stagedView : _unstagedView;
         string[] paths = view.SelectedTags.OfType<GitChange>().Select(change => change.Path).ToArray();
-        if (_busy || _commitRequested || _lifetime.IsCancellationRequested || paths.Length == 0) { return Task.CompletedTask; }
+        if (IsBusy || _lifetime.IsCancellationRequested || paths.Length == 0) { return Task.CompletedTask; }
         GitCompareRevision source = new(Kind: _viewStaged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
         return RunAsync(T("Open with difftool"), async () =>
         {
@@ -1149,7 +1204,7 @@ public sealed partial class CommitDialog : Window
 
     private bool HandleDiffCommand(string command)
     {
-        if (_busy || _commitRequested || _confirmationOpen || _lifetime.IsCancellationRequested || !IsVisible
+        if (IsBusy || _confirmationOpen || _lifetime.IsCancellationRequested || !IsVisible
             || !_diff.IsReadOnly || !_diff.CanStagePatch || _patch is null || _diff.SelectionLength == 0) { return false; }
         switch (command)
         {

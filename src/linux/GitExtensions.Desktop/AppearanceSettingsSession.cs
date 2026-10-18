@@ -28,6 +28,7 @@ internal sealed class AppearanceSettingsSession
         DesktopPreferences latest = _desktop.Load();
         return desired with
         {
+            Dictionary = Pick(GitDictionaryName.NormalizeDisabledIdentity(_baseline.Dictionary), GitDictionaryName.NormalizeDisabledIdentity(draft.Dictionary), GitDictionaryName.NormalizeDisabledIdentity(latest.Dictionary)),
             Theme = Pick(_baseline.Theme, draft.Theme, latest.Theme),
             Language = Pick(_baseline.Language, draft.Language, latest.Language),
             ShowRepoCurrentBranch = Pick(_baseline.ShowRepoCurrentBranch, draft.ShowRepoCurrentBranch, latest.ShowRepoCurrentBranch),
@@ -47,6 +48,7 @@ internal sealed class AppearanceSettingsSession
         // workflow profile fails. This acknowledgement has no profile IO or background work.
         _baseline = _baseline with
         {
+            Dictionary = GitDictionaryName.NormalizeDisabledIdentity(draft.Dictionary),
             Theme = draft.Theme, Language = draft.Language, ShowRepoCurrentBranch = draft.ShowRepoCurrentBranch,
             TruncatePathMethod = draft.TruncatePathMethod,
             ShowAuthorAvatarInCommitInfo = draft.ShowAuthorAvatarInCommitInfo, AvatarImageCacheDays = draft.AvatarImageCacheDays,
@@ -102,8 +104,11 @@ internal sealed class AppearanceSettingsSession
         { throw new JsonException("Invalid history view settings profile: " + _history.FilePath); }
     }
 
-    private static void Validate(AppearanceSettingsValues draft)
+    private void Validate(AppearanceSettingsValues draft)
     {
+        if (!string.Equals(GitDictionaryName.NormalizeDisabledIdentity(_baseline.Dictionary),
+            GitDictionaryName.NormalizeDisabledIdentity(draft.Dictionary), StringComparison.Ordinal))
+        { _ = GitDictionaryName.Normalize(draft.Dictionary); }
         if (!Enum.IsDefined(draft.TruncatePathMethod)) { throw new ArgumentException("Select a valid path truncation method.", nameof(draft)); }
         if (draft.Theme is not ("Light" or "Dark" or "System")) { throw new ArgumentException("Select a valid theme.", nameof(draft)); }
         if (draft.AvatarImageCacheDays is < 0 or > 400 || !Enum.IsDefined(draft.AvatarProvider) || !Enum.IsDefined(draft.AvatarFallbackType))
@@ -113,6 +118,7 @@ internal sealed class AppearanceSettingsSession
         => EqualityComparer<T>.Default.Equals(baseline, draft) ? current : draft;
     private static AppearanceSettingsValues Read(DesktopPreferences desktop, HistoryViewPreferences active) => new()
     {
+        Dictionary = GitDictionaryName.NormalizeDisabledIdentity(desktop.Dictionary),
         Theme = desktop.Theme, Language = desktop.Language, ShowRepoCurrentBranch = desktop.ShowRepoCurrentBranch,
         TruncatePathMethod = desktop.TruncatePathMethod,
         RelativeDate = active.RelativeDate, ShowAvatar = active.ShowAvatar,

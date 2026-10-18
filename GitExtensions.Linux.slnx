@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/linux/GitExtensions.Avalonia.Skia.Patched/GitExtensions.Avalonia.Skia.Patched.csproj" />
     <Project Path="src/linux/GitExtensions.Core/GitExtensions.Core.csproj" />
+    <Project Path="src/linux/GitExtensions.SpellChecking/GitExtensions.SpellChecking.csproj" />
     <Project Path="src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj" />
     <Project Path="src/linux/GitExtensions.Plugins/GitExtensions.Plugins.csproj" />
   </Folder>

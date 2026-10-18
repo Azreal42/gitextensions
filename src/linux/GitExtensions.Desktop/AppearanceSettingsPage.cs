@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using GitCommands;
+using GitExtensions.Linux.Spelling;
 using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 
@@ -18,12 +19,19 @@ internal sealed class AppearanceSettingsPage : UserControl
     internal const string TranslationHelpUrl = "https://github.com/gitextensions/gitextensions/wiki/Translations";
     internal const string AvatarProviderHelpUrl = "https://git-extensions-documentation.readthedocs.org/en/main/settings.html#author-images-avatar-provider";
     internal const string AvatarFallbackHelpUrl = "https://git-extensions-documentation.readthedocs.org/en/main/settings.html#author-images-avatar-fallback";
+    internal const string DictionaryHelpUrl = "https://github.com/gitextensions/gitextensions/wiki/Spelling";
     private static readonly string[] Themes = ["Light", "Dark", "System"];
     private readonly TranslationCatalog _translations;
     private readonly LanguageCatalog _languages;
     private readonly Func<Window, Task>? _helpTranslateAsync;
     private readonly CheckBox _relativeDate, _repoBranch, _avatar, _avatarCommitInfo;
-    private readonly ComboBox _theme, _language, _provider, _fallback, _truncatePath;
+    private readonly ComboBox _theme, _language, _provider, _fallback, _truncatePath, _dictionary;
+    private readonly DictionaryCatalog _dictionaries;
+    private readonly TextBlock _dictionaryNotice = new() { Name = "DictionaryNotice", TextWrapping = TextWrapping.Wrap, IsVisible = false };
+    private string[] _dictionaryNames = [DictionaryCatalog.NoneName];
+    private string _dictionaryDraftName = DictionaryCatalog.DefaultName;
+    private string? _dictionaryCatalogError;
+    private bool _dictionaryEdited;
     private readonly NumericUpDown _cacheDays;
     private readonly TextBox _customTemplate;
     private readonly TextBlock _customTemplateLabel;
@@ -43,6 +51,7 @@ internal sealed class AppearanceSettingsPage : UserControl
 
     internal AppearanceSettingsValues Draft => _accepted with
     {
+        Dictionary = _dictionaryEdited ? _dictionaryDraftName : _accepted.Dictionary,
         RelativeDate = _relativeDate.IsChecked == true,
         ShowRepoCurrentBranch = _repoBranch.IsChecked == true,
         TruncatePathMethod = _truncatePath.SelectedItem is TruncatePathMethod method ? method : _accepted.TruncatePathMethod,
@@ -59,10 +68,12 @@ internal sealed class AppearanceSettingsPage : UserControl
     internal AppearanceSettingsPage(AppearanceSettingsValues initial, TranslationCatalog translations,
         Func<Window, Task>? helpTranslateAsync = null, LanguageCatalog? languages = null,
         Func<Window, CancellationToken, Task>? clearAvatarCacheAsync = null,
-        Func<Window, string, Task>? avatarHelpAsync = null, CancellationToken cancellationToken = default)
+        Func<Window, string, Task>? avatarHelpAsync = null, CancellationToken cancellationToken = default,
+        DictionaryCatalog? dictionaryCatalog = null)
     {
         ArgumentNullException.ThrowIfNull(initial); ArgumentNullException.ThrowIfNull(translations);
         _accepted = initial; _translations = translations; _languages = languages ?? LanguageCatalog.LoadDefault();
+        _dictionaries = dictionaryCatalog ?? DictionaryCatalog.FromApplicationDirectory(AppContext.BaseDirectory);
         _helpTranslateAsync = helpTranslateAsync; _clearAvatarCacheAsync = clearAvatarCacheAsync;
         _avatarHelpAsync = avatarHelpAsync; _cancellationToken = cancellationToken; Name = "AppearanceSettingsPage";
 
@@ -138,9 +149,19 @@ internal sealed class AppearanceSettingsPage : UserControl
         AddField(language, Caption("lblLanguage", "Language (restart required)"), _language, _helpTranslate);
         HyperlinkButton dictionaries = new() { Name = "downloadDictionary", Content = Text("downloadDictionary", "Download dictionary"),
             Padding = default, MinHeight = 24, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
-        Disable(dictionaries, "The Linux commit editor does not yet have a spelling dictionary engine. Downloading a Windows dictionary would not enable spell checking.");
-        AddField(language, Caption("lblSpellingDictionary", "Dictionary for spelling checker"),
-            UnavailableChoice("Dictionary", "Spelling dictionaries are not connected to the Linux commit editor."), dictionaries);
+        BindHelp(dictionaries, DictionaryHelpUrl);
+        _dictionary = Choice("Dictionary", _dictionaryNames);
+        _dictionary.ItemTemplate = new FuncDataTemplate<string>((name, _) => new TextBlock
+        { Text = name == DictionaryCatalog.NoneName ? _translations.Translate("None") : name });
+        _dictionary.SelectionChanged += (_, _) =>
+        {
+            if (_loading) { return; }
+            _dictionaryEdited = true; _dictionaryDraftName = _dictionary.SelectedItem as string ?? "";
+            UpdateDictionaryDiagnostic();
+        };
+        _dictionary.DropDownOpened += (_, _) => ReloadDictionaries(_dictionaryEdited ? _dictionaryDraftName : _accepted.Dictionary);
+        AddField(language, Caption("lblSpellingDictionary", "Dictionary for spelling checker"), _dictionary, dictionaries);
+        AddWide(language, _dictionaryNotice);
 
         TextBlock unsupported = new() { Name = "AppearanceUnsupportedNotice",
             Text = _translations.Translate("Some Windows appearance options are not yet available on Linux. Their controls are disabled."),
@@ -165,6 +186,8 @@ internal sealed class AppearanceSettingsPage : UserControl
 
     internal bool Validate(out string? error)
     {
+        if (_dictionaryEdited && !_dictionaryNames.Contains(_dictionaryDraftName, StringComparer.Ordinal))
+        { return Invalid(_dictionary, "Select an installed spelling dictionary or None.", out error); }
         if (_truncatePath.SelectedItem is not TruncatePathMethod method || !Enum.IsDefined(method))
         { return Invalid(_truncatePath, "Select a path truncation method.", out error); }
         if (_theme.SelectedItem is not string theme || !Themes.Contains(theme))
@@ -202,6 +225,8 @@ internal sealed class AppearanceSettingsPage : UserControl
         try
         {
             _accepted = published; _languageEdited = false;
+            _dictionaryEdited = false; _dictionaryDraftName = published.Dictionary;
+            ReloadDictionaries(published.Dictionary);
             _relativeDate.IsChecked = published.RelativeDate; _repoBranch.IsChecked = published.ShowRepoCurrentBranch;
             _truncatePath.SelectedItem = published.TruncatePathMethod;
             _avatar.IsChecked = published.ShowAvatar;
@@ -231,6 +256,14 @@ internal sealed class AppearanceSettingsPage : UserControl
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
             IsEnabled = _avatarHelpAsync is not null };
         ToolTip.SetTip(button, _translations.Translate(tooltip));
+        BindHelp(button, url);
+        return button;
+    }
+
+    private void BindHelp(Button button, string url)
+    {
+        button.IsEnabled = _avatarHelpAsync is not null;
+        if (button is HyperlinkButton) { ToolTip.SetTip(button, url); }
         button.Click += async (_, _) =>
         {
             if (_avatarHelpAsync is null || _cancellationToken.IsCancellationRequested || TopLevel.GetTopLevel(this) is not Window { IsVisible: true } owner || !_avatarHelpBusy.Add(button)) { return; }
@@ -241,7 +274,34 @@ internal sealed class AppearanceSettingsPage : UserControl
             { if (Current(owner, revision)) { ShowError(error.Message); } }
             finally { _avatarHelpBusy.Remove(button); button.IsEnabled = _avatarHelpAsync is not null; }
         };
-        return button;
+    }
+
+    private void ReloadDictionaries(string desired)
+    {
+        bool loading = _loading; _loading = true;
+        try
+        {
+            string[] names = [DictionaryCatalog.NoneName, .. _dictionaries.GetInstalled().Select(item => item.Name)];
+            if (!_dictionaryNames.SequenceEqual(names, StringComparer.Ordinal))
+            { _dictionaryNames = names; _dictionary.ItemsSource = names; }
+            _dictionary.SelectedItem = _dictionaryNames.FirstOrDefault(name => name == desired)
+                ?? (string.Equals(desired, DictionaryCatalog.NoneName, StringComparison.OrdinalIgnoreCase) ? DictionaryCatalog.NoneName : null);
+            _dictionaryCatalogError = null;
+        }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+        { _dictionaryCatalogError = error.Message; }
+        finally { _loading = loading; }
+        UpdateDictionaryDiagnostic();
+    }
+
+    private void UpdateDictionaryDiagnostic()
+    {
+        string desired = _dictionaryEdited ? _dictionaryDraftName : _accepted.Dictionary;
+        bool missing = !_dictionaryNames.Contains(desired, StringComparer.Ordinal)
+            && !string.Equals(desired, DictionaryCatalog.NoneName, StringComparison.OrdinalIgnoreCase);
+        string? message = _dictionaryCatalogError ?? (missing
+            ? _translations.Translate("The configured spelling dictionary is unavailable:") + " " + desired : null);
+        _dictionaryNotice.Text = message; _dictionaryNotice.IsVisible = message is not null;
     }
 
     private async Task ClearAvatarCacheAsync()
@@ -301,11 +361,7 @@ internal sealed class AppearanceSettingsPage : UserControl
         ((TextBlock)check.Content!).Text += " (" + UnavailableText + ")";
         Disable(check, explanation); return check;
     }
-    private ComboBox UnavailableChoice(string name, string explanation)
-    {
-        ComboBox choice = Choice(name, new[] { UnavailableText }); choice.SelectedIndex = 0;
-        Disable(choice, explanation); return choice;
-    }
+
     private void Disable(Control control, string explanation)
     { control.IsEnabled = false; ToolTip.SetTip(control, _translations.Translate(explanation)); }
     private static ComboBox Choice(string name, System.Collections.IEnumerable choices) => new()

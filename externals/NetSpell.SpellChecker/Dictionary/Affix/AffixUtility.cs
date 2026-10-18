@@ -34,6 +34,10 @@ public static class AffixUtility
                 for (int i = 0; i < entry.ConditionCount; i++)
                 {
                     int charCode = word[i];
+#if NETSPELL_PORTABLE
+                    // No character entry means this rule does not match; try the remaining rules.
+                    if (charCode >= entry.Condition.Length) { break; }
+#endif
                     if ((entry.Condition[charCode] & (1 << i)) == (1 << i))
                     {
                         passCount++;
@@ -83,6 +87,10 @@ public static class AffixUtility
                 for (int i = 0; i < entry.ConditionCount; i++)
                 {
                     int charCode = word[^(entry.ConditionCount - i)];
+#if NETSPELL_PORTABLE
+                    // No character entry means this rule does not match; try the remaining rules.
+                    if (charCode >= entry.Condition.Length) { break; }
+#endif
                     if ((entry.Condition[charCode] & (1 << i)) == (1 << i))
                     {
                         passCount++;
@@ -265,6 +273,10 @@ public static class AffixUtility
             for (int i = 0; i < entry.ConditionCount; i++)
             {
                 int charCode = tempWord[i];
+#if NETSPELL_PORTABLE
+                // No character entry means this rule does not match; try the remaining rules.
+                if (charCode >= entry.Condition.Length) { break; }
+#endif
                 if ((entry.Condition[charCode] & (1 << i)) == (1 << i))
                 {
                     passCount++;
@@ -317,6 +329,10 @@ public static class AffixUtility
             for (int i = 0; i < entry.ConditionCount; i++)
             {
                 int charCode = tempWord[^(entry.ConditionCount - i)];
+#if NETSPELL_PORTABLE
+                // No character entry means this rule does not match; try the remaining rules.
+                if (charCode >= entry.Condition.Length) { break; }
+#endif
                 if ((entry.Condition[charCode] & (1 << i)) == (1 << i))
                 {
                     passCount++;

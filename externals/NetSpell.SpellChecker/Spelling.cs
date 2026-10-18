@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+#if !NETSPELL_PORTABLE
 using System.Drawing;
+#endif
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,7 +18,9 @@ namespace NetSpell.SpellChecker;
 ///     The Spelling class encapsulates the functions necessary to check
 ///     the spelling of inputted text.
 /// </summary>
+#if !NETSPELL_PORTABLE
 [ToolboxBitmap(typeof(Spelling), "Spelling.bmp")]
+#endif
 public partial class Spelling : Component
 {
     #region Global Regex

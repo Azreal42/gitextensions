@@ -10,7 +10,7 @@ public sealed partial class CommitDialog
 
     private void ConfigureRulesFileList(FileStatusListView view)
     {
-        bool Available() => !_busy && !_commitRequested && !_repository.IsBare;
+        bool Available() => !IsBusy && !_repository.IsBare;
         RulesFileMenus.AttachEditors(view, Available, kind => ShowRulesDialogAsync(new RulesFileEditorDialog(_repository, kind)));
         _updateRulesFileContexts.Add(RulesFileMenus.AttachIgnoreContext(view, Available,
             (local, patterns) => ShowRulesDialogAsync(new AddToGitIgnoreDialog(_repository, local, patterns))));

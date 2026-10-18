@@ -271,6 +271,7 @@
           "GitExtensions.Avalonia.Skia.Patched": "[11.3.22, )",
           "GitExtensions.Core": "[7.2.1-linux-alpha, )",
           "GitExtensions.Plugins": "[7.2.1-linux-alpha, )",
+          "GitExtensions.SpellChecking": "[7.2.1-linux-alpha, )",
           "SmartFormat": "[3.6.0, )"
         }
       },
@@ -294,6 +295,9 @@
         "dependencies": {
           "GitExtensions.Core": "[7.2.1-linux-alpha, )"
         }
+      },
+      "gitextensions.spellchecking": {
+        "type": "Project"
       },
       "Avalonia": {
         "type": "CentralTransitive",

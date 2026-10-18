@@ -7,6 +7,9 @@ public sealed record DesktopPreferences
     public List<string> RecentRepositories { get; init; } = [];
     public string Theme { get; init; } = "Light";
     public string? Language { get; init; }
+    public string Dictionary { get; init; } = GitDictionaryName.Default;
+    public bool ProvideAutocompletion { get; init; } = true;
+    public bool MarkIllFormedLinesInCommitMsg { get; init; } = true;
     public bool ShowRepoCurrentBranch { get; init; } = true;
     public GitCommands.TruncatePathMethod TruncatePathMethod { get; init; } = GitCommands.TruncatePathMethod.None;
     public bool ShowAuthorAvatarInCommitInfo { get; init; } = true;
@@ -58,6 +61,8 @@ public sealed class PreferencesStore
         GitReferenceSorting sorting = value.ReferenceSorting ?? new();
         return value with
         {
+            // Missing/null uses the Windows default; retain other unknown/invalid identities for diagnostics.
+            Dictionary = GitDictionaryName.NormalizeDisabledIdentity(value.Dictionary),
             TruncatePathMethod = Enum.IsDefined(value.TruncatePathMethod) ? value.TruncatePathMethod : GitCommands.TruncatePathMethod.None,
             AvatarImageCacheDays = Math.Clamp(value.AvatarImageCacheDays, 0, 400),
             AvatarProvider = Enum.IsDefined(value.AvatarProvider) ? value.AvatarProvider : GitCommands.AvatarProvider.None,
@@ -75,6 +80,8 @@ public sealed class PreferencesStore
 
     public void Save(DesktopPreferences preferences)
     {
+        ArgumentNullException.ThrowIfNull(preferences);
+        preferences = preferences with { Dictionary = GitDictionaryName.NormalizeDisabledIdentity(preferences.Dictionary) };
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
         string temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try

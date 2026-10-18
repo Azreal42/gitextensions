@@ -132,12 +132,12 @@ public sealed class AppearanceSettingsPageTests
             Assert.That(y, Is.GreaterThan(previous)); previous = y;
         }
         foreach (string name in new[] { "chkShowRelativeDate", "chkShowRepoCurrentBranch", "ShowAuthorAvatarInCommitGraph", "Language", "SettingsTheme", "truncatePathMethod",
-            "ShowAuthorAvatarInCommitInfo", "_NO_TRANSLATE_DaysToCacheImages", "AvatarProvider", "_NO_TRANSLATE_NoImageService" })
+            "ShowAuthorAvatarInCommitInfo", "_NO_TRANSLATE_DaysToCacheImages", "AvatarProvider", "_NO_TRANSLATE_NoImageService", "Dictionary" })
         {
             Control control = f.Field<Control>(name); f.Show(control); AssertReachable(f.Window, control);
         }
         foreach (string name in new[] { "chkShowCurrentBranchInVisualStudio", "chkEnableAutoScale", "ClearImageCache",
-            "avatarProviderHelp", "pictureAvatarHelp", "Dictionary", "downloadDictionary" })
+            "avatarProviderHelp", "pictureAvatarHelp", "downloadDictionary" })
         {
             Control control = f.Field<Control>(name); Assert.That(control.IsEffectivelyVisible, Is.True, name);
             Assert.That(control.IsEffectivelyEnabled, Is.False, name + " must not imply a provider or desktop integration that is not available.");

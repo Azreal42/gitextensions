@@ -36,6 +36,8 @@
     </ItemGroup>
   </Target>
   <ItemGroup>
+    <!-- Preserve the Windows repository settings XML format without its cache/watchers. -->
+    <Compile Include="../../app/GitCommands/XmlSerializableDictionary.cs" Link="Shared/XmlSerializableDictionary.cs" />
     <!-- Keep the upstream pure identity and hosting parsers as the source of truth. -->
     <Compile Include="../../app/GitExtensions.Extensibility/Git/ObjectId.cs" Link="Shared/ObjectId.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Git/DiffBranchStatus.cs" Link="Shared/DiffBranchStatus.cs" />

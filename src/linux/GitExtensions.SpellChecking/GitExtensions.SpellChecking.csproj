@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>GitExtensions.SpellChecking</AssemblyName>
+    <RootNamespace>GitExtensions.Linux.Spelling</RootNamespace>
+    <DefineConstants>$(DefineConstants);NETSPELL_PORTABLE</DefineConstants>
+    <!-- The original linked NetSpell sources predate nullable annotations.
+         Our new files explicitly enable nullable analysis. -->
+    <Nullable>disable</Nullable>
+    <Copyright>Copyright © 2003 Paul Welter, modified by Henk Westhuis and the Git Extensions contributors.</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../externals/NetSpell.SpellChecker/**/*.cs"
+             Exclude="../../../externals/NetSpell.SpellChecker/Properties/**;../../../externals/NetSpell.SpellChecker/obj/**;../../../externals/NetSpell.SpellChecker/bin/**"
+             Link="NetSpell/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="../../../setup/assets/Dictionaries/*.dic" Link="Dictionaries/%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="THIRD-PARTY-NOTICES.txt" Link="Licenses/SpellChecking-NOTICES.txt"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -245,6 +245,7 @@ public sealed partial class MainWindow
                         // Publish only the value actually committed to this Desktop profile,
                         // even if a later Clone/History workflow profile cannot be saved.
                         FileStatusListPreferencesStore.PublishPathPresentation(_preferencesStore.FilePath, acceptedDesktop.TruncatePathMethod);
+                        CommitSpellingController.PublishSavedDesktop(_preferencesStore.FilePath, acceptedDesktop);
                         // Register from the value actually written, before another workflow profile can
                         // fail. The service owns the mutation even if Settings stops waiting or closes.
                         try { avatarMutation = avatars?.ApplySavedPolicy(AvatarPreferences.From(acceptedDesktop)); }

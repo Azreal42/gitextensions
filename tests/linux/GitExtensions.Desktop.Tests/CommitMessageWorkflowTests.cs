@@ -485,7 +485,10 @@ public class CommitMessageWorkflowTests
         await fixture.Git("merge", "--no-ff", "--no-commit", "external-merge");
         string mergePath = await GitPath(fixture.Repository, "MERGE_MSG");
         string mergeMessage = await File.ReadAllTextAsync(mergePath);
+        TaskCompletionSource firstClosed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        dialog.Closed += (_, _) => firstClosed.TrySetResult();
         dialog.Close();
+        await firstClosed.Task.WaitAsync(TimeSpan.FromSeconds(15));
         Assert.That(dialog.IsVisible, Is.False);
         Assert.That(await File.ReadAllTextAsync(mergePath), Is.EqualTo(mergeMessage), "Closing an untouched, automatically displayed template must preserve the message just created by Git.");
         dialog = await fixture.OpenAsync();
@@ -504,7 +507,10 @@ public class CommitMessageWorkflowTests
             Assert.That(Message(dialog).Text, Is.EqualTo("Keep text when repository metadata disappears"));
         }
         finally { Directory.Move(removed, gitDirectory); }
+        TaskCompletionSource finalClosed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        dialog.Closed += (_, _) => finalClosed.TrySetResult();
         dialog.Close();
+        await finalClosed.Task.WaitAsync(TimeSpan.FromSeconds(15));
         Assert.That(dialog.IsVisible, Is.False);
         Assert.That(await File.ReadAllTextAsync(await GitPath(fixture.Repository, "COMMITMESSAGE")), Is.EqualTo("Keep text when repository metadata disappears"));
     }

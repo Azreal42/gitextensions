@@ -1,0 +1,13 @@
+The spell-checking engine is compiled from the original NetSpell sources under
+externals/NetSpell.SpellChecker, retaining their comments and attribution:
+Copyright (c) 2003, Paul Welter. Modified by Henk Westhuis for GitExtensions and
+the Git Extensions contributors. No independent copy of the engine is shipped
+as an alternative source implementation.
+
+The 13 NetSpell-format dictionary files are reused byte-for-byte from
+setup/assets/Dictionaries. All existing [Copyright] sections and authorship and
+licence statements are retained. They are not converted to Hunspell
+format or relabelled as one common dictionary licence.
+
+Git Extensions is distributed under the GNU General Public License version 3
+or later; see the repository LICENSE.md and the distribution licence notices.

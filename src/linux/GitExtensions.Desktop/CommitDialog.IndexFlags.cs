@@ -7,7 +7,7 @@ public sealed partial class CommitDialog
     private void ConfigureIndexFlagFiles()
     {
         _indexFlagFiles = new(_unstagedView,
-            () => !_busy && !_commitRequested && !_lifetime.IsCancellationRequested && IsVisible && !_repository.IsBare,
+            () => !IsBusy && !_lifetime.IsCancellationRequested && IsVisible && !_repository.IsBare,
             RefreshAsync, (paths, skip, enabled) => RunAsync(T("Update index flags"), async () =>
             {
                 // Refresh even after a partial/native failure; retain its original
