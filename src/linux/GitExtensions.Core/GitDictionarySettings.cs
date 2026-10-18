@@ -50,6 +50,16 @@ public sealed class GitDictionarySettingsSnapshot
     internal GitDictionarySettingsFile? Distributed { get; }
 }
 
-internal sealed record GitDictionarySettingsFile(string Path, GitRulesLocation Location, bool Exists,
-    string Hash, GitRulesIdentity? Identity, UnixFileMode? Mode, FileAttributes Attributes,
-    IReadOnlyDictionary<string, string> Values, string? Dictionary);
+internal sealed class GitDictionarySettingsFile
+{
+    internal GitDictionarySettingsFile(GitXmlSettingsSnapshot file)
+    {
+        File = file;
+        Dictionary = file.Values.TryGetValue("dictionary", out string? name) && name is not null
+            ? GitDictionaryName.NormalizeDisabledIdentity(name) : null;
+    }
+    internal GitXmlSettingsSnapshot File { get; }
+    internal string Path => File.Path;
+    internal bool Exists => File.Exists;
+    internal string? Dictionary { get; }
+}
