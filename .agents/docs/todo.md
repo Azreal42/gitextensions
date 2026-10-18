@@ -270,3 +270,13 @@ Le [full01 vérifié](../../artifacts/linux/git-environment-20261018/full-01/par
 - [ ] Auditer les séquences de lectures UI ReadBrowserAsync lors d’un changement de Git ; leurs lectures successives n’ont pas de snapshot global garanti.
 - [ ] Aligner explicitement la politique des versions : diagnostic Windows 2.43/2.53 et minimum Linux README/.deb 2.38 restent distincts.
 - [ ] Compléter l’arbre Settings et l’audit natif des pickers, erreurs, thèmes/langues, Wayland/DPI/accessibilité ; aucune parité globale certifiée.
+
+
+## Validation en cours — Settings tree
+
+Statut : ciblés vérifiés ; [ADR0096](adr/preferences/navigation/0096-settings-tree-host.md). Référence globale et niveaux inchangés en attente du full, du paquet et du parcours natif.
+
+- [x] Arbre/icônes, recherche AND/Entrée, mémoire/Goto, focus, pages étroites et scripts préchargés : [ciblé03 223/223](../../artifacts/linux/settings-navigation-20261018/targeted-03/desktop.trx), sans skip. Après alignement final en haut, [04 20/20](../../artifacts/linux/settings-navigation-20261018/targeted-final-04/desktop.trx) reprend les nouveaux cas ; build04 à 0, sans avertissement.
+- [x] Apply/SaveAll puis Cancel, retry, fusion Fonts et anciennes fermetures testés dans ces périmètres ; les échecs antérieurs restent dans failure. Un seul oracle historique change : Cancel après SaveAll rend true comme FormSettings Windows ; les autres gestes/assertions sont conservés.
+- [ ] Attendre les preuves de build, suites et parcours natifs ; finaliser ensuite les références sans transférer les preuves des lots précédents.
+- [ ] Poursuivre les pages Windows absentes, Plugins/CI et sources Global/Local ; Config demeure un dialogue enfant, sans parité globale de Settings.

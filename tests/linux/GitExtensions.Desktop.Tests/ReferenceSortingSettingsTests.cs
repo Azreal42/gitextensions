@@ -217,7 +217,7 @@ public sealed class ReferenceSortingSettingsTests
         }
     }
 
-    private static void ShowSorting(DesktopSettingsDialog dialog) { Pump(dialog); PushProcessTestDriver.Pointer(Field<TabItem>(dialog, "SettingsSortingTab")); Pump(dialog); }
+    private static void ShowSorting(DesktopSettingsDialog dialog) { Pump(dialog); SettingsNavigationTestDriver.Select(dialog, "Sorting"); Pump(dialog); }
     private static T Field<T>(TopLevel root, string name) where T : Control => root.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static void Edit(Window window, TextBox input, string text) { PushProcessTestDriver.Pointer(input); Press(window, PhysicalKey.A, RawInputModifiers.Control); window.KeyTextInput(text); Pump(window); }
     private static void Press(Window window, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None) { window.KeyPressQwerty(key, modifiers); if (window.IsVisible) { window.KeyReleaseQwerty(key, modifiers); } Pump(window); }

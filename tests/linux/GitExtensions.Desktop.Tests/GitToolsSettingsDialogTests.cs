@@ -290,10 +290,10 @@ public sealed class GitToolsSettingsDialogTests
         await Until(() => !main.IsBusy); Press(main, PhysicalKey.Comma, RawInputModifiers.Control);
         await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
         DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(); Pump(settings);
-        ClickControl(Field<TabItem>(settings, "SettingsScriptsTab")); Edit(settings, "ScriptName", "parent unsaved script");
-        ClickControl(Field<TabItem>(settings, "SettingsFontsTab")); ClickControl(Field<CheckBox>(settings, "ShowEolMarkerAsGlyph"));
+        SettingsNavigationTestDriver.Select(settings, "Scripts"); Edit(settings, "ScriptName", "parent unsaved script");
+        SettingsNavigationTestDriver.Select(settings, "Fonts"); ClickControl(Field<CheckBox>(settings, "ShowEolMarkerAsGlyph"));
         bool eolDraft = Field<AppearanceFontsSettingsPage>(settings, "AppearanceFontsSettingsPage").Draft.ShowEolMarkerAsGlyph;
-        ClickControl(Field<TabItem>(settings, "SettingsGeneralTab")); Click(settings, "OpenGitToolsConfiguration");
+        SettingsNavigationTestDriver.Select(settings, "Config"); Click(settings, "OpenGitToolsConfiguration");
         await Until(() => settings.OwnedWindows.OfType<GitToolsSettingsDialog>().Any());
         GitToolsSettingsDialog child = settings.OwnedWindows.OfType<GitToolsSettingsDialog>().Single(); await child.InitializeAsync(); await Idle(child);
         Assert.That(child.Owner, Is.SameAs(settings)); Click(child, "GitToolsCancel");
@@ -302,11 +302,11 @@ public sealed class GitToolsSettingsDialogTests
         Control? focused = settings.FocusManager?.GetFocusedElement() as Control;
         Assert.That(focused is not null && TopLevel.GetTopLevel(focused) == settings, Is.True,
             "Settings must regain its own focus; Main must not reinstall its history-grid focus.");
-        ClickControl(Field<TabItem>(settings, "SettingsScriptsTab"));
+        SettingsNavigationTestDriver.Select(settings, "Scripts");
         Assert.That(Field<ScriptsSettingsPage>(settings, "ScriptsSettingsPage").Draft[0].Name, Is.EqualTo("parent unsaved script"));
-        ClickControl(Field<TabItem>(settings, "SettingsFontsTab"));
+        SettingsNavigationTestDriver.Select(settings, "Fonts");
         Assert.That(Field<AppearanceFontsSettingsPage>(settings, "AppearanceFontsSettingsPage").Draft.ShowEolMarkerAsGlyph, Is.EqualTo(eolDraft));
-        ClickControl(Field<TabItem>(settings, "SettingsGeneralTab"));
+        SettingsNavigationTestDriver.Select(settings, "Config");
         Click(settings, "OpenGitToolsConfiguration"); await Until(() => settings.OwnedWindows.OfType<GitToolsSettingsDialog>().Any());
         child = settings.OwnedWindows.OfType<GitToolsSettingsDialog>().Single(); await child.InitializeAsync(); await Idle(child);
         await ChooseScope(child, 1); EditName(child, "Diff", "child published"); Click(child, "GitToolsApply"); await Idle(child);

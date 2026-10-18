@@ -859,7 +859,7 @@ public sealed class RemotesDialogTests
         MenuItem tools = main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => Header(item.Header) == "Tools");
         tools.Items.OfType<MenuItem>().Single(item => item.Name == "settingsToolStripMenuItem").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
-        DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(); Pump(settings); return settings;
+        DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(); Pump(settings); SettingsNavigationTestDriver.Select(settings, "Advanced"); return settings;
     }
     private static Button CaptionButton(Window owner, string caption) => owner.GetVisualDescendants().OfType<Button>().Single(button => Header(button.Content) == caption);
     private static string Header(object? content) => content switch { string value => value.Replace("_", "", StringComparison.Ordinal), AccessText access => (access.Text ?? "").Replace("_", "", StringComparison.Ordinal), TextBlock block => block.Text ?? "", _ => content?.ToString() ?? "" };

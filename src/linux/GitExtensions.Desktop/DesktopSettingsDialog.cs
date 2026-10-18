@@ -2,9 +2,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using System.Text.Json;
 using GitExtensions.Linux.Desktop.Localization;
+using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Scripts;
 
 namespace GitExtensions.Linux.Desktop;
@@ -27,12 +29,12 @@ internal sealed class DesktopSettingsDialog : Window
     public bool OpenGitConfiguration { get; private set; }
     internal FontPreferences FontsResult { get; private set; }
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
-    private TabControl? _settingsPages;
-    private TabItem? _gitEnvironmentTab, _checklistTab;
+    private static string? _lastSelectedPage;
+    internal SettingsNavigationView Navigation { get; private set; } = null!;
     internal GitEnvironmentSettingsSession? GitEnvironmentSession { get; private set; }
     internal void SelectGitEnvironmentPage(bool checklist)
     {
-        if (_settingsPages is not null) { _settingsPages.SelectedItem = checklist ? _checklistTab : _gitEnvironmentTab; }
+        Navigation.SelectPage(checklist ? "Checklist" : "GitPaths", focusContent: true);
     }
 
     public DesktopSettingsDialog(DesktopPreferences initial, TranslationCatalog translations, bool canConfigureGit,
@@ -45,7 +47,7 @@ internal sealed class DesktopSettingsDialog : Window
         GitEnvironmentSettingsSession? gitEnvironment = null,
         Func<DesktopSettingsDialog, Task>? publishSettings = null,
         Func<GitEnvironmentCheckId, Window, Task>? repairEnvironment = null,
-        bool showChecklist = false)
+        bool showChecklist = false, string? initialPage = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -56,9 +58,9 @@ internal sealed class DesktopSettingsDialog : Window
         Exception? fontError = fontsLoadError ?? fontSession?.LoadError;
         ScriptsResult = scripts ?? new(ScriptConfiguration.Read(null), false, ReadOnlyMemory<byte>.Empty);
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
-        Width = 740; SizeToContent = SizeToContent.Height; CanResize = false;
+        Width = 958; Height = 646; MinWidth = 740; MinHeight = 400; CanResize = true;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        if (configureGitTools is not null || gitEnvironment is not null)
+        if (configureGitTools is not null || gitEnvironment is not null || publishSettings is not null)
         {
             // Preserve Main -> Settings -> busy Config close requests before the child veto.
             ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
@@ -86,17 +88,19 @@ internal sealed class DesktopSettingsDialog : Window
         CheckBox exact = new() { Name = "chkFollowRenamesInFileHistoryExact", Content = new TextBlock { Text = translations.Translate("GeneralSettingsPage", "chkFollowRenamesInFileHistoryExact", "Text", "Follow exact renames and copies only"), TextWrapping = TextWrapping.Wrap }, IsChecked = FileHistoryResult.ExactRenames };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
-        StackPanel fields = new() { Margin = new Thickness(12), Spacing = 10 };
-        GeneralField("Theme", theme);
-        GeneralField(translations.Translate("AppearanceSettingsPage", "lblLanguage", "Text", "Language (restart required)"), language);
-        GeneralField("Number of commits to load", history);
-        fields.Children.Add(normalise); GeneralField("Replacement symbol", symbol); fields.Children.Add(advanced);
+        StackPanel fields = new() { Name = "GeneralSettingsPage", Margin = new Thickness(12), Spacing = 10 };
+        StackPanel appearanceFields = new() { Name = "AppearanceSettingsPage", Margin = new Thickness(12), Spacing = 10 };
+        StackPanel advancedFields = new() { Name = "AdvancedSettingsPage", Margin = new Thickness(12), Spacing = 10 };
+        GeneralField(appearanceFields, "Theme", theme);
+        GeneralField(appearanceFields, translations.Translate("AppearanceSettingsPage", "lblLanguage", "Text", "Language (restart required)"), language);
+        GeneralField(fields, "Number of commits to load", history);
+        advancedFields.Children.Add(normalise); GeneralField(advancedFields, "Replacement symbol", symbol); advancedFields.Children.Add(advanced);
         fields.Children.Add(fileHistory);
         Grid fileHistoryOptions = new() { ColumnDefinitions = new ColumnDefinitions("*,*") };
         fileHistoryOptions.Children.Add(follow); Grid.SetColumn(exact, 1); fileHistoryOptions.Children.Add(exact); fields.Children.Add(fileHistoryOptions);
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
-        configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); }; fields.Children.Add(configuration);
+        configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); };
         Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
         bool configuringTools = false;
         tools.Click += async (_, _) =>
@@ -108,7 +112,7 @@ internal sealed class DesktopSettingsDialog : Window
             catch (Exception error) { if (IsVisible) { notice.Text = error.Message; } }
             finally { configuringTools = false; if (IsVisible) { tools.IsEnabled = configureGitTools is not null; } }
         };
-        fields.Children.Add(tools);
+        StackPanel configurationFields = new() { Name = "SettingsGitConfiguration", Margin = new Thickness(12), Spacing = 10, Children = { tools, configuration } };
 
         ComboBox revisions = new() { Name = "_NO_TRANSLATE_cmbRevisionsSortBy", ItemsSource = historySort == GitLogSort.Date ? new[] { GitLogSort.GitDefault, GitLogSort.AuthorDate, GitLogSort.Topology, GitLogSort.Date } : new[] { GitLogSort.GitDefault, GitLogSort.AuthorDate, GitLogSort.Topology }, SelectedItem = historySort,
             ItemTemplate = new FuncDataTemplate<GitLogSort>((sort, _) => new TextBlock { Text = sort switch { GitLogSort.GitDefault => "Git default", GitLogSort.AuthorDate => "Author date", GitLogSort.Topology => "Topo (Ancestor)", _ => "Date order" } }) };
@@ -125,51 +129,76 @@ internal sealed class DesktopSettingsDialog : Window
         SortingField(2, "Order branches", order);
         SortingField(3, "Prioritized branches", branches, "Regex to prioritize branch names in the left panel.\nThe branches matching the pattern will be shown before the others.\nSeparate the priorities with ';'.");
         SortingField(4, "Prioritized remotes", remotes, "Regex to prioritize remote names in the left panel.\nThe remotes matching the pattern will be shown before the others.\nSeparate the priorities with ';'.");
-        TabItem generalTab = new() { Name = "SettingsGeneralTab", Header = translations.Translate("General"), Content = fields };
-        TabItem sortingTab = new() { Name = "SettingsSortingTab", Header = translations.Translate("Sorting"), Content = sorting };
         HotkeysSettingsPage hotkeysPage = new(activeHotkeys, translations) { Margin = new Thickness(12) };
-        TabItem hotkeysTab = new() { Name = "SettingsHotkeysTab", Header = translations.Translate("HotkeysSettingsPage", "$this", "Text", "Hotkeys"), Content = hotkeysPage };
         AppearanceFontsSettingsPage fontsPage = new(fontBaseline, translations, fontError) { Margin = new Thickness(12), Height = 315 };
-        TabItem fontsTab = new() { Name = "SettingsFontsTab", Header = translations.Translate("AppearanceFontsSettingsPage", "$this", "Text", "Fonts"), Content = fontsPage };
         ScriptsSettingsPage scriptsPage = new(ScriptsResult, translations) { Margin = new Thickness(12) };
         hotkeysPage.UpdateScripts(scriptsPage.Draft);
         scriptsPage.DraftChanged += draft => hotkeysPage.UpdateScripts(draft);
-        TabItem scriptsTab = new() { Name = "SettingsScriptsTab", Header = translations.Translate("ScriptsSettingsPage", "$this", "Text", "Scripts"), Content = scriptsPage };
-        TabControl tabs = new() { Name = "DesktopSettingsPages", MinHeight = 315, ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab, scriptsTab }, SelectedItem = generalTab };
-        _settingsPages = tabs;
+        string PageTitle(string category, string fallback) => translations.Translate(category, "$this", "Text", fallback);
+        SettingsNavigationPage generalPage = new("General", PageTitle("GeneralSettingsPage", "General"), fields, "GeneralSettings.png");
+        SettingsNavigationPage appearancePage = new("Appearance", PageTitle("AppearanceSettingsPage", "Appearance"), appearanceFields, "Appearance.png", Children:
+        [
+            new("Sorting", PageTitle("SortingSettingsPage", "Sorting"), sorting, "SortBy.png"),
+            new("Fonts", PageTitle("AppearanceFontsSettingsPage", "Fonts"), fontsPage, "Font.png")
+        ]);
+        SettingsNavigationPage[] extensionChildren =
+        [
+            generalPage, appearancePage,
+            new("Scripts", PageTitle("ScriptsSettingsPage", "Scripts"), scriptsPage, "Console.png"),
+            new("Hotkeys", PageTitle("HotkeysSettingsPage", "Hotkeys"), hotkeysPage, "Hotkey.png"),
+            new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), advancedFields, "AdvancedSettings.png")
+        ];
+        List<SettingsNavigationPage> roots = [];
+        List<SettingsNavigationPage> gitChildren = [];
         if (gitEnvironment is not null)
         {
-            _gitEnvironmentTab = new() { Name = "SettingsGitTab", Header = translations.Translate("GitSettingsPage", "$this", "Text", "Git"),
-                Content = new ScrollViewer { Content = gitEnvironment.Page, Margin = new Thickness(12), VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto } };
-            _checklistTab = new() { Name = "SettingsChecklistTab", Header = translations.Translate("ChecklistSettingsPage", "$this", "Text", "Checklist"),
-                Content = new ScrollViewer { Content = gitEnvironment.Checklist, Margin = new Thickness(12), VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto } };
-            tabs.ItemsSource = new[] { generalTab, sortingTab, hotkeysTab, fontsTab, scriptsTab, _gitEnvironmentTab, _checklistTab };
-            if (showChecklist) { tabs.SelectedItem = _checklistTab; }
+            gitEnvironment.Checklist.Margin = gitEnvironment.Page.Margin = new Thickness(12);
+            roots.Add(new("Checklist", PageTitle("ChecklistSettingsPage", "Checklist"), gitEnvironment.Checklist,
+                "git-extensions-logo-16px.png", IsInstantSave: true, Children: extensionChildren, NavigationTitle: "Git Extensions"));
+            gitChildren.Add(new("GitPaths", PageTitle("GitSettingsPage", "Paths"), gitEnvironment.Page, "FolderOpen.png"));
         }
+        else
+        {
+            roots.Add(new("GitExtensions", "Git Extensions", new TextBlock { Margin = new Thickness(12), Text = translations.Translate("Select one of the subnodes to view or edit the Git Extensions settings"), TextWrapping = TextWrapping.Wrap },
+                "git-extensions-logo-16px.png", Children: extensionChildren));
+        }
+        if (configureGitTools is not null || canConfigureGit)
+        { gitChildren.Add(new("Config", PageTitle("GitConfigSettingsPage", "Config"), configurationFields, "GeneralSettings.png")); }
+        if (gitChildren.Count > 0)
+        {
+            roots.Add(new("Git", PageTitle("GitRootIntroductionPage", "Git Settings"), new TextBlock
+                { Name = "GitRootIntroduction", Margin = new Thickness(12), Text = translations.Translate("GitRootIntroductionPage", "label1", "Text", "Select one of the subnodes to view or edit the Git settings"), TextWrapping = TextWrapping.Wrap },
+                "GitLogo16.png", Children: gitChildren, NavigationTitle: "Git"));
+        }
+        Navigation = new(roots, translations);
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
         Button cancel = new() { Name = "CancelDesktopSettings", Content = translations.Translate("Cancel"), MinWidth = 75, IsCancel = true };
-        bool saving = false, closeWhenIdle = false, accepting = false;
-        cancel.Click += (_, _) => Close(false);
+        Button apply = new() { Name = "ApplyDesktopSettings", Content = translations.Translate("Apply"), MinWidth = 75 };
+        bool saving = false, closeWhenIdle = false, accepting = false, saved = false;
+        cancel.Click += (_, _) => Close(saved);
         save.Click += async (_, _) => await SaveAllAsync(closeOnSuccess: true);
+        apply.Click += async (_, _) => await SaveAllAsync(closeOnSuccess: false);
         async Task<bool> SaveAllAsync(bool closeOnSuccess)
         {
             if (saving || gitEnvironment?.IsBusy == true) { return false; }
-            saving = true; save.IsEnabled = false;
+            saving = true; save.IsEnabled = apply.IsEnabled = false;
             try
             {
-                if (history.Value is null || history.Value < 1 || history.Value > 5000 || (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text)))
-                { tabs.SelectedItem = generalTab; notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); return false; }
+                if (history.Value is null || history.Value < 1 || history.Value > 5000)
+                { Navigation.SelectPage("General", true); notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); history.Focus(); return false; }
+                if (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text))
+                { Navigation.SelectPage("Advanced", true); notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); symbol.Focus(); return false; }
                 foreach (TextBox input in new[] { branches, remotes })
                 {
                     try { GitReferencePriorities.Validate(input.Text ?? ""); }
-                    catch (ArgumentException error) { tabs.SelectedItem = sortingTab; notice.Text = error.Message; input.Focus(); return false; }
+                    catch (ArgumentException error) { Navigation.SelectPage("Sorting", true); notice.Text = error.Message; input.Focus(); return false; }
                 }
                 if (!scriptsPage.Validate(out string? scriptValidation))
-                { tabs.SelectedItem = scriptsTab; notice.Text = scriptValidation; return false; }
+                { Navigation.SelectPage("Scripts", true); notice.Text = scriptValidation; return false; }
                 if (!fontsPage.Validate(out string? fontValidation))
-                { tabs.SelectedItem = fontsTab; notice.Text = fontValidation; return false; }
+                { Navigation.SelectPage("Fonts", true); notice.Text = fontValidation; return false; }
                 if (gitEnvironment is not null && !gitEnvironment.Page.Validate(out string? environmentValidation))
-                { tabs.SelectedItem = _gitEnvironmentTab; notice.Text = environmentValidation; return false; }
+                { Navigation.SelectPage("GitPaths", true); notice.Text = environmentValidation; return false; }
                 if (scriptsPage.IsDirty)
                 {
                     try
@@ -179,22 +208,24 @@ internal sealed class DesktopSettingsDialog : Window
                         scriptsPage.AcceptSaved(ScriptsResult);
                     }
                     catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
-                    { tabs.SelectedItem = scriptsTab; scriptsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save scripts.") + " " + error.Message; return false; }
+                    { Navigation.SelectPage("Scripts", true); scriptsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save scripts.") + " " + error.Message; return false; }
                 }
                 HotkeyBindings acceptedHotkeys = hotkeysPage.Draft.Clone();
                 try { saveHotkeys?.Invoke(acceptedHotkeys.Clone()); }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
-                { tabs.SelectedItem = hotkeysTab; notice.Text = translations.Translate("Unable to save hotkeys.") + " " + error.Message; return false; }
+                { Navigation.SelectPage("Hotkeys", true); notice.Text = translations.Translate("Unable to save hotkeys.") + " " + error.Message; return false; }
                 try
                 {
                     // An unreadable, untouched font profile is not replaced by unrelated Settings changes.
                     FontsResult = fontError is not null && fontsPage.Draft == fontBaseline ? fontBaseline
                         : saveFonts?.Invoke(fontBaseline, fontsPage.Draft) ?? fontsPage.Draft;
+                    fontsPage.AcceptSaved(FontsResult);
+                    fontBaseline = FontsResult;
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
-                { tabs.SelectedItem = fontsTab; fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return false; }
+                { Navigation.SelectPage("Fonts", true); fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return false; }
                 if (gitEnvironment is not null && !gitEnvironment.TrySave())
-                { tabs.SelectedItem = _gitEnvironmentTab; return false; }
+                { Navigation.SelectPage("GitPaths", true); return false; }
                 Result = initial with
                 {
                     Theme = theme.SelectedItem as string ?? "Light", HistoryLimit = (int)history.Value,
@@ -209,7 +240,7 @@ internal sealed class DesktopSettingsDialog : Window
                 HotkeysResult = acceptedHotkeys;
                 if (publishSettings is not null)
                 {
-                    tabs.IsEnabled = false;
+                    Navigation.IsEnabled = false;
                     try { await publishSettings(this); }
                     catch (OperationCanceledException) when (closeWhenIdle) { return false; }
                     catch (Exception error)
@@ -219,60 +250,95 @@ internal sealed class DesktopSettingsDialog : Window
                         return false;
                     }
                 }
-                fontBaseline = FontsResult;
+                notice.Text = null;
+                saved = true;
                 if (closeOnSuccess && !closeWhenIdle) { accepting = true; try { Close(true); } finally { accepting = false; } }
                 return !closeWhenIdle;
             }
             finally
             {
-                saving = false; tabs.IsEnabled = true; save.IsEnabled = gitEnvironment?.IsBusy != true;
-                if (closeWhenIdle && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(false); } }); }
+                saving = false; Navigation.IsEnabled = true; save.IsEnabled = apply.IsEnabled = gitEnvironment?.IsBusy != true;
+                if (closeWhenIdle && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
             }
         }
         if (gitEnvironment is not null)
         {
             gitEnvironment.SaveAllRequested = () => SaveAllAsync(closeOnSuccess: false);
             gitEnvironment.RepairRequested = id => repairEnvironment is null ? Task.CompletedTask : repairEnvironment(id, this);
-            gitEnvironment.BusyChanged += () => { save.IsEnabled = !saving && !gitEnvironment.IsBusy; };
+            gitEnvironment.BusyChanged += () => { save.IsEnabled = apply.IsEnabled = !saving && !gitEnvironment.IsBusy; };
             gitEnvironment.Settled += () =>
             {
-                if (closeWhenIdle && !saving) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(false); } }); }
-            };
-            Closing += (_, args) =>
-            {
-                if (!accepting && (gitEnvironment.IsBusy || saving))
-                { args.Cancel = true; closeWhenIdle = true; gitEnvironment.Cancel(); }
+                if (closeWhenIdle && !saving) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
             };
             Closed += (_, _) => gitEnvironment.Dispose();
-            tabs.SelectionChanged += async (_, _) =>
-            {
-                if (IsVisible && tabs.SelectedItem == _checklistTab && gitEnvironment.LastScan is null)
-                { await gitEnvironment.ScanAsync(); }
-            };
         }
-        DockPanel root = new() { LastChildFill = true };
-        StackPanel footer = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6, Margin = new Thickness(12, 6), Children = { save, cancel } };
+        Closing += (_, args) =>
+        {
+            if (!accepting && (saving || gitEnvironment?.IsBusy == true))
+            {
+                args.Cancel = true; closeWhenIdle = true; gitEnvironment?.Cancel();
+                return;
+            }
+            // WinForms keeps DialogResult.OK after Apply/SaveAll, even when the
+            // final dismissal is Cancel, the window close button or owner close.
+            if (saved && !accepting && !saving && gitEnvironment?.IsBusy != true)
+            {
+                args.Cancel = true; accepting = true;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(true); } });
+            }
+        };
+        DockPanel root = new() { LastChildFill = true, Margin = new Thickness(8) };
+        TextBlock instantSaveNotice = new()
+        {
+            Name = "SettingsInstantSaveNotice", TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center,
+            Text = translations.Translate("FormSettings", "labelInstantSaveNotice", "Text", "Changes on the selected page will be saved instantly. \r\nTherefore the Cancel button does NOT revert any changes made."),
+            IsVisible = Navigation.SelectedPage.IsInstantSave
+        };
+        StackPanel footer = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6, Children = { save, cancel, apply } };
+        Grid footerRow = new() { ColumnDefinitions = new("*,Auto"), Margin = new Thickness(12, 6), ColumnSpacing = 12 };
+        footerRow.Children.Add(instantSaveNotice); Grid.SetColumn(footer, 1); footerRow.Children.Add(footer);
+        Button? reloadEnvironment = null;
         if (gitEnvironment is not null)
         {
-            Button reloadEnvironment = new() { Name = "ReloadGitEnvironment", Content = translations.Translate("Reload"), MinWidth = 75 };
+            reloadEnvironment = new() { Name = "ReloadGitEnvironment", Content = translations.Translate("Reload"), MinWidth = 75 };
             reloadEnvironment.Click += (_, _) => gitEnvironment.Reload();
             gitEnvironment.BusyChanged += () => reloadEnvironment.IsEnabled = !gitEnvironment.IsBusy && !saving;
             footer.Children.Insert(0, reloadEnvironment);
         }
-        DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer); DockPanel.SetDock(notice, Dock.Bottom); root.Children.Add(notice); root.Children.Add(tabs); Content = root;
+        Navigation.PageSelected += async (page, _) =>
+        {
+            Title = translations.Translate("Settings") + " - " + page.Title;
+            instantSaveNotice.IsVisible = page.IsInstantSave;
+            if (reloadEnvironment is not null) { reloadEnvironment.IsVisible = page.Id is "Checklist" or "GitPaths"; }
+            if (IsVisible)
+            {
+                _lastSelectedPage = page.Id;
+                if (page.Id == "Checklist" && gitEnvironment is not null) { await gitEnvironment.ScanAsync(); }
+            }
+        };
+        string requestedPage = showChecklist ? "Checklist" : initialPage ?? _lastSelectedPage ?? (gitEnvironment is not null ? "Checklist" : "General");
+        if (!Navigation.SelectPage(requestedPage)) { Navigation.SelectPage(gitEnvironment is not null ? "Checklist" : "General"); }
+        DockPanel.SetDock(footerRow, Dock.Bottom); root.Children.Add(footerRow); DockPanel.SetDock(notice, Dock.Bottom); root.Children.Add(notice); root.Children.Add(Navigation); Content = root;
         Opened += async (_, _) =>
         {
-            if (Screens.ScreenFromWindow(this) is { } screen) { MaxHeight = Math.Max(260, screen.WorkingArea.Height / screen.Scaling - 40); }
-            if (showChecklist) { gitEnvironment?.Checklist.Focus(); } else { theme.Focus(); }
+            if (Screens.ScreenFromWindow(this) is { } screen)
+            {
+                MaxHeight = Math.Max(260, screen.WorkingArea.Height / screen.Scaling - 40);
+                MaxWidth = Math.Max(320, screen.WorkingArea.Width / screen.Scaling - 40);
+                MinHeight = Math.Min(MinHeight, MaxHeight); MinWidth = Math.Min(MinWidth, MaxWidth);
+                Height = Math.Min(Height, MaxHeight); Width = Math.Min(Width, MaxWidth);
+            }
+            _lastSelectedPage = Navigation.SelectedPage.Id;
+            Navigation.GetLogicalDescendants().OfType<TreeView>().First().Focus();
             ModalWindowActivation.AfterMapping(this, () => IsVisible);
-            if (showChecklist && gitEnvironment is not null) { await gitEnvironment.ScanAsync(); }
+            if (Navigation.SelectedPage.Id == "Checklist" && gitEnvironment is not null) { await gitEnvironment.ScanAsync(); }
         };
 
-        void GeneralField(string label, Control editor)
+        void GeneralField(StackPanel target, string label, Control editor)
         {
             Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
             row.Children.Add(new TextBlock { Text = translations.Translate(label), VerticalAlignment = VerticalAlignment.Center });
-            Grid.SetColumn(editor, 1); row.Children.Add(editor); fields.Children.Add(row);
+            Grid.SetColumn(editor, 1); row.Children.Add(editor); target.Children.Add(row);
         }
         void SortingField(int row, string label, Control editor, string? help = null)
         {

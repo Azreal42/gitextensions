@@ -26,6 +26,7 @@
     <AvaloniaResource Include="../../app/GitUI/Resources/Icons/difftastic.ico" Link="Assets/Icons/difftastic.ico" />
     <AvaloniaResource Include="../../app/GitUI/Resources/Backgrounds/DashboardBackground*.png" Link="Assets/Backgrounds/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../../setup/assets/Logo/GitExtensionsLogoWide.png" Link="Assets/GitExtensionsLogoWide.png" />
+    <AvaloniaResource Include="../../../setup/assets/Logo/git-extensions-logo-16px.png" Link="Assets/Icons/git-extensions-logo-16px.png" />
     <AvaloniaResource Include="../../plugins/*/Resources/Icon*.png" Link="Assets/PluginIcons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../plugins/Statistics/*/Resources/Icon*.png" Link="Assets/PluginIcons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="../../app/GitUI/Themes/invariant.css" Link="Assets/Themes/invariant.css" />

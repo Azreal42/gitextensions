@@ -203,6 +203,7 @@ public sealed class BrowseStartupTests
         Task<bool> result = dialog.ShowDialog<bool>(owner);
         try
         {
+            SettingsNavigationTestDriver.Select(dialog, "General");
             CheckBox choice = Field<CheckBox>(dialog, "SettingsUseBrowseForFileHistory");
             Assert.That(choice.IsChecked, Is.True);
             PushProcessTestDriver.Pointer(choice);

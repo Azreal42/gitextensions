@@ -157,11 +157,11 @@ public sealed class LanguagePreferencesTests
     {
         using Scope scope = new(); scope.Store.Save(new() { Language = "English", Theme = dark ? "Dark" : "Light", HistoryLimit = 321 }); DesktopLanguage.ApplyPreferredCulture();
         byte[] before = File.ReadAllBytes(scope.Store.FilePath); Window owner = scope.Own(new Window { RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light }); owner.Show();
-        DesktopSettingsDialog cancelled = scope.Own(new DesktopSettingsDialog(scope.Store.Load(), TranslationCatalog.LoadDefault(), false) { RequestedThemeVariant = owner.ActualThemeVariant }); Task<bool> cancel = cancelled.ShowDialog<bool>(owner); Pump(cancelled);
+        DesktopSettingsDialog cancelled = scope.Own(new DesktopSettingsDialog(scope.Store.Load(), TranslationCatalog.LoadDefault(), false) { RequestedThemeVariant = owner.ActualThemeVariant }); Task<bool> cancel = cancelled.ShowDialog<bool>(owner); Pump(cancelled); SettingsNavigationTestDriver.Select(cancelled, "Appearance");
         SelectLanguage(cancelled, "French"); Assert.That(File.ReadAllBytes(scope.Store.FilePath), Is.EqualTo(before));
         PushProcessTestDriver.Pointer(Field<Button>(cancelled, "CancelDesktopSettings")); Assert.That(await cancel, Is.False);
         Assert.That(File.ReadAllBytes(scope.Store.FilePath), Is.EqualTo(before));
-        DesktopSettingsDialog accepted = scope.Own(new DesktopSettingsDialog(scope.Store.Load(), TranslationCatalog.LoadDefault(), false) { RequestedThemeVariant = owner.ActualThemeVariant }); Task<bool> accept = accepted.ShowDialog<bool>(owner); Pump(accepted);
+        DesktopSettingsDialog accepted = scope.Own(new DesktopSettingsDialog(scope.Store.Load(), TranslationCatalog.LoadDefault(), false) { RequestedThemeVariant = owner.ActualThemeVariant }); Task<bool> accept = accepted.ShowDialog<bool>(owner); Pump(accepted); SettingsNavigationTestDriver.Select(accepted, "Appearance");
         Assert.That(accepted.GetVisualDescendants().OfType<TextBlock>().Any(label => label.Text == "Language (restart required)"), Is.True);
         SelectLanguage(accepted, "French"); Capture(accepted, "language-settings-" + (dark ? "dark" : "light") + ".png"); PushProcessTestDriver.Pointer(Field<Button>(accepted, "SaveDesktopSettings")); Assert.That(await accept, Is.True);
         Assert.That(accepted.Result.Language, Is.EqualTo("French")); Assert.That(accepted.Result.HistoryLimit, Is.EqualTo(321));
@@ -187,7 +187,7 @@ public sealed class LanguagePreferencesTests
         DesktopLanguage.ApplyPreferredCulture(); AskpassWindow child = scope.Own(new AskpassWindow("Enter password")); child.Show(); Pump(child);
         Assert.That(Field<Button>(child, "CancelAskpass").Content, Is.EqualTo("Annuler"));
         DesktopSettingsDialog restarted = scope.Own(new DesktopSettingsDialog(scope.Store.Load(), TranslationCatalog.LoadDefault(), false));
-        restarted.Show(); Pump(restarted);
+        restarted.Show(); Pump(restarted); SettingsNavigationTestDriver.Select(restarted, "Appearance");
         Assert.That(restarted.GetVisualDescendants().OfType<TextBlock>().Any(label => label.Text == "Langue (redémarrage requis)"), Is.True);
         Assert.That((Field<ComboBox>(restarted, "Language").SelectedItem as LanguageChoice)?.Name, Is.EqualTo("French"));
         Capture(restarted, "language-settings-french.png");
@@ -374,7 +374,7 @@ public sealed class LanguagePreferencesTests
     private static async Task<(DesktopSettingsDialog Dialog, Task Completion)> OpenSettings(Scope scope, MainWindow owner)
     {
         Task completion = (Task)Invoke(owner, "ShowSettingsAsync")!; await Until(() => owner.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
-        DesktopSettingsDialog settings = scope.Own(owner.OwnedWindows.OfType<DesktopSettingsDialog>().Single()); Pump(settings); return (settings, completion);
+        DesktopSettingsDialog settings = scope.Own(owner.OwnedWindows.OfType<DesktopSettingsDialog>().Single()); Pump(settings); SettingsNavigationTestDriver.Select(settings, "Appearance"); return (settings, completion);
     }
     private static async Task SaveFrench(Scope scope, MainWindow window)
     {
@@ -406,7 +406,7 @@ public sealed class LanguagePreferencesTests
 
     private static void SelectLanguage(Window window, string name)
     {
-        ComboBox combo = Field<ComboBox>(window, "Language"); PushProcessTestDriver.Pointer(combo); Pump(window);
+        SettingsNavigationTestDriver.Select(window, "Appearance"); ComboBox combo = Field<ComboBox>(window, "Language"); PushProcessTestDriver.Pointer(combo); Pump(window);
         Assert.That(combo.IsDropDownOpen, Is.True); Press(window, PhysicalKey.Home);
         int index = combo.Items.OfType<LanguageChoice>().Select(choice => choice.Name).ToList().IndexOf(name); Assert.That(index, Is.GreaterThanOrEqualTo(0));
         for (int i = 0; i < index; i++) { Press(window, PhysicalKey.ArrowDown); }

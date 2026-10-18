@@ -653,3 +653,14 @@ Les ciblés UI01 **59/65** et UI02 **63/66** restent rouges et conservés dans `
 Le [premier contrôle du full01](../../artifacts/linux/git-environment-20261018/full-01/parent-verification.json) a rejeté seulement l’égalité checkout/blob de neuf .targets/.cmd. La [revue02](../../artifacts/linux/git-environment-20261018/full-01/parent-verification-02.json) conserve ce rejet et ses hashes, puis vérifie les attributs du candidat et du checkout et la conversion exacte LF→CRLF de ces neuf chemins uniquement. Les octets réellement testés restent identiques avant/après ; aucune suite relancée et aucune normalisation générale.
 
 Harnais X11 : tentative01 terminée par fermeture de stdin, nettoyage forcé sans acceptation ; tentative03 échouée par NameError avant tout lancement natif. Les parcours02/04/05 et leurs vraies fermetures restent séparés. Le redémarrage02 génération2 a été fermé pendant le chargement ; le dépôt/diff réellement chargés au redémarrage sont vérifiés par04.
+
+
+## Settings tree — intentions à conserver
+
+- L’arbre ne doit pas recréer les pages ni perdre brouillons ou focus clavier ; Entrée dans la recherche ne publie rien.
+- Avec 200 px de navigation, les anciennes pages de largeur minimale 670 peuvent être coupées : conserver le défilement horizontal sur fenêtre étroite.
+- Une erreur ancienne doit disparaître après Save réussi ; Fonts AcceptSaved reprend le résultat fusionné pour éviter son écrasement lors d’un Apply répété.
+- Cancel après Apply/SaveAll réussi rend true et ne rollback pas les publications ; fermer pendant une opération exige annulation et drainage des acteurs connus.
+- Validation EN COURS : pages absentes, Config enfant et portées incomplètes restent des écarts ; aucune parité globale transférée. [ADR0096](adr/preferences/navigation/0096-settings-tree-host.md).
+
+[New01 18/19](../../artifacts/linux/settings-navigation-20261018/targeted-new-01/parent-failure-review.json) : l’oracle neuf exigeait une notice vide malgré la police fusionnée inexistante ; conserver son avertissement de fallback et vérifier la disparition de l’erreur de sauvegarde. [Ciblé02 219/222](../../artifacts/linux/settings-navigation-20261018/targeted-02/parent-failure-review.json) : un accès Config oubliait le nouveau nœud ; deux vrais boutons Scripts étaient hors viewport après mesure horizontale infinie. Borner le contenu au viewport/minimum déclaré, sans scroll réparateur dans les anciens tests ; [ciblé03 223/223](../../artifacts/linux/settings-navigation-20261018/targeted-03/desktop.trx), distinct du full et du natif.

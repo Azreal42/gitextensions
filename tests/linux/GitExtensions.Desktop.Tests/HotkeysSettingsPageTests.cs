@@ -197,7 +197,7 @@ public sealed class HotkeysSettingsPageTests
         DesktopPreferences initialPreferences = f.Dialog.Result; FileHistoryPreferences initialHistory = f.Dialog.FileHistoryResult;
         f.Select("Browse", "CreateBranch"); PushProcessTestDriver.Pointer(f.Page.Capture); Press(f.Dialog, PhysicalKey.F12, FreeModifiers);
         PushProcessTestDriver.Pointer(f.Button("bApply"));
-        PushProcessTestDriver.Pointer(Field<TabItem>(f.Dialog, "SettingsGeneralTab")); Pump(f.Dialog);
+        SettingsNavigationTestDriver.Select(f.Dialog, "Appearance"); Pump(f.Dialog);
         Choose(f.Dialog, Field<ComboBox>(f.Dialog, "SettingsTheme"), "Dark");
         PushProcessTestDriver.Pointer(f.Button("SaveDesktopSettings")); Pump(f.Dialog);
         Assert.That(f.Result.IsCompleted, Is.False); Assert.That(f.Dialog.IsVisible, Is.True); Assert.That(f.Saves, Is.EqualTo(1));
@@ -218,12 +218,12 @@ public sealed class HotkeysSettingsPageTests
         await using Scope f = await Scope.OpenAsync(); DesktopPreferences initial = f.Dialog.Result;
         if (invalidSorting)
         {
-            PushProcessTestDriver.Pointer(Field<TabItem>(f.Dialog, "SettingsSortingTab")); Pump(f.Dialog);
+            SettingsNavigationTestDriver.Select(f.Dialog, "Sorting"); Pump(f.Dialog);
             TextBox input = Field<TextBox>(f.Dialog, "txtPrioBranchNames"); Edit(f.Dialog, input, "[");
         }
         else
         {
-            PushProcessTestDriver.Pointer(Field<TabItem>(f.Dialog, "SettingsGeneralTab")); Pump(f.Dialog);
+            SettingsNavigationTestDriver.Select(f.Dialog, "Advanced"); Pump(f.Dialog);
             CheckBox normalise = Field<CheckBox>(f.Dialog, "SettingsNormaliseBranches");
             if (normalise.IsChecked != true) { PushProcessTestDriver.Pointer(normalise); }
             Edit(f.Dialog, Field<TextBox>(f.Dialog, "SettingsNormaliseSymbol"), "");
@@ -319,7 +319,7 @@ public sealed class HotkeysSettingsPageTests
     }
 
     private static void ShowHotkeys(DesktopSettingsDialog dialog)
-    { Pump(dialog); PushProcessTestDriver.Pointer(Field<TabItem>(dialog, "SettingsHotkeysTab")); Pump(dialog); }
+    { Pump(dialog); SettingsNavigationTestDriver.Select(dialog, "Hotkeys"); Pump(dialog); }
     private static void Select(DesktopSettingsDialog dialog, HotkeysSettingsPage page, string context, string name)
     {
         ListBox contexts = Field<ListBox>(dialog, "cmbSettings"), mappings = Field<ListBox>(dialog, "listMappings");

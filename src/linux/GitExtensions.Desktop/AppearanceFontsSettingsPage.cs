@@ -13,7 +13,8 @@ internal sealed class AppearanceFontsSettingsPage : UserControl
     private readonly Dictionary<DesktopFontRole, Button> _buttons = [];
     private readonly TextBlock _notice = new() { Name = "FontsNotice", TextWrapping = TextWrapping.Wrap };
     private readonly Exception? _loadError;
-    private readonly FontPreferences _baseline;
+    private FontPreferences _baseline;
+    private readonly CheckBox _eol;
     internal FontPreferences Draft { get; private set; }
 
     internal AppearanceFontsSettingsPage(FontPreferences initial, TranslationCatalog translations, Exception? loadError = null)
@@ -25,10 +26,10 @@ internal sealed class AppearanceFontsSettingsPage : UserControl
         Add(DesktopFontRole.Application, 1, "label26", "Application font", "applicationFontChangeButton");
         Add(DesktopFontRole.Commit, 2, "label34", "Commit font", "commitFontChangeButton");
         Add(DesktopFontRole.Monospace, 3, "label36", "Monospace font", "monospaceFontChangeButton");
-        CheckBox eol = new() { Name = "ShowEolMarkerAsGlyph", IsChecked = initial.ShowEolMarkerAsGlyph,
+        _eol = new() { Name = "ShowEolMarkerAsGlyph", IsChecked = initial.ShowEolMarkerAsGlyph,
             VerticalAlignment = VerticalAlignment.Center, Content = new TextBlock { Text = Text("ShowEolMarkerAsGlyph", "Show end-of-line markers as glyph instead of \"\\r\\n\" etc."), TextWrapping = TextWrapping.Wrap } };
-        eol.IsCheckedChanged += (_, _) => Draft = Draft with { ShowEolMarkerAsGlyph = eol.IsChecked == true };
-        Grid.SetColumn(eol, 2); rows.Children.Add(eol);
+        _eol.IsCheckedChanged += (_, _) => Draft = Draft with { ShowEolMarkerAsGlyph = _eol.IsChecked == true };
+        Grid.SetColumn(_eol, 2); rows.Children.Add(_eol);
         StackPanel body = new() { Spacing = 10, Children = { ClassicChrome.Group("gbFonts", Text("gbFonts", "Fonts (restart required)"), rows),
             new ScrollViewer { MaxHeight = 110, Content = _notice } } };
         Content = new ScrollViewer { Content = body };
@@ -61,6 +62,13 @@ internal sealed class AppearanceFontsSettingsPage : UserControl
         error = null; return true;
     }
     internal void ShowSaveError(Exception error) => _notice.Text = "Unable to save font preferences. " + error.Message;
+    internal void AcceptSaved(FontPreferences published)
+    {
+        _baseline = Draft = published;
+        _eol.IsChecked = published.ShowEolMarkerAsGlyph;
+        foreach (DesktopFontRole role in Enum.GetValues<DesktopFontRole>()) { RefreshButton(role); }
+        RefreshNotice();
+    }
     private string Text(string name, string source) => _translations.Translate("AppearanceFontsSettingsPage", name, "Text", source);
     private void RefreshButton(DesktopFontRole role)
     {

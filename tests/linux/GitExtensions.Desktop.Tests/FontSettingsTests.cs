@@ -141,7 +141,7 @@ public sealed class FontSettingsTests
         OpenFonts(a); PushProcessTestDriver.Pointer(Field<CheckBox>(a, "ShowEolMarkerAsGlyph"));
         PushProcessTestDriver.Pointer(Field<Button>(a, "SaveDesktopSettings")); Assert.That(await aa, Is.True);
         // The other window keeps an untouched font draft; accepting another page must not undo A.
-        ComboBox theme = Field<ComboBox>(b, "SettingsTheme"); ChooseOption(b, theme, "Dark");
+        SettingsNavigationTestDriver.Select(b, "Appearance"); ComboBox theme = Field<ComboBox>(b, "SettingsTheme"); ChooseOption(b, theme, "Dark");
         PushProcessTestDriver.Pointer(Field<Button>(b, "SaveDesktopSettings")); Assert.That(await bb, Is.True);
         Assert.That(b.FontsResult.ShowEolMarkerAsGlyph, Is.True); Assert.That(scope.Store.Load().ShowEolMarkerAsGlyph, Is.True);
     }
@@ -184,7 +184,7 @@ public sealed class FontSettingsTests
         byte[] before = File.ReadAllBytes(scope.Store.FilePath);
         DesktopSettingsDialog dialog = scope.Own(new DesktopSettingsDialog(new(), TranslationCatalog.LoadDefault(), false, fonts: initial, saveFonts: scope.Store.SaveChanges));
         Task<bool> completion = dialog.ShowDialog<bool>(owner); Pump(dialog);
-        ChooseOption(dialog, Field<ComboBox>(dialog, "SettingsTheme"), "Dark");
+        SettingsNavigationTestDriver.Select(dialog, "Appearance"); ChooseOption(dialog, Field<ComboBox>(dialog, "SettingsTheme"), "Dark");
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings")); Assert.That(await completion, Is.True);
         Assert.That(dialog.FontsResult, Is.EqualTo(initial)); Assert.That(File.ReadAllBytes(scope.Store.FilePath), Is.EqualTo(before));
     }
@@ -195,12 +195,12 @@ public sealed class FontSettingsTests
         using Scope scope = new(); Window owner = scope.Owner(); Directory.CreateDirectory(Path.GetDirectoryName(scope.Store.FilePath)!);
         File.WriteAllText(scope.Store.FilePath, "{keep exact corruption"); byte[] before = File.ReadAllBytes(scope.Store.FilePath);
         DesktopSettingsDialog dialog = scope.Own(new DesktopSettingsDialog(new(), TranslationCatalog.LoadDefault(), false, saveFonts: scope.Store.SaveChanges));
-        Task<bool> completion = dialog.ShowDialog<bool>(owner); Pump(dialog); ChooseOption(dialog, Field<ComboBox>(dialog, "SettingsTheme"), "Dark");
+        Task<bool> completion = dialog.ShowDialog<bool>(owner); Pump(dialog); SettingsNavigationTestDriver.Select(dialog, "Appearance"); ChooseOption(dialog, Field<ComboBox>(dialog, "SettingsTheme"), "Dark");
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings")); Assert.That(await completion, Is.True);
         Assert.That(dialog.Result.Theme, Is.EqualTo("Dark")); Assert.That(File.ReadAllBytes(scope.Store.FilePath), Is.EqualTo(before));
     }
 
-    private static void OpenFonts(Window window) { PushProcessTestDriver.Pointer(Field<TabItem>(window, "SettingsFontsTab")); Pump(window); }
+    private static void OpenFonts(Window window) { SettingsNavigationTestDriver.Select(window, "Fonts"); Pump(window); }
     private static FontFamily ChooseFirst(Window window)
     {
         ListBox list = Field<ListBox>(window, "FontFamily"); FontFamily family = list.Items.OfType<FontFamily>().First();

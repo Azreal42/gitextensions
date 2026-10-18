@@ -128,6 +128,7 @@ public sealed class HistorySortDefaultTests
         for (int i = 0; i < 500 && !f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Any(); i++) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
         DesktopSettingsDialog settings = f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
         settings.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+        SettingsNavigationTestDriver.Select(settings, "Appearance");
         settings.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "SettingsTheme").SelectedItem = "Dark";
         GitCommandLog.Clear();
         PushProcessTestDriver.Pointer(settings.GetVisualDescendants().OfType<Button>().Single(control => control.Name == "SaveDesktopSettings"));

@@ -107,7 +107,7 @@ public sealed class ScriptsSettingsPageTests
         f.Store.Save([item]); byte[] bytes = File.ReadAllBytes(f.Store.FilePath);
         (DesktopSettingsDialog dialog, Task<bool> done) = f.Open(f.Owner()); OpenScripts(dialog);
         Assert.That(Field<ScriptsSettingsPage>(dialog, "ScriptsSettingsPage").Draft.Single(), Is.EqualTo(item));
-        PushProcessTestDriver.Pointer(Field<TabItem>(dialog, "SettingsGeneralTab")); await Choose(dialog, Field<ComboBox>(dialog, "SettingsTheme"), 1);
+        SettingsNavigationTestDriver.Select(dialog, "Appearance"); await Choose(dialog, Field<ComboBox>(dialog, "SettingsTheme"), 1);
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings")); Assert.That(await done, Is.True);
         Assert.That(dialog.Result.Theme, Is.EqualTo("Dark")); Assert.That(f.SaveCalls, Is.Zero); Assert.That(File.ReadAllBytes(f.Store.FilePath), Is.EqualTo(bytes));
     }
@@ -118,7 +118,7 @@ public sealed class ScriptsSettingsPageTests
         using Scope f = new(); Directory.CreateDirectory(Path.GetDirectoryName(f.Store.FilePath)!); File.WriteAllText(f.Store.FilePath, "{keep exact corruption"); byte[] bytes = File.ReadAllBytes(f.Store.FilePath);
         (DesktopSettingsDialog dialog, Task<bool> done) = f.Open(f.Owner()); OpenScripts(dialog);
         Assert.That(Field<TextBlock>(dialog, "ScriptsNotice").Text, Is.Not.Empty); Assert.That(Field<ListBox>(dialog, "lvScripts").Items, Is.Empty);
-        PushProcessTestDriver.Pointer(Field<TabItem>(dialog, "SettingsGeneralTab")); await Choose(dialog, Field<ComboBox>(dialog, "SettingsTheme"), 1);
+        SettingsNavigationTestDriver.Select(dialog, "Appearance"); await Choose(dialog, Field<ComboBox>(dialog, "SettingsTheme"), 1);
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings")); Assert.That(await done, Is.True);
         Assert.That(File.ReadAllBytes(f.Store.FilePath), Is.EqualTo(bytes)); Assert.That(f.SaveCalls, Is.Zero);
     }
@@ -169,7 +169,7 @@ public sealed class ScriptsSettingsPageTests
     {
         using Scope f = new(); f.Store.Save(f.Initial); (DesktopSettingsDialog dialog, Task<bool> done) = f.Open(f.Owner()); OpenScripts(dialog);
         Edit(dialog, "ScriptName", "&Renamed"); PushProcessTestDriver.Pointer(Field<Button>(dialog, "btnMoveDown"));
-        PushProcessTestDriver.Pointer(Field<TabItem>(dialog, "SettingsHotkeysTab"));
+        SettingsNavigationTestDriver.Select(dialog, "Hotkeys");
         HotkeysSettingsPage hotkeys = Field<HotkeysSettingsPage>(dialog, "HotkeysSettingsPage");
         Assert.That(hotkeys.Draft.Commands("Scripts").Select(c => c.Code), Is.EqualTo(new[] { 9002, 9001 }));
         Assert.That(hotkeys.Draft.Commands("Scripts").Single(c => c.Code == 9001).Name, Is.EqualTo("Renamed"));
@@ -186,7 +186,7 @@ public sealed class ScriptsSettingsPageTests
         Assert.That(ScriptPresentation.Icon(script with { Icon = "EditFile" }), Is.TypeOf<Image>());
     }
 
-    private static void OpenScripts(Window w) { PushProcessTestDriver.Pointer(Field<TabItem>(w, "SettingsScriptsTab")); Pump(w); }
+    private static void OpenScripts(Window w) { SettingsNavigationTestDriver.Select(w, "Scripts"); Pump(w); }
     private static void ClickEditor(Window w, string name) { Control editor = Field<Control>(w, name); Reveal(w, editor); PushProcessTestDriver.Pointer(editor); }
     private static void Edit(Window w, string name, string value)
     {

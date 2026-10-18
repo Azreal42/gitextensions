@@ -24,16 +24,16 @@ public sealed class GitEnvironmentSettingsHostTests
     public async Task SaveAndRescanPublishesEveryEditedPageBeforeTheFirstProbeAndCancelKeepsThosePublications()
     {
         await using Host f = new(); f.Open();
-        Click(f.Dialog, "SettingsNormaliseBranches");
-        Click(f.Dialog, "SettingsFontsTab"); Click(f.Dialog, "ShowEolMarkerAsGlyph");
-        Click(f.Dialog, "SettingsScriptsTab"); Click(f.Dialog, "btnAdd");
+        SettingsNavigationTestDriver.Select(f.Dialog, "Advanced"); Click(f.Dialog, "SettingsNormaliseBranches");
+        SettingsNavigationTestDriver.Select(f.Dialog, "Fonts"); Click(f.Dialog, "ShowEolMarkerAsGlyph");
+        SettingsNavigationTestDriver.Select(f.Dialog, "Scripts"); Click(f.Dialog, "btnAdd");
         Edit(f.Dialog, "ScriptName", "Host publication script"); Edit(f.Dialog, "ScriptCommand", "/bin/true");
-        Click(f.Dialog, "SettingsHotkeysTab");
+        SettingsNavigationTestDriver.Select(f.Dialog, "Hotkeys");
         ListBox contexts = Field<ListBox>(f.Dialog, "cmbSettings"); contexts.ScrollIntoView("Browse"); Pump(f.Dialog);
         PushProcessTestDriver.Pointer((Control)contexts.ContainerFromItem("Browse")!); Pump(f.Dialog);
         ListBox mappings = Field<ListBox>(f.Dialog, "listMappings"); HotkeyCommand command = mappings.Items.OfType<HotkeyCommand>().Single(item => item.Name == "CreateBranch");
         mappings.ScrollIntoView(command); Pump(f.Dialog); PushProcessTestDriver.Pointer((Control)mappings.ContainerFromItem(command)!); Click(f.Dialog, "bClear");
-        Click(f.Dialog, "SettingsGitTab"); Edit(f.Dialog, "GitPath", f.SelectedGit);
+        SettingsNavigationTestDriver.Select(f.Dialog, "GitPaths"); Edit(f.Dialog, "GitPath", f.SelectedGit);
         await f.ShowChecklistAndWaitAsync(); f.ClearProbeLog();
         Assert.That(f.EnvironmentStore.Load().Preferences.GitExecutable, Is.EqualTo(f.InitialGit));
         f.BeforePublish = settings =>
@@ -50,7 +50,8 @@ public sealed class GitEnvironmentSettingsHostTests
         Assert.That(File.ReadAllText(f.ProbeLog), Does.Contain("selected:published").And.Not.Contain("selected:unpublished"));
         Assert.That(f.GeneralStore.Load().AutoNormaliseBranchName, Is.False); Assert.That(f.Dialog.IsVisible, Is.True);
         Assert.That(f.Session.Page.IsDirty, Is.False);
-        Click(f.Dialog, "CancelDesktopSettings"); Assert.That(await f.Completion, Is.False);
+        // Windows FormSettings.Save marks the host saved; FormClosing returns OK after SaveAll/Rescan even if Cancel closes it.
+        Click(f.Dialog, "CancelDesktopSettings"); Assert.That(await f.Completion, Is.True);
         Assert.That(f.EnvironmentStore.Load().Preferences.GitExecutable, Is.EqualTo(f.SelectedGit));
         Assert.That(f.GeneralStore.Load().AutoNormaliseBranchName, Is.False); Assert.That(f.FontStore.Load().ShowEolMarkerAsGlyph, Is.True);
         Assert.That(f.ScriptsStore.Load().Scripts.Any(script => script.Name == "Host publication script"), Is.True);
@@ -60,7 +61,7 @@ public sealed class GitEnvironmentSettingsHostTests
     [AvaloniaTest]
     public async Task CancelAfterAnInstantStartupToggleKeepsOnlyTheFlagAndDiscardsThePendingGitPath()
     {
-        await using Host f = new(); f.Open(); Click(f.Dialog, "SettingsGitTab"); Edit(f.Dialog, "GitPath", f.SelectedGit);
+        await using Host f = new(); f.Open(); SettingsNavigationTestDriver.Select(f.Dialog, "GitPaths"); Edit(f.Dialog, "GitPath", f.SelectedGit);
         await f.ShowChecklistAndWaitAsync(); Assert.That(f.Session.Checklist.CheckAtStartup, Is.True); f.ClearProbeLog();
         Click(f.Dialog, "CheckAtStartup");
         Assert.That(f.EnvironmentStore.Load().Preferences.CheckAtStartup, Is.False);
@@ -94,7 +95,7 @@ public sealed class GitEnvironmentSettingsHostTests
     [AvaloniaTest]
     public async Task AHostPublicationFailureAfterTheEnvironmentSaveLeavesTheActualPublicationVisibleAndNeverStartsTheScan()
     {
-        await using Host f = new(); f.Open(); Click(f.Dialog, "SettingsGitTab"); Edit(f.Dialog, "GitPath", f.SelectedGit);
+        await using Host f = new(); f.Open(); SettingsNavigationTestDriver.Select(f.Dialog, "GitPaths"); Edit(f.Dialog, "GitPath", f.SelectedGit);
         await f.ShowChecklistAndWaitAsync(); f.ClearProbeLog();
         f.PublishFailure = new IOException("desktop profile locked <literal>"); Click(f.Dialog, "Rescan");
         await Until(() => Field<TextBlock>(f.Dialog, "SettingsNotice").Text?.Contains("desktop profile locked <literal>", StringComparison.Ordinal) == true);
@@ -112,8 +113,8 @@ public sealed class GitEnvironmentSettingsHostTests
     public async Task ValidationOrAnEarlierSaveFailurePreventsGitPublicationAndRescanning(bool failHotkeys)
     {
         await using Host f = new(); f.Open();
-        if (!failHotkeys) { Edit(f.Dialog, "SettingsNormaliseSymbol", ""); }
-        Click(f.Dialog, "SettingsGitTab"); Edit(f.Dialog, "GitPath", f.SelectedGit);
+        if (!failHotkeys) { SettingsNavigationTestDriver.Select(f.Dialog, "Advanced"); Edit(f.Dialog, "SettingsNormaliseSymbol", ""); }
+        SettingsNavigationTestDriver.Select(f.Dialog, "GitPaths"); Edit(f.Dialog, "GitPath", f.SelectedGit);
         await f.ShowChecklistAndWaitAsync(); f.ClearProbeLog();
         if (failHotkeys) { f.HotkeyFailure = new IOException("hotkey profile locked <literal>"); }
         Click(f.Dialog, "Rescan"); Pump(f.Dialog);
@@ -207,10 +208,11 @@ public sealed class GitEnvironmentSettingsHostTests
                 {
                     BeforePublish?.Invoke(settings); if (PublishFailure is { } error) { throw error; }
                     GeneralStore.Save(settings.Result); Publications++; File.WriteAllText(Published, "published"); return Task.CompletedTask;
-                }, showChecklist: showChecklist);
+                }, showChecklist: showChecklist, initialPage: "General");
             Completion = Dialog.ShowDialog<bool>(Owner); Pump(Dialog);
+            if (!showChecklist) { SettingsNavigationTestDriver.Select(Dialog, "General"); }
         }
-        internal async Task ShowChecklistAndWaitAsync() { Click(Dialog, "SettingsChecklistTab"); await WaitForScanAsync(); }
+        internal async Task ShowChecklistAndWaitAsync() { SettingsNavigationTestDriver.Select(Dialog, "Checklist"); await WaitForScanAsync(); }
         internal async Task WaitForScanAsync() { await Session.OperationCompletion.WaitAsync(TimeSpan.FromSeconds(15)); await Until(() => !Session.IsBusy); Pump(Dialog); }
         internal void ClearProbeLog() { File.WriteAllText(ProbeLog, ""); if (File.Exists(Published)) { File.Delete(Published); } }
         private string Proxy(string label)

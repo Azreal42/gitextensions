@@ -168,7 +168,7 @@ public sealed class FileHistoryPreferencesTests
                 Task<bool> result = settings.ShowDialog<bool>(owner);
                 try
                 {
-                    Pump(settings);
+                    Pump(settings); SettingsNavigationTestDriver.Select(settings, "General");
                     CheckBox follow = Field<CheckBox>(settings, "chkFollowRenamesInFileHistory"), exact = Field<CheckBox>(settings, "chkFollowRenamesInFileHistoryExact");
                     Rect[] bounds = new[] { follow, exact }.Select(c => new Rect(c.TranslatePoint(default, settings)!.Value, c.Bounds.Size)).ToArray();
                     Assert.That(bounds.All(b => new Rect(default, settings.ClientSize).Contains(b)), Is.True);
@@ -252,7 +252,7 @@ public sealed class FileHistoryPreferencesTests
         MenuItem tools = main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(i => i.Name == "ToolsMenu");
         tools.Items.OfType<MenuItem>().Single(i => i.Name == "settingsToolStripMenuItem").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any());
-        DesktopSettingsDialog dialog = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(); Pump(dialog); return dialog;
+        DesktopSettingsDialog dialog = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(); Pump(dialog); SettingsNavigationTestDriver.Select(dialog, "General"); return dialog;
     }
     private static T Field<T>(Window owner, string name) where T : Control => owner.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
     private static void Press(Window owner, PhysicalKey key)

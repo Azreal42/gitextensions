@@ -184,7 +184,7 @@ public sealed partial class MainWindow
                     await environment.ScanAsync();
                     break;
                 case GitEnvironmentCheckId.Translation:
-                    if (owner.GetLogicalDescendants().OfType<TabControl>().FirstOrDefault(control => control.Name == "DesktopSettingsPages") is { } pages) { pages.SelectedIndex = 0; }
+                    if (owner is DesktopSettingsDialog appearanceSettings) { appearanceSettings.Navigation.SelectPage("Appearance", focusContent: true); }
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => owner.GetLogicalDescendants().OfType<ComboBox>().FirstOrDefault(control => control.Name == "Language")?.Focus());
                     break;
                 default:

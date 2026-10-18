@@ -118,7 +118,7 @@ public sealed class ReferenceSortingNavigationTests
             Assert.That(ViewItem(main, "ViewshowTagsToolStripMenuItem").IsChecked, Is.False); Assert.That(historyStore.Load().ShowTags, Is.True);
             Press(main, PhysicalKey.Comma, RawInputModifiers.Control);
             await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any()); DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(); Pump(settings);
-            PushProcessTestDriver.Pointer(Field<TabItem>(settings, "SettingsSortingTab")); Pump(settings);
+            SettingsNavigationTestDriver.Select(settings, "Sorting"); Pump(settings);
             Field<ComboBox>(settings, "_NO_TRANSLATE_cmbRevisionsSortBy").SelectedItem = GitLogSort.AuthorDate;
             Field<ComboBox>(settings, "_NO_TRANSLATE_cmbBranchesSortBy").SelectedItem = GitRefsSortBy.VersionRefName;
             PushProcessTestDriver.Pointer(Field<Button>(settings, "SaveDesktopSettings")); await Until(() => !settings.IsVisible && !main.IsBusy); Pump(main);
