@@ -453,7 +453,9 @@ public class DiffViewerReadingTests
         internal StackPanel Toolbar { get; } = new() { Orientation = Avalonia.Layout.Orientation.Horizontal };
         internal Fixture()
         {
-            View = new(Source, new DiffViewerPreferencesStore(Directory));
+            AvailableEncodingsPreferencesStore encodings = new(Directory);
+            encodings.SaveChanges(encodings.Load(), encodings.Catalog.Defaults.Append("windows-1252"));
+            View = new(Source, new DiffViewerPreferencesStore(Directory), encodings);
             DockPanel content = new(); DockPanel.SetDock(Toolbar, Dock.Top); content.Children.Add(Toolbar); content.Children.Add(View);
             Window = new() { Width = 720, Height = 300, Content = content }; Window.Show(); Pump(Window);
         }

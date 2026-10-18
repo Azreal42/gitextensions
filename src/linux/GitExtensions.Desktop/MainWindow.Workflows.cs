@@ -516,7 +516,7 @@ public sealed partial class MainWindow
             { RequestedThemeVariant = owner.ActualThemeVariant };
         try
         {
-            await RunAsync(T("Diff/Merge tools"), async current =>
+            await RunAsync(T("Git configuration"), async current =>
             {
                 if (!ReferenceEquals(current, repository)) { return; }
                 using CancellationTokenRegistration cancellation = Token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.RequestClose));

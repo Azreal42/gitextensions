@@ -3,6 +3,8 @@ namespace GitExtensions.Linux.Desktop;
 /// <summary>Independent scope drafts. Read-only views always come from the published snapshot.</summary>
 internal sealed class GitToolsDraftSession
 {
+    internal sealed record ValidationTarget(GitToolConfigurationView View, GitToolRole? Role = null,
+        GitConfigurationField? Field = null, string? ToolPart = null);
     private readonly Dictionary<GitToolConfigurationView, ScopeDraft> _scopes = [];
     internal GitToolConfigurationSnapshot Snapshot { get; }
 
@@ -33,7 +35,10 @@ internal sealed class GitToolsDraftSession
                 if (draft.NameDirty || path is not null || command is not null)
                 { roles.Add(new(role, hasName ? draft.Name : "", draft.NameDirty, path, command)); }
             }
-            if (roles.Count > 0) { edits.Add(new(view == GitToolConfigurationView.Local ? GitConfigScope.Local : GitConfigScope.Global, roles)); }
+            List<GitConfigurationFieldEdit> settings = Enum.GetValues<GitConfigurationField>()
+                .Where(field => scope.Setting(field).IsDirty).Select(field => new GitConfigurationFieldEdit(field, scope.Setting(field).Value)).ToList();
+            if (roles.Count > 0 || settings.Count > 0)
+            { edits.Add(new(view == GitToolConfigurationView.Local ? GitConfigScope.Local : GitConfigScope.Global, roles, settings)); }
         }
         return edits;
     }
@@ -43,6 +48,11 @@ internal sealed class GitToolsDraftSession
         GitToolsDraftSession next = new(after);
         foreach (GitToolConfigurationView view in new[] { GitToolConfigurationView.Local, GitToolConfigurationView.Global })
         {
+            foreach (GitConfigurationField field in Enum.GetValues<GitConfigurationField>())
+            {
+                SettingDraft old = Scope(view).Setting(field);
+                if (old.IsDirty) { next.Scope(view).Setting(field).SetValue(old.Value); }
+            }
             foreach (GitToolRole role in Enum.GetValues<GitToolRole>())
             {
                 RoleDraft old = Scope(view).Role(role), current = next.Scope(view).Role(role);
@@ -61,23 +71,36 @@ internal sealed class GitToolsDraftSession
         return next;
     }
 
-    internal bool Validate(out string? error, out GitToolConfigurationView view, out GitToolRole role)
+    internal bool Validate(out string? error, out ValidationTarget target)
     {
-        view = GitToolConfigurationView.Local; role = GitToolRole.Diff;
+        target = new(GitToolConfigurationView.Local);
         foreach (GitToolConfigurationScopeEdit edit in BuildEdits())
         {
-            view = edit.Scope == GitConfigScope.Local ? GitToolConfigurationView.Local : GitToolConfigurationView.Global;
+            GitToolConfigurationView view = edit.Scope == GitConfigScope.Local ? GitToolConfigurationView.Local : GitToolConfigurationView.Global;
             ScopeDraft scope = Scope(view);
+            foreach (GitConfigurationFieldEdit value in edit.Settings ?? [])
+            {
+                target = new(view, Field: value.Field);
+                SettingDraft setting = scope.Setting(value.Field);
+                if (!scope.CanEdit(value.Field))
+                { error = setting.Published.Restriction ?? scope.Snapshot.Diagnostic ?? "This configuration scope is read only."; return false; }
+                if (value.Value?.Contains('\0') == true) { error = "Git configuration values cannot contain NUL."; return false; }
+                if (value.Field == GitConfigurationField.AutoCrlf && value.Value is not (null or "true" or "input" or "false"))
+                { error = "Choose true, input, false or Not set for line endings."; return false; }
+            }
             foreach (GitToolRoleEdit value in edit.Roles)
             {
-                role = value.Role; RoleDraft draft = scope.Role(role); Fields fields = draft.Current;
+                GitToolRole role = value.Role; RoleDraft draft = scope.Role(role); Fields fields = draft.Current;
+                target = new(view, role);
                 if (!scope.CanEdit(role)) { error = scope.Snapshot.Diagnostic ?? "This configuration scope is read only."; return false; }
                 if (draft.Name.IndexOfAny(['\0', '\n', '\r']) >= 0) { error = "Tool names cannot contain NUL or a line break."; return false; }
-                if ((value.Path?.Value?.Contains('\0') ?? false) || (value.Command?.Value?.Contains('\0') ?? false))
-                { error = "Tool paths and commands cannot contain NUL."; return false; }
+                if (value.Path?.Value?.Contains('\0') == true)
+                { target = new(view, role, ToolPart: "path"); error = "Tool paths cannot contain NUL."; return false; }
+                if (value.Command?.Value?.Contains('\0') == true)
+                { target = new(view, role, ToolPart: "command"); error = "Tool commands cannot contain NUL."; return false; }
                 if (value.ChangeName && !draft.Selection.CanChange) { error = draft.Selection.Restriction; return false; }
-                if (value.Path is not null && !fields.CanChangePath) { error = fields.PathRestriction; return false; }
-                if (value.Command is not null && !fields.CanChangeCommand) { error = fields.CommandRestriction; return false; }
+                if (value.Path is not null && !fields.CanChangePath) { target = new(view, role, ToolPart: "path"); error = fields.PathRestriction; return false; }
+                if (value.Command is not null && !fields.CanChangeCommand) { target = new(view, role, ToolPart: "command"); error = fields.CommandRestriction; return false; }
             }
         }
         error = null; return true;
@@ -86,6 +109,7 @@ internal sealed class GitToolsDraftSession
     internal sealed class ScopeDraft
     {
         private readonly Dictionary<GitToolRole, RoleDraft> _roles = [];
+        private readonly Dictionary<GitConfigurationField, SettingDraft> _settings = [];
         private readonly bool _guiMerge;
         internal GitToolConfigurationScopeSnapshot Snapshot { get; }
         internal ScopeDraft(GitToolConfigurationScopeSnapshot snapshot, bool guiMerge)
@@ -93,11 +117,34 @@ internal sealed class GitToolsDraftSession
             Snapshot = snapshot; _guiMerge = guiMerge;
             foreach (GitToolRole role in Enum.GetValues<GitToolRole>())
             { _roles.Add(role, new(snapshot, role, guiMerge)); }
+            foreach (GitConfigurationField field in Enum.GetValues<GitConfigurationField>())
+            { _settings.Add(field, new(snapshot.GetSetting(field))); }
         }
         internal RoleDraft Role(GitToolRole role) => _roles[role];
+        internal SettingDraft Setting(GitConfigurationField field) => _settings[field];
+        internal bool CanEdit(GitConfigurationField field) => Snapshot.IsAvailable && Snapshot.CanWrite
+            && Snapshot.View is GitToolConfigurationView.Local or GitToolConfigurationView.Global
+            && Setting(field).Published.CanChange;
         internal bool CanEdit(GitToolRole role) => Snapshot.IsAvailable && Snapshot.CanWrite
             && Snapshot.View is GitToolConfigurationView.Local or GitToolConfigurationView.Global
             && (role != GitToolRole.Merge || _guiMerge);
+    }
+
+    internal sealed class SettingDraft
+    {
+        private bool _hasIntent;
+        internal GitToolConfigurationValue Published { get; }
+        internal string? Value { get; private set; }
+        internal bool IsPresent => _hasIntent ? Value is not null : Published.Occurrences.Count > 0;
+        internal bool IsDirty => _hasIntent && (Value is null ? Published.Occurrences.Count > 0
+            : Published.Occurrences.Count == 0 || Value != Published.Occurrences.Last().Value);
+        internal string DisplayValue => Published.Key == "credential.helper" && Published.Occurrences.Count > 1 && !_hasIntent
+            ? string.Join(", ", Published.Occurrences.Select(entry => entry.Value)) : Value ?? "";
+
+        internal SettingDraft(GitToolConfigurationValue published)
+        { Published = published; Value = published.Occurrences.LastOrDefault()?.Value; }
+        internal void SetValue(string? value) { Value = value; _hasIntent = true; }
+        internal void RestorePublished() { Value = Published.Occurrences.LastOrDefault()?.Value; _hasIntent = false; }
     }
 
     internal sealed class RoleDraft

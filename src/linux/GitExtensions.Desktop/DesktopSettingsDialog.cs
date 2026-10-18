@@ -83,9 +83,9 @@ internal sealed class DesktopSettingsDialog : Window
         Grid fileHistoryOptions = new() { ColumnDefinitions = new ColumnDefinitions("*,*") };
         fileHistoryOptions.Children.Add(follow); Grid.SetColumn(exact, 1); fileHistoryOptions.Children.Add(exact); fields.Children.Add(fileHistoryOptions);
         fields.Children.Add(new TextBlock { Name = "TelemetryStatus", Text = translations.Translate("Telemetry is disabled. No usage data is sent."), TextWrapping = TextWrapping.Wrap });
-        Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
+        Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); }; fields.Children.Add(configuration);
-        Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Diff/Merge tools") + "…", IsEnabled = canConfigureGit && configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
+        Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = canConfigureGit && configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
         bool configuringTools = false;
         tools.Click += async (_, _) =>
         {

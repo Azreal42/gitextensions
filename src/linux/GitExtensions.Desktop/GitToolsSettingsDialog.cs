@@ -10,7 +10,7 @@ using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
 
-/// <summary>The diff/merge section of Git Config, with explicit local/global draft publication.</summary>
+/// <summary>Git Config, with independent local/global drafts and explicit publication.</summary>
 internal sealed class GitToolsSettingsDialog : Window
 {
     private readonly GitRepository _repository;
@@ -18,6 +18,7 @@ internal sealed class GitToolsSettingsDialog : Window
     private readonly CancellationTokenSource _lifetime;
     private readonly CancellationTokenRegistration _ownerCancellation;
     private readonly GitToolsSettingsPage _page;
+    private readonly AvailableEncodingsPreferencesStore _encodingPreferences;
     private readonly TextBox _error = new()
     {
         Name = "GitToolsError", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
@@ -29,6 +30,7 @@ internal sealed class GitToolsSettingsDialog : Window
     private Task? _initialization;
     private bool _closed, _closeRequested, _acceptWhenIdle, _requiresReload, _closeOwnerWhenIdle, _ownerCloseRequested;
     private Window? _observedOwner;
+    private GitToolsDraftSession.ValidationTarget? _validationTarget;
     internal bool IsBusy { get; private set; }
     internal bool IsReady => _page.Session is { } session && session.Snapshot.Scopes.Any(scope => scope.IsAvailable);
     internal bool MayHaveChangedConfiguration { get; private set; }
@@ -38,19 +40,23 @@ internal sealed class GitToolsSettingsDialog : Window
     internal Task OperationCompletion => _completion?.Task ?? Task.CompletedTask;
     internal GitToolsSettingsPage Page => _page;
     internal Func<GitToolRole, string, CancellationToken, Task<string?>>? FilePicker { get; set; }
+    internal Func<string, CancellationToken, Task<string?>>? TemplateFilePicker { get; set; }
 
     internal GitToolsSettingsDialog(GitRepository repository, TranslationCatalog? translations = null,
-        GitToolRole? focus = null, CancellationToken ownerToken = default)
+        GitToolRole? focus = null, CancellationToken ownerToken = default, AvailableEncodingsPreferencesStore? encodingPreferences = null)
     {
         _repository = repository; _translations = translations ?? TranslationCatalog.LoadDefault();
+        _encodingPreferences = encodingPreferences ?? new();
         _lifetime = CancellationTokenSource.CreateLinkedTokenSource(ownerToken);
         Name = "GitToolsSettingsDialog";
-        Title = _translations.Translate("GitConfigSettingsPage", "$this", "Text", "Config") + " — " + _translations.Translate("Diff/Merge tools");
+        Title = _translations.Translate("GitConfigSettingsPage", "$this", "Text", "Config");
         Width = 820; MinWidth = 660; SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         // Observe our own owner-close request before an owned child's close can veto it.
         ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         _page = new(_translations); _page.DraftChanged += UpdateActions; _page.BrowseRequested = BrowseAsync;
+        _page.TemplateBrowseRequested = BrowseTemplateAsync; _page.ConfigureEncodingRequested = ConfigureEncodingAsync;
+        ReloadEncodingChoices(); AvailableEncodingsPreferencesStore.Saved += EncodingPreferencesSaved;
         _ok = Footer("GitToolsAccept", "OK"); _ok.IsDefault = true;
         _cancel = Footer("GitToolsCancel", "Cancel"); _cancel.IsCancel = true;
         _apply = Footer("GitToolsApply", "Apply"); _reload = Footer("GitToolsReload", "Reload");
@@ -81,7 +87,11 @@ internal sealed class GitToolsSettingsDialog : Window
                 owner.Closing += OwnerClosing;
             }
             if (Screens.ScreenFromWindow(this) is { } screen)
-            { MaxHeight = Math.Max(300, screen.WorkingArea.Height / screen.Scaling - 40); }
+            {
+                MaxHeight = Math.Max(240, screen.WorkingArea.Height / screen.Scaling - 40);
+                MaxWidth = Math.Max(320, screen.WorkingArea.Width / screen.Scaling - 40);
+                MinWidth = Math.Min(MinWidth, MaxWidth); Width = Math.Min(Width, MaxWidth);
+            }
             await InitializeAsync();
             if (!_closeRequested && IsVisible)
             {
@@ -106,6 +116,7 @@ internal sealed class GitToolsSettingsDialog : Window
         Closed += (_, _) =>
         {
             _closed = true; _page.Invalidate(); _lifetime.Cancel();
+            AvailableEncodingsPreferencesStore.Saved -= EncodingPreferencesSaved;
             _ownerCancellation.Dispose();
             if (_observedOwner is { } owner)
             {
@@ -135,8 +146,8 @@ internal sealed class GitToolsSettingsDialog : Window
     {
         GitToolsDraftSession? session = _page.Session;
         if (session is null || _requiresReload) { return; }
-        if (!session.Validate(out string? validation, out GitToolConfigurationView view, out _))
-        { _page.SelectScope(view); ShowError(validation ?? _translations.Translate("Unable to save settings.")); return; }
+        if (!session.Validate(out string? validation, out GitToolsDraftSession.ValidationTarget target))
+        { _validationTarget = target; _page.SelectScope(target.View); ShowError(validation ?? _translations.Translate("Unable to save settings.")); return; }
         IReadOnlyList<GitToolConfigurationScopeEdit> edits = session.BuildEdits();
         if (edits.Count == 0) { _acceptWhenIdle = closeOnSuccess; return; }
         GitToolConfigurationSaveResult result;
@@ -166,7 +177,10 @@ internal sealed class GitToolsSettingsDialog : Window
                 string observed = string.Join("\n", result.Writes.Select(write =>
                 {
                     GitToolConfigurationView scope = write.Scope == GitConfigScope.Local ? GitToolConfigurationView.Local : GitToolConfigurationView.Global;
-                    GitToolConfigurationOccurrence? entry = result.After!.GetScope(scope).Occurrences.LastOrDefault(occurrence => occurrence.Key == write.Key);
+                    GitToolConfigurationScopeSnapshot snapshot = result.After!.GetScope(scope);
+                    GitConfigurationField? field = Enum.GetValues<GitConfigurationField>().Cast<GitConfigurationField?>().FirstOrDefault(candidate => GitConfigurationFields.Key(candidate!.Value) == write.Key);
+                    GitToolConfigurationOccurrence? entry = field is { } setting ? snapshot.GetSetting(setting).Occurrences.LastOrDefault()
+                        : snapshot.Occurrences.LastOrDefault(occurrence => occurrence.Key == write.Key);
                     string published = entry is null ? _translations.Translate("Not set") : entry.Value ?? _translations.Translate("No value");
                     return $"{write.Scope}: {write.Key} = {published}";
                 }));
@@ -190,15 +204,54 @@ internal sealed class GitToolsSettingsDialog : Window
         });
     }
 
-    private async Task<string?> PickNativeAsync(GitToolRole role, string name, string path, CancellationToken token)
+    private Task BrowseTemplateAsync()
     {
-        string? startPath = ExistingDirectory(path) ?? ExistingDirectory(GitToolsCatalog.PreferredExecutable(role, name));
+        GitToolsSettingsPage.SettingPickerStamp? stamp = _page.CaptureTemplatePicker();
+        if (stamp is null) { return Task.CompletedTask; }
+        return RunOwnedAsync(async token =>
+        {
+            string? path = TemplateFilePicker is { } picker ? await picker(stamp.Path, token)
+                : await PickFileAsync(stamp.Path, null, token, template: true);
+            token.ThrowIfCancellationRequested();
+            if (!_closed && !_closeRequested && IsVisible && path is not null) { _page.AcceptTemplatePicker(stamp, path); }
+        });
+    }
+
+    private Task ConfigureEncodingAsync() => RunOwnedAsync(async token =>
+    {
+        AvailableEncodingsDialog dialog = new(_encodingPreferences, translations: _translations);
+        using CancellationTokenRegistration close = token.Register(() => Dispatcher.UIThread.Post(() => { if (dialog.IsVisible) { dialog.Close(false); } }));
+        await dialog.ShowDialog<bool>(this);
+        token.ThrowIfCancellationRequested();
+        if (!_closed && !_closeRequested) { ReloadEncodingChoices(); }
+    });
+
+    private void ReloadEncodingChoices()
+    {
+        AvailableEncodingsPreferencesLoadResult preferences = _encodingPreferences.Load();
+        _page.SetEncodingChoices(_encodingPreferences.Catalog.Choices(preferences.Names), preferences.Error?.Message);
+    }
+
+    private void EncodingPreferencesSaved(string path)
+    {
+        if (string.Equals(path, _encodingPreferences.FilePath, StringComparison.Ordinal))
+        { Dispatcher.UIThread.Post(() => { if (!_closed && !_closeRequested) { ReloadEncodingChoices(); } }); }
+    }
+
+    private async Task<string?> PickNativeAsync(GitToolRole role, string name, string path, CancellationToken token)
+        => await PickFileAsync(path, GitToolsCatalog.PreferredExecutable(role, name), token);
+
+    private async Task<string?> PickFileAsync(string path, string? preferred, CancellationToken token, bool template = false)
+    {
+        string? startPath = ExistingDirectory(path) ?? ExistingDirectory(preferred);
         using IStorageFolder? start = startPath is null ? null : await StorageProvider.TryGetFolderFromPathAsync(new Uri(startPath));
         token.ThrowIfCancellationRequested();
         IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = _translations.Translate("Select file"), AllowMultiple = false, SuggestedStartLocation = start,
-            FileTypeFilter = [new FilePickerFileType(_translations.Translate("All files")) { Patterns = ["*"] }]
+            FileTypeFilter = template
+                ? [new FilePickerFileType(_translations.Translate("Text files")) { Patterns = ["*.txt"] }, new FilePickerFileType(_translations.Translate("All files")) { Patterns = ["*"] }]
+                : [new FilePickerFileType(_translations.Translate("All files")) { Patterns = ["*"] }]
         });
         try
         {
@@ -223,6 +276,8 @@ internal sealed class GitToolsSettingsDialog : Window
         {
             _operationCancellation = null; IsBusy = false;
             if (!_closed) { _page.SetBusy(false); UpdateActions(); }
+            if (!_closed && !_closeRequested && _validationTarget is { } target)
+            { _validationTarget = null; _page.FocusValidation(target); }
             completion.TrySetResult();
             if (!_closed && (_closeRequested || _acceptWhenIdle)) { Close(_acceptWhenIdle && !_closeRequested); }
         }

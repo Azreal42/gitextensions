@@ -2,6 +2,22 @@ namespace GitExtensions.Linux;
 
 public enum GitToolRole { Diff, Merge }
 public enum GitToolConfigurationView { Effective, System, Global, Local }
+public enum GitConfigurationField { UserName, UserEmail, CredentialHelper, Editor, CommitTemplate, AutoCrlf, FilesEncoding }
+
+public static class GitConfigurationFields
+{
+    public static string Key(GitConfigurationField field) => field switch
+    {
+        GitConfigurationField.UserName => "user.name",
+        GitConfigurationField.UserEmail => "user.email",
+        GitConfigurationField.CredentialHelper => "credential.helper",
+        GitConfigurationField.Editor => "core.editor",
+        GitConfigurationField.CommitTemplate => "commit.template",
+        GitConfigurationField.AutoCrlf => "core.autocrlf",
+        GitConfigurationField.FilesEncoding => "i18n.filesencoding",
+        _ => throw new ArgumentOutOfRangeException(nameof(field))
+    };
+}
 
 /// <summary>A real ordered Git entry. A null value denotes an existing valueless entry.</summary>
 public sealed record GitToolConfigurationOccurrence(string Key, string? Value, string Scope, string Origin, int Order,
@@ -15,11 +31,14 @@ public sealed record GitToolConfigurationDefinition(GitToolRole Role, string Nam
 public sealed class GitToolConfigurationScopeSnapshot
 {
     private readonly bool _mergeSupported;
+    private readonly IReadOnlyList<GitToolConfigurationOccurrence> _settings;
     internal GitToolConfigurationScopeSnapshot(GitToolConfigurationView view, bool available, bool writable, string? diagnostic,
         bool mergeSupported, IEnumerable<GitToolConfigurationOccurrence> occurrences)
     {
         View = view; IsAvailable = available; CanWrite = writable; Diagnostic = diagnostic; _mergeSupported = mergeSupported;
-        Occurrences = Array.AsReadOnly(occurrences.ToArray());
+        GitToolConfigurationOccurrence[] entries = occurrences.ToArray();
+        Occurrences = Array.AsReadOnly(entries.Where(entry => GitToolConfigurationKeys.IsToolKey(entry.Key)).ToArray());
+        _settings = Array.AsReadOnly(entries.Where(entry => GitToolConfigurationKeys.IsSettingKey(entry.Key)).ToArray());
         SelectedDiffGui = Value("diff.guitool", GitToolRole.Diff);
         SelectedMergeGui = Value("merge.guitool", GitToolRole.Merge);
         MergeToolFallback = Value("merge.tool", GitToolRole.Merge, fallback: true);
@@ -32,6 +51,8 @@ public sealed class GitToolConfigurationScopeSnapshot
     public GitToolConfigurationValue SelectedMergeGui { get; }
     public GitToolConfigurationValue MergeToolFallback { get; }
     public IReadOnlyList<GitToolConfigurationOccurrence> Occurrences { get; }
+    public GitToolConfigurationValue GetSetting(GitConfigurationField field)
+        => Value(GitConfigurationFields.Key(field), null);
     public GitToolConfigurationDefinition GetTool(GitToolRole role, string name)
     {
         GitToolConfigurationKeys.ValidateName(name);
@@ -39,9 +60,9 @@ public sealed class GitToolConfigurationScopeSnapshot
         string prefix = GitToolConfigurationKeys.Prefix(role) + name + ".";
         return new(role, name, Value(prefix + "path", role), Value(prefix + "cmd", role));
     }
-    private GitToolConfigurationValue Value(string key, GitToolRole role, bool fallback = false)
+    private GitToolConfigurationValue Value(string key, GitToolRole? role, bool fallback = false)
     {
-        GitToolConfigurationOccurrence[] entries = Occurrences.Where(entry => entry.Key == key).ToArray();
+        GitToolConfigurationOccurrence[] entries = (role is null ? _settings : Occurrences).Where(entry => entry.Key == key).ToArray();
         string? restriction = !IsAvailable ? Diagnostic : fallback ? "merge.tool is a read-only fallback."
             : !CanWrite ? "This scope is read-only."
             : role == GitToolRole.Merge && !_mergeSupported ? "GUI merge tools require Git 2.20 or newer."
@@ -62,7 +83,7 @@ public sealed class GitToolConfigurationSnapshot
             string? diagnostic = state.Diagnostic ?? (available ? null : "Local configuration requires a Git repository.");
             bool writable = available && (view == GitToolConfigurationView.Local || view == GitToolConfigurationView.Global && state.GlobalTarget is not null);
             if (state.Diagnostic is null && view == GitToolConfigurationView.Global && state.GlobalTarget is null) { diagnostic = "The native global configuration destination could not be established. This scope is read-only."; }
-            IEnumerable<GitToolConfigurationOccurrence> entries = state.Entries.Where(entry => GitToolConfigurationKeys.IsToolKey(entry.Key)
+            IEnumerable<GitToolConfigurationOccurrence> entries = state.Entries.Where(entry => (GitToolConfigurationKeys.IsToolKey(entry.Key) || GitToolConfigurationKeys.IsSettingKey(entry.Key))
                 && (view == GitToolConfigurationView.Effective || entry.Scope == view.ToString().ToLowerInvariant()));
             return new GitToolConfigurationScopeSnapshot(view, available, writable, diagnostic, SupportsGuiMergeTool, entries);
         }).ToArray());
@@ -80,7 +101,14 @@ public sealed class GitToolConfigurationSnapshot
 public sealed record GitToolValueEdit(string? Value);
 public sealed record GitToolRoleEdit(GitToolRole Role, string? Name, bool ChangeName,
     GitToolValueEdit? Path = null, GitToolValueEdit? Command = null);
-public sealed record GitToolConfigurationScopeEdit(GitConfigScope Scope, IReadOnlyList<GitToolRoleEdit> Roles);
+/// <summary>A field edit preserves an empty value; null requests a native scoped unset.</summary>
+public sealed record GitConfigurationFieldEdit(GitConfigurationField Field, string? Value);
+public sealed record GitToolConfigurationScopeEdit(GitConfigScope Scope, IReadOnlyList<GitToolRoleEdit> Roles,
+    IReadOnlyList<GitConfigurationFieldEdit>? Settings = null)
+{
+    public void Deconstruct(out GitConfigScope scope, out IReadOnlyList<GitToolRoleEdit> roles)
+    { scope = Scope; roles = Roles; }
+}
 public enum GitToolConfigurationWriteOutcome { NoOp, NativeCompleted, NativeFailed, Unknown }
 public sealed record GitToolConfigurationWriteReceipt(GitConfigScope Scope, string Key, string? RequestedValue,
     IReadOnlyList<string> Arguments, GitResult? NativeResult, GitToolConfigurationWriteOutcome Outcome, string? Diagnostic);
@@ -100,6 +128,8 @@ public sealed class GitToolConfigurationSaveCanceledException : OperationCancele
 
 internal static class GitToolConfigurationKeys
 {
+    internal static bool IsSettingKey(string key) => key is "user.name" or "user.email" or "credential.helper" or "core.editor"
+        or "commit.template" or "core.autocrlf" or "i18n.filesencoding";
     internal static string Prefix(GitToolRole role) => role == GitToolRole.Diff ? "difftool." : "mergetool.";
     internal static string Selector(GitToolRole role) => role == GitToolRole.Diff ? "diff.guitool" : "merge.guitool";
     internal static void ValidateName(string name)

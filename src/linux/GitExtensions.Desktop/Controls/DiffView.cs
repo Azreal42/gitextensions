@@ -80,7 +80,8 @@ public sealed class DiffView : UserControl, IDisposable
     /// <summary>The host accepts only available repository commands; absence leaves the key unhandled.</summary>
     public Func<string, bool>? FileViewerCommandRequested { get; set; }
 
-    public DiffView(TextBox source, DiffViewerPreferencesStore? preferencesStore = null)
+    public DiffView(TextBox source, DiffViewerPreferencesStore? preferencesStore = null,
+        AvailableEncodingsPreferencesStore? availableEncodingsStore = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         _source = source;
@@ -122,7 +123,7 @@ public sealed class DiffView : UserControl, IDisposable
         _editor.TextChanged += EditorTextChanged;
         _nonprinting = new(_editor);
         Search = new(this);
-        ReadingMenu = new(this);
+        ReadingMenu = new(this, availableEncodingsStore);
         ContextMenu = new ContextMenu { ItemsSource = CreateContextMenuItems() };
         _source.PropertyChanged += SourceChanged;
         AddHandler(KeyDownEvent, (_, args) => HandleReadingShortcut(args), RoutingStrategies.Tunnel);

@@ -137,8 +137,18 @@ public sealed partial class GitRepository
                     result.Add(new(scopeEdit.Scope, role.Role, key, value is "" ? null : value, order));
                 }
             }
+            HashSet<GitConfigurationField> fields = [];
+            foreach (GitConfigurationFieldEdit setting in scopeEdit.Settings ?? [])
+            {
+                ArgumentNullException.ThrowIfNull(setting);
+                if (!Enum.IsDefined(setting.Field) || !fields.Add(setting.Field))
+                { throw new ArgumentException("Each supported Git configuration field may occur only once per scope.", nameof(edits)); }
+                if (setting.Value?.Contains('\0') == true) { throw new ArgumentException("Git configuration values cannot contain NUL.", nameof(edits)); }
+                result.Add(new(scopeEdit.Scope, null, GitConfigurationFields.Key(setting.Field), setting.Value, (int)setting.Field, setting.Field));
+            }
         }
-        return result.OrderBy(edit => edit.Scope == GitConfigScope.Local ? 0 : 1).ThenBy(edit => edit.Role).ThenBy(edit => edit.Order).ToList();
+        return result.OrderBy(edit => edit.Scope == GitConfigScope.Local ? 0 : 1)
+            .ThenBy(edit => edit.Role is GitToolRole role ? (int)role : 2).ThenBy(edit => edit.Order).ToList();
         static string? LastValue(GitToolConfigurationValue value) => value.Occurrences.LastOrDefault()?.Value;
     }
 
@@ -152,11 +162,13 @@ public sealed partial class GitRepository
     private static void ValidateToolConfigurationEdit(ToolConfigurationState state, ToolConfigurationEdit edit)
     {
         if (ToolEditIsNoOp(state, edit)) { return; }
+        if (edit.Field == GitConfigurationField.AutoCrlf && edit.Value is not (null or "false" or "input" or "true"))
+        { throw new ArgumentException("core.autocrlf must be false, input, true, or unset."); }
         string target = ToolTarget(state, edit.Scope) ?? throw new InvalidOperationException("The native configuration destination is unavailable.");
         ToolConfigurationFile file = state.Files.Single(source => source.LogicalPath == target);
         if (file.Identity is not null && !file.Identity.Value.IsRegular) { throw new IOException("The native configuration destination is not a regular file."); }
         GitToolConfigurationOccurrence[] entries = EntriesFor(state, edit).ToArray();
-        if (entries.Length > 1) { throw new InvalidOperationException("Cannot change a multi-valued tool setting, including duplicate/include values: " + edit.Key); }
+        if (entries.Length > 1) { throw new InvalidOperationException("Cannot change a multi-valued Git setting, including duplicate/include values: " + edit.Key); }
         if (edit.Value is null && entries.Length == 1 && !entries[0].IsNativeWriteTarget)
         { throw new InvalidOperationException("This value comes only from another file/include. Remove it in its source; a scoped unset cannot remove it: " + edit.Key); }
     }
@@ -180,6 +192,8 @@ public sealed partial class GitRepository
         string[] arguments = [.. GlobalOptions, "config", "--includes", "--null", "--list", "--show-origin", "--show-scope"];
         GitBinaryResult raw = await _runner.RunBinaryAsync(Path, arguments, token).ConfigureAwait(false);
         GitToolConfigurationOccurrence[] entries = ParseToolConfiguration(raw, arguments, localTarget, globalTarget);
+        string? diagnostic = localTarget is null && !local.Success && entries.Any(entry => entry.Scope == "local")
+            ? new GitCommandException(["rev-parse", "--git-path", "config"], local).Message : null;
         HashSet<string> paths = new(globalCandidates, StringComparer.Ordinal);
         if (localTarget is not null) { paths.Add(localTarget); }
         foreach (GitToolConfigurationOccurrence entry in entries)
@@ -209,7 +223,7 @@ public sealed partial class GitRepository
         string context = GitRulesFiles.Hash(ToolConfigurationUtf8.GetBytes(environment + "\0" + Path + "\0" + _runner.Executable + "\0" + version));
         string revision = GitRulesFiles.Hash(ToolConfigurationUtf8.GetBytes(GitRulesFiles.Hash(raw.StandardOutput)
             + string.Concat(files.Select(file => file.LogicalPath + "\0" + file.Location + "\0" + file.Identity + "\0" + file.Hash + "\0" + file.Mode + "\0" + file.Attributes))));
-        return new(version, context, revision, localTarget, globalTarget, Array.AsReadOnly(entries), files.AsReadOnly(), null);
+        return new(version, context, revision, localTarget, globalTarget, Array.AsReadOnly(entries), files.AsReadOnly(), diagnostic);
     }
 
     private async Task<Version> GetToolConfigurationGitVersionAsync(CancellationToken token)
@@ -324,5 +338,6 @@ public sealed partial class GitRepository
         { throw ToolConfigurationChanged(); }
     }
     private static IOException ToolConfigurationChanged() => new("Git configuration or its physical sources changed outside this editor. Reload before saving. No rollback was attempted.");
-    private sealed record ToolConfigurationEdit(GitConfigScope Scope, GitToolRole Role, string Key, string? Value, int Order);
+    private sealed record ToolConfigurationEdit(GitConfigScope Scope, GitToolRole? Role, string Key, string? Value, int Order,
+        GitConfigurationField? Field = null);
 }

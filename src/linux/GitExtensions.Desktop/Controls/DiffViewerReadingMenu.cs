@@ -9,6 +9,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Controls.Templates;
 using Avalonia.Controls.Presenters;
@@ -24,6 +25,8 @@ public sealed record DiffViewerEncodingChoice(string? Name, string DisplayName);
 public sealed class DiffViewerReadingMenu : IDisposable
 {
     private readonly DiffView _view;
+    private readonly AvailableEncodingsPreferencesStore _encodingStore;
+    private AvailableEncodingsPreferencesLoadResult _encodingPreferences;
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly List<(MenuItem Item, GitDiffCopyOperation? Copy)> _items = [];
     private readonly List<ComboBox> _encodingSelectors = [];
@@ -33,7 +36,20 @@ public sealed class DiffViewerReadingMenu : IDisposable
     private bool _disposed;
     public Task PendingOperation { get; private set; } = Task.CompletedTask;
 
-    internal DiffViewerReadingMenu(DiffView view) => _view = view;
+    public Exception? EncodingPreferencesError => _encodingPreferences.Error;
+
+    internal DiffViewerReadingMenu(DiffView view, AvailableEncodingsPreferencesStore? encodingStore = null, AvailableEncodingsCatalog? catalog = null)
+    {
+        _view = view; _encodingStore = encodingStore ?? new(catalog: catalog); _encodingPreferences = _encodingStore.Load();
+        AvailableEncodingsPreferencesStore.Saved += EncodingPreferencesSaved;
+    }
+
+    private void EncodingPreferencesSaved(string path)
+    {
+        if (_disposed || !string.Equals(path, _encodingStore.FilePath, StringComparison.Ordinal)) { return; }
+        if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => EncodingPreferencesSaved(path)); return; }
+        _encodingPreferences = _encodingStore.Load(); Refresh();
+    }
 
     public IReadOnlyList<object> CreateContextMenuItems()
     {
@@ -112,7 +128,11 @@ public sealed class DiffViewerReadingMenu : IDisposable
                 }
             });
         }
-        ToolTip.SetTip(selector, _translations.Translate("Encoding"));
+        selector.DropDownOpened += (_, _) =>
+        {
+            if (_disposed) { return; }
+            _encodingPreferences = _encodingStore.Load(); Refresh();
+        };
         _encodingSelectors.Add(selector);
         selector.SelectionChanged += (_, _) =>
         {
@@ -239,12 +259,15 @@ public sealed class DiffViewerReadingMenu : IDisposable
         try
         {
             string defaultName = _view.DefaultFileEncodingName;
-            string defaultDisplay = GitFileEncodingCodec.AvailableEncodings.FirstOrDefault(item => item.Name == defaultName)?.DisplayName ?? defaultName;
+            string defaultDisplay = _encodingStore.Catalog.Resolve(defaultName)?.DisplayName ?? defaultName;
             DiffViewerEncodingChoice[] choices = [new(null, defaultDisplay + " (" + _translations.Translate("Default") + ")"),
-                .. GitFileEncodingCodec.AvailableEncodings.Select(item => new DiffViewerEncodingChoice(item.Name, item.DisplayName))];
+                .. _encodingStore.Catalog.Choices(_encodingPreferences.Names, _view.FileEncodingName)
+                    .Select(item => new DiffViewerEncodingChoice(item.Name, item.DisplayName))];
             foreach (ComboBox selector in _encodingSelectors)
             {
-                if (selector.ItemsSource is not DiffViewerEncodingChoice[] previous || previous[0] != choices[0]) { selector.ItemsSource = choices; }
+                if (selector.ItemsSource is not DiffViewerEncodingChoice[] previous || !previous.SequenceEqual(choices)) { selector.ItemsSource = choices; }
+                ToolTip.SetTip(selector, _encodingPreferences.Error is null ? _translations.Translate("Encoding")
+                    : _translations.Translate("Unable to read preferred encodings.") + " " + _encodingStore.FilePath + ": " + _encodingPreferences.Error.Message);
                 selector.SelectedItem = selector.Items.OfType<DiffViewerEncodingChoice>().FirstOrDefault(item => item.Name == _view.FileEncodingName);
             }
         }
@@ -293,6 +316,7 @@ public sealed class DiffViewerReadingMenu : IDisposable
     public void Dispose()
     {
         if (_disposed) { return; } _disposed = true;
+        AvailableEncodingsPreferencesStore.Saved -= EncodingPreferencesSaved;
         _goToDialog?.Close(null); _goToDialog = null; _items.Clear(); _encodingSelectors.Clear();
         foreach ((Image icon, Bitmap bitmap) in _icons) { icon.Source = null; bitmap.Dispose(); } _icons.Clear();
     }
