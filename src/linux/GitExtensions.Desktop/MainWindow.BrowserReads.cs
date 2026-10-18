@@ -187,7 +187,10 @@ public sealed partial class MainWindow
             _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
             CancelFileGrep(); _fileGrepNavigation?.Cancel();
             _commitInfo.BeginClose();
-            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync());
+            // Shared branch workers outlive a cancelled consumer wait. Stop their owner before
+            // the close snapshot and keep the window alive until the real Git reads have drained.
+            Task branchesDispose = DisposeRepositoryBranchReadersAsync();
+            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync(), branchesDispose);
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterCommitInformationAsync(pending); }
             else { _commitInfoCloseReady = true; }
         };

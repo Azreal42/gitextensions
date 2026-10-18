@@ -7,6 +7,7 @@ public sealed record DesktopPreferences
     public List<string> RecentRepositories { get; init; } = [];
     public string Theme { get; init; } = "Light";
     public string? Language { get; init; }
+    public bool ShowRepoCurrentBranch { get; init; } = true;
     public int HistoryLimit { get; init; } = 300;
     // HistoryLimit is the incremental batch size retained for existing profiles.
     // The Windows General policy is an independent total cap; zero is unlimited.

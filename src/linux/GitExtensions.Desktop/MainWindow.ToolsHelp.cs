@@ -156,6 +156,7 @@ public sealed partial class MainWindow
         HotkeyBindings hotkeys = DesktopHotkeys.Reload();
         DesktopPreferences initial = _preferencesStore.Load();
         GeneralSettingsSession general = new(initial, fileHistory);
+        AppearanceSettingsSession appearance = new(initial, _historyView);
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         GitRepository? settingsRepository = _repository;
         using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
@@ -167,7 +168,10 @@ public sealed partial class MainWindow
             environment, ApplySettingsAsync, RepairEnvironmentAsync, showChecklist,
             generalSettings: general.Initial,
             cloneDestinations: _repositoryHistory.Recent.Select(entry => Path.GetDirectoryName(entry.Path))
-                .Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray());
+                .Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray(),
+            appearanceSettings: appearance.Initial,
+            helpTranslateAsync: owner => owner.IsVisible && !_lifetime.IsCancellationRequested
+                ? OpenWebAsync(AppearanceSettingsPage.TranslationHelpUrl) : Task.CompletedTask);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
@@ -212,15 +216,13 @@ public sealed partial class MainWindow
             {
                 token.ThrowIfCancellationRequested();
                 DesktopPreferences latest = _preferencesStore.Load();
-                DesktopPreferences preferences = settings.Result with
+                DesktopPreferences preferences = appearance.MergeDesktop(settings.AppearanceSettingsResult, settings.Result with
                 {
-                    // An unchanged language control must not undo a choice saved by another Browse
-                    // after this Settings window opened. Explicit new choices still win.
-                    Language = settings.Result.Language == initial.Language ? latest.Language : settings.Result.Language,
                     RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
-                };
+                });
                 bool histogramChanged = settings.GeneralSettingsResult.UseHistogramDiffAlgorithm != general.Initial.UseHistogramDiffAlgorithm;
-                GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences);
+                GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences,
+                    desktopSaved: () => appearance.DesktopSaved(settings.AppearanceSettingsResult));
                 preferences = publication.Desktop;
                 settings.AcceptGeneralSaved(publication);
                 bool presentationChanged = preferences.ShowGitStatusInBrowseToolbar != _preferences.ShowGitStatusInBrowseToolbar
@@ -237,13 +239,19 @@ public sealed partial class MainWindow
                 bool referencesChanged = preferences.ReferenceSorting != _preferences.ReferenceSorting
                     || preferences.PrioritizedBranchNames != _preferences.PrioritizedBranchNames
                     || preferences.PrioritizedRemoteNames != _preferences.PrioritizedRemoteNames;
-                // Settings saves this field explicitly; unrelated session-only View choices
-                // still need Save as default, as in the original application.
-                _historyViewStore.Save(_historyViewStore.Load() with { Sort = settings.HistorySortResult });
-                _historyView = _historyView with { Sort = settings.HistorySortResult };
+                // The active View is the Appearance baseline, but only explicit Appearance edits
+                // become saved defaults. Sorting retains its existing explicit Settings publication;
+                // other temporary View choices remain in this Browse.
+                AppearanceSettingsPublication appearancePublication = appearance.Save(settings.AppearanceSettingsResult,
+                    preferences, _historyView, settings.HistorySortResult);
+                settings.AcceptAppearanceSaved(appearancePublication);
+                _historyView = appearancePublication.History;
+                bool branchVisibilityChanged = preferences.ShowRepoCurrentBranch != _preferences.ShowRepoCurrentBranch;
                 _preferences = preferences;
                 reload |= ApplyGeneralHistoryPolicy();
                 ApplyTheme(_preferences.Theme);
+                ApplyHistoryViewPresentation();
+                if (branchVisibilityChanged) { await ApplyRepositoryBranchVisibilityAsync(_preferences.ShowRepoCurrentBranch, token); }
                 if (reload)
                 {
                     _historyQuery = _historyQuery with { Count = _preferences.HistoryLimit };

@@ -18,6 +18,10 @@ public sealed class DashboardControl : UserControl, IDisposable
     private readonly Action<RepositoryHistoryState> _save;
     private readonly Func<string, Task> _open;
     private readonly Window _owner;
+    private readonly RepositoryBranchMetadataService _repositoryBranches;
+    private readonly bool _ownsRepositoryBranches;
+    private readonly Func<bool> _showRepositoryBranch;
+    private readonly Func<GitExecutionEnvironment> _branchExecution;
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly TextBox _search = new() { Name = "DashboardSearch", Height = 24, MinWidth = 160 };
     private readonly StackPanel _groups = new() { Spacing = 8, Margin = new Thickness(12, 8) };
@@ -39,6 +43,12 @@ public sealed class DashboardControl : UserControl, IDisposable
     {
         Name = "RepositoryDashboard";
         _owner = owner; _history = history; _save = save; _open = open;
+        MainWindow? main = owner as MainWindow;
+        _repositoryBranches = main?.RepositoryBranches ?? new();
+        _ownsRepositoryBranches = main is null;
+        _showRepositoryBranch = main is null ? () => new PreferencesStore().Load().ShowRepoCurrentBranch : () => main.ShowRepositoryCurrentBranch;
+        _branchExecution = main is null ? () => GitEnvironment.Current : () => main.RepositoryBranchExecution;
+        owner.Closed += (_, _) => Dispose();
         _search.Watermark = T("Search repositories...");
         _search.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { RenderGroups(); } };
         _search.KeyDown += async (_, e) =>
@@ -80,12 +90,28 @@ public sealed class DashboardControl : UserControl, IDisposable
     public void Refresh(bool reload = true)
     {
         if (_disposed) { return; }
-        if (reload) { _metadata.Clear(); }
+        if (reload) { _metadata.Clear(); _repositoryBranches.Invalidate(); }
         if (reload) { _search.Text = ""; }
         RenderGroups();
-        _refresh?.Cancel(); _refresh?.Dispose(); _refresh = new CancellationTokenSource();
-        MetadataLoading = LoadMetadataAsync(_refresh.Token);
+        RefreshMetadata();
         Dispatcher.UIThread.Post(() => { if (IsEffectivelyVisible) { _search.Focus(); } });
+    }
+
+    internal Task RefreshMetadata()
+    {
+        if (_disposed) { return MetadataLoading; }
+        _refresh?.Cancel();
+        CancellationTokenSource request = new(); _refresh = request;
+        bool includeBranch = _showRepositoryBranch();
+        foreach (var rows in _rows.Values)
+        {
+            foreach ((Image _, TextBlock branch) in rows)
+            { branch.IsVisible = includeBranch; if (!includeBranch) { branch.Text = ""; } }
+        }
+        Task previous = MetadataLoading;
+        Task read = LoadMetadataAsync(request, includeBranch, _branchExecution());
+        MetadataLoading = previous.IsCompletedSuccessfully ? read : Task.WhenAll(previous, read);
+        return MetadataLoading;
     }
 
     public void SetFavorite(string path, bool enabled) { Save(_history().Favorite(path, enabled)); }
@@ -207,53 +233,41 @@ public sealed class DashboardControl : UserControl, IDisposable
         return tile;
     }
 
-    private async Task LoadMetadataAsync(CancellationToken token)
+    private async Task LoadMetadataAsync(CancellationTokenSource request, bool includeBranch, GitExecutionEnvironment execution)
     {
-        using IDisposable operation = GitEnvironment.BeginOperation();
-        GitRunner runner = GitEnvironment.Current.CreateRunner();
-        using SemaphoreSlim limit = new(4);
+        CancellationToken token = request.Token;
         try
         {
-            string[] paths = _history().Recent.Concat(_history().Favorites).Select(item => item.Path).Distinct(StringComparer.Ordinal).Where(path => !_metadata.ContainsKey(path)).ToArray();
+            string[] paths = _history().Recent.Concat(_history().Favorites).Select(item => item.Path).Distinct(StringComparer.Ordinal).ToArray();
             await Task.WhenAll(paths.Select(async path =>
             {
-                await limit.WaitAsync(token);
-                try
+                RepositoryBranchMetadata result = await _repositoryBranches.ReadAsync(path, includeBranch, execution, token);
+                token.ThrowIfCancellationRequested();
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    (bool Valid, string Branch) metadata;
-                    try
-                    {
-                        GitRepository repository = await GitRepository.OpenAsync(path, token, runner);
-                        string branch = "";
-                        if (!repository.IsBare)
-                        {
-                            GitResult result = await runner.RunAsync(repository.Path, ["symbolic-ref", "--quiet", "--short", "HEAD"], token);
-                            branch = result.Success ? result.StandardOutput.TrimEnd('\r', '\n') : T("Detached HEAD");
-                        }
-                        metadata = (true, branch);
-                    }
-                    catch (Exception exception) when (exception is GitCommandException or IOException or UnauthorizedAccessException or ArgumentException)
-                    { metadata = (false, ""); }
-                    token.ThrowIfCancellationRequested();
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        if (token.IsCancellationRequested || _disposed) { return; }
-                        _metadata[path] = metadata;
-                        if (_rows.TryGetValue(path, out var rows)) { foreach ((Image icon, TextBlock branch) in rows) { ApplyMetadata(icon, branch, metadata); } }
-                        foreach (MenuItem menu in _removeMissingMenus) { menu.IsVisible = HasInvalidEntries(); }
-                    });
-                }
-                finally { limit.Release(); }
+                    if (token.IsCancellationRequested || _disposed || !ReferenceEquals(_refresh, request)) { return; }
+                    string name = includeBranch && _showRepositoryBranch() ? result.IsDetached ? T("Detached HEAD") : result.Branch : "";
+                    var metadata = (result.Valid, name);
+                    _metadata[path] = metadata;
+                    if (_rows.TryGetValue(path, out var rows)) { foreach ((Image icon, TextBlock branch) in rows) { ApplyMetadata(icon, branch, metadata); } }
+                    foreach (MenuItem menu in _removeMissingMenus) { menu.IsVisible = HasInvalidEntries(); }
+                });
             }));
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (ReferenceEquals(_refresh, request)) { _refresh = null; }
+            request.Dispose();
+        }
     }
 
     private void ApplyMetadata(Image icon, TextBlock branch, (bool Valid, string Branch) metadata)
     {
         icon.Source = LoadBitmap(metadata.Valid ? "Icons/DashboardFolderGit.png" : "Icons/DashboardFolderError.png");
         Avalonia.Automation.AutomationProperties.SetName(icon, T(metadata.Valid ? "Git repository" : "Invalid repository"));
-        branch.Text = metadata.Branch;
+        branch.IsVisible = _showRepositoryBranch();
+        branch.Text = branch.IsVisible ? metadata.Branch : "";
     }
 
     private void ApplyPalette()
@@ -321,8 +335,15 @@ public sealed class DashboardControl : UserControl, IDisposable
     public void Dispose()
     {
         if (_disposed) { return; }
-        _disposed = true; _refresh?.Cancel(); _refresh?.Dispose();
+        _disposed = true; _refresh?.Cancel();
+        if (_ownsRepositoryBranches) { MetadataLoading = FinishOwnedReadsAsync(MetadataLoading); }
         foreach (Bitmap bitmap in _bitmaps) { bitmap.Dispose(); }
+    }
+
+    private async Task FinishOwnedReadsAsync(Task pending)
+    {
+        await _repositoryBranches.DisposeAsync();
+        await pending;
     }
 }
 

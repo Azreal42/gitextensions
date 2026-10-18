@@ -31,6 +31,13 @@ internal sealed class DesktopSettingsDialog : Window
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
     internal GeneralSettingsValues GeneralSettingsResult { get; private set; }
     private readonly GeneralSettingsPage _generalSettingsPage;
+    internal AppearanceSettingsValues AppearanceSettingsResult { get; private set; }
+    private readonly AppearanceSettingsPage _appearanceSettingsPage;
+    internal void AcceptAppearanceSaved(AppearanceSettingsPublication publication)
+    {
+        Result = publication.Desktop;
+        AppearanceSettingsResult = publication.Values; _appearanceSettingsPage.AcceptSaved(publication.Values);
+    }
     internal void AcceptGeneralSaved(GeneralSettingsPublication publication)
     {
         Result = publication.Desktop; FileHistoryResult = publication.FileHistory;
@@ -55,13 +62,17 @@ internal sealed class DesktopSettingsDialog : Window
         Func<DesktopSettingsDialog, Task>? publishSettings = null,
         Func<GitEnvironmentCheckId, Window, Task>? repairEnvironment = null,
         bool showChecklist = false, string? initialPage = null, GeneralSettingsValues? generalSettings = null,
-        IReadOnlyList<string>? cloneDestinations = null)
+        IReadOnlyList<string>? cloneDestinations = null, AppearanceSettingsValues? appearanceSettings = null,
+        Func<Window, Task>? helpTranslateAsync = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         GeneralSettingsResult = generalSettings ?? new GeneralSettingsSession(initial, FileHistoryResult).Initial;
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
+        AppearanceSettingsResult = appearanceSettings
+            ?? new AppearanceSettingsSession(initial, new HistoryViewPreferencesStore().Load()).Initial;
+        _appearanceSettingsPage = new(AppearanceSettingsResult, translations, helpTranslateAsync) { Margin = new Thickness(12) };
         HotkeyBindings activeHotkeys = hotkeys ?? new(); HotkeysResult = activeHotkeys.Clone();
         DesktopFontSession? fontSession = fonts is null ? DesktopFonts.CreateSession() : null;
         FontPreferences fontBaseline = fonts ?? fontSession!.Preferences; FontsResult = fontBaseline;
@@ -82,22 +93,11 @@ internal sealed class DesktopSettingsDialog : Window
                 { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
             };
         }
-        ComboBox theme = new() { Name = "SettingsTheme", ItemsSource = new[] { "Light", "Dark", "System" }, SelectedItem = initial.Theme, MinWidth = 150 };
-        var languageCatalog = LanguageCatalog.LoadDefault();
-        LanguageChoice? initialLanguage = string.IsNullOrEmpty(initial.Language) ? LanguageCatalog.English : languageCatalog.Find(initial.Language);
-        ComboBox language = new() { Name = "Language", ItemsSource = languageCatalog.Choices,
-            SelectedItem = initialLanguage, PlaceholderText = initialLanguage is null ? "English (" + translations.Translate("fallback") + ")" : null, MinWidth = 180,
-            ItemTemplate = new FuncDataTemplate<LanguageChoice>((choice, _) => new TextBlock { Text = choice?.Name }) };
-        if (initialLanguage is null)
-        { ToolTip.SetTip(language, initial.Language + "\n" + translations.Translate("Translation unavailable; using English")); }
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
         CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
-        StackPanel appearanceFields = new() { Name = "AppearanceSettingsPage", Margin = new Thickness(12), Spacing = 10 };
         StackPanel advancedFields = new() { Name = "AdvancedSettingsPage", Margin = new Thickness(12), Spacing = 10 };
-        GeneralField(appearanceFields, "Theme", theme);
-        GeneralField(appearanceFields, translations.Translate("AppearanceSettingsPage", "lblLanguage", "Text", "Language (restart required)"), language);
         advancedFields.Children.Add(normalise); GeneralField(advancedFields, "Replacement symbol", symbol); advancedFields.Children.Add(advanced);
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); };
@@ -136,7 +136,7 @@ internal sealed class DesktopSettingsDialog : Window
         scriptsPage.DraftChanged += draft => hotkeysPage.UpdateScripts(draft);
         string PageTitle(string category, string fallback) => translations.Translate(category, "$this", "Text", fallback);
         SettingsNavigationPage generalPage = new("General", PageTitle("GeneralSettingsPage", "General"), _generalSettingsPage, "GeneralSettings.png");
-        SettingsNavigationPage appearancePage = new("Appearance", PageTitle("AppearanceSettingsPage", "Appearance"), appearanceFields, "Appearance.png", Children:
+        SettingsNavigationPage appearancePage = new("Appearance", PageTitle("AppearanceSettingsPage", "Appearance"), _appearanceSettingsPage, "Appearance.png", Children:
         [
             new("Sorting", PageTitle("SortingSettingsPage", "Sorting"), sorting, "SortBy.png"),
             new("Fonts", PageTitle("AppearanceFontsSettingsPage", "Fonts"), fontsPage, "Font.png")
@@ -186,6 +186,8 @@ internal sealed class DesktopSettingsDialog : Window
             {
                 if (!_generalSettingsPage.Validate(out string? generalValidation))
                 { Navigation.SelectPage("General", true); notice.Text = generalValidation; return false; }
+                if (!_appearanceSettingsPage.Validate(out string? appearanceValidation))
+                { Navigation.SelectPage("Appearance", true); notice.Text = appearanceValidation; return false; }
                 if (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text))
                 { Navigation.SelectPage("Advanced", true); notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); symbol.Focus(); return false; }
                 foreach (TextBox input in new[] { branches, remotes })
@@ -227,10 +229,11 @@ internal sealed class DesktopSettingsDialog : Window
                 if (gitEnvironment is not null && !gitEnvironment.TrySave())
                 { Navigation.SelectPage("GitPaths", true); return false; }
                 GeneralSettingsResult = _generalSettingsPage.Draft;
+                AppearanceSettingsResult = _appearanceSettingsPage.Draft;
                 Result = initial with
                 {
-                    Theme = theme.SelectedItem as string ?? "Light",
-                    Language = (language.SelectedItem as LanguageChoice)?.Name ?? initial.Language,
+                    Theme = AppearanceSettingsResult.Theme, Language = AppearanceSettingsResult.Language,
+                    ShowRepoCurrentBranch = AppearanceSettingsResult.ShowRepoCurrentBranch,
                     AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
                     UseBrowseForFileHistory = GeneralSettingsResult.UseBrowseForFileHistory,
                     MaxRevisionGraphCommits = GeneralSettingsResult.MaxRevisionGraphCommits,

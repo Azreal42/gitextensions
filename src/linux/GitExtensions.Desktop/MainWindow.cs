@@ -428,6 +428,7 @@ public sealed partial class MainWindow : Window
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
         using IDisposable execution = repository.BeginOperation();
+        BeginRepositoryBranchRefresh(repository);
         HideQuickSearch();
         _parentChildNavigation?.Clear();
         _parentChildFileFocus = null;
