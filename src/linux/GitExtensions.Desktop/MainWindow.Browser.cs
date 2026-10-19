@@ -423,11 +423,7 @@ public sealed partial class MainWindow
         await dialog.ShowDialog(this);
     }
 
-    private Task CheckoutCommitAsync()
-    {
-        string revision = SelectedCommit().Hash;
-        return RunAsync("Checkout revision", r => CheckoutRevisionWithScriptEventsAsync(r, revision, Token));
-    }
+    private Task CheckoutCommitAsync() => CheckoutRevisionWithConfirmationAsync();
 
     private void UpdateCommitInfo(GitCommit commit)
     {

@@ -185,9 +185,9 @@ public sealed partial class MainWindow
     {
         if (_repository is null || _repository.IsBare || _commits.SelectedItem is not GitCommit selected) { return; }
         GitRepository repository = _repository;
-        if (!await Dialogs.ConfirmAsync(WorkflowOwner, T("Checkout this commit"), T("Checkout this commit with detached HEAD?") + "\n\n" + selected.Hash + "\n" + selected.Subject)) { return; }
-        if (_repository != repository || _busy) { return; }
-        await RunAsync("Checkout revision", r => CheckoutRevisionWithScriptEventsAsync(r, selected.Hash, Token));
+        if (_busy) { return; }
+        await ShowRepositoryDialogAsync(new CheckoutRevisionDialog(repository,
+            (owner, request, token) => CheckoutRevisionWithScriptEventsAsync(repository, request.Revision, token, request.Force, owner), selected.Hash));
     }
 
     private void PopulateRevisionCopyMenu(IReadOnlyDictionary<string, DateTimeOffset>? committedDates = null)

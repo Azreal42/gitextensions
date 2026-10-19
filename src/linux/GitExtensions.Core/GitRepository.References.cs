@@ -117,10 +117,17 @@ public sealed partial class GitRepository
 
     /// <summary>Return a completed revision checkout's native false result; launch errors and cancellation still propagate.</summary>
     public Task<GitResult> CheckoutRevisionAttemptAsync(string revision, CancellationToken cancellationToken = default)
+        => CheckoutRevisionAttemptAsync(revision, force: false, cancellationToken);
+
+    /// <summary>Force is explicit for this attempt only; no branch or stash preference is read or written.</summary>
+    public Task<GitResult> CheckoutRevisionAttemptAsync(string revision, bool force, CancellationToken cancellationToken = default)
         => WithMutationAsync(async token =>
         {
             await EnsureWorktreeAsync(token).ConfigureAwait(false);
-            return await _runner.RunAsync(Path, [.. GlobalOptions, "switch", "--detach", "--", ValidateValue(revision)], token).ConfigureAwait(false);
+            List<string> arguments = [.. GlobalOptions, "switch", "--detach"];
+            if (force) { arguments.Add("--force"); }
+            arguments.AddRange(["--", ValidateValue(revision)]);
+            return await _runner.RunAsync(Path, arguments, token).ConfigureAwait(false);
         }, cancellationToken);
 
     public Task<IReadOnlyList<GitBranchDeletionPreview>> GetBranchDeletionPreviewAsync(CancellationToken cancellationToken = default)

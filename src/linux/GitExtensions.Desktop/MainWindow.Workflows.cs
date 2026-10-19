@@ -126,16 +126,42 @@ public sealed partial class MainWindow
         });
     }
 
-    private async Task CheckoutRevisionWithScriptEventsAsync(GitRepository repository, string revision, CancellationToken token)
+    private async Task<CheckoutRevisionOutcome> CheckoutRevisionWithScriptEventsAsync(GitRepository repository, string revision, CancellationToken token,
+        bool force = false, Window? owner = null)
     {
-        using ScriptWorkflowScope scripts = new(WorkflowOwner, repository, token);
-        if (!await scripts.RunAsync(ScriptEvent.BeforeCheckout)) { return; }
+        owner ??= WorkflowOwner;
+        string target = await repository.ResolveRevisionAsync(revision, token);
+        if (!CheckoutRevisionRequest.IsActualCommit(target)) { throw new InvalidOperationException(T("Select 1 revision to checkout.")); }
+        string? before = (await repository.GetStatusAsync(token)).Head;
+        using ScriptWorkflowScope scripts = new(owner, repository, token);
+        if (!await scripts.RunAsync(ScriptEvent.BeforeCheckout)) { return new(null, true, before, before, false, scripts.MayHaveRunScripts); }
         scripts.ThrowIfStopped();
         // Preserve Windows' completed-false policy without catching launch/IO/cancellation exceptions.
-        GitResult result = await repository.CheckoutRevisionAttemptAsync(revision, scripts.Token);
+        GitResult result = await repository.CheckoutRevisionAttemptAsync(target, force, scripts.Token);
+        scripts.ThrowIfStopped();
+        string? after = before; bool updated = false; Exception? postCheckoutError = null;
+        if (result.Success)
+        {
+            try
+            {
+                after = (await repository.GetStatusAsync(scripts.Token)).Head;
+                if (after is not null && after != before)
+                { updated = await ResetDialogControls.UpdateSubmodulesAsync(owner, repository, true, scripts.Token, (window, ct) => AfterSubmoduleUpdateAsync(repository, window, ct)); }
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception exception) { postCheckoutError = exception; }
+        }
         scripts.ThrowIfStopped();
         await scripts.RunAsync(ScriptEvent.AfterCheckout);
-        if (!result.Success) { throw new GitCommandException(["switch", "--detach", revision], result); }
+        scripts.ThrowIfStopped();
+        if (!result.Success)
+        {
+            List<string> arguments = ["switch", "--detach"];
+            if (force) { arguments.Add("--force"); } arguments.AddRange(["--", target]);
+            throw new GitCommandException(arguments, result);
+        }
+        if (postCheckoutError is not null) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(postCheckoutError).Throw(); }
+        return new(result, false, before, after, updated, scripts.MayHaveRunScripts);
     }
 
     private async Task DiscardAsync()
