@@ -110,18 +110,16 @@ internal sealed class DesktopSettingsDialog : Window
         Name = "DesktopSettings"; Title = translations.Translate("Settings");
         Width = 958; Height = 646; MinWidth = 740; MinHeight = 400; CanResize = true;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        if (configureGitTools is not null || gitEnvironment is not null || publishSettings is not null)
+        // Every scoped page may defer closing while it drains owned work.
+        // Preserve the owner request independently of optional Git configuration callbacks.
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
+        Window? closingOwner = null;
+        Closing += (_, args) => { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { closingOwner = Owner as Window; } };
+        Closed += (_, _) =>
         {
-            // Preserve Main -> Settings -> busy Config close requests before the child veto.
-            ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
-            Window? closingOwner = null;
-            Closing += (_, args) => { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { closingOwner = Owner as Window; } };
-            Closed += (_, _) =>
-            {
-                if (closingOwner is { } owner)
-                { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
-            };
-        }
+            if (closingOwner is { } owner)
+            { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
         CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
         CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
         TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };

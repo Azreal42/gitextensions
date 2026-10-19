@@ -30,7 +30,8 @@ internal sealed class DonateDialog : Window
         {
             Name = "lblText", Text = text.Translate("FormDonate", "_donateText", "Text", DonationsCatalog.Explanation),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10), MaxWidth = 456,
-            HorizontalAlignment = HorizontalAlignment.Stretch
+            // Match the rectangular mouse surface of the original Windows label, including whitespace.
+            HorizontalAlignment = HorizontalAlignment.Stretch, Background = Brushes.Transparent
         };
         using Stream stream = AssetLoader.Open(DonationsCatalog.BadgeAsset);
         Bitmap bitmap = new(stream);

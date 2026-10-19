@@ -88,7 +88,9 @@ public sealed class DonateDialogTests
             dialog.MouseMove(point); Pump(dialog);
             Color link = Color.Parse(ClassicStyles.OriginalColors(dark)["HotTrack"]);
             Assert.That(((ISolidColorBrush)border.BorderBrush!).Color, Is.EqualTo(link)); AssertBorderPixel(dialog, border, link);
-            dialog.MouseMove(new Point(2, 2)); Press(dialog, PhysicalKey.Tab); Pump(dialog);
+            dialog.MouseMove(new Point(2, 2));
+            // Enter with the keyboard; cycling the sole already pointer-focused control does not change its focus origin.
+            dialog.FocusManager!.ClearFocus(); Press(dialog, PhysicalKey.Tab); Pump(dialog);
             Assert.That(badge.IsKeyboardFocusWithin, Is.True);
             Color focus = Color.Parse(ClassicStyles.OriginalColors(dark)["Highlight"]);
             Assert.That(((ISolidColorBrush)border.BorderBrush!).Color, Is.EqualTo(focus)); AssertBorderPixel(dialog, border, focus);
