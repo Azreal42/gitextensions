@@ -26,8 +26,10 @@ public static class RevisionHistoryRow
         if (row is HistoryRow historyRow) { historyRow.ApplyPresentation(presentation); }
     }
     internal static string? CommitHash(Control row) => (row as HistoryRow)?.CommitHash;
-    internal static void ApplyBuildStatus(Control row, GitHubActionsCommitStatus? status, bool showIcon, bool showText)
+    internal static void ApplyProviderBuildStatus(Control row, BuildServerCommitStatus? status, bool showIcon, bool showText)
     { if (row is HistoryRow historyRow) { historyRow.ApplyBuildStatus(status, showIcon, showText); } }
+    internal static void ApplyBuildStatus(Control row, GitHubActionsCommitStatus? status, bool showIcon, bool showText)
+        => ApplyProviderBuildStatus(row, status is null ? null : BuildServerCommitStatus.FromGitHubActions(status), showIcon, showText);
     private static TranslationCatalog? _translations;
     private static readonly Dictionary<string, Bitmap> BuildImages = [];
     private static Bitmap BuildImage(string name)
@@ -106,15 +108,15 @@ public static class RevisionHistoryRow
         private TextBlock? _build;
         private Image? _buildIcon;
         private StackPanel? _buildCell;
-        private (GitHubActionsBuildStatus? Status, string Text, bool Icon, bool Label)? _buildPresentation;
-        private GitHubActionsCommitStatus? _buildStatus;
+        private (BuildServerBuildStatus? Status, string Text, bool Icon, bool Label)? _buildPresentation;
+        private BuildServerCommitStatus? _buildStatus;
         internal string? CommitHash => _commit?.Hash;
 
-        internal void ApplyBuildStatus(GitHubActionsCommitStatus? status, bool showIcon, bool showText)
+        internal void ApplyBuildStatus(BuildServerCommitStatus? status, bool showIcon, bool showText)
         {
             _buildStatus = status;
             if (_build is null && !showIcon && !showText) { return; }
-            (GitHubActionsBuildStatus? Status, string Text, bool Icon, bool Label) presentation = (status?.Status, status?.Text ?? "", showIcon, showText);
+            (BuildServerBuildStatus? Status, string Text, bool Icon, bool Label) presentation = (status?.Status, status?.Text ?? "", showIcon, showText);
             if (_buildPresentation == presentation) { return; } _buildPresentation = presentation;
             if (_build is null)
             {
@@ -126,8 +128,8 @@ public static class RevisionHistoryRow
                 Grid.SetColumn(_buildCell, 5); Children.Add(_buildCell);
             }
             string icon = status?.Status switch
-            { GitHubActionsBuildStatus.Success => "StatusBadgeSuccess.png", GitHubActionsBuildStatus.Failure => "StatusBadgeError.png",
-              GitHubActionsBuildStatus.InProgress => "StatusBadgeWaiting.png", GitHubActionsBuildStatus.Stopped => "BisectStop.png", _ => "Warning.png" };
+            { BuildServerBuildStatus.Success => "StatusBadgeSuccess.png", BuildServerBuildStatus.Failure => "StatusBadgeError.png",
+              BuildServerBuildStatus.InProgress => "StatusBadgeWaiting.png", BuildServerBuildStatus.Stopped => "BisectStop.png", _ => "Warning.png" };
             if (status is not null) { _buildIcon!.Source = BuildImage(icon); _buildIcon.Tag = icon; }
             _buildIcon!.IsVisible = showIcon && status is not null;
             _build.Text = showText ? status?.Text ?? "" : ""; _build.IsVisible = showText;
@@ -141,10 +143,10 @@ public static class RevisionHistoryRow
             bool bright = _selected || ActualThemeVariant == ThemeVariant.Dark;
             _build.Foreground = _buildStatus?.Status switch
             {
-                GitHubActionsBuildStatus.Success => bright ? Brushes.LightGreen : Brushes.DarkGreen,
-                GitHubActionsBuildStatus.Failure => bright ? Brushes.OrangeRed : Brushes.DarkRed,
-                GitHubActionsBuildStatus.InProgress => bright ? Brushes.LightBlue : Brushes.Blue,
-                GitHubActionsBuildStatus.Unstable => Brushes.OrangeRed,
+                BuildServerBuildStatus.Success => bright ? Brushes.LightGreen : Brushes.DarkGreen,
+                BuildServerBuildStatus.Failure => bright ? Brushes.OrangeRed : Brushes.DarkRed,
+                BuildServerBuildStatus.InProgress => bright ? Brushes.LightBlue : Brushes.Blue,
+                BuildServerBuildStatus.Unstable => Brushes.OrangeRed,
                 _ => bright ? Brushes.LightGray : Brushes.Gray
             };
         }

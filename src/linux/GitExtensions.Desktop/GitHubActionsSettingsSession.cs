@@ -1,14 +1,14 @@
 namespace GitExtensions.Linux.Desktop;
 
-/// <summary>Two CI pages share one draft and the Settings window's acknowledged XML baselines.</summary>
-internal sealed class GitHubActionsSettingsSession
+/// <summary>All CI provider pages share one draft and the Settings window's acknowledged XML baselines.</summary>
+internal sealed partial class GitHubActionsSettingsSession
 {
     private readonly GitRepository? _repository;
     private readonly DistributedSettingsWorkspace _workspace;
     private readonly Dictionary<GitDistributedSettingsScope, Dictionary<string, string?>> _intentions = [];
     private IReadOnlyList<string> _remoteUrls = [];
     internal bool Loaded => _workspace.Loaded;
-    internal bool HasChanges => _intentions.Values.Any(v => v.Count > 0);
+    internal bool HasChanges => _intentions.Values.Any(v => v.Count > 0) || HasCredentialChanges;
     internal Exception? LoadError => _workspace.LoadError;
     internal string? DetectionError { get; private set; }
     internal bool HasRepository => _repository is not null;
@@ -25,11 +25,21 @@ internal sealed class GitHubActionsSettingsSession
         catch (Exception error) when (error is IOException or GitCommandException or InvalidOperationException)
         { DetectionError = "Remote detection is unavailable. Enter the owner and repository explicitly."; }
     }
+    internal string DefaultProjectName => _repository is null ? "" : Path.GetFileName(_repository.Path.TrimEnd(Path.DirectorySeparatorChar));
+    internal TeamCitySettings TeamCity(GitDistributedSettingsScope scope = GitDistributedSettingsScope.Effective) => new()
+    {
+        Enabled = GitHubActionsSettings.Boolean(Read(scope, TeamCitySettings.EnableKey)) == true,
+        ShowBuildResultPage = GitHubActionsSettings.Boolean(Read(scope, TeamCitySettings.ShowPageKey)) == true,
+        Provider = Read(scope, TeamCitySettings.ProviderKey) ?? "", ServerUrl = Read(scope, TeamCitySettings.ServerUrlKey) ?? "",
+        ProjectName = Read(scope, TeamCitySettings.ProjectNameKey) ?? DefaultProjectName,
+        BuildIdFilter = Read(scope, TeamCitySettings.BuildIdFilterKey) ?? "",
+        LogAsGuest = GitHubActionsSettings.Boolean(Read(scope, TeamCitySettings.LogAsGuestKey)) == true
+    };
     internal string? ScopePath(GitDistributedSettingsScope scope) => scope == GitDistributedSettingsScope.Effective
         ? null : _workspace.Snapshot?.IsAvailable(scope) == true ? _workspace.Snapshot.GetSnapshot(scope).Path : null;
     internal string? Read(GitDistributedSettingsScope scope, string key)
     {
-        if (!GitHubActionsSettings.Keys.Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
+        if (!GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys).Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
         if (scope == GitDistributedSettingsScope.Effective)
         { return Read(GitDistributedSettingsScope.Local, key) ?? Read(GitDistributedSettingsScope.Distributed, key) ?? Read(GitDistributedSettingsScope.Global, key); }
         if (_intentions.TryGetValue(scope, out Dictionary<string, string?>? changes) && changes.TryGetValue(key, out string? value)) { return value; }
@@ -39,7 +49,7 @@ internal sealed class GitHubActionsSettingsSession
     internal void Set(GitDistributedSettingsScope scope, string key, string? value)
     {
         if (scope == GitDistributedSettingsScope.Effective) { throw new InvalidOperationException("Effective settings are read-only."); }
-        if (!GitHubActionsSettings.Keys.Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
+        if (!GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys).Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
         GitXmlSettingsSnapshot file = (_workspace.Snapshot ?? throw new InvalidOperationException("CI settings have not been loaded.")).GetSnapshot(scope);
         if (!_intentions.TryGetValue(scope, out Dictionary<string, string?>? changes)) { _intentions.Add(scope, changes = new(StringComparer.Ordinal)); }
         if (value is null ? !file.Values.ContainsKey(key) : file.Values.GetValueOrDefault(key) == value) { changes.Remove(key); }
@@ -77,6 +87,10 @@ internal sealed class GitHubActionsSettingsSession
             Token = Raw(GitHubActionsSettings.TokenKey) ?? ""
         };
         if (_intentions.Values.Any(v => v.Count > 0) && effective.Active) { effective.Validate(); }
+        TeamCitySettings teamCity = TeamCity();
+        if (teamCity.Active) { teamCity.Validate(); }
+        // The original settings page rejects malformed regex even before integration is enabled.
+        if (_intentions.Values.Any(changes => changes.ContainsKey(TeamCitySettings.BuildIdFilterKey))) { _ = teamCity.CreateBuildIdRegex(); }
         foreach (GitDistributedSettingsScope scope in new[] { GitDistributedSettingsScope.Local, GitDistributedSettingsScope.Distributed, GitDistributedSettingsScope.Global })
         {
             if (!_intentions.TryGetValue(scope, out Dictionary<string, string?>? changes) || changes.Count == 0) { continue; }
@@ -86,6 +100,7 @@ internal sealed class GitHubActionsSettingsSession
             _workspace.AcceptSaved(before.WithSaved(scope, saved)); changes.Clear();
             GitHubActionsSettingsPublication.Publish(saved.Path);
         }
+        SaveCredentials();
     }
 }
 

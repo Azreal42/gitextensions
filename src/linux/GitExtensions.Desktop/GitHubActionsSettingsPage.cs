@@ -8,7 +8,7 @@ using Avalonia.Controls.Templates;
 
 namespace GitExtensions.Linux.Desktop;
 
-internal abstract class GitHubActionsScopedSettingsPage : UserControl
+internal abstract class BuildServerScopedSettingsPage : UserControl
 {
     protected readonly GitHubActionsSettingsSession Session;
     protected readonly TranslationCatalog Translations;
@@ -23,7 +23,7 @@ internal abstract class GitHubActionsScopedSettingsPage : UserControl
     private GitDistributedSettingsScope _scope;
     protected GitDistributedSettingsScope CurrentScope => _scope;
 
-    protected GitHubActionsScopedSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, string name)
+    protected BuildServerScopedSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, string name)
     {
         Session = session; Translations = translations; Name = name; _scope = session.InitialScope;
         WrapPanel scopes = new() { Orientation = Orientation.Horizontal };
@@ -38,14 +38,14 @@ internal abstract class GitHubActionsScopedSettingsPage : UserControl
         }
         Content = new StackPanel { Spacing = 8, Children = { scopes, _fields, _notice } };
     }
-    protected void Text(string key, string name, string caption, bool password = false)
+    protected TextBox Text(string key, string name, string caption, bool password = false)
     {
         TextBox box = new() { Name = name, Height = 24, MinHeight = 24, PasswordChar = password ? '●' : '\0' };
         _editors.Add(key, box);
         box.PropertyChanged += (_, args) => { if (!_loading && args.Property == TextBox.TextProperty) { Edit(key, string.IsNullOrEmpty(box.Text) ? null : box.Text); } };
         Grid line = new() { ColumnDefinitions = new ColumnDefinitions("155,*") };
         line.Children.Add(new TextBlock { Text = Translations.Translate(caption), VerticalAlignment = VerticalAlignment.Center });
-        Grid.SetColumn(box, 1); line.Children.Add(box); _fields.Children.Add(line);
+        Grid.SetColumn(box, 1); line.Children.Add(box); _fields.Children.Add(line); return box;
     }
     protected void Boolean(string key, string name, string caption)
     {
@@ -63,6 +63,7 @@ internal abstract class GitHubActionsScopedSettingsPage : UserControl
     }
     protected void Notice(string text) => _fields.Children.Add(new TextBlock { Text = Translations.Translate(text), TextWrapping = TextWrapping.Wrap });
     protected void Add(Control control) => _fields.Children.Add(control);
+    protected void SetFieldsEnabled(bool enabled) => _fields.IsEnabled = enabled;
     protected void HideHeader() => _header.IsVisible = false;
     internal void SetScope(GitDistributedSettingsScope scope) { _scope = scope; ShowLoadState(); ScopeChanged?.Invoke(scope); }
     private void Edit(string key, string? value)
@@ -89,11 +90,12 @@ internal abstract class GitHubActionsScopedSettingsPage : UserControl
                     (string owner, string repository) = Session.DetectedRepository;
                     box.Text = key == GitHubActionsSettings.OwnerKey && string.IsNullOrWhiteSpace(value) ? owner
                         : key == GitHubActionsSettings.RepositoryKey && string.IsNullOrWhiteSpace(value) ? repository
+                        : key == TeamCitySettings.ProjectNameKey && value is null ? Session.DefaultProjectName
                         : value ?? (key == GitHubActionsSettings.ApiUrlKey ? Session.Read(GitDistributedSettingsScope.Effective, key) ?? GitHubActionsSettings.DefaultApiUrl : "");
                 }
                 if (editor is CheckBox check) { check.IsThreeState = _scope != GitDistributedSettingsScope.Effective; check.IsChecked = GitHubActionsSettings.Boolean(value) ?? (_scope == GitDistributedSettingsScope.Effective ? false : null); }
                 if (editor is ComboBox combo)
-                { combo.ItemsSource = new[] { "", GitHubActionsSettings.ProviderName }.Concat(value is { Length: > 0 } && value != GitHubActionsSettings.ProviderName ? [value] : []).ToArray(); combo.SelectedItem = value ?? ""; }
+                { combo.ItemsSource = new[] { "", GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName }.Concat(value is { Length: > 0 } && value != GitHubActionsSettings.ProviderName && value != TeamCitySettings.ProviderName ? [value] : []).ToArray(); combo.SelectedItem = value ?? ""; }
             }
             _notice.Text = Session.LoadError is not null ? Translations.Translate("CI settings could not be read. No settings have been changed.")
                 : _scope == GitDistributedSettingsScope.Effective ? Translations.Translate("Effective settings are read-only. Select Local, Distributed or Global to edit.") : Session.DetectionError ?? "";
@@ -102,7 +104,7 @@ internal abstract class GitHubActionsScopedSettingsPage : UserControl
     }
 }
 
-internal sealed class GitHubActionsSettingsPage : GitHubActionsScopedSettingsPage
+internal sealed class GitHubActionsSettingsPage : BuildServerScopedSettingsPage
 {
     internal GitHubActionsSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, Action? createToken = null, bool embedded = false) : base(session, translations, "GitHubActionsSettingsPage")
     {
@@ -117,18 +119,25 @@ internal sealed class GitHubActionsSettingsPage : GitHubActionsScopedSettingsPag
     }
 }
 
-internal sealed class BuildServerIntegrationSettingsPage : GitHubActionsScopedSettingsPage
+internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSettingsPage
 {
     internal GitHubActionsSettingsPage GitHubPage { get; }
+    internal TeamCitySettingsPage TeamCityPage { get; }
+    internal bool IsBusy => TeamCityPage.IsBusy;
+    internal event Action? BusyChanged;
+    internal Task BeginClose() => TeamCityPage.BeginClose();
     internal BuildServerIntegrationSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, Action? createToken = null) : base(session, translations, "BuildServerIntegrationSettingsPage")
     {
         Boolean(GitHubActionsSettings.EnableKey, "EnableIntegration", "Enable build server integration");
         Boolean(GitHubActionsSettings.ShowPageKey, "ShowBuildResultPage", "Show build result page"); Provider();
         GitHubPage = new(session, translations, createToken, embedded: true); Add(GitHubPage);
-        ScopeChanged += GitHubPage.SetScope;
+        TeamCityPage = new(session, translations, embedded: true); Add(TeamCityPage);
+        TeamCityPage.BusyChanged += () => { SetFieldsEnabled(!TeamCityPage.IsBusy); BusyChanged?.Invoke(); };
+        ScopeChanged += GitHubPage.SetScope; ScopeChanged += TeamCityPage.SetScope;
         DraftChanged += UpdateProvider;
-        Notice("GitHub Actions reads workflow runs. Build pages open only when you explicitly choose Show build page."); ShowLoadState();
+        Notice("Build pages open only when you explicitly choose Show build page."); ShowLoadState();
     }
-    private void UpdateProvider() { if (GitHubPage is not null) { GitHubPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitHubActionsSettings.ProviderName; } }
-    internal override void ShowLoadState() { base.ShowLoadState(); GitHubPage?.ShowLoadState(); UpdateProvider(); }
+    private void UpdateProvider() { if (GitHubPage is not null) { GitHubPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitHubActionsSettings.ProviderName; }
+        if (TeamCityPage is not null) { TeamCityPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == TeamCitySettings.ProviderName; } }
+    internal override void ShowLoadState() { base.ShowLoadState(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); UpdateProvider(); }
 }

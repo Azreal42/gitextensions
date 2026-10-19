@@ -210,16 +210,18 @@ internal sealed class DesktopSettingsDialog : Window
         bool saving = false, closeWhenIdle = false, accepting = false, saved = false;
         bool detailedLoading = false;
         Task? detailedRead = null;
-        _revisionLinksSettingsPage.BusyChanged += () =>
+        void UpdateScopedPageBusy()
         {
-            save.IsEnabled = apply.IsEnabled = !saving && !detailedLoading && gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy;
-            if (closeWhenIdle && !saving && !detailedLoading && !_revisionLinksSettingsPage.IsBusy)
+            save.IsEnabled = apply.IsEnabled = !saving && !detailedLoading && gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy && !_buildServerSettingsPage.IsBusy;
+            if (closeWhenIdle && !saving && !detailedLoading && !_revisionLinksSettingsPage.IsBusy && !_buildServerSettingsPage.IsBusy)
             { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
-        };
+        }
+        _revisionLinksSettingsPage.BusyChanged += UpdateScopedPageBusy;
+        _buildServerSettingsPage.BusyChanged += UpdateScopedPageBusy;
         Closed += async (_, _) =>
         {
             _detailedCancellation.Cancel();
-            try { await _revisionLinksSettingsPage.BeginClose(); }
+            try { await Task.WhenAll(_revisionLinksSettingsPage.BeginClose(), _buildServerSettingsPage.BeginClose()); }
             catch (OperationCanceledException) { }
             finally { _detailedCancellation.Dispose(); }
         };
@@ -245,7 +247,7 @@ internal sealed class DesktopSettingsDialog : Window
                 catch (OperationCanceledException) when (_detailedCancellation.IsCancellationRequested) { }
                 finally
                 {
-                    detailedLoading = false; save.IsEnabled = apply.IsEnabled = !saving && gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy;
+                    detailedLoading = false; save.IsEnabled = apply.IsEnabled = !saving && gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy && !_buildServerSettingsPage.IsBusy;
                     if (closeWhenIdle && !saving && gitEnvironment?.IsBusy != true)
                     { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
                 }
@@ -253,7 +255,7 @@ internal sealed class DesktopSettingsDialog : Window
         }
         async Task<bool> SaveAllAsync(bool closeOnSuccess)
         {
-            if (saving || gitEnvironment?.IsBusy == true) { return false; }
+            if (saving || _revisionLinksSettingsPage.IsBusy || _buildServerSettingsPage.IsBusy || gitEnvironment?.IsBusy == true) { return false; }
             saving = true; save.IsEnabled = apply.IsEnabled = false;
             string activeSavePage = "Detailed";
             try
@@ -390,15 +392,15 @@ internal sealed class DesktopSettingsDialog : Window
             { Navigation.SelectPage(activeSavePage, true); notice.Text = translations.Translate("Unable to save settings.") + " " + error.Message; return false; }
             finally
             {
-                saving = false; Navigation.IsEnabled = true; save.IsEnabled = apply.IsEnabled = gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy;
-                if (closeWhenIdle && !detailedLoading && !_revisionLinksSettingsPage.IsBusy && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
+                saving = false; Navigation.IsEnabled = true; save.IsEnabled = apply.IsEnabled = gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy && !_buildServerSettingsPage.IsBusy;
+                if (closeWhenIdle && !detailedLoading && !_revisionLinksSettingsPage.IsBusy && !_buildServerSettingsPage.IsBusy && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
             }
         }
         if (gitEnvironment is not null)
         {
             gitEnvironment.SaveAllRequested = () => SaveAllAsync(closeOnSuccess: false);
             gitEnvironment.RepairRequested = id => repairEnvironment is null ? Task.CompletedTask : repairEnvironment(id, this);
-            gitEnvironment.BusyChanged += () => { save.IsEnabled = apply.IsEnabled = !saving && !detailedLoading && !gitEnvironment.IsBusy && !_revisionLinksSettingsPage.IsBusy; };
+            gitEnvironment.BusyChanged += () => { save.IsEnabled = apply.IsEnabled = !saving && !detailedLoading && !gitEnvironment.IsBusy && !_revisionLinksSettingsPage.IsBusy && !_buildServerSettingsPage.IsBusy; };
             gitEnvironment.Settled += () =>
             {
                 if (closeWhenIdle && !saving) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
@@ -407,13 +409,13 @@ internal sealed class DesktopSettingsDialog : Window
         }
         async Task CloseAfterRevisionLinksAsync()
         {
-            try { await _revisionLinksSettingsPage.BeginClose(); }
+            try { await Task.WhenAll(_revisionLinksSettingsPage.BeginClose(), _buildServerSettingsPage.BeginClose()); }
             catch (OperationCanceledException) { }
             if (!saving && !detailedLoading && gitEnvironment?.IsBusy != true && IsVisible) { Close(saved); }
         }
         Closing += (_, args) =>
         {
-            if (!accepting && (saving || detailedLoading || _revisionLinksSettingsPage.IsBusy || gitEnvironment?.IsBusy == true))
+            if (!accepting && (saving || detailedLoading || _revisionLinksSettingsPage.IsBusy || _buildServerSettingsPage.IsBusy || gitEnvironment?.IsBusy == true))
             {
                 args.Cancel = true; closeWhenIdle = true; gitEnvironment?.Cancel(); _detailedCancellation.Cancel();
                 _ = CloseAfterRevisionLinksAsync();

@@ -10,13 +10,15 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using Avalonia.Threading;
 using GitExtensions.Desktop.Controls;
+using GitUIPluginInterfaces.BuildServerIntegration;
 
 namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private GitHubActionsApiClient? _gitHubActionsClient;
-    private GitHubActionsRunSnapshot? _gitHubActionsSnapshot;
+    private IBuildServerSource? _gitHubActionsClient;
+    private string _buildServerProvider = "Build server";
+    private BuildServerSnapshot? _gitHubActionsSnapshot;
     private GitRepository? _gitHubActionsPublishedRepository;
     private CancellationTokenSource? _gitHubActionsRequest;
     private Task _gitHubActionsCompletion = Task.CompletedTask;
@@ -40,6 +42,10 @@ public sealed partial class MainWindow
     internal TimeSpan GitHubActionsPollInterval { get; set; } = TimeSpan.FromSeconds(30);
     internal Func<GitHubActionsSettings, GitHubActionsApiClient> GitHubActionsClientFactory { get; set; } = settings => new(settings);
     internal event Action? GitHubActionsStatusChanged;
+    internal Func<TeamCitySettings, IBuildServerCredentials, ITeamCityClient> TeamCityClientFactory { get; set; } = (settings, credentials) => new TeamCityApiClient(settings, credentials);
+    internal BuildServerCredentialsStore? CredentialsStoreOverride { get; set; }
+    internal BuildServerCommitStatus? BuildServerStatusFor(string? sha)
+        => _gitHubActionsEnabled && sha is not null && _gitHubActionsSnapshot?.Commits.TryGetValue(sha, out BuildServerCommitStatus? status) == true ? status : null;
 
     internal void InitializeGitHubActions()
     {
@@ -58,15 +64,15 @@ public sealed partial class MainWindow
                 .FirstOrDefault(control => control.Name == "RevisionBuildStatusCell");
             Control? row = cell?.GetVisualAncestors().OfType<Control>().FirstOrDefault(control => control.Name == "RevisionHistoryRow");
             if (row is null || row.FindAncestorOfType<ListBox>() != _commits
-                || GitHubActionsStatusFor(RevisionHistoryRow.CommitHash(row))?.Runs.FirstOrDefault() is not { } run) { return; }
+                || BuildServerStatusFor(RevisionHistoryRow.CommitHash(row))?.Runs.FirstOrDefault() is not { } run) { return; }
             args.Handled = true;
             await OpenGitHubActionsRunPageAsync(run);
         }, RoutingStrategies.Tunnel, handledEventsToo: true);
         _commits.LayoutUpdated += (_, _) => ApplyGitHubActionsRows();
-        _gitHubActionsRuns.ItemTemplate = new FuncDataTemplate<GitHubActionsWorkflowRun>((run, _) => new TextBlock
+        _gitHubActionsRuns.ItemTemplate = new FuncDataTemplate<BuildServerRun>((run, _) => new TextBlock
         { Text = run?.Description ?? "", TextTrimming = TextTrimming.CharacterEllipsis });
         _gitHubActionsRuns.SelectionChanged += (_, _) => UpdateGitHubActionsCommands();
-        _gitHubActionsRuns.DoubleTapped += async (_, _) => await OpenGitHubActionsRunPageAsync(_gitHubActionsRuns.SelectedItem as GitHubActionsWorkflowRun);
+        _gitHubActionsRuns.DoubleTapped += async (_, _) => await OpenGitHubActionsRunPageAsync(_gitHubActionsRuns.SelectedItem as BuildServerRun);
     }
 
     private void UpdateGitHubActionsSubscription(bool detached = false)
@@ -106,7 +112,7 @@ public sealed partial class MainWindow
             try { await restart; }
             catch (OperationCanceledException) { }
             catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
-            { if (!_gitHubActionsClosing) { SetGitHubActionsError("Could not refresh GitHub Actions settings."); } }
+            { if (!_gitHubActionsClosing) { SetGitHubActionsError("Could not refresh build server settings."); } }
         }
         async Task RemoveAsync(Task restart) { try { await restart; } finally { _gitHubActionsRestarts.Remove(restart); } }
     }
@@ -121,7 +127,7 @@ public sealed partial class MainWindow
         bool sameRepository = ReferenceEquals(repository, _gitHubActionsPublishedRepository);
         _gitHubActionsPublishedRepository = repository;
         if (!sameRepository)
-        { _gitHubActionsSnapshot = null; _gitHubActionsEnabled = false; _gitHubActionsClient?.Dispose(); _gitHubActionsClient = null; _gitHubActionsConfiguration = null; }
+        { _gitHubActionsSnapshot = null; _gitHubActionsEnabled = false; if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); } _gitHubActionsClient = null; _gitHubActionsConfiguration = null; }
         SetGitHubActionsError(null);
         PublishGitHubActionsStatus();
         if (repository is null || _gitHubActionsClosing || _lifetime.IsCancellationRequested) { return; }
@@ -165,50 +171,87 @@ public sealed partial class MainWindow
     }
     private async Task ReadGitHubActionsAsync(GitRepository repository, bool force, CancellationToken token)
     {
+        bool configurationResolved = false;
         try
         {
-            GitHubActionsSettings settings = await repository.ReadGitHubActionsSettingsAsync(DetailedRepositorySettings.GlobalPath, token);
+            GitDistributedSettingsSnapshot xml = await GitDistributedSettingsSnapshot.LoadAsync(DetailedRepositorySettings.GlobalPath,
+                await repository.GetInfoAsync(token), token);
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
-            _gitHubActionsEnabled = settings.Active;
-            SetGitHubActionsReportVisible(settings.Active && settings.ShowBuildResultPage);
-            if (!settings.Active)
+            string provider = xml.GetValue(GitHubActionsSettings.ProviderKey) ?? "";
+            bool active = GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.EnableKey)) == true
+                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName;
+            if (_buildServerProvider != provider) { SetGitHubActionsError(null); _gitHubActionsSnapshot = null; }
+            _buildServerProvider = provider.Length == 0 ? "Build server" : provider;
+            _gitHubActionsEnabled = active;
+            SetGitHubActionsReportVisible(active && GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.ShowPageKey)) == true);
+            if (!active)
             {
-                _gitHubActionsSnapshot = null; _gitHubActionsClient?.Dispose(); _gitHubActionsClient = null; _gitHubActionsConfiguration = null;
+                _gitHubActionsSnapshot = null;
+                if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); }
+                _gitHubActionsClient = null; _gitHubActionsConfiguration = null;
                 SetGitHubActionsError(null); PublishGitHubActionsStatus(); return;
             }
-            settings.Validate();
-            string configuration = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-                string.Join('\0', settings.ApiUrl, settings.Owner, settings.Repository, settings.Token))));
+            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; BuildServerCredentials? credentials = null;
+            string configuration;
+            if (provider == GitHubActionsSettings.ProviderName)
+            {
+                github = await repository.ReadGitHubActionsSettingsAsync(DetailedRepositorySettings.GlobalPath, token); github.Validate();
+                configuration = string.Join('\0', provider, github.ApiUrl, github.Owner, github.Repository, github.Token);
+            }
+            else
+            {
+                teamCity = TeamCitySettings.Read(xml, Path.GetFileName(repository.Path.TrimEnd(Path.DirectorySeparatorChar))); teamCity.Validate();
+                BuildServerCredentialsSnapshot saved = (CredentialsStoreOverride ?? new BuildServerCredentialsStore()).Load(provider, teamCity.ServerUri);
+                if (!saved.Exists)
+                { throw new InvalidOperationException("Configure TeamCity credentials in Settings."); }
+                credentials = saved.Credentials;
+                configuration = string.Join('\0', provider, teamCity.ServerUri.AbsoluteUri, teamCity.ProjectName, teamCity.BuildIdFilter, teamCity.LogAsGuest,
+                    credentials.BuildServerCredentialsType, credentials.Username, credentials.Password, credentials.BearerToken);
+            }
+            configuration = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(configuration)));
+            if (token.IsCancellationRequested) { return; }
+            configurationResolved = true;
             if (_gitHubActionsClient is null || configuration != _gitHubActionsConfiguration)
             {
-                _gitHubActionsClient?.Dispose(); _gitHubActionsClient = GitHubActionsClientFactory(settings);
+                if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); }
+                _gitHubActionsClient = github is not null ? new GitHubActionsBuildSource(GitHubActionsClientFactory(github))
+                    : new TeamCityBuildSource(TeamCityClientFactory(teamCity!, credentials!));
                 _gitHubActionsConfiguration = configuration; _gitHubActionsSnapshot = null;
+                PublishGitHubActionsStatus();
             }
-            GitHubActionsRunSnapshot snapshot = await _gitHubActionsClient.ReadAsync(force, token);
+            BuildServerSnapshot snapshot = await _gitHubActionsClient.ReadAsync(force, token);
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
-            _gitHubActionsSnapshot = snapshot; SetGitHubActionsError(snapshot.Truncated ? "Only the most recent GitHub Actions runs are shown." : null);
+            _gitHubActionsSnapshot = snapshot; SetGitHubActionsError(snapshot.Truncated ? "Only the most recent builds are shown." : null);
             PublishGitHubActionsStatus();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception error) when (error is GitHubActionsException or ArgumentException or IOException or UnauthorizedAccessException
+        catch (Exception error) when (error is GitHubActionsException or TeamCityException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
             or System.Xml.XmlException or InvalidDataException or GitCommandException or InvalidOperationException)
         {
             if (!token.IsCancellationRequested && !_gitHubActionsClosing && ReferenceEquals(_repository, repository))
             {
+                if (!configurationResolved)
+                {
+                    _gitHubActionsSnapshot = null; _gitHubActionsConfiguration = null;
+                    if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); }
+                    _gitHubActionsClient = null;
+                }
                 // Only our fixed, credential-free API messages may be shown. Never log payloads, settings or transport exceptions.
-                SetGitHubActionsError(error is GitHubActionsException ? error.Message : "Could not read GitHub Actions settings. Check the CI configuration.");
+                SetGitHubActionsError(error is GitHubActionsException or TeamCityException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
                 PublishGitHubActionsStatus();
             }
         }
     }
 
+    // Compatibility accessor for the first provider; the grid and report use the provider-neutral projection.
     internal GitHubActionsCommitStatus? GitHubActionsStatusFor(string? sha)
-        => _gitHubActionsEnabled && sha is not null && _gitHubActionsSnapshot?.Commits.TryGetValue(sha, out GitHubActionsCommitStatus? status) == true ? status : null;
+        => _gitHubActionsEnabled && sha is not null && _gitHubActionsClient is GitHubActionsBuildSource source
+            && source.LastSnapshot?.Commits.TryGetValue(sha, out GitHubActionsCommitStatus? status) == true ? status : null;
 
     internal void OnGitHubActionsSelectionChanged()
     {
-        GitHubActionsCommitStatus? status = GitHubActionsStatusFor((_commits.SelectedItem as GitCommit)?.Hash);
-        GitHubActionsWorkflowRun? selected = _gitHubActionsRuns.SelectedItem as GitHubActionsWorkflowRun;
+        BuildServerCommitStatus? status = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash);
+        BuildServerRun? selected = _gitHubActionsRuns.SelectedItem as BuildServerRun;
         _gitHubActionsRuns.ItemsSource = status?.Runs ?? [];
         _gitHubActionsRuns.SelectedItem = status?.Runs.FirstOrDefault(r => r.Id == selected?.Id) ?? status?.Runs.FirstOrDefault();
         UpdateGitHubActionsCommands();
@@ -219,14 +262,14 @@ public sealed partial class MainWindow
     private void ApplyGitHubActionsRows()
     {
         foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(c => c.Name == "RevisionHistoryRow"))
-        { RevisionHistoryRow.ApplyBuildStatus(row, GitHubActionsStatusFor(RevisionHistoryRow.CommitHash(row)),
+        { RevisionHistoryRow.ApplyProviderBuildStatus(row, BuildServerStatusFor(RevisionHistoryRow.CommitHash(row)),
             _gitHubActionsEnabled && _historyView.ShowBuildStatusIcon, _gitHubActionsEnabled && _historyView.ShowBuildStatusText); }
     }
     private void SetGitHubActionsError(string? error)
     {
-        if (error is null && GitHubActionsError is not null && _state.Text?.StartsWith("GitHub Actions:", StringComparison.Ordinal) == true) { _state.Text = _repositorySummary; }
+        if (error is null && GitHubActionsError is not null && _state.Text?.StartsWith(_buildServerProvider + ":", StringComparison.Ordinal) == true) { _state.Text = _repositorySummary; }
         GitHubActionsError = error; _gitHubActionsError.Text = error is null ? "" : T(error); _gitHubActionsError.IsVisible = error is not null;
-        if (error is not null) { _state.Text = "GitHub Actions: " + T(error); }
+        if (error is not null) { _state.Text = _buildServerProvider + ": " + T(error); }
     }
     private void SetGitHubActionsReportVisible(bool visible)
     {
@@ -234,7 +277,7 @@ public sealed partial class MainWindow
         if (_gitHubActionsTab is null)
         {
             _gitHubActionsOpen = new() { Name = "ShowGitHubActionsBuildPage", Content = T("Show build page"), HorizontalAlignment = HorizontalAlignment.Left };
-            _gitHubActionsOpen.Click += async (_, _) => await OpenGitHubActionsRunPageAsync(_gitHubActionsRuns.SelectedItem as GitHubActionsWorkflowRun);
+            _gitHubActionsOpen.Click += async (_, _) => await OpenGitHubActionsRunPageAsync(_gitHubActionsRuns.SelectedItem as BuildServerRun);
             DockPanel content = new(); StackPanel header = new() { Spacing = 4, Children = { _gitHubActionsError, _gitHubActionsOpen } };
             DockPanel.SetDock(header, Dock.Top); content.Children.Add(header); content.Children.Add(_gitHubActionsRuns);
             _gitHubActionsTab = new() { Name = "GitHubActionsBuildReport", Header = T("Build report"), Content = content };
@@ -260,10 +303,10 @@ public sealed partial class MainWindow
         MenuItem item = new() { Name = "ShowBuildPage", Header = T("Show build page") };
         item.Click += async (_, _) => await ShowBuildPageAsync(); _gitHubActionsShowMenus.Add(item); UpdateGitHubActionsCommands(); return item;
     }
-    internal Task ShowBuildPageAsync() => OpenGitHubActionsRunPageAsync(GitHubActionsStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault());
-    private Task OpenGitHubActionsRunPageAsync(GitHubActionsWorkflowRun? run)
+    internal Task ShowBuildPageAsync() => OpenGitHubActionsRunPageAsync(BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault());
+    private Task OpenGitHubActionsRunPageAsync(BuildServerRun? run)
     {
-        Uri? uri = run is null ? null : _gitHubActionsClient?.BuildPageUri(run);
+        Uri? uri = run?.PageUri;
         if (!_gitHubActionsEnabled || uri is null || _gitHubActionsClosing) { return Task.CompletedTask; }
         try { using Process? process = ExternalLauncher(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }); }
         catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
@@ -272,10 +315,10 @@ public sealed partial class MainWindow
     }
     private void UpdateGitHubActionsCommands()
     {
-        GitHubActionsWorkflowRun? selected = GitHubActionsStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault();
-        bool available = _gitHubActionsEnabled && !_gitHubActionsClosing && selected is not null && _gitHubActionsClient?.BuildPageUri(selected) is not null;
+        BuildServerRun? selected = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault();
+        bool available = _gitHubActionsEnabled && !_gitHubActionsClosing && selected is not null && selected.PageUri is not null;
         foreach (MenuItem item in _gitHubActionsShowMenus) { item.IsEnabled = available; }
-        if (_gitHubActionsOpen is not null) { _gitHubActionsOpen.IsEnabled = _gitHubActionsRuns.SelectedItem is GitHubActionsWorkflowRun run && _gitHubActionsClient?.BuildPageUri(run) is not null; }
+        if (_gitHubActionsOpen is not null) { _gitHubActionsOpen.IsEnabled = _gitHubActionsRuns.SelectedItem is BuildServerRun run && run.PageUri is not null; }
     }
     private async Task StopGitHubActionsReadAsync()
     {
@@ -289,7 +332,7 @@ public sealed partial class MainWindow
         _gitHubActionsClosing = true; ++_gitHubActionsGeneration; await StopGitHubActionsReadAsync();
         UpdateGitHubActionsSubscription(detached: true);
         await Task.WhenAll(_gitHubActionsRestarts.ToArray());
-        _gitHubActionsClient?.Dispose(); _gitHubActionsClient = null; _gitHubActionsSnapshot = null; _gitHubActionsEnabled = false;
+        if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); } _gitHubActionsClient = null; _gitHubActionsSnapshot = null; _gitHubActionsEnabled = false;
         UpdateGitHubActionsCommands();
     }
 }
