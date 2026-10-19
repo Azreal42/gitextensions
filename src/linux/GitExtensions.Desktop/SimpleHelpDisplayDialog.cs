@@ -12,7 +12,9 @@ internal sealed class SimpleHelpDisplayDialog : Window
     private readonly TextBox _text = new()
     {
         Name = "textBox1", IsReadOnly = true, AcceptsReturn = true,
-        TextWrapping = TextWrapping.Wrap, TabIndex = 0
+        TextWrapping = TextWrapping.Wrap, TabIndex = 0,
+        // Windows HideSelection hides the inactive highlight without discarding the range.
+        ClearSelectionOnLostFocus = false, IsInactiveSelectionHighlightEnabled = false
     };
 
     internal SimpleHelpDisplayDialog(string textControlName = "textBox1")

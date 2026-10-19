@@ -74,11 +74,24 @@ public sealed class SimpleHelpDisplayDialogTests
         Assert.That(sheet.Title, Is.EqualTo(f.Original("ScriptsSettingsPage", "_scriptSettingsPageHelpDisplayArgumentsHelp.Text")));
         Assert.That(help.Text, Is.EqualTo(f.Original("ScriptsSettingsPage", "_scriptSettingsPageHelpDisplayContent.Text")));
         Assert.That((help.CaretIndex, help.SelectionStart, help.SelectionEnd), Is.EqualTo((0, 0, 0)));
-        help.CaretIndex = 12; help.SelectionStart = 2; help.SelectionEnd = 12;
+        PushProcessTestDriver.Pointer(help);
+        PortableHelperSettingsFixture.Press(sheet, PhysicalKey.Home, RawInputModifiers.Control);
+        for (int step = 0; step < 2; step++) { PortableHelperSettingsFixture.Press(sheet, PhysicalKey.ArrowRight); }
+        for (int step = 0; step < 10; step++) { PortableHelperSettingsFixture.Press(sheet, PhysicalKey.ArrowRight, RawInputModifiers.Shift); }
+        string selected = help.Text![2..12];
+        Assert.That(help.IsKeyboardFocusWithin, Is.True);
+        Assert.That((help.SelectionStart, help.SelectionEnd, help.CaretIndex), Is.EqualTo((2, 12, 12)), "The real keyboard must establish the selection before blur.");
+        Assert.That(help.SelectedText, Is.EqualTo(selected));
         f.Edit(settings, "ScriptName", "draft edited while the help stays open");
+        Assert.That(PortableHelperSettingsFixture.Field<TextBox>(settings, "ScriptName").IsKeyboardFocusWithin, Is.True);
+        Assert.That(help.IsKeyboardFocusWithin, Is.False, "The parent edit must really move keyboard focus out of the sheet.");
+        Assert.That((help.SelectionStart, help.SelectionEnd, help.CaretIndex), Is.EqualTo((2, 12, 12)), "Hiding inactive selection must not discard the selected range.");
+        Assert.That(help.SelectedText, Is.EqualTo(selected));
         PushProcessTestDriver.Pointer(PortableHelperSettingsFixture.Field<Button>(settings, "btnArgumentsHelp"));
+        PortableHelperSettingsFixture.Pump(sheet);
         Assert.That(settings.OwnedWindows.OfType<SimpleHelpDisplayDialog>().Single(), Is.SameAs(sheet));
-        Assert.That((help.SelectionStart, help.SelectionEnd), Is.EqualTo((2, 12)), "BringToFront must not reset an existing sheet's selection.");
+        Assert.That((help.SelectionStart, help.SelectionEnd, help.CaretIndex), Is.EqualTo((2, 12, 12)), "BringToFront must not reset an existing sheet's selection.");
+        Assert.That(help.SelectedText, Is.EqualTo(selected));
         Assert.That(PortableHelperSettingsFixture.Field<ScriptsSettingsPage>(settings, "ScriptsSettingsPage").Draft[0].Name,
             Is.EqualTo("draft edited while the help stays open"));
         PortableHelperSettingsFixture.Capture(sheet, "simple-help-scripts-" + language + (dark ? "-dark.png" : "-light.png"));
