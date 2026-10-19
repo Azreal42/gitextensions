@@ -563,7 +563,7 @@ public class PullMenuTests
     }
     private static async Task DeclineInitialMergeConflictResolution(MainWindow main)
     {
-        const string message = "There are unresolved conflicts. Resolve them now?";
+        const string message = "There are unresolved merge conflicts, solve conflicts now?";
         bool IsQuestion(Window window) => window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == message);
         await Until(() => main.OwnedWindows.Any(IsQuestion));
         Window question = main.OwnedWindows.Single(IsQuestion);

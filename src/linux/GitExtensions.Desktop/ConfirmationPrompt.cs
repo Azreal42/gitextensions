@@ -24,7 +24,9 @@ internal static class ConfirmationPrompt
             { Text = translations.TranslateAccessKeys("TranslatedStrings", "_dontShowAgain", "Text", "&Don't show me this message again") }, MinHeight = 24 };
         Button yes = new() { Name = "ConfirmationYes", Content = acceptLabel ?? translations.Translate("Yes"), IsDefault = acceptIsDefault, MinWidth = 75 };
         Button no = new() { Name = "ConfirmationNo", Content = cancelLabel ?? translations.Translate("No"), IsCancel = true, IsDefault = !acceptIsDefault, MinWidth = 75 };
-        yes.Click += (_, _) => dialog.Close(true); no.Click += (_, _) => dialog.Close(false);
+        bool answered = false;
+        yes.Click += (_, _) => { answered = true; dialog.Close(true); };
+        no.Click += (_, _) => { answered = true; dialog.Close(false); };
         Grid body = new() { ColumnDefinitions = new("Auto,*"), ColumnSpacing = 10 };
         body.Children.Add(ResetDialogControls.Icon(warning ? "Warning" : "information"));
         TextBlock text = new() { Name = "ConfirmationMessage", Text = message, TextWrapping = TextWrapping.Wrap };
@@ -37,7 +39,9 @@ internal static class ConfirmationPrompt
             bool accepted = await dialog.ShowDialog<bool>(owner);
             token.ThrowIfCancellationRequested();
             if (!owner.IsVisible) { return false; }
-            if (check.IsChecked == true)
+            // Owner/cancellation/X close can complete before owner.IsVisible becomes false.
+            // Only an explicit answer may persist suppression.
+            if (answered && check.IsChecked == true)
             {
                 try { remember(); }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)

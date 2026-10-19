@@ -573,7 +573,7 @@ public class CommitMessageWorkflowTests
     private static async Task<Window> Confirmation(CommitDialog owner)
     { await Until(() => owner.OwnedWindows.Any()); return owner.OwnedWindows.Single(); }
     private static async Task<CommitEmptyDialog> EmptyDialog(CommitDialog owner) => (CommitEmptyDialog)await Confirmation(owner);
-    private static void AcceptConfirmation(Window prompt) => prompt.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    private static void AcceptConfirmation(Window prompt) => prompt.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel && button is not CheckBox).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     private static void CancelConfirmation(Window prompt) => prompt.GetVisualDescendants().OfType<Button>().Single(button => button.IsCancel).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     private static MenuItem[] HistoryMessages(MenuItem menu) => menu.Items.OfType<MenuItem>().Where(item => item.Name == "PreviousMessage").ToArray();
     private static MenuItem HistoryItem(MenuItem menu, string name) => menu.Items.OfType<MenuItem>().Single(item => item.Name == name);

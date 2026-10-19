@@ -157,7 +157,7 @@ public sealed class CommitSuperprojectTests
         Pointer(Field<Button>(f.Dialog, "Commit"));
         await Until(() => f.Dialog.OwnedWindows.Any());
         Window confirmation = f.Dialog.OwnedWindows.Single();
-        Pointer(confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel));
+        Pointer(confirmation.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ConfirmationYes"));
         await f.FinishedCommitAsync();
         string amended = await f.HeadAsync();
         Assert.That(amended, Is.Not.EqualTo(f.Initial));

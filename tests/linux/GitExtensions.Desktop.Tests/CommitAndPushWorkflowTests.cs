@@ -127,7 +127,7 @@ public class CommitAndPushWorkflowTests
         await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
         await Until(() => f.Dialog.OwnedWindows.Any());
         Window confirmation = f.Dialog.OwnedWindows.Single();
-        Button accept = confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel);
+        Button accept = confirmation.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ConfirmationYes");
         await PointerClick(accept); await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !f.Dialog.IsVisible);
         Assert.That(f.Dialog.HasCommitted && f.Dialog.PushCompleted, Is.True, f.Dialog.LastError);
         Assert.That(await f.Head(), Is.Not.EqualTo(f.Initial)); Assert.That(await f.RemoteHead(), Is.EqualTo(await f.Head()));
@@ -142,7 +142,7 @@ public class CommitAndPushWorkflowTests
         await f.StageChangeAsync(); await PointerClick(Field<CheckBox>(f.Dialog, "Amend"));
         await PointerClick(Field<Button>(f.Dialog, "CommitAndPush"));
         await Until(() => f.Dialog.OwnedWindows.Any()); Window confirmation = f.Dialog.OwnedWindows.Single();
-        await PointerClick(confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel));
+        await PointerClick(confirmation.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ConfirmationYes"));
         await Until(() => PushProcessTestDriver.Windows(f.Dialog).Any(window => window.Name == "PushRejectedConfirmation"));
         Window rejection = PushProcessTestDriver.Windows(f.Dialog).Single(window => window.Name == "PushRejectedConfirmation");
         await PointerClick(Field<Button>(rejection, "PushChoice0"));
@@ -166,7 +166,7 @@ public class CommitAndPushWorkflowTests
         await PointerClick(Field<Button>(f.Dialog, "ResetSoft"), f.DescribeGitAsync);
         await Until(() => f.Dialog.OwnedWindows.Any(), "Reset soft confirmation opened", () => f.DescribeStateAsync());
         Window confirmation = f.Dialog.OwnedWindows.Single();
-        await PointerClick(confirmation.GetVisualDescendants().OfType<Button>().Single(button => !button.IsCancel), f.DescribeGitAsync);
+        await PointerClick(confirmation.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ConfirmationYes"), f.DescribeGitAsync);
         await PushProcessTestDriver.UntilAsync(f.Dialog, () => !f.Dialog.IsBusy && !confirmation.IsVisible && !Field<CheckBox>(f.Dialog, "Amend").IsEnabled,
             "Confirmed soft reset completed and Amend disabled", () => f.DescribeStateAsync());
         Assert.That(Field<CheckBox>(f.Dialog, "Amend").IsEnabled, Is.False);

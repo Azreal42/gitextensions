@@ -49,7 +49,7 @@ public sealed class ConfirmationsSettingsSessionTests
         Assert.That(session.LoadErrors.Keys, Is.EquivalentTo(new[] { "pull-preferences.json" }));
         session.Save(session.Initial with { DontConfirmAmend = true });
         Assert.That(File.ReadAllBytes(bad), Is.EqualTo(bytes));
-        Assert.Throws<System.Text.Json.JsonException>(() => session.Save(session.Initial with { DontConfirmFetchAndPruneAll = true }));
+        Assert.Catch<System.Text.Json.JsonException>(() => session.Save(session.Initial with { DontConfirmFetchAndPruneAll = true }));
         Assert.That(File.ReadAllBytes(bad), Is.EqualTo(bytes));
     }
 
