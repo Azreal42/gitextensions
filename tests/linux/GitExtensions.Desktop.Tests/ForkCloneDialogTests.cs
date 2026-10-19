@@ -330,7 +330,8 @@ public sealed class ForkCloneDialogTests
         internal GitHubHostedRepository? Mine;
         internal List<string?> Owners { get; } = [];
         internal List<string> Searches { get; } = [];
-        internal List<GitHubRepositoryId> Forks { get; } = [], Details { get; } = [];
+        internal List<GitHubRepositoryId> Forks { get; } = [];
+        internal List<GitHubRepositoryId> Details { get; } = [];
         internal int UserReads;
         internal bool Disposed;
         internal Func<string, CancellationToken, Task<GitHubRepositorySearchResult>>? SearchOperation;
