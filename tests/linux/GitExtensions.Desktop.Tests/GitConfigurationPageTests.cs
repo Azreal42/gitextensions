@@ -372,6 +372,72 @@ public sealed class GitConfigurationPageTests
         Assert.That(await f.Read("local", "user.email"), Is.EqualTo("child-applied@example.invalid"));
     }
 
+    [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task MainSettingsAdvancedRouteAppliesNativeBooleanWhileParentDraftsAndCancelRemainIndependent(bool outsideRepository)
+    {
+        await using Scope f = await Scope.CreateAsync();
+        new PreferencesStore().Save(new() { Language = "English", StartWithRecentWorkingDir = false });
+        ScriptsPreferencesStore scripts = new(); scripts.Save([new() { Name = "saved script", Command = "/bin/true", HotkeyCommandIdentifier = 9001 }]);
+        byte[] savedScripts = File.ReadAllBytes(scripts.FilePath);
+        FontPreferencesStore fonts = new(); byte[]? savedFonts = File.Exists(fonts.FilePath) ? File.ReadAllBytes(fonts.FilePath) : null;
+        byte[] originalLocal = File.ReadAllBytes(f.Git.PathInRepository(".git/config")), originalGlobal = File.ReadAllBytes(f.Git.Output("global.config"));
+        Assert.That(await f.Read(outsideRepository ? "global" : "local", "fetch.prune"), Is.Null);
+        MainWindow main = new() { Width = 1280, Height = 900 }; f.Own(main); main.Show();
+        if (!outsideRepository) { await main.OpenRepositoryAsync(f.Git.Repository.Path); }
+        await Until(() => !main.IsBusy); Press(main, PhysicalKey.Comma, RawInputModifiers.Control);
+        await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any(settings => settings.IsVisible));
+        DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(window => window.IsVisible);
+        SettingsNavigationTestDriver.Select(settings, "Scripts"); Edit(settings, "ScriptName", "pending parent script after Advanced");
+        SettingsNavigationTestDriver.Select(settings, "Fonts"); ClickControl(Field<CheckBox>(settings, "ShowEolMarkerAsGlyph"));
+        bool eolDraft = Field<AppearanceFontsSettingsPage>(settings, "AppearanceFontsSettingsPage").Draft.ShowEolMarkerAsGlyph;
+        SettingsNavigationTestDriver.Select(settings, "GitAdvanced"); Click(settings, "OpenGitAdvancedConfiguration");
+        await Until(() => settings.OwnedWindows.OfType<GitToolsSettingsDialog>().Any(window => window.IsVisible));
+        GitToolsSettingsDialog child = settings.OwnedWindows.OfType<GitToolsSettingsDialog>().Single(window => window.IsVisible);
+        await child.InitializeAsync(); await Idle(child); Pump(child);
+        Assert.That(child.Owner, Is.SameAs(settings)); Assert.That(child.IsReady, Is.True, child.LastError);
+        Assert.That(Field<TabControl>(child, "GitConfigPages").SelectedItem, Is.SameAs(Field<TabItem>(child, "GitAdvancedTab")));
+        Assert.That(child.AdvancedPage.IsEffectivelyVisible, Is.True); Assert.That(child.Page.IsEffectivelyVisible, Is.False);
+        Assert.That(child.AdvancedPage.Session, Is.SameAs(child.Page.Session));
+        ComboBox scope = Field<ComboBox>(child, "GitAdvancedScope");
+        if (outsideRepository)
+        {
+            Assert.That(child.AdvancedPage.View, Is.EqualTo(GitToolConfigurationView.Global));
+            Assert.That(child.AdvancedPage.Session!.Snapshot.GetScope(GitToolConfigurationView.Local).IsAvailable, Is.False);
+            Choose(child, scope, 1); Assert.That(Field<CheckBox>(child, "checkBoxFetchPrune").IsEnabled, Is.False);
+            Choose(child, scope, 2);
+        }
+        else { Choose(child, scope, 1); }
+        CheckBox prune = Field<CheckBox>(child, "checkBoxFetchPrune");
+        Assert.That(child.AdvancedPage.View, Is.EqualTo(outsideRepository ? GitToolConfigurationView.Global : GitToolConfigurationView.Local));
+        Assert.That(prune.IsEffectivelyEnabled, Is.True); Assert.That(prune.IsChecked, Is.Null);
+        ClickControl(prune);
+        for (int cycle = 0; cycle < 3 && prune.IsChecked != true; cycle++) { Press(child, PhysicalKey.Space); }
+        Assert.That(prune.IsChecked, Is.True); Assert.That(prune.IsKeyboardFocusWithin, Is.True);
+        Click(child, "GitToolsApply"); await Idle(child);
+        Assert.That(child.LastError, Is.Null); Assert.That(child.LastSaveResult?.Success, Is.True);
+        GitToolConfigurationWriteReceipt receipt = child.LastSaveResult!.Writes.Single();
+        Assert.That(receipt.Key, Is.EqualTo("fetch.prune")); Assert.That(receipt.RequestedValue, Is.EqualTo("true"));
+        Assert.That(receipt.Scope, Is.EqualTo(outsideRepository ? GitConfigScope.Global : GitConfigScope.Local));
+        Assert.That(receipt.Outcome, Is.EqualTo(GitToolConfigurationWriteOutcome.NativeCompleted)); Assert.That(receipt.NativeResult?.Success, Is.True);
+        Assert.That(child.AdvancedPage.Session, Is.SameAs(child.Page.Session)); Assert.That(Field<Button>(child, "GitToolsApply").IsEnabled, Is.False);
+        Click(child, "GitToolsCancel");
+        await Until(() => !child.IsVisible && !main.IsBusy && Field<Button>(settings, "OpenGitAdvancedConfiguration").IsEnabled);
+        Control? focused = settings.FocusManager?.GetFocusedElement() as Control;
+        Assert.That(focused is not null && TopLevel.GetTopLevel(focused) == settings, Is.True);
+        SettingsNavigationTestDriver.Select(settings, "Scripts");
+        Assert.That(Field<ScriptsSettingsPage>(settings, "ScriptsSettingsPage").Draft[0].Name, Is.EqualTo("pending parent script after Advanced"));
+        SettingsNavigationTestDriver.Select(settings, "Fonts");
+        Assert.That(Field<AppearanceFontsSettingsPage>(settings, "AppearanceFontsSettingsPage").Draft.ShowEolMarkerAsGlyph, Is.EqualTo(eolDraft));
+        Click(settings, "CancelDesktopSettings"); await Until(() => !settings.IsVisible && !main.IsBusy);
+        Assert.That(await f.Read(outsideRepository ? "global" : "local", "fetch.prune"), Is.EqualTo("true"), "Parent Cancel must retain the child's already published native Git value.");
+        Assert.That(File.ReadAllBytes(scripts.FilePath), Is.EqualTo(savedScripts));
+        if (savedFonts is null) { Assert.That(File.Exists(fonts.FilePath), Is.False); }
+        else { Assert.That(File.ReadAllBytes(fonts.FilePath), Is.EqualTo(savedFonts)); }
+        Assert.That(File.ReadAllBytes(outsideRepository ? f.Git.PathInRepository(".git/config") : f.Git.Output("global.config")), Is.EqualTo(outsideRepository ? originalLocal : originalGlobal), "The other native scope is byte-identical.");
+    }
+
     private sealed class Scope(ReferenceFixture git) : IAsyncDisposable
     {
         private readonly List<Window> _windows = [];

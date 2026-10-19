@@ -509,13 +509,13 @@ public sealed partial class MainWindow
     private Task DiffToolAsync() => ShowGitToolsSettingsAsync(WorkflowOwner, GitToolRole.Diff);
 
     private async Task ShowGitToolsSettingsAsync(Window owner, GitToolRole? focus = null,
-        GitToolConfigurationView? view = null, GitConfigurationField? field = null)
+        GitToolConfigurationView? view = null, GitConfigurationField? field = null, bool advanced = false)
     {
         if (_busy || _lifetime.IsCancellationRequested || !owner.IsVisible) { return; }
         GitRepository? repository = _repository;
         using GitConfigurationContext context = GitConfigurationContext.Create(repository, GitEnvironment.Current);
         GitToolsSettingsDialog dialog = new(context.Repository, _translations, focus, _lifetime.Token,
-            initialView: view ?? (context.GlobalOnly ? GitToolConfigurationView.Global : null), focusField: field)
+            initialView: view ?? (context.GlobalOnly ? GitToolConfigurationView.Global : null), focusField: field, advanced: advanced)
             { RequestedThemeVariant = owner.ActualThemeVariant };
         try
         {

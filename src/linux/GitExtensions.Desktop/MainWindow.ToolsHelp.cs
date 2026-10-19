@@ -199,7 +199,9 @@ public sealed partial class MainWindow
             appearanceCancellationToken: environment.CancellationToken, detailedSettings: detailed,
             revisionLinksSettings: new(settingsRepository, workspace),
             gitHubActionsSettings: new(settingsRepository, workspace),
-            openSettingsUrlAsync: OpenWebAsync);
+            openSettingsUrlAsync: OpenWebAsync,
+            configureGitAdvanced: owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
+                ? ShowGitToolsSettingsAsync(owner, advanced: true) : Task.CompletedTask);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

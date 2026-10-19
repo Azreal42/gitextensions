@@ -80,7 +80,8 @@ internal sealed class DesktopSettingsDialog : Window
         RevisionLinksSettingsSession? revisionLinksSettings = null,
         GitHubActionsSettingsSession? gitHubActionsSettings = null,
         ConsoleStyleSettingsSession? consoleStyleSettings = null,
-        Func<string, Task>? openSettingsUrlAsync = null)
+        Func<string, Task>? openSettingsUrlAsync = null,
+        Func<Window, Task>? configureGitAdvanced = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -129,16 +130,24 @@ internal sealed class DesktopSettingsDialog : Window
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); };
         Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
+        Button advancedConfiguration = new() { Name = "OpenGitAdvancedConfiguration", Content = translations.Translate("GitConfigAdvancedSettingsPage", "$this", "Text", "Advanced") + "…",
+            IsEnabled = configureGitAdvanced is not null, HorizontalAlignment = HorizontalAlignment.Left };
         bool configuringTools = false;
-        tools.Click += async (_, _) =>
+        tools.Click += async (_, _) => await OpenConfigurationAsync(configureGitTools);
+        advancedConfiguration.Click += async (_, _) => await OpenConfigurationAsync(configureGitAdvanced);
+        async Task OpenConfigurationAsync(Func<Window, Task>? configure)
         {
-            if (configuringTools || configureGitTools is null || !IsVisible) { return; }
-            configuringTools = true; tools.IsEnabled = false;
-            try { await configureGitTools(this); }
+            if (configuringTools || configure is null || !IsVisible) { return; }
+            configuringTools = true; tools.IsEnabled = advancedConfiguration.IsEnabled = false;
+            try { await configure(this); }
             catch (OperationCanceledException) { }
             catch (Exception error) { if (IsVisible) { notice.Text = error.Message; } }
-            finally { configuringTools = false; if (IsVisible) { tools.IsEnabled = configureGitTools is not null; } }
-        };
+            finally
+            {
+                configuringTools = false;
+                if (IsVisible) { tools.IsEnabled = configureGitTools is not null; advancedConfiguration.IsEnabled = configureGitAdvanced is not null; }
+            }
+        }
         StackPanel configurationFields = new() { Name = "SettingsGitConfiguration", Margin = new Thickness(12), Spacing = 10, Children = { tools, configuration } };
 
         ComboBox revisions = new() { Name = "_NO_TRANSLATE_cmbRevisionsSortBy", ItemsSource = historySort == GitLogSort.Date ? new[] { GitLogSort.GitDefault, GitLogSort.AuthorDate, GitLogSort.Topology, GitLogSort.Date } : new[] { GitLogSort.GitDefault, GitLogSort.AuthorDate, GitLogSort.Topology }, SelectedItem = historySort,
@@ -195,6 +204,11 @@ internal sealed class DesktopSettingsDialog : Window
         }
         if (configureGitTools is not null || canConfigureGit)
         { gitChildren.Add(new("Config", PageTitle("GitConfigSettingsPage", "Config"), configurationFields, "GeneralSettings.png")); }
+        if (configureGitAdvanced is not null)
+        {
+            gitChildren.Add(new("GitAdvanced", PageTitle("GitConfigAdvancedSettingsPage", "Advanced"),
+                new StackPanel { Name = "SettingsGitAdvancedConfiguration", Margin = new Thickness(12), Children = { advancedConfiguration } }, "AdvancedSettings.png"));
+        }
         if (gitChildren.Count > 0)
         {
             roots.Add(new("Git", PageTitle("GitRootIntroductionPage", "Git Settings"), new TextBlock
