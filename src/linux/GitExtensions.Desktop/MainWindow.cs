@@ -54,7 +54,28 @@ public sealed partial class MainWindow : Window
     private string? _referenceSelectionOverride;
 
     internal bool IsBusy => _busy || BrowserReads.Any(read => read.Pending != 0) || _commitInfo.IsLoading;
-    internal Exception? LastException { get; private set; }
+    private Exception? _lastException;
+    internal Exception? LastException
+    {
+        get => _lastException;
+        private set
+        {
+            if (!ReferenceEquals(_lastException, value)) { InvalidateErrorReport(); }
+            _lastException = value;
+        }
+    }
+    private readonly Button _errorDetails = new() { Name = "ViewErrorDetails", IsVisible = false, MinHeight = 22, Padding = new Thickness(6, 0), Margin = new Thickness(8, 0, 0, 0) };
+    private ExceptionReportSnapshot? _errorSnapshot;
+    private ExceptionReportContext? _errorContext;
+    private string? _operationReportDirectory;
+    private long _errorGeneration;
+    private CancellationTokenSource? _errorReportCancellation;
+    private Task _errorReportCompletion = Task.CompletedTask;
+    internal Task ErrorReportCompletion => _errorReportCompletion;
+    internal ExceptionReportSnapshot? ErrorReportSnapshot => _errorSnapshot;
+    internal ExceptionReportContext? ErrorReportContextSnapshot => _errorContext;
+    internal Func<string, CancellationToken, Task>? ErrorReportCopyTextAsync { get; set; }
+
 
     public MainWindow() : this(new BrowseRequest()) { }
 
@@ -170,6 +191,7 @@ public sealed partial class MainWindow : Window
             }
         };
         Content = BuildLayout();
+        InitializeErrorReportAccess();
         InitializeFileHistoryBrowse();
         InitializeGitHubActions();
         _commits.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -404,6 +426,7 @@ public sealed partial class MainWindow : Window
         GitRepository? previous = _repository;
         await RunAsync("Open repository", async _ =>
         {
+            _operationReportDirectory = path;
             GitRepository candidate = await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
             await RefreshDataAsync(candidate, opening: true);
@@ -640,6 +663,8 @@ public sealed partial class MainWindow : Window
     {
         if (_busy || _lifetime.IsCancellationRequested) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
+        InvalidateErrorReport();
+        _operationReportDirectory = _repository?.Path;
         using IDisposable execution = _repository?.BeginOperation() ?? GitEnvironment.BeginOperation();
         using WindowWork work = TrackWindowWork();
         OperationFocus? previousFocus = CaptureOperationFocus();
@@ -661,14 +686,23 @@ public sealed partial class MainWindow : Window
         catch (Exception exception)
         {
             LastException = exception;
+            ExceptionReportSnapshot? captured = !Program.SmokeTest && !_lifetime.IsCancellationRequested && IsVisible
+                ? ExceptionReportSnapshot.Capture(exception) : null;
             _state.Text = label + " failed — see command output";
-            AppendOutput($"{label}: {exception.Message}");
+            AppendOutput($"{label}: {captured?.Root.Message ?? ExceptionReportSnapshot.MessageOf(exception)}");
             if (Program.SmokeTest) { Console.Error.WriteLine(exception); _repository = null; }
+            else if (!_lifetime.IsCancellationRequested && IsVisible)
+            {
+                _errorSnapshot = captured;
+                _errorContext = ExceptionReportContext.Capture(label, _operationReportDirectory, DesktopVersion, exception);
+                _errorDetails.IsVisible = true; _errorDetails.IsEnabled = _errorReportCompletion.IsCompleted;
+            }
         }
         finally
         {
             _operation.Dispose();
             _operation = null;
+            _operationReportDirectory = null;
             _busy = false;
             SetActionsEnabled(true);
             if (success) { _state.Text = _repositorySummary; }
@@ -681,6 +715,62 @@ public sealed partial class MainWindow : Window
             else if (!_lifetime.IsCancellationRequested) { await LoadVisibleCommitInformationAsync(); }
             if (!_lifetime.IsCancellationRequested) { RestoreOperationFocus(previousFocus); }
         }
+    }
+
+    private void InitializeErrorReportAccess()
+    {
+        _errorDetails.Content = _translations.Translate("TranslatedStrings", "_buttonViewDetails", "Text", "View details");
+        ToolTip.SetTip(_errorDetails, _errorDetails.Content);
+        _state.TextTrimming = TextTrimming.CharacterEllipsis;
+        // Keep the original status text and its border. The explicit action replaces no workflow UI.
+        if (_state.Parent is Border status)
+        {
+            status.Child = null;
+            Grid content = new() { ColumnDefinitions = new("*,Auto") };
+            content.Children.Add(_state); Grid.SetColumn(_errorDetails, 1); content.Children.Add(_errorDetails); status.Child = content;
+        }
+        _errorDetails.Click += async (_, _) =>
+        {
+            if (_busy || _lifetime.IsCancellationRequested || !_errorReportCompletion.IsCompleted
+                || _errorSnapshot is not { } snapshot || _errorContext is not { } context) { return; }
+            _errorReportCompletion = ShowCapturedErrorAsync(snapshot, context, _errorGeneration);
+            await _errorReportCompletion;
+        };
+        Closing += (_, _) => InvalidateErrorReport();
+    }
+
+    private void InvalidateErrorReport()
+    {
+        ++_errorGeneration; _errorSnapshot = null; _errorContext = null;
+        _errorDetails.IsVisible = _errorDetails.IsEnabled = false;
+        _errorReportCancellation?.Cancel();
+    }
+
+    private async Task ShowCapturedErrorAsync(ExceptionReportSnapshot snapshot, ExceptionReportContext context, long generation)
+    {
+        using WindowWork work = TrackWindowWork();
+        using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        _errorReportCancellation = cancellation; _errorDetails.IsEnabled = false;
+        bool quit = false;
+        try
+        {
+            BugReportDecision decision = await Dialogs.ShowErrorAsync(this, snapshot, context, _translations, cancellation.Token,
+                ErrorReportCopyTextAsync, (uri, token) => { token.ThrowIfCancellationRequested(); return OpenWebAsync(uri.AbsoluteUri); });
+            quit = decision == BugReportDecision.Quit && !cancellation.IsCancellationRequested && generation == _errorGeneration;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception) { if (!_lifetime.IsCancellationRequested) { AppendOutput(T("Unable to display error details.")); } }
+        finally
+        {
+            if (ReferenceEquals(_errorReportCancellation, cancellation)) { _errorReportCancellation = null; }
+            if (!_lifetime.IsCancellationRequested && IsVisible)
+            {
+                _errorDetails.IsEnabled = _errorSnapshot is not null;
+                if (generation == _errorGeneration && _errorSnapshot is not null) { _errorDetails.Focus(); }
+            }
+        }
+        // This job runs after this lease unwinds. Main's normal Closing path drains every other owner.
+        if (quit) { Dispatcher.UIThread.Post(() => { if (IsVisible && generation == _errorGeneration) { Close(); } }); }
     }
 
     private void SetActionsEnabled(bool enabled)
