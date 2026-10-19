@@ -1,11 +1,11 @@
 {
-  "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
-  "trx": "artifacts/linux/appveyor-20261019/desktop-full-01/results/desktop.trx",
-  "trx_sha256": "a485ab7eb9d1b70d1f91dae11a730fde66fd15529bc20a236786a161cf06e1e5",
+  "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+  "trx": "artifacts/linux/jenkins-20261020/desktop-full-01/results/desktop.trx",
+  "trx_sha256": "c2119df31ba1e39b0c96056300da45b3b57e104faee7f2f661af7cfe93d4ec31",
   "counters": {
-    "total": "3035",
-    "executed": "3035",
-    "passed": "3035",
+    "total": "3217",
+    "executed": "3217",
+    "passed": "3217",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -93,6 +93,12 @@
     "AvatarWindowLifetimeTests": {
       "Passed": 3
     },
+    "AzureDevOpsIntegrationTests": {
+      "Passed": 7
+    },
+    "AzureDevOpsSettingsPageTests": {
+      "Passed": 42
+    },
     "BlameAvatarTests": {
       "Passed": 4
     },
@@ -147,6 +153,9 @@
     "CheckoutInitialLayoutTests": {
       "Passed": 3
     },
+    "CheckoutRevisionDialogTests": {
+      "Passed": 16
+    },
     "CheckoutSubmoduleTests": {
       "Passed": 12
     },
@@ -182,6 +191,9 @@
     },
     "CloneProcessDialogTests": {
       "Passed": 8
+    },
+    "CommandlineHelpDialogTests": {
+      "Passed": 11
     },
     "CommitAndPushWorkflowTests": {
       "Passed": 9
@@ -345,6 +357,12 @@
     "DistributedSettingsWorkspaceTests": {
       "Passed": 6
     },
+    "DonateDialogTests": {
+      "Passed": 10
+    },
+    "DonateMenuIntegrationTests": {
+      "Passed": 4
+    },
     "EditableFileViewTests": {
       "Passed": 11
     },
@@ -423,6 +441,9 @@
     "FontStreamLifetimeTests": {
       "Passed": 1
     },
+    "FormEditDialogTests": {
+      "Passed": 8
+    },
     "GeneralBrowseStatusTests": {
       "Passed": 28
     },
@@ -438,8 +459,11 @@
     "GeneralSettingsSessionTests": {
       "Passed": 23
     },
-    "GitConfigurationPageTests": {
+    "GitConfigAdvancedSettingsPageTests": {
       "Passed": 19
+    },
+    "GitConfigurationPageTests": {
+      "Passed": 21
     },
     "GitEnvironmentChecklistTests": {
       "Passed": 18
@@ -522,6 +546,12 @@
     "InteractiveFileConsoleTests": {
       "Passed": 7
     },
+    "JenkinsIntegrationTests": {
+      "Passed": 9
+    },
+    "JenkinsSettingsPageTests": {
+      "Passed": 32
+    },
     "LanguageCatalogTests": {
       "Passed": 7
     },
@@ -555,6 +585,9 @@
     "MergeDetailedSettingsTests": {
       "Passed": 6
     },
+    "MessageDialogTests": {
+      "Passed": 10
+    },
     "NativeDiffViewerSettingsDialogTests": {
       "Passed": 4
     },
@@ -575,6 +608,9 @@
     },
     "PluginLifecycleTests": {
       "Passed": 4
+    },
+    "PluginRootIntroductionPageTests": {
+      "Passed": 6
     },
     "ProxyGourceDialogTests": {
       "Passed": 8
@@ -741,6 +777,9 @@
     "SettingsNavigationTests": {
       "Passed": 20
     },
+    "SimpleHelpDisplayDialogTests": {
+      "Passed": 6
+    },
     "StashMenuTests": {
       "Passed": 19
     },
@@ -801,64 +840,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
-      "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+      "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+      "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 936,
-      "total": 936,
-      "execution_result": "artifacts/linux/appveyor-20261019/core-full-01/result.json",
-      "execution_result_sha256": "08ac2447654b06d19810479322fe298e2819ac6d1630f636bf8198374bc2a9a2",
+      "passed": 1026,
+      "total": 1026,
+      "execution_result": "artifacts/linux/jenkins-20261020/core-full-01/result.json",
+      "execution_result_sha256": "4b6d8e4079025a943feba8fd632099ce32ac258030ae401278b02f14ceabec08",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
-        "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
+        "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
+        "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
-        "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
+        "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
+        "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
       },
-      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh full suites in W5; no exclusions."
+      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh complete suites in W7; no exclusions. One verified Core display-name rename is explicit in the lineage review."
     },
     "plugins": {
-      "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
-      "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+      "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+      "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/appveyor-20261019/plugins-full-01/result.json",
-      "execution_result_sha256": "2153c19006f50bd02af3c7af8d2a221680c40bcbf19446c5ea49913d4d0ee5da",
+      "execution_result": "artifacts/linux/jenkins-20261020/plugins-full-01/result.json",
+      "execution_result_sha256": "cb21e535b01a6cb3a9e125b94f07ea56c240d7b826d2920f3772390e1ec3a23d",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
-        "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
+        "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
+        "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
-        "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
+        "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
+        "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
       },
-      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh full suites in W5; no exclusions."
+      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh complete suites in W7; no exclusions. One verified Core display-name rename is explicit in the lineage review."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
-    "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+    "worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
+    "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
-      "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
+      "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
+      "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
     },
     "root_review": {
-      "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
-      "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
+      "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
+      "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
     },
-    "meaning": "Fresh full suites run in frozen W5. The primary preserves five unrelated Modal edits; import is not whole-primary equivalence or a primary full run. Native source, exact Debian artifact and installed interaction retain their separate scopes."
+    "meaning": "Fresh complete suites run in frozen W7. The primary preserves five unrelated Modal edits; the controlled import is not whole-primary equivalence or a primary full run. Native source and exact Debian artifact retain their separate scopes."
   }
 }

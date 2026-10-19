@@ -40,3 +40,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [GitLab et suivi CI partagé](adr/extensions/ci/0112-gitlab.md) : paramètres XML, lookup de projet et pipelines/statuts ; suites, paquet isolé et natif source ciblé vérifiés. Serveur réel, jobs et interactions installées ouverts.
 
 - [AppVeyor et suivi CI partagé](adr/extensions/ci/0113-appveyor.md) : page et statuts/durées/tests/PR Windows ; suites complètes, natif source ciblé et paquet isolé vérifiés. Serveur réel et rapport HTML embarqué ouverts.
+
+- Fenêtres portables et CI : [Azure DevOps](adr/extensions/ci/0114-azure-devops.md), [Jenkins](adr/extensions/ci/0116-jenkins.md), [Donate](adr/ui/dialogs/0115-donate.md), [Git Advanced](adr/preferences/git-config/0117-git-config-advanced.md), [Checkout revision](adr/workflows/references/0118-checkout-revision.md), [aide CLI](adr/ui/dialogs/0119-commandline-help.md), [visualiseur texte](adr/ui/dialogs/0120-in-memory-text-viewer.md), [aide Scripts](adr/ui/dialogs/0121-parameter-help.md), [introduction Plugins](adr/preferences/plugins/0122-plugins-introduction.md). Preuves par source et limites dans le TODO.

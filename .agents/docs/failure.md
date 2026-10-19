@@ -6,6 +6,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Observation | Cause / suite |
 | --- | --- |
+| Tableau Recovery trop haut | Le rendu natif du lot Jenkins montre les SHA complets repliés dans des colonnes étroites ; rapprocher les lignes simples du tableau Windows sans modifier les hashes copiés. [Capture](../../artifacts/linux/jenkins-20261020/native-01/frames/0047-click.png). |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
@@ -62,6 +63,10 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 
 | Piège | Cause / règle retenue |
 | --- | --- |
+| Quick view refuse de s'ouvrir | Renommer le viewer après son attachement à Content lève « styled element already styled ». Fixer le Name avant styling ; régression de l'ancien parcours Recovery conservée. [Échec](../../artifacts/linux/jenkins-20261020/targeted-03/results/desktop.trx). |
+| Échap du visualiseur ne remonte pas à la fenêtre | AvaloniaEdit consomme la touche sans retirer la sélection ni fermer. Relayer depuis le TextArea focalisé en tunnel, sélection avant Close, priorité Find/menu contexte conservée ; même contrat que Stash/Commit. [Échec réel](../../artifacts/linux/jenkins-20261020/portable-targeted-01/results/desktop.trx), [correction ciblée](../../artifacts/linux/jenkins-20261020/portable-targeted-02/results/desktop.trx). |
+| L'aide Scripts perd la sélection au retour | TextBox effaçait la plage à LostFocus ; préserver la sélection tout en masquant son highlight inactif. L'oracle compare le caret réellement établi au clavier, sans lui imposer l'extrémité d'une autre API. |
+| Page inactive annoncée visible dans un test | Un onglet détaché peut garder IsEffectivelyVisible ; contrôler l'arbre visuel réellement présenté et attendre les lectures possédées. Le défaut de cet oracle ne justifie pas un changement du produit. |
 | Compare perd la saisie rapide du filtre | Remplacer ItemsSource réémet SelectionChanged puis RunAsync désactive le champ. Garder la lecture ciblée indépendante, identifier la demande et ne publier que la sélection courante ; rouge natif7a conservé. |
 | Filtre historique visible mais inactif | Focaliser un contrôle à Opened ne garantit pas l’activation X11. Réutiliser ModalWindowActivation.AfterMapping déjà partagé par les dialogues de dépôt et GoTo ; le replay7a expire avant la première Échap, sans preuve de son traitement. |
 | Destination LF vide au focus ou après Ctrl+A | Hauteur fixe puis défilement horizontal jusqu’au caret masquent les lignes courtes. Replier les valeurs multiligne avec hauteur bornée, sans transformer le texte ; conserver 24 px pour les chemins ordinaires. Glyphes, copie littérale et six rendus clair/sombre vérifiés en headless ; audit natif restant dans TODO. |
@@ -814,3 +819,9 @@ Le premier ciblé conserve 256/258 Desktop : la lecture de `symbolic-ref` devait
 L’adaptateur Windows signale lui-même un écart entre le préfixe v2 annoncé par la documentation et ses routes effectives : le portable conserve ce contrat, sans déduire sa validité sur un serveur réel d’un transport de test.
 
 Le présentateur CI commun fournit une liste et des liens externes, pas le rapport HTML Windows embarqué. Le serveur AppVeyor réel/authentifié, les interactions installées et les variantes natives au-delà du parcours ciblé restent non qualifiés tant que leurs preuves propres ne sont pas rattachées ; ni une page écrite ni une suite voisine ne les certifie.
+
+## CI Azure DevOps et Jenkins
+
+La revue statique Azure a corrigé une autorisation PAT fondée sur des substituts syntaxiques de template : seules les variables réelles du dépôt créent le contexte autorisé. Le launcher de Token management et son erreur sont possédés avec Settings. Les essais Azure01/02 ont aussi distingué le vrai défaut de fermeture propriétaire, les gestes de badge et le double adorner Avalonia ; les essais échoués restent dans `artifacts/linux/azuredevops-20261019/`.
+
+La revue statique Jenkins a séparé historique en cache et nouvelles émissions : une ancienne fin ne doit pas bloquer un running neuf, les diagnostics d'une limite disparaissent à la récupération réelle, et le watcher ne reçoit pas un build éliminé par le plafond global. Les identifiants dépendent de l'endpoint complet, y compris son chemin. Ces constats statiques ne sont pas présentés comme des exécutions échouées. Repères : ADR0114/0116 et `artifacts/linux/jenkins-20261020/review/`.

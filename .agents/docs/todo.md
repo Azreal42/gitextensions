@@ -1,14 +1,14 @@
 # TODO
 
-Mise à jour : 19 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/appveyor-20261019/window-inventory-syntax-01.json) : 2351 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
+Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/jenkins-20261020/window-inventory-syntax-01.json) : 2395 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `c108a6bb3` : 3035/3035 Desktop (259 classes), 936/936 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=0, N1=13, N2=35, N3=50, NA=1 ; 32 pages : N0=2, N1=6, N2=23, NA=1**. Aucun N4 ni pourcentage de travail déduit des comptes.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `63812eebc` : 3217/3217 Desktop (272 classes), 1026/1026 Core, 35/35 Plugins** ; **99 fenêtres métier : 8 N1, 40 N2, 50 N3, 1 hors périmètre ; 32 pages : 4 N1, 27 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
 
-Les [suites de référence](../../artifacts/linux/appveyor-20261019/review/root-full-review.json) ont tourné sur W5 figé ; l’[import contrôlé](../../artifacts/linux/appveyor-20261019/review/source-import-review.json) préserve les cinq modifications Modal distinctes du primaire, sans réexécution ni équivalence globale revendiquée. Paquet et natif ont leurs périmètres séparés dans la section AppVeyor ; les anciennes preuves restent liées à leurs sources.
+Les [suites de référence](../../artifacts/linux/jenkins-20261020/review/root-full-review.json) ont tourné sur W7 figé ; l’[import contrôlé](../../artifacts/linux/jenkins-20261020/review/source-import-review.json) préserve les cinq modifications Modal distinctes du primaire, sans réexécution ni équivalence globale revendiquée. Paquet et natif gardent les périmètres décrits ci-dessous ; les anciennes preuves restent liées à leurs sources.
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
@@ -422,4 +422,21 @@ Source `95f628aea7d29db61f21fc81458ac1779b9204fa` : **3001/3001 Desktop (256 cla
 - [x] Source `c108a6bb3` : [suites complètes](../../artifacts/linux/appveyor-20261019/review/root-full-review.json), **3035/3035 Desktop (259 classes), 936/936 Core, 35/35 Plugins**. Les cinq modifications Modal du checkout restent hors source exécutée.
 - [x] [Natif source](../../artifacts/linux/appveyor-20261019/native-01/root-native-review.json) : anglais/clair puis français/sombre sous X11 privé, premier clic/Bas/Haut, scopes, Annuler/Appliquer et persistance après redémarrage ; deux fermetures normales. CI désactivée, aucune qualification du serveur par ce parcours.
 - [x] [Paquet exact](../../artifacts/linux/appveyor-20261019/review/root-package-review.json), cinq phases et installation DPKG isolée vérifiées ; 39916592 octets. Ni installation hôte ni push.
-- [ ] Rapport HTML embarqué Windows, serveur AppVeyor réel/authentifié et contrat v2, interactions installées et variantes Wayland/IME/DPI/accessibilité. Azure DevOps/Jenkins restent deux pages N0 ; treize familles ouvertes, aucun N4.
+- [ ] Rapport HTML embarqué Windows, serveur AppVeyor réel/authentifié et contrat v2, interactions installées et variantes Wayland/IME/DPI/accessibilité. À la clôture AppVeyor, Azure DevOps/Jenkins restaient deux pages N0 ; leur portage ciblé est décrit ci-dessous. Treize familles ouvertes, aucun N4.
+
+## Fenêtres portables et CI — lot vérifié du 20 octobre
+
+- [x] Azure DevOps/TFS : trois champs et deux liens Windows, PAT masqué lié aux URLs concrètes du dépôt, XML scoped et lecteur CI commun ; ADR0114. Donate : texte/badge originaux, fenêtre possédée et activation externe explicite ; ADR0115.
+- [x] Jenkins : trois champs, projets/dossiers/multibranch et variables, Guest/Basic privé par endpoint, lectures bornées/cache/ETag et statuts communs ; ADR0116. Les six fournisseurs CI de l'inventaire ont désormais un équivalent ; cela ne clôt pas leurs écarts.
+- [x] Git Advanced : huit triétats Windows dans la session Config/Advanced, portées et publication communes ; ADR0117. Checkout revision : formulaire compact, picker/Force et Before/native/After avec vrais effets Git ; ADR0118.
+- [x] Aide CLI autonome, visualiseur de texte en mémoire et Quick view readonly, aide Scripts non modale et introduction Plugins ; ADR0119–0122. FormEdit ne renvoie pas de saisie et la page d'introduction ne contient pas de catalogue d'activation.
+
+[Suites complètes W7](../../artifacts/linux/jenkins-20261020/review/root-full-review.json) sur `63812eebc4b0994f625b7da259cee72735c46dd4` : 3217/3217 Desktop, 1026/1026 Core, 35/35 Plugins ; anciens scénarios conservés, dont un libellé Core renommé avec ses corps de tests inchangés et vérifiés dans la revue de filiation. Les ciblés ayant révélé les défauts Quick view/focus restent avec leurs résultats bruts ; la correction finale et le parcours historique Recovery passent dans cette source.
+
+[Natif W7](../../artifacts/linux/jenkins-20261020/native-01/root-native-review.json) : Jenkins anglais/clair et français/sombre, premier clic/Haut/Bas, portées/credentials/Cancel/Apply/redémarrage, puis `help` autonome ; Git Advanced, Plugins, aide Scripts, Checkout/Échap et Recovery Quick view inspectés sans mutation Git. [Azure/Donate natif W6](../../artifacts/linux/azuredevops-20261019/native-01/root-native-review.json) reste lié à `2e96c8dea`, sans transfert implicite à W7. [Paquet exact isolé](../../artifacts/linux/jenkins-20261020/review/root-package-review.json) : cinq phases à 0, **39977848 octets**, SHA256 `8a283b832a92feec91f3d72cede0f91934a50c116d187df2c36f6d0467dbe5e3`, 402 fichiers contrôlés ; aucune installation hôte ni push.
+
+- [ ] Rapport HTML CI embarqué, services/authentifications réels, GCM/SSO et audit étendu Wayland/IME/DPI/accessibilité ; interactions du paquet installé distinctes des tests et de DPKG isolé.
+- [ ] Resserrer la table Recovery : les SHA complets se replient en lignes trop hautes dans le parcours natif W7. Conserver la copie littérale des hashes.
+- [ ] Tranche suivante préparée : FormEditor, Fork/Clone GitHub et Confirmations. Sources et tests candidats distincts ; aucune qualification transférée avant leur exécution.
+
+Les niveaux N2 de ces neuf entrées restent partiels ; les treize familles globales restent ouvertes, aucun N4.
