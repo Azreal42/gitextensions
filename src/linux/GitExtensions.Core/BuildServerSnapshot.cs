@@ -75,4 +75,14 @@ public sealed class BuildServerSnapshot
             (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated, snapshot.Diagnostics);
     }
 
+    public static BuildServerSnapshot FromJenkins(JenkinsSnapshot snapshot, Func<JenkinsBuild, Uri?> page)
+    {
+        BuildServerRun Run(JenkinsBuild build) => new(build.BuildId, build.ProjectId, build.Description,
+            (BuildServerBuildStatus)build.Status, Array.AsReadOnly(build.CommitHashes.ToArray()), build.StartedAt,
+            build.UpdatedAt, page(build), build.Tooltip, ShowInBuildReportTab: build.ShowInBuildReportTab,
+            DurationMilliseconds: build.DurationMilliseconds);
+        return new(snapshot.Builds.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
+            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated, snapshot.Diagnostics);
+    }
+
 }

@@ -16,13 +16,16 @@ internal sealed class BuildServerCredentialsDialog : Window
     private readonly RadioButton _guest, _user, _bearer;
     private readonly TextBox _username, _password, _token;
     private bool _decided;
+    private readonly bool _allowBearerToken;
+    private readonly Button _ok;
 
     internal BuildServerCredentials? Result { get; private set; }
 
     internal BuildServerCredentialsDialog(string buildServerUniqueKey, IBuildServerCredentials? credentials = null,
-        TranslationCatalog? translations = null)
+        TranslationCatalog? translations = null, bool allowBearerToken = true)
     {
         ArgumentNullException.ThrowIfNull(buildServerUniqueKey);
+        _allowBearerToken = allowBearerToken;
         BuildServerCredentials initial = Clone(credentials);
         if (!Enum.IsDefined(initial.BuildServerCredentialsType)) { throw new ArgumentOutOfRangeException(nameof(credentials)); }
         TranslationCatalog text = translations ?? TranslationCatalog.LoadDefault();
@@ -45,13 +48,14 @@ internal sealed class BuildServerCredentialsDialog : Window
         _guest = Choice("radioButtonGuestAccess", "Guest access", initial.BuildServerCredentialsType == BuildServerCredentialsType.Guest);
         _user = Choice("radioButtonAuthenticatedUser", "Authenticated user", initial.BuildServerCredentialsType == BuildServerCredentialsType.UsernameAndPassword);
         _bearer = Choice("radioButtonBearerToken", "Bearer token", initial.BuildServerCredentialsType == BuildServerCredentialsType.BearerToken);
+        _bearer.IsEnabled = allowBearerToken;
         _username = Input("textBoxUserName", initial.Username, secret: false);
         _password = Input("textBoxPassword", initial.Password, secret: true);
         _token = Input("textBoxBearerToken", initial.BearerToken, secret: true);
         Grid fields = new() { Name = "BuildServerCredentialFields", ColumnDefinitions = new("Auto,*"), RowDefinitions = new("26,26,26") };
         Field(0, "label2", "Username:", _username); Field(1, "label3", "Password:", _password); Field(2, "label4", "Bearer token:", _token);
         StackPanel modes = new() { Name = "BuildServerCredentialModes", Height = 75, Spacing = 1, Children = { _guest, _user, _bearer } };
-        Button ok = new() { Name = "buttonOK", Content = T("buttonOK", "OK"), IsDefault = true, MinWidth = 75, Height = 25, MinHeight = 0 };
+        Button ok = _ok = new() { Name = "buttonOK", Content = T("buttonOK", "OK"), IsDefault = true, MinWidth = 75, Height = 25, MinHeight = 0 };
         Button cancel = new() { Name = "buttonCancel", Content = T("buttonCancel", "Cancel"), IsCancel = true, MinWidth = 75, Height = 25, MinHeight = 0 };
         ok.Click += (_, _) => Accept(); cancel.Click += (_, _) => Cancel();
         StackPanel actions = new() { Name = "BuildServerCredentialsButtons", Orientation = Orientation.Horizontal,
@@ -107,12 +111,13 @@ internal sealed class BuildServerCredentialsDialog : Window
     private void UpdateMode()
     {
         _username.IsEnabled = _password.IsEnabled = _user.IsChecked == true;
-        _token.IsEnabled = _bearer.IsChecked == true;
+        _token.IsEnabled = _allowBearerToken && _bearer.IsChecked == true;
+        _ok.IsEnabled = _allowBearerToken || _bearer.IsChecked != true;
     }
 
     private void Accept()
     {
-        if (_decided || !IsVisible) { return; }
+        if (_decided || !IsVisible || !_allowBearerToken && _bearer.IsChecked == true) { return; }
         BuildServerCredentials accepted = new()
         {
             BuildServerCredentialsType = _user.IsChecked == true ? BuildServerCredentialsType.UsernameAndPassword

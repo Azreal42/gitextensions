@@ -19,7 +19,7 @@ internal abstract class BuildServerScopedSettingsPage : UserControl
     protected readonly TranslationCatalog Translations;
     private readonly StackPanel _fields = new() { Spacing = 5 };
     private readonly TextBlock _notice = new() { TextWrapping = TextWrapping.Wrap };
-    private static readonly string[] Providers = [GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName, GitLabSettings.ProviderName, AppVeyorSettings.ProviderName, AzureDevOpsSettings.ProviderName];
+    private static readonly string[] Providers = [GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName, GitLabSettings.ProviderName, AppVeyorSettings.ProviderName, AzureDevOpsSettings.ProviderName, JenkinsSettings.ProviderName];
     private readonly Dictionary<string, Control> _editors = [];
     private readonly Dictionary<GitDistributedSettingsScope, RadioButton> _scopes = [];
     private readonly WrapPanel _header;
@@ -151,17 +151,18 @@ internal sealed class GitHubActionsSettingsPage : BuildServerScopedSettingsPage
     }
 }
 
-internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSettingsPage
+internal sealed partial class BuildServerIntegrationSettingsPage : BuildServerScopedSettingsPage
 {
     internal GitHubActionsSettingsPage GitHubPage { get; }
     internal TeamCitySettingsPage TeamCityPage { get; }
     internal GitLabSettingsPage GitLabPage { get; }
     internal AppVeyorSettingsPage AppVeyorPage { get; }
     internal AzureDevOpsSettingsPage AzureDevOpsPage { get; }
-    internal override void PrepareSave() { base.PrepareSave(); AppVeyorPage.PrepareSave(); AzureDevOpsPage.PrepareSave(); }
-    internal bool IsBusy => TeamCityPage.IsBusy || GitLabPage.IsBusy || AzureDevOpsPage.IsBusy;
+    internal JenkinsSettingsPage JenkinsPage { get; }
+    internal override void PrepareSave() { base.PrepareSave(); AppVeyorPage.PrepareSave(); AzureDevOpsPage.PrepareSave(); JenkinsPage.PrepareSave(); }
+    internal bool IsBusy => TeamCityPage.IsBusy || GitLabPage.IsBusy || AzureDevOpsPage.IsBusy || _credentialsBusy;
     internal event Action? BusyChanged;
-    internal Task BeginClose() => Task.WhenAll(TeamCityPage.BeginClose(), GitLabPage.BeginClose(), AzureDevOpsPage.BeginClose());
+    internal Task BeginClose() => Task.WhenAll(TeamCityPage.BeginClose(), GitLabPage.BeginClose(), AzureDevOpsPage.BeginClose(), BeginCredentialsClose());
     internal BuildServerIntegrationSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, Action? createToken = null, Action<Uri>? openBuildServerUri = null) : base(session, translations, "BuildServerIntegrationSettingsPage")
     {
         Boolean(GitHubActionsSettings.EnableKey, "EnableIntegration", "Enable build server integration");
@@ -171,9 +172,13 @@ internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSett
         GitLabPage = new(session, translations, openBuildServerUri, embedded: true); Add(GitLabPage);
         AppVeyorPage = new(session, translations, embedded: true); Add(AppVeyorPage);
         AzureDevOpsPage = new(session, translations, openBuildServerUri, embedded: true); Add(AzureDevOpsPage);
+        JenkinsPage = new(session, translations, embedded: true); Add(JenkinsPage);
+        InitializeJenkinsCredentials();
         AzureDevOpsPage.BusyChanged += () => BusyChanged?.Invoke();
         GitLabPage.BusyChanged += () => BusyChanged?.Invoke();
         TeamCityPage.BusyChanged += () => { SetFieldsEnabled(!TeamCityPage.IsBusy); BusyChanged?.Invoke(); };
+        ScopeChanged += JenkinsPage.SetScope; ScopeChanged += _ => InvalidateJenkinsCredentials();
+        JenkinsPage.DraftChanged += InvalidateJenkinsCredentials;
         ScopeChanged += GitHubPage.SetScope; ScopeChanged += TeamCityPage.SetScope; ScopeChanged += GitLabPage.SetScope; ScopeChanged += AppVeyorPage.SetScope; ScopeChanged += AzureDevOpsPage.SetScope;
         DraftChanged += () => UpdateProvider(userInitiated: true);
         Notice("Build pages open only when you explicitly choose Show build page."); ShowLoadState();
@@ -182,6 +187,8 @@ internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSett
         if (TeamCityPage is not null) { TeamCityPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == TeamCitySettings.ProviderName; }
         if (GitLabPage is not null) { bool active = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitLabSettings.ProviderName; GitLabPage.IsVisible = active; GitLabPage.SetProviderActive(active); }
         if (AppVeyorPage is not null) { bool active = Session.Read(CurrentScope, AppVeyorSettings.ProviderKey) == AppVeyorSettings.ProviderName; AppVeyorPage.IsVisible = active; AppVeyorPage.SetProviderActive(active, userInitiated); }
-        if (AzureDevOpsPage is not null) { bool active = Session.Read(CurrentScope, AzureDevOpsSettings.ProviderKey) == AzureDevOpsSettings.ProviderName; AzureDevOpsPage.IsVisible = active; AzureDevOpsPage.SetProviderActive(active, userInitiated); } }
-    internal override void ShowLoadState() { base.ShowLoadState(); UpdateProvider(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); GitLabPage?.ShowLoadState(); AppVeyorPage?.ShowLoadState(); AzureDevOpsPage?.ShowLoadState(); }
+        if (AzureDevOpsPage is not null) { bool active = Session.Read(CurrentScope, AzureDevOpsSettings.ProviderKey) == AzureDevOpsSettings.ProviderName; AzureDevOpsPage.IsVisible = active; AzureDevOpsPage.SetProviderActive(active, userInitiated); }
+        if (JenkinsPage is not null) { bool active = Session.Read(CurrentScope, JenkinsSettings.ProviderKey) == JenkinsSettings.ProviderName; JenkinsPage.IsVisible = active; JenkinsPage.SetProviderActive(active, userInitiated); }
+        if (userInitiated) { InvalidateJenkinsCredentials(); } else { UpdateJenkinsCredentials(); } }
+    internal override void ShowLoadState() { base.ShowLoadState(); UpdateProvider(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); GitLabPage?.ShowLoadState(); AppVeyorPage?.ShowLoadState(); AzureDevOpsPage?.ShowLoadState(); JenkinsPage?.ShowLoadState(); UpdateJenkinsCredentials(); }
 }

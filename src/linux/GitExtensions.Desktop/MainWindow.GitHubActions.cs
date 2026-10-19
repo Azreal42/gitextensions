@@ -183,7 +183,7 @@ public sealed partial class MainWindow
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
             string provider = xml.GetValue(GitHubActionsSettings.ProviderKey) ?? "";
             bool active = GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.EnableKey)) == true
-                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName or AppVeyorSettings.ProviderName or AzureDevOpsSettings.ProviderName;
+                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName or AppVeyorSettings.ProviderName or AzureDevOpsSettings.ProviderName or JenkinsSettings.ProviderName;
             if (_buildServerProvider != provider) { SetGitHubActionsError(null); _gitHubActionsSnapshot = null; }
             _buildServerProvider = provider.Length == 0 ? "Build server" : provider;
             _gitHubActionsEnabled = active;
@@ -195,7 +195,7 @@ public sealed partial class MainWindow
                 _gitHubActionsClient = null; _gitHubActionsConfiguration = null;
                 SetGitHubActionsError(null); PublishGitHubActionsStatus(); return;
             }
-            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; AppVeyorSettings? appVeyor = null; AzureDevOpsSettings? azureDevOps = null; IReadOnlySet<string>? admittedCommits = null; BuildServerCredentials? credentials = null;
+            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; AppVeyorSettings? appVeyor = null; AzureDevOpsSettings? azureDevOps = null; JenkinsSettings? jenkins = null; IReadOnlySet<string>? admittedCommits = null; BuildServerCredentials? credentials = null;
             string configuration;
             if (provider == GitHubActionsSettings.ProviderName)
             {
@@ -228,6 +228,16 @@ public sealed partial class MainWindow
                 configuration = string.Join('\0', provider, appVeyor.AccountName, appVeyor.AccountToken,
                     appVeyor.ProjectName, appVeyor.LoadTestsResults, string.Join('\n', admittedCommits.Order(StringComparer.Ordinal)));
             }
+            else if (provider == JenkinsSettings.ProviderName)
+            {
+                BuildServerRepositoryVariables variables = await repository.GetBuildServerRepositoryVariablesAsync(token);
+                jenkins = JenkinsSettings.Read(xml, variables.Expand); jenkins.Validate();
+                BuildServerCredentialsSnapshot saved = (CredentialsStoreOverride ?? new BuildServerCredentialsStore()).Load(provider, jenkins.ServerUri);
+                if (!saved.Exists) { throw new InvalidOperationException("Configure Jenkins credentials in Settings."); }
+                credentials = saved.Credentials;
+                configuration = string.Join('\0', provider, jenkins.ServerUri.AbsoluteUri, jenkins.ProjectName, jenkins.IgnoreBuildBranch,
+                    credentials.BuildServerCredentialsType, credentials.Username, credentials.Password, credentials.BearerToken);
+            }
             else
             {
                 teamCity = TeamCitySettings.Read(xml, Path.GetFileName(repository.Path.TrimEnd(Path.DirectorySeparatorChar))); teamCity.Validate();
@@ -253,6 +263,7 @@ public sealed partial class MainWindow
                     : gitLab is not null ? new GitLabBuildSource(GitLabClientFactory(gitLab))
                     : azureDevOps is not null ? new AzureDevOpsBuildSource(AzureDevOpsClientFactory(azureDevOps))
                     : appVeyor is not null ? new AppVeyorBuildSource(AppVeyorClientFactory(appVeyor, admittedCommits!))
+                    : jenkins is not null ? new JenkinsBuildSource(JenkinsClientFactory(jenkins, credentials!))
                     : new TeamCityBuildSource(TeamCityClientFactory(teamCity!, credentials!));
                 _gitHubActionsConfiguration = configuration;
             }
@@ -262,7 +273,7 @@ public sealed partial class MainWindow
             PublishGitHubActionsStatus();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or AzureDevOpsException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
+        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or AzureDevOpsException or JenkinsException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
             or System.Xml.XmlException or InvalidDataException or GitCommandException or InvalidOperationException)
         {
             if (!token.IsCancellationRequested && !_gitHubActionsClosing && ReferenceEquals(_repository, repository))
@@ -274,7 +285,7 @@ public sealed partial class MainWindow
                     _gitHubActionsClient = null;
                 }
                 // Only our fixed, credential-free API messages may be shown. Never log payloads, settings or transport exceptions.
-                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or AzureDevOpsException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
+                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or AzureDevOpsException or JenkinsException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
                 PublishGitHubActionsStatus();
             }
         }

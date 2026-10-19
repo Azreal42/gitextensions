@@ -4,7 +4,7 @@ namespace GitExtensions.Linux.Desktop;
 internal sealed partial class GitHubActionsSettingsSession
 {
     private static readonly HashSet<string> KnownKeys = GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys)
-        .Concat(GitLabSettings.Keys).Concat(AppVeyorSettings.Keys).Concat(AzureDevOpsSettings.Keys).ToHashSet(StringComparer.Ordinal);
+        .Concat(GitLabSettings.Keys).Concat(AppVeyorSettings.Keys).Concat(AzureDevOpsSettings.Keys).Concat(JenkinsSettings.Keys).ToHashSet(StringComparer.Ordinal);
     private readonly GitRepository? _repository;
     private readonly DistributedSettingsWorkspace _workspace;
     private readonly Dictionary<GitDistributedSettingsScope, Dictionary<string, string?>> _intentions = [];
@@ -108,6 +108,9 @@ internal sealed partial class GitHubActionsSettingsSession
         AzureDevOpsSettings azureDevOps = AzureDevOps();
         if (azureDevOps.Active) { azureDevOps.Validate(); }
         ValidateAzureDevOpsEdits();
+        JenkinsSettings jenkins = Jenkins();
+        if (jenkins.Active) { jenkins.Validate(); }
+        ValidateJenkinsEdits();
         TeamCitySettings teamCity = TeamCity();
         if (teamCity.Active) { teamCity.Validate(); }
         // The original settings page rejects malformed regex even before integration is enabled.

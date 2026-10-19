@@ -48,3 +48,11 @@ internal sealed class AzureDevOpsBuildSource(IAzureDevOpsClient client) : IBuild
         => BuildServerSnapshot.FromAzureDevOps(await client.ReadAsync(force, token), client.BuildPageUri);
     public ValueTask DisposeAsync() => client.DisposeAsync();
 }
+
+internal sealed class JenkinsBuildSource(IJenkinsClient client) : IBuildServerSource
+{
+    public TimeSpan? PreferredPollInterval => TimeSpan.FromSeconds(10);
+    public async Task<BuildServerSnapshot> ReadAsync(bool force, CancellationToken token)
+        => BuildServerSnapshot.FromJenkins(await client.ReadAsync(force, token), client.BuildPageUri);
+    public ValueTask DisposeAsync() => client.DisposeAsync();
+}
