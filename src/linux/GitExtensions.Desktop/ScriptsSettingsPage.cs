@@ -24,7 +24,8 @@ internal sealed class ScriptsSettingsPage : UserControl
     private ScriptsPreferencesLoadResult _baseline;
     private int? _selectedId;
     private bool _loading, _closed;
-    private Window? _owner, _help;
+    private Window? _owner;
+    private SimpleHelpDisplayDialog? _help;
 
     internal IReadOnlyList<ScriptDefinition> Draft => Array.AsReadOnly(_scripts.ToArray());
     internal bool IsDirty => !_scripts.SequenceEqual(_baseline.Scripts);
@@ -111,6 +112,7 @@ internal sealed class ScriptsSettingsPage : UserControl
         ScrollViewer notice = new() { Content = _notice, MaxHeight = 65 }; Grid.SetRow(notice, 3); root.Children.Add(notice);
         Content = root;
         AttachedToVisualTree += (_, _) => AttachOwner();
+        DetachedFromVisualTree += (_, _) => _help?.Close();
         RefreshRows(); ShowSelected();
         if (baseline.Error is not null) { ShowSaveError(baseline.Error); }
     }
@@ -287,11 +289,12 @@ internal sealed class ScriptsSettingsPage : UserControl
     {
         AttachOwner(); if (_closed || _owner is null) { return; }
         if (_help is { IsVisible: true }) { _help.Activate(); return; }
-        TextBox text = new() { Name = "ScriptArgumentsHelpText", IsReadOnly = true, AcceptsReturn = true, Text = Text("_scriptSettingsPageHelpDisplayContent", ArgumentsHelp) };
-        ScrollViewer.SetHorizontalScrollBarVisibility(text, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
-        ScrollViewer.SetVerticalScrollBarVisibility(text, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
-        Window help = new() { Name = "ScriptArgumentsHelp", Title = Text("_scriptSettingsPageHelpDisplayArgumentsHelp", "Arguments help"), Width = 620, Height = 500,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner, Content = text };
+        SimpleHelpDisplayDialog help = new("ScriptArgumentsHelpText")
+        {
+            Name = "ScriptArgumentsHelp", RequestedThemeVariant = _owner.ActualThemeVariant,
+            DialogTitle = Text("_scriptSettingsPageHelpDisplayArgumentsHelp", "Arguments help"),
+            ContentText = Text("_scriptSettingsPageHelpDisplayContent", ArgumentsHelp)
+        };
         help.Closed += (_, _) => { if (ReferenceEquals(_help, help)) { _help = null; } };
         _help = help; help.Show(_owner);
     }

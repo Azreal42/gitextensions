@@ -215,6 +215,9 @@ internal sealed class DesktopSettingsDialog : Window
                 { Name = "GitRootIntroduction", Margin = new Thickness(12), Text = translations.Translate("GitRootIntroductionPage", "label1", "Text", "Select one of the subnodes to view or edit the Git settings"), TextWrapping = TextWrapping.Wrap },
                 "GitLogo16.png", Children: gitChildren, NavigationTitle: "Git"));
         }
+        roots.Add(new("Plugins", PageTitle("PluginRootIntroductionPage", "Plugins Settings"),
+            new PluginRootIntroductionPage(translations), "plugin.png",
+            NavigationTitle: translations.Translate("PluginsSettingsGroup", "$this", "Title", "Plugins")));
         Navigation = new(roots, translations);
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
         Button cancel = new() { Name = "CancelDesktopSettings", Content = translations.Translate("Cancel"), MinWidth = 75, IsCancel = true };
