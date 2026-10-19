@@ -136,6 +136,32 @@ public sealed class TeamCityIntegrationTests
     }
 
     [AvaloniaTest]
+    public async Task InvalidNewCredentialsClearPriorBuildsEvenWhenTheReplacementClientConstructorThrows()
+    {
+        using DetailedSettingsTestScope f = await DetailedSettingsTestScope.CreateAsync(); Enable(f);
+        f.Desktop.Save(new() { Language = "English", StartWithRecentWorkingDir = false });
+        string sha = (await f.Repository!.GetLogAsync(1, all: false)).Single().Hash;
+        BuildServerCredentialsStore store = GuestStore(f); FakeClient previous = new(sha); int factories = 0;
+        MainWindow window = new() { GitHubActionsPollInterval = Timeout.InfiniteTimeSpan, CredentialsStoreOverride = store };
+        window.TeamCityClientFactory = (settings, credentials) => ++factories == 1 ? previous : new TeamCityApiClient(settings, credentials);
+        window.Show();
+        try
+        {
+            await window.OpenRepositoryAsync(f.Repository.Path); await Until(() => window.BuildServerStatusFor(sha) is not null);
+            Uri endpoint = new("https://ci.example/one/");
+            store.SaveChanges(store.Load(TeamCitySettings.ProviderName, endpoint), new BuildServerCredentials
+                { BuildServerCredentialsType = BuildServerCredentialsType.BearerToken, BearerToken = "" });
+            // The real client rejects an explicitly saved empty token before any HTTP request.
+            await window.RefreshGitHubActionsNowAsync(); Pump(window);
+            Assert.That(factories, Is.EqualTo(2)); Assert.That(previous.Disposed, Is.True);
+            Assert.That(window.GitHubActionsError, Is.Not.Null);
+            Assert.That(window.BuildServerStatusFor(sha), Is.Null, "A failed replacement must never retain the previous client's statuses or links.");
+            Assert.That(window.BuildGitHubActionsShowBuildPageMenu().IsEnabled, Is.False);
+        }
+        finally { await window.CloseGitHubActionsAsync(); window.Close(); }
+    }
+
+    [AvaloniaTest]
     public async Task RepositorySwitchAndCloseDrainTeamCityWithoutLatePublication()
     {
         using DetailedSettingsTestScope f = await DetailedSettingsTestScope.CreateAsync(); Enable(f);

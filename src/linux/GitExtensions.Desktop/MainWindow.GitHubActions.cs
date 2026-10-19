@@ -213,11 +213,15 @@ public sealed partial class MainWindow
             configurationResolved = true;
             if (_gitHubActionsClient is null || configuration != _gitHubActionsConfiguration)
             {
-                if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); }
+                IBuildServerSource? previous = _gitHubActionsClient;
+                _gitHubActionsClient = null; _gitHubActionsConfiguration = null; _gitHubActionsSnapshot = null;
+                // Invalidate first: even a replacement constructor can reject changed credentials/settings.
+                PublishGitHubActionsStatus();
+                if (previous is not null) { await previous.DisposeAsync(); }
+                token.ThrowIfCancellationRequested();
                 _gitHubActionsClient = github is not null ? new GitHubActionsBuildSource(GitHubActionsClientFactory(github))
                     : new TeamCityBuildSource(TeamCityClientFactory(teamCity!, credentials!));
-                _gitHubActionsConfiguration = configuration; _gitHubActionsSnapshot = null;
-                PublishGitHubActionsStatus();
+                _gitHubActionsConfiguration = configuration;
             }
             BuildServerSnapshot snapshot = await _gitHubActionsClient.ReadAsync(force, token);
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
