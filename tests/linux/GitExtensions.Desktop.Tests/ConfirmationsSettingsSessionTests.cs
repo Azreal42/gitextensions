@@ -9,7 +9,7 @@ namespace GitExtensions.Desktop.Tests;
 [NonParallelizable]
 public sealed class ConfirmationsSettingsSessionTests
 {
-    private static IEnumerable<string> Choices => ConfirmationSettingsCatalog.Fields.Select(field => field.Name);
+    private static IEnumerable<string> Choices => ConfirmationSettingsCatalog.Fields.Select(setting => setting.Name);
 
     [TestCaseSource(nameof(Choices))]
     public void EachChoiceWritesItsRealWorkflowKeyAndPreservesForeignRawValues(string name)
