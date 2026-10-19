@@ -1,11 +1,11 @@
 {
-  "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
-  "trx": "artifacts/linux/pull-requests-20261019/desktop-full-03/results/desktop.trx",
-  "trx_sha256": "5ea58fa0b649a3d183aad3cf6be68562ed79f6c1920883155b0705c8e62df927",
+  "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+  "trx": "artifacts/linux/teamcity-20261019/desktop-full-02/results/desktop.trx",
+  "trx_sha256": "55519e092665110d2f9bc80aeea08678c2ada6bc05a3d91a163c6f76b901a6b7",
   "counters": {
-    "total": "2889",
-    "executed": "2889",
-    "passed": "2889",
+    "total": "2969",
+    "executed": "2969",
+    "passed": "2969",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -131,6 +131,9 @@
     },
     "BuildServerCredentialsDialogTests": {
       "Passed": 17
+    },
+    "BuildServerCredentialsStoreTests": {
+      "Passed": 45
     },
     "CheckoutInitialLayoutTests": {
       "Passed": 3
@@ -738,6 +741,12 @@
     "SubmodulesDialogTests": {
       "Passed": 13
     },
+    "TeamCityBuildChooserDialogTests": {
+      "Passed": 28
+    },
+    "TeamCityIntegrationTests": {
+      "Passed": 7
+    },
     "TranslationCatalogTests": {
       "Passed": 11
     },
@@ -777,64 +786,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
-      "execution_source_sha": null,
+      "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+      "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 848,
-      "total": 848,
-      "execution_result": "artifacts/linux/pull-requests-20261019/core-full-01/result.json",
-      "execution_result_sha256": "ac8ff916f6f4e41c8a5d25fdc9c5e2a1274168fce50471eb25a037897c54a823",
+      "passed": 873,
+      "total": 873,
+      "execution_result": "artifacts/linux/teamcity-20261019/core-full-02/result.json",
+      "execution_result_sha256": "86886c01baf1c92f8fffdc822d5e4859b9863c90beb0e4e2b332fa940b2ffbb9",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
-        "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
+        "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
+        "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
-        "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+        "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
+        "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
       },
-      "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
+      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W3; no exclusions."
     },
     "plugins": {
-      "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
-      "execution_source_sha": null,
+      "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+      "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/pull-requests-20261019/plugins-full-01/result.json",
-      "execution_result_sha256": "9c5d91bf88eebcd33cb472da1b9011183a0fe0c59583455c4594072213198822",
+      "execution_result": "artifacts/linux/teamcity-20261019/plugins-full-02/result.json",
+      "execution_result_sha256": "7c07957d939a3743f1d2aa352ed8e7d9a806613055145db7f1ae31b5d2f8c494",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
-        "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
+        "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
+        "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
-        "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+        "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
+        "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
       },
-      "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
+      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W3; no exclusions."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
-    "execution_source_sha": null,
+    "worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
+    "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
-      "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+      "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
+      "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
     },
     "root_review": {
-      "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
-      "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
+      "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
+      "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
     },
-    "meaning": "Actual W full executions with frozen source/config scope and immutable binaries. Exact feature imported; five unrelated preexisting Modal edits remain in R, so current R global equivalence stays false. Core/Plugins qualification explicitly excludes the three later Desktop-only source edits, not a fabricated global manifest equality. No primary rerun or global native/package UI parity."
+    "meaning": "Actual fresh W3 full runs on frozen feature-source bytes and immutable binaries built after the correction commit; metadata/build-generated inputs and all assets are not implied by the extension-only manifests. Primary retains five unrelated Modal edits; no primary full or installed interactive TeamCity acceptance."
   }
 }

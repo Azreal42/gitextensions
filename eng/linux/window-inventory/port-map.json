@@ -105,8 +105,8 @@
         "AvatarService",
         "MainWindow@InitializeAvatarLifetime"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions partage les réglages scoped avec Settings, états par SHA dans la grille, liste de runs et Show build page externe ; autres fournisseurs et parité du rapport Windows ouverts (ADR0109).",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions et TeamCity partagent les réglages par portée, les états par SHA dans la grille, la liste de builds et Show build page externe ; autres fournisseurs et parité du rapport Windows ouverts (ADR0109/0111).",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions et TeamCity ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -173,7 +173,8 @@
         "0057",
         "0078",
         "0108",
-        "0109"
+        "0109",
+        "0111"
       ],
       "extra_evidence": [
         {
@@ -1936,24 +1937,30 @@
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
       "feature": "Identifiants du serveur CI",
       "group": "hosting",
-      "level": "N1",
+      "level": "N2",
       "linux": [
         "BuildServerCredentialsDialog",
         "GitHubHostingSettingsDialog",
         "GitHubHostingPreferencesStore",
         "GitHubHostingCredentials",
-        "file:src/linux/GitExtensions.Core/GitHubHostingSettings.cs"
+        "file:src/linux/GitExtensions.Core/GitHubHostingSettings.cs",
+        "BuildServerCredentialsStore",
+        "BuildServerCredentialsSnapshot",
+        "TeamCitySettingsPage"
       ],
-      "implemented": "Dialogue compact basé sur le modèle original Guest/UsernameAndPassword/BearerToken, champs inactifs mémorisés et secrets masqués ; brouillon cloné, OK nouveau modèle, Cancel/Escape null. Consommateur réel dans les paramètres Hosting GitHub avec Save parent et origine API explicite. Suites complètes, variantes EN/FR clair/sombre headless et parcours source natif anglais/clair ciblé vérifiés (ADR0110).",
-      "remaining": "N1 : raccordement Jenkins/TeamCity et autres consommateurs CI historiques absent ; le token CI Actions reste séparé. Identifiants locaux sans coffre ; audits natifs étendus, autres langues et plateformes ouverts. Le consommateur Hosting ne certifie pas toute l’authentification CI.",
+      "implemented": "Dialogue compact original Guest/UsernameAndPassword/BearerToken, champs inactifs conservés et secrets masqués ; brouillons clonés et Save parent. Consommateurs Hosting GitHub et TeamCity effectifs. Store CI utilisateur séparé du XML, provider+origine+basepath, no-op, fusion de champs et fichier 0600 ; les changements d’instance ne reprennent aucun ancien statut/lien. Suites complètes et tests d’intégration vérifiés ; limites natives historiques ADR0110 et actuelles ADR0111 distinctes.",
+      "remaining": "N2 : Jenkins/autres consommateurs CI historiques et authentification intégrée Windows absents ; token CI Actions séparé. Identifiants locaux en clair sans coffre ; audit interactif TeamCity et autres plateformes ouvert. Le store coopératif/optimiste et les fichiers XML ne forment pas une transaction globale.",
       "visual": "rapproche",
       "tests": [
         "BuildServerCredentialsDialogTests",
         "GitHubHostingSettingsDialogTests",
-        "GitHubHostingPreferencesStoreTests"
+        "GitHubHostingPreferencesStoreTests",
+        "BuildServerCredentialsStoreTests",
+        "TeamCityIntegrationTests"
       ],
       "adr": [
-        "0110"
+        "0110",
+        "0111"
       ]
     },
     "GitUI.CommandsDialogs.RepoHosting.CreatePullRequestForm": {
@@ -2378,13 +2385,23 @@
     "TeamCityIntegration.Settings.TeamCityBuildChooser": {
       "feature": "CI : choix de build TeamCity",
       "group": "plugins",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Aucune intégration TeamCity fonctionnelle dans le port Linux.",
-      "remaining": "Fournisseur, requêtes, grille de builds et sélection à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "TeamCityBuildChooserDialog",
+        "TeamCityApiClient",
+        "TeamCitySettings",
+        "file:src/linux/GitExtensions.Core/TeamCityModels.cs"
+      ],
+      "implemented": "Sélecteur compact Windows 451×379, projets hiérarchiques triés par nom et configurations chargées à l’expansion puis triées par ID ; restauration exacte, OK uniquement sur un build et double-clic natif. Focus initial, flèches, Tab et annulation/drainage testés ; captures EN clair/FR sombre contrôlées. Lectures REST/XML réelles sur transports de test, sans démarrer le polling du chooser.",
+      "remaining": "N2 : serveur TeamCity réel et authentifié, NTLM/SSO Windows non repris, grands arbres et audit interactif étendu Wayland/DPI/accessibilité ouverts. Les captures headless et le smoke du paquet ne certifient pas les gestes natifs installés.",
+      "visual": "rapproche",
+      "tests": [
+        "TeamCityBuildChooserDialogTests",
+        "TeamCityIntegrationTests"
+      ],
+      "adr": [
+        "0111"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.AutoLayoutSettingsPage": {
       "feature": "Infrastructure de fenêtres",
@@ -2578,18 +2595,28 @@
         "GitHubActionsApiClient",
         "GitHubActionsSettings",
         "GitHubActionsRunSnapshot",
-        "file:src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs"
+        "file:src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs",
+        "TeamCitySettingsPage",
+        "TeamCitySettings",
+        "TeamCityApiClient",
+        "BuildServerCredentialsStore",
+        "BuildServerSnapshot",
+        "file:src/linux/GitExtensions.Desktop/BuildServerSource.cs"
       ],
-      "implemented": "Page CI : Enable integration, Show build result page, fournisseur GitHub Actions et champs API/owner/repository/token dans les scopes XML Windows. Lecture GET de runs, états regroupés par SHA dans la grille, liste locale de runs et Show build page explicite dans le navigateur externe ; publication après Apply, polling annulable et fermeture drainée.",
-      "remaining": "Build report limité à une liste de runs, sans viewer HTML/détails jobs/logs équivalents Windows. GitHub Actions seul ; dialogue générique de credentials, TeamCity et autres fournisseurs CI absents. Aucun lancement/annulation de workflow ou gestion PR ; qualification HTTP contrôlée, natif et paquet distincts. N2, aucune parité globale. Lecture anonyme du client compilé sur Azreal42/gitextensions vérifiée (GET200 puis ETag304) ; interface live authentifiée/Enterprise et parité étendue restent ouvertes.",
+      "implemented": "Paramètres et portées CI partagés pour GitHub Actions et TeamCity. Un seul polling, projection BuildServerSnapshot, cellules de statuts et rapport ; sélection/lignes/focus conservés à la publication et fermeture drainée. TeamCity ajoute chooser, collage de lien et identifiants utilisateur distincts des XML. Suites complètes vérifiées ; pages de build ouvertes uniquement sur action explicite.",
+      "remaining": "N2 : AppVeyor, Azure DevOps, GitLab et Jenkins absents. Rapport limité à une liste et un navigateur externe, sans viewer HTML/jobs/logs Windows. NTLM/SSO non repris ; serveur TeamCity réel, GHA authentifié/Enterprise et audit interactif étendu restent ouverts. PR GitHub utilise le client distinct ADR0110 ; aucune parité globale.",
       "visual": "rapproche",
       "tests": [
         "DistributedSettingsWorkspaceTests",
-        "GitHubActionsDesktopTests"
+        "GitHubActionsDesktopTests",
+        "BuildServerCredentialsStoreTests",
+        "TeamCityIntegrationTests",
+        "TeamCityBuildChooserDialogTests"
       ],
       "adr": [
         "0109",
-        "0105"
+        "0105",
+        "0111"
       ],
       "extra_evidence": [
         {
@@ -3213,13 +3240,37 @@
     "TeamCityIntegration.Settings.TeamCitySettingsUserControl": {
       "feature": "Paramètres CI : TeamCity",
       "group": "ci-settings",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de fournisseur TeamCity porté.",
-      "remaining": "Page de paramètres, authentification et fournisseur CI à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "TeamCitySettingsPage",
+        "TeamCitySettings",
+        "TeamCityApiClient",
+        "TeamCityBuildChooserDialog",
+        "BuildServerCredentialsStore",
+        "BuildServerCredentialsSnapshot",
+        "BuildServerCredentialsDialog",
+        "GitHubActionsSettingsSession"
+      ],
+      "implemented": "Page TeamCity dans Build server integration avec clés et portées XML Windows ; chooser et extraction explicite du lien du presse-papiers. Brouillons Apply/Cancel et identifiants Guest/Basic/Bearer du dialogue partagé, enregistrés uniquement dans le profil XDG par instance. Statuts par SHA et rapport commun avec GitHub Actions, polling annulable et mises à jour sans recréer la grille ; suites complètes vérifiées (ADR0111).",
+      "remaining": "N2 : pas de NTLM/SSO ni coffre Linux ; serveur TeamCity réel et audit interactif étendu ouverts. Rapport local puis navigateur explicite, sans HTML embarqué. Variables {cRepoProject}/{cRepoShortName} admises par le modèle Core via callback mais non raccordées au remote courant de l’hôte ; détails sérialisés et historique borné, aucune mutation de build.",
+      "visual": "rapproche",
+      "tests": [
+        "TeamCityBuildChooserDialogTests",
+        "BuildServerCredentialsStoreTests",
+        "TeamCityIntegrationTests"
+      ],
+      "adr": [
+        "0111",
+        "0105"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core TeamCity — suite complète vérifiée",
+          "source": "tests/linux/GitExtensions.Core.Tests/TeamCityScenarios.cs",
+          "line": 8,
+          "kind": "source"
+        }
+      ]
     }
   },
   "installer_entries": {

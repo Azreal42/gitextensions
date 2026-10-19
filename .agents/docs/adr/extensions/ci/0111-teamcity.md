@@ -1,0 +1,9 @@
+# ADR 0111 · TeamCity dans le suivi CI partagé
+
+Conserver le parcours Windows : choisir un projet/build TeamCity, reprendre ses clés XML, lire les statuts des commits et ouvrir une page de build sur demande. Le sélecteur compact reste une fenêtre distincte ; son exploration ne démarre pas le polling. GitHub Actions et TeamCity partagent désormais la présentation, la publication dans les lignes existantes et le cycle d’annulation, avec des transports propres à chaque fournisseur.
+
+L’identité d’authentification comprend fournisseur, origine et chemin de l’instance ; Host seul ne suffit pas pour deux serveurs sous le même domaine. Le dialogue original Guest/UsernameAndPassword/BearerToken garde des brouillons privés. Save parent les publie dans le profil XDG, hors XML du dépôt ; Cancel abandonne les modifications non publiées. Le fichier local reste en clair et privé (0600), sans coffre, NTLM ni import de credentials du système. Les sauvegardes de plusieurs fichiers sont séquentielles, sans promesse de transaction globale.
+
+HTTP/HTTPS explicites sont conservés. `LogAsGuest` concerne uniquement le lien du rapport (`guest=1`) ; le choix REST reste indépendant. Une configuration invalide d’une nouvelle instance retire les anciens statuts et liens. L’historique est borné et le rapport ouvre le navigateur externe ; la parité HTML Windows reste ouverte.
+
+Repères : `TeamCitySettings/Page/BuildChooserDialog`, `TeamCityApiClient`, `BuildServerSnapshot/Source`, `BuildServerCredentialsStore`, `TeamCityIntegrationTests`. Résultats, serveur réel et périmètre interactif dans le [TODO](../../../todo.md#teamcity--périmètre-vérifié). Les variables de dépôt du modèle Core restent à raccorder à l’hôte.

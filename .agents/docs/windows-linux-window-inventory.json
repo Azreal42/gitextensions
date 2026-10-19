@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "877bb29f02247188237e3ab98abd448166c7ccf0",
-  "source_digest_sha256": "8e8c76f099680f95d666ae194f3029947547ab7c8b1126f39fa0f3ef9e66d60f",
-  "scanned_csharp_files": 2310,
+  "code_reference_commit": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+  "source_digest_sha256": "a81d9f2971d2eca6538f3a9c5b264db6060a2a9b9894528eb1cec32401c19a90",
+  "scanned_csharp_files": 2326,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,21 +26,20 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 98,
+    "linux_window_types": 99,
     "linux_abstract_bases": 4,
     "linux_dynamic_factories": 34,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N0": 1,
-      "N1": 14,
-      "N2": 33,
+      "N1": 13,
+      "N2": 35,
       "N3": 50,
       "NA": 1
     },
     "settings_levels": {
-      "N0": 5,
+      "N0": 4,
       "N1": 6,
-      "N2": 20,
+      "N2": 21,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,54 +49,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/pull-requests-20261019/desktop-full-03/results/desktop.trx",
-    "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
-    "trx_sha256": "5ea58fa0b649a3d183aad3cf6be68562ed79f6c1920883155b0705c8e62df927",
+    "trx": "artifacts/linux/teamcity-20261019/desktop-full-02/results/desktop.trx",
+    "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+    "trx_sha256": "55519e092665110d2f9bc80aeea08678c2ada6bc05a3d91a163c6f76b901a6b7",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
-        "execution_source_sha": null,
+        "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+        "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
-        "passed": 848,
-        "total": 848,
-        "execution_result": "artifacts/linux/pull-requests-20261019/core-full-01/result.json",
-        "execution_result_sha256": "ac8ff916f6f4e41c8a5d25fdc9c5e2a1274168fce50471eb25a037897c54a823",
+        "passed": 873,
+        "total": 873,
+        "execution_result": "artifacts/linux/teamcity-20261019/core-full-02/result.json",
+        "execution_result_sha256": "86886c01baf1c92f8fffdc822d5e4859b9863c90beb0e4e2b332fa940b2ffbb9",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
-          "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
+          "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
+          "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
-          "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+          "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
+          "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
         },
-        "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
+        "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W3; no exclusions."
       },
       "plugins": {
-        "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
-        "execution_source_sha": null,
+        "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+        "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/pull-requests-20261019/plugins-full-01/result.json",
-        "execution_result_sha256": "9c5d91bf88eebcd33cb472da1b9011183a0fe0c59583455c4594072213198822",
+        "execution_result": "artifacts/linux/teamcity-20261019/plugins-full-02/result.json",
+        "execution_result_sha256": "7c07957d939a3743f1d2aa352ed8e7d9a806613055145db7f1ae31b5d2f8c494",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
-          "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
+          "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
+          "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
-          "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+          "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
+          "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
         },
-        "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
+        "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W3; no exclusions."
       }
     },
     "current_linux_code_equivalent": false,
@@ -483,21 +482,21 @@
           "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
           "label": "BuildServerIntegrationSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 120,
+          "line": 122,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
           "label": "GitHubActionsSettingsSession",
-          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsSession.cs",
-          "line": 4,
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
+          "line": 5,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsPage",
           "label": "GitHubActionsSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 105,
+          "line": 107,
           "kind": "component"
         },
         {
@@ -2253,8 +2252,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions partage les réglages scoped avec Settings, états par SHA dans la grille, liste de runs et Show build page externe ; autres fournisseurs et parité du rapport Windows ouverts (ADR0109).",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions et TeamCity partagent les réglages par portée, les états par SHA dans la grille, la liste de builds et Show build page externe ; autres fournisseurs et parité du rapport Windows ouverts (ADR0109/0111).",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions et TeamCity ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2596,7 +2595,8 @@
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
         ".agents/docs/adr/preferences/revision-links/0108-revision-links.md",
-        ".agents/docs/adr/extensions/ci/0109-github-actions.md"
+        ".agents/docs/adr/extensions/ci/0109-github-actions.md",
+        ".agents/docs/adr/extensions/ci/0111-teamcity.md"
       ]
     },
     {
@@ -8254,8 +8254,8 @@
       "feature": "Configuration CI",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Page CI : Enable integration, Show build result page, fournisseur GitHub Actions et champs API/owner/repository/token dans les scopes XML Windows. Lecture GET de runs, états regroupés par SHA dans la grille, liste locale de runs et Show build page explicite dans le navigateur externe ; publication après Apply, polling annulable et fermeture drainée.",
-      "remaining": "Build report limité à une liste de runs, sans viewer HTML/détails jobs/logs équivalents Windows. GitHub Actions seul ; dialogue générique de credentials, TeamCity et autres fournisseurs CI absents. Aucun lancement/annulation de workflow ou gestion PR ; qualification HTTP contrôlée, natif et paquet distincts. N2, aucune parité globale. Lecture anonyme du client compilé sur Azreal42/gitextensions vérifiée (GET200 puis ETag304) ; interface live authentifiée/Enterprise et parité étendue restent ouvertes.",
+      "implemented": "Paramètres et portées CI partagés pour GitHub Actions et TeamCity. Un seul polling, projection BuildServerSnapshot, cellules de statuts et rapport ; sélection/lignes/focus conservés à la publication et fermeture drainée. TeamCity ajoute chooser, collage de lien et identifiants utilisateur distincts des XML. Suites complètes vérifiées ; pages de build ouvertes uniquement sur action explicite.",
+      "remaining": "N2 : AppVeyor, Azure DevOps, GitLab et Jenkins absents. Rapport limité à une liste et un navigateur externe, sans viewer HTML/jobs/logs Windows. NTLM/SSO non repris ; serveur TeamCity réel, GHA authentifié/Enterprise et audit interactif étendu restent ouverts. PR GitHub utilise le client distinct ADR0110 ; aucune parité globale.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -8270,21 +8270,21 @@
           "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
           "label": "BuildServerIntegrationSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 120,
+          "line": 122,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
           "label": "GitHubActionsSettingsSession",
-          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsSession.cs",
-          "line": 4,
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
+          "line": 5,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsPage",
           "label": "GitHubActionsSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 105,
+          "line": 107,
           "kind": "component"
         },
         {
@@ -8326,9 +8326,56 @@
           "source": "src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.TeamCitySettingsPage",
+          "label": "TeamCitySettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/TeamCitySettingsPage.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.TeamCitySettings",
+          "label": "TeamCitySettings",
+          "source": "src/linux/GitExtensions.Core/TeamCitySettings.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.TeamCityApiClient",
+          "label": "TeamCityApiClient",
+          "source": "src/linux/GitExtensions.Core/TeamCityApiClient.cs",
+          "line": 17,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsStore",
+          "label": "BuildServerCredentialsStore",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsStore.cs",
+          "line": 30,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.BuildServerSnapshot",
+          "label": "BuildServerSnapshot",
+          "source": "src/linux/GitExtensions.Core/BuildServerSnapshot.cs",
+          "line": 23,
+          "kind": "component"
+        },
+        {
+          "label": "BuildServerSource.cs",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsStoreTests.cs",
+          "test_class": "BuildServerCredentialsStoreTests",
+          "passed_in_reference_run": 45,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DistributedSettingsWorkspaceTests.cs",
           "test_class": "DistributedSettingsWorkspaceTests",
@@ -8340,11 +8387,24 @@
           "test_class": "GitHubActionsDesktopTests",
           "passed_in_reference_run": 7,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityBuildChooserDialogTests.cs",
+          "test_class": "TeamCityBuildChooserDialogTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityIntegrationTests.cs",
+          "test_class": "TeamCityIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/extensions/ci/0109-github-actions.md",
-        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md",
+        ".agents/docs/adr/extensions/ci/0111-teamcity.md"
       ]
     },
     {
@@ -13317,9 +13377,9 @@
       "category": "windows",
       "feature": "Identifiants du serveur CI",
       "group": "hosting",
-      "level": "N1",
-      "implemented": "Dialogue compact basé sur le modèle original Guest/UsernameAndPassword/BearerToken, champs inactifs mémorisés et secrets masqués ; brouillon cloné, OK nouveau modèle, Cancel/Escape null. Consommateur réel dans les paramètres Hosting GitHub avec Save parent et origine API explicite. Suites complètes, variantes EN/FR clair/sombre headless et parcours source natif anglais/clair ciblé vérifiés (ADR0110).",
-      "remaining": "N1 : raccordement Jenkins/TeamCity et autres consommateurs CI historiques absent ; le token CI Actions reste séparé. Identifiants locaux sans coffre ; audits natifs étendus, autres langues et plateformes ouverts. Le consommateur Hosting ne certifie pas toute l’authentification CI.",
+      "level": "N2",
+      "implemented": "Dialogue compact original Guest/UsernameAndPassword/BearerToken, champs inactifs conservés et secrets masqués ; brouillons clonés et Save parent. Consommateurs Hosting GitHub et TeamCity effectifs. Store CI utilisateur séparé du XML, provider+origine+basepath, no-op, fusion de champs et fichier 0600 ; les changements d’instance ne reprennent aucun ancien statut/lien. Suites complètes et tests d’intégration vérifiés ; limites natives historiques ADR0110 et actuelles ADR0111 distinctes.",
+      "remaining": "N2 : Jenkins/autres consommateurs CI historiques et authentification intégrée Windows absents ; token CI Actions séparé. Identifiants locaux en clair sans coffre ; audit interactif TeamCity et autres plateformes ouvert. Le store coopératif/optimiste et les fichiers XML ne forment pas une transaction globale.",
       "visual": "rapproche",
       "linux": [
         {
@@ -13355,6 +13415,27 @@
           "source": "src/linux/GitExtensions.Core/GitHubHostingSettings.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsStore",
+          "label": "BuildServerCredentialsStore",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsStore.cs",
+          "line": 30,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsSnapshot",
+          "label": "BuildServerCredentialsSnapshot",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsStore.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.TeamCitySettingsPage",
+          "label": "TeamCitySettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/TeamCitySettingsPage.cs",
+          "line": 16,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -13362,6 +13443,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsDialogTests.cs",
           "test_class": "BuildServerCredentialsDialogTests",
           "passed_in_reference_run": 17,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsStoreTests.cs",
+          "test_class": "BuildServerCredentialsStoreTests",
+          "passed_in_reference_run": 45,
           "results_present": true
         },
         {
@@ -13375,10 +13462,17 @@
           "test_class": "GitHubHostingSettingsDialogTests",
           "passed_in_reference_run": 4,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityIntegrationTests.cs",
+          "test_class": "TeamCityIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/extensions/github/0110-pull-requests.md"
+        ".agents/docs/adr/extensions/github/0110-pull-requests.md",
+        ".agents/docs/adr/extensions/ci/0111-teamcity.md"
       ]
     },
     {
@@ -14785,13 +14879,56 @@
       "category": "windows",
       "feature": "CI : choix de build TeamCity",
       "group": "plugins",
-      "level": "N0",
-      "implemented": "Aucune intégration TeamCity fonctionnelle dans le port Linux.",
-      "remaining": "Fournisseur, requêtes, grille de builds et sélection à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Sélecteur compact Windows 451×379, projets hiérarchiques triés par nom et configurations chargées à l’expansion puis triées par ID ; restauration exacte, OK uniquement sur un build et double-clic natif. Focus initial, flèches, Tab et annulation/drainage testés ; captures EN clair/FR sombre contrôlées. Lectures REST/XML réelles sur transports de test, sans démarrer le polling du chooser.",
+      "remaining": "N2 : serveur TeamCity réel et authentifié, NTLM/SSO Windows non repris, grands arbres et audit interactif étendu Wayland/DPI/accessibilité ouverts. Les captures headless et le smoke du paquet ne certifient pas les gestes natifs installés.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.TeamCityBuildChooserDialog",
+          "label": "TeamCityBuildChooserDialog",
+          "source": "src/linux/GitExtensions.Desktop/TeamCityBuildChooserDialog.cs",
+          "line": 17,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.TeamCityApiClient",
+          "label": "TeamCityApiClient",
+          "source": "src/linux/GitExtensions.Core/TeamCityApiClient.cs",
+          "line": 17,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.TeamCitySettings",
+          "label": "TeamCitySettings",
+          "source": "src/linux/GitExtensions.Core/TeamCitySettings.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "TeamCityModels.cs",
+          "source": "src/linux/GitExtensions.Core/TeamCityModels.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityBuildChooserDialogTests.cs",
+          "test_class": "TeamCityBuildChooserDialogTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityIntegrationTests.cs",
+          "test_class": "TeamCityIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/ci/0111-teamcity.md"
+      ]
     },
     {
       "id": "TeamCityIntegration.Settings.TeamCitySettingsUserControl",
@@ -14816,13 +14953,112 @@
       "category": "settings",
       "feature": "Paramètres CI : TeamCity",
       "group": "ci-settings",
-      "level": "N0",
-      "implemented": "Pas de fournisseur TeamCity porté.",
-      "remaining": "Page de paramètres, authentification et fournisseur CI à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Page TeamCity dans Build server integration avec clés et portées XML Windows ; chooser et extraction explicite du lien du presse-papiers. Brouillons Apply/Cancel et identifiants Guest/Basic/Bearer du dialogue partagé, enregistrés uniquement dans le profil XDG par instance. Statuts par SHA et rapport commun avec GitHub Actions, polling annulable et mises à jour sans recréer la grille ; suites complètes vérifiées (ADR0111).",
+      "remaining": "N2 : pas de NTLM/SSO ni coffre Linux ; serveur TeamCity réel et audit interactif étendu ouverts. Rapport local puis navigateur explicite, sans HTML embarqué. Variables {cRepoProject}/{cRepoShortName} admises par le modèle Core via callback mais non raccordées au remote courant de l’hôte ; détails sérialisés et historique borné, aucune mutation de build.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core TeamCity — suite complète vérifiée",
+          "source": "tests/linux/GitExtensions.Core.Tests/TeamCityScenarios.cs",
+          "line": 8,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.TeamCitySettingsPage",
+          "label": "TeamCitySettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/TeamCitySettingsPage.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.TeamCitySettings",
+          "label": "TeamCitySettings",
+          "source": "src/linux/GitExtensions.Core/TeamCitySettings.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.TeamCityApiClient",
+          "label": "TeamCityApiClient",
+          "source": "src/linux/GitExtensions.Core/TeamCityApiClient.cs",
+          "line": 17,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.TeamCityBuildChooserDialog",
+          "label": "TeamCityBuildChooserDialog",
+          "source": "src/linux/GitExtensions.Desktop/TeamCityBuildChooserDialog.cs",
+          "line": 17,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsStore",
+          "label": "BuildServerCredentialsStore",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsStore.cs",
+          "line": 30,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsSnapshot",
+          "label": "BuildServerCredentialsSnapshot",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsStore.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsDialog",
+          "label": "BuildServerCredentialsDialog",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
+          "label": "GitHubActionsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
+          "line": 5,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsDialogTests.cs",
+          "test_class": "BuildServerCredentialsDialogTests",
+          "passed_in_reference_run": 17,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsStoreTests.cs",
+          "test_class": "BuildServerCredentialsStoreTests",
+          "passed_in_reference_run": 45,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubHostingSettingsDialogTests.cs",
+          "test_class": "GitHubHostingSettingsDialogTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityBuildChooserDialogTests.cs",
+          "test_class": "TeamCityBuildChooserDialogTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TeamCityIntegrationTests.cs",
+          "test_class": "TeamCityIntegrationTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/ci/0111-teamcity.md",
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+      ]
     },
     {
       "id": "native:IDD_ASK_PASSWORD",
@@ -15144,7 +15380,12 @@
         {
           "id": "GitUI.HelperDialogs.FormBuildServerCredentials",
           "name": "FormBuildServerCredentials",
-          "level": "N1"
+          "level": "N2"
+        },
+        {
+          "id": "TeamCityIntegration.Settings.TeamCitySettingsUserControl",
+          "name": "TeamCitySettingsUserControl",
+          "level": "N2"
         }
       ],
       "note": ""
@@ -16209,7 +16450,7 @@
         {
           "id": "GitUI.HelperDialogs.FormBuildServerCredentials",
           "name": "FormBuildServerCredentials",
-          "level": "N1"
+          "level": "N2"
         }
       ],
       "note": ""
@@ -16508,7 +16749,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
-          "line": 16
+          "line": 17
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Grep.cs",
@@ -17896,6 +18137,35 @@
         }
       ],
       "note": "Mise à jour des sous-modules ; sous-workflow de FormSubmodules/Checkout/Pull."
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.TeamCityBuildChooserDialog",
+      "name": "TeamCityBuildChooserDialog",
+      "source": "src/linux/GitExtensions.Desktop/TeamCityBuildChooserDialog.cs",
+      "line": 17,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/TeamCityBuildChooserDialog.cs",
+          "line": 17
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "TeamCityIntegration.Settings.TeamCityBuildChooser",
+          "name": "TeamCityBuildChooser",
+          "level": "N2"
+        },
+        {
+          "id": "TeamCityIntegration.Settings.TeamCitySettingsUserControl",
+          "name": "TeamCitySettingsUserControl",
+          "level": "N2"
+        }
+      ],
+      "note": ""
     },
     {
       "id": "GitExtensions.Linux.Desktop.UndoLastCommitConfirmationDialog",
@@ -22466,8 +22736,8 @@
       "N2": 3
     },
     "hosting": {
-      "N1": 2,
-      "N2": 2
+      "N1": 1,
+      "N2": 3
     },
     "information": {
       "N1": 5,
@@ -22480,8 +22750,7 @@
       "NA": 1
     },
     "plugins": {
-      "N0": 1,
-      "N2": 3,
+      "N2": 4,
       "N3": 5
     },
     "settings-pages": {
@@ -22490,8 +22759,8 @@
       "NA": 1
     },
     "ci-settings": {
-      "N0": 5,
-      "N2": 1
+      "N0": 4,
+      "N2": 2
     }
   }
 }
