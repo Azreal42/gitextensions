@@ -66,7 +66,7 @@ internal abstract class BuildServerScopedSettingsPage : UserControl
     protected void Notice(string text) => _fields.Children.Add(new TextBlock { Text = Translations.Translate(text), TextWrapping = TextWrapping.Wrap });
     protected void Add(Control control) => _fields.Children.Add(control);
     protected void SetFieldsEnabled(bool enabled) => _fields.IsEnabled = enabled;
-    protected void HideHeader() => _header.IsVisible = false;
+    protected void HideHeader() { _header.IsVisible = false; _notice.IsVisible = false; }
     internal void SetScope(GitDistributedSettingsScope scope) { _scope = scope; ShowLoadState(); ScopeChanged?.Invoke(scope); }
     private void Edit(string key, string? value)
     { if (Session.Loaded && _scope != GitDistributedSettingsScope.Effective) { Session.Set(_scope, key, value); DraftChanged?.Invoke(); } }

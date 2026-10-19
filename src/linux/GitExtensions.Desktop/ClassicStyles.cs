@@ -261,7 +261,7 @@ internal static class ClassicStyles
             ["Control"] = "Control", ["ControlText"] = "ControlText", ["Menu"] = "Menu",
             ["MenuText"] = "MenuText", ["Border"] = "ActiveBorder", ["Button"] = "ButtonFace",
             ["ButtonBorder"] = "ButtonShadow", ["Hover"] = "ControlLight", ["Pressed"] = "ControlDark",
-            ["Disabled"] = "GrayText", ["Highlight"] = "Highlight", ["HighlightText"] = dark ? "WindowText" : "HighlightText",
+            ["Disabled"] = "GrayText", ["Link"] = "HotTrack", ["Highlight"] = "Highlight", ["HighlightText"] = dark ? "WindowText" : "HighlightText",
             ["MenuHighlightText"] = "HighlightText",
             ["MenuHighlight"] = "MenuHighlight", ["Selection"] = "Selection",
             ["Tooltip"] = "Info", ["TooltipText"] = "InfoText"
@@ -285,6 +285,7 @@ internal static class ClassicStyles
         }
         Dictionary<string, string> templateBrushes = new(StringComparer.Ordinal)
         {
+            ["SystemControlForegroundAccentBrush"] = "Link",
             ["ToolTipBackground"] = "Tooltip",
             ["ToolTipForeground"] = "TooltipText",
             ["ToolTipBorderBrush"] = "Border",

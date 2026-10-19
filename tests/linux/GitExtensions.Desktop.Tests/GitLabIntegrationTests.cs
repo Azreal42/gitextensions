@@ -54,6 +54,27 @@ public sealed class GitLabIntegrationTests
     }
 
     [Test]
+    public async Task TokenWithoutItsStoredInstanceIsNotSilentlyBoundToARemoteUntilExplicitReentry()
+    {
+        using DetailedSettingsTestScope f = await DetailedSettingsTestScope.CreateAsync();
+        f.Write(GitDistributedSettingsScope.Global, (GitLabSettings.EnableKey, "true"),
+            (GitLabSettings.ProviderKey, GitLabSettings.ProviderName), (GitLabSettings.ProjectIdKey, "12"),
+            (GitLabSettings.ApiTokenKey, "orphan-token"));
+        await f.Git.GitAsync("remote", "add", "origin", "https://gitlab.example/group/repo.git");
+        GitHubActionsSettingsSession session = new(f.Repository); await session.InitializeAsync(default);
+        Dictionary<string, byte[]> material = f.Material();
+        session.Set(GitDistributedSettingsScope.Local, GitLabSettings.ProjectIdKey, "19");
+        Assert.ThrowsAsync<ArgumentException>(async () => await session.SaveFilesAsync(default)); f.AssertMaterial(material);
+        session.Set(GitDistributedSettingsScope.Global, GitLabSettings.ApiTokenKey, "explicit-token");
+        await session.SaveFilesAsync(default);
+        GitDistributedSettingsSnapshot snapshot = await GitDistributedSettingsSnapshot.LoadAsync(DetailedRepositorySettings.GlobalPath,
+            await f.Repository!.GetInfoAsync(default), default);
+        GitLabSettings accepted = GitLabSettings.Read(snapshot, session.RemoteUrls);
+        Assert.That(accepted.InstanceUrl, Is.EqualTo("https://gitlab.example"));
+        Assert.That(accepted.ApiToken, Is.EqualTo("explicit-token")); Assert.That(accepted.ProjectId, Is.EqualTo(19));
+    }
+
+    [Test]
     public async Task InvalidActiveProjectDoesNotPublishEitherScope()
     {
         using DetailedSettingsTestScope f = await DetailedSettingsTestScope.CreateAsync(); Enable(f);

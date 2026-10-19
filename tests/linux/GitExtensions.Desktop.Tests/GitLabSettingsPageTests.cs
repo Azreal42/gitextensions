@@ -6,6 +6,8 @@ using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
+using Avalonia.Media;
+using GitExtensions.Linux.Desktop;
 using Avalonia.VisualTree;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop.Localization;
@@ -39,6 +41,12 @@ public sealed class GitLabSettingsPageTests
         { Assert.That(f.Field<Button>(name).Content, Is.EqualTo(catalog.Translate("GitlabSettingsUserControl", name, "Text", source))); }
         Assert.That(f.Field<TextBlock>("GetProjectIdStatusText").Text, Is.EqualTo(catalog.Translate("GitlabSettingsUserControl", "GetProjectIdStatusText", "Text", Failure)));
         Assert.That(f.Page.GetVisualDescendants().OfType<RadioButton>().Count(choice => choice.IsEffectivelyVisible), Is.Zero, "The shared provider page owns the only scope header.");
+        foreach (string name in new[] { "GetProjectIdLink", "TokenManagementLink" })
+        {
+            TextBlock caption = f.Field<Button>(name).GetVisualDescendants().OfType<TextBlock>().Single();
+            Assert.That((caption.Foreground as ISolidColorBrush)?.Color, Is.EqualTo(Color.Parse(ClassicStyles.OriginalColors(dark)["HotTrack"])),
+                "Rendered links must use Windows HotTrack rather than the platform accent.");
+        }
         foreach (TextBlock label in f.Page.GetVisualDescendants().OfType<TextBlock>().Where(text => text.IsEffectivelyVisible && !string.IsNullOrEmpty(text.Text)))
         {
             Assert.That(label.TextLayout.TextLines.Any(line => line.HasCollapsed), Is.False, label.Text);
@@ -59,6 +67,12 @@ public sealed class GitLabSettingsPageTests
         await using GitLabSettingsUiFixture f = await GitLabSettingsUiFixture.CreateAsync(); await f.ShowAsync();
         Dictionary<string, byte[]> before = f.Profile.Material();
         Assert.That(f.Field<TextBox>("InstanceUrlTextBox").IsEffectivelyEnabled, Is.False, "Effective is read-only.");
+        Assert.That(f.Dialog.GetVisualDescendants().OfType<TextBlock>().Count(text => text.IsEffectivelyVisible
+            && text.Text == "Effective settings are read-only. Select Local, Distributed or Global to edit."), Is.EqualTo(1),
+            "The embedded provider uses the shared notice only once.");
+        TextBlock disabledLink = f.Field<Button>("GetProjectIdLink").GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.That((disabledLink.Foreground as ISolidColorBrush)?.Color, Is.EqualTo(Color.Parse(ClassicStyles.OriginalColors(false)["GrayText"])),
+            "The read-only lookup paints its disabled state, while token management remains an explicit available link.");
         f.Select(GitDistributedSettingsScope.Global); f.Edit("ProjectIdTextBox", "2048"); f.Edit("ApiTokenTextBox", "explicit-new-token");
         f.Profile.AssertMaterial(before); f.Click("ApplyDesktopSettings"); await f.SavedAsync();
         GitXmlSettingsSnapshot global = await f.Profile.ReadAsync(GitDistributedSettingsScope.Global);

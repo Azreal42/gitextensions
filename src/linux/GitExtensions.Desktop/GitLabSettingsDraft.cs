@@ -22,8 +22,8 @@ internal sealed partial class GitHubActionsSettingsSession
             foreach (GitDistributedSettingsScope origin in new[] { GitDistributedSettingsScope.Local, GitDistributedSettingsScope.Distributed, GitDistributedSettingsScope.Global })
             {
                 if (Read(origin, GitLabSettings.ApiTokenKey) is null) { continue; }
-                Uri tokenInstance = GitLabSettings.ParseInstanceUri(Read(origin, GitLabSettings.InstanceUrlKey) ?? DetectedGitLabInstance());
-                if (!GitLabSettings.SameInstance(tokenInstance, result.InstanceUri))
+                string? tokenEndpoint = Read(origin, GitLabSettings.InstanceUrlKey);
+                if (string.IsNullOrWhiteSpace(tokenEndpoint) || !GitLabSettings.SameInstance(GitLabSettings.ParseInstanceUri(tokenEndpoint), result.InstanceUri))
                 { throw new ArgumentException("The GitLab token and instance belong to different settings origins. Configure them together in the selected scope."); }
                 break;
             }

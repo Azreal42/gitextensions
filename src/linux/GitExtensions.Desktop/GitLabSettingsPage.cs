@@ -216,8 +216,8 @@ internal sealed class GitLabSettingsPage : BuildServerScopedSettingsPage
         { Setters = { new Setter(Border.BorderBrushProperty, Brushes.Transparent) } });
         link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":focus-visible").Template().OfType<Border>().Name("GitLabLinkFocus"))
         { Setters = { new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicHighlightBrush")) } });
-        link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":disabled"))
-        { Setters = { new Setter(ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush")) } });
+        link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":disabled").Template().OfType<TextBlock>())
+        { Setters = { new Setter(TextBlock.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush")) } });
         return link;
     }
     private string T(string item, string source) => Translations.Translate("GitlabSettingsUserControl", item, "Text", source);
