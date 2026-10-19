@@ -43,7 +43,7 @@ internal static class EditableFileScenarios
         UnixFileMode? mode = OperatingSystem.IsWindows() ? null : File.GetUnixFileMode(f.Path);
         EditableFileSnapshot snapshot = await f.Store.ReadAsync(f.Path); await f.Store.SaveAsync(snapshot, snapshot.Text);
         Check(File.GetLastWriteTimeUtc(f.Path) == stamp && File.ReadAllBytes(f.Path).SequenceEqual(original), "An unchanged Save does not rewrite the file.");
-        Check(mode is null || File.GetUnixFileMode(f.Path) == mode, "An unchanged Save never adjusts modes.");
+        Check(OperatingSystem.IsWindows() || File.GetUnixFileMode(f.Path) == mode, "An unchanged Save never adjusts modes.");
     }
     private static async Task ImmutableAsync()
     {
@@ -66,7 +66,7 @@ internal static class EditableFileScenarios
         EditableFileSnapshot snapshot = await f.Store.ReadAsync(f.Path, "windows-1252");
         await Expect<EncoderFallbackException>(() => f.Store.SaveAsync(snapshot, "unrepresentable λ"));
         await Expect<ArgumentException>(() => f.Store.SaveAsync(snapshot, "bad\0text"));
-        Check(File.ReadAllBytes(f.Path).SequenceEqual(bytes) && (mode is null || File.GetUnixFileMode(f.Path) == mode), "Encoding validation precedes writes and temporary permission changes.");
+        Check(File.ReadAllBytes(f.Path).SequenceEqual(bytes) && (OperatingSystem.IsWindows() || File.GetUnixFileMode(f.Path) == mode), "Encoding validation precedes writes and temporary permission changes.");
         await Expect<NotSupportedException>(() => f.Store.ReadAsync(f.Path, "not-a-real-codec"));
     }
     private static async Task BinaryAsync()
