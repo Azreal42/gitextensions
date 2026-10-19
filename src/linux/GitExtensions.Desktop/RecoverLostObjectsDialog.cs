@@ -322,9 +322,9 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         {
             GitObjectPreview data = await Repository.GetObjectPreviewAsync(hash, token, _preview.TextView.ComparisonMenu.Options, _preview.TextView.DisplayOptions); token.ThrowIfCancellationRequested();
             if (_closing || !IsVisible) { return; }
-            FileHistoryContentView viewer = new() { Name = "RecoveryQuickViewer" }; Window child = new() { Name = "RecoveryQuickView", Title = data.SuggestedFileName, Width = 800, Height = 550,
-                Content = viewer, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
-            child.KeyDown += (_, args) => { if (args.Key == Key.Escape) { child.Close(); args.Handled = true; } };
+            using TextEditDialog child = new("", data.SuggestedFileName, Translations)
+                { Name = "RecoveryQuickView", IsReadOnly = true, RequestedThemeVariant = ActualThemeVariant };
+            FileHistoryContentView viewer = child.Viewer; viewer.Name = "RecoveryQuickViewer";
             using CancellationTokenRegistration cancellation = token.Register(() => Dispatcher.UIThread.Post(child.Close));
             try
             {
@@ -337,7 +337,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
                 else { viewer.ShowDiff(data.Text ?? "", data.SuggestedFileName); viewer.TextView.Mode = DiffViewMode.PlainText; }
                 await child.ShowDialog(this);
             }
-            finally { child.Close(); viewer.Dispose(); }
+            finally { child.Close(); }
         }, cancellationToken: _lifetime.Token);
     }
     private Task SaveBlobAsync()
