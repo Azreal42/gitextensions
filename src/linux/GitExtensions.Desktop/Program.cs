@@ -6,6 +6,13 @@ namespace GitExtensions.Linux.Desktop;
 
 internal static class Program
 {
+    internal const string GuiHelpCommand = "help";
+    internal const string ConsoleHelpOption = "--help";
+    // Keep stdout's existing contract; the window projects this same public usage rather than the Windows command list.
+    internal const string CommandlineUsage = "Usage: gitextensions [repository-directory] | browse [repository-directory] [--pathFilter=path] [-commit=selected[,first-selected]] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]";
+    internal static IReadOnlyList<string> PublicCommandlineForms { get; } = Array.AsReadOnly<string>(
+        [.. CommandlineUsage["Usage: gitextensions ".Length..].Split(" | ", StringSplitOptions.None), GuiHelpCommand, ConsoleHelpOption]);
+    internal static bool IsCommandlineHelpInvocation(IReadOnlyList<string> args) => args.Count == 1 && args[0] == GuiHelpCommand;
     internal static string? RepositoryPath { get; private set; }
     internal static bool SmokeTest { get; private set; }
     internal static DesktopStartupRequest StartupRequest { get; private set; } = DesktopStartupRequest.Browse;
@@ -13,8 +20,12 @@ internal static class Program
     internal static GitEnvironmentStartup? TakeEnvironmentStartup() => Interlocked.Exchange(ref _environmentStartup, null);
 
     [STAThread]
-    public static int Main(string[] args)
+    public static int Main(string[] args) => Run(args, CommandlineHelpApplication.Run);
+
+    // The single GUI-launch seam lets dispatch be checked without starting a second application lifetime.
+    internal static int Run(string[] args, Func<int> showCommandlineHelp)
     {
+        ArgumentNullException.ThrowIfNull(args); ArgumentNullException.ThrowIfNull(showCommandlineHelp);
         if (args.FirstOrDefault() == InteractiveFileConsoleProtocol.Mode)
         { return InteractiveFileConsoleApplication.Run(args[1..]); }
         if (GitRebaseEditor.IsNativeEditorInvocation(args))
@@ -35,10 +46,17 @@ internal static class Program
             return 0;
         }
 
-        if (!cleanup && args.Contains("--help", StringComparer.Ordinal))
+        if (!cleanup && args.Contains(ConsoleHelpOption, StringComparer.Ordinal))
         {
-            Console.WriteLine("Usage: gitextensions [repository-directory] | browse [repository-directory] [--pathFilter=path] [-commit=selected[,first-selected]] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]");
+            Console.WriteLine(CommandlineUsage);
             return 0;
+        }
+
+        if (IsCommandlineHelpInvocation(args))
+        {
+            try { return showCommandlineHelp(); }
+            catch (Exception)
+            { Console.Error.WriteLine("Unable to open commandline help."); return 1; }
         }
 
         DesktopStartupArguments startup;
