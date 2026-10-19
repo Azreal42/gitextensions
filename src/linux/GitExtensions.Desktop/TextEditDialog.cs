@@ -10,7 +10,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class TextEditDialog : Window, IDisposable
 {
     private bool _disposed;
-    internal FileHistoryContentView Viewer { get; } = new() { Name = "Viewer" };
+    internal FileHistoryContentView Viewer { get; }
 
     public bool IsReadOnly
     {
@@ -19,7 +19,14 @@ public sealed class TextEditDialog : Window, IDisposable
     }
 
     public TextEditDialog(string text, string filename = "", TranslationCatalog? translations = null)
+        : this(text, filename, translations, "Viewer")
     {
+    }
+
+    internal TextEditDialog(string text, string filename, TranslationCatalog? translations, string viewerName)
+    {
+        // Name is immutable once the viewer is styled through this window's Content.
+        Viewer = new() { Name = viewerName };
         TranslationCatalog catalog = translations ?? TranslationCatalog.LoadDefault();
         Name = "FormEdit"; Title = catalog.Translate("FormEdit", "$this", "Text", "View");
         Width = 733; Height = 571; WindowStartupLocation = WindowStartupLocation.CenterOwner;

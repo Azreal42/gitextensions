@@ -48,6 +48,7 @@ public sealed class FormEditDialogTests
         Press(dialog, PhysicalKey.Y, RawInputModifiers.Control); Assert.That(editor.Text, Is.EqualTo("edited λ"));
         Press(dialog, PhysicalKey.S, RawInputModifiers.Control); Assert.That(done.IsCompleted, Is.False);
         Assert.That(File.ReadAllBytes(filename), Is.EqualTo(before), "A filename is syntax context, never an implicit write destination.");
+        AssertFirstEscapeOnlyClearsSelection(dialog); Assert.That(done.IsCompleted, Is.False);
         Press(dialog, PhysicalKey.Escape); await Until(() => done.IsCompleted); await done.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.That(File.ReadAllBytes(filename), Is.EqualTo(before)); Assert.That(host.Owner.IsVisible, Is.True);
         Control? returnedFocus = host.Owner.FocusManager?.GetFocusedElement() as Control;
@@ -73,6 +74,7 @@ public sealed class FormEditDialogTests
             Assert.That(done.IsCompleted, Is.False);
         }
         finally { await ClipboardExtensions.SetTextAsync(clipboard, previous ?? ""); }
+        AssertFirstEscapeOnlyClearsSelection(dialog); Assert.That(done.IsCompleted, Is.False);
         Press(dialog, PhysicalKey.Escape); await Until(() => done.IsCompleted); await done.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
@@ -86,6 +88,7 @@ public sealed class FormEditDialogTests
         Assert.That(editor.Text, Is.EqualTo("editable draft")); Assert.That(editor.Document, Is.SameAs(document));
         dialog.IsReadOnly = false; Press(dialog, PhysicalKey.Z, RawInputModifiers.Control);
         Assert.That(editor.Text, Is.EqualTo("original\n")); Assert.That(editor.Document, Is.SameAs(document));
+        AssertFirstEscapeOnlyClearsSelection(dialog); Assert.That(done.IsCompleted, Is.False);
         Press(dialog, PhysicalKey.Escape); await Until(() => done.IsCompleted); await done.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
@@ -111,9 +114,17 @@ public sealed class FormEditDialogTests
         Task recoveryDone = recovery.ShowDialog(host.Owner); Pump(recovery);
         ListBox rows = Field<ListBox>(recovery, "RecoveryObjects");
         rows.SelectedIndex = Enumerable.Range(0, recovery.VisibleObjects.Count).Single(i => recovery.VisibleObjects[i].Hash == lost);
-        rows.ScrollIntoView(rows.SelectedItem!); await Until(() => recovery.Preview?.Hash == lost); Pump(recovery);
-        string before = await Witness(git); Assert.That(rows.Focus(), Is.True); Pump(recovery); Press(recovery, PhysicalKey.Enter);
-        await Until(() => recovery.OwnedWindows.OfType<TextEditDialog>().Any(window => window.IsVisible));
+        rows.ScrollIntoView(rows.SelectedItem!);
+        await Until(() => !recovery.IsBusy && recovery.SelectedObject?.Hash == lost && recovery.Preview?.Hash == lost, () => RecoveryDiagnostic(recovery, rows));
+        Pump(recovery); Assert.That(recovery.Preview!.ReadError, Is.Null, RecoveryDiagnostic(recovery, rows));
+        Assert.That(Field<FileHistoryContentView>(recovery, "RecoveryPreview").TextView.DocumentIdentity, Is.EqualTo(git.Repository.Path + "\nobject:" + lost));
+        string before = await Witness(git); Assert.That(rows.Focus(), Is.True); Pump(recovery);
+        Assert.That(rows.IsKeyboardFocusWithin, Is.True, RecoveryDiagnostic(recovery, rows));
+        Press(recovery, PhysicalKey.Enter);
+        await Until(() => recovery.LastException is not null || recovery.LastError is not null
+            || recovery.OwnedWindows.OfType<TextEditDialog>().Any(window => window.IsVisible), () => RecoveryDiagnostic(recovery, rows));
+        Assert.That(recovery.LastException, Is.Null, RecoveryDiagnostic(recovery, rows));
+        Assert.That(recovery.LastError, Is.Null, RecoveryDiagnostic(recovery, rows));
         TextEditDialog quick = recovery.OwnedWindows.OfType<TextEditDialog>().Single(window => window.IsVisible); Pump(quick);
         Assert.That(quick.Name, Is.EqualTo("RecoveryQuickView")); Assert.That(quick.Owner, Is.SameAs(recovery));
         Assert.That(quick.ClientSize.Width, Is.EqualTo(733)); Assert.That(quick.ClientSize.Height, Is.EqualTo(571));
@@ -130,7 +141,8 @@ public sealed class FormEditDialogTests
         }
         else
         {
-            Press(quick, PhysicalKey.Escape); await Until(() => !quick.IsVisible && !recovery.IsBusy); Pump(recovery);
+            AssertFirstEscapeOnlyClearsSelection(quick); Assert.That(recovery.IsBusy, Is.True);
+            Press(quick, PhysicalKey.Escape); await Until(() => !quick.IsVisible && !recovery.IsBusy, () => RecoveryDiagnostic(recovery, rows)); Pump(recovery);
             Assert.That(rows.IsKeyboardFocusWithin, Is.True, "The actual Recovery workflow restores focus to the object list.");
             recovery.Close(); await Until(() => recoveryDone.IsCompleted); await recoveryDone.WaitAsync(TimeSpan.FromSeconds(5));
         }
@@ -183,15 +195,33 @@ public sealed class FormEditDialogTests
             finally { Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", _oldConfig); if (Directory.Exists(_root)) { Directory.Delete(_root, true); } }
         }
     }
+    private static void AssertFirstEscapeOnlyClearsSelection(TextEditDialog dialog)
+    {
+        TextEditor editor = Editor(dialog); string text = editor.Text;
+        Assert.That(editor.TextArea.IsKeyboardFocusWithin, Is.True);
+        Press(dialog, PhysicalKey.A, RawInputModifiers.Control); Assert.That(editor.SelectionLength, Is.GreaterThan(0));
+        Press(dialog, PhysicalKey.Escape);
+        Assert.That(editor.SelectionLength, Is.Zero, "FileViewer consumes the first Escape to clear its actual selection.");
+        Assert.That(editor.Text, Is.EqualTo(text)); Assert.That(dialog.IsVisible, Is.True);
+    }
+    private static string RecoveryDiagnostic(RecoverLostObjectsDialog dialog, ListBox rows)
+    {
+        Control? focused = dialog.FocusManager?.GetFocusedElement() as Control;
+        return "busy=" + dialog.IsBusy + "; LastError=" + dialog.LastError + "; LastException=" + dialog.LastException
+            + "; selected=" + dialog.SelectedObject?.Hash + "; preview=" + dialog.Preview?.Hash + "; previewError=" + dialog.Preview?.ReadError
+            + "; focused=" + focused + "; focusOwner=" + (focused is null ? null : TopLevel.GetTopLevel(focused)?.Name)
+            + "; listFocus=" + rows.IsKeyboardFocusWithin + "; enabled=" + rows.IsEffectivelyEnabled + "; visible=" + rows.IsEffectivelyVisible
+            + "; menu=" + rows.ContextMenu?.IsOpen + "; owned=" + string.Join(", ", dialog.OwnedWindows.Select(window => window.Name + ":visible=" + window.IsVisible));
+    }
     private static TextEditor Editor(TextEditDialog dialog) => dialog.Viewer.GetVisualDescendants().OfType<TextEditor>().Single();
     private static T Field<T>(TopLevel window, string name) where T : Control => PushProcessTestDriver.Field<T>(window, name);
     private static void Press(Window window, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None)
     { window.KeyPressQwerty(key, modifiers); if (window.IsVisible) { window.KeyReleaseQwerty(key, modifiers); } Dispatcher.UIThread.RunJobs(); if (window.IsVisible) { Pump(window); } }
     private static void Pump(TopLevel window) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
-    private static async Task Until(Func<bool> complete)
+    private static async Task Until(Func<bool> complete, Func<string>? diagnostic = null)
     {
         Stopwatch timer = Stopwatch.StartNew(); while (!complete() && timer.Elapsed < TimeSpan.FromSeconds(15)) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
-        Dispatcher.UIThread.RunJobs(); Assert.That(complete(), Is.True, "The actual FormEdit or Recovery operation did not settle.");
+        Dispatcher.UIThread.RunJobs(); Assert.That(complete(), Is.True, "The actual FormEdit or Recovery operation did not settle. " + diagnostic?.Invoke());
     }
     private static async Task Until(Func<Task<bool>> complete)
     {

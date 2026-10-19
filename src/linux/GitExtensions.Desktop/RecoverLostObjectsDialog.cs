@@ -322,9 +322,9 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         {
             GitObjectPreview data = await Repository.GetObjectPreviewAsync(hash, token, _preview.TextView.ComparisonMenu.Options, _preview.TextView.DisplayOptions); token.ThrowIfCancellationRequested();
             if (_closing || !IsVisible) { return; }
-            using TextEditDialog child = new("", data.SuggestedFileName, Translations)
+            using TextEditDialog child = new("", data.SuggestedFileName, Translations, "RecoveryQuickViewer")
                 { Name = "RecoveryQuickView", IsReadOnly = true, RequestedThemeVariant = ActualThemeVariant };
-            FileHistoryContentView viewer = child.Viewer; viewer.Name = "RecoveryQuickViewer";
+            FileHistoryContentView viewer = child.Viewer;
             using CancellationTokenRegistration cancellation = token.Register(() => Dispatcher.UIThread.Post(child.Close));
             try
             {
