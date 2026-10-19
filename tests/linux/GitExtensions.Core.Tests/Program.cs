@@ -72,6 +72,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. XmlDistributedSettingsScenarios.All,
     .. RevisionLinksScenarios.All,
     .. GitHubActionsScenarios.All,
+    .. GitHubHostingScenarios.All,
     .. RemoteHeadsScenarios.All,
     ("unborn status and unstage", UnbornAsync),
     ("repository discovery normalizes subdirectories and metadata to root", DiscoveryAsync),
@@ -233,6 +234,7 @@ if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = Rules
 if (args.Contains("--remote-heads-only", StringComparer.Ordinal)) { tests = RemoteHeadsScenarios.All.ToArray(); }
 if (args.Contains("--xml-distributed-settings-only", StringComparer.Ordinal)) { tests = XmlDistributedSettingsScenarios.All.ToArray(); }
 if (args.Contains("--remaining-windows-only", StringComparer.Ordinal)) { tests = RevisionLinksScenarios.All.Concat(GitHubActionsScenarios.All).Concat(XmlDistributedSettingsScenarios.All).ToArray(); }
+if (args.Contains("--pull-requests-only", StringComparer.Ordinal)) { tests = GitHubHostingScenarios.All.ToArray(); }
 if (args.Contains("--detailed-settings-only", StringComparer.Ordinal)) { tests = XmlDistributedSettingsScenarios.All.Concat(DictionarySettingsScenarios.All).Concat(RemoteHeadsScenarios.All).Concat(WorktreeScenarios.All).ToArray(); }
 if (args.Contains("--dictionary-settings-only", StringComparer.Ordinal)) { tests = DictionarySettingsScenarios.All.ToArray(); }
 if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptScenarios.All.Concat(ScriptRuntimeScenarios.All).ToArray(); }

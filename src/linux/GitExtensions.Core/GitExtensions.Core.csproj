@@ -36,6 +36,10 @@
     </ItemGroup>
   </Target>
   <ItemGroup>
+    <!-- Pure original credential identities; no Windows credential manager/UI dependency. -->
+    <Compile Include="../../plugins/GitUIPluginInterfaces/BuildServerIntegration/BuildServerCredentialsType.cs" Link="Shared/BuildServerCredentialsType.cs" />
+    <Compile Include="../../plugins/GitUIPluginInterfaces/BuildServerIntegration/IBuildServerCredentials.cs" Link="Shared/IBuildServerCredentials.cs" />
+    <Compile Include="../../plugins/GitUIPluginInterfaces/BuildServerIntegration/BuildServerCredentials.cs" Link="Shared/BuildServerCredentials.cs" />
     <!-- Preserve the original completion value, matching, metadata and extraction rules. -->
     <Compile Include="../../app/GitUI/AutoCompletion/AutoCompleteWord.cs" Link="Shared/AutoCompleteWord.cs" />
     <Compile Include="../../app/GitUI/AutoCompletion/IAutoCompleteProvider.cs" Link="Shared/IAutoCompleteProvider.cs" />

@@ -290,7 +290,7 @@ public sealed partial class MainWindow
             BuildHistoryNavigateMenu(),
             BuildHistoryViewMenu(),
             BuildCommandsMenu(),
-            MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync)),
+            BuildGitHostsMenu(),
             MenuGroup("Plugins", NativePluginCatalog.BuiltIn.Concat(LifecycleSettingsPlugins()).Select(PluginMenuItem).ToArray()),
             BuildToolsMenu(),
             BuildHelpMenu()
