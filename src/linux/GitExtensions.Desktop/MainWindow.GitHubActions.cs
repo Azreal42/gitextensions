@@ -43,6 +43,7 @@ public sealed partial class MainWindow
     internal Func<GitHubActionsSettings, GitHubActionsApiClient> GitHubActionsClientFactory { get; set; } = settings => new(settings);
     internal event Action? GitHubActionsStatusChanged;
     internal Func<TeamCitySettings, IBuildServerCredentials, ITeamCityClient> TeamCityClientFactory { get; set; } = (settings, credentials) => new TeamCityApiClient(settings, credentials);
+    internal Func<GitLabSettings, IGitLabClient> GitLabClientFactory { get; set; } = settings => new GitLabApiClient(settings);
     internal BuildServerCredentialsStore? CredentialsStoreOverride { get; set; }
     internal BuildServerCommitStatus? BuildServerStatusFor(string? sha)
         => _gitHubActionsEnabled && sha is not null && _gitHubActionsSnapshot?.Commits.TryGetValue(sha, out BuildServerCommitStatus? status) == true ? status : null;
@@ -179,7 +180,7 @@ public sealed partial class MainWindow
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
             string provider = xml.GetValue(GitHubActionsSettings.ProviderKey) ?? "";
             bool active = GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.EnableKey)) == true
-                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName;
+                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName;
             if (_buildServerProvider != provider) { SetGitHubActionsError(null); _gitHubActionsSnapshot = null; }
             _buildServerProvider = provider.Length == 0 ? "Build server" : provider;
             _gitHubActionsEnabled = active;
@@ -191,12 +192,20 @@ public sealed partial class MainWindow
                 _gitHubActionsClient = null; _gitHubActionsConfiguration = null;
                 SetGitHubActionsError(null); PublishGitHubActionsStatus(); return;
             }
-            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; BuildServerCredentials? credentials = null;
+            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; BuildServerCredentials? credentials = null;
             string configuration;
             if (provider == GitHubActionsSettings.ProviderName)
             {
                 github = await repository.ReadGitHubActionsSettingsAsync(DetailedRepositorySettings.GlobalPath, token); github.Validate();
                 configuration = string.Join('\0', provider, github.ApiUrl, github.Owner, github.Repository, github.Token);
+            }
+            else if (provider == GitLabSettings.ProviderName)
+            {
+                var remotes = await repository.GetRemotesAsync(token);
+                gitLab = GitLabSettings.Read(xml, remotes.SelectMany(remote => remote.PushUrls.Count > 0 ? remote.PushUrls : remote.FetchUrls));
+                gitLab.Validate();
+                configuration = string.Join('\0', provider, gitLab.InstanceUri.AbsoluteUri,
+                    gitLab.ProjectId.ToString(System.Globalization.CultureInfo.InvariantCulture), gitLab.ApiToken, gitLab.PagesLimit);
             }
             else
             {
@@ -220,6 +229,7 @@ public sealed partial class MainWindow
                 if (previous is not null) { await previous.DisposeAsync(); }
                 token.ThrowIfCancellationRequested();
                 _gitHubActionsClient = github is not null ? new GitHubActionsBuildSource(GitHubActionsClientFactory(github))
+                    : gitLab is not null ? new GitLabBuildSource(GitLabClientFactory(gitLab))
                     : new TeamCityBuildSource(TeamCityClientFactory(teamCity!, credentials!));
                 _gitHubActionsConfiguration = configuration;
             }
@@ -229,7 +239,7 @@ public sealed partial class MainWindow
             PublishGitHubActionsStatus();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception error) when (error is GitHubActionsException or TeamCityException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
+        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
             or System.Xml.XmlException or InvalidDataException or GitCommandException or InvalidOperationException)
         {
             if (!token.IsCancellationRequested && !_gitHubActionsClosing && ReferenceEquals(_repository, repository))
@@ -241,7 +251,7 @@ public sealed partial class MainWindow
                     _gitHubActionsClient = null;
                 }
                 // Only our fixed, credential-free API messages may be shown. Never log payloads, settings or transport exceptions.
-                SetGitHubActionsError(error is GitHubActionsException or TeamCityException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
+                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
                 PublishGitHubActionsStatus();
             }
         }

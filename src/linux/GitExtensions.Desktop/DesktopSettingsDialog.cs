@@ -93,7 +93,7 @@ internal sealed class DesktopSettingsDialog : Window
         RevisionLinksSettingsSession = revisionLinksSettings ?? new(scopedRepository, workspace);
         _revisionLinksSettingsPage = new(RevisionLinksSettingsSession, translations) { Margin = new Thickness(12) };
         GitHubActionsSettingsSession = gitHubActionsSettings ?? new(scopedRepository, workspace);
-        _buildServerSettingsPage = new(GitHubActionsSettingsSession, translations, openSettingsUrlAsync is null ? null : () => { _ = openSettingsUrlAsync("https://github.com/settings/personal-access-tokens/new"); }) { Margin = new Thickness(12) };
+        _buildServerSettingsPage = new(GitHubActionsSettingsSession, translations, openSettingsUrlAsync is null ? null : () => { _ = openSettingsUrlAsync("https://github.com/settings/personal-access-tokens/new"); }, openSettingsUrlAsync is null ? null : uri => { _ = openSettingsUrlAsync(uri.AbsoluteUri); }) { Margin = new Thickness(12) };
         _consoleStyleSession = consoleStyleSettings ?? new();
         _consoleStylePage = new(_consoleStyleSession, translations) { Margin = new Thickness(12) };
         _detailedSettingsPage = new(DetailedSettingsSession, translations) { Margin = new Thickness(12) };

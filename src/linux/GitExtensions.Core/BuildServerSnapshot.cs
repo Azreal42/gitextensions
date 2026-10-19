@@ -43,4 +43,13 @@ public sealed class BuildServerSnapshot
         return new(snapshot.Builds.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
             (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated);
     }
+    public static BuildServerSnapshot FromGitLab(GitLabSnapshot snapshot, Func<GitLabPipeline, Uri?> page)
+    {
+        BuildServerRun Run(GitLabPipeline pipeline) => new(pipeline.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            pipeline.ProjectId.ToString(System.Globalization.CultureInfo.InvariantCulture), pipeline.Description,
+            (BuildServerBuildStatus)pipeline.BuildStatus, Array.AsReadOnly(new[] { pipeline.Sha }), pipeline.CreatedAt, pipeline.UpdatedAt, page(pipeline));
+        return new(snapshot.Pipelines.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
+            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Pipelines.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated);
+    }
+
 }

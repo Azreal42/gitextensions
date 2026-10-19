@@ -47,6 +47,8 @@ internal abstract class BuildServerScopedSettingsPage : UserControl
         line.Children.Add(new TextBlock { Text = Translations.Translate(caption), VerticalAlignment = VerticalAlignment.Center });
         Grid.SetColumn(box, 1); line.Children.Add(box); _fields.Children.Add(line); return box;
     }
+    protected void LoadText(TextBox box, string? value)
+    { bool loading = _loading; _loading = true; try { box.Text = value; } finally { _loading = loading; } }
     protected void Boolean(string key, string name, string caption)
     {
         CheckBox box = new() { Name = name, Content = Translations.Translate(caption), IsThreeState = true };
@@ -95,7 +97,7 @@ internal abstract class BuildServerScopedSettingsPage : UserControl
                 }
                 if (editor is CheckBox check) { check.IsThreeState = _scope != GitDistributedSettingsScope.Effective; check.IsChecked = GitHubActionsSettings.Boolean(value) ?? (_scope == GitDistributedSettingsScope.Effective ? false : null); }
                 if (editor is ComboBox combo)
-                { combo.ItemsSource = new[] { "", GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName }.Concat(value is { Length: > 0 } && value != GitHubActionsSettings.ProviderName && value != TeamCitySettings.ProviderName ? [value] : []).ToArray(); combo.SelectedItem = value ?? ""; }
+                { combo.ItemsSource = new[] { "", GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName, GitLabSettings.ProviderName }.Concat(value is { Length: > 0 } && value != GitHubActionsSettings.ProviderName && value != TeamCitySettings.ProviderName && value != GitLabSettings.ProviderName ? [value] : []).ToArray(); combo.SelectedItem = value ?? ""; }
             }
             _notice.Text = Session.LoadError is not null ? Translations.Translate("CI settings could not be read. No settings have been changed.")
                 : _scope == GitDistributedSettingsScope.Effective ? Translations.Translate("Effective settings are read-only. Select Local, Distributed or Global to edit.") : Session.DetectionError ?? "";
@@ -123,21 +125,25 @@ internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSett
 {
     internal GitHubActionsSettingsPage GitHubPage { get; }
     internal TeamCitySettingsPage TeamCityPage { get; }
-    internal bool IsBusy => TeamCityPage.IsBusy;
+    internal GitLabSettingsPage GitLabPage { get; }
+    internal bool IsBusy => TeamCityPage.IsBusy || GitLabPage.IsBusy;
     internal event Action? BusyChanged;
-    internal Task BeginClose() => TeamCityPage.BeginClose();
-    internal BuildServerIntegrationSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, Action? createToken = null) : base(session, translations, "BuildServerIntegrationSettingsPage")
+    internal Task BeginClose() => Task.WhenAll(TeamCityPage.BeginClose(), GitLabPage.BeginClose());
+    internal BuildServerIntegrationSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, Action? createToken = null, Action<Uri>? openBuildServerUri = null) : base(session, translations, "BuildServerIntegrationSettingsPage")
     {
         Boolean(GitHubActionsSettings.EnableKey, "EnableIntegration", "Enable build server integration");
         Boolean(GitHubActionsSettings.ShowPageKey, "ShowBuildResultPage", "Show build result page"); Provider();
         GitHubPage = new(session, translations, createToken, embedded: true); Add(GitHubPage);
         TeamCityPage = new(session, translations, embedded: true); Add(TeamCityPage);
+        GitLabPage = new(session, translations, openBuildServerUri, embedded: true); Add(GitLabPage);
+        GitLabPage.BusyChanged += () => BusyChanged?.Invoke();
         TeamCityPage.BusyChanged += () => { SetFieldsEnabled(!TeamCityPage.IsBusy); BusyChanged?.Invoke(); };
-        ScopeChanged += GitHubPage.SetScope; ScopeChanged += TeamCityPage.SetScope;
+        ScopeChanged += GitHubPage.SetScope; ScopeChanged += TeamCityPage.SetScope; ScopeChanged += GitLabPage.SetScope;
         DraftChanged += UpdateProvider;
         Notice("Build pages open only when you explicitly choose Show build page."); ShowLoadState();
     }
     private void UpdateProvider() { if (GitHubPage is not null) { GitHubPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitHubActionsSettings.ProviderName; }
-        if (TeamCityPage is not null) { TeamCityPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == TeamCitySettings.ProviderName; } }
-    internal override void ShowLoadState() { base.ShowLoadState(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); UpdateProvider(); }
+        if (TeamCityPage is not null) { TeamCityPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == TeamCitySettings.ProviderName; }
+        if (GitLabPage is not null) { bool active = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitLabSettings.ProviderName; GitLabPage.IsVisible = active; GitLabPage.SetProviderActive(active); } }
+    internal override void ShowLoadState() { base.ShowLoadState(); UpdateProvider(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); GitLabPage?.ShowLoadState(); }
 }
