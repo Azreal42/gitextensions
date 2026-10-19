@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
@@ -42,9 +43,21 @@ public sealed class TextEditDialog : Window, IDisposable
                 if (!_disposed && IsVisible && IsEffectivelyEnabled) { Viewer.TextView.FocusEditor(); }
             }, DispatcherPriority.Loaded);
         };
+        // FileViewer consumes Escape before the form: clear its selection first.
+        // AvaloniaEdit handles this key internally, so relay it at the focused text area.
+        Viewer.TextView.Editor.TextArea.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Handled || args.Key != Key.Escape || args.KeyModifiers != KeyModifiers.None
+                || !ReferenceEquals(args.Source, Viewer.TextView.Editor.TextArea) || !Viewer.TextView.Editor.TextArea.IsFocused
+                || Viewer.TextView.ContextMenu?.IsOpen == true) { return; }
+            args.Handled = true;
+            if (!Viewer.TextView.Editor.TextArea.Selection.IsEmpty) { Viewer.TextView.Editor.TextArea.ClearSelection(); }
+            else { Close(); }
+        }, RoutingStrategies.Tunnel);
         KeyDown += (_, args) =>
         {
-            if (args.Key == Key.Escape) { args.Handled = true; Close(); }
+            if (!args.Handled && args.Key == Key.Escape && args.KeyModifiers == KeyModifiers.None)
+            { args.Handled = true; Close(); }
         };
         Closed += (_, _) => Dispose();
     }
