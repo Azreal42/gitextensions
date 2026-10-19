@@ -1,11 +1,11 @@
 {
-  "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
-  "trx": "artifacts/linux/remaining-windows-20261019/desktop-full-03/results/desktop.trx",
-  "trx_sha256": "d803397187c9b9d52a8506720d1dd9ec33021ceaf259513c740b070f90c5aef9",
+  "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
+  "trx": "artifacts/linux/pull-requests-20261019/desktop-full-03/results/desktop.trx",
+  "trx_sha256": "5ea58fa0b649a3d183aad3cf6be68562ed79f6c1920883155b0705c8e62df927",
   "counters": {
-    "total": "2810",
-    "executed": "2810",
-    "passed": "2810",
+    "total": "2889",
+    "executed": "2889",
+    "passed": "2889",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -128,6 +128,9 @@
     },
     "BrowserSelectionTests": {
       "Passed": 7
+    },
+    "BuildServerCredentialsDialogTests": {
+      "Passed": 17
     },
     "CheckoutInitialLayoutTests": {
       "Passed": 3
@@ -450,6 +453,15 @@
     "GitHubActionsDesktopTests": {
       "Passed": 7
     },
+    "GitHubHostingPreferencesStoreTests": {
+      "Passed": 19
+    },
+    "GitHubHostingSettingsDialogTests": {
+      "Passed": 4
+    },
+    "GitHubPullRequestFetchTests": {
+      "Passed": 11
+    },
     "GitProcessDialogTests": {
       "Passed": 15
     },
@@ -560,6 +572,9 @@
     },
     "PullProcessDialogTests": {
       "Passed": 9
+    },
+    "PullRequestDialogsTests": {
+      "Passed": 24
     },
     "PushDetailedSettingsTests": {
       "Passed": 7
@@ -672,6 +687,9 @@
     "RevisionQuickSearchTests": {
       "Passed": 42
     },
+    "RootPullRequestWorkflowTests": {
+      "Passed": 4
+    },
     "RulesFileEditorDialogTests": {
       "Passed": 19
     },
@@ -759,62 +777,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+      "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
       "execution_source_sha": null,
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 820,
-      "total": 820,
-      "execution_result": "artifacts/linux/remaining-windows-20261019/core-full-03/core-result.json",
-      "execution_result_sha256": "1a1f8fac380d690ad81c4ccbae305ce57601ef7cd2bc820341b7df6c97363fa9",
+      "passed": 848,
+      "total": 848,
+      "execution_result": "artifacts/linux/pull-requests-20261019/core-full-01/result.json",
+      "execution_result_sha256": "ac8ff916f6f4e41c8a5d25fdc9c5e2a1274168fce50471eb25a037897c54a823",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
-        "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
+        "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
+        "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
-        "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
-      }
+        "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
+        "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+      },
+      "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
     },
     "plugins": {
-      "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+      "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
       "execution_source_sha": null,
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/remaining-windows-20261019/plugins-full-02/plugins-result.json",
-      "execution_result_sha256": "ff5ba4184ac2b8f434877db4f13cfe4dec878b1a485c6d56e0ce49037f605fb6",
+      "execution_result": "artifacts/linux/pull-requests-20261019/plugins-full-01/result.json",
+      "execution_result_sha256": "9c5d91bf88eebcd33cb472da1b9011183a0fe0c59583455c4594072213198822",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
-        "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
+        "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
+        "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
-        "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
-      }
+        "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
+        "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+      },
+      "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
+    "worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
     "execution_source_sha": null,
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
-      "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
+      "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
+      "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
     },
     "root_review": {
-      "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
-      "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
+      "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
+      "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
     },
-    "meaning": "Actual accepted W full suites on frozen source/assets, exact feature commit tree imported. Five unrelated Modal working-tree edits retained, so current R global code equivalence remains false. No primary rerun or global native/package UI parity."
+    "meaning": "Actual W full executions with frozen source/config scope and immutable binaries. Exact feature imported; five unrelated preexisting Modal edits remain in R, so current R global equivalence stays false. Core/Plugins qualification explicitly excludes the three later Desktop-only source edits, not a fabricated global manifest equality. No primary rerun or global native/package UI parity."
   }
 }

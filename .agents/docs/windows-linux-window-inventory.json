@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
-  "source_digest_sha256": "f15c7ff8813d801cebe6614557df044418909210ac9124bd5027bbc58d73f504",
-  "scanned_csharp_files": 2284,
+  "code_reference_commit": "877bb29f02247188237e3ab98abd448166c7ccf0",
+  "source_digest_sha256": "8e8c76f099680f95d666ae194f3029947547ab7c8b1126f39fa0f3ef9e66d60f",
+  "scanned_csharp_files": 2310,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,14 +26,14 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 93,
-    "linux_abstract_bases": 3,
+    "linux_window_types": 98,
+    "linux_abstract_bases": 4,
     "linux_dynamic_factories": 34,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N0": 4,
-      "N1": 13,
-      "N2": 31,
+      "N0": 1,
+      "N1": 14,
+      "N2": 33,
       "N3": 50,
       "NA": 1
     },
@@ -50,52 +50,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/remaining-windows-20261019/desktop-full-03/results/desktop.trx",
-    "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
-    "trx_sha256": "d803397187c9b9d52a8506720d1dd9ec33021ceaf259513c740b070f90c5aef9",
+    "trx": "artifacts/linux/pull-requests-20261019/desktop-full-03/results/desktop.trx",
+    "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
+    "trx_sha256": "5ea58fa0b649a3d183aad3cf6be68562ed79f6c1920883155b0705c8e62df927",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+        "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
         "execution_source_sha": null,
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
-        "passed": 820,
-        "total": 820,
-        "execution_result": "artifacts/linux/remaining-windows-20261019/core-full-03/core-result.json",
-        "execution_result_sha256": "1a1f8fac380d690ad81c4ccbae305ce57601ef7cd2bc820341b7df6c97363fa9",
+        "passed": 848,
+        "total": 848,
+        "execution_result": "artifacts/linux/pull-requests-20261019/core-full-01/result.json",
+        "execution_result_sha256": "ac8ff916f6f4e41c8a5d25fdc9c5e2a1274168fce50471eb25a037897c54a823",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
-          "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
+          "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
+          "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
-          "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
-        }
+          "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
+          "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+        },
+        "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
       },
       "plugins": {
-        "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+        "source_sha": "877bb29f02247188237e3ab98abd448166c7ccf0",
         "execution_source_sha": null,
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/pull-requests-ci-auth/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/remaining-windows-20261019/plugins-full-02/plugins-result.json",
-        "execution_result_sha256": "ff5ba4184ac2b8f434877db4f13cfe4dec878b1a485c6d56e0ce49037f605fb6",
+        "execution_result": "artifacts/linux/pull-requests-20261019/plugins-full-01/result.json",
+        "execution_result_sha256": "9c5d91bf88eebcd33cb472da1b9011183a0fe0c59583455c4594072213198822",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
-          "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
+          "path": "artifacts/linux/pull-requests-20261019/review/root-full-review.json",
+          "sha256": "8744ee9c192373a1877f4ca1420840aebd2962b3e1c8593986183dbb958cc942"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
-          "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
-        }
+          "path": "artifacts/linux/pull-requests-20261019/review/source-import-review.json",
+          "sha256": "989febf57dfd96d2921c03f9272880549226047c86eeee6b1009e7318f0c4b77"
+        },
+        "comparison_scope": "All Core/Plugins source and binaries identical; three later Desktop-only source edits and six Desktop DLL/PDB changes are excluded explicitly by the Root scope review."
       }
     },
     "current_linux_code_equivalent": false,
@@ -2720,6 +2722,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RootPullRequestWorkflowTests.cs",
+          "test_class": "RootPullRequestWorkflowTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
           "test_class": "ScriptEventWorkflowTests",
           "passed_in_reference_run": 14,
@@ -3540,6 +3548,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionAdvancedTests.cs",
           "test_class": "RevisionAdvancedTests",
           "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RootPullRequestWorkflowTests.cs",
+          "test_class": "RootPullRequestWorkflowTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
@@ -5199,6 +5213,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RootPullRequestWorkflowTests.cs",
+          "test_class": "RootPullRequestWorkflowTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
           "test_class": "ScriptEventWorkflowTests",
           "passed_in_reference_run": 14,
@@ -6678,13 +6698,97 @@
       "category": "windows",
       "feature": "Création de pull request",
       "group": "hosting",
-      "level": "N0",
-      "implemented": "Ouverture de l’URL d’un dépôt seulement.",
-      "remaining": "Providers d’hébergement, sélection branches et création de PR dans l’app absents.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Menu Git hosts et dialogue natif reprenant dépôts, branches, titre et corps Windows ; titre Git/template annulables sans remplacer la saisie, éditeur multiligne ordinaire et création POST explicite. Groupe PluginSettings original, identifiants distincts du token CI Actions. Suites complètes et parcours source natif ciblé vérifiés (ADR0110).",
+      "remaining": "N2 : autres hébergeurs, service GitHub réel authentifié/Enterprise, langues et audits Wayland/IME/DPI/accessibilité restent ouverts. Réponses/pagination bornées et signalées ; palette des combos encore adaptée au système. Le smoke du paquet ne vaut pas audit interactif de ses fenêtres.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core GitHub Hosting — suite complète vérifiée",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubHostingScenarios.cs",
+          "line": 9,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.CreatePullRequestDialog",
+          "label": "CreatePullRequestDialog",
+          "source": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.cs",
+          "line": 8,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.PullRequestDialog",
+          "label": "PullRequestDialog",
+          "source": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.Work.cs",
+          "line": 15,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubHostingClient",
+          "label": "GitHubHostingClient",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingApiClient.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubHostingTemplates",
+          "label": "GitHubHostingTemplates",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingTemplates.cs",
+          "line": 5,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubHostingRemotes",
+          "label": "GitHubHostingRemotes",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingRemotes.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubHostingPreferencesStore",
+          "label": "GitHubHostingPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/GitHubHostingPreferencesStore.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "label": "GitHubHostingSettings.cs",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingSettings.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "MainWindow.PullRequests.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.PullRequests.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubHostingPreferencesStoreTests.cs",
+          "test_class": "GitHubHostingPreferencesStoreTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubHostingSettingsDialogTests.cs",
+          "test_class": "GitHubHostingSettingsDialogTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/PullRequestDialogsTests.cs",
+          "test_class": "PullRequestDialogsTests",
+          "passed_in_reference_run": 24,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/github/0110-pull-requests.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.RepoHosting.ForkAndCloneForm",
@@ -6783,13 +6887,110 @@
       "category": "windows",
       "feature": "Consultation de pull requests",
       "group": "hosting",
-      "level": "N0",
-      "implemented": "Pas de liste de PR dans l’application Linux.",
-      "remaining": "Providers, liste, détails et actions de PR à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Liste native de PR, fichiers/renommages et diff via FileStatusListView/DiffView partagés ; discussion sélectionnable, brouillons par PR, commentaire POST et fermeture PATCH explicites. Fetch seul vers pr/n12_feature/topic ; ajout/réutilisation du remote puis vrai Checkout partagé pour owner/feature/topic. Annulation, scripts et fermeture drainée testés ; parcours source natif ciblé vérifié (ADR0110).",
+      "remaining": "N2 : discussion Markdown/HTML littérale et navigation inter-fichiers du viewer Windows incomplète ; réponses/diffs/listes bornés signalés. Autres hébergeurs, GitHub réel authentifié/Enterprise et audit natif étendu ouverts. Un remote ajouté peut rester après échec réseau ; pas de transaction globale. Smoke du paquet distinct de son audit interactif.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core GitHub Hosting — suite complète vérifiée",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubHostingScenarios.cs",
+          "line": 9,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.ViewPullRequestsDialog",
+          "label": "ViewPullRequestsDialog",
+          "source": "src/linux/GitExtensions.Desktop/ViewPullRequestsDialog.cs",
+          "line": 10,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.PullRequestDialog",
+          "label": "PullRequestDialog",
+          "source": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.Work.cs",
+          "line": 15,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.PullRequestDiscussionView",
+          "label": "PullRequestDiscussionView",
+          "source": "src/linux/GitExtensions.Desktop/PullRequestDiscussionView.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Desktop.Controls.FileStatusListView",
+          "label": "FileStatusListView",
+          "source": "src/linux/GitExtensions.Desktop/Controls/FileStatusListView.cs",
+          "line": 34,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Desktop.Controls.DiffView",
+          "label": "DiffView",
+          "source": "src/linux/GitExtensions.Desktop/Controls/DiffView.cs",
+          "line": 24,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubHostingClient",
+          "label": "GitHubHostingClient",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingApiClient.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubPullRequestDiff",
+          "label": "GitHubPullRequestDiff",
+          "source": "src/linux/GitExtensions.Core/GitHubPullRequestDiff.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "label": "GitRepository.PullRequests.cs",
+          "source": "src/linux/GitExtensions.Core/GitRepository.PullRequests.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "MainWindow.PullRequests.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.PullRequests.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubHostingSettingsDialogTests.cs",
+          "test_class": "GitHubHostingSettingsDialogTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubPullRequestFetchTests.cs",
+          "test_class": "GitHubPullRequestFetchTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/PullRequestDialogsTests.cs",
+          "test_class": "PullRequestDialogsTests",
+          "passed_in_reference_run": 24,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RootPullRequestWorkflowTests.cs",
+          "test_class": "RootPullRequestWorkflowTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/github/0110-pull-requests.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SearchWindow`1",
@@ -10003,6 +10204,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RootPullRequestWorkflowTests.cs",
+          "test_class": "RootPullRequestWorkflowTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
           "test_class": "ScriptEventWorkflowTests",
           "passed_in_reference_run": 14,
@@ -13110,13 +13317,69 @@
       "category": "windows",
       "feature": "Identifiants du serveur CI",
       "group": "hosting",
-      "level": "N0",
-      "implemented": "Jeton spécifique GitHub Actions dans la page du fournisseur ; aucun dialogue générique de credentials CI équivalent.",
-      "remaining": "Dialogue générique anonymous/username-password/bearer et cycle d’authentification des fournisseurs à porter ; le token Actions et askpass Git ne le remplacent pas.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "implemented": "Dialogue compact basé sur le modèle original Guest/UsernameAndPassword/BearerToken, champs inactifs mémorisés et secrets masqués ; brouillon cloné, OK nouveau modèle, Cancel/Escape null. Consommateur réel dans les paramètres Hosting GitHub avec Save parent et origine API explicite. Suites complètes, variantes EN/FR clair/sombre headless et parcours source natif anglais/clair ciblé vérifiés (ADR0110).",
+      "remaining": "N1 : raccordement Jenkins/TeamCity et autres consommateurs CI historiques absent ; le token CI Actions reste séparé. Identifiants locaux sans coffre ; audits natifs étendus, autres langues et plateformes ouverts. Le consommateur Hosting ne certifie pas toute l’authentification CI.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsDialog",
+          "label": "BuildServerCredentialsDialog",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubHostingSettingsDialog",
+          "label": "GitHubHostingSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/GitHubHostingSettingsDialog.cs",
+          "line": 12,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubHostingPreferencesStore",
+          "label": "GitHubHostingPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/GitHubHostingPreferencesStore.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubHostingCredentials",
+          "label": "GitHubHostingCredentials",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingCredentials.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "GitHubHostingSettings.cs",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingSettings.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsDialogTests.cs",
+          "test_class": "BuildServerCredentialsDialogTests",
+          "passed_in_reference_run": 17,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubHostingPreferencesStoreTests.cs",
+          "test_class": "GitHubHostingPreferencesStoreTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubHostingSettingsDialogTests.cs",
+          "test_class": "GitHubHostingSettingsDialogTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/github/0110-pull-requests.md"
+      ]
     },
     {
       "id": "GitUI.HelperDialogs.FormChooseCommit",
@@ -14863,6 +15126,30 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsDialog",
+      "name": "BuildServerCredentialsDialog",
+      "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDialog.cs",
+      "line": 14,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDialog.cs",
+          "line": 14
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.HelperDialogs.FormBuildServerCredentials",
+          "name": "FormBuildServerCredentials",
+          "level": "N1"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.CheckoutBranchDialog",
       "name": "CheckoutBranchDialog",
       "source": "src/linux/GitExtensions.Desktop/CheckoutBranchDialog.cs",
@@ -15328,6 +15615,30 @@
           "id": "GitUI.CommandsDialogs.FormCreateBranch",
           "name": "FormCreateBranch",
           "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.CreatePullRequestDialog",
+      "name": "CreatePullRequestDialog",
+      "source": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.cs",
+      "line": 8,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.cs",
+          "line": 8
+        }
+      ],
+      "bases": [
+        "PullRequestDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.RepoHosting.CreatePullRequestForm",
+          "name": "CreatePullRequestForm",
+          "level": "N2"
         }
       ],
       "note": ""
@@ -15880,6 +16191,30 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.GitHubHostingSettingsDialog",
+      "name": "GitHubHostingSettingsDialog",
+      "source": "src/linux/GitExtensions.Desktop/GitHubHostingSettingsDialog.cs",
+      "line": 12,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/GitHubHostingSettingsDialog.cs",
+          "line": 12
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.HelperDialogs.FormBuildServerCredentials",
+          "name": "FormBuildServerCredentials",
+          "level": "N1"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.GitImpactDialog",
       "name": "GitImpactDialog",
       "source": "src/linux/GitExtensions.Desktop/GitImpactDialog.cs",
@@ -16218,6 +16553,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Pull.cs",
           "line": 13
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.PullRequests.cs",
+          "line": 8
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
@@ -16707,6 +17046,35 @@
         {
           "id": "GitUI.CommandsDialogs.FormPull",
           "name": "FormPull",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.PullRequestDialog",
+      "name": "PullRequestDialog",
+      "source": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.Work.cs",
+      "line": 15,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/CreatePullRequestDialog.Work.cs",
+          "line": 15
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": true,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.RepoHosting.CreatePullRequestForm",
+          "name": "CreatePullRequestForm",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.RepoHosting.ViewPullRequestsForm",
+          "name": "ViewPullRequestsForm",
           "level": "N2"
         }
       ],
@@ -17546,6 +17914,30 @@
       "abstract": false,
       "windows": [],
       "note": "Confirmation Undo ; variante du menu de FormBrowse."
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.ViewPullRequestsDialog",
+      "name": "ViewPullRequestsDialog",
+      "source": "src/linux/GitExtensions.Desktop/ViewPullRequestsDialog.cs",
+      "line": 10,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/ViewPullRequestsDialog.cs",
+          "line": 10
+        }
+      ],
+      "bases": [
+        "PullRequestDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.RepoHosting.ViewPullRequestsForm",
+          "name": "ViewPullRequestsForm",
+          "level": "N2"
+        }
+      ],
+      "note": ""
     },
     {
       "id": "GitExtensions.Linux.Desktop.WorktreeDialog",
@@ -22074,8 +22466,8 @@
       "N2": 3
     },
     "hosting": {
-      "N0": 3,
-      "N1": 1
+      "N1": 2,
+      "N2": 2
     },
     "information": {
       "N1": 5,

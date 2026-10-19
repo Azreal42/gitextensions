@@ -1936,35 +1936,95 @@
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
       "feature": "Identifiants du serveur CI",
       "group": "hosting",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Jeton spécifique GitHub Actions dans la page du fournisseur ; aucun dialogue générique de credentials CI équivalent.",
-      "remaining": "Dialogue générique anonymous/username-password/bearer et cycle d’authentification des fournisseurs à porter ; le token Actions et askpass Git ne le remplacent pas.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N1",
+      "linux": [
+        "BuildServerCredentialsDialog",
+        "GitHubHostingSettingsDialog",
+        "GitHubHostingPreferencesStore",
+        "GitHubHostingCredentials",
+        "file:src/linux/GitExtensions.Core/GitHubHostingSettings.cs"
+      ],
+      "implemented": "Dialogue compact basé sur le modèle original Guest/UsernameAndPassword/BearerToken, champs inactifs mémorisés et secrets masqués ; brouillon cloné, OK nouveau modèle, Cancel/Escape null. Consommateur réel dans les paramètres Hosting GitHub avec Save parent et origine API explicite. Suites complètes, variantes EN/FR clair/sombre headless et parcours source natif anglais/clair ciblé vérifiés (ADR0110).",
+      "remaining": "N1 : raccordement Jenkins/TeamCity et autres consommateurs CI historiques absent ; le token CI Actions reste séparé. Identifiants locaux sans coffre ; audits natifs étendus, autres langues et plateformes ouverts. Le consommateur Hosting ne certifie pas toute l’authentification CI.",
+      "visual": "rapproche",
+      "tests": [
+        "BuildServerCredentialsDialogTests",
+        "GitHubHostingSettingsDialogTests",
+        "GitHubHostingPreferencesStoreTests"
+      ],
+      "adr": [
+        "0110"
+      ]
     },
     "GitUI.CommandsDialogs.RepoHosting.CreatePullRequestForm": {
       "feature": "Création de pull request",
       "group": "hosting",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Ouverture de l’URL d’un dépôt seulement.",
-      "remaining": "Providers d’hébergement, sélection branches et création de PR dans l’app absents.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "CreatePullRequestDialog",
+        "PullRequestDialog",
+        "GitHubHostingClient",
+        "GitHubHostingTemplates",
+        "GitHubHostingRemotes",
+        "GitHubHostingPreferencesStore",
+        "file:src/linux/GitExtensions.Core/GitHubHostingSettings.cs",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.PullRequests.cs"
+      ],
+      "implemented": "Menu Git hosts et dialogue natif reprenant dépôts, branches, titre et corps Windows ; titre Git/template annulables sans remplacer la saisie, éditeur multiligne ordinaire et création POST explicite. Groupe PluginSettings original, identifiants distincts du token CI Actions. Suites complètes et parcours source natif ciblé vérifiés (ADR0110).",
+      "remaining": "N2 : autres hébergeurs, service GitHub réel authentifié/Enterprise, langues et audits Wayland/IME/DPI/accessibilité restent ouverts. Réponses/pagination bornées et signalées ; palette des combos encore adaptée au système. Le smoke du paquet ne vaut pas audit interactif de ses fenêtres.",
+      "visual": "rapproche",
+      "tests": [
+        "PullRequestDialogsTests",
+        "GitHubHostingSettingsDialogTests",
+        "GitHubHostingPreferencesStoreTests"
+      ],
+      "adr": [
+        "0110"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core GitHub Hosting — suite complète vérifiée",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubHostingScenarios.cs",
+          "line": 9,
+          "kind": "source"
+        }
+      ]
     },
     "GitUI.CommandsDialogs.RepoHosting.ViewPullRequestsForm": {
       "feature": "Consultation de pull requests",
       "group": "hosting",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de liste de PR dans l’application Linux.",
-      "remaining": "Providers, liste, détails et actions de PR à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "ViewPullRequestsDialog",
+        "PullRequestDialog",
+        "PullRequestDiscussionView",
+        "FileStatusListView",
+        "DiffView",
+        "GitHubHostingClient",
+        "GitHubPullRequestDiff",
+        "file:src/linux/GitExtensions.Core/GitRepository.PullRequests.cs",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.PullRequests.cs"
+      ],
+      "implemented": "Liste native de PR, fichiers/renommages et diff via FileStatusListView/DiffView partagés ; discussion sélectionnable, brouillons par PR, commentaire POST et fermeture PATCH explicites. Fetch seul vers pr/n12_feature/topic ; ajout/réutilisation du remote puis vrai Checkout partagé pour owner/feature/topic. Annulation, scripts et fermeture drainée testés ; parcours source natif ciblé vérifié (ADR0110).",
+      "remaining": "N2 : discussion Markdown/HTML littérale et navigation inter-fichiers du viewer Windows incomplète ; réponses/diffs/listes bornés signalés. Autres hébergeurs, GitHub réel authentifié/Enterprise et audit natif étendu ouverts. Un remote ajouté peut rester après échec réseau ; pas de transaction globale. Smoke du paquet distinct de son audit interactif.",
+      "visual": "rapproche",
+      "tests": [
+        "PullRequestDialogsTests",
+        "GitHubPullRequestFetchTests",
+        "GitHubHostingSettingsDialogTests",
+        "RootPullRequestWorkflowTests"
+      ],
+      "adr": [
+        "0110"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core GitHub Hosting — suite complète vérifiée",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubHostingScenarios.cs",
+          "line": 9,
+          "kind": "source"
+        }
+      ]
     },
     "GitUI.CommandsDialogs.RepoHosting.ForkAndCloneForm": {
       "feature": "Fork puis clone via un hébergeur",
