@@ -386,6 +386,7 @@ public sealed class GitConfigurationPageTests
         Assert.That(await f.Read(outsideRepository ? "global" : "local", "fetch.prune"), Is.Null);
         MainWindow main = new() { Width = 1280, Height = 900 }; f.Own(main); main.Show();
         if (!outsideRepository) { await main.OpenRepositoryAsync(f.Git.Repository.Path); }
+        await main.WindowWorkCompletion.WaitAsync(TimeSpan.FromSeconds(20));
         await Until(() => !main.IsBusy); Press(main, PhysicalKey.Comma, RawInputModifiers.Control);
         await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any(settings => settings.IsVisible));
         DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(window => window.IsVisible);
@@ -398,7 +399,8 @@ public sealed class GitConfigurationPageTests
         await child.InitializeAsync(); await Idle(child); Pump(child);
         Assert.That(child.Owner, Is.SameAs(settings)); Assert.That(child.IsReady, Is.True, child.LastError);
         Assert.That(Field<TabControl>(child, "GitConfigPages").SelectedItem, Is.SameAs(Field<TabItem>(child, "GitAdvancedTab")));
-        Assert.That(child.AdvancedPage.IsEffectivelyVisible, Is.True); Assert.That(child.Page.IsEffectivelyVisible, Is.False);
+        Assert.That(child.AdvancedPage.IsEffectivelyVisible, Is.True); Assert.That(TopLevel.GetTopLevel(child.AdvancedPage), Is.SameAs(child));
+        Assert.That(child.GetVisualDescendants(), Does.Not.Contain(child.Page), "The unselected Config page must not occur in the rendered window tree.");
         Assert.That(child.AdvancedPage.Session, Is.SameAs(child.Page.Session));
         ComboBox scope = Field<ComboBox>(child, "GitAdvancedScope");
         if (outsideRepository)
@@ -436,6 +438,7 @@ public sealed class GitConfigurationPageTests
         if (savedFonts is null) { Assert.That(File.Exists(fonts.FilePath), Is.False); }
         else { Assert.That(File.ReadAllBytes(fonts.FilePath), Is.EqualTo(savedFonts)); }
         Assert.That(File.ReadAllBytes(outsideRepository ? f.Git.PathInRepository(".git/config") : f.Git.Output("global.config")), Is.EqualTo(outsideRepository ? originalLocal : originalGlobal), "The other native scope is byte-identical.");
+        await main.WindowWorkCompletion.WaitAsync(TimeSpan.FromSeconds(20));
     }
 
     private sealed class Scope(ReferenceFixture git) : IAsyncDisposable
