@@ -4,6 +4,7 @@ namespace GitExtensions.Linux.Desktop;
 internal interface IBuildServerSource : IAsyncDisposable
 {
     Task<BuildServerSnapshot> ReadAsync(bool force, CancellationToken token);
+    TimeSpan? PreferredPollInterval => null;
 }
 
 internal sealed class GitHubActionsBuildSource(GitHubActionsApiClient client) : IBuildServerSource
@@ -29,5 +30,13 @@ internal sealed class GitLabBuildSource(IGitLabClient client) : IBuildServerSour
 {
     public async Task<BuildServerSnapshot> ReadAsync(bool force, CancellationToken token)
         => BuildServerSnapshot.FromGitLab(await client.ReadAsync(force, token), client.BuildPageUri);
+    public ValueTask DisposeAsync() => client.DisposeAsync();
+}
+
+internal sealed class AppVeyorBuildSource(IAppVeyorClient client) : IBuildServerSource
+{
+    public TimeSpan? PreferredPollInterval => TimeSpan.FromSeconds(10);
+    public async Task<BuildServerSnapshot> ReadAsync(bool force, CancellationToken token)
+        => BuildServerSnapshot.FromAppVeyor(await client.ReadAsync(force, token), client.BuildPageUri);
     public ValueTask DisposeAsync() => client.DisposeAsync();
 }

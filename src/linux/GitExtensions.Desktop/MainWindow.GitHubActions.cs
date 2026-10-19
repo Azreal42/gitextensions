@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.Frozen;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia.Controls;
@@ -39,7 +40,9 @@ public sealed partial class MainWindow
     internal string? GitHubActionsError { get; private set; }
     internal bool GitHubActionsEnabled => _gitHubActionsEnabled;
     internal Task GitHubActionsCompletion => Task.WhenAll(_gitHubActionsRestarts.Concat(_gitHubActionsManualReads).Append(_gitHubActionsCompletion).ToArray());
-    internal TimeSpan GitHubActionsPollInterval { get; set; } = TimeSpan.FromSeconds(30);
+    private TimeSpan? _buildServerPollOverride;
+    internal TimeSpan GitHubActionsPollInterval
+    { get => _buildServerPollOverride ?? _gitHubActionsClient?.PreferredPollInterval ?? TimeSpan.FromSeconds(30); set => _buildServerPollOverride = value; }
     internal Func<GitHubActionsSettings, GitHubActionsApiClient> GitHubActionsClientFactory { get; set; } = settings => new(settings);
     internal event Action? GitHubActionsStatusChanged;
     internal Func<TeamCitySettings, IBuildServerCredentials, ITeamCityClient> TeamCityClientFactory { get; set; } = (settings, credentials) => new TeamCityApiClient(settings, credentials);
@@ -71,7 +74,7 @@ public sealed partial class MainWindow
         }, RoutingStrategies.Tunnel, handledEventsToo: true);
         _commits.LayoutUpdated += (_, _) => ApplyGitHubActionsRows();
         _gitHubActionsRuns.ItemTemplate = new FuncDataTemplate<BuildServerRun>((run, _) => new TextBlock
-        { Text = run?.Description ?? "", TextTrimming = TextTrimming.CharacterEllipsis });
+        { Text = run?.Description ?? "", TextTrimming = TextTrimming.CharacterEllipsis, [ToolTip.TipProperty] = run?.Tooltip ?? run?.Description });
         _gitHubActionsRuns.SelectionChanged += (_, _) => UpdateGitHubActionsCommands();
         _gitHubActionsRuns.DoubleTapped += async (_, _) => await OpenGitHubActionsRunPageAsync(_gitHubActionsRuns.SelectedItem as BuildServerRun);
     }
@@ -180,7 +183,7 @@ public sealed partial class MainWindow
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
             string provider = xml.GetValue(GitHubActionsSettings.ProviderKey) ?? "";
             bool active = GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.EnableKey)) == true
-                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName;
+                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName or AppVeyorSettings.ProviderName;
             if (_buildServerProvider != provider) { SetGitHubActionsError(null); _gitHubActionsSnapshot = null; }
             _buildServerProvider = provider.Length == 0 ? "Build server" : provider;
             _gitHubActionsEnabled = active;
@@ -192,7 +195,7 @@ public sealed partial class MainWindow
                 _gitHubActionsClient = null; _gitHubActionsConfiguration = null;
                 SetGitHubActionsError(null); PublishGitHubActionsStatus(); return;
             }
-            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; BuildServerCredentials? credentials = null;
+            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; AppVeyorSettings? appVeyor = null; IReadOnlySet<string>? admittedCommits = null; BuildServerCredentials? credentials = null;
             string configuration;
             if (provider == GitHubActionsSettings.ProviderName)
             {
@@ -206,6 +209,15 @@ public sealed partial class MainWindow
                 gitLab.Validate();
                 configuration = string.Join('\0', provider, gitLab.InstanceUri.AbsoluteUri,
                     gitLab.ProjectId.ToString(System.Globalization.CultureInfo.InvariantCulture), gitLab.ApiToken, gitLab.PagesLimit);
+            }
+            else if (provider == AppVeyorSettings.ProviderName)
+            {
+                BuildServerRepositoryVariables variables = await repository.GetBuildServerRepositoryVariablesAsync(token);
+                appVeyor = AppVeyorSettings.Read(xml, expandVariables: variables.Expand); appVeyor.Validate();
+                admittedCommits = _commits.Items.OfType<GitCommit>().Select(commit => commit.Hash)
+                    .Where(AppVeyorBuild.IsCommitHash).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+                configuration = string.Join('\0', provider, appVeyor.AccountName, appVeyor.AccountToken,
+                    appVeyor.ProjectName, appVeyor.LoadTestsResults, string.Join('\n', admittedCommits.Order(StringComparer.Ordinal)));
             }
             else
             {
@@ -230,6 +242,7 @@ public sealed partial class MainWindow
                 token.ThrowIfCancellationRequested();
                 _gitHubActionsClient = github is not null ? new GitHubActionsBuildSource(GitHubActionsClientFactory(github))
                     : gitLab is not null ? new GitLabBuildSource(GitLabClientFactory(gitLab))
+                    : appVeyor is not null ? new AppVeyorBuildSource(AppVeyorClientFactory(appVeyor, admittedCommits!))
                     : new TeamCityBuildSource(TeamCityClientFactory(teamCity!, credentials!));
                 _gitHubActionsConfiguration = configuration;
             }
@@ -239,7 +252,7 @@ public sealed partial class MainWindow
             PublishGitHubActionsStatus();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
+        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
             or System.Xml.XmlException or InvalidDataException or GitCommandException or InvalidOperationException)
         {
             if (!token.IsCancellationRequested && !_gitHubActionsClosing && ReferenceEquals(_repository, repository))
@@ -251,7 +264,7 @@ public sealed partial class MainWindow
                     _gitHubActionsClient = null;
                 }
                 // Only our fixed, credential-free API messages may be shown. Never log payloads, settings or transport exceptions.
-                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
+                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
                 PublishGitHubActionsStatus();
             }
         }
@@ -314,8 +327,8 @@ public sealed partial class MainWindow
     }
     internal MenuItem BuildGitHubActionsShowBuildPageMenu()
     {
-        MenuItem item = new() { Name = "ShowBuildPage", Header = T("Show build page") };
-        item.Click += async (_, _) => await ShowBuildPageAsync(); _gitHubActionsShowMenus.Add(item); UpdateGitHubActionsCommands(); return item;
+        MenuItem item = new() { Name = "ShowBuildPage", Header = RevisionHeader("openBuildReportToolStripMenuItem", "View &build report in a browser"), Icon = OriginalIconImage("Integration.png") };
+        item.Click += async (_, _) => await WithRevisionActionFocusAsync(ShowBuildPageAsync); _gitHubActionsShowMenus.Add(item); UpdateGitHubActionsCommands(); return item;
     }
     internal Task ShowBuildPageAsync() => OpenGitHubActionsRunPageAsync(BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault());
     private Task OpenGitHubActionsRunPageAsync(BuildServerRun? run)
@@ -331,7 +344,8 @@ public sealed partial class MainWindow
     {
         BuildServerRun? selected = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault();
         bool available = _gitHubActionsEnabled && !_gitHubActionsClosing && selected is not null && selected.PageUri is not null;
-        foreach (MenuItem item in _gitHubActionsShowMenus) { item.IsEnabled = available; }
+        foreach (MenuItem item in _gitHubActionsShowMenus) { item.IsEnabled = item.IsVisible = available; }
+        UpdateBuildServerPullRequestCommands();
         if (_gitHubActionsOpen is not null) { _gitHubActionsOpen.IsEnabled = _gitHubActionsRuns.SelectedItem is BuildServerRun run && run.PageUri is not null; }
     }
     private async Task StopGitHubActionsReadAsync()

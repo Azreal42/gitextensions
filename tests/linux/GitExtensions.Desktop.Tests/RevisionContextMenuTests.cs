@@ -34,8 +34,8 @@ public sealed class RevisionContextMenuTests
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
             main.RequestedThemeVariant = theme; Pump(main); menu.Open(history); Pump(main);
-            Assert.That(menu.Items.Cast<object>().Select(item => item is Separator ? "|" : Caption((MenuItem)item)), Is.EqualTo(expected));
-            MenuItem[] items = menu.Items.OfType<MenuItem>().ToArray();
+            Assert.That(menu.Items.OfType<Control>().Where(item => item.IsVisible).Select(item => item is Separator ? "|" : Caption((MenuItem)item)), Is.EqualTo(expected));
+            MenuItem[] items = menu.Items.OfType<MenuItem>().Where(item => item.IsVisible).ToArray();
             Assert.That(items.All(item => item.Icon is Image { Source: not null, Width: 16, Height: 16 }), Is.True);
             Assert.That(items.All(item => Math.Abs(item.Bounds.Height - 22) < .1), Is.True, "Original rows are 22px, including groups with shortcuts.");
             Assert.That(Item(menu, "RevisionCreateBranch").InputGesture, Is.EqualTo(new KeyGesture(Key.B, KeyModifiers.Control)));

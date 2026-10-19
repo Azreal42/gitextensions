@@ -108,7 +108,7 @@ public static class RevisionHistoryRow
         private TextBlock? _build;
         private Image? _buildIcon;
         private StackPanel? _buildCell;
-        private (BuildServerBuildStatus? Status, string Text, bool Icon, bool Label)? _buildPresentation;
+        private (BuildServerBuildStatus? Status, string Text, string Tooltip, bool Icon, bool Label)? _buildPresentation;
         private BuildServerCommitStatus? _buildStatus;
         internal string? CommitHash => _commit?.Hash;
 
@@ -116,7 +116,7 @@ public static class RevisionHistoryRow
         {
             _buildStatus = status;
             if (_build is null && !showIcon && !showText) { return; }
-            (BuildServerBuildStatus? Status, string Text, bool Icon, bool Label) presentation = (status?.Status, status?.Text ?? "", showIcon, showText);
+            (BuildServerBuildStatus? Status, string Text, string Tooltip, bool Icon, bool Label) presentation = (status?.Status, status?.Text ?? "", status?.Tooltip ?? "", showIcon, showText);
             if (_buildPresentation == presentation) { return; } _buildPresentation = presentation;
             if (_build is null)
             {
@@ -133,7 +133,7 @@ public static class RevisionHistoryRow
             if (status is not null) { _buildIcon!.Source = BuildImage(icon); _buildIcon.Tag = icon; }
             _buildIcon!.IsVisible = showIcon && status is not null;
             _build.Text = showText ? status?.Text ?? "" : ""; _build.IsVisible = showText;
-            _buildCell!.IsVisible = showIcon || showText; ToolTip.SetTip(_buildCell, status?.Text);
+            _buildCell!.IsVisible = showIcon || showText; ToolTip.SetTip(_buildCell, status?.Tooltip);
             ColumnDefinitions[5].Width = new GridLength(showText ? 150 : showIcon ? 16 : 0);
             ApplyBuildColor();
         }

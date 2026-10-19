@@ -3,6 +3,8 @@ namespace GitExtensions.Linux.Desktop;
 /// <summary>All CI provider pages share one draft and the Settings window's acknowledged XML baselines.</summary>
 internal sealed partial class GitHubActionsSettingsSession
 {
+    private static readonly HashSet<string> KnownKeys = GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys)
+        .Concat(GitLabSettings.Keys).Concat(AppVeyorSettings.Keys).ToHashSet(StringComparer.Ordinal);
     private readonly GitRepository? _repository;
     private readonly DistributedSettingsWorkspace _workspace;
     private readonly Dictionary<GitDistributedSettingsScope, Dictionary<string, string?>> _intentions = [];
@@ -40,7 +42,7 @@ internal sealed partial class GitHubActionsSettingsSession
         ? null : _workspace.Snapshot?.IsAvailable(scope) == true ? _workspace.Snapshot.GetSnapshot(scope).Path : null;
     internal string? Read(GitDistributedSettingsScope scope, string key)
     {
-        if (!GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys).Concat(GitLabSettings.Keys).Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
+        if (!KnownKeys.Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
         if (scope == GitDistributedSettingsScope.Effective)
         { return Read(GitDistributedSettingsScope.Local, key) ?? Read(GitDistributedSettingsScope.Distributed, key) ?? Read(GitDistributedSettingsScope.Global, key); }
         if (_intentions.TryGetValue(scope, out Dictionary<string, string?>? changes) && changes.TryGetValue(key, out string? value)) { return value; }
@@ -50,7 +52,7 @@ internal sealed partial class GitHubActionsSettingsSession
     internal void Set(GitDistributedSettingsScope scope, string key, string? value)
     {
         if (scope == GitDistributedSettingsScope.Effective) { throw new InvalidOperationException("Effective settings are read-only."); }
-        if (!GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys).Concat(GitLabSettings.Keys).Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
+        if (!KnownKeys.Contains(key)) { throw new ArgumentException("Unknown CI key.", nameof(key)); }
         GitXmlSettingsSnapshot file = (_workspace.Snapshot ?? throw new InvalidOperationException("CI settings have not been loaded.")).GetSnapshot(scope);
         if (!_intentions.TryGetValue(scope, out Dictionary<string, string?>? changes)) { _intentions.Add(scope, changes = new(StringComparer.Ordinal)); }
         if (value is null ? !file.Values.ContainsKey(key) : file.Values.GetValueOrDefault(key) == value) { changes.Remove(key); }
@@ -91,6 +93,8 @@ internal sealed partial class GitHubActionsSettingsSession
         if (_intentions.Values.Any(v => v.Count > 0) && effective.Active) { effective.Validate(); }
         GitLabSettings gitLab = GitLab();
         if (gitLab.Active) { gitLab.Validate(); }
+        AppVeyorSettings appVeyor = AppVeyor();
+        if (appVeyor.Active) { appVeyor.Validate(); }
         TeamCitySettings teamCity = TeamCity();
         if (teamCity.Active) { teamCity.Validate(); }
         // The original settings page rejects malformed regex even before integration is enabled.

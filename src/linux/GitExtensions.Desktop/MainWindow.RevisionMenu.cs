@@ -57,7 +57,8 @@ public sealed partial class MainWindow
                 RevisionAction("RevisionRevert", "revertCommitToolStripMenuItem", "Re&vert this commit...", RevertAsync, "RevertCommit.png", true),
                 RevisionAction("RevisionCherryPick", "cherryPickCommitToolStripMenuItem", "Cherr&y pick this commit...", CherryPickAsync, "CherryPick.png", true),
                 RevisionAction("RevisionArchive", "archiveRevisionToolStripMenuItem", "Arch&ive this commit...", ExportArchiveAsync, "ArchiveRevision.png"),
-                BuildRevisionAdvancedMenu(), new Separator(), BuildComparisonMenu(), new Separator(), BuildRevisionNavigateMenu(), BuildRevisionViewMenu()
+                BuildRevisionAdvancedMenu(), new Separator(), BuildComparisonMenu(), new Separator(), BuildRevisionNavigateMenu(), BuildRevisionViewMenu(),
+                BuildGitHubActionsShowBuildPageMenu(), BuildServerPullRequestPageMenu()
             }
         };
         _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
