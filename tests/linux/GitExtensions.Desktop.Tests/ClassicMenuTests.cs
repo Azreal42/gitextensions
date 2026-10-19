@@ -120,11 +120,11 @@ public sealed class ClassicMenuTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n");
         List<ProcessStartInfo> launches = [];
         f.Window.ExternalLauncher = info => { launches.Add(info); return null; };
-        foreach (string name in new[] { "userManualToolStripMenuItem", "translateToolStripMenuItem", "donateToolStripMenuItem", "checkForUpdatesToolStripMenuItem", "reportAnIssueToolStripMenuItem" })
+        foreach (string name in new[] { "userManualToolStripMenuItem", "translateToolStripMenuItem", "checkForUpdatesToolStripMenuItem", "reportAnIssueToolStripMenuItem" })
         { Click(Find(f.Window, name)); }
-        await Until(() => launches.Count == 5);
+        await Until(() => launches.Count == 4);
         Assert.That(launches.Select(info => info.FileName), Is.All.EqualTo("xdg-open"));
-        Assert.That(launches.Select(info => info.ArgumentList.Single()), Is.EqualTo(new[] { "https://git-extensions-documentation.readthedocs.io/", "https://github.com/gitextensions/gitextensions/wiki/Translations", "https://opencollective.com/gitextensions", "https://github.com/Azreal42/gitextensions/releases", "https://github.com/Azreal42/gitextensions/issues" }));
+        Assert.That(launches.Select(info => info.ArgumentList.Single()), Is.EqualTo(new[] { "https://git-extensions-documentation.readthedocs.io/", "https://github.com/gitextensions/gitextensions/wiki/Translations", "https://github.com/Azreal42/gitextensions/releases", "https://github.com/Azreal42/gitextensions/issues" }));
         Assert.That(await ClipboardExtensions.TryGetTextAsync(f.Window.Clipboard!), Does.Contain("Git Extensions").And.Not.Contain(f.Repository));
         foreach ((string name, string text) in new[] { ("aboutToolStripMenuItem", "Linux / Avalonia"), ("changelogToolStripMenuItem", "Git Extensions") })
         {

@@ -27,11 +27,12 @@ public sealed class BuildServerSnapshot
 {
     public DateTimeOffset ReadAt { get; }
     public bool Truncated { get; }
+    public IReadOnlyList<string> Diagnostics { get; }
     public IReadOnlyList<BuildServerRun> Runs { get; }
     public IReadOnlyDictionary<string, BuildServerCommitStatus> Commits { get; }
-    private BuildServerSnapshot(IEnumerable<BuildServerRun> runs, IEnumerable<BuildServerCommitStatus> commits, DateTimeOffset readAt, bool truncated)
+    private BuildServerSnapshot(IEnumerable<BuildServerRun> runs, IEnumerable<BuildServerCommitStatus> commits, DateTimeOffset readAt, bool truncated, IEnumerable<string>? diagnostics = null)
     {
-        ReadAt = readAt; Truncated = truncated;
+        ReadAt = readAt; Truncated = truncated; Diagnostics = Array.AsReadOnly((diagnostics ?? []).ToArray());
         Runs = Array.AsReadOnly(runs.Select(run => run with { CommitHashes = Array.AsReadOnly(run.CommitHashes.ToArray()) }).ToArray());
         Commits = new ReadOnlyDictionary<string, BuildServerCommitStatus>(commits.ToDictionary(value => value.CommitHash,
             value => value with { Runs = Array.AsReadOnly(value.Runs.ToArray()) }, StringComparer.OrdinalIgnoreCase));
@@ -62,6 +63,16 @@ public sealed class BuildServerSnapshot
             build.ShowInBuildReportTab, build.DurationMilliseconds);
         return new(snapshot.Builds.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
             (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated);
+    }
+
+    public static BuildServerSnapshot FromAzureDevOps(AzureDevOpsSnapshot snapshot, Func<AzureDevOpsBuild, Uri?> page)
+    {
+        BuildServerRun Run(AzureDevOpsBuild build) => new(build.BuildId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            build.DefinitionId.ToString(System.Globalization.CultureInfo.InvariantCulture), build.Description,
+            (BuildServerBuildStatus)build.Status, Array.AsReadOnly(new[] { build.CommitHash }), build.StartedAt, build.FinishedAt,
+            page(build), build.Tooltip, build.PullRequestUri, build.ShowInBuildReportTab, build.DurationMilliseconds);
+        return new(snapshot.Builds.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
+            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated, snapshot.Diagnostics);
     }
 
 }

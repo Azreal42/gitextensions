@@ -40,3 +40,11 @@ internal sealed class AppVeyorBuildSource(IAppVeyorClient client) : IBuildServer
         => BuildServerSnapshot.FromAppVeyor(await client.ReadAsync(force, token), client.BuildPageUri);
     public ValueTask DisposeAsync() => client.DisposeAsync();
 }
+
+internal sealed class AzureDevOpsBuildSource(IAzureDevOpsClient client) : IBuildServerSource
+{
+    public TimeSpan? PreferredPollInterval => TimeSpan.FromSeconds(10);
+    public async Task<BuildServerSnapshot> ReadAsync(bool force, CancellationToken token)
+        => BuildServerSnapshot.FromAzureDevOps(await client.ReadAsync(force, token), client.BuildPageUri);
+    public ValueTask DisposeAsync() => client.DisposeAsync();
+}

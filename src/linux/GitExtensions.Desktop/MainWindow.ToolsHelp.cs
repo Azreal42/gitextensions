@@ -111,7 +111,7 @@ public sealed partial class MainWindow
             new Separator(),
             OriginalAction(category, "translateToolStripMenuItem", "&Translate", "Translate.png", () => OpenWebAsync("https://github.com/gitextensions/gitextensions/wiki/Translations")),
             new Separator(),
-            OriginalAction(category, "donateToolStripMenuItem", "&Donate", "DollarSign.png", () => OpenWebAsync("https://opencollective.com/gitextensions")),
+            OriginalAction(category, "donateToolStripMenuItem", "&Donate", "DollarSign.png", ShowDonateAsync),
             telemetry,
             OriginalAction(category, "reportAnIssueToolStripMenuItem", "&Report an issue", "BugReport.png", ReportIssueAsync),
             OriginalAction(category, "checkForUpdatesToolStripMenuItem", "Check for &updates", "CheckForUpdates.png", () => OpenWebAsync(ForkUrl + "/releases")),
@@ -138,6 +138,9 @@ public sealed partial class MainWindow
         using StreamReader reader = new(stream);
         return ShowHelpTextAsync("Changelog", reader.ReadToEnd());
     }
+
+    private Task ShowDonateAsync() => new DonateDialog(_translations, uri => _ = OpenWebAsync(uri.AbsoluteUri))
+        { RequestedThemeVariant = ActualThemeVariant }.ShowDialog(this);
 
     private Task ShowAboutAsync() => new DesktopInformationWindow(T("About"),
         "Git Extensions " + DesktopVersion + "\n\nLinux / Avalonia\n" + ForkUrl

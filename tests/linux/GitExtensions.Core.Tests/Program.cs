@@ -75,6 +75,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. TeamCityScenarios.All,
     .. GitLabScenarios.All,
     .. AppVeyorScenarios.All,
+    .. AzureDevOpsScenarios.All,
     .. GitHubHostingScenarios.All,
     .. RemoteHeadsScenarios.All,
     ("unborn status and unstage", UnbornAsync),
@@ -240,6 +241,7 @@ if (args.Contains("--remaining-windows-only", StringComparer.Ordinal)) { tests =
 if (args.Contains("--teamcity-only", StringComparer.Ordinal)) { tests = TeamCityScenarios.All.ToArray(); }
 if (args.Contains("--gitlab-only", StringComparer.Ordinal)) { tests = GitLabScenarios.All.ToArray(); }
 if (args.Contains("--appveyor-only", StringComparer.Ordinal)) { tests = AppVeyorScenarios.All.ToArray(); }
+if (args.Contains("--azuredevops-only", StringComparer.Ordinal)) { tests = AzureDevOpsScenarios.All.ToArray(); }
 if (args.Contains("--pull-requests-only", StringComparer.Ordinal)) { tests = GitHubHostingScenarios.All.ToArray(); }
 if (args.Contains("--detailed-settings-only", StringComparer.Ordinal)) { tests = XmlDistributedSettingsScenarios.All.Concat(DictionarySettingsScenarios.All).Concat(RemoteHeadsScenarios.All).Concat(WorktreeScenarios.All).ToArray(); }
 if (args.Contains("--dictionary-settings-only", StringComparer.Ordinal)) { tests = DictionarySettingsScenarios.All.ToArray(); }

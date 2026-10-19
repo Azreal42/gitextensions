@@ -4,11 +4,14 @@ namespace GitExtensions.Linux.Desktop;
 internal sealed partial class GitHubActionsSettingsSession
 {
     private static readonly HashSet<string> KnownKeys = GitHubActionsSettings.Keys.Concat(TeamCitySettings.Keys)
-        .Concat(GitLabSettings.Keys).Concat(AppVeyorSettings.Keys).ToHashSet(StringComparer.Ordinal);
+        .Concat(GitLabSettings.Keys).Concat(AppVeyorSettings.Keys).Concat(AzureDevOpsSettings.Keys).ToHashSet(StringComparer.Ordinal);
     private readonly GitRepository? _repository;
     private readonly DistributedSettingsWorkspace _workspace;
     private readonly Dictionary<GitDistributedSettingsScope, Dictionary<string, string?>> _intentions = [];
     private IReadOnlyList<string> _remoteUrls = [];
+    internal IReadOnlyList<string> AzureDevOpsRemoteUrls { get; private set; } = [];
+    private BuildServerRepositoryVariables? _buildServerVariables;
+    internal string ExpandBuildServerVariables(string value) => _buildServerVariables?.Expand(value) ?? value;
     internal bool Loaded => _workspace.Loaded;
     internal bool HasChanges => _intentions.Values.Any(v => v.Count > 0) || HasCredentialChanges;
     internal Exception? LoadError => _workspace.LoadError;
@@ -23,7 +26,13 @@ internal sealed partial class GitHubActionsSettingsSession
     {
         await _workspace.InitializeAsync(token);
         if (!Loaded || _repository is null) { return; }
-        try { _remoteUrls = (await _repository.GetRemotesAsync(token)).SelectMany(r => r.PushUrls.Count > 0 ? r.PushUrls : r.FetchUrls).ToArray(); }
+        try
+        {
+            IReadOnlyList<GitRemote> remotes = await _repository.GetRemotesAsync(token);
+            _remoteUrls = remotes.SelectMany(r => r.PushUrls.Count > 0 ? r.PushUrls : r.FetchUrls).ToArray();
+            AzureDevOpsRemoteUrls = remotes.SelectMany(r => r.FetchUrls).ToArray();
+            _buildServerVariables = await _repository.GetBuildServerRepositoryVariablesAsync(token);
+        }
         catch (Exception error) when (error is IOException or GitCommandException or InvalidOperationException)
         { DetectionError = "Remote detection is unavailable. Enter the owner and repository explicitly."; }
     }
@@ -58,6 +67,7 @@ internal sealed partial class GitHubActionsSettingsSession
         if (value is null ? !file.Values.ContainsKey(key) : file.Values.GetValueOrDefault(key) == value) { changes.Remove(key); }
         else { changes[key] = value; }
         BindGitLabDraft(scope, key, value);
+        BindAzureDevOpsDraft(scope, key, value);
         if (key == GitHubActionsSettings.TokenKey && !string.IsNullOrEmpty(value))
         {
             // Store the endpoint with an explicitly entered token so a later inherited URL cannot retarget it.
@@ -95,6 +105,9 @@ internal sealed partial class GitHubActionsSettingsSession
         if (gitLab.Active) { gitLab.Validate(); }
         AppVeyorSettings appVeyor = AppVeyor();
         if (appVeyor.Active) { appVeyor.Validate(); }
+        AzureDevOpsSettings azureDevOps = AzureDevOps();
+        if (azureDevOps.Active) { azureDevOps.Validate(); }
+        ValidateAzureDevOpsEdits();
         TeamCitySettings teamCity = TeamCity();
         if (teamCity.Active) { teamCity.Validate(); }
         // The original settings page rejects malformed regex even before integration is enabled.

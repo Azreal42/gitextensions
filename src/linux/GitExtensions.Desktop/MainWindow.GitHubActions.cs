@@ -183,7 +183,7 @@ public sealed partial class MainWindow
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
             string provider = xml.GetValue(GitHubActionsSettings.ProviderKey) ?? "";
             bool active = GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.EnableKey)) == true
-                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName or AppVeyorSettings.ProviderName;
+                && provider is GitHubActionsSettings.ProviderName or TeamCitySettings.ProviderName or GitLabSettings.ProviderName or AppVeyorSettings.ProviderName or AzureDevOpsSettings.ProviderName;
             if (_buildServerProvider != provider) { SetGitHubActionsError(null); _gitHubActionsSnapshot = null; }
             _buildServerProvider = provider.Length == 0 ? "Build server" : provider;
             _gitHubActionsEnabled = active;
@@ -195,7 +195,7 @@ public sealed partial class MainWindow
                 _gitHubActionsClient = null; _gitHubActionsConfiguration = null;
                 SetGitHubActionsError(null); PublishGitHubActionsStatus(); return;
             }
-            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; AppVeyorSettings? appVeyor = null; IReadOnlySet<string>? admittedCommits = null; BuildServerCredentials? credentials = null;
+            GitHubActionsSettings? github = null; TeamCitySettings? teamCity = null; GitLabSettings? gitLab = null; AppVeyorSettings? appVeyor = null; AzureDevOpsSettings? azureDevOps = null; IReadOnlySet<string>? admittedCommits = null; BuildServerCredentials? credentials = null;
             string configuration;
             if (provider == GitHubActionsSettings.ProviderName)
             {
@@ -209,6 +209,15 @@ public sealed partial class MainWindow
                 gitLab.Validate();
                 configuration = string.Join('\0', provider, gitLab.InstanceUri.AbsoluteUri,
                     gitLab.ProjectId.ToString(System.Globalization.CultureInfo.InvariantCulture), gitLab.ApiToken, gitLab.PagesLimit);
+            }
+            else if (provider == AzureDevOpsSettings.ProviderName)
+            {
+                BuildServerRepositoryVariables variables = await repository.GetBuildServerRepositoryVariablesAsync(token);
+                var remotes = await repository.GetRemotesAsync(token);
+                azureDevOps = AzureDevOpsSettings.Read(xml, remotes.SelectMany(remote => remote.FetchUrls), variables.Expand);
+                azureDevOps.Validate();
+                configuration = string.Join('\0', provider, azureDevOps.ProjectUri.AbsoluteUri,
+                    azureDevOps.BuildDefinitionFilter, azureDevOps.ApiToken, azureDevOps.RepositoryName);
             }
             else if (provider == AppVeyorSettings.ProviderName)
             {
@@ -242,17 +251,18 @@ public sealed partial class MainWindow
                 token.ThrowIfCancellationRequested();
                 _gitHubActionsClient = github is not null ? new GitHubActionsBuildSource(GitHubActionsClientFactory(github))
                     : gitLab is not null ? new GitLabBuildSource(GitLabClientFactory(gitLab))
+                    : azureDevOps is not null ? new AzureDevOpsBuildSource(AzureDevOpsClientFactory(azureDevOps))
                     : appVeyor is not null ? new AppVeyorBuildSource(AppVeyorClientFactory(appVeyor, admittedCommits!))
                     : new TeamCityBuildSource(TeamCityClientFactory(teamCity!, credentials!));
                 _gitHubActionsConfiguration = configuration;
             }
             BuildServerSnapshot snapshot = await _gitHubActionsClient.ReadAsync(force, token);
             if (token.IsCancellationRequested || _gitHubActionsClosing || !ReferenceEquals(_repository, repository)) { return; }
-            _gitHubActionsSnapshot = snapshot; SetGitHubActionsError(snapshot.Truncated ? "Only the most recent builds are shown." : null);
+            _gitHubActionsSnapshot = snapshot; SetGitHubActionsError(snapshot.Truncated ? "Only the most recent builds are shown." : snapshot.Diagnostics.FirstOrDefault());
             PublishGitHubActionsStatus();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
+        catch (Exception error) when (error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or AzureDevOpsException or ArgumentException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException
             or System.Xml.XmlException or InvalidDataException or GitCommandException or InvalidOperationException)
         {
             if (!token.IsCancellationRequested && !_gitHubActionsClosing && ReferenceEquals(_repository, repository))
@@ -264,7 +274,7 @@ public sealed partial class MainWindow
                     _gitHubActionsClient = null;
                 }
                 // Only our fixed, credential-free API messages may be shown. Never log payloads, settings or transport exceptions.
-                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
+                SetGitHubActionsError(error is GitHubActionsException or TeamCityException or GitLabException or AppVeyorException or AzureDevOpsException ? error.Message : "Could not read build server settings. Check the CI configuration and credentials.");
                 PublishGitHubActionsStatus();
             }
         }

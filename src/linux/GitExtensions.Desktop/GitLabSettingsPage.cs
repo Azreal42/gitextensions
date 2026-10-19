@@ -196,29 +196,6 @@ internal sealed class GitLabSettingsPage : BuildServerScopedSettingsPage
     }
     private async Task DisposeAfterCloseAsync(Task pending) { await pending; _lifetime.Dispose(); }
 
-    private Button Link(string name, string caption, int tab)
-    {
-        Button link = new()
-        {
-            Name = name, Content = T(name, caption), TabIndex = tab, MinHeight = 0, MinWidth = 0,
-            Padding = default, BorderThickness = default, Margin = new Thickness(3, 0),
-            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Cursor = new(StandardCursorType.Hand)
-        };
-        link.Bind(ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundAccentBrush"));
-        link.Template = new FuncControlTemplate<Button>((_, _) =>
-        {
-            TextBlock text = new() { TextDecorations = TextDecorations.Underline, TextWrapping = TextWrapping.Wrap };
-            text.Bind(TextBlock.TextProperty, new TemplateBinding(ContentControl.ContentProperty), BindingPriority.Template);
-            text.Bind(TextBlock.ForegroundProperty, new TemplateBinding(ForegroundProperty), BindingPriority.Template);
-            return new Border { Name = "GitLabLinkFocus", Child = text, BorderThickness = new Thickness(1), Background = Brushes.Transparent };
-        });
-        link.Styles.Add(new Style(selector => selector.OfType<Button>().Template().OfType<Border>().Name("GitLabLinkFocus"))
-        { Setters = { new Setter(Border.BorderBrushProperty, Brushes.Transparent) } });
-        link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":focus-visible").Template().OfType<Border>().Name("GitLabLinkFocus"))
-        { Setters = { new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicHighlightBrush")) } });
-        link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":disabled").Template().OfType<TextBlock>())
-        { Setters = { new Setter(TextBlock.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush")) } });
-        return link;
-    }
+    private Button Link(string name, string caption, int tab) => SettingsLink(name, T(name, caption), tab);
     private string T(string item, string source) => Translations.Translate("GitlabSettingsUserControl", item, "Text", source);
 }

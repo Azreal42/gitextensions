@@ -11,19 +11,46 @@ namespace GitExtensions.Linux.Desktop;
 
 internal static class Dialogs
 {
-    public static async Task ShowErrorAsync(Window owner, string message)
+    public static Task ShowErrorAsync(Window owner, string message)
+        => ShowMessageCoreAsync(owner, TranslationCatalog.LoadDefault().Translate("Error"), message, null, default);
+
+    public static Task ShowMessageAsync(Window owner, string title, string message, bool warning,
+        CancellationToken cancellationToken = default)
+        => ShowMessageCoreAsync(owner, title, message, warning, cancellationToken);
+
+    private static async Task ShowMessageCoreAsync(Window owner, string title, string message, bool? warning,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
-        Window dialog = new() { Title = translations.Translate("Error"), Width = 520, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        Button accept = new() { Content = translations.Translate("OK"), IsDefault = true, IsCancel = true, MinWidth = 75 };
+        Window activeOwner = ActiveOwner(owner);
+        Window dialog = new() { Name = "MessageDialog", Title = title, Width = 520,
+            SizeToContent = SizeToContent.Height, CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = activeOwner.ActualThemeVariant };
+        Button accept = new() { Name = "MessageDialogAccept", Content = translations.Translate("OK"), IsDefault = true, IsCancel = true, MinWidth = 75 };
         accept.Click += (_, _) => dialog.Close();
+        Grid body = new() { ColumnDefinitions = new(warning is null ? "*" : "Auto,*"), ColumnSpacing = 10 };
+        if (warning is bool isWarning) { body.Children.Add(ResetDialogControls.Icon(isWarning ? "Warning" : "StatusBadgeError")); }
+        TextBlock text = new() { Name = "MessageDialogText", Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+        Grid.SetColumn(text, warning is null ? 0 : 1); body.Children.Add(text);
         dialog.Content = new StackPanel { Margin = new Thickness(12), Spacing = 10, Children =
         {
-            new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+            body,
             new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { accept } }
         } };
-        dialog.Opened += (_, _) => { accept.Focus(); ModalWindowActivation.AfterMapping(dialog, () => dialog.IsVisible); };
-        await dialog.ShowDialog(ActiveOwner(owner));
+        dialog.Opened += (_, _) =>
+        {
+            accept.Focus(); ModalWindowActivation.AfterMapping(dialog, () => dialog.IsVisible && !cancellationToken.IsCancellationRequested);
+        };
+        using CancellationTokenRegistration close = cancellationToken.Register(() => Dispatcher.UIThread.Post(() =>
+        { if (dialog.IsVisible) { dialog.Close(); } }));
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await dialog.ShowDialog(activeOwner);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+        finally { dialog.Close(); }
     }
 
     public static async Task<string[]?> PromptAsync(Window owner, string title, params (string Label, string Value)[] fields)

@@ -1,10 +1,15 @@
-using Avalonia;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Controls;
+using Avalonia.Data;
+using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
+using Avalonia.Styling;
+using Avalonia;
 using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
-using Avalonia.Controls.Templates;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -14,7 +19,7 @@ internal abstract class BuildServerScopedSettingsPage : UserControl
     protected readonly TranslationCatalog Translations;
     private readonly StackPanel _fields = new() { Spacing = 5 };
     private readonly TextBlock _notice = new() { TextWrapping = TextWrapping.Wrap };
-    private static readonly string[] Providers = [GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName, GitLabSettings.ProviderName, AppVeyorSettings.ProviderName];
+    private static readonly string[] Providers = [GitHubActionsSettings.ProviderName, TeamCitySettings.ProviderName, GitLabSettings.ProviderName, AppVeyorSettings.ProviderName, AzureDevOpsSettings.ProviderName];
     private readonly Dictionary<string, Control> _editors = [];
     private readonly Dictionary<GitDistributedSettingsScope, RadioButton> _scopes = [];
     private readonly WrapPanel _header;
@@ -63,6 +68,30 @@ internal abstract class BuildServerScopedSettingsPage : UserControl
         _editors.Add(GitHubActionsSettings.ProviderKey, provider);
         provider.SelectionChanged += (_, _) => { if (!_loading) { Edit(GitHubActionsSettings.ProviderKey, provider.SelectedItem as string is { Length: > 0 } value ? value : null); } };
         _fields.Children.Add(new TextBlock { Text = Translations.Translate("Build server") }); _fields.Children.Add(provider);
+    }
+    protected Button SettingsLink(string name, string caption, int tab)
+    {
+        Button link = new()
+        {
+            Name = name, Content = caption, TabIndex = tab, MinHeight = 0, MinWidth = 0,
+            Padding = default, BorderThickness = default, Margin = new Thickness(3, 0),
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Cursor = new(StandardCursorType.Hand)
+        };
+        link.Bind(ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundAccentBrush"));
+        link.Template = new FuncControlTemplate<Button>((_, _) =>
+        {
+            TextBlock text = new() { TextDecorations = TextDecorations.Underline, TextWrapping = TextWrapping.Wrap };
+            text.Bind(TextBlock.TextProperty, new TemplateBinding(ContentControl.ContentProperty), BindingPriority.Template);
+            text.Bind(TextBlock.ForegroundProperty, new TemplateBinding(ForegroundProperty), BindingPriority.Template);
+            return new Border { Name = "BuildServerLinkFocus", Child = text, BorderThickness = new Thickness(1), Background = Brushes.Transparent };
+        });
+        link.Styles.Add(new Style(selector => selector.OfType<Button>().Template().OfType<Border>().Name("BuildServerLinkFocus"))
+        { Setters = { new Setter(Border.BorderBrushProperty, Brushes.Transparent) } });
+        link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":focus-visible").Template().OfType<Border>().Name("BuildServerLinkFocus"))
+        { Setters = { new Setter(Border.BorderBrushProperty, new DynamicResourceExtension("ClassicHighlightBrush")) } });
+        link.Styles.Add(new Style(selector => selector.OfType<Button>().Class(":disabled").Template().OfType<TextBlock>())
+        { Setters = { new Setter(TextBlock.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush")) } });
+        return link;
     }
     protected void Notice(string text) => _fields.Children.Add(new TextBlock { Text = Translations.Translate(text), TextWrapping = TextWrapping.Wrap });
     protected void Add(Control control) => _fields.Children.Add(control);
@@ -128,10 +157,11 @@ internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSett
     internal TeamCitySettingsPage TeamCityPage { get; }
     internal GitLabSettingsPage GitLabPage { get; }
     internal AppVeyorSettingsPage AppVeyorPage { get; }
-    internal override void PrepareSave() { base.PrepareSave(); AppVeyorPage.PrepareSave(); }
-    internal bool IsBusy => TeamCityPage.IsBusy || GitLabPage.IsBusy;
+    internal AzureDevOpsSettingsPage AzureDevOpsPage { get; }
+    internal override void PrepareSave() { base.PrepareSave(); AppVeyorPage.PrepareSave(); AzureDevOpsPage.PrepareSave(); }
+    internal bool IsBusy => TeamCityPage.IsBusy || GitLabPage.IsBusy || AzureDevOpsPage.IsBusy;
     internal event Action? BusyChanged;
-    internal Task BeginClose() => Task.WhenAll(TeamCityPage.BeginClose(), GitLabPage.BeginClose());
+    internal Task BeginClose() => Task.WhenAll(TeamCityPage.BeginClose(), GitLabPage.BeginClose(), AzureDevOpsPage.BeginClose());
     internal BuildServerIntegrationSettingsPage(GitHubActionsSettingsSession session, TranslationCatalog translations, Action? createToken = null, Action<Uri>? openBuildServerUri = null) : base(session, translations, "BuildServerIntegrationSettingsPage")
     {
         Boolean(GitHubActionsSettings.EnableKey, "EnableIntegration", "Enable build server integration");
@@ -140,15 +170,18 @@ internal sealed class BuildServerIntegrationSettingsPage : BuildServerScopedSett
         TeamCityPage = new(session, translations, embedded: true); Add(TeamCityPage);
         GitLabPage = new(session, translations, openBuildServerUri, embedded: true); Add(GitLabPage);
         AppVeyorPage = new(session, translations, embedded: true); Add(AppVeyorPage);
+        AzureDevOpsPage = new(session, translations, openBuildServerUri, embedded: true); Add(AzureDevOpsPage);
+        AzureDevOpsPage.BusyChanged += () => BusyChanged?.Invoke();
         GitLabPage.BusyChanged += () => BusyChanged?.Invoke();
         TeamCityPage.BusyChanged += () => { SetFieldsEnabled(!TeamCityPage.IsBusy); BusyChanged?.Invoke(); };
-        ScopeChanged += GitHubPage.SetScope; ScopeChanged += TeamCityPage.SetScope; ScopeChanged += GitLabPage.SetScope; ScopeChanged += AppVeyorPage.SetScope;
+        ScopeChanged += GitHubPage.SetScope; ScopeChanged += TeamCityPage.SetScope; ScopeChanged += GitLabPage.SetScope; ScopeChanged += AppVeyorPage.SetScope; ScopeChanged += AzureDevOpsPage.SetScope;
         DraftChanged += () => UpdateProvider(userInitiated: true);
         Notice("Build pages open only when you explicitly choose Show build page."); ShowLoadState();
     }
     private void UpdateProvider(bool userInitiated = false) { if (GitHubPage is not null) { GitHubPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitHubActionsSettings.ProviderName; }
         if (TeamCityPage is not null) { TeamCityPage.IsVisible = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == TeamCitySettings.ProviderName; }
         if (GitLabPage is not null) { bool active = Session.Read(CurrentScope, GitHubActionsSettings.ProviderKey) == GitLabSettings.ProviderName; GitLabPage.IsVisible = active; GitLabPage.SetProviderActive(active); }
-        if (AppVeyorPage is not null) { bool active = Session.Read(CurrentScope, AppVeyorSettings.ProviderKey) == AppVeyorSettings.ProviderName; AppVeyorPage.IsVisible = active; AppVeyorPage.SetProviderActive(active, userInitiated); } }
-    internal override void ShowLoadState() { base.ShowLoadState(); UpdateProvider(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); GitLabPage?.ShowLoadState(); AppVeyorPage?.ShowLoadState(); }
+        if (AppVeyorPage is not null) { bool active = Session.Read(CurrentScope, AppVeyorSettings.ProviderKey) == AppVeyorSettings.ProviderName; AppVeyorPage.IsVisible = active; AppVeyorPage.SetProviderActive(active, userInitiated); }
+        if (AzureDevOpsPage is not null) { bool active = Session.Read(CurrentScope, AzureDevOpsSettings.ProviderKey) == AzureDevOpsSettings.ProviderName; AzureDevOpsPage.IsVisible = active; AzureDevOpsPage.SetProviderActive(active, userInitiated); } }
+    internal override void ShowLoadState() { base.ShowLoadState(); UpdateProvider(); GitHubPage?.ShowLoadState(); TeamCityPage?.ShowLoadState(); GitLabPage?.ShowLoadState(); AppVeyorPage?.ShowLoadState(); AzureDevOpsPage?.ShowLoadState(); }
 }
