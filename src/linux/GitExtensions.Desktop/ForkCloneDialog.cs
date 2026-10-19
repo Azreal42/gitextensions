@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Styling;
 using Avalonia.Threading;
 
 namespace GitExtensions.Linux.Desktop;
@@ -18,8 +19,8 @@ public sealed partial class ForkCloneDialog : StartupRepositoryDialog
     private readonly IGitHubForkCloneClient _client;
     private readonly bool _authenticated;
     private readonly Action<Uri> _openUrl;
-    private readonly ListBox _mine = new() { Name = "myReposLV", SelectionMode = SelectionMode.Single, HorizontalContentAlignment = HorizontalAlignment.Stretch };
-    private readonly ListBox _results = new() { Name = "searchResultsLV", SelectionMode = SelectionMode.Single, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private readonly ListBox _mine = new() { Name = "myReposLV", SelectionMode = SelectionMode.Single };
+    private readonly ListBox _results = new() { Name = "searchResultsLV", SelectionMode = SelectionMode.Single };
     private readonly TabControl _tabs = new() { Name = "tabControl" };
     private readonly TextBox _query = new() { Name = "searchTB", Height = 24 };
     private readonly TextBox _description = new() { Name = "searchResultItemDescription", IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
@@ -148,6 +149,8 @@ public sealed partial class ForkCloneDialog : StartupRepositoryDialog
     }
     private Control RepositoryList(ListBox list, bool search)
     {
+        list.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
+        { Setters = { new Setter(ContentControl.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch) } });
         Grid panel = new() { RowDefinitions = new("Auto,*") };
         Avalonia.Controls.ScrollViewer.SetHorizontalScrollBarVisibility(list, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
         Grid header = RepositoryRow(null, search); header.Background = Brushes.Transparent;

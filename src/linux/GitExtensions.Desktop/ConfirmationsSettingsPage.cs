@@ -56,11 +56,11 @@ internal sealed class ConfirmationsSettingsPage : UserControl
         get
         {
             ConfirmationsSettingsValues values = _baseline;
-            foreach (ConfirmationSetting field in ConfirmationSettingsCatalog.Fields)
+            foreach (ConfirmationSetting setting in ConfirmationSettingsCatalog.Fields)
             {
-                bool? check = _choices[field.Name].IsChecked;
+                bool? check = _choices[setting.Name].IsChecked;
                 // WinForms.Checked is true for both Checked and Indeterminate on bool fields.
-                values = values.With(field.Name, field.Nullable ? check.HasValue ? !check.Value : null : check == false);
+                values = values.With(setting.Name, setting.Nullable ? check.HasValue ? !check.Value : null : check == false);
             }
             return values;
         }

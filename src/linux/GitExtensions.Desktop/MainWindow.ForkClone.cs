@@ -12,7 +12,7 @@ public sealed partial class MainWindow
     {
         if (_busy) { return; }
         ForkCloneDialog? dialog = null;
-        await RunAsync("Fork/Clone repository", async _ =>
+        await RunAsync("Fork/Clone repository", async currentRepository =>
         {
             IReadOnlyDictionary<string, string?> values = new GitHubHostingPreferencesStore().Load();
             GitHubHostingSettings settings = GitHubHostingSettings.FromPluginSettings(values);
