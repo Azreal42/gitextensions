@@ -18,6 +18,8 @@ internal sealed class GitToolsSettingsDialog : Window
     private readonly CancellationTokenSource _lifetime;
     private readonly CancellationTokenRegistration _ownerCancellation;
     private readonly GitToolsSettingsPage _page;
+    private readonly GitConfigAdvancedSettingsPage _advancedPage;
+    private readonly TabControl _tabs;
     private readonly AvailableEncodingsPreferencesStore _encodingPreferences;
     private readonly TextBox _error = new()
     {
@@ -39,12 +41,13 @@ internal sealed class GitToolsSettingsDialog : Window
     internal GitToolConfigurationSaveResult? LastSaveResult { get; private set; }
     internal Task OperationCompletion => _completion?.Task ?? Task.CompletedTask;
     internal GitToolsSettingsPage Page => _page;
+    internal GitConfigAdvancedSettingsPage AdvancedPage => _advancedPage;
     internal Func<GitToolRole, string, CancellationToken, Task<string?>>? FilePicker { get; set; }
     internal Func<string, CancellationToken, Task<string?>>? TemplateFilePicker { get; set; }
 
     internal GitToolsSettingsDialog(GitRepository repository, TranslationCatalog? translations = null,
         GitToolRole? focus = null, CancellationToken ownerToken = default, AvailableEncodingsPreferencesStore? encodingPreferences = null,
-        GitToolConfigurationView? initialView = null, GitConfigurationField? focusField = null)
+        GitToolConfigurationView? initialView = null, GitConfigurationField? focusField = null, bool advanced = false)
     {
         _repository = repository; _translations = translations ?? TranslationCatalog.LoadDefault();
         _encodingPreferences = encodingPreferences ?? new();
@@ -57,6 +60,19 @@ internal sealed class GitToolsSettingsDialog : Window
         ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         _page = new(_translations); _page.DraftChanged += UpdateActions; _page.BrowseRequested = BrowseAsync;
         _page.TemplateBrowseRequested = BrowseTemplateAsync; _page.ConfigureEncodingRequested = ConfigureEncodingAsync;
+        _advancedPage = new(_translations); _advancedPage.DraftChanged += UpdateActions;
+        _tabs = new() { Name = "GitConfigPages", ItemsSource = new[]
+        {
+            new TabItem { Name = "GitConfigTab", Header = Title, Content = _page },
+            new TabItem { Name = "GitAdvancedTab", Header = _translations.Translate("GitConfigAdvancedSettingsPage", "$this", "Text", "Advanced"), Content = _advancedPage }
+        }, SelectedIndex = advanced ? 1 : 0 };
+        _tabs.SelectionChanged += (_, args) =>
+        {
+            if (args.Source != _tabs || _page.Session is not { } session) { return; }
+            if (_tabs.SelectedIndex == 1) { _advancedPage.SelectScope(_page.View); _advancedPage.SetSession(session); }
+            else { _page.SelectScope(_advancedPage.View); _page.SetSession(session); }
+        };
+        ClassicChoiceAppearance.Apply(this, "git-config-advanced");
         ReloadEncodingChoices(); AvailableEncodingsPreferencesStore.Saved += EncodingPreferencesSaved;
         _ok = Footer("GitToolsAccept", "OK"); _ok.IsDefault = true;
         _cancel = Footer("GitToolsCancel", "Cancel"); _cancel.IsCancel = true;
@@ -67,7 +83,7 @@ internal sealed class GitToolsSettingsDialog : Window
         _reload.Click += async (_, _) => await RunOwnedAsync(LoadAsync);
         StackPanel body = new() { Margin = new Thickness(12), Spacing = 10, Children =
         {
-            _page,
+            _tabs,
             new TextBlock { Name = "GitToolsNotice", Text = _translations.Translate("Apply saves Git configuration. Cancel discards only unsaved changes."), TextWrapping = TextWrapping.Wrap },
             _error, _reload
         } };
@@ -96,9 +112,9 @@ internal sealed class GitToolsSettingsDialog : Window
             await InitializeAsync();
             if (!_closeRequested && IsVisible)
             {
-                if (initialView is { } view) { _page.SelectScope(view); }
-                if (focus is { } role) { _page.FocusRole(role); }
-                if (focusField is { } field) { _page.FocusValidation(new(_page.View, Field: field)); }
+                if (initialView is { } view) { _page.SelectScope(view); _advancedPage.SelectScope(view); }
+                if (focus is { } role) { _tabs.SelectedIndex = 0; _page.FocusRole(role); }
+                if (focusField is { } field) { FocusValidation(new(_page.View, Field: field)); }
                 ModalWindowActivation.AfterMapping(this, () => !_closeRequested && !_closed);
             }
         };
@@ -112,13 +128,13 @@ internal sealed class GitToolsSettingsDialog : Window
             }
             if (IsBusy)
             {
-                args.Cancel = true; _closeRequested = true; _page.Invalidate();
+                args.Cancel = true; _closeRequested = true; _page.Invalidate(); _advancedPage.Invalidate();
                 _lifetime.Cancel(); _operationCancellation?.Cancel();
             }
         };
         Closed += (_, _) =>
         {
-            _closed = true; _page.Invalidate(); _lifetime.Cancel();
+            _closed = true; _page.Invalidate(); _advancedPage.Invalidate(); _lifetime.Cancel();
             AvailableEncodingsPreferencesStore.Saved -= EncodingPreferencesSaved;
             _ownerCancellation.Dispose();
             if (_observedOwner is { } owner)
@@ -139,7 +155,7 @@ internal sealed class GitToolsSettingsDialog : Window
     {
         GitToolConfigurationSnapshot snapshot = await _repository.GetToolConfigurationAsync(token);
         token.ThrowIfCancellationRequested();
-        _page.SetSession(_page.Session?.Rebase(snapshot) ?? new(snapshot));
+        SetSession(_page.Session?.Rebase(snapshot) ?? new(snapshot));
         _requiresReload = !snapshot.Scopes.Any(scope => scope.IsAvailable);
         if (_requiresReload) { ShowError(string.Join("\n", snapshot.Scopes.Select(scope => scope.Diagnostic).Where(text => !string.IsNullOrEmpty(text)).Distinct())); }
         else { ShowError(null); }
@@ -150,7 +166,7 @@ internal sealed class GitToolsSettingsDialog : Window
         GitToolsDraftSession? session = _page.Session;
         if (session is null || _requiresReload) { return; }
         if (!session.Validate(out string? validation, out GitToolsDraftSession.ValidationTarget target))
-        { _validationTarget = target; _page.SelectScope(target.View); ShowError(validation ?? _translations.Translate("Unable to save settings.")); return; }
+        { _validationTarget = target; SelectValidationPage(target); ShowError(validation ?? _translations.Translate("Unable to save settings.")); return; }
         IReadOnlyList<GitToolConfigurationScopeEdit> edits = session.BuildEdits();
         if (edits.Count == 0) { _acceptWhenIdle = closeOnSuccess; return; }
         GitToolConfigurationSaveResult result;
@@ -159,7 +175,7 @@ internal sealed class GitToolsSettingsDialog : Window
         catch (GitToolConfigurationSaveException error) { result = error.Result; }
         catch { MayHaveChangedConfiguration = true; _requiresReload = true; throw; }
         LastSaveResult = result; MayHaveChangedConfiguration |= result.MayHaveChanged;
-        if (result.After is { } after) { _page.SetSession(session.Rebase(after)); }
+        if (result.After is { } after) { SetSession(session.Rebase(after)); }
         _requiresReload = !result.Success || result.After is null;
         if (_requiresReload)
         {
@@ -269,7 +285,7 @@ internal sealed class GitToolsSettingsDialog : Window
         if (_closed || _closeRequested || IsBusy) { return; }
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously); _completion = completion;
         using CancellationTokenSource operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
-        _operationCancellation = operation; IsBusy = true; _page.SetBusy(true); UpdateActions();
+        _operationCancellation = operation; IsBusy = true; _page.SetBusy(true); _advancedPage.SetBusy(true); _tabs.IsEnabled = false; UpdateActions();
         try { await action(operation.Token); }
         catch (OperationCanceledException) when (operation.IsCancellationRequested)
         { if (!_closeRequested) { ShowError(_translations.Translate("Operation cancelled")); } }
@@ -278,9 +294,9 @@ internal sealed class GitToolsSettingsDialog : Window
         finally
         {
             _operationCancellation = null; IsBusy = false;
-            if (!_closed) { _page.SetBusy(false); UpdateActions(); }
+            if (!_closed) { _page.SetBusy(false); _advancedPage.SetBusy(false); _tabs.IsEnabled = true; UpdateActions(); }
             if (!_closed && !_closeRequested && _validationTarget is { } target)
-            { _validationTarget = null; _page.FocusValidation(target); }
+            { _validationTarget = null; FocusValidation(target); }
             completion.TrySetResult();
             if (!_closed && (_closeRequested || _acceptWhenIdle)) { Close(_acceptWhenIdle && !_closeRequested); }
         }
@@ -289,7 +305,7 @@ internal sealed class GitToolsSettingsDialog : Window
     internal void RequestClose()
     {
         if (_closed) { return; }
-        _closeRequested = true; _page.Invalidate(); _lifetime.Cancel(); _operationCancellation?.Cancel();
+        _closeRequested = true; _page.Invalidate(); _advancedPage.Invalidate(); _lifetime.Cancel(); _operationCancellation?.Cancel();
         if (!IsBusy) { Close(false); }
     }
 
@@ -299,6 +315,23 @@ internal sealed class GitToolsSettingsDialog : Window
         _ownerCloseRequested = true;
         if (IsBusy) { args.Cancel = true; _closeOwnerWhenIdle = true; }
         RequestClose();
+    }
+
+    private void SetSession(GitToolsDraftSession session)
+    { _page.SetSession(session); _advancedPage.SetSession(session); }
+
+    internal void SelectAdvancedPage(bool advanced) => _tabs.SelectedIndex = advanced ? 1 : 0;
+
+    private void SelectValidationPage(GitToolsDraftSession.ValidationTarget target)
+    {
+        _tabs.SelectedIndex = target.Field is { } field && GitConfigurationFields.IsAdvancedBoolean(field) ? 1 : 0;
+        _page.SelectScope(target.View); _advancedPage.SelectScope(target.View);
+    }
+
+    private void FocusValidation(GitToolsDraftSession.ValidationTarget target)
+    {
+        SelectValidationPage(target);
+        if (_tabs.SelectedIndex == 1) { _advancedPage.FocusValidation(target); } else { _page.FocusValidation(target); }
     }
 
     private void UpdateActions()

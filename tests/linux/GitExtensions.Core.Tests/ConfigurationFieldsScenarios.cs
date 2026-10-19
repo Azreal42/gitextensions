@@ -5,7 +5,7 @@ internal static class ConfigurationFieldsScenarios
 {
     public static IReadOnlyList<(string Name, Func<Task> Run)> All { get; } =
     [
-        ("configuration fields expose immutable actual scopes origins missing empty and valueless values", SnapshotAsync),
+        ("seven original configuration fields expose immutable actual scopes origins missing empty and valueless values", SnapshotAsync),
         ("configuration fields and six tool fields share one guarded native batch with exact values", JointBatchAsync),
         ("configuration fields preserve duplicate noops and reject every changed multivalue before tools write", DuplicatesAsync),
         ("configuration fields refuse included-only unset and retain sources when adding native overrides", IncludesAsync),
@@ -18,7 +18,10 @@ internal static class ConfigurationFieldsScenarios
         ("configuration fields cancellation drains the witnessed native writer without post-cancel readback", CancellationAsync)
     ];
 
-    private static readonly GitConfigurationField[] Fields = Enum.GetValues<GitConfigurationField>();
+    // This suite covers the original seven scalar fields; GitConfigAdvancedScenarios covers the eight boolean fields.
+    private static readonly GitConfigurationField[] Fields = [GitConfigurationField.UserName, GitConfigurationField.UserEmail,
+        GitConfigurationField.CredentialHelper, GitConfigurationField.Editor, GitConfigurationField.CommitTemplate,
+        GitConfigurationField.AutoCrlf, GitConfigurationField.FilesEncoding];
     private static readonly string[] Keys = ["user.name", "user.email", "credential.helper", "core.editor", "commit.template", "core.autocrlf", "i18n.filesencoding"];
 
     private static async Task SnapshotAsync()

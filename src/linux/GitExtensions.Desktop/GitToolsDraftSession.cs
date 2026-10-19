@@ -87,6 +87,8 @@ internal sealed class GitToolsDraftSession
                 if (value.Value?.Contains('\0') == true) { error = "Git configuration values cannot contain NUL."; return false; }
                 if (value.Field == GitConfigurationField.AutoCrlf && value.Value is not (null or "true" or "input" or "false"))
                 { error = "Choose true, input, false or Not set for line endings."; return false; }
+                if (GitConfigurationFields.IsAdvancedBoolean(value.Field) && value.Value is not (null or "true" or "false"))
+                { error = "Choose true, false or Not set for advanced Git settings."; return false; }
             }
             foreach (GitToolRoleEdit value in edit.Roles)
             {

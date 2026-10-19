@@ -68,6 +68,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. CommitCompletionScenarios.All,
     .. SuperprojectScenarios.All,
     .. ConfigurationFieldsScenarios.All,
+    .. GitConfigAdvancedScenarios.All,
     .. DictionarySettingsScenarios.All,
     .. XmlDistributedSettingsScenarios.All,
     .. RevisionLinksScenarios.All,
@@ -258,6 +259,7 @@ if (args.Contains("--git-environment-only", StringComparer.Ordinal)) { tests = G
 if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal))
 { tests = [.. GitProcessStreamingScenarios.All, .. ToolConfigurationScenarios.All, .. ScriptScenarios.All, .. ScriptRuntimeScenarios.All,
     .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All, .. HistoryRemovalScenarios.All]; }
+if (args.Contains("--git-config-advanced-only", StringComparer.Ordinal)) { tests = GitConfigAdvancedScenarios.All.ToArray(); }
 if (args.Contains("--configuration-fields-only", StringComparer.Ordinal)) { tests = ConfigurationFieldsScenarios.All.ToArray(); }
 
 int failures = 0;

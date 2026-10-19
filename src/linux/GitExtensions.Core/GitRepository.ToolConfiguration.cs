@@ -165,6 +165,10 @@ public sealed partial class GitRepository
         if (ToolEditIsNoOp(state, edit)) { return; }
         if (edit.Field == GitConfigurationField.AutoCrlf && edit.Value is not (null or "false" or "input" or "true"))
         { throw new ArgumentException("core.autocrlf must be false, input, true, or unset."); }
+        if (edit.Field is { } field && GitConfigurationFields.IsAdvancedBoolean(field) && edit.Value is not (null or "false" or "true"))
+        { throw new ArgumentException("Advanced Git boolean settings must be false, true, or unset."); }
+        if (edit.Field == GitConfigurationField.RebaseUpdateRefs && state.Version < new Version(2, 38))
+        { throw new InvalidOperationException("Rebase updateRefs requires Git 2.38 or newer."); }
         string target = ToolTarget(state, edit.Scope) ?? throw new InvalidOperationException("The native configuration destination is unavailable.");
         ToolConfigurationFile file = state.Files.Single(source => source.LogicalPath == target);
         if (file.Identity is not null && !file.Identity.Value.IsRegular) { throw new IOException("The native configuration destination is not a regular file."); }

@@ -2,7 +2,8 @@ namespace GitExtensions.Linux;
 
 public enum GitToolRole { Diff, Merge }
 public enum GitToolConfigurationView { Effective, System, Global, Local }
-public enum GitConfigurationField { UserName, UserEmail, CredentialHelper, Editor, CommitTemplate, AutoCrlf, FilesEncoding }
+public enum GitConfigurationField { UserName, UserEmail, CredentialHelper, Editor, CommitTemplate, AutoCrlf, FilesEncoding,
+    PullRebase, FetchPrune, MergeAutoStash, RebaseAutoStash, RebaseAutoSquash, RebaseUpdateRefs, RerereEnabled, RerereAutoUpdate }
 
 public static class GitConfigurationFields
 {
@@ -15,7 +16,28 @@ public static class GitConfigurationFields
         GitConfigurationField.CommitTemplate => "commit.template",
         GitConfigurationField.AutoCrlf => "core.autocrlf",
         GitConfigurationField.FilesEncoding => "i18n.filesencoding",
+        GitConfigurationField.PullRebase => "pull.rebase",
+        GitConfigurationField.FetchPrune => "fetch.prune",
+        GitConfigurationField.MergeAutoStash => "merge.autostash",
+        GitConfigurationField.RebaseAutoStash => "rebase.autostash",
+        GitConfigurationField.RebaseAutoSquash => "rebase.autosquash",
+        GitConfigurationField.RebaseUpdateRefs => "rebase.updaterefs",
+        GitConfigurationField.RerereEnabled => "rerere.enabled",
+        GitConfigurationField.RerereAutoUpdate => "rerere.autoupdate",
         _ => throw new ArgumentOutOfRangeException(nameof(field))
+    };
+
+    public static bool IsAdvancedBoolean(GitConfigurationField field) => field is
+        GitConfigurationField.PullRebase or GitConfigurationField.FetchPrune or GitConfigurationField.MergeAutoStash
+        or GitConfigurationField.RebaseAutoStash or GitConfigurationField.RebaseAutoSquash or GitConfigurationField.RebaseUpdateRefs
+        or GitConfigurationField.RerereEnabled or GitConfigurationField.RerereAutoUpdate;
+
+    /// <summary>The Windows advanced page's exact, case-sensitive tri-state decoding. Unknown raw values stay untouched.</summary>
+    public static bool? AdvancedBooleanState(string? value) => value switch
+    {
+        "true" or "yes" or "on" or "1" => true,
+        "false" or "no" or "off" or "0" or "" => false,
+        _ => null
     };
 }
 
@@ -30,12 +52,12 @@ public sealed record GitToolConfigurationDefinition(GitToolRole Role, string Nam
 /// <summary>All lookups are immutable memory reads, including unknown tool names.</summary>
 public sealed class GitToolConfigurationScopeSnapshot
 {
-    private readonly bool _mergeSupported;
+    private readonly bool _mergeSupported, _updateRefsSupported;
     private readonly IReadOnlyList<GitToolConfigurationOccurrence> _settings;
     internal GitToolConfigurationScopeSnapshot(GitToolConfigurationView view, bool available, bool writable, string? diagnostic,
-        bool mergeSupported, IEnumerable<GitToolConfigurationOccurrence> occurrences)
+        bool mergeSupported, IEnumerable<GitToolConfigurationOccurrence> occurrences, bool updateRefsSupported = true)
     {
-        View = view; IsAvailable = available; CanWrite = writable; Diagnostic = diagnostic; _mergeSupported = mergeSupported;
+        View = view; IsAvailable = available; CanWrite = writable; Diagnostic = diagnostic; _mergeSupported = mergeSupported; _updateRefsSupported = updateRefsSupported;
         GitToolConfigurationOccurrence[] entries = occurrences.ToArray();
         Occurrences = Array.AsReadOnly(entries.Where(entry => GitToolConfigurationKeys.IsToolKey(entry.Key)).ToArray());
         _settings = Array.AsReadOnly(entries.Where(entry => GitToolConfigurationKeys.IsSettingKey(entry.Key)).ToArray());
@@ -66,6 +88,7 @@ public sealed class GitToolConfigurationScopeSnapshot
         string? restriction = !IsAvailable ? Diagnostic : fallback ? "merge.tool is a read-only fallback."
             : !CanWrite ? "This scope is read-only."
             : role == GitToolRole.Merge && !_mergeSupported ? "GUI merge tools require Git 2.20 or newer."
+            : key == "rebase.updaterefs" && !_updateRefsSupported ? "Rebase updateRefs requires Git 2.38 or newer."
             : entries.Length > 1 ? "This scope contains multiple values, including included files. Only an unchanged value can be kept." : null;
         return new(key, Array.AsReadOnly(entries), restriction is null, restriction);
     }
@@ -77,6 +100,7 @@ public sealed class GitToolConfigurationSnapshot
     {
         Owner = owner; State = state; GitVersion = state.Version; ConfigurationRevision = state.Revision;
         SupportsGuiMergeTool = state.Version >= new Version(2, 20);
+        SupportsRebaseUpdateRefs = state.Version >= new Version(2, 38);
         Scopes = Array.AsReadOnly(Enum.GetValues<GitToolConfigurationView>().Select(view =>
         {
             bool available = state.Diagnostic is null && (view != GitToolConfigurationView.Local || state.LocalTarget is not null);
@@ -85,13 +109,14 @@ public sealed class GitToolConfigurationSnapshot
             if (state.Diagnostic is null && view == GitToolConfigurationView.Global && state.GlobalTarget is null) { diagnostic = "The native global configuration destination could not be established. This scope is read-only."; }
             IEnumerable<GitToolConfigurationOccurrence> entries = state.Entries.Where(entry => (GitToolConfigurationKeys.IsToolKey(entry.Key) || GitToolConfigurationKeys.IsSettingKey(entry.Key))
                 && (view == GitToolConfigurationView.Effective || entry.Scope == view.ToString().ToLowerInvariant()));
-            return new GitToolConfigurationScopeSnapshot(view, available, writable, diagnostic, SupportsGuiMergeTool, entries);
+            return new GitToolConfigurationScopeSnapshot(view, available, writable, diagnostic, SupportsGuiMergeTool, entries, SupportsRebaseUpdateRefs);
         }).ToArray());
     }
     internal GitRepository Owner { get; }
     internal ToolConfigurationState State { get; }
     public Version GitVersion { get; }
     public bool SupportsGuiMergeTool { get; }
+    public bool SupportsRebaseUpdateRefs { get; }
     public string ConfigurationRevision { get; }
     public IReadOnlyList<GitToolConfigurationScopeSnapshot> Scopes { get; }
     public GitToolConfigurationScopeSnapshot GetScope(GitToolConfigurationView view)
@@ -129,7 +154,9 @@ public sealed class GitToolConfigurationSaveCanceledException : OperationCancele
 internal static class GitToolConfigurationKeys
 {
     internal static bool IsSettingKey(string key) => key is "user.name" or "user.email" or "credential.helper" or "core.editor"
-        or "commit.template" or "core.autocrlf" or "i18n.filesencoding";
+        or "commit.template" or "core.autocrlf" or "i18n.filesencoding"
+        or "pull.rebase" or "fetch.prune" or "merge.autostash" or "rebase.autostash"
+        or "rebase.autosquash" or "rebase.updaterefs" or "rerere.enabled" or "rerere.autoupdate";
     internal static string Prefix(GitToolRole role) => role == GitToolRole.Diff ? "difftool." : "mergetool.";
     internal static string Selector(GitToolRole role) => role == GitToolRole.Diff ? "diff.guitool" : "merge.guitool";
     internal static void ValidateName(string name)
