@@ -93,8 +93,9 @@ public sealed class DonateDialogTests
             dialog.FocusManager!.ClearFocus(); Press(dialog, PhysicalKey.Tab); Pump(dialog);
             Assert.That(badge.IsKeyboardFocusWithin, Is.True);
             Color focus = Color.Parse(ClassicStyles.OriginalColors(dark)["Highlight"]);
+            Capture(dialog, $"donate-focus-{(dark ? "Dark" : "Light")}.png");
             Assert.That(((ISolidColorBrush)border.BorderBrush!).Color, Is.EqualTo(focus)); AssertBorderPixel(dialog, border, focus);
-            Assert.That(opened, Is.Empty); Capture(dialog, $"donate-focus-{(dark ? "Dark" : "Light")}.png");
+            Assert.That(opened, Is.Empty);
             Press(dialog, PhysicalKey.Escape); Pump(owner); await completion.WaitAsync(TimeSpan.FromSeconds(5));
         }
         finally { if (dialog.IsVisible) { dialog.Close(); } owner.Close(); }

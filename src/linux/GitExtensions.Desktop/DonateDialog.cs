@@ -41,7 +41,8 @@ internal sealed class DonateDialog : Window
             Name = "pbxDonate", Content = image, Margin = new Thickness(12), MinWidth = 90, MinHeight = 35,
             HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch,
-            Cursor = new Cursor(StandardCursorType.Hand), Template = BadgeTemplate()
+            // The template draws its own keyboard focus border; do not overlay the generic dashed adorner.
+            Cursor = new Cursor(StandardCursorType.Hand), Template = BadgeTemplate(), FocusAdorner = null
         };
         badge.Classes.Add("donate-badge"); AutomationProperties.SetName(badge, Title);
         badge.Click += async (_, _) =>
