@@ -804,3 +804,13 @@ Build01/02 ont révélé un callback avant initialisation et une capture de para
 Native01 montrait l’accent orange Ubuntu et deux notices Effective. La palette Windows HotTrack et la notice partagée corrigent ces écarts ; [Native02](../../artifacts/linux/gitlab-20261019/native-02/root-native-review.json) qualifie seulement son parcours source X11/local.
 
 Garder les temporaires des suites **courts et hors dépôt** : Core01 finit à 899/903 car ses fixtures découvrent le dépôt parent ; Desktop02 dépasse le viewport Clone intentionnel de 80px avec un préfixe long. Desktop01/02 sont interrompus et ne qualifient rien, même avec une phase wait0. Le [diagnostic Clone](../../artifacts/linux/gitlab-20261019/review/clone-fixture-diagnostic-review.json) passe 1/1 clair/sombre avec un préfixe court, sans modifier produit ni oracle. Les [suites finales](../../artifacts/linux/gitlab-20261019/review/root-full-review.json) restent distinctes ; aucun serveur GitLab réel ni geste du paquet installé n’en est déduit.
+
+## AppVeyor — HEAD détachée et oracle de langue
+
+Le premier ciblé conserve 256/258 Desktop : la lecture de `symbolic-ref` devait accepter le code1 attendu en HEAD détachée, puis utiliser le premier remote. Le test français chargeait son oracle depuis la culture du contexte appelant après `await` ; le catalogue attendu doit être choisi explicitement. Les corrections passent le ciblé frais et les suites complètes ; les résultats bruts du ciblé01 restent conservés.
+
+## AppVeyor — limites résiduelles
+
+L’adaptateur Windows signale lui-même un écart entre le préfixe v2 annoncé par la documentation et ses routes effectives : le portable conserve ce contrat, sans déduire sa validité sur un serveur réel d’un transport de test.
+
+Le présentateur CI commun fournit une liste et des liens externes, pas le rapport HTML Windows embarqué. Le serveur AppVeyor réel/authentifié, les interactions installées et les variantes natives au-delà du parcours ciblé restent non qualifiés tant que leurs preuves propres ne sont pas rattachées ; ni une page écrite ni une suite voisine ne les certifie.

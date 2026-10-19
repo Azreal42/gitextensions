@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-  "source_digest_sha256": "7e8b86e124757da63c67530d62d456f8102a5d67d1b15f416b6d070e911b06bb",
-  "scanned_csharp_files": 2337,
+  "code_reference_commit": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+  "source_digest_sha256": "c937bba36f629fb7339c2ec140060401481d1a74eecbb5fbae41a164c7cd0570",
+  "scanned_csharp_files": 2351,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -37,9 +37,9 @@
       "NA": 1
     },
     "settings_levels": {
-      "N0": 3,
+      "N0": 2,
       "N1": 6,
-      "N2": 22,
+      "N2": 23,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -49,54 +49,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/gitlab-20261019/desktop-full-03/results/desktop.trx",
-    "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-    "trx_sha256": "d7303e2d3c9c9f1b297abd4e4cff29b7f4101c1352a50e37e43610474374e07f",
+    "trx": "artifacts/linux/appveyor-20261019/desktop-full-01/results/desktop.trx",
+    "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+    "trx_sha256": "a485ab7eb9d1b70d1f91dae11a730fde66fd15529bc20a236786a161cf06e1e5",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-        "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+        "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+        "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
-        "passed": 903,
-        "total": 903,
-        "execution_result": "artifacts/linux/gitlab-20261019/core-full-02/result.json",
-        "execution_result_sha256": "20bcaae40f5701ba4aeaa04b1c25f74e0fe67e4ee31988fec1951fdf67bf024e",
+        "passed": 936,
+        "total": 936,
+        "execution_result": "artifacts/linux/appveyor-20261019/core-full-01/result.json",
+        "execution_result_sha256": "08ac2447654b06d19810479322fe298e2819ac6d1630f636bf8198374bc2a9a2",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
-          "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
+          "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
+          "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
-          "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
+          "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
+          "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
         },
-        "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W4; no exclusions."
+        "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh full suites in W5; no exclusions."
       },
       "plugins": {
-        "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-        "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+        "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+        "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/gitlab-20261019/plugins-full-01/result.json",
-        "execution_result_sha256": "864c96d979ad10f783a54b6efe64982d3bcbfef7e092907fac3e0accd643775e",
+        "execution_result": "artifacts/linux/appveyor-20261019/plugins-full-01/result.json",
+        "execution_result_sha256": "2153c19006f50bd02af3c7af8d2a221680c40bcbf19446c5ea49913d4d0ee5da",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
-          "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
+          "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
+          "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
-          "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
+          "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
+          "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
         },
-        "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W4; no exclusions."
+        "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh full suites in W5; no exclusions."
       }
     },
     "current_linux_code_equivalent": false,
@@ -126,13 +126,124 @@
       "category": "settings",
       "feature": "Paramètres CI : AppVeyor",
       "group": "ci-settings",
-      "level": "N0",
-      "implemented": "Pas de fournisseur AppVeyor porté.",
-      "remaining": "Page de paramètres, authentification et fournisseur CI à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Page AppVeyor compacte reprise de Windows : compte, token masqué, projets multiples séparés par | et option trois états de résultats de tests. XML et portées partagés, Effective en lecture seule, brouillons Apply/Cancel ; suggestion du dossier sans écriture implicite. Lecture des historiques/détails, durées/tests/PR et statuts par SHA via le suivi CI commun. Périmètre N2 vérifié ; preuves et limites dans ADR0113 et le TODO.",
+      "remaining": "N2 partiel : rapport HTML embarqué Windows encore absent du présentateur commun, liste et liens externes seulement. Routes v2 conservées d’après Windows, sans certification du serveur AppVeyor réel/authentifié. Token dans le XML choisi, sans coffre ni import de credentials système ; historique borné et incomplet signalé. Contenu du rapport embarqué, parité visuelle/native étendue et interactions installées ouverts.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core AppVeyor, dont fixtures Windows originales",
+          "source": "tests/linux/GitExtensions.Core.Tests/AppVeyorScenarios.cs",
+          "line": 7,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
+          "label": "BuildServerIntegrationSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
+          "line": 125,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppVeyorSettingsPage",
+          "label": "AppVeyorSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsPage.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
+          "label": "GitHubActionsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 3,
+          "kind": "component"
+        },
+        {
+          "label": "AppVeyorSettingsDraft.cs",
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DistributedSettingsWorkspace",
+          "label": "DistributedSettingsWorkspace",
+          "source": "src/linux/GitExtensions.Desktop/DistributedSettingsWorkspace.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorSettings",
+          "label": "AppVeyorSettings",
+          "source": "src/linux/GitExtensions.Core/AppVeyorSettings.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorProjects",
+          "label": "AppVeyorProjects",
+          "source": "src/linux/GitExtensions.Core/AppVeyorProjects.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorApiClient",
+          "label": "AppVeyorApiClient",
+          "source": "src/linux/GitExtensions.Core/AppVeyorApiClient.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorSnapshot",
+          "label": "AppVeyorSnapshot",
+          "source": "src/linux/GitExtensions.Core/AppVeyorModels.cs",
+          "line": 59,
+          "kind": "component"
+        },
+        {
+          "label": "AppVeyorModels.cs",
+          "source": "src/linux/GitExtensions.Core/AppVeyorModels.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppVeyorBuildSource",
+          "label": "AppVeyorBuildSource",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
+          "line": 36,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.GitHubActions.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppVeyorIntegrationTests.cs",
+          "test_class": "AppVeyorIntegrationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppVeyorRepositoryVariablesTests.cs",
+          "test_class": "AppVeyorRepositoryVariablesTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppVeyorSettingsPageTests.cs",
+          "test_class": "AppVeyorSettingsPageTests",
+          "passed_in_reference_run": 21,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/ci/0113-appveyor.md"
+      ]
     },
     {
       "id": "AzureDevOpsIntegration.Settings.SettingsUserControl",
@@ -482,21 +593,21 @@
           "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
           "label": "BuildServerIntegrationSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 124,
+          "line": 125,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
           "label": "GitHubActionsSettingsSession",
-          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
-          "line": 5,
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 3,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsPage",
           "label": "GitHubActionsSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 109,
+          "line": 110,
           "kind": "component"
         },
         {
@@ -690,14 +801,14 @@
           "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
           "label": "BuildServerIntegrationSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 124,
+          "line": 125,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
           "label": "GitHubActionsSettingsSession",
-          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
-          "line": 5,
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 3,
           "kind": "component"
         },
         {
@@ -758,7 +869,7 @@
           "id": "GitExtensions.Linux.Desktop.GitLabBuildSource",
           "label": "GitLabBuildSource",
           "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
-          "line": 28,
+          "line": 29,
           "kind": "component"
         },
         {
@@ -2349,8 +2460,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity et GitLab partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab conserve l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112).",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions, TeamCity et GitLab ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab et AppVeyor partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab conserve l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert.",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions, TeamCity, GitLab et AppVeyor ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2430,7 +2541,14 @@
           "id": "GitExtensions.Linux.Desktop.GitLabBuildSource",
           "label": "GitLabBuildSource",
           "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
-          "line": 28,
+          "line": 29,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppVeyorBuildSource",
+          "label": "AppVeyorBuildSource",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
+          "line": 36,
           "kind": "component"
         }
       ],
@@ -2439,6 +2557,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AnnotatedReferencePresentationTests.cs",
           "test_class": "AnnotatedReferencePresentationTests",
           "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppVeyorIntegrationTests.cs",
+          "test_class": "AppVeyorIntegrationTests",
+          "passed_in_reference_run": 6,
           "results_present": true
         },
         {
@@ -2707,7 +2831,8 @@
         ".agents/docs/adr/preferences/revision-links/0108-revision-links.md",
         ".agents/docs/adr/extensions/ci/0109-github-actions.md",
         ".agents/docs/adr/extensions/ci/0111-teamcity.md",
-        ".agents/docs/adr/extensions/ci/0112-gitlab.md"
+        ".agents/docs/adr/extensions/ci/0112-gitlab.md",
+        ".agents/docs/adr/extensions/ci/0113-appveyor.md"
       ]
     },
     {
@@ -2891,7 +3016,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 183,
+          "line": 184,
           "kind": "window"
         },
         {
@@ -8365,8 +8490,8 @@
       "feature": "Configuration CI",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Paramètres et portées CI partagés pour GitHub Actions, TeamCity et GitLab. Un seul polling, projection BuildServerSnapshot, cellules de statuts et rapport ; sélection/lignes/focus conservés à la publication et fermeture drainée. TeamCity ajoute chooser, collage de lien et identifiants utilisateur distincts des XML. GitLab ajoute les trois champs Windows, lookup du projet et token XML dans la portée choisie (ADR0112). Références des suites par source dans le TODO ; pages de build ouvertes uniquement sur action explicite.",
-      "remaining": "N2 : AppVeyor, Azure DevOps et Jenkins absents. Rapport limité à une liste et un navigateur externe, sans viewer HTML/jobs/logs Windows. NTLM/SSO non repris ; serveurs TeamCity/GitLab réels, GHA authentifié/Enterprise et audit interactif étendu restent ouverts. PR GitHub utilise le client distinct ADR0110 ; aucune parité globale. Le token GitLab reste dans le XML choisi ; pas de transfert vers le stockage privé TeamCity.",
+      "implemented": "Paramètres et portées CI partagés pour GitHub Actions, TeamCity, GitLab et AppVeyor. Un seul polling, projection BuildServerSnapshot, cellules de statuts et rapport ; sélection/lignes/focus conservés à la publication et fermeture drainée. TeamCity ajoute chooser, collage de lien et identifiants utilisateur distincts des XML. GitLab ajoute les trois champs Windows, lookup du projet et token XML dans la portée choisie (ADR0112). Références des suites par source dans le TODO ; pages de build ouvertes uniquement sur action explicite. AppVeyor reprend compte/token/projets et option tests nullable, raccordés aux durées/tests/PR et statuts communs ; ADR0113, suites complètes et natif source ciblé vérifiés.",
+      "remaining": "N2 : Azure DevOps et Jenkins absents. Rapport limité à une liste et un navigateur externe, sans viewer HTML/jobs/logs Windows. NTLM/SSO non repris ; serveurs TeamCity/GitLab/AppVeyor réels, GHA authentifié/Enterprise et audit interactif étendu restent ouverts. PR GitHub utilise le client distinct ADR0110 ; aucune parité globale. Le token GitLab reste dans le XML choisi ; pas de transfert vers le stockage privé TeamCity.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -8381,21 +8506,21 @@
           "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
           "label": "BuildServerIntegrationSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 124,
+          "line": 125,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
           "label": "GitHubActionsSettingsSession",
-          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
-          "line": 5,
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 3,
           "kind": "component"
         },
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsPage",
           "label": "GitHubActionsSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
-          "line": 109,
+          "line": 110,
           "kind": "component"
         },
         {
@@ -8470,7 +8595,7 @@
           "id": "GitExtensions.Linux.BuildServerSnapshot",
           "label": "BuildServerSnapshot",
           "source": "src/linux/GitExtensions.Core/BuildServerSnapshot.cs",
-          "line": 23,
+          "line": 26,
           "kind": "component"
         },
         {
@@ -8517,11 +8642,64 @@
           "id": "GitExtensions.Linux.Desktop.GitLabBuildSource",
           "label": "GitLabBuildSource",
           "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
-          "line": 28,
+          "line": 29,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppVeyorSettingsPage",
+          "label": "AppVeyorSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsPage.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "label": "AppVeyorSettingsDraft.cs",
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorSettings",
+          "label": "AppVeyorSettings",
+          "source": "src/linux/GitExtensions.Core/AppVeyorSettings.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorApiClient",
+          "label": "AppVeyorApiClient",
+          "source": "src/linux/GitExtensions.Core/AppVeyorApiClient.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.AppVeyorSnapshot",
+          "label": "AppVeyorSnapshot",
+          "source": "src/linux/GitExtensions.Core/AppVeyorModels.cs",
+          "line": 59,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AppVeyorBuildSource",
+          "label": "AppVeyorBuildSource",
+          "source": "src/linux/GitExtensions.Desktop/BuildServerSource.cs",
+          "line": 36,
           "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppVeyorIntegrationTests.cs",
+          "test_class": "AppVeyorIntegrationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppVeyorSettingsPageTests.cs",
+          "test_class": "AppVeyorSettingsPageTests",
+          "passed_in_reference_run": 21,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BuildServerCredentialsStoreTests.cs",
           "test_class": "BuildServerCredentialsStoreTests",
@@ -8569,7 +8747,8 @@
         ".agents/docs/adr/extensions/ci/0109-github-actions.md",
         ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md",
         ".agents/docs/adr/extensions/ci/0111-teamcity.md",
-        ".agents/docs/adr/extensions/ci/0112-gitlab.md"
+        ".agents/docs/adr/extensions/ci/0112-gitlab.md",
+        ".agents/docs/adr/extensions/ci/0113-appveyor.md"
       ]
     },
     {
@@ -15183,8 +15362,8 @@
         {
           "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
           "label": "GitHubActionsSettingsSession",
-          "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDraft.cs",
-          "line": 5,
+          "source": "src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+          "line": 3,
           "kind": "component"
         }
       ],
@@ -16845,6 +17024,10 @@
       "line": 15,
       "sources": [
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.AppVeyor.cs",
+          "line": 6
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ArtificialRevisions.cs",
           "line": 9
         },
@@ -16914,7 +17097,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
-          "line": 17
+          "line": 18
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Grep.cs",
@@ -22924,8 +23107,8 @@
       "NA": 1
     },
     "ci-settings": {
-      "N0": 3,
-      "N2": 3
+      "N0": 2,
+      "N2": 4
     }
   }
 }

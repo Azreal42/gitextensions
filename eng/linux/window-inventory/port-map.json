@@ -104,10 +104,11 @@
         "AvatarImageControl",
         "AvatarService",
         "MainWindow@InitializeAvatarLifetime",
-        "GitLabBuildSource"
+        "GitLabBuildSource",
+        "AppVeyorBuildSource"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity et GitLab partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab conserve l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112).",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions, TeamCity et GitLab ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab et AppVeyor partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab conserve l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert.",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions, TeamCity, GitLab et AppVeyor ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -150,7 +151,8 @@
         "AvatarSettingsConsumerTests",
         "RevisionLinksControllerTests",
         "GitHubActionsDesktopTests",
-        "GitLabIntegrationTests"
+        "GitLabIntegrationTests",
+        "AppVeyorIntegrationTests"
       ],
       "adr": [
         "0031",
@@ -177,7 +179,8 @@
         "0108",
         "0109",
         "0111",
-        "0112"
+        "0112",
+        "0113"
       ],
       "extra_evidence": [
         {
@@ -2610,10 +2613,16 @@
         "GitLabSettings",
         "GitLabApiClient",
         "GitLabSnapshot",
-        "GitLabBuildSource"
+        "GitLabBuildSource",
+        "AppVeyorSettingsPage",
+        "file:src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+        "AppVeyorSettings",
+        "AppVeyorApiClient",
+        "AppVeyorSnapshot",
+        "AppVeyorBuildSource"
       ],
-      "implemented": "Paramètres et portées CI partagés pour GitHub Actions, TeamCity et GitLab. Un seul polling, projection BuildServerSnapshot, cellules de statuts et rapport ; sélection/lignes/focus conservés à la publication et fermeture drainée. TeamCity ajoute chooser, collage de lien et identifiants utilisateur distincts des XML. GitLab ajoute les trois champs Windows, lookup du projet et token XML dans la portée choisie (ADR0112). Références des suites par source dans le TODO ; pages de build ouvertes uniquement sur action explicite.",
-      "remaining": "N2 : AppVeyor, Azure DevOps et Jenkins absents. Rapport limité à une liste et un navigateur externe, sans viewer HTML/jobs/logs Windows. NTLM/SSO non repris ; serveurs TeamCity/GitLab réels, GHA authentifié/Enterprise et audit interactif étendu restent ouverts. PR GitHub utilise le client distinct ADR0110 ; aucune parité globale. Le token GitLab reste dans le XML choisi ; pas de transfert vers le stockage privé TeamCity.",
+      "implemented": "Paramètres et portées CI partagés pour GitHub Actions, TeamCity, GitLab et AppVeyor. Un seul polling, projection BuildServerSnapshot, cellules de statuts et rapport ; sélection/lignes/focus conservés à la publication et fermeture drainée. TeamCity ajoute chooser, collage de lien et identifiants utilisateur distincts des XML. GitLab ajoute les trois champs Windows, lookup du projet et token XML dans la portée choisie (ADR0112). Références des suites par source dans le TODO ; pages de build ouvertes uniquement sur action explicite. AppVeyor reprend compte/token/projets et option tests nullable, raccordés aux durées/tests/PR et statuts communs ; ADR0113, suites complètes et natif source ciblé vérifiés.",
+      "remaining": "N2 : Azure DevOps et Jenkins absents. Rapport limité à une liste et un navigateur externe, sans viewer HTML/jobs/logs Windows. NTLM/SSO non repris ; serveurs TeamCity/GitLab/AppVeyor réels, GHA authentifié/Enterprise et audit interactif étendu restent ouverts. PR GitHub utilise le client distinct ADR0110 ; aucune parité globale. Le token GitLab reste dans le XML choisi ; pas de transfert vers le stockage privé TeamCity.",
       "visual": "rapproche",
       "tests": [
         "DistributedSettingsWorkspaceTests",
@@ -2622,13 +2631,16 @@
         "TeamCityIntegrationTests",
         "TeamCityBuildChooserDialogTests",
         "GitLabSettingsPageTests",
-        "GitLabIntegrationTests"
+        "GitLabIntegrationTests",
+        "AppVeyorSettingsPageTests",
+        "AppVeyorIntegrationTests"
       ],
       "adr": [
         "0109",
         "0105",
         "0111",
-        "0112"
+        "0112",
+        "0113"
       ],
       "extra_evidence": [
         {
@@ -3174,13 +3186,40 @@
     "AppVeyorIntegration.Settings.AppVeyorSettingsUserControl": {
       "feature": "Paramètres CI : AppVeyor",
       "group": "ci-settings",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de fournisseur AppVeyor porté.",
-      "remaining": "Page de paramètres, authentification et fournisseur CI à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "BuildServerIntegrationSettingsPage",
+        "AppVeyorSettingsPage",
+        "GitHubActionsSettingsSession",
+        "file:src/linux/GitExtensions.Desktop/AppVeyorSettingsDraft.cs",
+        "DistributedSettingsWorkspace",
+        "AppVeyorSettings",
+        "AppVeyorProjects",
+        "AppVeyorApiClient",
+        "AppVeyorSnapshot",
+        "file:src/linux/GitExtensions.Core/AppVeyorModels.cs",
+        "AppVeyorBuildSource",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs"
+      ],
+      "implemented": "Page AppVeyor compacte reprise de Windows : compte, token masqué, projets multiples séparés par | et option trois états de résultats de tests. XML et portées partagés, Effective en lecture seule, brouillons Apply/Cancel ; suggestion du dossier sans écriture implicite. Lecture des historiques/détails, durées/tests/PR et statuts par SHA via le suivi CI commun. Périmètre N2 vérifié ; preuves et limites dans ADR0113 et le TODO.",
+      "remaining": "N2 partiel : rapport HTML embarqué Windows encore absent du présentateur commun, liste et liens externes seulement. Routes v2 conservées d’après Windows, sans certification du serveur AppVeyor réel/authentifié. Token dans le XML choisi, sans coffre ni import de credentials système ; historique borné et incomplet signalé. Contenu du rapport embarqué, parité visuelle/native étendue et interactions installées ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "AppVeyorSettingsPageTests",
+        "AppVeyorIntegrationTests",
+        "AppVeyorRepositoryVariablesTests"
+      ],
+      "adr": [
+        "0113"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core AppVeyor, dont fixtures Windows originales",
+          "source": "tests/linux/GitExtensions.Core.Tests/AppVeyorScenarios.cs",
+          "line": 7,
+          "kind": "source"
+        }
+      ]
     },
     "AzureDevOpsIntegration.Settings.SettingsUserControl": {
       "feature": "Paramètres CI : Azure DevOps",

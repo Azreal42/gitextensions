@@ -1,11 +1,11 @@
 {
-  "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-  "trx": "artifacts/linux/gitlab-20261019/desktop-full-03/results/desktop.trx",
-  "trx_sha256": "d7303e2d3c9c9f1b297abd4e4cff29b7f4101c1352a50e37e43610474374e07f",
+  "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+  "trx": "artifacts/linux/appveyor-20261019/desktop-full-01/results/desktop.trx",
+  "trx_sha256": "a485ab7eb9d1b70d1f91dae11a730fde66fd15529bc20a236786a161cf06e1e5",
   "counters": {
-    "total": "3001",
-    "executed": "3001",
-    "passed": "3001",
+    "total": "3035",
+    "executed": "3035",
+    "passed": "3035",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -26,6 +26,15 @@
     },
     "AnnotatedReferencePresentationTests": {
       "Passed": 5
+    },
+    "AppVeyorIntegrationTests": {
+      "Passed": 6
+    },
+    "AppVeyorRepositoryVariablesTests": {
+      "Passed": 7
+    },
+    "AppVeyorSettingsPageTests": {
+      "Passed": 21
     },
     "AppearanceDictionaryTests": {
       "Passed": 15
@@ -792,64 +801,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-      "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+      "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+      "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 903,
-      "total": 903,
-      "execution_result": "artifacts/linux/gitlab-20261019/core-full-02/result.json",
-      "execution_result_sha256": "20bcaae40f5701ba4aeaa04b1c25f74e0fe67e4ee31988fec1951fdf67bf024e",
+      "passed": 936,
+      "total": 936,
+      "execution_result": "artifacts/linux/appveyor-20261019/core-full-01/result.json",
+      "execution_result_sha256": "08ac2447654b06d19810479322fe298e2819ac6d1630f636bf8198374bc2a9a2",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
-        "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
+        "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
+        "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
-        "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
+        "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
+        "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
       },
-      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W4; no exclusions."
+      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh full suites in W5; no exclusions."
     },
     "plugins": {
-      "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
-      "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+      "source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
+      "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/gitlab-20261019/plugins-full-01/result.json",
-      "execution_result_sha256": "864c96d979ad10f783a54b6efe64982d3bcbfef7e092907fac3e0accd643775e",
+      "execution_result": "artifacts/linux/appveyor-20261019/plugins-full-01/result.json",
+      "execution_result_sha256": "2153c19006f50bd02af3c7af8d2a221680c40bcbf19446c5ea49913d4d0ee5da",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
-        "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
+        "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
+        "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
-        "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
+        "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
+        "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
       },
-      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W4; no exclusions."
+      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh full suites in W5; no exclusions."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
-    "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+    "worktree": "/home/az42/.codex/worktrees/appveyor-integration/gitextensions",
+    "execution_source_sha": "c108a6bb3c71cef065a7210182451a84c1c9a671",
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
-      "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
+      "path": "artifacts/linux/appveyor-20261019/review/source-import-review.json",
+      "sha256": "731ab22cba4aa86f1e578308787260712a0ddd45e556ab2904dede0a0b6f4624"
     },
     "root_review": {
-      "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
-      "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
+      "path": "artifacts/linux/appveyor-20261019/review/root-full-review.json",
+      "sha256": "3a167ac5527ca1792d74be1e09274878b4372861b6fe13c1de416ff0ceada4b8"
     },
-    "meaning": "Fresh full runs execute in frozen W4 with stable source/config extension and selected binary manifests. Primary retains five unrelated Modal edits; import is not whole-primary equivalence or a primary full run. Assets/metadata outside those manifests, installed interaction and live GitLab are not implied."
+    "meaning": "Fresh full suites run in frozen W5. The primary preserves five unrelated Modal edits; import is not whole-primary equivalence or a primary full run. Native source, exact Debian artifact and installed interaction retain their separate scopes."
   }
 }
