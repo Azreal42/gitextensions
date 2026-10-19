@@ -36,3 +36,5 @@ Le code, les tests et les scripts sont la source de vérité. Ces notes gardent 
 - [Complétion du message Commit](adr/preferences/commit-completion/0102-commit-message-completion.md) : règles Windows partagées, popup au caret et exemptions temporaires du correcteur ; [preuves et limites](todo.md#complétion-du-message-commit--périmètre-vérifié), avec sélection seule colorée et style partagé aux autres complétions.
 
 - [TeamCity et suivi CI partagé](adr/extensions/ci/0111-teamcity.md) : sélecteur/réglages, lecture REST/XML et identifiants utilisateur par instance ; suites complètes et paquet isolé vérifiés, serveur réel et audit interactif ouverts.
+
+- [GitLab et suivi CI partagé](adr/extensions/ci/0112-gitlab.md) : paramètres XML, lookup de projet et pipelines/statuts ; suites, paquet isolé et natif source ciblé vérifiés. Serveur réel, jobs et interactions installées ouverts.

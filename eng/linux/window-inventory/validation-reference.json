@@ -1,11 +1,11 @@
 {
-  "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
-  "trx": "artifacts/linux/teamcity-20261019/desktop-full-02/results/desktop.trx",
-  "trx_sha256": "55519e092665110d2f9bc80aeea08678c2ada6bc05a3d91a163c6f76b901a6b7",
+  "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+  "trx": "artifacts/linux/gitlab-20261019/desktop-full-03/results/desktop.trx",
+  "trx_sha256": "d7303e2d3c9c9f1b297abd4e4cff29b7f4101c1352a50e37e43610474374e07f",
   "counters": {
-    "total": "2969",
-    "executed": "2969",
-    "passed": "2969",
+    "total": "3001",
+    "executed": "3001",
+    "passed": "3001",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -465,6 +465,12 @@
     "GitHubPullRequestFetchTests": {
       "Passed": 11
     },
+    "GitLabIntegrationTests": {
+      "Passed": 8
+    },
+    "GitLabSettingsPageTests": {
+      "Passed": 24
+    },
     "GitProcessDialogTests": {
       "Passed": 15
     },
@@ -786,64 +792,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
-      "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+      "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+      "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 873,
-      "total": 873,
-      "execution_result": "artifacts/linux/teamcity-20261019/core-full-02/result.json",
-      "execution_result_sha256": "86886c01baf1c92f8fffdc822d5e4859b9863c90beb0e4e2b332fa940b2ffbb9",
+      "passed": 903,
+      "total": 903,
+      "execution_result": "artifacts/linux/gitlab-20261019/core-full-02/result.json",
+      "execution_result_sha256": "20bcaae40f5701ba4aeaa04b1c25f74e0fe67e4ee31988fec1951fdf67bf024e",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
-        "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
+        "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
+        "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
-        "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
+        "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
+        "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
       },
-      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W3; no exclusions."
+      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W4; no exclusions."
     },
     "plugins": {
-      "source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
-      "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+      "source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
+      "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/teamcity-20261019/plugins-full-02/result.json",
-      "execution_result_sha256": "7c07957d939a3743f1d2aa352ed8e7d9a806613055145db7f1ae31b5d2f8c494",
+      "execution_result": "artifacts/linux/gitlab-20261019/plugins-full-01/result.json",
+      "execution_result_sha256": "864c96d979ad10f783a54b6efe64982d3bcbfef7e092907fac3e0accd643775e",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
-        "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
+        "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
+        "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
-        "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
+        "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
+        "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
       },
-      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W3; no exclusions."
+      "comparison_scope": "All source/config extension and binary manifests stable and equal across all three fresh full runs in W4; no exclusions."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/teamcity-integration/gitextensions",
-    "execution_source_sha": "6534a924c3a37a19d69a3af7a15069c2b71d4126",
+    "worktree": "/home/az42/.codex/worktrees/gitlab-integration/gitextensions",
+    "execution_source_sha": "95f628aea7d29db61f21fc81458ac1779b9204fa",
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/teamcity-20261019/review/source-import-review-02.json",
-      "sha256": "6892ceeeb133a06f02899ad751137a4226a367b56d4f4486aaa075cdf470b1a0"
+      "path": "artifacts/linux/gitlab-20261019/review/source-import-review.json",
+      "sha256": "1c13b11df8a6b5ac62b29c53712bf7c0864b04fc905072da3a466255973d69f9"
     },
     "root_review": {
-      "path": "artifacts/linux/teamcity-20261019/review/root-full-review.json",
-      "sha256": "f4b06f1db86e794b0af569f91119bfe0c83155f70fb7ce078ea62eb613669c3c"
+      "path": "artifacts/linux/gitlab-20261019/review/root-full-review.json",
+      "sha256": "a295c6bcd0e90ec86afa24218ad4c6508407727daa078eaafb86873314acd542"
     },
-    "meaning": "Actual fresh W3 full runs on frozen feature-source bytes and immutable binaries built after the correction commit; metadata/build-generated inputs and all assets are not implied by the extension-only manifests. Primary retains five unrelated Modal edits; no primary full or installed interactive TeamCity acceptance."
+    "meaning": "Fresh full runs execute in frozen W4 with stable source/config extension and selected binary manifests. Primary retains five unrelated Modal edits; import is not whole-primary equivalence or a primary full run. Assets/metadata outside those manifests, installed interaction and live GitLab are not implied."
   }
 }
