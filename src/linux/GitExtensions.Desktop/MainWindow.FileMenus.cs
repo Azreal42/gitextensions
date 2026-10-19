@@ -108,18 +108,48 @@ public sealed partial class MainWindow
             : identity.Groups.All(group => _revisionDiffGroups.Any(current => ReferenceEquals(current, group)));
     }
 
+    private (int Line, string? Encoding) FileMenuReadingPosition(FileMenuLeaf leaf)
+    {
+        if (_refreshing || _lifetime.IsCancellationRequested || _repository is not { } repository) { return (1, null); }
+        bool tree = (_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab";
+        if (!tree && (_tabs.SelectedItem as TabItem)?.Name != "DiffTab") { return (1, null); }
+        FileMenuSelection? selection = GetFileMenuSelection(tree);
+        if (selection is not { Leaves.Count: 1, Folder: null, IsDisplayOnly: false }
+            || !IsCurrentFileMenuSelection(selection) || selection.Leaves[0].File != leaf.File
+            || selection.Leaves[0].First != leaf.First || selection.Leaves[0].Second != leaf.Second) { return (1, null); }
+        FileContentView? content;
+        string identity;
+        if (tree)
+        {
+            if (_treeRead.Pending != 0 || _treeFileRead.Pending != 0 || !ReferenceEquals(_fileTreeRepository, repository)
+                || _fileTreeRevision is not string revision || (_fileTreeSource ?? new(revision)) != leaf.Second) { return (1, null); }
+            content = _fileContent;
+            identity = string.Join('\0', repository.Path, leaf.File.Path, revision, "blob");
+        }
+        else
+        {
+            if (_revisionRead.Pending != 0 || _revisionDiffRead.Pending != 0
+                || _revisionFilesView?.FocusedSelectedTag is not RevisionDiffFileSelection selected
+                || selected.File != leaf.File) { return (1, null); }
+            content = _commitContent;
+            identity = _revisionComparisons.TryGetValue(selected.Group, out GitComparison? comparison)
+                ? string.Join("\0", repository.Path, selected.File.Path, comparison.Base.Kind, comparison.Base.Revision,
+                    comparison.Compare.Kind, comparison.Compare.Revision, selected.File.OriginalPath)
+                : string.Join("\0", repository.Path, selected.File.Path, selected.Group.Kind,
+                    selected.Group.Revision, selected.Group.BaseRevision, selected.File.OriginalPath);
+        }
+        // The previous pixels remain visible during panel reads. They are not a position for the new selection.
+        return content is { IsImage: false } && content.TextView.IsDocumentReady && content.TextView.DocumentIdentity == identity
+            ? (content.TextView.CurrentFileLine, content.TextView.FileEncodingName ?? content.TextView.DefaultFileEncodingName) : (1, null);
+    }
+
     private void ConfigureFileContextMenu(TreeView tree, bool isFileTree)
     {
         FileStatusListView view = (isFileTree ? _fileTreeView : _revisionFilesView)!;
         Func<string, Func<CancellationToken, Task>, bool, Task> run = RunFileMenuOperationAsync;
         _fileMenuOperations ??= new(this, run, IsCurrentFileMenuSelection, info => ExternalLauncher(info), _lifetime.Token, T, () => WorkflowOwner)
         {
-            ReadingPosition = leaf =>
-            {
-                string identity = string.Join('\0', _repository?.Path, leaf.File.Path, leaf.Second.Revision, "blob");
-                return _fileContent is { } content && content.TextView.IsDocumentReady && content.TextView.DocumentIdentity == identity
-                    ? (content.TextView.CurrentFileLine, content.TextView.FileEncodingName) : (1, null);
-            }
+            ReadingPosition = FileMenuReadingPosition
         };
         FileMenuAdditionalOperations additional = _fileMenuAdditionalOperations ??= new(this, run, IsCurrentFileMenuSelection, info => ExternalLauncher(info), _lifetime.Token, () => WorkflowOwner);
         FileMenuHost host = new()

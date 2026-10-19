@@ -39,7 +39,7 @@ public sealed class DashboardControl : UserControl, IDisposable
     private bool _disposed;
     private double _tileWidth = 300;
 
-    public DashboardControl(Window owner, Func<RepositoryHistoryState> history, Action<RepositoryHistoryState> save, Func<string, Task> open, Func<Task> create, Func<Task> choose, Func<Task> clone)
+    public DashboardControl(Window owner, Func<RepositoryHistoryState> history, Action<RepositoryHistoryState> save, Func<string, Task> open, Func<Task> create, Func<Task> choose, Func<Task> clone, Func<Task>? forkClone = null)
     {
         Name = "RepositoryDashboard";
         _owner = owner; _history = history; _save = save; _open = open;
@@ -61,6 +61,8 @@ public sealed class DashboardControl : UserControl, IDisposable
         Grid.SetRow(_search, 1); header.Children.Add(_search); _header.Child = header;
         _logo.Child = new Image { Source = LoadBitmap("GitExtensionsLogoWide.png"), Stretch = Stretch.Uniform };
         _start.Child = new StackPanel { Spacing = 8, Children = { Link(T("Create new repository"), "RepoCreate.png", create), Link(T("Open repository"), "RepoOpen.png", choose), Link(T("Clone repository"), "CloneRepoGit.png", clone) } };
+        if (forkClone is not null && _start.Child is StackPanel start)
+        { start.Children.Add(Link(T("Clone GitHub repository"), "CloneRepoGitHub.png", forkClone)); }
         _contribute.Child = new StackPanel
         {
             Spacing = 8,

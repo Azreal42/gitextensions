@@ -1,7 +1,7 @@
 namespace GitExtensions.Linux;
 
 public sealed record GitInitOptions(string? InitialBranch = null, bool Bare = false, bool Shared = false);
-public sealed record GitCloneOptions(bool Bare = false, bool RecurseSubmodules = true, string? Branch = null, bool NoCheckout = false, int? Depth = null);
+public sealed record GitCloneOptions(bool Bare = false, bool RecurseSubmodules = true, string? Branch = null, bool NoCheckout = false, int? Depth = null, bool? SingleBranch = false);
 
 public sealed partial class GitRepository
 {
@@ -54,7 +54,7 @@ public sealed partial class GitRepository
         {
             arguments.Add("--depth=" + depth.ToString(System.Globalization.CultureInfo.InvariantCulture));
             // The original clone dialog keeps other remote branches available in a shallow clone.
-            arguments.Add("--no-single-branch");
+            if (options.SingleBranch is bool singleBranch) { arguments.Add(singleBranch ? "--single-branch" : "--no-single-branch"); }
         }
         cancellationToken.ThrowIfCancellationRequested();
         string fullPath = System.IO.Path.GetFullPath(destination);

@@ -380,6 +380,7 @@ public sealed class PushDialog : RepositoryDialog
 
     internal Task ExecuteAsync(Window owner, CancellationToken cancellationToken = default) => RunAsync("Push", async token =>
     {
+        _preferences = _store.Load();
         Succeeded = Cancelled = false;
         _workflowStopRequested = false; LastProcess = null;
         GitPushRequest request = ReadOptions();
@@ -396,13 +397,13 @@ public sealed class PushDialog : RepositoryDialog
             if (!known && defaultPush != request.DestinationRef && !_preferences.DontConfirmNewBranch)
             {
                 var choice = await ChoiceAsync(owner, "PushNewBranchConfirmation", C("_pushCaption", "Push"), C("_branchNewForRemote", "The branch you are about to push seems to be a new branch for the remote.\nAre you sure you want to push this branch?"), [(1, T("Yes")), (0, T("No"))], true, token);
-                if (choice.Remember) { _preferences = _preferences with { DontConfirmNewBranch = true }; _store.Save(_preferences); }
+                if (choice.Remember) { _preferences = _store.Load() with { DontConfirmNewBranch = true }; _store.Save(_preferences); }
                 if (choice.Value != 1) { Cancelled = true; return; }
             }
             GitReference? local = _references.FirstOrDefault(reference => reference.IsBranch && reference.ShortName == request.Source);
             if (!request.SetUpstream && local is not null && string.IsNullOrEmpty(local.Upstream) && !_remotes.Any(remote => request.Source.StartsWith(remote.Name, StringComparison.OrdinalIgnoreCase)) && Config("branch.autosetupmerge") != "false")
             {
-                bool track = _preferences.DontConfirmAddTracking;
+                bool track = _store.Load().DontConfirmAddTracking;
                 if (!track)
                 {
                     var choice = await ChoiceAsync(owner, "PushTrackingConfirmation", C("_pushCaption", "Push"), string.Format(C("_updateTrackingReference", "The branch {0} does not have a tracking reference. Do you want to add a tracking reference to {1}?"), request.Source, request.DestinationRef), [(1, T("Yes")), (2, T("No")), (0, T("Cancel"))], false, token);
@@ -428,7 +429,7 @@ public sealed class PushDialog : RepositoryDialog
             var choice = await ChoiceAsync(owner, "PushDeleteConfirmation", T("Delete Confirmation"), request.Source[1..], [(1, T("Yes")), (0, T("Cancel"))], false, token);
             if (choice.Value != 1) { Cancelled = true; return; }
         }
-        _preferences = _preferences with { Recursion = (GitPushRecursion)Math.Max(0, _recursive.SelectedIndex) }; _store.Save(_preferences);
+        _preferences = _store.Load() with { Recursion = (GitPushRecursion)Math.Max(0, _recursive.SelectedIndex) }; _store.Save(_preferences);
         if (_toUrl.IsChecked == true)
         {
             int capacity = new RepositoryHistoryStore().Load(new PreferencesStore().Load().RecentRepositories).HistorySize;
@@ -476,7 +477,7 @@ public sealed class PushDialog : RepositoryDialog
             // A hook/permission failure is not a non-fast-forward rejection. Never offer an automatic force for it.
             bool rejected = output.Contains("[rejected]", StringComparison.Ordinal) && !output.Contains("[remote rejected]", StringComparison.Ordinal);
             if (!rejected || current.Mode != GitPushMode.Branch || current.Source != _currentBranch || _toRemote.IsChecked != true || _bare) { return null; }
-            GitPullAction? action = _preferences.RejectedAction;
+            GitPullAction? action = _store.Load().RejectedAction;
             bool force = false;
             if (action is null)
             {
@@ -487,7 +488,7 @@ public sealed class PushDialog : RepositoryDialog
                      (2, A("_pullRebaseButton", "Pull with &rebase")), (3, A("_pullMergeButton", "Pull with &merge")), (4, A("_pushForceButton", "&Force push with lease")), (0, T("Cancel"))], true, ct, commandLinks: true);
                 action = choice.Value switch { 1 => GitPullAction.Default, 2 => GitPullAction.Rebase, 3 => GitPullAction.Merge, _ => GitPullAction.None };
                 force = choice.Value == 4;
-                if (choice.Remember && !force) { _preferences = _preferences with { RejectedAction = action }; _store.Save(_preferences); }
+                if (choice.Remember && !force) { _preferences = _store.Load() with { RejectedAction = action }; _store.Save(_preferences); }
             }
             if (force)
             {

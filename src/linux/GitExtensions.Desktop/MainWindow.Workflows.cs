@@ -111,10 +111,20 @@ public sealed partial class MainWindow
     {
         string message = _commitMessage.Text ?? "";
         if (string.IsNullOrWhiteSpace(message)) { _state.Text = "Enter a commit message"; _commitMessage.Focus(); return; }
-        if (_amend.IsChecked == true && !await Dialogs.ConfirmAsync(this, "Amend commit", "Replace the latest commit with the staged changes and this message?")) { return; }
+        if (_amend.IsChecked == true && !await ConfirmationPrompt.ShowAsync(WorkflowOwner, T("Amend commit"),
+            _translations.Translate("FormCommit", "_amendCommit", "Text", "You are about to rewrite history.\nOnly use Amend if the commit has not been published yet!\n\nDo you want to continue?"),
+            new CommitPreferencesStore().Load().DontConfirmAmend,
+            () => ConfirmationPrompt.Remember(nameof(ConfirmationsSettingsValues.DontConfirmAmend)), _lifetime.Token,
+            acceptLabel: T("Amend commit"), cancelLabel: T("Cancel"), acceptIsDefault: false)) { return; }
         await RunAsync("Commit", async repository =>
         {
-            using ScriptWorkflowScope scripts = new(WorkflowOwner, repository, Token);
+            Window owner = WorkflowOwner;
+            if (!await CommitBranchGuard.EnsureAsync(owner, repository, new(), _translations, Token,
+                () => CreateChangesCommitBranchAsync(owner, repository, Token),
+                () => CheckoutChangesCommitBranchAsync(owner, repository, Token))) { return; }
+            Token.ThrowIfCancellationRequested();
+            if (!owner.IsVisible) { return; }
+            using ScriptWorkflowScope scripts = new(owner, repository, Token);
             if (!await scripts.RunAsync(ScriptEvent.BeforeCommit)) { return; }
             scripts.ThrowIfStopped();
             GitResult result = await repository.CommitAsync(message, _amend.IsChecked == true, scripts.Token);
@@ -124,6 +134,41 @@ public sealed partial class MainWindow
             _commitMessage.Text = "";
             _amend.IsChecked = false;
         });
+    }
+
+    private async Task<bool> CreateChangesCommitBranchAsync(Window owner, GitRepository repository, CancellationToken token)
+    {
+        DesktopPreferences preferences = new PreferencesStore().Load();
+        CreateBranchDialog dialog = new(repository, "HEAD", autoNormalize: preferences.AutoNormaliseBranchName, replacement: preferences.AutoNormaliseSymbol)
+            { RequestedThemeVariant = owner.ActualThemeVariant };
+        Task initialization = Task.CompletedTask;
+        dialog.Opened += (_, _) => initialization = dialog.InitializeAsync();
+        using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
+        try { await dialog.ShowDialog(owner); await initialization; token.ThrowIfCancellationRequested(); }
+        finally { dialog.Close(); }
+        return owner.IsVisible && dialog.CreatedBranch is not null;
+    }
+
+    private async Task<bool> CheckoutChangesCommitBranchAsync(Window owner, GitRepository repository, CancellationToken token)
+    {
+        DesktopPreferences preferences = new PreferencesStore().Load();
+        CheckoutBranchDialog? dialog = null;
+        dialog = new(repository, autoNormalize: preferences.AutoNormaliseBranchName, replacement: preferences.AutoNormaliseSymbol,
+            afterSubmoduleUpdateAsync: ct => AfterSubmoduleUpdateAsync(repository, dialog!.IsVisible ? dialog : owner, ct))
+            { RequestedThemeVariant = owner.ActualThemeVariant };
+        using CancellationTokenRegistration cancellation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
+        try
+        {
+            await dialog.InitializeAsync(token); token.ThrowIfCancellationRequested();
+            if (dialog.CanExecuteDefault)
+            {
+                await dialog.ExecuteDefaultAsync(owner, token); token.ThrowIfCancellationRequested();
+                if (dialog.LastError is null) { return owner.IsVisible && dialog.Succeeded; }
+            }
+            await dialog.ShowDialog(owner); token.ThrowIfCancellationRequested();
+            return owner.IsVisible && dialog.Succeeded;
+        }
+        finally { dialog.Close(); }
     }
 
     private async Task<CheckoutRevisionOutcome> CheckoutRevisionWithScriptEventsAsync(GitRepository repository, string revision, CancellationToken token,
@@ -182,17 +227,31 @@ public sealed partial class MainWindow
     {
         token.ThrowIfCancellationRequested();
         if (!owner.IsVisible) { return; }
-        if ((await repository.GetConflictsAsync(token)).Count > 0)
+        bool hadConflicts = (await repository.GetConflictsAsync(token)).Count > 0;
+        bool patchOrRebase = await CommitBranchGuard.IsPatchOrRebaseInProgressAsync(repository, token);
+        if (hadConflicts)
         {
-            Task<bool> confirmation = Dialogs.ConfirmAsync(owner, T("Resolve conflicts"), T("There are unresolved conflicts. Resolve them now?"));
-            using CancellationTokenRegistration cancelConfirmation = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            { foreach (Window child in owner.OwnedWindows.ToArray()) { child.Close(); } }));
-            if (!await confirmation) { return; }
+            ConflictConfirmationPreferences preferences = new ConflictConfirmationPreferencesStore().Load();
+            bool resolve = await ConfirmationPrompt.ShowAsync(owner,
+                _translations.Translate("MessageBoxes", "_unresolvedMergeConflictsCaption", "Text", "Merge conflicts"),
+                _translations.Translate("MessageBoxes", "_unresolvedMergeConflicts", "Text", "There are unresolved merge conflicts, solve conflicts now?"),
+                preferences.DontConfirmResolveConflicts,
+                () => ConfirmationPrompt.Remember(nameof(ConfirmationsSettingsValues.DontConfirmResolveConflicts)), token, warning: false);
             token.ThrowIfCancellationRequested();
-            if (!owner.IsVisible || !await ResolveConflictsDialog.ShowAsync(owner, repository, token)) { return; }
+            if (!resolve || !owner.IsVisible || !await ResolveConflictsDialog.ShowAsync(owner, repository, token)) { return; }
         }
         token.ThrowIfCancellationRequested();
-        if (!offerCommit || !owner.IsVisible || !(await repository.GetStatusAsync(token)).Changes.Any(change => change.IsStaged)) { return; }
+        if (!hadConflicts || patchOrRebase || !offerCommit || !owner.IsVisible
+            || await CommitBranchGuard.IsPatchOrRebaseInProgressAsync(repository, token)
+            || (await repository.GetConflictsAsync(token)).Count != 0
+            || !(await repository.GetStatusAsync(token)).Changes.Any(change => change.IsStaged)) { return; }
+        bool commitNow = await ConfirmationPrompt.ShowAsync(owner,
+            _translations.Translate("FormResolveConflicts", "_allConflictsResolvedCaption", "Text", "Commit"),
+            _translations.Translate("FormResolveConflicts", "_allConflictsResolved", "Text", "All merge conflicts are resolved, you can commit.\nDo you want to commit now?"),
+            new ConflictConfirmationPreferencesStore().Load().DontConfirmCommitAfterConflictsResolved,
+            () => ConfirmationPrompt.Remember(nameof(ConfirmationsSettingsValues.DontConfirmCommitAfterConflictsResolved)), token, warning: false);
+        token.ThrowIfCancellationRequested();
+        if (!commitNow || !owner.IsVisible) { return; }
         CommitDialog commit = new(repository, afterSubmoduleUpdateAsync: (window, ct) => AfterSubmoduleUpdateAsync(repository, window, ct)) { RequestedThemeVariant = owner.ActualThemeVariant };
         using CancellationTokenRegistration cancelCommit = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(commit.Close));
         try { await commit.ShowDialog(owner); token.ThrowIfCancellationRequested(); }

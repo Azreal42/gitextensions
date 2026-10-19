@@ -14,6 +14,7 @@ public sealed record CommitPreferences
     public bool CommitAndPushForcedWhenAmend { get; init; }
     public bool StageInSuperprojectAfterCommit { get; init; } = true;
     public bool DontConfirmCommitIfNoBranch { get; init; }
+    public bool DontConfirmAmend { get; init; }
     public bool EnsureCommitMessageSecondLineEmpty { get; init; } = true;
     public int NumberOfPreviousMessages { get; init; } = 6;
     public string LastCommitMessage { get; init; } = "";

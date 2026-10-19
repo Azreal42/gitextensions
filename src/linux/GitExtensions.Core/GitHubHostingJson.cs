@@ -15,6 +15,12 @@ internal static class GitHubHostingJson
     private static string Author(JsonElement value) => value.TryGetProperty("user", out JsonElement user) && user.ValueKind == JsonValueKind.Object ? Text(user, "login") : "(deleted)";
     private static DateTimeOffset Date(JsonElement value, string name) => value.GetProperty(name).GetDateTimeOffset();
     private static bool Hash(string value) => value.Length is 40 or 64 && value.All(char.IsAsciiHexDigit);
+    private static string? Homepage(JsonElement value)
+    {
+        string text = Text(value, "homepage");
+        return !text.Any(char.IsControl) && Uri.TryCreate(text, UriKind.Absolute, out Uri? uri)
+            && (uri.Scheme is "https" or "http") && uri.UserInfo.Length == 0 ? uri.AbsoluteUri : null;
+    }
     private static string Web(JsonElement value, GitHubHostingSettings settings) => settings.SafeWebUri(Text(value, "html_url"))?.AbsoluteUri ?? "";
     private static string Clone(string url, string owner, string name, GitHubHostingSettings settings)
         => settings.TryParseRemote(url, out GitHubRepositoryId? identity) && identity.Owner.Equals(owner, StringComparison.OrdinalIgnoreCase)
@@ -25,8 +31,13 @@ internal static class GitHubHostingJson
         GitHubHostingSettings.Segment(owner); GitHubHostingSettings.Segment(name);
         GitHubRepositoryId? parent = value.TryGetProperty("parent", out JsonElement p) && p.ValueKind == JsonValueKind.Object
             ? new(RequiredText(p.GetProperty("owner"), "login"), RequiredText(p, "name")) : null;
+        long? forks = value.TryGetProperty("forks_count", out JsonElement f) && f.ValueKind != JsonValueKind.Null ? f.GetInt64() : null;
+        if (forks < 0) { throw new JsonException(); }
+        bool? push = value.TryGetProperty("permissions", out JsonElement permissions) && permissions.ValueKind == JsonValueKind.Object
+            && permissions.TryGetProperty("push", out JsonElement permission) ? permission.GetBoolean() : null;
         return new(value.GetProperty("id").GetInt64(), owner, name, Text(value, "description"), Flag(value, "private"), Flag(value, "fork"),
-            Text(value, "default_branch"), Clone(Text(value, "clone_url"), owner, name, settings), Clone(Text(value, "ssh_url"), owner, name, settings), Web(value, settings), parent);
+            Text(value, "default_branch"), Clone(Text(value, "clone_url"), owner, name, settings), Clone(Text(value, "ssh_url"), owner, name, settings), Web(value, settings), parent)
+        { ForksCount = forks, Homepage = Homepage(value), CanPush = push };
     }
     private static GitHubPullRequestRef Ref(JsonElement value, GitHubHostingSettings settings)
     {

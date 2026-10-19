@@ -79,6 +79,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. AzureDevOpsScenarios.All,
     .. JenkinsScenarios.All,
     .. GitHubHostingScenarios.All,
+    .. GitHubForkCloneScenarios.All,
     .. RemoteHeadsScenarios.All,
     ("unborn status and unstage", UnbornAsync),
     ("repository discovery normalizes subdirectories and metadata to root", DiscoveryAsync),
@@ -195,6 +196,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. RemoteSettingsScenarios.All,
     .. WorktreeScenarios.All,
     .. RulesFileScenarios.All,
+    .. EditableFileScenarios.All,
     .. PushStreamingScenarios.All,
     .. CloneStreamingScenarios.All,
     .. ScriptScenarios.All,
@@ -237,6 +239,7 @@ if (args.Contains("--submodule-conflict-only", StringComparer.Ordinal)) { tests 
 if (args.Contains("--askpass-modes-only", StringComparer.Ordinal))
 { tests = [("askpass isolates response streams and preserves explicit helpers", AskpassAsync), .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All]; }
 if (args.Contains("--rules-files-only", StringComparer.Ordinal)) { tests = RulesFileScenarios.All.ToArray(); }
+if (args.Contains("--file-editor-only", StringComparer.Ordinal)) { tests = EditableFileScenarios.All.ToArray(); }
 if (args.Contains("--remote-heads-only", StringComparer.Ordinal)) { tests = RemoteHeadsScenarios.All.ToArray(); }
 if (args.Contains("--xml-distributed-settings-only", StringComparer.Ordinal)) { tests = XmlDistributedSettingsScenarios.All.ToArray(); }
 if (args.Contains("--remaining-windows-only", StringComparer.Ordinal)) { tests = RevisionLinksScenarios.All.Concat(GitHubActionsScenarios.All).Concat(XmlDistributedSettingsScenarios.All).ToArray(); }
@@ -246,6 +249,7 @@ if (args.Contains("--appveyor-only", StringComparer.Ordinal)) { tests = AppVeyor
 if (args.Contains("--azuredevops-only", StringComparer.Ordinal)) { tests = AzureDevOpsScenarios.All.ToArray(); }
 if (args.Contains("--jenkins-only", StringComparer.Ordinal)) { tests = JenkinsScenarios.All.ToArray(); }
 if (args.Contains("--pull-requests-only", StringComparer.Ordinal)) { tests = GitHubHostingScenarios.All.ToArray(); }
+if (args.Contains("--fork-clone-only", StringComparer.Ordinal)) { tests = GitHubForkCloneScenarios.All.ToArray(); }
 if (args.Contains("--detailed-settings-only", StringComparer.Ordinal)) { tests = XmlDistributedSettingsScenarios.All.Concat(DictionarySettingsScenarios.All).Concat(RemoteHeadsScenarios.All).Concat(WorktreeScenarios.All).ToArray(); }
 if (args.Contains("--dictionary-settings-only", StringComparer.Ordinal)) { tests = DictionarySettingsScenarios.All.ToArray(); }
 if (args.Contains("--scripts-only", StringComparer.Ordinal)) { tests = ScriptScenarios.All.Concat(ScriptRuntimeScenarios.All).ToArray(); }

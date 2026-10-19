@@ -832,7 +832,7 @@ public sealed partial class CommitDialog : Window
                 if (!await ValidateCommitMessageAsync()) { return; }
                 if (_amend.IsChecked == true)
                 {
-                    if (!await Dialogs.ConfirmAsync(this, C("_amendCommitCaption", "Amend commit"), C("_amendCommit", "You are about to rewrite history.\nOnly use Amend if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
+                    if (!await ConfirmAmendAsync(C("_amendCommit", "You are about to rewrite history.\nOnly use Amend if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
                 }
                 else if (noStaged)
                 {
@@ -1026,9 +1026,14 @@ public sealed partial class CommitDialog : Window
         }
         catch (Exception exception) { ShowFailure(T("Options"), exception); }
     }
+    private Task<bool> ConfirmAmendAsync(string message) => ConfirmationPrompt.ShowAsync(this, C("_amendCommitCaption", "Amend commit"),
+        message, _preferencesStore.Load().DontConfirmAmend,
+        () => ConfirmationPrompt.Remember(nameof(ConfirmationsSettingsValues.DontConfirmAmend), Path.GetDirectoryName(_preferencesStore.FilePath)), _lifetime.Token,
+        acceptLabel: C("_amendCommitCaption", "Amend commit"), cancelLabel: T("Cancel"), acceptIsDefault: false);
+
     private async Task ResetSoftAsync()
     {
-        if (!await Dialogs.ConfirmAsync(this, C("ResetSoft", "Reset soft"), C("_amendResetSoft", "You are about to rewrite history by Soft Reset to the previous commit.\nOnly use Amend / Reset if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
+        if (!await ConfirmAmendAsync(C("_amendResetSoft", "You are about to rewrite history by Soft Reset to the previous commit.\nOnly use Amend / Reset if the commit has not been published yet!\n\nDo you want to continue?"))) { return; }
         await MutateAsync(C("ResetSoft", "Reset soft"), () => _repository.ResetAsync("HEAD^", GitResetMode.Soft, OperationToken));
         if (LastError is null) { _forcePushAfterSoftReset = true; UpdateAvailability(); }
     }

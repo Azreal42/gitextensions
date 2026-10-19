@@ -9,14 +9,15 @@ public sealed partial class MainWindow
 {
     private MenuItem BuildGitHostsMenu()
     {
+        MenuItem forkClone = MenuAction("Fork/Clone repository…", ShowForkCloneAsync, "CloneRepoGitHub.png"); forkClone.Name = "GitHubForkClone";
         MenuItem create = MenuAction("Create pull request…", () => ShowPullRequestsAsync(create: true), "PullRequest.png"); create.Name = "GitHubCreatePullRequest";
         MenuItem view = MenuAction("View pull requests…", () => ShowPullRequestsAsync(create: false), "PullRequest.png"); view.Name = "GitHubViewPullRequests";
         MenuItem settings = MenuAction("GitHub settings…", ShowGitHubHostingSettingsAsync, "GitHub32.png"); settings.Name = "GitHubHostingSettings";
-        MenuItem menu = MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync), create, view, settings);
+        MenuItem menu = MenuGroup("Git hosts", MenuAction("Browse remote repository", BrowseRemoteAsync), forkClone, create, view, settings);
         menu.SubmenuOpened += (_, _) =>
         {
             create.IsEnabled = view.IsEnabled = !_busy && _repository is not null;
-            settings.IsEnabled = !_busy;
+            forkClone.IsEnabled = settings.IsEnabled = !_busy;
         };
         return menu;
     }

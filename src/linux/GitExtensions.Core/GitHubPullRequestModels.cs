@@ -9,6 +9,9 @@ public sealed record GitHubHostedRepository(long Id, string Owner, string Name, 
     bool Fork, string DefaultBranch, string CloneUrl, string SshUrl, string WebUrl, GitHubRepositoryId? Parent = null)
 {
     public GitHubRepositoryId Identity => new(Owner, Name);
+    public long? ForksCount { get; init; }
+    public string? Homepage { get; init; }
+    public bool? CanPush { get; init; }
     public override string ToString() => Identity.ToString();
 }
 

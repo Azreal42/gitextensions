@@ -31,6 +31,8 @@ internal sealed class DesktopSettingsDialog : Window
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
     internal GeneralSettingsValues GeneralSettingsResult { get; private set; }
     private readonly GeneralSettingsPage _generalSettingsPage;
+    internal ConfirmationsSettingsSession ConfirmationsSettingsSession { get; }
+    private readonly ConfirmationsSettingsPage _confirmationsSettingsPage;
     internal AppearanceSettingsValues AppearanceSettingsResult { get; private set; }
     private readonly AppearanceSettingsPage _appearanceSettingsPage;
     internal DetailedSettingsSession DetailedSettingsSession { get; }
@@ -81,13 +83,16 @@ internal sealed class DesktopSettingsDialog : Window
         GitHubActionsSettingsSession? gitHubActionsSettings = null,
         ConsoleStyleSettingsSession? consoleStyleSettings = null,
         Func<string, Task>? openSettingsUrlAsync = null,
-        Func<Window, Task>? configureGitAdvanced = null)
+        Func<Window, Task>? configureGitAdvanced = null,
+        ConfirmationsSettingsSession? confirmations = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         GeneralSettingsResult = generalSettings ?? new GeneralSettingsSession(initial, FileHistoryResult).Initial;
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
+        ConfirmationsSettingsSession = confirmations ?? new();
+        _confirmationsSettingsPage = new(ConfirmationsSettingsSession, translations);
         DetailedSettingsSession = detailedSettings ?? new(null, initial);
         DistributedSettingsWorkspace workspace = DetailedSettingsSession.Workspace;
         GitRepository? scopedRepository = DetailedSettingsSession.Repository;
@@ -185,7 +190,8 @@ internal sealed class DesktopSettingsDialog : Window
             new("BuildServerIntegration", PageTitle("BuildServerIntegrationSettingsPage", "Build server integration"), _buildServerSettingsPage, "Integration.png"),
             new("Scripts", PageTitle("ScriptsSettingsPage", "Scripts"), scriptsPage, "Console.png"),
             new("Hotkeys", PageTitle("HotkeysSettingsPage", "Hotkeys"), hotkeysPage, "Hotkey.png"),
-            new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), advancedFields, "AdvancedSettings.png"),
+            new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), advancedFields, "AdvancedSettings.png", Children:
+            [ new("Confirmations", PageTitle("ConfirmationsSettingsPage", "Confirmations"), _confirmationsSettingsPage, "BisectGood.png") ]),
             new("Detailed", PageTitle("DetailedSettingsPage", "Detailed"), _detailedSettingsPage, "Settings.png")
         ];
         List<SettingsNavigationPage> roots = [];
@@ -374,6 +380,9 @@ internal sealed class DesktopSettingsDialog : Window
                 }
                 try
                 {
+                    activeSavePage = "Confirmations";
+                    ConfirmationsSettingsSession.Save(_confirmationsSettingsPage.Draft, receipt =>
+                    { _confirmationsSettingsPage.AcceptSaved(receipt); saved |= receipt.Written; }, _detailedCancellation.Token);
                     if (publishSettings is null) { DetailedSettingsSession.DesktopSaved(Result); }
                     activeSavePage = "Detailed";
                     await DetailedSettingsSession.SaveFilesAsync(_detailedCancellation.Token);

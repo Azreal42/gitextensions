@@ -104,45 +104,7 @@ public sealed partial class GitRepository
             || expected.Mode != actual.Mode || expected.Attributes != actual.Attributes) { throw GitRulesFiles.Changed(); }
     }
 
-    private static async Task WriteExistingRulesFileAsync(GitRulesFileSnapshot snapshot, byte[] bytes, CancellationToken token)
-    {
-        await using FileStream observed = new(snapshot.ResolvedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous);
-        if (GitRulesIdentity.ReadHandle(observed.SafeFileHandle) != snapshot.Identity) { throw GitRulesFiles.Changed(); }
-        bool changedMode = false;
-        try
-        {
-            FileStream OpenWritable() => new(snapshot.ResolvedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read, 4096, FileOptions.Asynchronous);
-            FileStream writable;
-            try { writable = OpenWritable(); }
-            catch (UnauthorizedAccessException)
-            {
-                // Group/ACL access can already permit writing without ownership: do not require chmod first.
-                if (!OperatingSystem.IsWindows() && snapshot.Mode is UnixFileMode mode && !mode.HasFlag(UnixFileMode.UserWrite))
-                { File.SetUnixFileMode(observed.SafeFileHandle, mode | UnixFileMode.UserWrite); changedMode = true; }
-                else if (OperatingSystem.IsWindows() && snapshot.Attributes.HasFlag(FileAttributes.ReadOnly))
-                { File.SetAttributes(observed.SafeFileHandle, snapshot.Attributes & ~FileAttributes.ReadOnly); changedMode = true; }
-                else { throw; }
-                writable = OpenWritable();
-            }
-            await using FileStream file = writable;
-            if (GitRulesIdentity.ReadHandle(file.SafeFileHandle) != snapshot.Identity) { throw GitRulesFiles.Changed(); }
-            using MemoryStream buffer = new(); await file.CopyToAsync(buffer, token).ConfigureAwait(false);
-            if (GitRulesFiles.Hash(buffer.ToArray()) != snapshot.ContentHash) { throw GitRulesFiles.Changed(); }
-            GitRulesFiles.CheckLocation(snapshot.Location, GitRulesFiles.Resolve(snapshot.Path));
-            token.ThrowIfCancellationRequested();
-            file.Position = 0;
-            await file.WriteAsync(bytes, CancellationToken.None).ConfigureAwait(false);
-            file.SetLength(bytes.Length);
-            await file.FlushAsync(CancellationToken.None).ConfigureAwait(false);
-            GitRulesFiles.CheckLocation(snapshot.Location, GitRulesFiles.Resolve(snapshot.Path));
-        }
-        finally
-        {
-            if (changedMode)
-            {
-                if (!OperatingSystem.IsWindows() && snapshot.Mode is UnixFileMode mode) { File.SetUnixFileMode(observed.SafeFileHandle, mode); }
-                else if (OperatingSystem.IsWindows()) { File.SetAttributes(observed.SafeFileHandle, snapshot.Attributes); }
-            }
-        }
-    }
+    private static Task WriteExistingRulesFileAsync(GitRulesFileSnapshot snapshot, byte[] bytes, CancellationToken token)
+        => EditableFileIO.WriteExistingAsync(new(snapshot.Path, snapshot.ResolvedPath, snapshot.Location, snapshot.Identity,
+            snapshot.ContentHash, snapshot.Mode, snapshot.Attributes), bytes, token);
 }

@@ -122,18 +122,14 @@ public sealed partial class CommitDialog
     // saving the attempted message or running BeforeCommit. It must not reenter RunAsync.
     private async Task<bool> EnsureCommitBranchAsync()
     {
-        GitStatus status = await _repository.GetStatusAsync(OperationToken);
-        if (_preferencesStore.Load().DontConfirmCommitIfNoBranch || !status.IsDetached
-            || await IsCommitRebaseInProgressAsync()) { return true; }
-        CommitBranchChoiceDialog prompt = new(_translations) { RequestedThemeVariant = ActualThemeVariant };
-        using CancellationTokenRegistration registration = OperationToken.Register(() => Dispatcher.UIThread.Post(prompt.Close));
-        CommitBranchChoice choice;
-        try { choice = await prompt.ShowDialog<CommitBranchChoice>(this); OperationToken.ThrowIfCancellationRequested(); }
-        finally { prompt.Close(); }
-        if (choice == CommitBranchChoice.Cancel) { return false; }
-        if (choice == CommitBranchChoice.Continue) { return true; }
+        return await CommitBranchGuard.EnsureAsync(this, _repository, _preferencesStore, _translations, OperationToken,
+            () => OpenCreateCommitBranchAsync((_kind.SelectedIndex != 0 ? _target.SelectedItem as GitCommit : null)?.Hash ?? "HEAD"),
+            CheckoutCommitBranchAsync);
+    }
+
+    private async Task<bool> CheckoutCommitBranchAsync()
+    {
         GitCommit? edited = _kind.SelectedIndex != 0 ? _target.SelectedItem as GitCommit : null;
-        if (choice == CommitBranchChoice.Create) { return await OpenCreateCommitBranchAsync(edited?.Hash ?? "HEAD"); }
         DesktopPreferences preferences = new PreferencesStore().Load();
         CheckoutBranchConstraint? constraint = edited is null ? null : new(
             token => CommitCheckoutReferencesAsync(edited.Hash, token),
@@ -192,18 +188,6 @@ public sealed partial class CommitDialog
             OperationToken.ThrowIfCancellationRequested();
         }
         finally { checkout.Close(); }
-    }
-
-    private async Task<bool> IsCommitRebaseInProgressAsync()
-    {
-        // Match Module.InTheMiddleOfRebase: git-am's applying marker is not a
-        // rebase, and the legacy rebase directory is still recognized.
-        foreach (string name in new[] { "rebase-merge", "rebase-apply", "rebase" })
-        {
-            string directory = await GetGitPathAsync(name);
-            if (Directory.Exists(directory)) { return !File.Exists(Path.Combine(directory, "applying")); }
-        }
-        return false;
     }
 
     private async Task<IReadOnlyList<GitReference>> CommitCheckoutReferencesAsync(string editedHash, CancellationToken token)

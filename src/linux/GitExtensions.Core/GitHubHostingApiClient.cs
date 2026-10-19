@@ -13,7 +13,7 @@ public sealed class GitHubHostingException(string message, int? statusCode = nul
 }
 
 /// <summary>Explicit REST operations only. No login discovery, retries of writes, repository mutations or secret-bearing diagnostics.</summary>
-public sealed class GitHubHostingClient : IGitHubHostingClient
+public sealed partial class GitHubHostingClient : IGitHubHostingClient, IGitHubForkCloneClient
 {
     public const string ApiVersion = "2022-11-28";
     public const int PageSize = 100;
@@ -24,6 +24,7 @@ public sealed class GitHubHostingClient : IGitHubHostingClient
     public GitHubHostingSettings Settings { get; }
     public int MaxPages { get; init; } = 10;
     public int MaxResponseBytes { get; init; } = 32 * 1024 * 1024;
+    public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(45);
     public GitHubHostingClient(GitHubHostingSettings settings, IBuildServerCredentials? credentials = null, HttpMessageHandler? handler = null)
     {
         ArgumentNullException.ThrowIfNull(settings); settings.Validate(); Settings = settings; _api = GitHubHostingSettings.Endpoint(settings.ApiUrl);
@@ -34,7 +35,7 @@ public sealed class GitHubHostingClient : IGitHubHostingClient
             BuildServerCredentialsType.UsernameAndPassword => new("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes(auth.Username + ":" + auth.Password))),
             _ => null
         };
-        _http = new(handler ?? new SocketsHttpHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(45) };
+        _http = new(handler ?? new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false }) { Timeout = Timeout.InfiniteTimeSpan };
     }
     private static string Repo(GitHubRepositoryId repository)
     { ArgumentNullException.ThrowIfNull(repository); return "repos/" + GitHubHostingSettings.Segment(repository.Owner) + "/" + GitHubHostingSettings.Segment(repository.Name); }
@@ -122,18 +123,25 @@ public sealed class GitHubHostingClient : IGitHubHostingClient
     {
         try { using JsonDocument json = JsonDocument.Parse(bytes); return project(json.RootElement); }
         catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException or KeyNotFoundException or OverflowException or ArgumentException)
-        { throw new GitHubHostingException("GitHub returned an invalid pull request response."); }
+        { throw new GitHubHostingException("GitHub returned an invalid hosting response."); }
     }
     private sealed record Payload(byte[] Bytes, bool? Next);
     private async Task<Payload> SendAsync(HttpMethod method, string path, byte[]? body, string accept, CancellationToken token)
     {
         ObjectDisposedException.ThrowIf(_disposed, this); token.ThrowIfCancellationRequested();
         if (MaxResponseBytes is < 1024 or > 64 * 1024 * 1024) { throw new ArgumentOutOfRangeException(nameof(MaxResponseBytes)); }
+        if (RequestTimeout <= TimeSpan.Zero || RequestTimeout > TimeSpan.FromMinutes(5)) { throw new ArgumentOutOfRangeException(nameof(RequestTimeout)); }
+        // ResponseHeadersRead ends HttpClient.Timeout at the headers. Keep this
+        // one deadline alive until the last body byte, including GET redirects.
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        deadline.CancelAfter(RequestTimeout);
+        CancellationToken requestToken = deadline.Token;
         Uri uri = new(_api, path);
         try
         {
             for (int redirects = 0; ; redirects++)
             {
+                requestToken.ThrowIfCancellationRequested();
                 if (!GitHubHostingSettings.SameOrigin(_api, uri) || !uri.AbsolutePath.StartsWith(_api.AbsolutePath, StringComparison.Ordinal)
                     || !string.IsNullOrEmpty(uri.UserInfo) || !string.IsNullOrEmpty(uri.Fragment))
                 { throw new GitHubHostingException("The API redirected outside the configured hosting endpoint. Credentials were not forwarded."); }
@@ -141,7 +149,7 @@ public sealed class GitHubHostingClient : IGitHubHostingClient
                 request.Headers.UserAgent.ParseAdd("GitExtensions/7.2.1-linux-alpha"); request.Headers.Accept.Add(new(accept));
                 request.Headers.Add("X-GitHub-Api-Version", ApiVersion); request.Headers.Authorization = _authorization;
                 if (body is not null) { request.Content = new ByteArrayContent(body); request.Content.Headers.ContentType = new("application/json"); }
-                using HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
+                using HttpResponseMessage response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, requestToken).ConfigureAwait(false);
                 int code = (int)response.StatusCode;
                 if (code is 301 or 302 or 303 or 307 or 308)
                 {
@@ -159,14 +167,14 @@ public sealed class GitHubHostingClient : IGitHubHostingClient
                     throw new GitHubHostingException(error, code);
                 }
                 if (response.Content.Headers.ContentLength > MaxResponseBytes) { throw new GitHubHostingException("The GitHub response exceeds the supported size. Open the pull request explicitly in the browser."); }
-                await using Stream stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
+                await using Stream stream = await response.Content.ReadAsStreamAsync(requestToken).ConfigureAwait(false);
                 using MemoryStream bytes = new(); byte[] buffer = new byte[8192]; int read;
-                while ((read = await stream.ReadAsync(buffer.AsMemory(), token).ConfigureAwait(false)) > 0)
+                while ((read = await stream.ReadAsync(buffer.AsMemory(), requestToken).ConfigureAwait(false)) > 0)
                 {
                     if (bytes.Length + read > MaxResponseBytes) { throw new GitHubHostingException("The GitHub response exceeds the supported size. Open the pull request explicitly in the browser."); }
                     bytes.Write(buffer, 0, read);
                 }
-                token.ThrowIfCancellationRequested();
+                requestToken.ThrowIfCancellationRequested();
                 bool? next = response.Headers.TryGetValues("Link", out IEnumerable<string>? links) ? links.Any(link => link.Contains("rel=\"next\"", StringComparison.OrdinalIgnoreCase)) : null;
                 return new(bytes.ToArray(), next);
             }

@@ -75,7 +75,12 @@ public sealed partial class CompareRevisionsDialog
 
     private void InitializeFileMenus()
     {
-        _fileMenuOperations = new(this, RunFileMenuOperationAsync, IsCurrentFileMenuSelection, info => FileMenuExternalLauncher(info), _selectionLifetime.Token, T);
+        _fileMenuOperations = new(this, RunFileMenuOperationAsync, IsCurrentFileMenuSelection, info => FileMenuExternalLauncher(info), _selectionLifetime.Token, T)
+        {
+            ReadingPosition = leaf => !IsSelectionLoading && !ActiveView.IsImage && ActiveView.TextView.IsDocumentReady && _loadedSelection is { } loaded && loaded.File == leaf.File
+                && ReferenceEquals(loaded.Comparison, leaf.Comparison) && loaded.Tab == _tabs.SelectedIndex
+                ? (ActiveView.TextView.CurrentFileLine, ActiveView.TextView.FileEncodingName ?? ActiveView.TextView.DefaultFileEncodingName) : (1, null)
+        };
         FileMenuAdditionalOperations additional = _fileMenuAdditionalOperations = new(this, RunFileMenuOperationAsync,
             IsCurrentFileMenuSelection, info => FileMenuExternalLauncher(info), _selectionLifetime.Token);
         DesktopScriptExecutor.SetFileProvider(this, CaptureFileMenuSelection);

@@ -7,6 +7,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Platform;
 using GitExtensions.Desktop.Controls;
+using GitExtensions.Linux.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 using GitExtensions.Linux.Plugins;
 using GitCommands;
@@ -141,7 +142,7 @@ public sealed partial class MainWindow
         ApplyCommitInfoLayout(_commitInfoPosition, persist: false);
         Grid.SetColumn(right, 2);
         _browserBody.Children.Add(right);
-        _dashboard = new DashboardControl(this, () => _repositoryHistory, SaveRepositoryHistory, OpenRepositoryAsync, InitializeAsync, ChooseRepositoryAsync, CloneAsync);
+        _dashboard = new DashboardControl(this, () => _repositoryHistory, SaveRepositoryHistory, OpenRepositoryAsync, InitializeAsync, ChooseRepositoryAsync, CloneAsync, ShowForkCloneAsync);
         Grid workspace = new(); workspace.Children.Add(_browserBody); workspace.Children.Add(_dashboard);
         root.Children.Add(workspace);
         UpdateRepositoryMenus();
@@ -325,9 +326,21 @@ public sealed partial class MainWindow
         MenuItem recover = MenuAction("Recover lost objects…", RecoverLostObjectsAsync, "RecoverLostObjects.png"); recover.Name = "BrowseRecoverLostObjects";
         recover.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "recoverLostObjectsToolStripMenuItem", "Text", "&Recover lost objects...") };
         if (recover.Icon is Image icon) { icon.Tag = "RecoverLostObjects.png"; }
+        MenuItem edit = OriginalMenuItems.Create(_translations, "FormBrowse", "editLocalGitConfigToolStripMenuItem", "&Edit .git/config", "EditGitConfig.png");
+        edit.Tag = false; _actionMenus.Add(edit);
+        edit.Click += async (_, _) =>
+        {
+            if (_repository is null || _busy) { return; }
+            bool changed = false;
+            await RunAsync("Edit .git/config", async repository =>
+            {
+                try { await FileEditorWorkflow.OpenLocalConfigurationAsync(WorkflowOwner, repository, Token, () => changed = true, _translations); }
+                finally { if (changed && !Token.IsCancellationRequested) { await RefreshDataAsync(repository); } }
+            }, refresh: false);
+        };
         using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/Maintenance.png"));
         return new MenuItem { Name = "BrowseGitMaintenance", Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "gitMaintenanceToolStripMenuItem", "Text", "&Git maintenance") },
-            Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16, Tag = "Maintenance.png" }, ItemsSource = new[] { recover } };
+            Icon = new Image { Source = new Bitmap(stream), Width = 16, Height = 16, Tag = "Maintenance.png" }, ItemsSource = new[] { recover, edit } };
     }
     private MenuItem BuildReflogMenu()
     {

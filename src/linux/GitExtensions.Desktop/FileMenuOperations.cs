@@ -45,8 +45,8 @@ internal sealed class FileMenuOperations
                 if (Owner.Clipboard is { } clipboard)
                 { await clipboard.SetTextAsync(string.Join(Environment.NewLine, selection.CopyPaths.Select(path => command == FileMenuCommand.CopyFullNative ? Path.Combine(selection.Repository.Path, path) : path))); }
                 return;
+            case FileMenuCommand.EditWorkingFile: await EditWorkingFileAsync(selection); return;
             case FileMenuCommand.OpenWorkingFile:
-            case FileMenuCommand.EditWorkingFile:
             case FileMenuCommand.OpenWorkingFileWith:
                 string? app = command == FileMenuCommand.OpenWorkingFileWith ? await ChooseApplicationAsync(selection) : "xdg-open";
                 if (app is not null) { Launch(Path.Combine(selection.Repository.Path, selection.Paths.Single()), app, selection); }
@@ -125,6 +125,25 @@ internal sealed class FileMenuOperations
         string executable = values[0];
         if (!Path.IsPathFullyQualified(executable) || !File.Exists(executable)) { throw new ArgumentException(_translate("Select an existing application executable.")); }
         return executable;
+    }
+    private async Task EditWorkingFileAsync(FileMenuSelection selection)
+    {
+        FileMenuLeaf leaf = selection.Leaves.Single();
+        string path = Path.GetFullPath(selection.Paths.Single(), selection.Repository.Path);
+        var reading = ReadingPosition(leaf); bool changed = false;
+        try
+        {
+            await RunAsync("Edit file", selection, async token =>
+            {
+                await FileEditorWorkflow.OpenAsync(Owner, selection.Repository, path, reading.Line, reading.Encoding,
+                    cancellationToken: token, fileChanged: () => changed = true);
+            }, false);
+        }
+        finally
+        {
+            if (changed && !_lifetime.IsCancellationRequested && _owner.IsVisible && _isCurrent(selection))
+            { await _run("Refresh after file edit", _ => Task.CompletedTask, true); }
+        }
     }
     private async Task OpenRevisionAsync(FileMenuSelection selection, bool withApplication)
     {
