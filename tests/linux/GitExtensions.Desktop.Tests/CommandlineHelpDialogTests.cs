@@ -182,7 +182,7 @@ public sealed class CommandlineHelpDialogTests
     private static T Field<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
     private static void Pump(Window window) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
     private static void Press(Window window, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None)
-    { window.KeyPressQwerty(key, modifiers); window.KeyReleaseQwerty(key, modifiers); Pump(window); }
+    { window.KeyPressQwerty(key, modifiers); if (window.IsVisible) { window.KeyReleaseQwerty(key, modifiers); Pump(window); } }
     private static void Capture(Window window, string name)
     {
         Pump(window); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); using WriteableBitmap? frame = window.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
