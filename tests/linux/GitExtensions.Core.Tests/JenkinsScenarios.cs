@@ -35,6 +35,7 @@ internal static class JenkinsScenarios
         ("Jenkins watcher never regresses a known SHA to an older build after refresh", WatcherRetentionAsync),
         ("Jenkins cached completed project is not replayed against another project fresh running build", CachedProjectDoesNotReplayAsync),
         ("Jenkins required full emissions precede full reads promoted by timestamp probes", RequiredFullEmissionOrderAsync),
+        ("Jenkins global retained build bound excludes unadmitted full emissions from commit statuses and report runs", RetainedBuildBoundFiltersEmissionsAsync),
         ("Jenkins automatic recovery from404 clears only the recovered project incomplete warning", AutomaticMissingRecoveryAsync),
         ("Jenkins cached incomplete project warnings survive a request bound until that project recovers", CachedIncompleteRecoveryAsync),
         ("Jenkins multi-SHA mapping supports SHA256 and ignores the whole build on any matched branch", IgnoreAsync),
@@ -276,6 +277,44 @@ internal static class JenkinsScenarios
             "p's already-required full emission admits the first completed status before q's timestamp-promoted full, exactly as Windows.");
         Check(second.Builds.Count == 3 && second.Builds.Any(build => build.ProjectId == "/jenkins/job/q" && build.Number == 2 && build.Status == JenkinsBuildStatus.Failure),
             "Priority admission does not discard q's newer failed build from the full retained list.");
+    }
+
+    private static async Task RetainedBuildBoundFiltersEmissionsAsync()
+    {
+        Clock clock = new(); bool nextPass = false; List<string> requests = [];
+        string cachedSha = new('a', 40);
+        using Handler handler = new((request, _) =>
+        {
+            bool q = request.RequestUri!.AbsolutePath.Contains("/job/q/", StringComparison.Ordinal);
+            bool full = Query(request.RequestUri)["tree"].Contains("builds[", StringComparison.Ordinal);
+            requests.Add((q ? "q" : "p") + (full ? ":full" : ":probe"));
+            Check(!nextPass || !q, "The second pass must reach the global budget after p's required full, before probing cached q.");
+            if (q) { return Reply(Json(Job(Build(timestamp: 50, sha: cachedSha, project: "q")))); }
+            return Reply(Json(nextPass
+                ? Job(Build(3, result: null, running: true, timestamp: 300, project: "p"), Build(2, sha: Other, timestamp: 200, project: "p"))
+                : Job(Build(result: null, running: true, timestamp: 100, project: "p"))));
+        });
+        await using JenkinsApiClient client = new(Settings("q|p"), Guest(), handler, clock) { MaxBuilds = 2 };
+        JenkinsSnapshot first = await client.ReadAsync();
+        Check(!first.Truncated && first.Builds.Count == 2 && first.Commits.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals([cachedSha, Sha])
+            && requests.SequenceEqual(["q:full", "p:full"]), "The initial pass fills the bound with q and p's two real statuses in configured order.");
+        nextPass = true; requests.Clear(); clock.Advance(121); JenkinsSnapshot second = await client.ReadAsync();
+        string[] retainedIds = ["/jenkins/job/q#1", "/jenkins/job/p#3"];
+        Check(requests.SequenceEqual(["p:full"]), "The already-running p emits before cached q is considered, without an invented probe.");
+        Check(second.Truncated && second.Diagnostics.Any(message => message.Contains("retained build bound", StringComparison.Ordinal)),
+            "The configured-order retained history explicitly reports the dropped build.");
+        Check(second.Builds.Select(build => build.BuildId).SequenceEqual(retainedIds),
+            "q's cached A and p's newest B are retained; p's newly emitted C is outside MaxBuilds=2.");
+        Check(second.Commits.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals([cachedSha, Sha])
+            && !second.Commits.ContainsKey(Other) && second.Commits[Sha].Build.BuildId == retainedIds[1],
+            "A truncated fresh emission must not create a phantom commit status while the retained update still reaches the watcher.");
+        BuildServerSnapshot projected = BuildServerSnapshot.FromJenkins(second, client.BuildPageUri);
+        Check(projected.Truncated && projected.Diagnostics.SequenceEqual(second.Diagnostics)
+            && projected.Runs.Select(run => run.Id).SequenceEqual(retainedIds)
+            && projected.Commits.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals([cachedSha, Sha])
+            && projected.Commits.Values.SelectMany(status => status.Runs).All(run => retainedIds.Contains(run.Id))
+            && projected.Commits[Sha].Runs.Single().Id == retainedIds[1],
+            "The shared report/grid projection must not resurrect excluded C as a status, run or build-page action.");
     }
 
     private static async Task AutomaticMissingRecoveryAsync()

@@ -59,7 +59,9 @@ public sealed class JenkinsSnapshot
             .ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase) ?? new(StringComparer.OrdinalIgnoreCase);
         // Only full reads emitted during this pass participate in its Windows priority admission.
         // Unchanged project history still supplies Builds/presence and preserves the watcher result.
-        foreach (JenkinsBuild build in emissions ?? observed)
+        // A full read can run before a cached project but fall outside the configured-order history bound.
+        HashSet<string> admitted = observed.Select(build => build.BuildId).ToHashSet(StringComparer.Ordinal);
+        foreach (JenkinsBuild build in (emissions ?? observed).Where(build => admitted.Contains(build.BuildId)))
         {
             bool better = false;
             foreach (string sha in build.CommitHashes.Where(JenkinsBuild.IsCommitHash))
