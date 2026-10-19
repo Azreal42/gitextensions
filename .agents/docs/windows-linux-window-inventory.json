@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "8872bdb6773dc7769bfe6b8415bac1a8b2893111",
-  "source_digest_sha256": "690638ed9492b52033057209aa88310e4f0cfab7e16e9c40fe79a5d302fd4972",
-  "scanned_csharp_files": 2231,
+  "code_reference_commit": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+  "source_digest_sha256": "4f670adf7b083abe34607241f1f385666cdea8f36519dda4e18680c51e21daa4",
+  "scanned_csharp_files": 2249,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -38,9 +38,9 @@
       "NA": 1
     },
     "settings_levels": {
-      "N0": 10,
+      "N0": 9,
       "N1": 6,
-      "N2": 15,
+      "N2": 16,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,49 +50,59 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/commit-completion-20261018/full-02/results/desktop.trx",
-    "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-    "trx_sha256": "6413ee85582c58fac129c753662d20ccf7d3024a11f5ab7a4cb3a2a7868b4b01",
+    "trx": "artifacts/linux/detailed-settings-20261019/desktop-full-02/results/desktop.trx",
+    "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+    "trx_sha256": "4baea60df50f0cac04c087df7d21f99bdaa0480e9e18fb96eb99ca750c5bb767",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-        "execution_source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-        "candidate_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-        "passed": 739,
-        "total": 739,
-        "execution_result": "artifacts/linux/commit-completion-20261018/full-02/core-result.json",
-        "execution_result_sha256": "86d04fa345196c388d0b292d2856158af9499255074db76f6d329a15c5839417",
+        "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+        "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+        "execution_source_sha": null,
+        "execution_kind": "worktree",
+        "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+        "primary_execution": false,
+        "reexecuted_on_candidate": false,
+        "passed": 787,
+        "total": 787,
+        "execution_result": "artifacts/linux/detailed-settings-20261019/core-full-03/core-result.json",
+        "execution_result_sha256": "535a9420192a0012469b623e3bb304dcec88d097f8d3779974dcf99da52c75f4",
         "execution_exit_code": 0,
-        "build_result": "artifacts/linux/commit-completion-20261018/full-02/build-result.json",
-        "build_result_sha256": "4e71a3aad94f66addfc18c0acda0f4823edd542841ed12c3d3e30ac74373a750",
-        "build_exit_code": 0,
-        "parent_verification": "artifacts/linux/commit-completion-20261018/full-02/parent-verification.json",
-        "parent_verification_sha256": "f2b86c5c37a25dc8e8e49b5c8280923c96261ff2fb588a5967a795a952404353",
-        "runtime_inputs_unchanged": true,
-        "fresh_execution_this_tranche": true,
-        "reexecuted_on_candidate": true
+        "build_result": "artifacts/linux/detailed-settings-20261019/core-03/build-result.json",
+        "build_result_sha256": "ed3f4d3a40f42d95408edd6e19d10d726bbb061d55cc6aa1fa6680180ab81ac4",
+        "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
+        "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
+        "source_equivalence": {
+          "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
+          "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+        },
+        "build_exit_code": 0
       },
       "plugins": {
-        "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-        "execution_source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-        "candidate_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+        "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+        "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+        "execution_source_sha": null,
+        "execution_kind": "worktree",
+        "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+        "primary_execution": false,
+        "reexecuted_on_candidate": false,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/commit-completion-20261018/full-02/plugins-result.json",
-        "execution_result_sha256": "266763ef960f060f64272ba32de5328295030ed2bf138d394c1ebedc1d2d7f1a",
+        "execution_result": "artifacts/linux/detailed-settings-20261019/plugins-full-02/plugins-result.json",
+        "execution_result_sha256": "dbee7b211f6ff38dc25f79c5ec7e59ade4dd7d322b88c6e8751d2817648c9293",
         "execution_exit_code": 0,
-        "build_result": "artifacts/linux/commit-completion-20261018/full-02/build-result.json",
-        "build_result_sha256": "4e71a3aad94f66addfc18c0acda0f4823edd542841ed12c3d3e30ac74373a750",
-        "build_exit_code": 0,
-        "parent_verification": "artifacts/linux/commit-completion-20261018/full-02/parent-verification.json",
-        "parent_verification_sha256": "f2b86c5c37a25dc8e8e49b5c8280923c96261ff2fb588a5967a795a952404353",
-        "runtime_inputs_unchanged": true,
-        "fresh_execution_this_tranche": true,
-        "reexecuted_on_candidate": true
+        "build_result": "artifacts/linux/detailed-settings-20261019/plugins-build-01/build-result.json",
+        "build_result_sha256": "a7d34b1514a8397c5c8fe20ba7d9ec323ca9e8760b603935e6059aaf23ee7001",
+        "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
+        "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
+        "source_equivalence": {
+          "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
+          "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+        },
+        "build_exit_code": 0
       }
     },
-    "current_linux_code_equivalent": false,
+    "current_linux_code_equivalent": true,
     "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
@@ -1206,7 +1216,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 364,
+          "line": 365,
           "kind": "window"
         },
         {
@@ -1450,20 +1460,20 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageFormattingTests.cs",
           "test_class": "CommitMessageFormattingTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 28,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessagePreferencesStoreTests.cs",
           "test_class": "CommitMessagePreferencesStoreTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 17,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageWorkflowTests.cs",
@@ -1474,8 +1484,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 25,
+          "results_present": true
         }
       ],
       "adr": [
@@ -1582,8 +1592,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
@@ -1630,14 +1640,14 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
           "test_class": "CommitSuperprojectTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 25,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
@@ -1902,7 +1912,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 152,
+          "line": 153,
           "kind": "window"
         }
       ],
@@ -2531,8 +2541,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
@@ -3222,8 +3232,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionControllerTests.cs",
@@ -3264,14 +3274,14 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageFormattingTests.cs",
           "test_class": "CommitMessageFormattingTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 28,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessagePreferencesStoreTests.cs",
           "test_class": "CommitMessagePreferencesStoreTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 17,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitMessageWorkflowTests.cs",
@@ -3294,14 +3304,14 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
           "test_class": "CommitSuperprojectTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 25,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
@@ -3652,8 +3662,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
@@ -4448,6 +4458,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedGraphPublicationTests.cs",
+          "test_class": "DetailedGraphPublicationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryBrowseTests.cs",
           "test_class": "FileHistoryBrowseTests",
           "passed_in_reference_run": 9,
@@ -4560,7 +4576,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 152,
+          "line": 153,
           "kind": "window"
         }
       ],
@@ -4862,8 +4878,8 @@
       "feature": "Fusion de branche",
       "group": "operations",
       "level": "N3",
-      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique.",
-      "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso.",
+      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite.",
+      "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso. Valeurs hors0–100 conservées visiblement, action bloquée jusqu’à correction explicite ; nouveau parcours natif et audit de toutes les variantes encore ouverts.",
       "visual": "rapproche",
       "linux": [
         {
@@ -4901,6 +4917,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MergeDetailedSettingsTests.cs",
+          "test_class": "MergeDetailedSettingsTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptEventWorkflowTests.cs",
           "test_class": "ScriptEventWorkflowTests",
           "passed_in_reference_run": 14,
@@ -4910,7 +4932,8 @@
       "adr": [
         ".agents/docs/adr/workflows/merges/0043-merge-and-conflicts.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
       ]
     },
     {
@@ -4997,8 +5020,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
@@ -5107,8 +5130,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
           "test_class": "CommitSuperprojectTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
@@ -5204,8 +5227,8 @@
       "feature": "Push",
       "group": "network",
       "level": "N2",
-      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow.",
-      "remaining": "PR hébergeurs, grille ls-remote directe, Abort/fermetures et audit étendu des scripts/reprises ouverts.",
+      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow. Option Detailed raccordée au multibranche : ls-remote dans le contexte capturé du dépôt et Process possédé, liste distante complète sans fetch ni choix implicite ; erreur/annulation sans repli local.",
+      "remaining": "PR hébergeurs, Abort/fermetures et audit étendu des scripts/reprises et de la lecture serveur dans le paquet encore ouverts.",
       "visual": "rapproche",
       "linux": [
         {
@@ -5240,19 +5263,25 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
           "test_class": "CommitSuperprojectTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullLayoutTests.cs",
           "test_class": "PullLayoutTests",
           "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/PushDetailedSettingsTests.cs",
+          "test_class": "PushDetailedSettingsTests",
+          "passed_in_reference_run": 7,
           "results_present": true
         },
         {
@@ -5291,7 +5320,8 @@
         ".agents/docs/adr/workflows/remotes/0038-quick-push.md",
         ".agents/docs/adr/workflows/remotes/0055-owned-push-process.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
       ]
     },
     {
@@ -5508,8 +5538,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullLayoutTests.cs",
@@ -5951,6 +5981,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -6905,6 +6941,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
@@ -7154,6 +7196,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/DesktopFontsTests.cs",
           "test_class": "DesktopFontsTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -7579,6 +7627,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSpellingTests.cs",
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -8052,6 +8106,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
@@ -8213,8 +8273,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
@@ -8261,14 +8321,14 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
           "test_class": "CommitSuperprojectTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 25,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileContentTests.cs",
@@ -8452,13 +8512,249 @@
       "category": "settings",
       "feature": "Réglages détaillés par dépôt/global",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Pas d’équivalent de cette page.",
-      "remaining": "Reprendre les réglages détaillés et leur portée/configuration distribuée.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Six champs Windows dans les trois groupes Graph/Push/Merge ; Effective readonly, portées Local/Distributed/Global, héritage brut et brouillons Apply/Cancel. XML commun avec Dictionary ; graphe configurable dans Browse, historique fichier et picker de révision, publié au vrai save par profil. Push Multiple lit le serveur sans fetch ; Merge partage les valeurs XML et conserve ses changements instantanés.",
+      "remaining": "Adaptations Linux : Global XDG, vrai tri-state, Distributed désactivé en bare, valeur Merge hors0–100 visible et bloquante. Suites complètes et parcours X11 source Apply/Cancel/redémarrage vérifiés ; audit natif étendu des consommateurs, variantes Wayland/DPI/accessibilité et parité globale restent ouverts.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.DetailedSettingsPage",
+          "label": "DetailedSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/DetailedSettingsPage.cs",
+          "line": 14,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DetailedSettingsSession",
+          "label": "DetailedSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/DetailedSettingsSession.cs",
+          "line": 74,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DetailedGraphSettings",
+          "label": "DetailedGraphSettings",
+          "source": "src/linux/GitExtensions.Desktop/DetailedGraphSettings.cs",
+          "line": 9,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
+          "test_class": "AppearanceDictionaryTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsLayoutTests.cs",
+          "test_class": "AppearanceSettingsLayoutTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedGraphPublicationTests.cs",
+          "test_class": "DetailedGraphPublicationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsMigrationTests.cs",
+          "test_class": "DetailedSettingsMigrationTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsSessionTests.cs",
+          "test_class": "DetailedSettingsSessionTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
+          "test_class": "FileHistoryPreferencesTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FilePathPresentationIntegrationTests.cs",
+          "test_class": "FilePathPresentationIntegrationTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralBrowseStatusTests.cs",
+          "test_class": "GeneralBrowseStatusTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralSettingsSessionTests.cs",
+          "test_class": "GeneralSettingsSessionTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
+          "test_class": "GitConfigurationPageTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
+          "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MergeDetailedSettingsTests.cs",
+          "test_class": "MergeDetailedSettingsTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/PushDetailedSettingsTests.cs",
+          "test_class": "PushDetailedSettingsTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionGraphOptionsTests.cs",
+          "test_class": "RevisionGraphOptionsTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
+          "test_class": "TruncatePathPreferencesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.DiffViewerSettingsPage",
@@ -8612,6 +8908,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -9192,13 +9494,25 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
           "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedGraphPublicationTests.cs",
+          "test_class": "DetailedGraphPublicationTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -9704,6 +10018,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
@@ -10086,6 +10406,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
           "test_class": "FileHistoryPreferencesTests",
           "passed_in_reference_run": 5,
@@ -10404,6 +10730,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -10732,6 +11064,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationViewTests.cs",
           "test_class": "CommitInformationViewTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
           "results_present": true
         },
         {
@@ -11142,8 +11480,8 @@
       "feature": "Création d’un worktree",
       "group": "repositories",
       "level": "N3",
-      "implemented": "Dialogue Windows dédié : branches locales hors courante, branche nouvelle au commit courant avec -b, dossier proposé depuis le principal, normalisation et complétion partagées, Process natif et conservation des effets partiels ; proposition de switch après fermeture.",
-      "remaining": "Audit GUI natif exhaustif et toutes les variantes de complétion/accessibilité encore ouverts. Le défaut Windows de chemins relatifs respecte la configuration explicite et peut activer une extension Git incompatible avec les anciennes versions.",
+      "implemented": "Dialogue Windows dédié : branches locales hors courante, branche nouvelle au commit courant avec -b, dossier proposé depuis le principal, normalisation et complétion partagées, Process natif et conservation des effets partiels ; proposition de switch après fermeture. Le principal d’un sous-module absorbé est rattaché au checkout après vérification réciproque ; création gérée principal/linked, politiques relative/absolue et effets partiels vérifiés par Git réel.",
+      "remaining": "Audit GUI natif exhaustif et toutes les variantes de complétion/accessibilité encore ouverts. Le défaut Windows de chemins relatifs respecte la configuration explicite et peut activer une extension Git incompatible avec les anciennes versions. Nouveau parcours Desktop/natif depuis un absorbé encore ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -11183,7 +11521,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/worktrees/0068-manage-and-create-worktrees.md"
+        ".agents/docs/adr/workflows/worktrees/0068-manage-and-create-worktrees.md",
+        ".agents/docs/adr/workflows/worktrees/0106-absorbed-main-checkout.md"
       ]
     },
     {
@@ -11209,8 +11548,8 @@
       "feature": "Gestion des worktrees",
       "group": "repositories",
       "level": "N3",
-      "implemented": "Grille Windows compacte Path/Type/Branch/SHA-1, colonnes AllCells redimensionnables, copie de ligne, absents barrés, Create/Open/Delete/Prune, confirmation de switch persistante ; actions communes Repository/raccourci/arbre/barre et switch hors modal. Snapshots et gardes main/current/alias ; dirty/submodules protégés par Git, double-force verrouillé uniquement après deux consentements.",
-      "remaining": "Audit GUI natif exhaustif et ensemble des gestes/raccourcis/copie de cellules du DataGridView encore ouverts. La suppression native Git avec force explicite remplace volontairement l’effacement récursif Windows ; elle ne supprime pas silencieusement des fichiers hors consentement.",
+      "implemented": "Grille Windows compacte Path/Type/Branch/SHA-1, colonnes AllCells redimensionnables, copie de ligne, absents barrés, Create/Open/Delete/Prune, confirmation de switch persistante ; actions communes Repository/raccourci/arbre/barre et switch hors modal. Snapshots et gardes main/current/alias ; dirty/submodules protégés par Git, double-force verrouillé uniquement après deux consentements. Le principal d’un sous-module absorbé est rattaché au checkout après vérification réciproque ; création gérée principal/linked, politiques relative/absolue et effets partiels vérifiés par Git réel.",
+      "remaining": "Audit GUI natif exhaustif et ensemble des gestes/raccourcis/copie de cellules du DataGridView encore ouverts. La suppression native Git avec force explicite remplace volontairement l’effacement récursif Windows ; elle ne supprime pas silencieusement des fichiers hors consentement. Nouveau parcours Desktop/natif depuis un absorbé encore ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -11257,7 +11596,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/worktrees/0068-manage-and-create-worktrees.md"
+        ".agents/docs/adr/workflows/worktrees/0068-manage-and-create-worktrees.md",
+        ".agents/docs/adr/workflows/worktrees/0106-absorbed-main-checkout.md"
       ]
     },
     {
@@ -11564,8 +11904,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -11839,8 +12179,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -12117,8 +12457,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -12406,7 +12746,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 152,
+          "line": 153,
           "kind": "window"
         }
       ],
@@ -13538,8 +13878,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 47,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
@@ -14769,6 +15109,11 @@
           "level": "N1"
         },
         {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.DetailedSettingsPage",
+          "name": "DetailedSettingsPage",
+          "level": "N2"
+        },
+        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.FormBrowseRepoSettingsPage",
           "name": "FormBrowseRepoSettingsPage",
           "level": "N2"
@@ -14805,11 +15150,11 @@
       "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
       "name": "ExportRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-      "line": 152,
+      "line": 153,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 152
+          "line": 153
         }
       ],
       "bases": [
@@ -16990,7 +17335,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 525,
+      "line": 574,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",
@@ -21266,9 +21611,9 @@
       "N3": 5
     },
     "settings-pages": {
-      "N0": 4,
+      "N0": 3,
       "N1": 6,
-      "N2": 15,
+      "N2": 16,
       "NA": 1
     },
     "ci-settings": {

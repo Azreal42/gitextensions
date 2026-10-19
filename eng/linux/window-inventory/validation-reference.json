@@ -1,11 +1,11 @@
 {
-  "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-  "trx": "artifacts/linux/commit-completion-20261018/full-02/results/desktop.trx",
-  "trx_sha256": "6413ee85582c58fac129c753662d20ccf7d3024a11f5ab7a4cb3a2a7868b4b01",
+  "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+  "trx": "artifacts/linux/detailed-settings-20261019/desktop-full-02/results/desktop.trx",
+  "trx_sha256": "4baea60df50f0cac04c087df7d21f99bdaa0480e9e18fb96eb99ca750c5bb767",
   "counters": {
-    "total": "2517",
-    "executed": "2517",
-    "passed": "2517",
+    "total": "2742",
+    "executed": "2742",
+    "passed": "2742",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -171,6 +171,9 @@
     "CommitAndPushWorkflowTests": {
       "Passed": 9
     },
+    "CommitBranchTests": {
+      "Passed": 47
+    },
     "CommitCompletionControllerTests": {
       "Passed": 27
     },
@@ -204,6 +207,12 @@
     "CommitInformationViewTests": {
       "Passed": 7
     },
+    "CommitMessageFormattingTests": {
+      "Passed": 28
+    },
+    "CommitMessagePreferencesStoreTests": {
+      "Passed": 17
+    },
     "CommitMessageWorkflowTests": {
       "Passed": 13
     },
@@ -212,6 +221,12 @@
     },
     "CommitSpellingTests": {
       "Passed": 30
+    },
+    "CommitSuperprojectTests": {
+      "Passed": 21
+    },
+    "CommitTemplateDialogTests": {
+      "Passed": 25
     },
     "CompactNavigationTreeTests": {
       "Passed": 4
@@ -239,6 +254,18 @@
     },
     "DesktopFontsTests": {
       "Passed": 7
+    },
+    "DetailedGraphPublicationTests": {
+      "Passed": 6
+    },
+    "DetailedSettingsMigrationTests": {
+      "Passed": 2
+    },
+    "DetailedSettingsPageTests": {
+      "Passed": 23
+    },
+    "DetailedSettingsSessionTests": {
+      "Passed": 15
     },
     "DialogAccessKeyTests": {
       "Passed": 4
@@ -483,6 +510,9 @@
     "MergeBranchDialogTests": {
       "Passed": 7
     },
+    "MergeDetailedSettingsTests": {
+      "Passed": 6
+    },
     "NativeDiffViewerSettingsDialogTests": {
       "Passed": 4
     },
@@ -518,6 +548,9 @@
     },
     "PullProcessDialogTests": {
       "Passed": 9
+    },
+    "PushDetailedSettingsTests": {
+      "Passed": 7
     },
     "PushDialogTests": {
       "Passed": 25
@@ -608,6 +641,9 @@
     },
     "RevisionDiffGroupTests": {
       "Passed": 6
+    },
+    "RevisionGraphOptionsTests": {
+      "Passed": 28
     },
     "RevisionHistoryRowTests": {
       "Passed": 6
@@ -702,40 +738,76 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-      "execution_source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-      "candidate_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-      "passed": 739,
-      "total": 739,
-      "execution_result": "artifacts/linux/commit-completion-20261018/full-02/core-result.json",
-      "execution_result_sha256": "86d04fa345196c388d0b292d2856158af9499255074db76f6d329a15c5839417",
+      "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+      "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+      "execution_source_sha": null,
+      "execution_kind": "worktree",
+      "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+      "primary_execution": false,
+      "reexecuted_on_candidate": false,
+      "passed": 787,
+      "total": 787,
+      "execution_result": "artifacts/linux/detailed-settings-20261019/core-full-03/core-result.json",
+      "execution_result_sha256": "535a9420192a0012469b623e3bb304dcec88d097f8d3779974dcf99da52c75f4",
       "execution_exit_code": 0,
-      "build_result": "artifacts/linux/commit-completion-20261018/full-02/build-result.json",
-      "build_result_sha256": "4e71a3aad94f66addfc18c0acda0f4823edd542841ed12c3d3e30ac74373a750",
-      "build_exit_code": 0,
-      "parent_verification": "artifacts/linux/commit-completion-20261018/full-02/parent-verification.json",
-      "parent_verification_sha256": "f2b86c5c37a25dc8e8e49b5c8280923c96261ff2fb588a5967a795a952404353",
-      "runtime_inputs_unchanged": true,
-      "fresh_execution_this_tranche": true,
-      "reexecuted_on_candidate": true
+      "build_result": "artifacts/linux/detailed-settings-20261019/core-03/build-result.json",
+      "build_result_sha256": "ed3f4d3a40f42d95408edd6e19d10d726bbb061d55cc6aa1fa6680180ab81ac4",
+      "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
+      "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
+      "source_equivalence": {
+        "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
+        "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+      },
+      "build_exit_code": 0
     },
     "plugins": {
-      "source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-      "execution_source_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
-      "candidate_sha": "069de52b7d17ff0f1faecaef8d2e3e5322c93d09",
+      "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+      "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+      "execution_source_sha": null,
+      "execution_kind": "worktree",
+      "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+      "primary_execution": false,
+      "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/commit-completion-20261018/full-02/plugins-result.json",
-      "execution_result_sha256": "266763ef960f060f64272ba32de5328295030ed2bf138d394c1ebedc1d2d7f1a",
+      "execution_result": "artifacts/linux/detailed-settings-20261019/plugins-full-02/plugins-result.json",
+      "execution_result_sha256": "dbee7b211f6ff38dc25f79c5ec7e59ade4dd7d322b88c6e8751d2817648c9293",
       "execution_exit_code": 0,
-      "build_result": "artifacts/linux/commit-completion-20261018/full-02/build-result.json",
-      "build_result_sha256": "4e71a3aad94f66addfc18c0acda0f4823edd542841ed12c3d3e30ac74373a750",
-      "build_exit_code": 0,
-      "parent_verification": "artifacts/linux/commit-completion-20261018/full-02/parent-verification.json",
-      "parent_verification_sha256": "f2b86c5c37a25dc8e8e49b5c8280923c96261ff2fb588a5967a795a952404353",
-      "runtime_inputs_unchanged": true,
-      "fresh_execution_this_tranche": true,
-      "reexecuted_on_candidate": true
+      "build_result": "artifacts/linux/detailed-settings-20261019/plugins-build-01/build-result.json",
+      "build_result_sha256": "a7d34b1514a8397c5c8fe20ba7d9ec323ca9e8760b603935e6059aaf23ee7001",
+      "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
+      "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
+      "source_equivalence": {
+        "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
+        "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+      },
+      "build_exit_code": 0
     }
+  },
+  "execution_provenance": {
+    "kind": "worktree",
+    "worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+    "execution_source_sha": null,
+    "primary_execution": false,
+    "reexecuted_on_candidate": false,
+    "source_equivalence": {
+      "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
+      "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+    },
+    "root_review": {
+      "path": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
+      "sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf"
+    },
+    "desktop_witnesses": {
+      "execution": {
+        "path": "artifacts/linux/detailed-settings-20261019/desktop-full-02/desktop-result.json",
+        "sha256": "dd3a9d7afd104d25783853ece0c20b1562adda2e9ceb39b56fd5b1ffd436ae20"
+      },
+      "build": {
+        "path": "artifacts/linux/detailed-settings-20261019/desktop-build-03/build-result.json",
+        "sha256": "56cec29b75bbed2a9d43bb12d2cb3fcc01c3d4c3a7e67fd15f1dbffb78cbb61f"
+      }
+    },
+    "meaning": "Actual accepted W suites; final imported code identity verified by Root. No primary test execution, native parity or packaged-UI claim."
   }
 }

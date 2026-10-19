@@ -421,15 +421,16 @@
         "CreateWorktreeDialog",
         "MainWindow@CreateWorktreeAsync"
       ],
-      "implemented": "Dialogue Windows dédié : branches locales hors courante, branche nouvelle au commit courant avec -b, dossier proposé depuis le principal, normalisation et complétion partagées, Process natif et conservation des effets partiels ; proposition de switch après fermeture.",
-      "remaining": "Audit GUI natif exhaustif et toutes les variantes de complétion/accessibilité encore ouverts. Le défaut Windows de chemins relatifs respecte la configuration explicite et peut activer une extension Git incompatible avec les anciennes versions.",
+      "implemented": "Dialogue Windows dédié : branches locales hors courante, branche nouvelle au commit courant avec -b, dossier proposé depuis le principal, normalisation et complétion partagées, Process natif et conservation des effets partiels ; proposition de switch après fermeture. Le principal d’un sous-module absorbé est rattaché au checkout après vérification réciproque ; création gérée principal/linked, politiques relative/absolue et effets partiels vérifiés par Git réel.",
+      "remaining": "Audit GUI natif exhaustif et toutes les variantes de complétion/accessibilité encore ouverts. Le défaut Windows de chemins relatifs respecte la configuration explicite et peut activer une extension Git incompatible avec les anciennes versions. Nouveau parcours Desktop/natif depuis un absorbé encore ouvert.",
       "visual": "rapproche",
       "tests": [
         "WorktreeDialogTests",
         "WorktreeNavigationTests"
       ],
       "adr": [
-        "0068"
+        "0068",
+        "0106"
       ],
       "extra_evidence": [
         {
@@ -448,15 +449,16 @@
         "MainWindow@ManageWorktreesAsync",
         "WorktreeDialogControls@ConfirmOpenAsync"
       ],
-      "implemented": "Grille Windows compacte Path/Type/Branch/SHA-1, colonnes AllCells redimensionnables, copie de ligne, absents barrés, Create/Open/Delete/Prune, confirmation de switch persistante ; actions communes Repository/raccourci/arbre/barre et switch hors modal. Snapshots et gardes main/current/alias ; dirty/submodules protégés par Git, double-force verrouillé uniquement après deux consentements.",
-      "remaining": "Audit GUI natif exhaustif et ensemble des gestes/raccourcis/copie de cellules du DataGridView encore ouverts. La suppression native Git avec force explicite remplace volontairement l’effacement récursif Windows ; elle ne supprime pas silencieusement des fichiers hors consentement.",
+      "implemented": "Grille Windows compacte Path/Type/Branch/SHA-1, colonnes AllCells redimensionnables, copie de ligne, absents barrés, Create/Open/Delete/Prune, confirmation de switch persistante ; actions communes Repository/raccourci/arbre/barre et switch hors modal. Snapshots et gardes main/current/alias ; dirty/submodules protégés par Git, double-force verrouillé uniquement après deux consentements. Le principal d’un sous-module absorbé est rattaché au checkout après vérification réciproque ; création gérée principal/linked, politiques relative/absolue et effets partiels vérifiés par Git réel.",
+      "remaining": "Audit GUI natif exhaustif et ensemble des gestes/raccourcis/copie de cellules du DataGridView encore ouverts. La suppression native Git avec force explicite remplace volontairement l’effacement récursif Windows ; elle ne supprime pas silencieusement des fichiers hors consentement. Nouveau parcours Desktop/natif depuis un absorbé encore ouvert.",
       "visual": "rapproche",
       "tests": [
         "WorktreeDialogTests",
         "WorktreeNavigationTests"
       ],
       "adr": [
-        "0068"
+        "0068",
+        "0106"
       ],
       "extra_evidence": [
         {
@@ -847,17 +849,19 @@
         "MergeBranchDialog",
         "ResolveConflictsDialog"
       ],
-      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique.",
-      "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso.",
+      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite.",
+      "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso. Valeurs hors0–100 conservées visiblement, action bloquée jusqu’à correction explicite ; nouveau parcours natif et audit de toutes les variantes encore ouverts.",
       "visual": "rapproche",
       "tests": [
         "MergeBranchDialogTests",
-        "ScriptEventWorkflowTests"
+        "ScriptEventWorkflowTests",
+        "MergeDetailedSettingsTests"
       ],
       "adr": [
         "0043",
         "0057",
-        "0078"
+        "0078",
+        "0105"
       ]
     },
     "GitUI.CommandsDialogs.FormResolveConflicts": {
@@ -1015,20 +1019,22 @@
         "RemotesDialog",
         "GitProcessDialog"
       ],
-      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow.",
-      "remaining": "PR hébergeurs, grille ls-remote directe, Abort/fermetures et audit étendu des scripts/reprises ouverts.",
+      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow. Option Detailed raccordée au multibranche : ls-remote dans le contexte capturé du dépôt et Process possédé, liste distante complète sans fetch ni choix implicite ; erreur/annulation sans repli local.",
+      "remaining": "PR hébergeurs, Abort/fermetures et audit étendu des scripts/reprises et de la lecture serveur dans le paquet encore ouverts.",
       "visual": "rapproche",
       "tests": [
         "PushDialogTests",
         "PushProcessDialogTests",
-        "ScriptEventWorkflowTests"
+        "ScriptEventWorkflowTests",
+        "PushDetailedSettingsTests"
       ],
       "adr": [
         "0036",
         "0038",
         "0055",
         "0057",
-        "0078"
+        "0078",
+        "0105"
       ]
     },
     "GitUI.CommandsDialogs.FormRemotes": {
@@ -2576,13 +2582,28 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.DetailedSettingsPage": {
       "feature": "Réglages détaillés par dépôt/global",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas d’équivalent de cette page.",
-      "remaining": "Reprendre les réglages détaillés et leur portée/configuration distribuée.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "DetailedSettingsPage",
+        "DetailedSettingsSession",
+        "DesktopSettingsDialog",
+        "DetailedGraphSettings"
+      ],
+      "implemented": "Six champs Windows dans les trois groupes Graph/Push/Merge ; Effective readonly, portées Local/Distributed/Global, héritage brut et brouillons Apply/Cancel. XML commun avec Dictionary ; graphe configurable dans Browse, historique fichier et picker de révision, publié au vrai save par profil. Push Multiple lit le serveur sans fetch ; Merge partage les valeurs XML et conserve ses changements instantanés.",
+      "remaining": "Adaptations Linux : Global XDG, vrai tri-state, Distributed désactivé en bare, valeur Merge hors0–100 visible et bloquante. Suites complètes et parcours X11 source Apply/Cancel/redémarrage vérifiés ; audit natif étendu des consommateurs, variantes Wayland/DPI/accessibilité et parité globale restent ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "DetailedSettingsPageTests",
+        "DetailedSettingsSessionTests",
+        "DetailedSettingsMigrationTests",
+        "DetailedGraphPublicationTests",
+        "RevisionGraphOptionsTests",
+        "PushDetailedSettingsTests",
+        "MergeDetailedSettingsTests"
+      ],
+      "adr": [
+        "0105"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.DiffViewerSettingsPage": {
       "feature": "Réglages du lecteur de diff",
