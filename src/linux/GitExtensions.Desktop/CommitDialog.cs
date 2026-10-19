@@ -132,7 +132,7 @@ public sealed partial class CommitDialog : Window
             await DesktopScriptExecutor.ExecuteAsync(this, _repository, script, OperationToken);
         }));
         DesktopFonts.Apply(_message, DesktopFontRole.Commit);
-        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        ConsoleStylePresentation.Bind(_output);
         foreach (Control input in new Control[] { _filter, _amend, _resetAuthor })
         { input.Height = input.MinHeight = DesktopFontMetrics.ToolbarHeight; }
         _initialKind = initialKind;

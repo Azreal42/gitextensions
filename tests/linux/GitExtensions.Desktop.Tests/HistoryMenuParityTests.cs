@@ -43,8 +43,10 @@ public sealed class HistoryMenuParityTests
         string[] icons = ["WorkingDirChanges.png", "GotoCurrentRevision.png", "GotoCommit.png", "GoToChildCommit.png", "GoToParentCommit.png", "GoToFirstParentCommit.png", "GoToLastParentCommit.png", "GoToMergeBaseCommit.png", "NavigateBackward.png", "NavigateForward.png"];
         Assert.That(navigate.Items.OfType<MenuItem>().Take(10).Select(i => (i.Icon as Image)?.Tag), Is.EqualTo(icons));
         Assert.That(navigate.Items.OfType<MenuItem>().Take(10).All(i => i.Icon is Image { Source: not null, Width: 16, Height: 16 }), Is.True);
-        foreach (string unavailable in new[] { "ShowSuperprojectTags", "ShowSuperprojectRemoteBranches", "ShowSuperprojectBranches", "showBuildStatusIconToolStripMenuItem", "showBuildStatusTextToolStripMenuItem" })
+        foreach (string unavailable in new[] { "ShowSuperprojectTags", "ShowSuperprojectRemoteBranches", "ShowSuperprojectBranches" })
         { Assert.That(Item(view, "View" + unavailable).IsEnabled, Is.False); Assert.That(ToolTip.GetTip(Item(view, "View" + unavailable)), Is.Not.Null); }
+        foreach (string available in new[] { "showBuildStatusIconToolStripMenuItem", "showBuildStatusTextToolStripMenuItem" })
+        { Assert.That(Item(view, "View" + available).IsEnabled, Is.True); }
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {
             f.Window.RequestedThemeVariant = theme;

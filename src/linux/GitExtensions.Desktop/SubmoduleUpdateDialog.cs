@@ -20,7 +20,7 @@ public sealed class SubmoduleUpdateDialog : RepositoryDialog
 
     public SubmoduleUpdateDialog(GitRepository repository) : base(repository, "Update submodules")
     {
-        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        ConsoleStylePresentation.Bind(_output);
         Width = 620; Height = 290; MinWidth = 460; MinHeight = 220;
         Button close = new() { Name = "CancelSubmoduleUpdate", Content = T("Cancel"), IsCancel = true, Height = 24, MinHeight = 24, MinWidth = 75, Padding = new Thickness(8, 0) };
         close.Click += (_, _) => Close();

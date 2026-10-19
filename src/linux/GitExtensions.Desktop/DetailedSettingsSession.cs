@@ -75,7 +75,9 @@ internal sealed class DetailedSettingsSession
 {
     private readonly GitRepository? _repository;
     private readonly Dictionary<GitDistributedSettingsScope, Dictionary<string, string?>> _intentions = [];
-    private GitDistributedSettingsSnapshot? _snapshot;
+    private readonly DistributedSettingsWorkspace _workspace;
+    private GitDistributedSettingsSnapshot? _snapshot
+    { get => _workspace.Snapshot; set { if (value is not null) { _workspace.AcceptSaved(value); } } }
     private MergePreferences? _legacyLog;
     private string? _legacyRepository;
     private bool _legacyMigrationRequested;
@@ -85,18 +87,21 @@ internal sealed class DetailedSettingsSession
     internal Exception? LoadError { get; private set; }
     internal bool Loaded => _snapshot is not null && LoadError is null;
     internal bool HasRepository => _repository is not null;
+    internal GitRepository? Repository => _repository;
+    internal DistributedSettingsWorkspace Workspace => _workspace;
     internal bool HasDistributed => _snapshot?.Distributed is not null;
     internal GitDistributedSettingsScope InitialScope => HasRepository ? GitDistributedSettingsScope.Effective : GitDistributedSettingsScope.Global;
-    internal DetailedSettingsSession(GitRepository? repository, DesktopPreferences desktop)
+    internal DetailedSettingsSession(GitRepository? repository, DesktopPreferences desktop, DistributedSettingsWorkspace? workspace = null)
     {
-        _repository = repository; Graph = _graphBaseline = _acceptedGraph = DetailedGraphSettings.From(desktop);
+        _repository = repository; _workspace = workspace ?? new(repository); Graph = _graphBaseline = _acceptedGraph = DetailedGraphSettings.From(desktop);
     }
 
     internal async Task InitializeAsync(CancellationToken token)
     {
         try
         {
-            _snapshot = await DetailedRepositorySettings.LoadAsync(_repository, token);
+            await _workspace.InitializeAsync(token);
+            if (_workspace.LoadError is { } error) { LoadError = error; return; }
             if (_repository is not null)
             {
                 _legacyRepository = (await _repository.GetInfoAsync(token)).CommonDirectory;

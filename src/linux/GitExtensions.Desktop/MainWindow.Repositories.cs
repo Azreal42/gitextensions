@@ -122,6 +122,7 @@ public sealed partial class MainWindow
             _historySelectionOrder.Clear(); _parentChildLatestCommit = null;
             await _backgroundFetch.UnregisterAsync();
             _repository = null;
+            await OnGitHubActionsRepositoryChangedAsync(null);
             _comparisonBase = null;
             _selectedArtificialHistoryRevision = null;
             _browseFileHistory = null;

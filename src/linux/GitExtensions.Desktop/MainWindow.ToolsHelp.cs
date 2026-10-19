@@ -115,7 +115,7 @@ public sealed partial class MainWindow
             telemetry,
             OriginalAction(category, "reportAnIssueToolStripMenuItem", "&Report an issue", "BugReport.png", ReportIssueAsync),
             OriginalAction(category, "checkForUpdatesToolStripMenuItem", "Check for &updates", "CheckForUpdates.png", () => OpenWebAsync(ForkUrl + "/releases")),
-            OriginalAction(category, "aboutToolStripMenuItem", "&About", "information.png", () => ShowHelpTextAsync("About", "Git Extensions " + DesktopVersion + "\n\nLinux / Avalonia\n" + ForkUrl + "\n\nCopyright © 2008–2026 Git Extensions Team\nGPL-3.0-or-later"))
+            OriginalAction(category, "aboutToolStripMenuItem", "&About", "information.png", ShowAboutAsync)
         }};
     }
 
@@ -138,6 +138,11 @@ public sealed partial class MainWindow
         using StreamReader reader = new(stream);
         return ShowHelpTextAsync("Changelog", reader.ReadToEnd());
     }
+
+    private Task ShowAboutAsync() => new DesktopInformationWindow(T("About"),
+        "Git Extensions " + DesktopVersion + "\n\nLinux / Avalonia\n" + ForkUrl
+        + "\n\nCopyright © 2008–2026 Git Extensions Team\nGPL-3.0-or-later",
+        owner => new ContributorsDialog(_translations).ShowDialog(owner)).ShowDialog(this);
 
     private Task ShowHelpTextAsync(string title, string text) => new DesktopInformationWindow(T(title), text).ShowDialog(this);
 
@@ -164,7 +169,8 @@ public sealed partial class MainWindow
         AvatarService? avatars = _avatarLifetime?.Scope?.Service ?? App.PeekAvatarRuntime()?.Service;
         DesktopFontSession fonts = DesktopFonts.CreateSession();
         GitRepository? settingsRepository = _repository;
-        DetailedSettingsSession detailed = new(settingsRepository, initial);
+        DistributedSettingsWorkspace workspace = new(settingsRepository);
+        DetailedSettingsSession detailed = new(settingsRepository, initial, workspace);
         await detailed.InitializeAsync(_lifetime.Token);
         using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
         DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
@@ -187,7 +193,10 @@ public sealed partial class MainWindow
             },
             avatarHelpAsync: (owner, url) => owner.IsVisible && !_lifetime.IsCancellationRequested
                 ? OpenWebAsync(url) : Task.CompletedTask,
-            appearanceCancellationToken: environment.CancellationToken, detailedSettings: detailed);
+            appearanceCancellationToken: environment.CancellationToken, detailedSettings: detailed,
+            revisionLinksSettings: new(settingsRepository, workspace),
+            gitHubActionsSettings: new(settingsRepository, workspace),
+            openSettingsUrlAsync: OpenWebAsync);
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

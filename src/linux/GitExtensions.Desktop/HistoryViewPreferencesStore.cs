@@ -15,6 +15,8 @@ internal sealed record HistoryViewPreferences
     public bool ShowTags { get; init; } = true;
     public bool ShowNotes { get; init; }
     public bool ShowNotesColumn { get; init; }
+    public bool ShowBuildStatusIcon { get; init; } = true;
+    public bool ShowBuildStatusText { get; init; }
     public bool ShowBody { get; init; } = true;
     public bool ShowAuthorDate { get; init; } = true;
     public bool RelativeDate { get; init; } = true;

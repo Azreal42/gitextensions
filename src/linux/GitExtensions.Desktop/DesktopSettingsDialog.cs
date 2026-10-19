@@ -35,6 +35,12 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly AppearanceSettingsPage _appearanceSettingsPage;
     internal DetailedSettingsSession DetailedSettingsSession { get; }
     private readonly DetailedSettingsPage _detailedSettingsPage;
+    internal RevisionLinksSettingsSession RevisionLinksSettingsSession { get; }
+    private readonly RevisionLinksSettingsPage _revisionLinksSettingsPage;
+    internal GitHubActionsSettingsSession GitHubActionsSettingsSession { get; }
+    private readonly BuildServerIntegrationSettingsPage _buildServerSettingsPage;
+    private readonly ConsoleStyleSettingsSession _consoleStyleSession;
+    private readonly ConsoleStyleSettingsPage _consoleStylePage;
     private readonly CancellationTokenSource _detailedCancellation = new();
     internal void AcceptDetailedSaved() => _detailedSettingsPage.AcceptSaved();
     internal void AcceptAppearanceSaved(AppearanceSettingsPublication publication)
@@ -70,7 +76,11 @@ internal sealed class DesktopSettingsDialog : Window
         Func<Window, Task>? helpTranslateAsync = null,
         Func<Window, CancellationToken, Task>? clearAvatarCacheAsync = null,
         Func<Window, string, Task>? avatarHelpAsync = null, CancellationToken appearanceCancellationToken = default,
-        DetailedSettingsSession? detailedSettings = null)
+        DetailedSettingsSession? detailedSettings = null,
+        RevisionLinksSettingsSession? revisionLinksSettings = null,
+        GitHubActionsSettingsSession? gitHubActionsSettings = null,
+        ConsoleStyleSettingsSession? consoleStyleSettings = null,
+        Func<string, Task>? openSettingsUrlAsync = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -78,6 +88,14 @@ internal sealed class DesktopSettingsDialog : Window
         GeneralSettingsResult = generalSettings ?? new GeneralSettingsSession(initial, FileHistoryResult).Initial;
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
         DetailedSettingsSession = detailedSettings ?? new(null, initial);
+        DistributedSettingsWorkspace workspace = DetailedSettingsSession.Workspace;
+        GitRepository? scopedRepository = DetailedSettingsSession.Repository;
+        RevisionLinksSettingsSession = revisionLinksSettings ?? new(scopedRepository, workspace);
+        _revisionLinksSettingsPage = new(RevisionLinksSettingsSession, translations) { Margin = new Thickness(12) };
+        GitHubActionsSettingsSession = gitHubActionsSettings ?? new(scopedRepository, workspace);
+        _buildServerSettingsPage = new(GitHubActionsSettingsSession, translations, openSettingsUrlAsync is null ? null : () => { _ = openSettingsUrlAsync("https://github.com/settings/personal-access-tokens/new"); }) { Margin = new Thickness(12) };
+        _consoleStyleSession = consoleStyleSettings ?? new();
+        _consoleStylePage = new(_consoleStyleSession, translations) { Margin = new Thickness(12) };
         _detailedSettingsPage = new(DetailedSettingsSession, translations) { Margin = new Thickness(12) };
         AppearanceSettingsResult = appearanceSettings
             ?? new AppearanceSettingsSession(initial, new HistoryViewPreferencesStore().Load()).Initial;
@@ -150,11 +168,14 @@ internal sealed class DesktopSettingsDialog : Window
         SettingsNavigationPage appearancePage = new("Appearance", PageTitle("AppearanceSettingsPage", "Appearance"), _appearanceSettingsPage, "Appearance.png", Children:
         [
             new("Sorting", PageTitle("SortingSettingsPage", "Sorting"), sorting, "SortBy.png"),
-            new("Fonts", PageTitle("AppearanceFontsSettingsPage", "Fonts"), fontsPage, "Font.png")
+            new("Fonts", PageTitle("AppearanceFontsSettingsPage", "Fonts"), fontsPage, "Font.png"),
+            new("ConsoleStyle", PageTitle("ConsoleStyleSettingsPage", "Console"), _consoleStylePage, "Console.png")
         ]);
         SettingsNavigationPage[] extensionChildren =
         [
             generalPage, appearancePage,
+            new("RevisionLinks", PageTitle("RevisionLinksSettingsPage", "Revision links"), _revisionLinksSettingsPage, "Link.png"),
+            new("BuildServerIntegration", PageTitle("BuildServerIntegrationSettingsPage", "Build server integration"), _buildServerSettingsPage, "Integration.png"),
             new("Scripts", PageTitle("ScriptsSettingsPage", "Scripts"), scriptsPage, "Console.png"),
             new("Hotkeys", PageTitle("HotkeysSettingsPage", "Hotkeys"), hotkeysPage, "Hotkey.png"),
             new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), advancedFields, "AdvancedSettings.png"),
@@ -189,22 +210,42 @@ internal sealed class DesktopSettingsDialog : Window
         bool saving = false, closeWhenIdle = false, accepting = false, saved = false;
         bool detailedLoading = false;
         Task? detailedRead = null;
-        Closed += (_, _) => { _detailedCancellation.Cancel(); _detailedCancellation.Dispose(); };
+        _revisionLinksSettingsPage.BusyChanged += () =>
+        {
+            save.IsEnabled = apply.IsEnabled = !saving && !detailedLoading && gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy;
+            if (closeWhenIdle && !saving && !detailedLoading && !_revisionLinksSettingsPage.IsBusy)
+            { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
+        };
+        Closed += async (_, _) =>
+        {
+            _detailedCancellation.Cancel();
+            try { await _revisionLinksSettingsPage.BeginClose(); }
+            catch (OperationCanceledException) { }
+            finally { _detailedCancellation.Dispose(); }
+        };
         cancel.Click += (_, _) => Close(saved);
         save.Click += async (_, _) => await SaveAllAsync(closeOnSuccess: true);
         apply.Click += async (_, _) => await SaveAllAsync(closeOnSuccess: false);
         Task EnsureDetailedReadyAsync()
         {
-            if (DetailedSettingsSession.Loaded || DetailedSettingsSession.LoadError is not null) { return Task.CompletedTask; }
+            if (detailedRead is not null) { return detailedRead; }
             return detailedRead ??= ReadAsync();
             async Task ReadAsync()
             {
                 detailedLoading = true; save.IsEnabled = apply.IsEnabled = false;
-                try { await DetailedSettingsSession.InitializeAsync(_detailedCancellation.Token); _detailedSettingsPage.ShowLoadState(); }
+                try
+                {
+                    await DetailedSettingsSession.InitializeAsync(_detailedCancellation.Token);
+                    await RevisionLinksSettingsSession.InitializeAsync(_detailedCancellation.Token);
+                    await GitHubActionsSettingsSession.InitializeAsync(_detailedCancellation.Token);
+                    _detailedSettingsPage.ShowLoadState();
+                    _revisionLinksSettingsPage.ShowLoadState();
+                    _buildServerSettingsPage.ShowLoadState();
+                }
                 catch (OperationCanceledException) when (_detailedCancellation.IsCancellationRequested) { }
                 finally
                 {
-                    detailedLoading = false; save.IsEnabled = apply.IsEnabled = !saving && gitEnvironment?.IsBusy != true;
+                    detailedLoading = false; save.IsEnabled = apply.IsEnabled = !saving && gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy;
                     if (closeWhenIdle && !saving && gitEnvironment?.IsBusy != true)
                     { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
                 }
@@ -214,11 +255,18 @@ internal sealed class DesktopSettingsDialog : Window
         {
             if (saving || gitEnvironment?.IsBusy == true) { return false; }
             saving = true; save.IsEnabled = apply.IsEnabled = false;
+            string activeSavePage = "Detailed";
             try
             {
                 await EnsureDetailedReadyAsync();
                 if (closeWhenIdle) { return false; }
                 _detailedSettingsPage.PrepareSave();
+                activeSavePage = "RevisionLinks";
+                await _revisionLinksSettingsPage.PrepareSaveAsync(_detailedCancellation.Token);
+                activeSavePage = "BuildServerIntegration";
+                _buildServerSettingsPage.PrepareSave();
+                if (!_consoleStylePage.Validate(out string? consoleValidation))
+                { Navigation.SelectPage("ConsoleStyle", true); notice.Text = consoleValidation; return false; }
                 if (!_generalSettingsPage.Validate(out string? generalValidation))
                 { Navigation.SelectPage("General", true); notice.Text = generalValidation; return false; }
                 if (!_appearanceSettingsPage.Validate(out string? appearanceValidation))
@@ -310,14 +358,23 @@ internal sealed class DesktopSettingsDialog : Window
                 try
                 {
                     if (publishSettings is null) { DetailedSettingsSession.DesktopSaved(Result); }
+                    activeSavePage = "Detailed";
                     await DetailedSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     AcceptDetailedSaved();
+                    activeSavePage = "RevisionLinks";
+                    await RevisionLinksSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
+                    _revisionLinksSettingsPage.AcceptSaved();
+                    activeSavePage = "BuildServerIntegration";
+                    if (GitHubActionsSettingsSession.HasChanges)
+                    { await GitHubActionsSettingsSession.SaveFilesAsync(_detailedCancellation.Token); _buildServerSettingsPage.AcceptSaved(); }
+                    activeSavePage = "ConsoleStyle";
+                    _consoleStylePage.AcceptSaved(_consoleStyleSession.Save(_consoleStylePage.Draft));
                 }
                 catch (OperationCanceledException) when (closeWhenIdle) { return false; }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Xml.XmlException
                     or ArgumentException or InvalidOperationException or JsonException)
                 {
-                    Navigation.SelectPage("Detailed", true);
+                    Navigation.SelectPage(activeSavePage, true);
                     notice.Text = translations.Translate("Unable to save settings.") + " " + error.Message + "\n"
                         + translations.Translate("Some settings may already have been saved. Cancel discards only unsaved changes.");
                     return false;
@@ -327,28 +384,39 @@ internal sealed class DesktopSettingsDialog : Window
                 if (closeOnSuccess && !closeWhenIdle) { accepting = true; try { Close(true); } finally { accepting = false; } }
                 return !closeWhenIdle;
             }
+            catch (OperationCanceledException) when (_detailedCancellation.IsCancellationRequested) { return false; }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Xml.XmlException
+                or ArgumentException or InvalidOperationException or JsonException)
+            { Navigation.SelectPage(activeSavePage, true); notice.Text = translations.Translate("Unable to save settings.") + " " + error.Message; return false; }
             finally
             {
-                saving = false; Navigation.IsEnabled = true; save.IsEnabled = apply.IsEnabled = gitEnvironment?.IsBusy != true;
-                if (closeWhenIdle && !detailedLoading && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
+                saving = false; Navigation.IsEnabled = true; save.IsEnabled = apply.IsEnabled = gitEnvironment?.IsBusy != true && !_revisionLinksSettingsPage.IsBusy;
+                if (closeWhenIdle && !detailedLoading && !_revisionLinksSettingsPage.IsBusy && gitEnvironment?.IsBusy != true) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
             }
         }
         if (gitEnvironment is not null)
         {
             gitEnvironment.SaveAllRequested = () => SaveAllAsync(closeOnSuccess: false);
             gitEnvironment.RepairRequested = id => repairEnvironment is null ? Task.CompletedTask : repairEnvironment(id, this);
-            gitEnvironment.BusyChanged += () => { save.IsEnabled = apply.IsEnabled = !saving && !gitEnvironment.IsBusy; };
+            gitEnvironment.BusyChanged += () => { save.IsEnabled = apply.IsEnabled = !saving && !detailedLoading && !gitEnvironment.IsBusy && !_revisionLinksSettingsPage.IsBusy; };
             gitEnvironment.Settled += () =>
             {
                 if (closeWhenIdle && !saving) { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsVisible) { Close(saved); } }); }
             };
             Closed += (_, _) => gitEnvironment.Dispose();
         }
+        async Task CloseAfterRevisionLinksAsync()
+        {
+            try { await _revisionLinksSettingsPage.BeginClose(); }
+            catch (OperationCanceledException) { }
+            if (!saving && !detailedLoading && gitEnvironment?.IsBusy != true && IsVisible) { Close(saved); }
+        }
         Closing += (_, args) =>
         {
-            if (!accepting && (saving || detailedLoading || gitEnvironment?.IsBusy == true))
+            if (!accepting && (saving || detailedLoading || _revisionLinksSettingsPage.IsBusy || gitEnvironment?.IsBusy == true))
             {
                 args.Cancel = true; closeWhenIdle = true; gitEnvironment?.Cancel(); _detailedCancellation.Cancel();
+                _ = CloseAfterRevisionLinksAsync();
                 return;
             }
             // WinForms keeps DialogResult.OK after Apply/SaveAll, even when the

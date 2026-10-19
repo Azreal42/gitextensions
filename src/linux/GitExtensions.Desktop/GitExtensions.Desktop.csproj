@@ -7,6 +7,8 @@
     <IsPublishable>true</IsPublishable>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Keep the Windows contributor lists as raw XML; no ResX code generation or duplicated names. -->
+    <EmbeddedResource Include="../../app/GitUI/Properties/Resources.resx" Link="Resources/Contributors.Windows.xml" LogicalName="GitExtensions.Contributors.Windows.xml" Type="Non-Resx" />
     <Content Include="gitextensions-askpass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="../GitExtensions.Core/GitExtensions.Core.csproj" />
     <ProjectReference Include="../GitExtensions.SpellChecking/GitExtensions.SpellChecking.csproj" />

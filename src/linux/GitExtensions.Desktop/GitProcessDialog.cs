@@ -59,7 +59,7 @@ public sealed class GitProcessDialog : Window
         ProcessDialogPreferencesStore? preferencesStore = null, bool preserveStreamedOutput = false,
         Func<GitProcessDialog, GitProcessAttemptResult, CancellationToken, Task<GitProcessCommand?>>? handleOnExit = null)
     {
-        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        ConsoleStylePresentation.Bind(_output);
         ArgumentNullException.ThrowIfNull(command); ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(commandDescription);
         _command = command; _store = preferencesStore ?? new(); _preserveStreamedOutput = preserveStreamedOutput;

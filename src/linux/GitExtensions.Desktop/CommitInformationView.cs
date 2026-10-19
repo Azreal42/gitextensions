@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Avalonia;
@@ -14,7 +15,7 @@ using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
 
-public enum CommitInformationCommand { NavigateRevision, NavigateReference, AddNotes, Backward, Forward }
+public enum CommitInformationCommand { NavigateRevision, NavigateReference, AddNotes, Backward, Forward, OpenExternalLink }
 
 /// <summary>The shared, independently loaded CommitInfo panel from Browse, file history and blame.</summary>
 public sealed class CommitInformationView : UserControl, IDisposable
@@ -23,6 +24,15 @@ public sealed class CommitInformationView : UserControl, IDisposable
     private readonly CommitInformationPreferencesStore _preferences;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HashSet<Task> _reads = [];
+    private readonly RevisionLinksController _revisionLinks = new();
+    private readonly StackPanel _related = new() { Name = "CommitInformationRelatedLinks", IsVisible = false };
+    private string _relatedText = "";
+    internal Func<Uri, Task> RevisionLinkLauncher { get; set; } = uri =>
+    {
+        ProcessStartInfo start = new("xdg-open") { UseShellExecute = false };
+        start.ArgumentList.Add(uri.AbsoluteUri); using Process? process = Process.Start(start);
+        return Task.CompletedTask;
+    };
     private readonly Grid _header = new() { ColumnDefinitions = new("Auto,*"), ColumnSpacing = 12, Margin = new(8, 8, 16, 8) };
     private readonly Grid _headerLayout = new() { ColumnDefinitions = new("Auto,*") };
     private readonly AvatarImageControl _authorAvatar = new(role: AvatarImageRole.CommitInfo, placeholder: AvatarPlaceholder.User80)
@@ -60,9 +70,10 @@ public sealed class CommitInformationView : UserControl, IDisposable
     public bool ShowRevisionLinks { get; set; } = true;
     public string CopyText => _copyHeaderText + (string.IsNullOrEmpty(MessageControl.Text) ? "" : "\n\n" + MessageControl.Text);
     public string Text => _headerText + (string.IsNullOrEmpty(MessageControl.Text) ? "" : "\n\n" + MessageControl.Text)
+        + (string.IsNullOrEmpty(_relatedText) ? "" : "\n\n" + _relatedText)
         + (string.IsNullOrEmpty(_referenceText) ? "" : "\n\n" + _referenceText);
-    public bool IsLoading => _reads.Any(task => !task.IsCompleted);
-    public Task Completion => Task.WhenAll(_reads.Append(_authorAvatar.Completion).ToArray());
+    public bool IsLoading => _reads.Any(task => !task.IsCompleted) || _revisionLinks.IsLoading;
+    public Task Completion => Task.WhenAll(_reads.Append(_authorAvatar.Completion).Append(_revisionLinks.Completion).ToArray());
     public event Action<CommitInformationCommand, string?>? CommandRequested;
     public event Action<string>? InteractionError;
 
@@ -70,6 +81,9 @@ public sealed class CommitInformationView : UserControl, IDisposable
     public CommitInformationView(CommitInformationPreferencesStore preferences)
     {
         _preferences = preferences; Options = preferences.Load();
+        _revisionLinks.Updated += RenderRelatedLinks;
+        AttachedToVisualTree += (_, _) => { _revisionLinks.Attach(); if (_loadedGeneration == _generation) { _ = _revisionLinks.LoadAsync(); } };
+        DetachedFromVisualTree += (_, _) => _revisionLinks.Detach();
         DesktopFonts.Apply(MessageControl, DesktopFontRole.Commit);
         Focusable = false;
         foreach (string field in new[] { "Author", "Date", "Committer", "Commit date", "Commit hash", "Children", "Parents", "File" })
@@ -142,29 +156,29 @@ public sealed class CommitInformationView : UserControl, IDisposable
     {
         if (_disposed || _closing) { return; }
         bool same = ReferenceEquals(repository, _repository) && revision?.Hash == _revision?.Hash;
-        Cancel(); _repository = repository; _revision = revision; _graph = graph ?? []; _context = context;
+        Cancel(); _revisionLinks.SetRevision(repository, revision?.Hash); _repository = repository; _revision = revision; _graph = graph ?? []; _context = context;
         Options = _preferences.Load(); _contextLink = null; _pointerMenuPending = false;
         _containment = null; _annotations = []; _description = null; _showAllBranches = _showAllTags = false;
         if (repository is null || revision is null) { ClearContent(); return; }
-        if (!same) { PublishHeader(KnownDetails(revision)); _supplementary.Children.Clear(); _referenceText = ""; }
+        if (!same) { ClearRelatedLinks(); PublishHeader(KnownDetails(revision)); _supplementary.Children.Clear(); _referenceText = ""; }
         _authorAvatar.SetActive(true);
     }
 
     public void SetMessage(string text)
     {
-        Cancel(); _repository = null; _revision = null; ClearContent(); MessageControl.Text = text;
+        Cancel(); _revisionLinks.SetRevision(null, null); _repository = null; _revision = null; ClearContent(); MessageControl.Text = text;
     }
 
     public void Cancel()
     {
         _generation++; _loadedGeneration = -1; _current?.Cancel(); _current = null;
-        _authorAvatar.SetActive(false);
+        _authorAvatar.SetActive(false); _revisionLinks.Cancel();
     }
 
     public void BeginClose()
     {
         if (_closing) { return; }
-        _closing = true; Cancel(); _lifetime.Cancel(); _authorAvatar.BeginClose();
+        _closing = true; Cancel(); _lifetime.Cancel(); _authorAvatar.BeginClose(); _ = _revisionLinks.BeginClose();
     }
 
     public Task LoadAsync(CancellationToken cancellationToken = default)
@@ -198,12 +212,13 @@ public sealed class CommitInformationView : UserControl, IDisposable
             GitCommitReferenceScope scope = (options.WantsLocal ? GitCommitReferenceScope.LocalBranches : 0)
                 | (options.WantsRemote ? GitCommitReferenceScope.RemoteBranches : 0)
                 | (options.Tags || options.Annotated ? GitCommitReferenceScope.Tags : 0);
+            Task relatedLinks = _revisionLinks.LoadAsync(token);
             Task<GitCommitDetails> details = repository.GetCommitDetailsAsync(revision.Hash, includeNotes: true, token);
             Task<GitCommitContainment> containment = repository.GetCommitContainingReferencesAsync(revision.Hash, scope, token);
             Task<GitCommitDescription?> description = options.Derives ? repository.GetCommitDescribeAsync(revision.Hash, token) : Task.FromResult<GitCommitDescription?>(null);
             // Await every independently started read even if another fails, so cancellation/close drains all children.
-            try { await Task.WhenAll(details, containment, description); }
-            catch { source.Cancel(); try { await Task.WhenAll(details, containment, description); } catch { } throw; }
+            try { await Task.WhenAll(details, containment, description, relatedLinks); }
+            catch { source.Cancel(); try { await Task.WhenAll(details, containment, description, relatedLinks); } catch { } throw; }
             token.ThrowIfCancellationRequested();
             GitCommitContainment refs = await containment;
             GitReference[] attached = refs.References.Where(reference => reference.Kind == GitCommitReferenceKind.Tag && reference.RevisionHash == revision.Hash)
@@ -283,6 +298,7 @@ public sealed class CommitInformationView : UserControl, IDisposable
             StackPanel block = new(); SelectableTextBlock label = Selectable(name); label.TextDecorations = TextDecorations.Underline; block.Children.Add(label);
             block.Children.Add(Selectable(annotation.Message)); _supplementary.Children.Add(block); sections.Add(name + "\n" + annotation.Message);
         }
+        _supplementary.Children.Add(_related);
         bool mixed = Options.WantsLocal && Options.WantsRemote;
         List<CommitInformationReference<GitCommitReference>> branches = _containment.References.Where(reference => reference.Kind != GitCommitReferenceKind.Tag)
             .Select(reference => new CommitInformationReference<GitCommitReference>(reference,
@@ -352,8 +368,73 @@ public sealed class CommitInformationView : UserControl, IDisposable
             HorizontalAlignment = HorizontalAlignment.Left, Cursor = new(StandardCursorType.Hand)
         };
         link.Bind(ForegroundProperty, new DynamicResourceExtension("SystemControlForegroundAccentBrush"));
-        link.Click += (_, _) => { if (!target.StartsWith("showall/", StringComparison.Ordinal)) { CommandRequested?.Invoke(command, target); } };
+        link.Click += async (_, _) =>
+        {
+            if (_closing || _disposed) { return; }
+            if (command == CommitInformationCommand.OpenExternalLink)
+            {
+                try { await ActivateRevisionLinkAsync(target); }
+                catch (Exception error) when (error is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
+                { InteractionError?.Invoke(error.Message); }
+            }
+            else if (!target.StartsWith("showall/", StringComparison.Ordinal)) { CommandRequested?.Invoke(command, target); }
+        };
         return link;
+    }
+
+    private void ClearRelatedLinks()
+    { _related.Children.Clear(); _related.IsVisible = false; _relatedText = ""; }
+
+    private void RenderRelatedLinks(RevisionLinksResult result)
+    {
+        ClearRelatedLinks();
+        if (result.Links.Count != 0)
+        {
+            string heading = T("Related links:");
+            _related.Children.Add(Selectable(heading));
+            WrapPanel line = new() { Orientation = Orientation.Horizontal };
+            foreach (var external in result.Links)
+            {
+                if (line.Children.Count != 0) { line.Children.Add(Selectable(", ")); }
+                Button link = Link(external.Caption ?? external.Uri, CommitInformationCommand.OpenExternalLink, external.Uri);
+                link.Name = "CommitInformationRelatedLink"; line.Children.Add(link);
+            }
+            _related.Children.Add(line); _related.IsVisible = true;
+            _relatedText = heading + "\n" + string.Join(", ", result.Links.Select(link => link.Caption ?? link.Uri));
+        }
+        string diagnostic = string.Join("\n", result.Diagnostics.Select(item => item.Message).Concat(result.Error is null ? [] : new[] { result.Error }));
+        // Invalid patterns never rewrite user XML or interrupt the commit's other information.
+        ToolTip.SetTip(_related, diagnostic.Length == 0 ? null : diagnostic);
+        if (diagnostic.Length != 0)
+        {
+            _related.Children.Add(new TextBlock { Name = "RevisionLinksDiagnostic", Text = diagnostic, TextWrapping = TextWrapping.Wrap });
+            _related.IsVisible = true;
+        }
+    }
+
+    internal async Task ActivateRevisionLinkAsync(string address)
+    {
+        if (_disposed || _closing) { return; }
+        string candidate = address;
+        while (!Uri.TryCreate(candidate, UriKind.Absolute, out _))
+        {
+            int hash = candidate.IndexOf('#');
+            if (hash < 0) { throw new ArgumentException("Invalid revision link: " + address); }
+            candidate = candidate[(hash + 1)..];
+        }
+        Uri uri = new(candidate, UriKind.Absolute);
+        if (uri.Scheme == "gitext")
+        {
+            string target = uri.AbsolutePath.TrimStart('/');
+            if (uri.Host == "gotocommit") { CommandRequested?.Invoke(CommitInformationCommand.NavigateRevision, target); }
+            else if (uri.Host is "gotobranch" or "gototag")
+            { CommandRequested?.Invoke(CommitInformationCommand.NavigateReference, (uri.Host == "gototag" ? "refs/tags/" : "") + target); }
+            else if (uri.Host == "showall" && target is "branches" or "tags")
+            { if (target == "branches") { _showAllBranches = true; } else { _showAllTags = true; } RenderReferences(); }
+            else { throw new ArgumentException("Unknown Git Extensions link: " + address); }
+            return;
+        }
+        await RevisionLinkLauncher(uri);
     }
 
     private void AddOption(string name, string text, Func<CommitInformationOptions, bool> selected, Func<CommitInformationOptions, CommitInformationOptions> change)
@@ -397,7 +478,8 @@ public sealed class CommitInformationView : UserControl, IDisposable
     private async Task CopyAsync(string text)
     { if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard) { await clipboard.SetTextAsync(text); } }
     private static string LinkAddress((CommitInformationCommand Command, string Target) link)
-        => link.Target.StartsWith("showall/", StringComparison.Ordinal) ? "gitext://" + link.Target
+        => link.Command == CommitInformationCommand.OpenExternalLink ? link.Target
+            : link.Target.StartsWith("showall/", StringComparison.Ordinal) ? "gitext://" + link.Target
             : link.Command == CommitInformationCommand.NavigateRevision ? "gitext://gotocommit/" + link.Target
             : "gitext://" + (link.Target.StartsWith("refs/tags/", StringComparison.Ordinal) ? "gototag/" + link.Target[10..]
                 : "gotobranch/" + (link.Target.StartsWith("refs/heads/", StringComparison.Ordinal) ? link.Target[11..]
@@ -412,12 +494,12 @@ public sealed class CommitInformationView : UserControl, IDisposable
     {
         _authorAvatar.SetActive(false); _authorAvatar.SetIdentity(null, null);
         _header.IsVisible = _headerLayout.IsVisible = false; _headerText = _copyHeaderText = _referenceText = ""; MessageControl.Text = ""; _supplementary.Children.Clear();
-        _contextLink = null; _pointerMenuPending = false;
+        _contextLink = null; _pointerMenuPending = false; ClearRelatedLinks();
     }
 
     public void Dispose()
     {
         if (_disposed) { return; }
-        BeginClose(); _disposed = true; _lifetime.Dispose();
+        BeginClose(); _disposed = true; _revisionLinks.Dispose(); _lifetime.Dispose();
     }
 }

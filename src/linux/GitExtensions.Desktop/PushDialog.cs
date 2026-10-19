@@ -56,7 +56,7 @@ public sealed class PushDialog : RepositoryDialog
 
     public PushDialog(GitRepository repository, Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Push")
     {
-        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        ConsoleStylePresentation.Bind(_output);
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferences = _store.Load();
         _url.ItemsSource = _destinationHistory.Load();

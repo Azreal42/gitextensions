@@ -43,6 +43,9 @@
     <Compile Include="../../app/GitUI/AutoCompletion/AutoCompleteRegexes.cs" Link="Shared/AutoCompleteRegexes.cs" />
     <!-- Preserve the Windows repository settings XML format without its cache/watchers. -->
     <Compile Include="../../app/GitCommands/XmlSerializableDictionary.cs" Link="Shared/XmlSerializableDictionary.cs" />
+    <!-- Preserve the actual Windows revision link XML identities and URI equality. -->
+    <Compile Include="../../app/GitCommands/ExternalLinks/ExternalLink.cs" Link="Shared/ExternalLink.cs" />
+    <Compile Include="../../app/GitCommands/ExternalLinks/ExternalLinkDefinition.cs" Link="Shared/ExternalLinkDefinition.cs" />
     <!-- Keep the upstream pure identity and hosting parsers as the source of truth. -->
     <Compile Include="../../app/GitExtensions.Extensibility/Git/ObjectId.cs" Link="Shared/ObjectId.cs" />
     <Compile Include="../../app/GitExtensions.Extensibility/Git/DiffBranchStatus.cs" Link="Shared/DiffBranchStatus.cs" />

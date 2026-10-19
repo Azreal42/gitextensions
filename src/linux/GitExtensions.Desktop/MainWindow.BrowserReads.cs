@@ -192,7 +192,7 @@ public sealed partial class MainWindow
             // the close snapshot and keep the window alive until the real Git reads have drained.
             Task branchesDispose = DisposeRepositoryBranchReadersAsync();
             Task avatars = CloseAvatarReadersAsync();
-            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync(), branchesDispose, avatars);
+            Task pending = Task.WhenAll(WindowWorkCompletion, CloseFileHistoryInlineBlameAsync(), branchesDispose, avatars, CloseGitHubActionsAsync());
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterCommitInformationAsync(pending); }
             else { _commitInfoCloseReady = true; }
         };

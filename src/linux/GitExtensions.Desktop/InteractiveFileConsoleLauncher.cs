@@ -117,23 +117,7 @@ public static class InteractiveFileConsoleLauncher
 
     private static Process StartTerminal(string executable, IReadOnlyList<string> arguments, GitExecutionEnvironment environment)
     {
-        string? terminal = FindExecutable("gnome-terminal", environment) ?? FindExecutable("konsole", environment)
-            ?? FindExecutable("xterm", environment) ?? FindExecutable("x-terminal-emulator", environment);
-        if (terminal is null) { throw new FileNotFoundException("No supported terminal emulator is installed. Install gnome-terminal, konsole, xterm or x-terminal-emulator to use interactive Git."); }
-        ProcessStartInfo info = new(terminal) { UseShellExecute = false };
-        environment.ApplyTo(info);
-        string name = Path.GetFileName(terminal);
-        if (name == "gnome-terminal") { info.ArgumentList.Add("--wait"); info.ArgumentList.Add("--"); }
-        else
-        {
-            if (name == "konsole") { info.ArgumentList.Add("--nofork"); }
-            info.ArgumentList.Add("-e");
-        }
-        info.ArgumentList.Add(executable);
-        foreach (string argument in arguments) { info.ArgumentList.Add(argument); }
+        ProcessStartInfo info = ConsoleStyleTerminal.CreateStartInfo(executable, arguments, environment, waitForExit: true);
         return Process.Start(info) ?? throw new IOException("The interactive Git terminal could not be started.");
     }
-    private static string? FindExecutable(string name, GitExecutionEnvironment environment)
-        => (environment.GetVariable("PATH") ?? "").Split(Path.PathSeparator)
-            .Where(value => !string.IsNullOrEmpty(value)).Select(value => Path.Combine(value, name)).FirstOrDefault(File.Exists);
 }

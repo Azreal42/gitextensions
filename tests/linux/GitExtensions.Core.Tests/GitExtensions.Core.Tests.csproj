@@ -10,4 +10,11 @@
   <ItemGroup>
     <ProjectReference Include="../../../src/linux/GitExtensions.Core/GitExtensions.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Original Windows fixtures are executable serialization oracles, not copied expected output. -->
+    <EmbeddedResource Include="../../app/UnitTests/GitCommands.Tests/ExternalLinks/ExternalLinksStorageIntegrationTests.Can_save_settings.verified.xml" LogicalName="RevisionLinksWindows.golden.xml" />
+    <EmbeddedResource Include="../../app/UnitTests/GitCommands.Tests/ExternalLinks/MockData/level1_repogit_GitExtensions.settings.xml" LogicalName="RevisionLinksWindows.local.xml" />
+    <EmbeddedResource Include="../../app/UnitTests/GitCommands.Tests/ExternalLinks/MockData/level2_repodist_GitExtensions.settings.xml" LogicalName="RevisionLinksWindows.distributed.xml" />
+    <EmbeddedResource Include="../../app/UnitTests/GitCommands.Tests/ExternalLinks/MockData/level3_roaming_GitExtensions.settings.xml" LogicalName="RevisionLinksWindows.global.xml" />
+  </ItemGroup>
 </Project>

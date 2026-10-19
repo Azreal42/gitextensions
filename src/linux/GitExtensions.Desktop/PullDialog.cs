@@ -56,7 +56,7 @@ public sealed partial class PullDialog : RepositoryDialog
         Func<CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
         Func<Window, GitRepository, bool, CancellationToken, Task>? resolveConflictsAsync = null) : base(repository, "Pull")
     {
-        DesktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        ConsoleStylePresentation.Bind(_output);
         if (!PullPreferencesStore.IsToolbarAction(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         _initialAction = action;
         _initialRemote = remote; _initialBranch = branch;

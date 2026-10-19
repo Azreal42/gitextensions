@@ -64,6 +64,7 @@ public sealed partial class MainWindow : Window
         DetailedGraphSettings.Bind(_historyGraph);
         _desktopFonts.Apply(this, DesktopFontRole.Application);
         _desktopFonts.Apply(_output, DesktopFontRole.Monospace);
+        ConsoleStylePresentation.Bind(_output, defaultFont: _desktopFonts.For(DesktopFontRole.Monospace));
         Title = "Git Extensions";
         Width = 1280;
         Height = 840;
@@ -132,6 +133,7 @@ public sealed partial class MainWindow : Window
             RememberRevisionNavigation();
             RefreshRebaseMenu();
             RefreshRevisionContextMenu();
+            OnGitHubActionsSelectionChanged();
             if (!_refreshing) { UpdateHistoryPresentation(); }
             if (!_refreshing && _commits.SelectedItem is GitCommit commit)
             {
@@ -169,6 +171,7 @@ public sealed partial class MainWindow : Window
         };
         Content = BuildLayout();
         InitializeFileHistoryBrowse();
+        InitializeGitHubActions();
         _commits.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _workingRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _indexRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -408,6 +411,7 @@ public sealed partial class MainWindow : Window
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { AppendOutput($"Unable to save preferences: {exception.Message}"); }
             SetDashboardVisible(false);
             await RegisterBackgroundFetchAsync(candidate);
+            ScheduleGitHubActionsRepositoryChanged(candidate);
         }, refresh: false, requireRepository: false);
         if (_repository == previous && previous is null) { _state.Text = "Could not open repository. See command output."; }
     }
@@ -421,6 +425,7 @@ public sealed partial class MainWindow : Window
         var bookmark = editing?.CaptureEditorSelection();
         if (_dashboard?.IsVisible == true) { await RefreshDashboardAsync(); }
         else { await RunAsync("Refresh", repository => RefreshDataAsync(repository), refresh: false); }
+        ScheduleGitHubActionsRepositoryChanged(_repository);
         RestoreOperationFocus(historyFocus);
         if (!IsBranchFilterOwnerClosing && editing is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true } && bookmark is { } selection)
         { editing.RestoreEditorSelection(selection); }

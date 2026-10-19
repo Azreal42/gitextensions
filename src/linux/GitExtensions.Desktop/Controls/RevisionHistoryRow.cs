@@ -5,6 +5,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop.Localization;
 using GitExtensions.Linux.Plugins;
@@ -23,7 +25,17 @@ public static class RevisionHistoryRow
     {
         if (row is HistoryRow historyRow) { historyRow.ApplyPresentation(presentation); }
     }
+    internal static string? CommitHash(Control row) => (row as HistoryRow)?.CommitHash;
+    internal static void ApplyBuildStatus(Control row, GitHubActionsCommitStatus? status, bool showIcon, bool showText)
+    { if (row is HistoryRow historyRow) { historyRow.ApplyBuildStatus(status, showIcon, showText); } }
     private static TranslationCatalog? _translations;
+    private static readonly Dictionary<string, Bitmap> BuildImages = [];
+    private static Bitmap BuildImage(string name)
+    {
+        if (!BuildImages.TryGetValue(name, out Bitmap? image))
+        { using Stream stream = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/Icons/" + name)); BuildImages.Add(name, image = new Bitmap(stream)); }
+        return image;
+    }
 
     public static Control Create(GitCommit? commit, IReadOnlyList<GitReference> references, bool relativeDates = true)
     {
@@ -91,6 +103,51 @@ public static class RevisionHistoryRow
         public TextBlock? AuthorName { get; set; }
         private bool _dim;
         private TextBlock? _notes;
+        private TextBlock? _build;
+        private Image? _buildIcon;
+        private StackPanel? _buildCell;
+        private (GitHubActionsBuildStatus? Status, string Text, bool Icon, bool Label)? _buildPresentation;
+        private GitHubActionsCommitStatus? _buildStatus;
+        internal string? CommitHash => _commit?.Hash;
+
+        internal void ApplyBuildStatus(GitHubActionsCommitStatus? status, bool showIcon, bool showText)
+        {
+            _buildStatus = status;
+            if (_build is null && !showIcon && !showText) { return; }
+            (GitHubActionsBuildStatus? Status, string Text, bool Icon, bool Label) presentation = (status?.Status, status?.Text ?? "", showIcon, showText);
+            if (_buildPresentation == presentation) { return; } _buildPresentation = presentation;
+            if (_build is null)
+            {
+                // Keep notes at column4, even if CI is activated before Notes. Existing rows remain the same objects.
+                while (ColumnDefinitions.Count < 6) { ColumnDefinitions.Add(new ColumnDefinition(0, GridUnitType.Pixel)); }
+                _build = Cell("RevisionBuildStatus", "");
+                _buildIcon = new() { Name = "RevisionBuildStatusIcon", Width = 16, Height = 16, Stretch = Stretch.None, VerticalAlignment = VerticalAlignment.Center };
+                _buildCell = new() { Name = "RevisionBuildStatusCell", Orientation = Orientation.Horizontal, Spacing = 2, Children = { _buildIcon, _build } };
+                Grid.SetColumn(_buildCell, 5); Children.Add(_buildCell);
+            }
+            string icon = status?.Status switch
+            { GitHubActionsBuildStatus.Success => "StatusBadgeSuccess.png", GitHubActionsBuildStatus.Failure => "StatusBadgeError.png",
+              GitHubActionsBuildStatus.InProgress => "StatusBadgeWaiting.png", GitHubActionsBuildStatus.Stopped => "BisectStop.png", _ => "Warning.png" };
+            if (status is not null) { _buildIcon!.Source = BuildImage(icon); _buildIcon.Tag = icon; }
+            _buildIcon!.IsVisible = showIcon && status is not null;
+            _build.Text = showText ? status?.Text ?? "" : ""; _build.IsVisible = showText;
+            _buildCell!.IsVisible = showIcon || showText; ToolTip.SetTip(_buildCell, status?.Text);
+            ColumnDefinitions[5].Width = new GridLength(showText ? 150 : showIcon ? 16 : 0);
+            ApplyBuildColor();
+        }
+        private void ApplyBuildColor()
+        {
+            if (_build is null) { return; }
+            bool bright = _selected || ActualThemeVariant == ThemeVariant.Dark;
+            _build.Foreground = _buildStatus?.Status switch
+            {
+                GitHubActionsBuildStatus.Success => bright ? Brushes.LightGreen : Brushes.DarkGreen,
+                GitHubActionsBuildStatus.Failure => bright ? Brushes.OrangeRed : Brushes.DarkRed,
+                GitHubActionsBuildStatus.InProgress => bright ? Brushes.LightBlue : Brushes.Blue,
+                GitHubActionsBuildStatus.Unstable => Brushes.OrangeRed,
+                _ => bright ? Brushes.LightGray : Brushes.Gray
+            };
+        }
 
         public void ApplyPresentation(Presentation value)
         {
@@ -109,7 +166,7 @@ public static class RevisionHistoryRow
             ColumnDefinitions[3].Width = new GridLength(value.ShowId ? HashWidth() : 0);
             if (value.ShowNotesColumn && _notes is null)
             {
-                _notes = Cell("RevisionNotes", ""); ColumnDefinitions.Add(new ColumnDefinition(220, GridUnitType.Pixel));
+                _notes = Cell("RevisionNotes", ""); if (ColumnDefinitions.Count < 5) { ColumnDefinitions.Add(new ColumnDefinition(220, GridUnitType.Pixel)); }
                 Grid.SetColumn(_notes, 4); Children.Add(_notes); TextCells = [.. TextCells, _notes];
             }
             if (_notes is not null)
@@ -152,6 +209,7 @@ public static class RevisionHistoryRow
             foreach (MessageCell message in Children.OfType<MessageCell>())
             { message.Details.Foreground = _selected && _selectionFocused ? dark ? DarkText : Brushes.White : Brushes.Gray; }
             if (AuthorName is not null) { AuthorName.FontWeight = IsAuthored(_commit, _authoredEmail) ? FontWeight.Bold : _application.Weight; }
+            ApplyBuildColor();
         }
     }
 
