@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -68,7 +69,11 @@ public sealed partial class MainWindow
         _revisionScriptItems = ScriptMenuItems.ReplaceOwned(_revisionContext, _revisionScriptItems, scripts);
     }
     internal ScriptHostSelection CaptureScriptSelection(FileMenuSelection? files = null)
+        => CaptureScriptSelection(files, out _);
+
+    internal ScriptHostSelection CaptureScriptSelection(FileMenuSelection? files, out PixelPoint? selectorAnchor)
     {
+        selectorAnchor = null;
         GitCommit[] selected = _commits.SelectedItems?.OfType<GitCommit>().ToArray() ?? [];
         GitCompareRevision? latest = CurrentRelativeRevision();
         GitCommit? latestCommit = latest?.Kind == GitCompareRevisionKind.Commit
@@ -88,6 +93,8 @@ public sealed partial class MainWindow
                 _ => null
             };
         }
+        if (latestCommit is not null && _commits.Items.OfType<GitCommit>().FirstOrDefault(commit => commit.Hash == latestCommit.Hash) is { } anchored)
+        { selectorAnchor = QuickReferenceAnchor(anchored, scrollIntoView: false); }
         var viewer = files?.IsFileTree == true ? _fileContent?.TextView : _commitContent?.TextView;
         return new(true, latestCommit, selected, files,
             files is null ? null : viewer?.CurrentFileLine,

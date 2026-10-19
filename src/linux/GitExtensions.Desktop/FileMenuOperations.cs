@@ -57,12 +57,7 @@ internal sealed class FileMenuOperations
             case FileMenuCommand.SaveAs: await SaveAsync(selection); return;
             case FileMenuCommand.ResetToFirst:
             case FileMenuCommand.ResetToSecond: await ResetAsync(selection, command == FileMenuCommand.ResetToFirst); return;
-            case FileMenuCommand.RenameMove:
-                string path = selection.Folder ?? selection.Paths.Single();
-                if (path.Length == 0) { throw new InvalidOperationException(_translate("Select a file or folder first.")); }
-                string[]? name = await Dialogs.PromptAsync(Owner, _translate("Rename / move"), (_translate("New name"), path));
-                if (name is not null) { EnsureCurrent(selection); await RunAsync("Rename / move", selection, token => selection.Repository.MoveTrackedFileAsync(path, name[0], token), true); }
-                return;
+            case FileMenuCommand.RenameMove: await RenameMoveAsync(selection); return;
             case FileMenuCommand.StopTracking:
                 if (await Dialogs.ConfirmAsync(Owner, _translate("Stop tracking this file"), _translate("Stop tracking this file") + "?\n\n" + selection.Paths.Single()))
                 { EnsureCurrent(selection); await RunAsync("Stop tracking this file", selection, token => selection.Repository.StopTrackingFileAsync(selection.Paths.Single(), token), true); }
@@ -125,6 +120,53 @@ internal sealed class FileMenuOperations
         string executable = values[0];
         if (!Path.IsPathFullyQualified(executable) || !File.Exists(executable)) { throw new ArgumentException(_translate("Select an existing application executable.")); }
         return executable;
+    }
+    private async Task RenameMoveAsync(FileMenuSelection selection)
+    {
+        string path = selection.Folder ?? selection.Paths.Single();
+        if (path.Length == 0) { throw new InvalidOperationException(_translate("Select a file or folder first.")); }
+        string draft = path; bool attempted = false;
+        try
+        {
+            // Keep the captured selection stable across retries; refresh after the whole interaction drains.
+            await RunAsync("Rename / move", selection, async token =>
+            {
+                while (true)
+                {
+                    token.ThrowIfCancellationRequested(); EnsureCurrent(selection);
+                    Window owner = Owner;
+                    SimplePromptDialog prompt = new(_translate("Rename / move"), _translate("New name"), draft)
+                        { RequestedThemeVariant = owner.ActualThemeVariant };
+                    using CancellationTokenRegistration close = token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(prompt.Close));
+                    try
+                    {
+                        token.ThrowIfCancellationRequested(); await prompt.ShowDialog(owner); token.ThrowIfCancellationRequested();
+                        if (!prompt.WasAccepted) { return; }
+                        EnsureCurrent(selection); draft = prompt.UserInput;
+                    }
+                    finally { prompt.Close(); }
+                    if (string.IsNullOrWhiteSpace(draft) || draft == path) { continue; }
+                    try
+                    {
+                        attempted = true;
+                        await selection.Repository.MoveTrackedFileAsync(path, draft, token);
+                        return;
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception error)
+                    {
+                        token.ThrowIfCancellationRequested(); EnsureCurrent(selection);
+                        await Dialogs.ShowMessageAsync(owner, _translate("Error"), error.Message, false, token);
+                        token.ThrowIfCancellationRequested(); EnsureCurrent(selection);
+                    }
+                }
+            }, false);
+        }
+        finally
+        {
+            if (attempted && !_lifetime.IsCancellationRequested && _owner.IsVisible && _isCurrent(selection))
+            { await _run("Refresh after rename / move", _ => Task.CompletedTask, true); }
+        }
     }
     private async Task EditWorkingFileAsync(FileMenuSelection selection)
     {

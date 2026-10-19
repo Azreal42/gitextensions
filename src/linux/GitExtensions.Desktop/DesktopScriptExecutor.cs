@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.Input;
@@ -44,11 +45,13 @@ internal static class DesktopScriptExecutor
         CancellationToken cancellation = operation.Token;
         MainWindow? browse = BrowseOwner(owner);
         files ??= lifetime.Files?.Invoke();
-        ScriptHostSelection selection = browse?.CaptureScriptSelection(files) ?? new(Files: files);
+        PixelPoint? selectorAnchor = null;
+        ScriptHostSelection selection = browse is null ? new(Files: files) : browse.CaptureScriptSelection(files, out selectorAnchor);
         if (lifetime.Position is { } position)
         { var reading = position(); selection = selection with { LineNumber = reading.Line, ColumnNumber = reading.Column }; }
         CapturedScriptContext captured = await ScriptHostContext.CaptureAsync(repository, selection, cancellation);
-        ScriptPreparationResult prepared = await new ScriptPreparationDispatcher(owner, captured.Context, captured.References).PrepareAsync(script, cancellation);
+        ScriptPreparationResult prepared = await new ScriptPreparationDispatcher(owner, captured.Context, captured.References,
+            selectorPosition: selectorAnchor, selectorPlacement: selectorAnchor is PixelPoint anchor ? dialog => MainWindow.FitQuickSelectorLocation(owner, dialog, anchor) : null).PrepareAsync(script, cancellation);
         cancellation.ThrowIfCancellationRequested();
         if (prepared.Expansion.Status != ScriptExpansionStatus.Completed)
         {

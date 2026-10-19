@@ -15,7 +15,7 @@ internal sealed class QuickStringSelectorDialog : QuickItemSelectorDialog<string
     private static QuickSelectorDefinition<string> Define(IReadOnlyList<string> values, TranslationCatalog translations)
     {
         ArgumentNullException.ThrowIfNull(values);
-        return new("QuickStringSelectorDialog", translations.Translate("FormQuickStringSelector", "_actionSelect", "Text", "Select"),
+        return new("QuickStringSelectorDialog", translations.Translate("FormQuickGitRefSelector", "_actionSelect", "Text", "Select"),
             "QuickStringsFrame", values.OrderBy(value => value).ToArray(), value => value, 0);
     }
 }

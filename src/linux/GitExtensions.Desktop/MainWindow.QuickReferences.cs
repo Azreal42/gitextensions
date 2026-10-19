@@ -80,15 +80,23 @@ public sealed partial class MainWindow
     }
 
     private PixelPoint QuickReferenceLocation(Window dialog, GitCommit commit)
+        => FitQuickSelectorLocation(this, dialog, QuickReferenceAnchor(commit));
+
+    private PixelPoint QuickReferenceAnchor(GitCommit commit, bool scrollIntoView = true)
     {
-        _commits.ScrollIntoView(commit);
+        if (scrollIntoView) { _commits.ScrollIntoView(commit); }
         _commits.UpdateLayout();
         Control edge = _historyGraph.IsEffectivelyVisible ? _historyGraph : _commits;
         Point bottom = _commits.ContainerFromIndex(_commits.Items.IndexOf(commit)) is Control row
             ? row.TranslatePoint(new Point(0, row.Bounds.Height), edge) ?? default : default;
         PixelPoint location = edge.PointToScreen(new Point(edge == _historyGraph ? edge.Bounds.Width : 0, bottom.Y));
-        // Keep the Windows graph-cell anchor while fitting native work areas.
-        if (Screens.ScreenFromPoint(location) is { WorkingArea: var area } screen)
+        return location;
+    }
+
+    internal static PixelPoint FitQuickSelectorLocation(Window owner, Window dialog, PixelPoint location)
+    {
+        // Shared by reference actions and script selectors; no second screen-fitting algorithm.
+        if (owner.Screens.ScreenFromPoint(location) is { WorkingArea: var area } screen)
         {
             int width = (int)Math.Ceiling(dialog.Width * screen.Scaling), height = (int)Math.Ceiling(dialog.Height * screen.Scaling);
             location = new(Math.Clamp(location.X, area.X, Math.Max(area.X, area.Right - width)),

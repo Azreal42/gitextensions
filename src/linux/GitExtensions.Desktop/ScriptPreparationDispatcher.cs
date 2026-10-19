@@ -24,15 +24,16 @@ internal sealed class ScriptPreparationDispatcher
     private readonly TranslationCatalog? _translations;
     private readonly Func<string, CancellationToken, Task<IReadOnlyList<string>>>? _browseFiles;
     private readonly PixelPoint? _selectorPosition;
+    private readonly Func<Window, PixelPoint>? _selectorPlacement;
     private int _preparing;
 
     internal ScriptPreparationDispatcher(Window owner, ScriptContext context, ScriptReferenceMetadata references,
         TranslationCatalog? translations = null, Func<string, CancellationToken, Task<IReadOnlyList<string>>>? browseFiles = null,
-        PixelPoint? selectorPosition = null)
+        PixelPoint? selectorPosition = null, Func<Window, PixelPoint>? selectorPlacement = null)
     {
         ArgumentNullException.ThrowIfNull(owner); ArgumentNullException.ThrowIfNull(context); ArgumentNullException.ThrowIfNull(references);
         _owner = owner; _context = context.Snapshot(); _references = references.Snapshot();
-        _translations = translations; _browseFiles = browseFiles; _selectorPosition = selectorPosition;
+        _translations = translations; _browseFiles = browseFiles; _selectorPosition = selectorPosition; _selectorPlacement = selectorPlacement;
     }
 
     internal async Task<ScriptPreparationResult> PrepareAsync(ScriptDefinition script, CancellationToken cancellationToken = default)
@@ -157,12 +158,27 @@ internal sealed class ScriptPreparationDispatcher
                 default: throw new ArgumentOutOfRangeException(nameof(request));
             }
             dialog.RequestedThemeVariant = _host._owner.ActualThemeVariant;
-            if (dialog is QuickStringSelectorDialog or QuickGitRefSelectorDialog)
-            {
-                dialog.Position = _host._selectorPosition ?? _host._owner.PointToScreen(new Point(12, 32));
-            }
             _active = dialog;
-            try { token.ThrowIfCancellationRequested(); await dialog.ShowDialog(_host._owner); }
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                if (dialog is QuickStringSelectorDialog or QuickGitRefSelectorDialog)
+                {
+                    bool Current() => !token.IsCancellationRequested && !_lifetime.IsCancellationRequested
+                        && _host._owner.IsVisible && ReferenceEquals(_active, dialog);
+                    if (!Current()) { throw new OperationCanceledException(token); }
+                    PixelPoint initial = dialog.Position = _host._selectorPosition ?? _host._owner.PointToScreen(new Point(12, 32));
+                    if (_host._selectorPlacement is { } placement)
+                    {
+                        dialog.Opened += (_, _) =>
+                        {
+                            // Apply the actual mapped size once. Never chase a later user move or resize.
+                            if (Current() && dialog.IsVisible && dialog.Position == initial) { dialog.Position = placement(dialog); }
+                        };
+                    }
+                }
+                token.ThrowIfCancellationRequested(); await dialog.ShowDialog(_host._owner);
+            }
             finally
             {
                 dialog.Close();
