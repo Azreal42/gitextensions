@@ -304,8 +304,8 @@ public sealed class JenkinsSettingsPageTests
     private static void Edit(Window window, string name, string text)
     {
         TextBox box = Child<TextBox>(window, name); PushProcessTestDriver.Pointer(box);
-        window.KeyPressQwerty(PhysicalKey.A, Avalonia.Input.Raw.RawInputModifiers.Control); window.KeyReleaseQwerty(PhysicalKey.A, Avalonia.Input.Raw.RawInputModifiers.Control);
-        window.KeyPressQwerty(PhysicalKey.Backspace); window.KeyReleaseQwerty(PhysicalKey.Backspace); window.KeyTextInput(text); DetailedSettingsUiHost.Pump(window);
+        window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control); window.KeyReleaseQwerty(PhysicalKey.A, RawInputModifiers.Control);
+        window.KeyPressQwerty(PhysicalKey.Backspace, RawInputModifiers.None); window.KeyReleaseQwerty(PhysicalKey.Backspace, RawInputModifiers.None); window.KeyTextInput(text); DetailedSettingsUiHost.Pump(window);
         Assert.That(box.Text, Is.EqualTo(text));
     }
 
