@@ -1,0 +1,9 @@
+# ADR 0107 · Contributeurs et console Linux
+
+Décision : réutiliser les crédits Windows et adapter les trois réglages Console aux consommateurs Linux réels. Qualification ciblée acceptée ; [périmètre](../../../todo.md#contributeurs-console-liens-et-github-actions--validation-ciblée).
+
+`ContributorsCatalog` lit les quatre valeurs Team/Coders/Translators/Designers du `Resources.resx` Windows lié comme XML brut ; aucune liste manuelle. `ContributorsDialog` conserve trois onglets, 624×442, texte sélectionnable en lecture seule et traductions communes, depuis About. N3 fonctionnel ciblé, suites et parcours X11 anglais/clair acceptés ; aucune parité totale certifiée.
+
+`ConsoleStyleSettingsPage/Session` prépare terminal, palette et fonte ; Apply sauvegarde le profil XDG puis publie, Cancel abandonne le brouillon. No-op conserve les octets et clés inconnues ; les seuls champs modifiés fusionnent avec le profil courant, sans transaction interprocessus. `ConsoleStylePresentation` suit le profil et l’attachement des sorties raccordées, préserve texte/focus/sélection ; reset réutilise Monospace de session ([ADR0091](../../preferences/fonts/0091-fonts-and-eol.md)).
+
+`ConsoleStyleTerminal` choisit GNOME Terminal, Konsole, XTerm ou x-terminal-emulator installé et transmet des arguments littéraux ; un choix explicite indisponible échoue. Palettes/fontes personnalisent la sortie intégrée ; les terminaux externes gardent leurs profils. ConEmu et ses thèmes ne sont pas simulés. Page N2 ; protocole interactif possédé conservé ([ADR0080](../0080-shared-file-menus.md)). La palette dispose les anciens bindings Default et lie le fond du Border de template ; tests du pixel peint, navigation/réattachement/survol/focus et parcours X11 avec redémarrage vérifiés. Code/tests : `ContributorsDialogTests`, `ConsoleStyleSettingsTests`.

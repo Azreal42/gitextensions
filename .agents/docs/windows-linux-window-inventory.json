@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-  "source_digest_sha256": "4f670adf7b083abe34607241f1f385666cdea8f36519dda4e18680c51e21daa4",
-  "scanned_csharp_files": 2249,
+  "code_reference_commit": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+  "source_digest_sha256": "f15c7ff8813d801cebe6614557df044418909210ac9124bd5027bbc58d73f504",
+  "scanned_csharp_files": 2284,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,21 +26,21 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 92,
+    "linux_window_types": 93,
     "linux_abstract_bases": 3,
     "linux_dynamic_factories": 34,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N0": 5,
+      "N0": 4,
       "N1": 13,
       "N2": 31,
-      "N3": 49,
+      "N3": 50,
       "NA": 1
     },
     "settings_levels": {
-      "N0": 9,
+      "N0": 5,
       "N1": 6,
-      "N2": 16,
+      "N2": 20,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -50,59 +50,55 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/detailed-settings-20261019/desktop-full-02/results/desktop.trx",
-    "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-    "trx_sha256": "4baea60df50f0cac04c087df7d21f99bdaa0480e9e18fb96eb99ca750c5bb767",
+    "trx": "artifacts/linux/remaining-windows-20261019/desktop-full-03/results/desktop.trx",
+    "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+    "trx_sha256": "d803397187c9b9d52a8506720d1dd9ec33021ceaf259513c740b070f90c5aef9",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-        "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+        "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
         "execution_source_sha": null,
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
-        "passed": 787,
-        "total": 787,
-        "execution_result": "artifacts/linux/detailed-settings-20261019/core-full-03/core-result.json",
-        "execution_result_sha256": "535a9420192a0012469b623e3bb304dcec88d097f8d3779974dcf99da52c75f4",
+        "passed": 820,
+        "total": 820,
+        "execution_result": "artifacts/linux/remaining-windows-20261019/core-full-03/core-result.json",
+        "execution_result_sha256": "1a1f8fac380d690ad81c4ccbae305ce57601ef7cd2bc820341b7df6c97363fa9",
         "execution_exit_code": 0,
-        "build_result": "artifacts/linux/detailed-settings-20261019/core-03/build-result.json",
-        "build_result_sha256": "ed3f4d3a40f42d95408edd6e19d10d726bbb061d55cc6aa1fa6680180ab81ac4",
-        "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
-        "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
-        "source_equivalence": {
-          "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
-          "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+        "parent_verification": {
+          "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
+          "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
         },
-        "build_exit_code": 0
+        "source_equivalence": {
+          "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
+          "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
+        }
       },
       "plugins": {
-        "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-        "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+        "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
         "execution_source_sha": null,
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/detailed-settings-20261019/plugins-full-02/plugins-result.json",
-        "execution_result_sha256": "dbee7b211f6ff38dc25f79c5ec7e59ade4dd7d322b88c6e8751d2817648c9293",
+        "execution_result": "artifacts/linux/remaining-windows-20261019/plugins-full-02/plugins-result.json",
+        "execution_result_sha256": "ff5ba4184ac2b8f434877db4f13cfe4dec878b1a485c6d56e0ce49037f605fb6",
         "execution_exit_code": 0,
-        "build_result": "artifacts/linux/detailed-settings-20261019/plugins-build-01/build-result.json",
-        "build_result_sha256": "a7d34b1514a8397c5c8fe20ba7d9ec323ca9e8760b603935e6059aaf23ee7001",
-        "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
-        "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
-        "source_equivalence": {
-          "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
-          "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+        "parent_verification": {
+          "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
+          "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
         },
-        "build_exit_code": 0
+        "source_equivalence": {
+          "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
+          "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
+        }
       }
     },
-    "current_linux_code_equivalent": true,
+    "current_linux_code_equivalent": false,
     "meaning": "Tests de la source de référence seulement ; un test associé ne certifie pas tous les comportements de sa fenêtre. Le générateur n’exécute pas les tests applicatifs ; leurs exécutions de référence sont explicites."
   },
   "screens": [
@@ -468,13 +464,98 @@
       "category": "settings",
       "feature": "Paramètres CI : GitHub Actions",
       "group": "ci-settings",
-      "level": "N0",
-      "implemented": "Pas de fournisseur GitHub Actions porté.",
-      "remaining": "Page de paramètres, authentification et fournisseur CI à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Champs API URL, owner, repository et token masqué dans Build server integration ; détection remote sans écriture, lecture anonyme ou token explicite. Clés BuildServer.GitHub Actions conservées ; GET paginés/ETag/cache borné, états par SHA et accès explicite à une page de run du site configuré.",
+      "remaining": "Build report liste les runs puis ouvre explicitement la page GitHub dans le navigateur externe ; pas de viewer HTML embarqué équivalent Windows. N2 : token stocké dans le fichier de la portée choisie, sans coffre ni dialogue générique de credentials. Pas de PR, jobs/logs détaillés ni mutation de workflow. Lecture anonyme du client compilé sur Azreal42/gitextensions vérifiée (GET200 puis ETag304) ; interface live authentifiée/Enterprise et parité étendue restent ouvertes.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core Actions (source, suite complète acceptée)",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubActionsScenarios.cs",
+          "line": 7,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
+          "label": "BuildServerIntegrationSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
+          "line": 120,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
+          "label": "GitHubActionsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsSession.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsPage",
+          "label": "GitHubActionsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
+          "line": 105,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DistributedSettingsWorkspace",
+          "label": "DistributedSettingsWorkspace",
+          "source": "src/linux/GitExtensions.Desktop/DistributedSettingsWorkspace.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.GitHubActions.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubActionsApiClient",
+          "label": "GitHubActionsApiClient",
+          "source": "src/linux/GitExtensions.Core/GitHubActionsApiClient.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubActionsSettings",
+          "label": "GitHubActionsSettings",
+          "source": "src/linux/GitExtensions.Core/GitHubActionsSettings.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubActionsRunSnapshot",
+          "label": "GitHubActionsRunSnapshot",
+          "source": "src/linux/GitExtensions.Core/GitHubActionsWorkflowRun.cs",
+          "line": 52,
+          "kind": "component"
+        },
+        {
+          "label": "GitRepository.GitHubActions.cs",
+          "source": "src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DistributedSettingsWorkspaceTests.cs",
+          "test_class": "DistributedSettingsWorkspaceTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubActionsDesktopTests.cs",
+          "test_class": "GitHubActionsDesktopTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/ci/0109-github-actions.md"
+      ]
     },
     {
       "id": "GitExtensions.Plugins.GitImpact.FormImpact",
@@ -819,13 +900,50 @@
       "category": "windows",
       "feature": "Liste des contributeurs",
       "group": "information",
-      "level": "N0",
-      "implemented": "Pas de fenêtre/listing dédié équivalent.",
-      "remaining": "Liste, crédits et interface de contributions à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N3",
+      "implemented": "Fenêtre 624×442 depuis About, trois onglets Developers/Translators/Designers ; textes Windows Team/Coders/Translators/Designers liés à la ressource originale, lecture seule sélectionnable, traductions et fermeture possédée.",
+      "remaining": "N3 fonctionnel ciblé : suites acceptées et parcours anglais/clair/X11 depuis About, trois onglets et retour Escape vérifiés. Audit natif étendu, Wayland/IME/DPI/accessibilité et parité totale ouverts.",
+      "visual": "rapproche",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.ContributorsDialog",
+          "label": "ContributorsDialog",
+          "source": "src/linux/GitExtensions.Desktop/ContributorsDialog.cs",
+          "line": 12,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ContributorsCatalog",
+          "label": "ContributorsCatalog",
+          "source": "src/linux/GitExtensions.Desktop/ContributorsCatalog.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopInformationWindow",
+          "label": "DesktopInformationWindow",
+          "source": "src/linux/GitExtensions.Desktop/DesktopInformationWindow.cs",
+          "line": 8,
+          "kind": "window"
+        },
+        {
+          "label": "MainWindow.ToolsHelp.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ContributorsDialogTests.cs",
+          "test_class": "ContributorsDialogTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/ui/dialogs/0107-contributors-and-console-style.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.BrowseDialog.DashboardControl.FormDashboardCategoryTitle",
@@ -1216,7 +1334,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 365,
+          "line": 368,
           "kind": "window"
         },
         {
@@ -1516,8 +1634,8 @@
       "feature": "À propos",
       "group": "information",
       "level": "N2",
-      "implemented": "Version réelle, OS/runtime et informations du fork.",
-      "remaining": "Présentation et panneaux/liens originaux non intégralement reproduits.",
+      "implemented": "Version réelle et informations du fork ; bouton Contributors ouvrant la fenêtre possédée à trois onglets depuis les crédits Windows partagés (ADR0107).",
+      "remaining": "Présentation, autres panneaux/liens originaux et audit natif étendu non intégralement reproduits ; le raccord Contributors ne certifie pas la parité globale de About.",
       "visual": "adapte",
       "linux": [
         {
@@ -1534,10 +1652,17 @@
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ContributorsDialogTests.cs",
+          "test_class": "ContributorsDialogTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/ui/0060-shared-classic-menus.md"
+        ".agents/docs/adr/ui/0060-shared-classic-menus.md",
+        ".agents/docs/adr/ui/dialogs/0107-contributors-and-console-style.md"
       ]
     },
     {
@@ -1972,7 +2097,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitInformationView",
           "label": "CommitInformationView",
           "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
-          "line": 20,
+          "line": 21,
           "kind": "component"
         },
         {
@@ -2126,8 +2251,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100).",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, Markdown, mailto) encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions partage les réglages scoped avec Settings, états par SHA dans la grille, liste de runs et Show build page externe ; autres fournisseurs et parité du rapport Windows ouverts (ADR0109).",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2158,7 +2283,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitInformationView",
           "label": "CommitInformationView",
           "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
-          "line": 20,
+          "line": 21,
           "kind": "component"
         },
         {
@@ -2368,6 +2493,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubActionsDesktopTests.cs",
+          "test_class": "GitHubActionsDesktopTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistoryMenuParityTests.cs",
           "test_class": "HistoryMenuParityTests",
           "passed_in_reference_run": 7,
@@ -2416,6 +2547,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionLinksControllerTests.cs",
+          "test_class": "RevisionLinksControllerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionQuickSearchTests.cs",
           "test_class": "RevisionQuickSearchTests",
           "passed_in_reference_run": 42,
@@ -2455,7 +2592,9 @@
         ".agents/docs/adr/ui/history/0088-parent-child-navigation.md",
         ".agents/docs/adr/preferences/hotkeys/0089-configurable-hotkeys.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/preferences/revision-links/0108-revision-links.md",
+        ".agents/docs/adr/extensions/ci/0109-github-actions.md"
       ]
     },
     {
@@ -4265,7 +4404,7 @@
           "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
           "label": "NativeRebaseEditorWindow",
           "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 49,
+          "line": 50,
           "kind": "window"
         }
       ],
@@ -4350,7 +4489,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitInformationView",
           "label": "CommitInformationView",
           "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
-          "line": 20,
+          "line": 21,
           "kind": "component"
         },
         {
@@ -5369,7 +5508,7 @@
           "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
           "label": "NativeRebaseEditorWindow",
           "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 49,
+          "line": 50,
           "kind": "window"
         }
       ],
@@ -5859,8 +5998,8 @@
       "feature": "Paramètres de l’application",
       "group": "settings",
       "level": "N2",
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page.",
-      "remaining": "N2 : pages Windows absentes, Plugins/CI et sources Global/Local/distribuées de toutes les pages encore ouverts. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109.",
+      "remaining": "N2 : pages Windows absentes, autres fournisseurs CI et pages Plugins manquantes ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "linux": [
         {
@@ -5984,6 +6123,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConsoleStyleSettingsTests.cs",
+          "test_class": "ConsoleStyleSettingsTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
           "test_class": "DetailedSettingsPageTests",
           "passed_in_reference_run": 23,
@@ -6068,6 +6213,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubActionsDesktopTests.cs",
+          "test_class": "GitHubActionsDesktopTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
@@ -6122,6 +6273,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionLinksSettingsPageTests.cs",
+          "test_class": "RevisionLinksSettingsPageTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
           "test_class": "ScriptsSettingsPageTests",
           "passed_in_reference_run": 15,
@@ -6148,7 +6305,10 @@
         ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
         ".agents/docs/adr/platform/rendering/0092-skia-stream-lifetime.md",
         ".agents/docs/adr/preferences/environment/0095-git-environment-and-checklist.md",
-        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
+        ".agents/docs/adr/ui/dialogs/0107-contributors-and-console-style.md",
+        ".agents/docs/adr/preferences/revision-links/0108-revision-links.md",
+        ".agents/docs/adr/extensions/ci/0109-github-actions.md"
       ]
     },
     {
@@ -7420,7 +7580,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyRepositoryBranchVisibilityAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Repositories.cs",
-          "line": 227,
+          "line": 228,
           "kind": "window"
         },
         {
@@ -7448,7 +7608,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyTheme",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 565,
+          "line": 559,
           "kind": "window"
         },
         {
@@ -7892,13 +8052,99 @@
       "category": "settings",
       "feature": "Configuration CI",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Commandes CI désactivées dans la grille.",
-      "remaining": "Providers, paramètres et états de build à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Page CI : Enable integration, Show build result page, fournisseur GitHub Actions et champs API/owner/repository/token dans les scopes XML Windows. Lecture GET de runs, états regroupés par SHA dans la grille, liste locale de runs et Show build page explicite dans le navigateur externe ; publication après Apply, polling annulable et fermeture drainée.",
+      "remaining": "Build report limité à une liste de runs, sans viewer HTML/détails jobs/logs équivalents Windows. GitHub Actions seul ; dialogue générique de credentials, TeamCity et autres fournisseurs CI absents. Aucun lancement/annulation de workflow ou gestion PR ; qualification HTTP contrôlée, natif et paquet distincts. N2, aucune parité globale. Lecture anonyme du client compilé sur Azreal42/gitextensions vérifiée (GET200 puis ETag304) ; interface live authentifiée/Enterprise et parité étendue restent ouvertes.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core Actions (source, suite complète acceptée)",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubActionsScenarios.cs",
+          "line": 7,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.BuildServerIntegrationSettingsPage",
+          "label": "BuildServerIntegrationSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
+          "line": 120,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsSession",
+          "label": "GitHubActionsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsSession.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitHubActionsSettingsPage",
+          "label": "GitHubActionsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/GitHubActionsSettingsPage.cs",
+          "line": 105,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DistributedSettingsWorkspace",
+          "label": "DistributedSettingsWorkspace",
+          "source": "src/linux/GitExtensions.Desktop/DistributedSettingsWorkspace.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.GitHubActions.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubActionsApiClient",
+          "label": "GitHubActionsApiClient",
+          "source": "src/linux/GitExtensions.Core/GitHubActionsApiClient.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubActionsSettings",
+          "label": "GitHubActionsSettings",
+          "source": "src/linux/GitExtensions.Core/GitHubActionsSettings.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubActionsRunSnapshot",
+          "label": "GitHubActionsRunSnapshot",
+          "source": "src/linux/GitExtensions.Core/GitHubActionsWorkflowRun.cs",
+          "line": 52,
+          "kind": "component"
+        },
+        {
+          "label": "GitRepository.GitHubActions.cs",
+          "source": "src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DistributedSettingsWorkspaceTests.cs",
+          "test_class": "DistributedSettingsWorkspaceTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubActionsDesktopTests.cs",
+          "test_class": "GitHubActionsDesktopTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/extensions/ci/0109-github-actions.md",
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ChecklistSettingsPage",
@@ -7973,7 +8219,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 154,
+          "line": 159,
           "kind": "window"
         }
       ],
@@ -8482,13 +8728,86 @@
       "category": "settings",
       "feature": "Style de la console",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Console de processus et journal disponibles.",
-      "remaining": "Page de style et émulateurs de console Windows non portés.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Brouillon Apply/Cancel : terminal Linux installé ou Automatic, palettes Default/Light/Dark et fonte optionnelle via le picker partagé. Publication par profil vers les sorties Git raccordées sans remplacer texte/focus/sélection ; reset sur Monospace. Choix du terminal consommé par les commandes interactives et le terminal du dépôt.",
+      "remaining": "N2 : palette réellement peinte vérifiée après navigation/réattachement/survol/focus, Apply/Cancel et redémarrage. Adaptation Linux sans ConEmu ; les terminaux externes gardent leurs propres couleurs/fontes. Ouverture réelle de tous les terminaux, variantes natives et audit étendu ouverts.",
+      "visual": "adapte",
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.ConsoleStyleSettingsPage",
+          "label": "ConsoleStyleSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ConsoleStyleSettingsPage.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConsoleStyleSettingsSession",
+          "label": "ConsoleStyleSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ConsoleStyleSettingsSession.cs",
+          "line": 5,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConsoleStylePreferencesStore",
+          "label": "ConsoleStylePreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/ConsoleStylePreferences.cs",
+          "line": 22,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConsoleStylePresentation",
+          "label": "ConsoleStylePresentation",
+          "source": "src/linux/GitExtensions.Desktop/ConsoleStylePresentation.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConsoleStyleTerminal",
+          "label": "ConsoleStyleTerminal",
+          "source": "src/linux/GitExtensions.Desktop/ConsoleStyleTerminal.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FontPickerDialog",
+          "label": "FontPickerDialog",
+          "source": "src/linux/GitExtensions.Desktop/FontPickerDialog.cs",
+          "line": 12,
+          "kind": "window"
+        },
+        {
+          "label": "ConsoleStylePreferences.cs",
+          "source": "src/linux/GitExtensions.Desktop/ConsoleStylePreferences.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.InteractiveFileConsoleLauncher",
+          "label": "InteractiveFileConsoleLauncher",
+          "source": "src/linux/GitExtensions.Desktop/InteractiveFileConsoleLauncher.cs",
+          "line": 14,
+          "kind": "component"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConsoleStyleSettingsTests.cs",
+          "test_class": "ConsoleStyleSettingsTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/ui/dialogs/0107-contributors-and-console-style.md",
+        ".agents/docs/adr/preferences/fonts/0091-fonts-and-eol.md",
+        ".agents/docs/adr/ui/0080-shared-file-menus.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.DetailedSettingsPage",
@@ -10215,7 +10534,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 154,
+          "line": 159,
           "kind": "window"
         }
       ],
@@ -10622,13 +10941,118 @@
       "category": "settings",
       "feature": "Liens des révisions",
       "group": "settings-pages",
-      "level": "N0",
-      "implemented": "Pas de page correspondante.",
-      "remaining": "Configuration, expressions et activation des liens de révision à porter.",
-      "visual": "absent",
-      "linux": [],
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "implemented": "Catégories, regex remote/révision et formats Caption/URI, modèles GitHub/Azure DevOps ; XML RevisionLinkDefs commun aux scopes, Effective agrège Local→Distributed→Global. Brouillons, Apply/Cancel et baseline acquittée partagée avec Detailed/CI ; Related links dans CommitInformationView, rafraîchissement ciblé et activation explicite.",
+      "remaining": "N2 : matching Desktop borné à 250 ms, diagnostics séparés et annulation/générations drainées ; audit natif étendu de tous les hôtes et de l’activation des liens encore ouvert. Les modèles de liens ne constituent ni une interface PR ni un fournisseur CI.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core des règles Windows (source, suite complète acceptée)",
+          "source": "tests/linux/GitExtensions.Core.Tests/RevisionLinksScenarios.cs",
+          "line": 9,
+          "kind": "source"
+        }
+      ],
+      "linux": [
+        {
+          "id": "GitExtensions.Linux.Desktop.RevisionLinksSettingsPage",
+          "label": "RevisionLinksSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/RevisionLinksSettingsPage.cs",
+          "line": 14,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.RevisionLinksSettingsSession",
+          "label": "RevisionLinksSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/RevisionLinksSettingsSession.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.RevisionLinksController",
+          "label": "RevisionLinksController",
+          "source": "src/linux/GitExtensions.Desktop/RevisionLinksController.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommitInformationView",
+          "label": "CommitInformationView",
+          "source": "src/linux/GitExtensions.Desktop/CommitInformationView.cs",
+          "line": 21,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRevisionLinkSettings",
+          "label": "GitRevisionLinkSettings",
+          "source": "src/linux/GitExtensions.Core/GitRevisionLinkSettings.cs",
+          "line": 79,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRevisionLinkParser",
+          "label": "GitRevisionLinkParser",
+          "source": "src/linux/GitExtensions.Core/GitRevisionLinkParser.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitRevisionLinkTemplates",
+          "label": "GitRevisionLinkTemplates",
+          "source": "src/linux/GitExtensions.Core/GitRevisionLinkTemplates.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DistributedSettingsWorkspace",
+          "label": "DistributedSettingsWorkspace",
+          "source": "src/linux/GitExtensions.Desktop/DistributedSettingsWorkspace.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "GitRevisionLinkContext.cs",
+          "source": "src/linux/GitExtensions.Core/GitRevisionLinkContext.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "GitRepository.RevisionLinks.cs",
+          "source": "src/linux/GitExtensions.Core/GitRepository.RevisionLinks.cs",
+          "line": 1,
+          "kind": "source"
+        }
+      ],
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DistributedSettingsWorkspaceTests.cs",
+          "test_class": "DistributedSettingsWorkspaceTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionLinksControllerTests.cs",
+          "test_class": "RevisionLinksControllerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionLinksSettingsPageTests.cs",
+          "test_class": "RevisionLinksSettingsPageTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionLinksSettingsSessionTests.cs",
+          "test_class": "RevisionLinksSettingsSessionTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/revision-links/0108-revision-links.md",
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ScriptsSettingsPage",
@@ -12687,8 +13111,8 @@
       "feature": "Identifiants du serveur CI",
       "group": "hosting",
       "level": "N0",
-      "implemented": "Pas de fournisseur CI porté ni de dialogue de credentials CI.",
-      "remaining": "Dialogue et cycle d’authentification des fournisseurs à porter ; askpass Git ne le remplace pas.",
+      "implemented": "Jeton spécifique GitHub Actions dans la page du fournisseur ; aucun dialogue générique de credentials CI équivalent.",
+      "remaining": "Dialogue générique anonymous/username-password/bearer et cycle d’authentification des fournisseurs à porter ; le token Actions et askpass Git ne le remplacent pas.",
       "visual": "absent",
       "linux": [],
       "tests": [],
@@ -14856,6 +15280,30 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.ContributorsDialog",
+      "name": "ContributorsDialog",
+      "source": "src/linux/GitExtensions.Desktop/ContributorsDialog.cs",
+      "line": 12,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/ContributorsDialog.cs",
+          "line": 12
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.AboutBoxDialog.FormContributors",
+          "name": "FormContributors",
+          "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.CreateBranchDialog",
       "name": "CreateBranchDialog",
       "source": "src/linux/GitExtensions.Desktop/CreateBranchDialog.cs",
@@ -15049,6 +15497,11 @@
       ],
       "abstract": false,
       "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.AboutBoxDialog.FormContributors",
+          "name": "FormContributors",
+          "level": "N3"
+        },
         {
           "id": "GitUI.CommandsDialogs.BrowseDialog.FormChangeLog",
           "name": "FormChangeLog",
@@ -15329,6 +15782,11 @@
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
           "name": "AppearanceFontsSettingsPage",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ConsoleStyleSettingsPage",
+          "name": "ConsoleStyleSettingsPage",
           "level": "N2"
         }
       ],
@@ -15714,6 +16172,10 @@
           "line": 5
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
+          "line": 16
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Grep.cs",
           "line": 9
         },
@@ -16058,11 +16520,11 @@
       "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
       "name": "NativeRebaseEditorWindow",
       "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-      "line": 49,
+      "line": 50,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 49
+          "line": 50
         }
       ],
       "bases": [
@@ -21349,7 +21811,28 @@
       "kind": "control/resource"
     }
   ],
-  "checkout_changes": [],
+  "checkout_changes": [
+    {
+      "source": "src/linux/GitExtensions.Desktop/App.cs",
+      "status": "tracked change"
+    },
+    {
+      "source": "src/linux/GitExtensions.Desktop/AskpassApplication.cs",
+      "status": "tracked change"
+    },
+    {
+      "source": "src/linux/GitExtensions.Desktop/ModalWindowActivation.cs",
+      "status": "tracked change"
+    },
+    {
+      "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
+      "status": "tracked change"
+    },
+    {
+      "source": "tests/linux/GitExtensions.Desktop.Tests/ModalWindowActivationTests.cs",
+      "status": "untracked"
+    }
+  ],
   "installer_dialogs": [
     {
       "id": "BrowseDlg",
@@ -21595,10 +22078,9 @@
       "N1": 1
     },
     "information": {
-      "N0": 1,
       "N1": 5,
       "N2": 2,
-      "N3": 1
+      "N3": 2
     },
     "platform": {
       "N2": 1,
@@ -21611,13 +22093,13 @@
       "N3": 5
     },
     "settings-pages": {
-      "N0": 3,
       "N1": 6,
-      "N2": 16,
+      "N2": 19,
       "NA": 1
     },
     "ci-settings": {
-      "N0": 6
+      "N0": 5,
+      "N2": 1
     }
   }
 }

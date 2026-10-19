@@ -105,8 +105,8 @@
         "AvatarService",
         "MainWindow@InitializeAvatarLifetime"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100).",
-      "remaining": "Browse reste N2 : menus secondaires, CI/superproject ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Compléments CommitInfo (liens associés, Markdown, mailto) encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions partage les réglages scoped avec Settings, états par SHA dans la grille, liste de runs et Show build page externe ; autres fournisseurs et parité du rapport Windows ouverts (ADR0109).",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 et fournisseurs CI autres que GitHub Actions ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -146,7 +146,9 @@
         "RevisionAvatarRenderingTests",
         "AvatarCommitInfoTests",
         "AvatarActivationTests",
-        "AvatarSettingsConsumerTests"
+        "AvatarSettingsConsumerTests",
+        "RevisionLinksControllerTests",
+        "GitHubActionsDesktopTests"
       ],
       "adr": [
         "0031",
@@ -169,7 +171,9 @@
         "0088",
         "0089",
         "0057",
-        "0078"
+        "0078",
+        "0108",
+        "0109"
       ],
       "extra_evidence": [
         {
@@ -1896,8 +1900,8 @@
         "GitHomeDirectoryDialog",
         "SettingsNavigationView"
       ],
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page.",
-      "remaining": "N2 : pages Windows absentes, Plugins/CI et sources Global/Local/distribuées de toutes les pages encore ouverts. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109.",
+      "remaining": "N2 : pages Windows absentes, autres fournisseurs CI et pages Plugins manquantes ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "tests": [
         "ClassicMenuTests",
@@ -1910,7 +1914,10 @@
         "GitEnvironmentSettingsPagesTests",
         "GitEnvironmentSettingsSessionTests",
         "GitEnvironmentStartupTests",
-        "SettingsNavigationTests"
+        "SettingsNavigationTests",
+        "ConsoleStyleSettingsTests",
+        "RevisionLinksSettingsPageTests",
+        "GitHubActionsDesktopTests"
       ],
       "adr": [
         "0060",
@@ -1920,7 +1927,10 @@
         "0091",
         "0092",
         "0095",
-        "0096"
+        "0096",
+        "0107",
+        "0108",
+        "0109"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -1928,8 +1938,8 @@
       "group": "hosting",
       "level": "N0",
       "linux": [],
-      "implemented": "Pas de fournisseur CI porté ni de dialogue de credentials CI.",
-      "remaining": "Dialogue et cycle d’authentification des fournisseurs à porter ; askpass Git ne le remplace pas.",
+      "implemented": "Jeton spécifique GitHub Actions dans la page du fournisseur ; aucun dialogue générique de credentials CI équivalent.",
+      "remaining": "Dialogue générique anonymous/username-password/bearer et cycle d’authentification des fournisseurs à porter ; le token Actions et askpass Git ne le remplacent pas.",
       "visual": "absent",
       "tests": [],
       "adr": []
@@ -2025,26 +2035,37 @@
       "linux": [
         "DesktopInformationWindow"
       ],
-      "implemented": "Version réelle, OS/runtime et informations du fork.",
-      "remaining": "Présentation et panneaux/liens originaux non intégralement reproduits.",
+      "implemented": "Version réelle et informations du fork ; bouton Contributors ouvrant la fenêtre possédée à trois onglets depuis les crédits Windows partagés (ADR0107).",
+      "remaining": "Présentation, autres panneaux/liens originaux et audit natif étendu non intégralement reproduits ; le raccord Contributors ne certifie pas la parité globale de About.",
       "visual": "adapte",
       "tests": [
-        "ClassicMenuTests"
+        "ClassicMenuTests",
+        "ContributorsDialogTests"
       ],
       "adr": [
-        "0060"
+        "0060",
+        "0107"
       ]
     },
     "GitUI.CommandsDialogs.AboutBoxDialog.FormContributors": {
       "feature": "Liste des contributeurs",
       "group": "information",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de fenêtre/listing dédié équivalent.",
-      "remaining": "Liste, crédits et interface de contributions à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N3",
+      "linux": [
+        "ContributorsDialog",
+        "ContributorsCatalog",
+        "DesktopInformationWindow",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs"
+      ],
+      "implemented": "Fenêtre 624×442 depuis About, trois onglets Developers/Translators/Designers ; textes Windows Team/Coders/Translators/Designers liés à la ressource originale, lecture seule sélectionnable, traductions et fermeture possédée.",
+      "remaining": "N3 fonctionnel ciblé : suites acceptées et parcours anglais/clair/X11 depuis About, trois onglets et retour Escape vérifiés. Audit natif étendu, Wayland/IME/DPI/accessibilité et parité totale ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "ContributorsDialogTests"
+      ],
+      "adr": [
+        "0107"
+      ]
     },
     "GitUI.CommandsDialogs.BrowseDialog.FormDonate": {
       "feature": "Don",
@@ -2487,13 +2508,37 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.BuildServerIntegrationSettingsPage": {
       "feature": "Configuration CI",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Commandes CI désactivées dans la grille.",
-      "remaining": "Providers, paramètres et états de build à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "BuildServerIntegrationSettingsPage",
+        "GitHubActionsSettingsSession",
+        "GitHubActionsSettingsPage",
+        "DistributedSettingsWorkspace",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
+        "GitHubActionsApiClient",
+        "GitHubActionsSettings",
+        "GitHubActionsRunSnapshot",
+        "file:src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs"
+      ],
+      "implemented": "Page CI : Enable integration, Show build result page, fournisseur GitHub Actions et champs API/owner/repository/token dans les scopes XML Windows. Lecture GET de runs, états regroupés par SHA dans la grille, liste locale de runs et Show build page explicite dans le navigateur externe ; publication après Apply, polling annulable et fermeture drainée.",
+      "remaining": "Build report limité à une liste de runs, sans viewer HTML/détails jobs/logs équivalents Windows. GitHub Actions seul ; dialogue générique de credentials, TeamCity et autres fournisseurs CI absents. Aucun lancement/annulation de workflow ou gestion PR ; qualification HTTP contrôlée, natif et paquet distincts. N2, aucune parité globale. Lecture anonyme du client compilé sur Azreal42/gitextensions vérifiée (GET200 puis ETag304) ; interface live authentifiée/Enterprise et parité étendue restent ouvertes.",
+      "visual": "rapproche",
+      "tests": [
+        "DistributedSettingsWorkspaceTests",
+        "GitHubActionsDesktopTests"
+      ],
+      "adr": [
+        "0109",
+        "0105"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core Actions (source, suite complète acceptée)",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubActionsScenarios.cs",
+          "line": 7,
+          "kind": "source"
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.ChecklistSettingsPage": {
       "feature": "Vérifications de la configuration initiale",
@@ -2571,13 +2616,28 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.ConsoleStyleSettingsPage": {
       "feature": "Style de la console",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Console de processus et journal disponibles.",
-      "remaining": "Page de style et émulateurs de console Windows non portés.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "ConsoleStyleSettingsPage",
+        "ConsoleStyleSettingsSession",
+        "ConsoleStylePreferencesStore",
+        "ConsoleStylePresentation",
+        "ConsoleStyleTerminal",
+        "FontPickerDialog",
+        "file:src/linux/GitExtensions.Desktop/ConsoleStylePreferences.cs",
+        "InteractiveFileConsoleLauncher"
+      ],
+      "implemented": "Brouillon Apply/Cancel : terminal Linux installé ou Automatic, palettes Default/Light/Dark et fonte optionnelle via le picker partagé. Publication par profil vers les sorties Git raccordées sans remplacer texte/focus/sélection ; reset sur Monospace. Choix du terminal consommé par les commandes interactives et le terminal du dépôt.",
+      "remaining": "N2 : palette réellement peinte vérifiée après navigation/réattachement/survol/focus, Apply/Cancel et redémarrage. Adaptation Linux sans ConEmu ; les terminaux externes gardent leurs propres couleurs/fontes. Ouverture réelle de tous les terminaux, variantes natives et audit étendu ouverts.",
+      "visual": "adapte",
+      "tests": [
+        "ConsoleStyleSettingsTests"
+      ],
+      "adr": [
+        "0107",
+        "0091",
+        "0080"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.DetailedSettingsPage": {
       "feature": "Réglages détaillés par dépôt/global",
@@ -2827,13 +2887,40 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.RevisionLinksSettingsPage": {
       "feature": "Liens des révisions",
       "group": "settings-pages",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de page correspondante.",
-      "remaining": "Configuration, expressions et activation des liens de révision à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "RevisionLinksSettingsPage",
+        "RevisionLinksSettingsSession",
+        "RevisionLinksController",
+        "CommitInformationView",
+        "GitRevisionLinkSettings",
+        "GitRevisionLinkParser",
+        "GitRevisionLinkTemplates",
+        "DistributedSettingsWorkspace",
+        "file:src/linux/GitExtensions.Core/GitRevisionLinkContext.cs",
+        "file:src/linux/GitExtensions.Core/GitRepository.RevisionLinks.cs"
+      ],
+      "implemented": "Catégories, regex remote/révision et formats Caption/URI, modèles GitHub/Azure DevOps ; XML RevisionLinkDefs commun aux scopes, Effective agrège Local→Distributed→Global. Brouillons, Apply/Cancel et baseline acquittée partagée avec Detailed/CI ; Related links dans CommitInformationView, rafraîchissement ciblé et activation explicite.",
+      "remaining": "N2 : matching Desktop borné à 250 ms, diagnostics séparés et annulation/générations drainées ; audit natif étendu de tous les hôtes et de l’activation des liens encore ouvert. Les modèles de liens ne constituent ni une interface PR ni un fournisseur CI.",
+      "visual": "rapproche",
+      "tests": [
+        "RevisionLinksSettingsSessionTests",
+        "RevisionLinksSettingsPageTests",
+        "RevisionLinksControllerTests",
+        "DistributedSettingsWorkspaceTests"
+      ],
+      "adr": [
+        "0108",
+        "0105"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core des règles Windows (source, suite complète acceptée)",
+          "source": "tests/linux/GitExtensions.Core.Tests/RevisionLinksScenarios.cs",
+          "line": 9,
+          "kind": "source"
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.ScriptsSettingsPage": {
       "feature": "Scripts et événements",
@@ -3010,13 +3097,36 @@
     "GitExtensions.Plugins.GitHubActionsIntegration.Settings.GitHubActionsSettingsUserControl": {
       "feature": "Paramètres CI : GitHub Actions",
       "group": "ci-settings",
-      "level": "N0",
-      "linux": [],
-      "implemented": "Pas de fournisseur GitHub Actions porté.",
-      "remaining": "Page de paramètres, authentification et fournisseur CI à porter.",
-      "visual": "absent",
-      "tests": [],
-      "adr": []
+      "level": "N2",
+      "linux": [
+        "BuildServerIntegrationSettingsPage",
+        "GitHubActionsSettingsSession",
+        "GitHubActionsSettingsPage",
+        "DistributedSettingsWorkspace",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
+        "GitHubActionsApiClient",
+        "GitHubActionsSettings",
+        "GitHubActionsRunSnapshot",
+        "file:src/linux/GitExtensions.Core/GitRepository.GitHubActions.cs"
+      ],
+      "implemented": "Champs API URL, owner, repository et token masqué dans Build server integration ; détection remote sans écriture, lecture anonyme ou token explicite. Clés BuildServer.GitHub Actions conservées ; GET paginés/ETag/cache borné, états par SHA et accès explicite à une page de run du site configuré.",
+      "remaining": "Build report liste les runs puis ouvre explicitement la page GitHub dans le navigateur externe ; pas de viewer HTML embarqué équivalent Windows. N2 : token stocké dans le fichier de la portée choisie, sans coffre ni dialogue générique de credentials. Pas de PR, jobs/logs détaillés ni mutation de workflow. Lecture anonyme du client compilé sur Azreal42/gitextensions vérifiée (GET200 puis ETag304) ; interface live authentifiée/Enterprise et parité étendue restent ouvertes.",
+      "visual": "rapproche",
+      "tests": [
+        "DistributedSettingsWorkspaceTests",
+        "GitHubActionsDesktopTests"
+      ],
+      "adr": [
+        "0109"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core Actions (source, suite complète acceptée)",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubActionsScenarios.cs",
+          "line": 7,
+          "kind": "source"
+        }
+      ]
     },
     "GitExtensions.Plugins.GitlabIntegration.Settings.GitlabSettingsUserControl": {
       "feature": "Paramètres CI : GitLab",

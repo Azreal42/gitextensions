@@ -1,0 +1,7 @@
+# ADR 0108 · Liens des révisions
+
+Décision : porter les règles Windows et leurs éditeurs, sans remplacer le message du commit. Page N2 ; [périmètre](../../../todo.md#contributeurs-console-liens-et-github-actions--validation-ciblée).
+
+`GitRevisionLinkSettings` garde le XML brut `RevisionLinkDefs`. Effective agrège les collections Local→Distributed→Global, plutôt qu’un premier scalaire ; lecture seule. Les éditions explicites seules sérialisent, trient et retirent les formats vides ; liste vide supprime la clé. Un document inconnu/invalide non touché conserve ses octets. `DistributedSettingsWorkspace` partage la baseline réellement acquittée avec Detailed et CI : CAS du moteur XML commun, sauvegardes séquentielles, pas de transaction globale ni rebase silencieux d’une écriture externe ([ADR0105](../detailed/0105-detailed-graph-and-xml-settings.md)).
+
+`GitRevisionLinkParser` capture message complet, références attachées au SHA et remotes fetch/push bruts. Groupes remote avant révision, regex imbriquée, `%COMMIT_HASH%`, formats et déduplication d’URI suivent Windows ; modèles GitHub/Azure DevOps sans réseau. Le Desktop borne les regex à 250 ms hors UI et publie des diagnostics séparés. `RevisionLinksController` filtre profil, attachement et génération, annule puis draine ses lectures ; Related links s’active seulement au geste, avec navigation gitext partagée. Une sauvegarde recharge les liens seuls. Ces modèles PR restent de simples liens ; audit natif étendu et parité globale ouverts.

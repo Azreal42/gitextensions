@@ -1,11 +1,11 @@
 {
-  "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-  "trx": "artifacts/linux/detailed-settings-20261019/desktop-full-02/results/desktop.trx",
-  "trx_sha256": "4baea60df50f0cac04c087df7d21f99bdaa0480e9e18fb96eb99ca750c5bb767",
+  "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
+  "trx": "artifacts/linux/remaining-windows-20261019/desktop-full-03/results/desktop.trx",
+  "trx_sha256": "d803397187c9b9d52a8506720d1dd9ec33021ceaf259513c740b070f90c5aef9",
   "counters": {
-    "total": "2742",
-    "executed": "2742",
-    "passed": "2742",
+    "total": "2810",
+    "executed": "2810",
+    "passed": "2810",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -246,6 +246,12 @@
     "ConflictRoutingTests": {
       "Passed": 9
     },
+    "ConsoleStyleSettingsTests": {
+      "Passed": 19
+    },
+    "ContributorsDialogTests": {
+      "Passed": 7
+    },
     "CreateBranchInitializationFocusTests": {
       "Passed": 11
     },
@@ -320,6 +326,9 @@
     },
     "DiffViewerToolbarTests": {
       "Passed": 3
+    },
+    "DistributedSettingsWorkspaceTests": {
+      "Passed": 6
     },
     "EditableFileViewTests": {
       "Passed": 11
@@ -437,6 +446,9 @@
     },
     "GitEnvironmentTransportTests": {
       "Passed": 6
+    },
+    "GitHubActionsDesktopTests": {
+      "Passed": 7
     },
     "GitProcessDialogTests": {
       "Passed": 15
@@ -648,6 +660,15 @@
     "RevisionHistoryRowTests": {
       "Passed": 6
     },
+    "RevisionLinksControllerTests": {
+      "Passed": 7
+    },
+    "RevisionLinksSettingsPageTests": {
+      "Passed": 9
+    },
+    "RevisionLinksSettingsSessionTests": {
+      "Passed": 13
+    },
     "RevisionQuickSearchTests": {
       "Passed": 42
     },
@@ -738,76 +759,62 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-      "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+      "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
       "execution_source_sha": null,
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 787,
-      "total": 787,
-      "execution_result": "artifacts/linux/detailed-settings-20261019/core-full-03/core-result.json",
-      "execution_result_sha256": "535a9420192a0012469b623e3bb304dcec88d097f8d3779974dcf99da52c75f4",
+      "passed": 820,
+      "total": 820,
+      "execution_result": "artifacts/linux/remaining-windows-20261019/core-full-03/core-result.json",
+      "execution_result_sha256": "1a1f8fac380d690ad81c4ccbae305ce57601ef7cd2bc820341b7df6c97363fa9",
       "execution_exit_code": 0,
-      "build_result": "artifacts/linux/detailed-settings-20261019/core-03/build-result.json",
-      "build_result_sha256": "ed3f4d3a40f42d95408edd6e19d10d726bbb061d55cc6aa1fa6680180ab81ac4",
-      "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
-      "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
-      "source_equivalence": {
-        "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
-        "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+      "parent_verification": {
+        "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
+        "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
       },
-      "build_exit_code": 0
+      "source_equivalence": {
+        "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
+        "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
+      }
     },
     "plugins": {
-      "source_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
-      "candidate_sha": "344a910d127e54723e9f44c7601f0424d9fccb3b",
+      "source_sha": "95db3ae7188e7c12eb670fc75ed81c7460644eb0",
       "execution_source_sha": null,
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/detailed-settings-20261019/plugins-full-02/plugins-result.json",
-      "execution_result_sha256": "dbee7b211f6ff38dc25f79c5ec7e59ade4dd7d322b88c6e8751d2817648c9293",
+      "execution_result": "artifacts/linux/remaining-windows-20261019/plugins-full-02/plugins-result.json",
+      "execution_result_sha256": "ff5ba4184ac2b8f434877db4f13cfe4dec878b1a485c6d56e0ce49037f605fb6",
       "execution_exit_code": 0,
-      "build_result": "artifacts/linux/detailed-settings-20261019/plugins-build-01/build-result.json",
-      "build_result_sha256": "a7d34b1514a8397c5c8fe20ba7d9ec323ca9e8760b603935e6059aaf23ee7001",
-      "parent_verification": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
-      "parent_verification_sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf",
-      "source_equivalence": {
-        "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
-        "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+      "parent_verification": {
+        "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
+        "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
       },
-      "build_exit_code": 0
+      "source_equivalence": {
+        "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
+        "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
+      }
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/detailed-settings-worktrees/gitextensions",
+    "worktree": "/home/az42/.codex/worktrees/remaining-windows-github-actions/gitextensions",
     "execution_source_sha": null,
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/detailed-settings-20261019/review/desktop-import-review.json",
-      "sha256": "c8e7757e7628128cec5942c706a96dcf31077a61a6a8c25434bf2106ce2ff829"
+      "path": "artifacts/linux/remaining-windows-20261019/review/source-import-review.json",
+      "sha256": "2fc6539592778a501ebbf44a436cc31c57cbbeae76e6bd52e20c899275cf572b"
     },
     "root_review": {
-      "path": "artifacts/linux/detailed-settings-20261019/review/inventory-reference-review.json",
-      "sha256": "63f57150e4e7a0630e291514f662be54e9850a9c568df2b9a0315bf9abcb32bf"
+      "path": "artifacts/linux/remaining-windows-20261019/review/root-full-review.json",
+      "sha256": "a02df296570c248f996b9b18ba1e264ec05e48f004822604c765b80178b1cfe4"
     },
-    "desktop_witnesses": {
-      "execution": {
-        "path": "artifacts/linux/detailed-settings-20261019/desktop-full-02/desktop-result.json",
-        "sha256": "dd3a9d7afd104d25783853ece0c20b1562adda2e9ceb39b56fd5b1ffd436ae20"
-      },
-      "build": {
-        "path": "artifacts/linux/detailed-settings-20261019/desktop-build-03/build-result.json",
-        "sha256": "56cec29b75bbed2a9d43bb12d2cb3fcc01c3d4c3a7e67fd15f1dbffb78cbb61f"
-      }
-    },
-    "meaning": "Actual accepted W suites; final imported code identity verified by Root. No primary test execution, native parity or packaged-UI claim."
+    "meaning": "Actual accepted W full suites on frozen source/assets, exact feature commit tree imported. Five unrelated Modal working-tree edits retained, so current R global code equivalence remains false. No primary rerun or global native/package UI parity."
   }
 }

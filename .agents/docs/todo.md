@@ -1,15 +1,14 @@
 # TODO
 
-Mise à jour : 19 octobre 2026. Les validations ci-dessous restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais `344a910d1`](../../artifacts/linux/detailed-settings-20261019/window-inventory-syntax-01.json) : 2249 fichiers C#, zéro diagnostic**.
+Mise à jour : 19 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/remaining-windows-20261019/window-inventory-syntax-01.json) : 2284 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue fenêtres présentes et parité vérifiée. **Référence `344a910d1`, suites complètes 2742/2742 Desktop (238 classes), 787/787 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=5, N1=13, N2=31, N3=49, NA=1 ; 32 pages : N0=9, N1=6, N2=16, NA=1**. Aucun N4 et aucune conversion de ces nombres en pourcentage du travail de migration.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `95db3ae71` : 2810/2810 Desktop (245 classes), 820/820 Core, 35/35 Plugins** ; **99 fenêtres métier : N0=4, N1=13, N2=31, N3=50, NA=1 ; 32 pages : N0=5, N1=6, N2=20, NA=1**. Aucun N4 ni pourcentage de travail déduit des comptes.
 
-Les nouvelles suites complètes ont été exécutées sur les sources figées de W, puis importées exactement dans `344a910d1`. Elles remplacent la référence069 ; les validations natives restent liées à leurs parcours précis. Le .deb de cette source est vérifié en isolation et installé sur la machine ; 402 fichiers contrôlés et version embarquée confirmée. La matrice détaille classes Window, fabriques Linux, boîtes système, Designer et dialogues WiX. Classes de base et installateur restent séparés des fenêtres métier ; les tests associés appartiennent à la vraie suite de référence, sans certification de chaque écran.
-
+Les suites complètes ont été exécutées sur W figé, puis leurs octets importés dans le commit de référence ; [revue](../../artifacts/linux/remaining-windows-20261019/review/root-full-review.json). Le checkout conserve cinq changements Modal préexistants : sa correspondance globale à la source testée reste explicitement fausse. [Parcours X11 ciblés](../../artifacts/linux/remaining-windows-20261019/review/root-native-review.json) et [nouveau paquet isolé](../../artifacts/linux/remaining-windows-20261019/review/root-package-review.json) ont leurs preuves séparées. La dernière installation machine reste `344a910d1` ; le nouveau .deb est disponible pour essai. Les anciens résultats sont conservés avec leur source.
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; PR/hébergement et CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
@@ -17,7 +16,7 @@ Les nouvelles suites complètes ont été exécutées sur les sources figées de
 
 - [x] Detailed : six champs Windows, portées et XML partagés, brouillons Apply/Cancel, options Graph et consommateurs Push/Merge ; ADR0105. Suites complètes, paquet et parcours X11 source avec redémarrage vérifiés ; N2 et audit étendu ouvert.
 
-- [x] General : groupes et dépendances Windows, profils partagés et consommateurs réels ; suites complètes, paquet exact et natif source ciblé avec redémarrage vérifiés. ADR0097 ; console et télémétrie indisponibles, niveau N2 et audit étendu ouvert.
+- [x] General : groupes et dépendances Windows, profils partagés et consommateurs réels ; suites complètes, paquet exact et natif source ciblé avec redémarrage vérifiés. ADR0097 ; fenêtre console Windows séparée et télémétrie indisponibles, niveau N2 et audit étendu ouvert.
 
 - [x] Settings : arbre/icônes Windows, recherche, mémoire, focus et Apply commun ; suites complètes, paquet exact et natif source ciblé avec redémarrage vérifiés. ADR0096 ; FormSettings N2, pages/portées absentes encore ouvertes.
 
@@ -379,3 +378,13 @@ Source `7c52b39742abaf2a4b11635f910bf78f4a70edca` ; [ADR0096](adr/preferences/na
 - [ ] Audit natif étendu de Detailed/Push/Merge/Worktrees absorbé, langues/thèmes supplémentaires, Wayland/IME/DPI/accessibilité, paquet interactif et parité globale ouverts. Tri-state, Global XDG, bare sans Distributed et valeur Merge hors0–100 visible/bloquante sont des adaptations explicites.
 
 - [x] [Installation machine demandée](../../artifacts/linux/detailed-settings-20261019/host-install-01/root-install-review.json) : APT à 0, `7.2.1-linux-alpha+344a910d1`, 402/402 fichiers du manifeste et entrée desktop contrôlés. Aucun parcours graphique hôte exécuté ; retours utilisateur attendus.
+
+## Contributeurs, console, liens et GitHub Actions — validation ciblée
+
+Source `95db3ae7188e7c12eb670fc75ed81c7460644eb0` ; 4041 sources/assets figés, suites complètes et filiation des 2742 cas Desktop antérieurs contrôlées. [Revue complète](../../artifacts/linux/remaining-windows-20261019/review/root-full-review.json), [natif ciblé](../../artifacts/linux/remaining-windows-20261019/review/root-native-review.json), [paquet](../../artifacts/linux/remaining-windows-20261019/review/root-package-review.json), [lecture GitHub publique](../../artifacts/linux/remaining-windows-20261019/live-github-public-02/root-tool-wait-receipt.json). Le relevé et la matrice sont régénérés ; aucun N4 et les 13 familles globales restent ouvertes.
+
+- [x] Contributeurs : crédits Windows liés, trois onglets compacts depuis About ; N3 fonctionnel ciblé, audit étendu ouvert (ADR0107).
+- [x] Console : terminal installé réel, palettes/fontes partagées, Apply/Cancel, palette peinte après navigation/survol/focus et persistance au redémarrage ; N2, profils externes et ConEmu non reproduits (ADR0107).
+- [x] Revision links : XML et règles Windows, modèles GitHub/Azure DevOps, Related links sans recharger le message, baseline commune avec Detailed/CI ; N2, audit natif de tous les hôtes et activations ouvert (ADR0108).
+- [x] CI/GitHub Actions : paramètres scoped, lecture GET, états par SHA sans recréer les lignes, cache/ETag et polling drainé ; N2. Lecture anonyme du client compilé vérifiée sur le dépôt public (200/304) ; interface authentifiée/live Enterprise encore ouverte. Build report liste les runs et ouvre leur page explicitement dans le navigateur, sans viewer HTML/jobs/logs équivalent Windows (ADR0109).
+- [ ] PR create/view, dialogue générique de credentials CI, TeamCity et autres fournisseurs CI, audit étendu Wayland/IME/DPI/accessibilité, interface du paquet installé et parité globale restent ouverts.
