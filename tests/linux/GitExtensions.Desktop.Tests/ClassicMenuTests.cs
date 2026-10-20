@@ -120,12 +120,24 @@ public sealed class ClassicMenuTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n");
         List<ProcessStartInfo> launches = [];
         f.Window.ExternalLauncher = info => { launches.Add(info); return null; };
-        foreach (string name in new[] { "userManualToolStripMenuItem", "translateToolStripMenuItem", "checkForUpdatesToolStripMenuItem", "reportAnIssueToolStripMenuItem" })
+        foreach (string name in new[] { "userManualToolStripMenuItem", "translateToolStripMenuItem", "reportAnIssueToolStripMenuItem" })
         { Click(Find(f.Window, name)); }
-        await Until(() => launches.Count == 4);
+        await Until(() => launches.Count == 3);
         Assert.That(launches.Select(info => info.FileName), Is.All.EqualTo("xdg-open"));
-        Assert.That(launches.Select(info => info.ArgumentList.Single()), Is.EqualTo(new[] { "https://git-extensions-documentation.readthedocs.io/", "https://github.com/gitextensions/gitextensions/wiki/Translations", "https://github.com/Azreal42/gitextensions/releases", "https://github.com/Azreal42/gitextensions/issues" }));
+        Assert.That(launches.Select(info => info.ArgumentList.Single()), Is.EqualTo(new[] { "https://git-extensions-documentation.readthedocs.io/", "https://github.com/gitextensions/gitextensions/wiki/Translations", "https://github.com/Azreal42/gitextensions/issues" }));
         Assert.That(await ClipboardExtensions.TryGetTextAsync(f.Window.Clipboard!), Does.Contain("Git Extensions").And.Not.Contain(f.Repository));
+        using UpdatesTestClient updates = new();
+        f.Window.UpdatesClientFactory = () => updates;
+        Click(Find(f.Window, "checkForUpdatesToolStripMenuItem"));
+        await Until(() => f.Window.OwnedWindows.OfType<UpdatesDialog>().Any());
+        UpdatesDialog updateDialog = f.Window.OwnedWindows.OfType<UpdatesDialog>().Single();
+        Assert.That(updateDialog.Owner, Is.SameAs(f.Window)); Assert.That(launches.Count, Is.EqualTo(3));
+        updates.Searches.Single().Result.SetResult(new(null, false));
+        await Until(() => updateDialog.PendingOperation.IsCompleted); await updateDialog.PendingOperation;
+        Assert.That(updateDialog.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "UpdateLabel").Text,
+            Does.Contain("No compatible Linux package"));
+        updateDialog.Close(); await Until(() => updates.Disposed);
+        Assert.That(updates.DisposedWhileActive, Is.False); Assert.That(launches.Count, Is.EqualTo(3));
         foreach ((string name, string text) in new[] { ("aboutToolStripMenuItem", "Linux / Avalonia"), ("changelogToolStripMenuItem", "Git Extensions") })
         {
             Click(Find(f.Window, name)); await Until(() => f.Window.OwnedWindows.OfType<DesktopInformationWindow>().Any());
