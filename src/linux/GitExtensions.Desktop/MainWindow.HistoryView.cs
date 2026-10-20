@@ -57,7 +57,9 @@ public sealed partial class MainWindow
     private async Task ChangeHistoryViewAsync(Func<HistoryViewPreferences, HistoryViewPreferences> change, bool reload)
     {
         bool showArtificial = _historyView.ShowArtificialCommits;
-        _historyView = change(_historyView);
+        HistoryViewPreferences desired = change(_historyView);
+        TrackColorsViewChange(_historyView, desired);
+        _historyView = desired;
         if (showArtificial != _historyView.ShowArtificialCommits) { _parentChildNavigation?.Clear(); }
         _historyQuery = _historyQuery with { Reflog = _historyView.ShowReflog };
         if (reload && _repository is not null) { await RefreshAsync(); }
@@ -81,10 +83,12 @@ public sealed partial class MainWindow
         string note = metadata.Notes ?? "";
         string details = body + (_historyView.ShowNotes && !_historyView.ShowNotesColumn && note.Length > 0
             ? "  [" + T("Notes") + "] " + string.Join(' ', note.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)) : "");
-        bool dim = (_highlightedHistoryBranch ?? (_historyView.DrawNonRelativesGray ? _relatedHistory : null)) is { Count: > 0 } related && !related.Contains(commit.Hash);
+        bool dim = _historyView.DrawNonRelativesTextGray
+            && (_highlightedHistoryBranch ?? _relatedHistory) is { Count: > 0 } related
+            && !related.Contains(commit.Hash);
         RevisionHistoryRow.ApplyPresentation(row, new(_historyView.ShowAvatar, _historyView.ShowAuthor, _historyView.ShowDate,
             _historyView.ShowId, _historyView.RelativeDate, _historyView.ShowNotesColumn, date, details, note, dim,
-            HistoryViewReferences(_navigationReferences)));
+            HistoryViewReferences(_navigationReferences), _historyView.FillRefLabels));
     }
 
     private IReadOnlySet<string>? RelatedHistory(string? revision, bool descendants)

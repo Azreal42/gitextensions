@@ -33,6 +33,8 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly GeneralSettingsPage _generalSettingsPage;
     internal ConfirmationsSettingsSession ConfirmationsSettingsSession { get; }
     private readonly ConfirmationsSettingsPage _confirmationsSettingsPage;
+    internal ColorsSettingsSession ColorsSettingsSession { get; }
+    private readonly ColorsSettingsPage _colorsSettingsPage;
     internal AppearanceSettingsValues AppearanceSettingsResult { get; private set; }
     private readonly AppearanceSettingsPage _appearanceSettingsPage;
     internal DetailedSettingsSession DetailedSettingsSession { get; }
@@ -84,7 +86,9 @@ internal sealed class DesktopSettingsDialog : Window
         ConsoleStyleSettingsSession? consoleStyleSettings = null,
         Func<string, Task>? openSettingsUrlAsync = null,
         Func<Window, Task>? configureGitAdvanced = null,
-        ConfirmationsSettingsSession? confirmations = null)
+        ConfirmationsSettingsSession? confirmations = null,
+        ColorsSettingsSession? colors = null,
+        Func<ColorsSettingsValues, CancellationToken, ColorsSettingsPublication>? publishColors = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -93,6 +97,8 @@ internal sealed class DesktopSettingsDialog : Window
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
         ConfirmationsSettingsSession = confirmations ?? new();
         _confirmationsSettingsPage = new(ConfirmationsSettingsSession, translations);
+        ColorsSettingsSession = colors ?? new(new HistoryViewPreferencesStore().Load());
+        _colorsSettingsPage = new(ColorsSettingsSession.Initial, translations);
         DetailedSettingsSession = detailedSettings ?? new(null, initial);
         DistributedSettingsWorkspace workspace = DetailedSettingsSession.Workspace;
         GitRepository? scopedRepository = DetailedSettingsSession.Repository;
@@ -180,6 +186,7 @@ internal sealed class DesktopSettingsDialog : Window
         SettingsNavigationPage appearancePage = new("Appearance", PageTitle("AppearanceSettingsPage", "Appearance"), _appearanceSettingsPage, "Appearance.png", Children:
         [
             new("Sorting", PageTitle("SortingSettingsPage", "Sorting"), sorting, "SortBy.png"),
+            new("Colors", PageTitle("ColorsSettingsPage", "Colors"), _colorsSettingsPage, "Colors.png"),
             new("Fonts", PageTitle("AppearanceFontsSettingsPage", "Fonts"), fontsPage, "Font.png"),
             new("ConsoleStyle", PageTitle("ConsoleStyleSettingsPage", "Console"), _consoleStylePage, "Console.png")
         ]);
@@ -380,6 +387,12 @@ internal sealed class DesktopSettingsDialog : Window
                 }
                 try
                 {
+                    activeSavePage = "Colors";
+                    ColorsSettingsPublication colorsSaved = publishColors is null
+                        ? ColorsSettingsSession.Save(_colorsSettingsPage.Draft, cancellationToken: _detailedCancellation.Token)
+                        : publishColors(_colorsSettingsPage.Draft, _detailedCancellation.Token);
+                    _colorsSettingsPage.AcceptSaved(colorsSaved);
+                    saved |= colorsSaved.Written;
                     activeSavePage = "Confirmations";
                     ConfirmationsSettingsSession.Save(_confirmationsSettingsPage.Draft, receipt =>
                     { _confirmationsSettingsPage.AcceptSaved(receipt); saved |= receipt.Written; }, _detailedCancellation.Token);

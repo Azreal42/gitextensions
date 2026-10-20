@@ -19,7 +19,7 @@ namespace GitExtensions.Desktop.Controls;
 public static class RevisionHistoryRow
 {
     internal sealed record Presentation(bool ShowAvatar, bool ShowAuthor, bool ShowDate, bool ShowId, bool RelativeDate,
-        bool ShowNotesColumn, DateTimeOffset Date, string Details, string Notes, bool Dim, IReadOnlyList<GitReference> References);
+        bool ShowNotesColumn, DateTimeOffset Date, string Details, string Notes, bool Dim, IReadOnlyList<GitReference> References, bool FillRefLabels = false);
 
     internal static void ApplyPresentation(Control row, Presentation presentation)
     {
@@ -179,7 +179,7 @@ public static class RevisionHistoryRow
             }
             MessageCell message = Children.OfType<MessageCell>().Single();
             message.SetPresentation(value.Details, value.References.Where(r => r.RevisionHash == _commit.Hash).DistinctBy(r => r.Name, StringComparer.Ordinal)
-                .OrderBy(r => r.IsCurrent ? 0 : r.IsBranch ? 1 : r.IsRemote ? 2 : 3).ThenBy(r => r.Name, StringComparer.Ordinal).ToArray());
+                .OrderBy(r => r.IsCurrent ? 0 : r.IsBranch ? 1 : r.IsRemote ? 2 : 3).ThenBy(r => r.Name, StringComparer.Ordinal).ToArray(), value.FillRefLabels);
             _dim = value.Dim; ApplyState();
         }
 
@@ -271,14 +271,16 @@ public static class RevisionHistoryRow
             Details = Cell("RevisionMessageDetails", ""); Details.Margin = default; Details.Foreground = Brushes.Gray; Children.Add(Details);
             SetPresentation("", refs);
         }
-        public void SetPresentation(string details, GitReference[] references)
+        public void SetPresentation(string details, GitReference[] references, bool fillRefLabels = false)
         {
             Details.Text = details.Length == 0 ? "" : "  " + details;
             ToolTip.SetTip(this, string.Join('\n', references.Select(reference => reference.ShortName)
                 .Append(Subject.Text!).Append(_body).Where(text => text.Length > 0)));
-            if (_references.SequenceEqual(references)) { return; }
+            if (_references.SequenceEqual(references))
+            { foreach (ReferenceBadge badge in _badges) { badge.SetFilled(fillRefLabels); } return; }
             foreach (ReferenceBadge badge in _badges) { Children.Remove(badge); }
             _references = references; _badges = references.Select(r => new ReferenceBadge(r)).ToArray();
+            foreach (ReferenceBadge badge in _badges) { badge.SetFilled(fillRefLabels); }
             foreach (ReferenceBadge badge in _badges) { Children.Add(badge); }
             InvalidateMeasure();
         }
@@ -328,6 +330,9 @@ public static class RevisionHistoryRow
         private readonly TextBlock _label;
         private readonly CurrentBranchArrow? _arrow;
         private ListBoxItem? _selectionOwner;
+        private bool _filled;
+        internal void SetFilled(bool filled)
+        { if (_filled == filled) { return; } _filled = filled; UpdatePalette(); }
         public ReferenceBadge(GitReference reference)
         {
             _reference = reference; Name = "RevisionReference"; Tag = reference;
@@ -363,10 +368,19 @@ public static class RevisionHistoryRow
             bool dark = ActualThemeVariant == ThemeVariant.Dark;
             Color color = CommitGraph.ReferenceColor(_reference, dark);
             Color window = Color.Parse(dark ? "#323232" : "#ffffff");
-            // RevisionGridRefRenderer.DrawRefEx / DrawRefBackground, FillRefLabels=false default.
-            _label.Foreground = new SolidColorBrush(Lerp(color, Colors.Black, .25f));
-            BorderBrush = new SolidColorBrush(Lerp(color, window, .5f));
-            Background = _selectionOwner?.IsSelected == true ? new SolidColorBrush(window) : Brushes.Transparent;
+            // RevisionGridRefRenderer.DrawRefBackground: same fill gradient and frame interpolation.
+            _label.Foreground = new SolidColorBrush(_filled ? color : Lerp(color, Colors.Black, .25f));
+            BorderBrush = new SolidColorBrush(Lerp(color, window, _filled ? .83f : .5f));
+            if (_filled)
+            {
+                Color top = Lerp(color, window, .92f), bottom = Lerp(top, window, .9f);
+                Background = new LinearGradientBrush
+                {
+                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+                    GradientStops = new GradientStops { new GradientStop(top, 0), new GradientStop(bottom, 1) }
+                };
+            }
+            else { Background = _selectionOwner?.IsSelected == true ? new SolidColorBrush(window) : Brushes.Transparent; }
             if (_arrow is not null) { _arrow.Brush = new SolidColorBrush(color); }
         }
         private static Color Lerp(Color from, Color to, float amount) => Color.FromRgb(

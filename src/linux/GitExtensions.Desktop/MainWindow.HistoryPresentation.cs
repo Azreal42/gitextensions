@@ -34,7 +34,8 @@ public sealed partial class MainWindow
         _historyGraph.IsVisible = _historyView.ShowGraph;
         _historyGraph.SelectedHashes = selected.Select(commit => commit.Hash).ToArray();
         _historyGraph.SelectionFocused = _commits.IsKeyboardFocusWithin;
-        _historyGraph.AuthoredEmail = _authoredEmail;
+        _historyGraph.AuthoredEmail = _historyView.HighlightAuthoredRevisions ? _authoredEmail : null;
+        _historyGraph.DrawAlternateBackground = _historyView.DrawAlternateBackground;
         foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(control => control.Name == "RevisionHistoryRow")) { UpdateHistoryRow(row); }
         UpdateArtificialHistorySelectionAppearance();
     }
@@ -46,7 +47,9 @@ public sealed partial class MainWindow
         foreach (GitCommit entry in _historyGraph.OrderedCommits)
         { if (entry.Hash == commit.Hash) { break; } index++; }
         bool selected = _commits.SelectedItems?.OfType<GitCommit>().Any(entry => entry.Hash == commit.Hash) == true;
-        RevisionHistoryRow.UpdateState(row, selected, _commits.IsKeyboardFocusWithin, _authoredEmail, index);
+        RevisionHistoryRow.UpdateState(row, selected, _commits.IsKeyboardFocusWithin,
+            _historyView.HighlightAuthoredRevisions ? _authoredEmail : null, index,
+            _historyView.DrawAlternateBackground);
         ApplyHistoryRowOptions(row, commit);
     }
 

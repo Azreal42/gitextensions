@@ -71,7 +71,7 @@ public sealed partial class MainWindow
         _historyGraph.LineHeight = BrowseRowHeight;
         _historyGraph.LaneWidth = 12;
         _historyGraph.ShowReferenceLabels = false;
-        _historyGraph.DrawAlternateBackground = true;
+        _historyGraph.DrawAlternateBackground = _historyView.DrawAlternateBackground;
         _commits.GotFocus += (_, _) => UpdateHistoryPresentation();
         _commits.LostFocus += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHistoryPresentation);
         _commits.ActualThemeVariantChanged += (_, _) => UpdateHistoryPresentation();

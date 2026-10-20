@@ -168,6 +168,7 @@ public sealed partial class MainWindow
         GeneralSettingsSession general = new(initial, fileHistory);
         ConfirmationsSettingsSession confirmations = new();
         AppearanceSettingsSession appearance = new(initial, _historyView);
+        ColorsSettingsSession colors = new(_historyView);
         // Reuse the runtime already bound to this mapped Main, including explicitly bound hosts.
         // Peeking the App fallback never constructs a service or initiates an avatar read.
         AvatarService? avatars = _avatarLifetime?.Scope?.Service ?? App.PeekAvatarRuntime()?.Service;
@@ -202,7 +203,8 @@ public sealed partial class MainWindow
             gitHubActionsSettings: new(settingsRepository, workspace),
             openSettingsUrlAsync: OpenWebAsync,
             configureGitAdvanced: owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
-                ? ShowGitToolsSettingsAsync(owner, advanced: true) : Task.CompletedTask, confirmations: confirmations);
+                ? ShowGitToolsSettingsAsync(owner, advanced: true) : Task.CompletedTask, confirmations: confirmations,
+            colors: colors, publishColors: (draft, ct) => PublishColorsSettings(colors, draft, ct));
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

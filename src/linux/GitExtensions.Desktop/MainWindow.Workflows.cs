@@ -576,7 +576,13 @@ public sealed partial class MainWindow
 
     private Task SaveCurrentViewSettingsAsync()
     {
-        _historyViewStore.Save(_historyView);
+        try { SaveCurrentColorsAwareViewDefaults(_lifetime.Token); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            string message = T("Unable to save settings.") + " " + error.Message;
+            AppendOutput(message); _state.Text = message;
+            return Task.CompletedTask;
+        }
         if (!new DiffViewerPreferencesStore().SaveCurrentViewSettingsAsDefault())
         {
             string message = T("Unable to save settings.");
