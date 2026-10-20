@@ -120,14 +120,6 @@ public sealed partial class MainWindow
         }};
     }
 
-    private async Task ShowUpdatesAsync()
-    {
-        using ILinuxUpdateClient client = UpdatesClientFactory();
-        UpdatesDialog dialog = new(client, DesktopVersion, OpenWebAsync, _translations) { RequestedThemeVariant = ActualThemeVariant };
-        try { await dialog.ShowDialog(this); }
-        finally { await dialog.Retirement; }
-    }
-
     private Task OpenWebAsync(string url)
     {
         ExternalLauncher(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } });

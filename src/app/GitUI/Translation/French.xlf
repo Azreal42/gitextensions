@@ -43,6 +43,10 @@ Si activé, tous les symboles illégaux seront remplacés par le symbole de remp
         <target>Vérifier les nouvelles versions candidates à la livraison</target>
         
       </trans-unit>
+      <trans-unit id="chkCheckForRCVersions.LinuxToolTipText">
+        <source>Linux alpha and beta packages are also pre-releases.</source>
+        <target>Les paquets Linux alpha et bêta sont aussi des préversions.</target>
+      </trans-unit>
       <trans-unit id="chkCheckForUpdates.Text">
         <source>Check for updates weekly</source>
         <target>Vérifier les mises à jour chaque semaine</target>

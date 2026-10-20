@@ -28,7 +28,9 @@ internal sealed class AdvancedSettingsSession
         {
             AutoNormaliseBranchName = initialDesktop.AutoNormaliseBranchName,
             AutoNormaliseSymbol = initialDesktop.AutoNormaliseSymbol,
-            AlwaysShowAdvancedOptions = initialDesktop.AlwaysShowAdvancedOptions
+            AlwaysShowAdvancedOptions = initialDesktop.AlwaysShowAdvancedOptions,
+            CheckForUpdates = initialDesktop.CheckForUpdates,
+            CheckForReleaseCandidates = initialDesktop.CheckForReleaseCandidates
         };
     }
 

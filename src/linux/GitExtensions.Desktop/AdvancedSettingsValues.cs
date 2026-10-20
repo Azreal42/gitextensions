@@ -8,6 +8,8 @@ internal sealed record AdvancedSettingsValues
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";
     public bool AlwaysShowAdvancedOptions { get; init; }
+    public bool CheckForUpdates { get; init; } = true;
+    public bool CheckForReleaseCandidates { get; init; }
 
     internal object Get(string name) => name switch
     {
@@ -17,6 +19,8 @@ internal sealed record AdvancedSettingsValues
         nameof(AutoNormaliseBranchName) => AutoNormaliseBranchName,
         nameof(AutoNormaliseSymbol) => AutoNormaliseSymbol,
         nameof(AlwaysShowAdvancedOptions) => AlwaysShowAdvancedOptions,
+        nameof(CheckForUpdates) => CheckForUpdates,
+        nameof(CheckForReleaseCandidates) => CheckForReleaseCandidates,
         _ => throw new ArgumentOutOfRangeException(nameof(name))
     };
     internal AdvancedSettingsValues With(string name, object value) => name switch
@@ -27,6 +31,8 @@ internal sealed record AdvancedSettingsValues
         nameof(AutoNormaliseBranchName) => this with { AutoNormaliseBranchName = (bool)value },
         nameof(AutoNormaliseSymbol) => this with { AutoNormaliseSymbol = (string)value },
         nameof(AlwaysShowAdvancedOptions) => this with { AlwaysShowAdvancedOptions = (bool)value },
+        nameof(CheckForUpdates) => this with { CheckForUpdates = (bool)value },
+        nameof(CheckForReleaseCandidates) => this with { CheckForReleaseCandidates = (bool)value },
         _ => throw new ArgumentOutOfRangeException(nameof(name))
     };
     internal static DesktopPreferences ApplyDesktop(DesktopPreferences current, AdvancedSettingsValues values,
@@ -39,6 +45,8 @@ internal sealed record AdvancedSettingsValues
                 nameof(AutoNormaliseBranchName) => current with { AutoNormaliseBranchName = values.AutoNormaliseBranchName },
                 nameof(AutoNormaliseSymbol) => current with { AutoNormaliseSymbol = values.AutoNormaliseSymbol },
                 nameof(AlwaysShowAdvancedOptions) => current with { AlwaysShowAdvancedOptions = values.AlwaysShowAdvancedOptions },
+                nameof(CheckForUpdates) => current with { CheckForUpdates = values.CheckForUpdates },
+                nameof(CheckForReleaseCandidates) => current with { CheckForReleaseCandidates = values.CheckForReleaseCandidates },
                 _ => current
             };
         }
@@ -60,6 +68,8 @@ internal static class AdvancedSettingsCatalog
         new(nameof(AdvancedSettingsValues.UseDefaultCheckoutChanges), "reference-preferences.json", "chkUseLocalChangesAction", "chkUseLocalChangesAction", "Use last chosen \"local changes\" action as default action.\r\nThis action will be performed without warning while checking out branch."),
         new(nameof(AdvancedSettingsValues.AutoNormaliseBranchName), DesktopProfile, "SettingsNormaliseBranches", "chkAutoNormaliseBranchName", "Auto normalise branch name"),
         new(nameof(AdvancedSettingsValues.AutoNormaliseSymbol), DesktopProfile, "SettingsNormaliseSymbol", "cboAutoNormaliseSymbol", "Symbol to use:", true),
-        new(nameof(AdvancedSettingsValues.AlwaysShowAdvancedOptions), DesktopProfile, "SettingsAdvancedOptions", "chkAlwaysShowAdvOpt", "Always show advanced options")
+        new(nameof(AdvancedSettingsValues.AlwaysShowAdvancedOptions), DesktopProfile, "SettingsAdvancedOptions", "chkAlwaysShowAdvOpt", "Always show advanced options"),
+        new(nameof(AdvancedSettingsValues.CheckForUpdates), DesktopProfile, "chkCheckForUpdates", "chkCheckForUpdates", "Check for updates weekly"),
+        new(nameof(AdvancedSettingsValues.CheckForReleaseCandidates), DesktopProfile, "chkCheckForRCVersions", "chkCheckForRCVersions", "Check for release candidate versions")
     ]);
 }

@@ -53,6 +53,15 @@ public sealed class LinuxUpdateClientTests
     }
 
     [Test]
+    public async Task AStableTagMarkedAsAPrereleaseKeepsItsEffectiveClassification()
+    {
+        using LinuxUpdateClient client = Client(Release("v8.0.0", prerelease: true));
+        LinuxUpdateRelease release = (await client.FindAsync(Version("7.2.1"), true, default)).Release!;
+        Assert.That(release.IsPrerelease, Is.True); Assert.That(release.Version.IsPrerelease, Is.False);
+        Assert.That((await client.FindAsync(Version("7.2.1"), false, default)).Release, Is.Null);
+    }
+
+    [Test]
     public async Task DistinguishesAnEmptyLinuxPublicationListFromNoNewerVersion()
     {
         using LinuxUpdateClient empty = Client(); Assert.That((await empty.FindAsync(Version("7.2.1"), true, default)).HasCompatiblePublications, Is.False);

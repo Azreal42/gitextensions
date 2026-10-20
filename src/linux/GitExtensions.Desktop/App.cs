@@ -68,6 +68,7 @@ public sealed class App : Application
             ExistingAvatarRuntime = new(new AvatarService(AvatarPreferences.From(saved)));
         }
         ExistingAvatarRuntime.BindWindow(window);
+        if (window is MainWindow browse && !request.Arguments.SmokeTest) { browse.EnableAutomaticUpdates(); }
         return window;
     }
 

@@ -36,6 +36,8 @@ public sealed record DesktopPreferences
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";
     public bool AlwaysShowAdvancedOptions { get; init; }
+    public bool CheckForUpdates { get; init; } = true;
+    public bool CheckForReleaseCandidates { get; init; }
     public bool UseBrowseForFileHistory { get; init; } = true;
     public GitReferenceSorting ReferenceSorting { get; init; } = new();
     public string PrioritizedBranchNames { get; init; } = GitReferencePriorities.DefaultBranchPatterns;

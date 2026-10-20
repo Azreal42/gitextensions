@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace GitExtensions.Linux.Desktop;
 
-internal sealed record LinuxUpdateRelease(LinuxReleaseVersion Version, Uri ReleaseUri, Uri DownloadUri, string FileName, long Size, string? Sha256);
+internal sealed record LinuxUpdateRelease(LinuxReleaseVersion Version, Uri ReleaseUri, Uri DownloadUri, string FileName, long Size, string? Sha256, bool IsPrerelease = false);
 internal sealed record LinuxUpdateSearch(LinuxUpdateRelease? Release, bool HasCompatiblePublications);
 
 internal interface ILinuxUpdateClient : IDisposable
@@ -94,7 +94,7 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
                 && digest.AsSpan(7).ContainsAnyExcept("0123456789abcdefABCDEF") == false ? digest[7..].ToLowerInvariant() : null;
             // Duplicate package identities are ambiguous; never pick an arbitrary asset.
             if (found is not null) { return null; }
-            found = new(version, releaseUri!, download!, fileName, length, hash);
+            found = new(version, releaseUri!, download!, fileName, length, hash, prerelease || version.IsPrerelease);
         }
         return found;
     }

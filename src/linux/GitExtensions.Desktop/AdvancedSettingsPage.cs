@@ -11,7 +11,7 @@ namespace GitExtensions.Linux.Desktop;
 
 internal sealed record AdvancedSymbolChoice(string Value, string Caption);
 
-/// <summary>The portable original Checkout/General/Commit controls; no inactive updater or terminal options.</summary>
+/// <summary>The original Checkout/General/Commit/Updates groups over their existing workflow profiles.</summary>
 internal sealed class AdvancedSettingsPage : UserControl
 {
     private readonly Dictionary<string, CheckBox> _choices = new(StringComparer.Ordinal);
@@ -21,7 +21,7 @@ internal sealed class AdvancedSettingsPage : UserControl
     {
         _baseline = session.Initial; Name = "AdvancedSettingsPage";
         string Text(string name, string fallback) => translations.Translate("AdvancedSettingsPage", name, "Text", fallback).Replace("&&", "&", StringComparison.Ordinal).Replace("\r\n", "\n", StringComparison.Ordinal);
-        StackPanel checkout = new() { Spacing = 1 }, general = new() { Spacing = 1 }, commit = new() { Spacing = 1 };
+        StackPanel checkout = new() { Spacing = 1 }, general = new() { Spacing = 1 }, commit = new() { Spacing = 1 }, updates = new() { Spacing = 1 };
         Add(checkout, nameof(AdvancedSettingsValues.AlwaysShowCheckoutDialog));
         Add(checkout, nameof(AdvancedSettingsValues.UseDefaultCheckoutChanges));
         Add(general, nameof(AdvancedSettingsValues.AlwaysShowAdvancedOptions));
@@ -35,11 +35,14 @@ internal sealed class AdvancedSettingsPage : UserControl
         replacement.Children.Add(new TextBlock { Name = "label1", Text = Text("label1", "Symbol to use:"), VerticalAlignment = VerticalAlignment.Center });
         Grid.SetColumn(_symbol, 1); replacement.Children.Add(_symbol); general.Children.Add(replacement);
         Add(commit, nameof(AdvancedSettingsValues.CommitAndPushForcedWhenAmend));
+        Add(updates, nameof(AdvancedSettingsValues.CheckForUpdates));
+        Add(updates, nameof(AdvancedSettingsValues.CheckForReleaseCandidates));
         Content = new StackPanel { Name = "tableLayoutPanel2", Margin = new Thickness(8), Spacing = 6, Children =
         {
             ClassicChrome.Group("CheckoutGB", Text("CheckoutGB", "Checkout"), checkout),
             ClassicChrome.Group("GeneralGB", Text("GeneralGB", "General"), general),
-            ClassicChrome.Group("grpCommit", Text("grpCommit", "Commit"), commit)
+            ClassicChrome.Group("grpCommit", Text("grpCommit", "Commit"), commit),
+            ClassicChrome.Group("grpUpdates", Text("grpUpdates", "Updates"), updates)
         } };
         _choices[nameof(AdvancedSettingsValues.AutoNormaliseBranchName)].IsCheckedChanged += (_, _) => UpdateSymbolAvailability();
         UpdateSymbolAvailability();
@@ -54,6 +57,11 @@ internal sealed class AdvancedSettingsPage : UserControl
             CheckBox choice = new() { Name = setting.Control, Tag = setting.OriginalControl, IsChecked = (bool)_baseline.Get(name), MinHeight = 24,
                 Padding = default, HorizontalAlignment = HorizontalAlignment.Stretch,
                 Content = new TextBlock { Text = Text(setting.OriginalControl, setting.Caption), TextWrapping = TextWrapping.Wrap } };
+            if (name == nameof(AdvancedSettingsValues.CheckForReleaseCandidates))
+            {
+                ToolTip.SetTip(choice, translations.Translate("AdvancedSettingsPage", "chkCheckForRCVersions", "LinuxToolTipText",
+                    "Linux alpha and beta packages are also pre-releases."));
+            }
             _choices.Add(name, choice); group.Children.Add(choice);
         }
     }

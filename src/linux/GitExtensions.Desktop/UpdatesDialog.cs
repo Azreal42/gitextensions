@@ -31,7 +31,7 @@ internal sealed class UpdatesDialog : Window
     internal Task Retirement { get; private set; } = Task.CompletedTask;
     internal Task PendingOperation => _pending;
 
-    internal UpdatesDialog(ILinuxUpdateClient client, string currentVersion, Func<string, Task> open, TranslationCatalog? translations = null)
+    internal UpdatesDialog(ILinuxUpdateClient client, string currentVersion, Func<string, Task> open, TranslationCatalog? translations = null, bool? includePrereleases = null, LinuxUpdateSearch? initialSearch = null)
     {
         _client = client; _text = translations ?? TranslationCatalog.LoadDefault(); _open = open;
         _current = LinuxReleaseVersion.Parse(currentVersion) ?? throw new ArgumentException("The installed release version is invalid.", nameof(currentVersion));
@@ -40,7 +40,7 @@ internal sealed class UpdatesDialog : Window
         CanResize = CanMaximize = CanMinimize = false; ShowInTaskbar = false; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _label = new() { Name = "UpdateLabel", Text = T("UpdateLabel", "Searching for updates"), TextWrapping = TextWrapping.Wrap };
         _progress = new() { Name = "progressBar1", Height = 20, MinHeight = 20, IsIndeterminate = true, Margin = new Thickness(0, 3, 0, 0) };
-        _prereleases = new() { Name = "IncludePrereleases", Content = Access("_includePrereleases", "Include pre-releases"), IsChecked = _current.IsPrerelease, Margin = new Thickness(0, 5, 0, 0) };
+        _prereleases = new() { Name = "IncludePrereleases", Content = Access("_includePrereleases", "Include pre-releases"), IsChecked = includePrereleases ?? _current.IsPrerelease, Margin = new Thickness(0, 5, 0, 0) };
         _prereleases.IsCheckedChanged += (_, _) => { if (IsVisible && !_busy && !_closed) { Start(SearchAsync); } };
         _log = Link("linkChangeLog", "Show release notes and change &log");
         _direct = Link("linkDirectDownload", "&Direct Download");
@@ -53,7 +53,12 @@ internal sealed class UpdatesDialog : Window
         Border footer = ClassicChrome.Border(actions, new Thickness(0, 1, 0, 0), new Thickness(12, 4));
         footer.Name = "ControlsPanel"; footer.MinHeight = 32; footer.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicButtonBrush"));
         Grid layout = new() { RowDefinitions = new("*,Auto") }; layout.Children.Add(body); Grid.SetRow(footer, 1); layout.Children.Add(footer); Content = layout;
-        Opened += (_, _) => { ModalWindowActivation.AfterMapping(this, () => IsVisible && !_closed); Start(SearchAsync); };
+        Opened += (_, _) =>
+        {
+            ModalWindowActivation.AfterMapping(this, () => IsVisible && !_closed);
+            if (initialSearch is null) { Start(SearchAsync); }
+            else { PresentSearch(initialSearch); Refresh(); }
+        };
         Closed += (_, _) => { _closed = true; _lifetime.Cancel(); Retirement = RetireAsync(); };
         AddHandler(KeyDownEvent, (_, args) =>
         {
@@ -91,6 +96,11 @@ internal sealed class UpdatesDialog : Window
         _label.Text = T("UpdateLabel", "Searching for updates"); _progress.IsIndeterminate = true; Refresh();
         LinuxUpdateSearch result = await _client.FindAsync(_current, _prereleases.IsChecked == true, _lifetime.Token);
         if (_closed || _lifetime.IsCancellationRequested) { return; }
+        PresentSearch(result);
+    }
+
+    private void PresentSearch(LinuxUpdateSearch result)
+    {
         _release = result.Release;
         if (_release is not null) { RestoreReleaseLabel(); }
         else { _label.Text = result.HasCompatiblePublications ? T("_noUpdatesFound", "No updates found")

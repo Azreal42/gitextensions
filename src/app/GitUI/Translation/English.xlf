@@ -35,6 +35,10 @@ If enabled, any illegal symbols will be replaced with the replacement symbol of 
         <source>Check for release candidate versions</source>
         <target />
       </trans-unit>
+      <trans-unit id="chkCheckForRCVersions.LinuxToolTipText">
+        <source>Linux alpha and beta packages are also pre-releases.</source>
+        <target />
+      </trans-unit>
       <trans-unit id="chkCheckForUpdates.Text">
         <source>Check for updates weekly</source>
         <target />
