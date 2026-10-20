@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using GitExtensions.Linux.Desktop;
 using NUnit.Framework;
@@ -157,6 +158,41 @@ public sealed class BugReportDialogTests
     }
 
     [AvaloniaTest]
+    [TestCase("Ignore")] [TestCase("Dismiss")] [TestCase("Quit")]
+    public async Task TheReturnedFirstDecisionSurvivesAQueuedQuitAfterTheRealCloseGesture(string firstDecision)
+    {
+        int opened = 0;
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously), release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using BugReportUiScope f = new(context: BugReportUiScope.StandardContext with { ShowIgnore = true },
+            copy: async (_, _) => { started.TrySetResult(); await release.Task; },
+            open: (_, _) => { opened++; return Task.CompletedTask; });
+        try
+        {
+            f.Click("btnCopy"); await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.That(f.Field<Button>("quitButton").IsEffectivelyEnabled, Is.True);
+            switch (firstDecision)
+            {
+                case "Ignore": f.Click("IgnoreButton"); break;
+                case "Dismiss": f.Dialog.Close(); break;
+                case "Quit": f.Click("quitButton"); break;
+                default: throw new ArgumentOutOfRangeException(nameof(firstDecision));
+            }
+            PortableHelperSettingsFixture.Pump(f.Dialog);
+            Assert.That(f.Dialog.IsVisible && f.Host.Owner.IsVisible, Is.True);
+            Assert.That(f.Completion.IsCompleted || f.Dialog.Completion.IsCompleted, Is.False);
+            Assert.That(f.Field<Button>("IgnoreButton").IsEnabled || f.Field<Button>("quitButton").IsEnabled, Is.False);
+            // An accepted input event may already be queued before controls become disabled.
+            // Dispatch its routed Click explicitly to test the handler guard independently of disabled hit testing.
+            f.Field<Button>("quitButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.That(f.Completion.IsCompleted, Is.False); Assert.That(opened, Is.Zero);
+        }
+        finally { release.TrySetResult(); }
+        await PushProcessTestDriver.CompleteAsync(f.Completion, f.Host.Owner);
+        Assert.That(await f.Completion, Is.EqualTo(Enum.Parse<BugReportDecision>(firstDecision)));
+        Assert.That(f.Host.Owner.IsVisible, Is.True); Assert.That(f.Dialog.IsVisible, Is.False); Assert.That(opened, Is.Zero);
+    }
+
+    [AvaloniaTest]
     public async Task AnExternalLauncherFailureKeepsTheReportAndDescriptionWithAFixedLocalNotice()
     {
         await using BugReportUiScope f = new(open: (_, _) => Task.FromException(new IOException("private launcher payload must not become the notice")));
@@ -174,7 +210,7 @@ public sealed class BugReportDialogTests
         await using BugReportUiScope f = new(open: (uri, _) => { opened.Add(uri); return Task.CompletedTask; });
         f.Edit("details to review"); f.Click("sendAndQuitButton");
         Window confirmation = await f.Child("ConfirmExternalErrorReport");
-        f.Dialog.BeginClose(); f.Dialog.Close();
+        _ = f.Dialog.BeginClose(); f.Dialog.Close();
         await PushProcessTestDriver.CompleteAsync(f.Completion, f.Host.Owner);
         Assert.That(confirmation.IsVisible || f.Dialog.IsVisible, Is.False); Assert.That(opened, Is.Empty);
         Assert.That(await f.Completion, Is.EqualTo(BugReportDecision.Dismiss), "An implicit close must never act like Send or Quit.");
@@ -238,7 +274,7 @@ internal sealed class BugReportUiScope : IAsyncDisposable
     { await PushProcessTestDriver.UntilAsync(Dialog, () => Dialog.OwnedWindows.Any(window => window.Name == name)); return Dialog.OwnedWindows.Single(window => window.Name == name); }
     public async ValueTask DisposeAsync()
     {
-        try { Dialog.BeginClose(); Dialog.Close(); await PushProcessTestDriver.CompleteAsync(Completion, Host.Owner); Dialog.DisposeWork(); }
+        try { _ = Dialog.BeginClose(); Dialog.Close(); await PushProcessTestDriver.CompleteAsync(Completion, Host.Owner); Dialog.DisposeWork(); }
         finally { Host.Dispose(); }
     }
 }

@@ -21,7 +21,7 @@ internal sealed class BugReportDialog : Window
     private readonly CancellationTokenSource _lifetime;
     private readonly TextBox _description = new() { Name = "descriptionTextBox", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, ClearSelectionOnLostFocus = false };
     private readonly TextBlock _notice = new() { Name = "BugReportNotice", TextWrapping = TextWrapping.Wrap };
-    private readonly Button _copy, _send;
+    private readonly Button _copy, _send, _ignore, _quit;
     private readonly ExceptionDetailsControl _details;
     private Task _work = Task.CompletedTask;
     private bool _busy, _closing, _closed, _disposed, _closeScheduled;
@@ -48,18 +48,18 @@ internal sealed class BugReportDialog : Window
         }, SelectedIndex = context.FocusDetails ? 1 : 0 };
         _copy = Command("btnCopy", "&Copy", "CopyToClipboard");
         _send = Command("sendAndQuitButton", "&Send and Quit", "github");
-        Button ignore = Command("IgnoreButton", "&Ignore"); ignore.IsVisible = context.ShowIgnore; ignore.IsEnabled = context.CanIgnore;
-        Button quit = new HyperlinkButton { Name = "quitButton", Content = new AccessText { Text = _translations.TranslateAccessKeys("BugReportForm", "quitButton", "Text", "&Quit") }, IsCancel = true, MinHeight = 25 };
+        _ignore = Command("IgnoreButton", "&Ignore"); _ignore.IsVisible = context.ShowIgnore;
+        _quit = new HyperlinkButton { Name = "quitButton", Content = new AccessText { Text = _translations.TranslateAccessKeys("BugReportForm", "quitButton", "Text", "&Quit") }, IsCancel = true, MinHeight = 25 };
         ToolTip.SetTip(_copy, Text("_toolTipCopy", "Copy the issue details into clipboard"));
         ToolTip.SetTip(_send, Text("_toolTipSendQuit", "Report the issue to GitHub and quit application.\nA valid GitHub account is required"));
-        ToolTip.SetTip(quit, Text("_toolTipQuit", "Quit application without reporting the issue"));
+        ToolTip.SetTip(_quit, Text("_toolTipQuit", "Quit application without reporting the issue"));
         _copy.Click += async (_, _) => { string report = _context.CopyText(_snapshot, _description.Text); await StartAsync(() => CopyAsync(report)); };
         _send.Click += async (_, _) => { string description = _description.Text ?? ""; await StartAsync(() => SendAsync(description)); };
-        ignore.Click += (_, _) => RequestDecision(BugReportDecision.Ignore);
-        quit.Click += (_, _) => RequestDecision(BugReportDecision.Quit);
+        _ignore.Click += (_, _) => RequestDecision(BugReportDecision.Ignore);
+        _quit.Click += (_, _) => RequestDecision(BugReportDecision.Quit);
         Grid footer = new() { Name = "tableLayoutPanel1", ColumnDefinitions = new("*,Auto,Auto,Auto"), ColumnSpacing = 6, Margin = new Thickness(4, 0) };
         _copy.HorizontalAlignment = HorizontalAlignment.Left; footer.Children.Add(_copy);
-        foreach ((Control control, int column) in new[] { ((Control)ignore, 1), (_send, 2), (quit, 3) })
+        foreach ((Control control, int column) in new[] { ((Control)_ignore, 1), (_send, 2), (_quit, 3) })
         { Grid.SetColumn(control, column); footer.Children.Add(control); }
         Grid root = new() { RowDefinitions = new("*,Auto,Auto"), Margin = new Thickness(4) };
         root.Children.Add(tabs); Grid.SetRow(_notice, 1); root.Children.Add(_notice); Grid.SetRow(footer, 2); root.Children.Add(footer); Content = root;
@@ -124,8 +124,12 @@ internal sealed class BugReportDialog : Window
     }
     private void UpdateActions()
     {
-        _copy.IsEnabled = !_busy && !_closing && (_copyText is not null || Clipboard is not null);
-        _send.IsEnabled = !_busy && !_closing && !_context.FocusDetails && _openIssue is not null;
+        bool acceptingDecision = !_closing && !_closed && !_lifetime.IsCancellationRequested;
+        _copy.IsEnabled = !_busy && acceptingDecision && (_copyText is not null || Clipboard is not null);
+        _send.IsEnabled = !_busy && acceptingDecision && !_context.FocusDetails && _openIssue is not null;
+        // The first local decision may cancel a busy operation, then remains fixed until it drains.
+        _ignore.IsEnabled = acceptingDecision && _context.CanIgnore;
+        _quit.IsEnabled = acceptingDecision;
     }
     private Task StartAsync(Func<Task> action)
     {
@@ -200,7 +204,12 @@ internal sealed class BugReportDialog : Window
     }
 
     private void RequestDecision(BugReportDecision decision)
-    { _decision = decision; BeginClose(); ScheduleClose(); }
+    {
+        // Closing by X already seals Dismiss through BeginClose. Ignore/Quit must not be
+        // replaced by a late pointer, Escape or already-queued routed Click while work drains.
+        if (_closing || _closed || _lifetime.IsCancellationRequested) { return; }
+        _decision = decision; BeginClose(); ScheduleClose();
+    }
     internal Task BeginClose()
     {
         if (!_closing)

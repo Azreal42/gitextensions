@@ -1,5 +1,7 @@
 using System.Reflection;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -134,6 +136,79 @@ public sealed class ErrorReportRoutingTests
         await PushProcessTestDriver.CompleteAsync(f.Main.ErrorReportCompletion, f.Main);
         Assert.That(report.IsVisible, Is.False); Assert.That(f.Main.LastException, Is.Null);
         Assert.That(f.Main.ErrorReportSnapshot, Is.Null); Assert.That(Field<Button>(f.Main, "ViewErrorDetails").IsVisible, Is.False);
+    }
+
+    [AvaloniaTest]
+    [TestCase("Ignore")] [TestCase("Dismiss")] [TestCase("Quit")]
+    public async Task TheFirstReportCloseDecisionStaysFixedWhileCopyDrainsDespiteLateQuitInput(string firstDecision)
+    {
+        await using Scope f = await Scope.CreateAsync(); int launches = 0;
+        f.Main.ExternalLauncher = _ => { launches++; return null; };
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously), release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Main.ErrorReportCopyTextAsync = async (_, _) => { started.TrySetResult(); await release.Task; };
+        await f.Main.OpenRepositoryAsync(f.EmptyDirectory("latched report decision"));
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, "ViewErrorDetails")); BugReportDialog report = await f.Report();
+        Button quit = Field<Button>(report, "quitButton");
+        try
+        {
+            PushProcessTestDriver.Pointer(Field<Button>(report, "btnCopy"));
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(10)); PortableHelperSettingsFixture.Pump(report);
+            Assert.That(quit.IsEffectivelyEnabled, Is.True, "A first Quit remains available during Copy, then must drain it.");
+            Point quitCenter = quit.TranslatePoint(new Point(quit.Bounds.Width / 2, quit.Bounds.Height / 2), report)!.Value;
+            Assert.That((report.InputHitTest(quitCenter) as Visual)?.GetSelfAndVisualAncestors().Contains(quit), Is.True);
+            switch (firstDecision)
+            {
+                case "Ignore": PushProcessTestDriver.Pointer(Field<Button>(report, "IgnoreButton")); break;
+                case "Dismiss": report.Close(); break; // The actual Window Closing path used by the title-bar X, not BeginClose directly.
+                case "Quit": PushProcessTestDriver.Pointer(quit); break;
+                default: throw new ArgumentOutOfRangeException(nameof(firstDecision));
+            }
+            PortableHelperSettingsFixture.Pump(report);
+            Assert.That(report.IsVisible && f.Main.IsVisible, Is.True);
+            Assert.That(report.Completion.IsCompleted || f.Main.ErrorReportCompletion.IsCompleted, Is.False);
+            Assert.That(f.Main.WindowWorkCompletion.IsCompleted, Is.False);
+            foreach (string name in new[] { "btnCopy", "sendAndQuitButton", "IgnoreButton", "quitButton" })
+            { Assert.That(Field<Button>(report, name).IsEnabled, Is.False, "Late decision controls must be disabled: " + name); }
+            Assert.That(quit.TranslatePoint(new Point(quit.Bounds.Width / 2, quit.Bounds.Height / 2), report), Is.EqualTo(quitCenter));
+            Assert.That(new Rect(default, report.ClientSize).Contains(quitCenter), Is.True);
+            // Send actual pointer input to the same visible Quit rectangle despite its now-disabled state.
+            // The strict enabled-target driver is intentionally inapplicable to this negative input test.
+            report.MouseMove(quitCenter); report.MouseDown(quitCenter, MouseButton.Left); report.MouseUp(quitCenter, MouseButton.Left);
+            PortableHelperSettingsFixture.Press(report, PhysicalKey.Escape);
+            Assert.That(report.IsVisible && f.Main.IsVisible, Is.True); Assert.That(launches, Is.Zero);
+        }
+        finally { release.TrySetResult(); }
+        await PushProcessTestDriver.CompleteAsync(f.Main.ErrorReportCompletion, f.Main);
+        PortableHelperSettingsFixture.Pump(f.Main); // Flush a posted Quit too; Task completion alone is not the host-close oracle.
+        if (firstDecision == "Quit") { await PushProcessTestDriver.UntilAsync(f.Main, () => !f.Main.IsVisible); }
+        else { Assert.That(f.Main.IsVisible, Is.True, "The first Ignore/Dismiss must not be replaced by the late Quit."); }
+        await f.Main.WindowWorkCompletion.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.That(report.IsVisible, Is.False); Assert.That(f.Main.ErrorReportCompletion.IsCompletedSuccessfully, Is.True);
+        Assert.That(launches, Is.Zero);
+    }
+
+    [AvaloniaTest]
+    public async Task ActualOwnerCloseDuringTheSubmissionConfirmationNeverOpensTheTracker()
+    {
+        await using Scope f = await Scope.CreateAsync(); int launches = 0;
+        f.Main.ExternalLauncher = _ => { launches++; return null; };
+        InvalidOperationException original = new("recoverable report with a submission preview");
+        Task operation = (Task)typeof(MainWindow).GetMethod("RunAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(f.Main, ["Recoverable operation", (Func<GitRepository, Task>)(_ => Task.FromException(original)), false, false])!;
+        await operation.WaitAsync(TimeSpan.FromSeconds(10));
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, "ViewErrorDetails")); BugReportDialog report = await f.Report();
+        TextBox description = Field<TextBox>(report, "descriptionTextBox"); PushProcessTestDriver.Pointer(description);
+        report.KeyTextInput("Explicit description retained for review");
+        PushProcessTestDriver.Pointer(Field<Button>(report, "sendAndQuitButton"));
+        await PushProcessTestDriver.UntilAsync(report, () => report.OwnedWindows.Any(window => window.Name == "ConfirmExternalErrorReport"));
+        Window confirmation = report.OwnedWindows.Single(window => window.Name == "ConfirmExternalErrorReport");
+        Assert.That(Field<Button>(confirmation, "CancelErrorReportSubmission").IsDefault, Is.True);
+        Assert.That(launches, Is.Zero);
+        f.Main.Close(); // Real owner lifetime invalidation, not a direct presenter BeginClose call.
+        await PushProcessTestDriver.UntilAsync(f.Main, () => !f.Main.IsVisible);
+        await f.Main.WindowWorkCompletion.WaitAsync(TimeSpan.FromSeconds(15));
+        Assert.That(report.IsVisible || confirmation.IsVisible, Is.False);
+        Assert.That(f.Main.ErrorReportCompletion.IsCompletedSuccessfully, Is.True); Assert.That(launches, Is.Zero);
     }
 
     private static T Field<T>(TopLevel window, string name) where T : Control => PushProcessTestDriver.Field<T>(window, name);
