@@ -217,7 +217,11 @@ public sealed class ClassicMenuTests
         DesktopSettingsDialog dialog = f.Window.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
         SettingsNavigationTestDriver.Select(dialog, "General");
         dialog.GetVisualDescendants().OfType<NumericUpDown>().Single(input => input.Name == "_NO_TRANSLATE_MaxCommits").Value = 150;
-        dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "SaveDesktopSettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Button save = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "SaveDesktopSettings");
+        TestContext.Out.WriteLine($"Settings before Save: enabled={save.IsEffectivelyEnabled}, gitEnvironmentBusy={dialog.GitEnvironmentSession?.IsBusy}, dialogVisible={dialog.IsVisible}, mainBusy={f.Window.IsBusy}, storedMax={store.Load().MaxRevisionGraphCommits}");
+        // A real pointer cannot activate OK while the automatic environment scan disables it.
+        await Until(() => save.IsEffectivelyEnabled);
+        save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(() => !dialog.IsVisible && !f.Window.IsBusy && store.Load().MaxRevisionGraphCommits == 150);
         Assert.That(store.Load().HistoryLimit, Is.EqualTo(initial.HistoryLimit), "General edits the total ceiling, independently of the existing incremental batch size.");
         Assert.That(store.Load().AutoNormaliseSymbol, Is.EqualTo(initial.AutoNormaliseSymbol));

@@ -254,7 +254,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token); _previewCancellation = cancellation;
         try
         {
-            GitObjectPreview preview = await Repository.GetObjectPreviewAsync(hash, cancellation.Token, _preview.TextView.ComparisonMenu.Options, _preview.TextView.DisplayOptions);
+            GitObjectPreview preview = await Repository.GetRecoveryObjectPreviewAsync(hash, cancellation.Token, _preview.TextView.ComparisonMenu.Options, _preview.TextView.DisplayOptions);
             if (_closing || cancellation.IsCancellationRequested || version != _previewVersion || SelectedObject?.Hash != hash) { return; }
             if (preview.ReadError is not null)
             { Preview = preview; _previewError.Text = Text("_lostObjectUnreadable", "Object could not be read. It may be corrupted or no longer available.") + "\n\n" + preview.ReadError; _previewError.IsVisible = true; }
@@ -281,7 +281,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         {
             foreach (RecoveryRow row in _rows.Where(row => row.Object.Type == GitLostObjectType.Blob && !row.Annotated).ToArray())
             {
-                GitObjectPreview data = await Repository.GetObjectPreviewAsync(row.Object.Hash, cancellation.Token);
+                GitObjectPreview data = await Repository.GetRecoveryObjectPreviewAsync(row.Object.Hash, cancellation.Token);
                 if (_closing || cancellation.IsCancellationRequested || version != _scanVersion) { return; }
                 row.Annotated = true;
                 if (data.ReadError is null) { row.RawType = row.Object.RawType + " (" + Text("_seemingly", "seemingly") + ": " + Path.GetExtension(data.SuggestedFileName).TrimStart('.') + ")"; UpdateColumns(); }
@@ -320,7 +320,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         if (!CanAct || SelectedObject is not { } item) { return Task.CompletedTask; } string hash = item.Hash;
         return RunAsync("View", async token =>
         {
-            GitObjectPreview data = await Repository.GetObjectPreviewAsync(hash, token, _preview.TextView.ComparisonMenu.Options, _preview.TextView.DisplayOptions); token.ThrowIfCancellationRequested();
+            GitObjectPreview data = await Repository.GetRecoveryObjectPreviewAsync(hash, token, _preview.TextView.ComparisonMenu.Options, _preview.TextView.DisplayOptions); token.ThrowIfCancellationRequested();
             if (_closing || !IsVisible) { return; }
             using TextEditDialog child = new("", data.SuggestedFileName, Translations, "RecoveryQuickViewer")
                 { Name = "RecoveryQuickView", IsReadOnly = true, RequestedThemeVariant = ActualThemeVariant };
@@ -345,7 +345,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         if (!CanAct || SelectedObject is not { Type: GitLostObjectType.Blob } item) { return Task.CompletedTask; } string hash = item.Hash;
         return RunAsync("Save as…", async token =>
         {
-            GitObjectPreview data = await Repository.GetObjectPreviewAsync(hash, token); token.ThrowIfCancellationRequested(); if (_closing || !IsVisible) { return; }
+            GitObjectPreview data = await Repository.GetRecoveryObjectPreviewAsync(hash, token); token.ThrowIfCancellationRequested(); if (_closing || !IsVisible) { return; }
             string extension = Path.GetExtension(data.SuggestedFileName).TrimStart('.');
             FilePickerSaveOptions options = new() { Title = Text("saveAsToolStripMenuItem", "Save as..."), SuggestedFileName = data.SuggestedFileName, DefaultExtension = extension,
                 SuggestedStartLocation = await StorageProvider.TryGetFolderFromPathAsync(new Uri(Repository.Path)), FileTypeChoices = FileTypes(extension), ShowOverwritePrompt = true };

@@ -44,15 +44,24 @@ public sealed partial class GitRepository
     }
 
     /// <summary>Object preview is always read-only; a codec/object failure preserves the identity and any successfully read bytes.</summary>
-    public async Task<GitObjectPreview> GetObjectPreviewAsync(string objectId, CancellationToken cancellationToken = default,
+    public Task<GitObjectPreview> GetObjectPreviewAsync(string objectId, CancellationToken cancellationToken = default,
         GitComparisonDiffOptions? options = null, GitDiffDisplayOptions? displayOptions = null)
+        => GetObjectPreviewCoreAsync(objectId, cachePreview: true, cancellationToken, options, displayOptions);
+
+    /// <summary>Reads the currently available object for recovery without using the generic preview cache.</summary>
+    public Task<GitObjectPreview> GetRecoveryObjectPreviewAsync(string objectId, CancellationToken cancellationToken = default,
+        GitComparisonDiffOptions? options = null, GitDiffDisplayOptions? displayOptions = null)
+        => GetObjectPreviewCoreAsync(objectId, cachePreview: false, cancellationToken, options, displayOptions);
+
+    private async Task<GitObjectPreview> GetObjectPreviewCoreAsync(string objectId, bool cachePreview, CancellationToken cancellationToken,
+        GitComparisonDiffOptions? options, GitDiffDisplayOptions? displayOptions)
     {
         string oid = ValidateObjectId(objectId);
         GitObjectData? data = null;
         string encodingName = "utf-8", suggested = "file.txt";
         try
         {
-            data = await ReadObjectCoreAsync(oid, cachePreview: true, cancellationToken).ConfigureAwait(false);
+            data = await ReadObjectCoreAsync(oid, cachePreview, cancellationToken).ConfigureAwait(false);
             encodingName = displayOptions?.FileEncodingName is string overrideName ? GitFileEncodingCodec.GetEncoding(overrideName).WebName
                 : await GetFileEncodingNameAsync(cancellationToken).ConfigureAwait(false);
             if (data.Type == GitLostObjectType.Blob)
@@ -82,7 +91,10 @@ public sealed partial class GitRepository
                 { PatchBytes = patch.StandardOutput, FileEncodingName = encodingName, IsLosslessPatch = decoded.IsLossless, UseGitColoring = useColor };
                 return new(oid, data, decoded.Text, document, encodingName, "commit.patch", null);
             }
-            GitBinaryResult pretty = await RunCachedBinaryAsync(GitCachedReadKind.Object, ["--no-replace-objects", "cat-file", "-p", oid], cancellationToken).ConfigureAwait(false);
+            string[] prettyArguments = ["--no-replace-objects", "cat-file", "-p", oid];
+            GitBinaryResult pretty = cachePreview
+                ? await RunCachedBinaryAsync(GitCachedReadKind.Object, prettyArguments, cancellationToken).ConfigureAwait(false)
+                : await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. prettyArguments], cancellationToken).ConfigureAwait(false);
             if (!pretty.Success) { throw ObjectCommandError(["cat-file", "-p", oid], pretty); }
             return new(oid, data, ObjectUtf8.GetString(pretty.StandardOutput), null, "utf-8", suggested, null);
         }

@@ -172,6 +172,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. BlameEncodingScenarios.All,
     .. ReflogScenarios.All,
     .. ObjectRecoveryScenarios.All,
+    .. RecoveryObjectPreviewScenarios.All,
     .. CleanScenarios.All,
     .. HistoryRemovalScenarios.All,
     .. GitProcessStreamingScenarios.All,
@@ -271,6 +272,7 @@ if (args.Contains("--command-log-capture-only", StringComparer.Ordinal)) { tests
 if (args.Contains("--command-cache-only", StringComparer.Ordinal)) { tests = GitCommandCacheScenarios.All.ToArray(); }
 if (args.Contains("--command-cache-readers-only", StringComparer.Ordinal)) { tests = GitCommandCacheReaderScenarios.All.ToArray(); }
 if (args.Contains("--command-cache-all-only", StringComparer.Ordinal)) { tests = [.. GitCommandCacheScenarios.All, .. GitCommandCacheReaderScenarios.All]; }
+if (args.Contains("--recovery-object-preview-only", StringComparer.Ordinal)) { tests = RecoveryObjectPreviewScenarios.All.ToArray(); }
 if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal))
 { tests = [.. GitProcessStreamingScenarios.All, .. ToolConfigurationScenarios.All, .. ScriptScenarios.All, .. ScriptRuntimeScenarios.All,
     .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All, .. HistoryRemovalScenarios.All]; }

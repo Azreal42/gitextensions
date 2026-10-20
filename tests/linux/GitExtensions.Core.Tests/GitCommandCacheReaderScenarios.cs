@@ -39,7 +39,8 @@ internal static class GitCommandCacheReaderScenarios
         ("command cache real tree preview caches both binary object and pretty listing without caching Recovery", Guard(TreePreviewAsync)),
         ("command cache raw tree and blob hits ignore an unreadable unrelated worktree subtree", Guard(RawAuthorityAsync)),
         ("command cache positive blame hits become fresh while any textconv dependency is unverified", Guard(BlameTextconvAsync)),
-        ("command cache native replacement shallow and graft override files invalidate positive immutable hits", Guard(GraphOverridesAsync))
+        ("command cache native replacement shallow and graft override files invalidate positive immutable hits", Guard(GraphOverridesAsync)),
+        ("command cache unclosed Git scripts stay fresh when stable executable bytes read a changed external marker", Guard(ScriptGitBypassAsync))
     ];
 
     private static Func<Task> Guard(Func<Task> action) => async () =>
@@ -405,21 +406,39 @@ internal static class GitCommandCacheReaderScenarios
         string dependency=attributes?p.Seed.File(".gitattributes"):p.Seed.File(".git/config");
         if(attributes){File.WriteAllText(dependency,"*.txt diff \n");}
         Reset();await Hit("diff",()=>p.Repository.GetRevisionFileDiffAsync(changes,file));
-        // Clear only to force the next factory after a proven positive admission/hit.
-        Reset();using DiffGate gate=new(p.Seed);GitRepository repository=new(p.Repository.Path,new GitRunner(gate.Executable));Task<string>? operation=null;
+        // Force a real miss only after native Git has proven a positive admission/hit.
+        Reset();int mutations=0;long launchId=0;Exception? observerError=null;Task<string>? operation=null;string actual="";
+        using CancellationTokenSource cancel=new(TimeSpan.FromSeconds(20));
+        void Observe()
+        {
+            GitCommandLogEntry? entry=GitCommandLog.Snapshot().LastOrDefault(item=>item.Command=="git diff" && item.Directory==p.Repository.Path && item.IsRunning && item.ProcessId is null);
+            if(entry is null || Interlocked.CompareExchange(ref mutations,1,0)!=0){return;}
+            launchId=entry.Id;
+            try
+            {
+                // Begin publishes synchronously after authority capture, before Configure/ProcessStart.
+                if(attributes){File.WriteAllText(dependency,"*.txt -diff\n");}else{File.AppendAllText(dependency,"\n[cache-test]\n during = changed\n");}
+            }
+            catch(Exception error){observerError=error;} // Diagnostic observers isolate throws; assert outside the callback.
+        }
+        GitCommandLog.Changed+=Observe;
         try
         {
-            operation=repository.GetRevisionFileDiffAsync(changes,file);await gate.Ready();
-            Check(!operation.IsCompleted && Calls("diff")==1,"Actual target factory did not reach its owned launch gate.");
-            if(attributes){File.WriteAllText(dependency,"*.txt -diff\n");}else{File.AppendAllText(dependency,"\n[cache-test]\n during = changed\n");}
-            gate.Release();string actual=await operation.WaitAsync(TimeSpan.FromSeconds(15));
+            operation=p.Repository.GetRevisionFileDiffAsync(changes,file,cancellationToken:cancel.Token);
+            actual=await operation.WaitAsync(TimeSpan.FromSeconds(15));
+            Check(mutations==1 && launchId>0 && observerError is null && Calls("diff")==1,"Real native factory did not observe exactly one successful pre-launch dependency mutation.");
             Check(attributes?actual.Contains("Binary files",StringComparison.Ordinal):actual.Contains("new value 終",StringComparison.Ordinal),"Caller did not receive the native successful result after the authority changed.");
             Check(!GitCommandCache.Shared.Snapshot().Any(entry=>entry.Key.StartsWith("diff ",StringComparison.Ordinal)||entry.Key.Contains(" diff ",StringComparison.Ordinal)),"Changed authority admitted its in-flight result.");
-            Check(!LinuxProcessState.IsRunning(gate.ProcessId) && !LinuxProcessState.IsRunning(gate.ChildId),"Factory returned before its owned actors retired.");
-            var(a,b)=await Hit("diff",()=>repository.GetRevisionFileDiffAsync(changes,file));
-            Check(a==actual && b==actual,"New stable authority did not admit a true hit after the discarded result.");
+            GitCommandLogEntry completed=GitCommandLog.Snapshot().Single(entry=>entry.Id==launchId);
+            Check(completed is { IsRunning:false, ExitCode:0, Cancelled:false, ProcessId:>0 } && !LinuxProcessState.IsRunning(completed.ProcessId!.Value),"Awaited native Git did not publish a real PID, successful completion and retirement.");
         }
-        finally{gate.Release();if(operation is not null){await operation.WaitAsync(TimeSpan.FromSeconds(15));}}
+        finally
+        {
+            GitCommandLog.Changed-=Observe;cancel.Cancel();
+            if(operation is not null){try{await operation.WaitAsync(TimeSpan.FromSeconds(15));}catch(OperationCanceledException) when(cancel.IsCancellationRequested){}}
+        }
+        var(a,b)=await Hit("diff",()=>p.Repository.GetRevisionFileDiffAsync(changes,file));
+        Check(a==actual && b==actual,"New stable authority did not admit a true hit after the discarded result.");
     }
     private static async Task DisplayKeyAsync()
     {
@@ -585,41 +604,44 @@ internal static class GitCommandCacheReaderScenarios
             File.Delete(shallow);File.Delete(grafts);File.Delete(replacement);
         }
     }
+    private static async Task ScriptGitBypassAsync()
+    {
+        using Pair p=await PairAsync();string script=Path.Combine(p.Seed.Root,"git"),marker=Path.Combine(p.Seed.Root,"external-marker"),actors=Path.Combine(p.Seed.Root,"wrapper-actors");
+        File.WriteAllText(marker,"MARKER-A\n");File.WriteAllText(actors,"");
+        WriteExecutable(script,"#!/bin/sh\nmatch=no\nfor arg in \"$@\"; do test \"$arg\" != cat-file || match=yes; done\n"
+            +"if test \"$match\" != yes; then exec /usr/bin/git \"$@\"; fi\n/usr/bin/git \"$@\" &\nchild=$!\nprintf '%s %s\\n' \"$$\" \"$child\" >> "+Quote(actors)+"\n"
+            +"wait \"$child\" || exit $?\ncat < \"$GE_CACHE_WRAPPER_MARKER\"\n");
+        byte[] scriptBytes=File.ReadAllBytes(script);string? previous=Environment.GetEnvironmentVariable("GE_CACHE_WRAPPER_MARKER");
+        try
+        {
+            Environment.SetEnvironmentVariable("GE_CACHE_WRAPPER_MARKER",marker);Reset();
+            var(native,nativeHit)=await Hit("cat-file",()=>p.Repository.GetFileBytesAsync(Literal,p.Second));
+            Check(native.SequenceEqual(nativeHit),"The native Git positive witness never admitted its immutable blob.");
+            long[] admitted=GitCommandCache.Shared.Snapshot().Select(entry=>entry.Id).ToArray();long retained=GitCommandCache.Shared.RetainedBytes;
+            long lastId=GitCommandLog.Snapshot().Max(entry=>entry.Id);int calls=Calls("cat-file");GitRepository wrapped=new(p.Repository.Path,new GitRunner(script));
+            byte[] first=await wrapped.GetFileBytesAsync(Literal,p.Second);
+            Check(first.SequenceEqual(native.Concat(Encoding.UTF8.GetBytes("MARKER-A\n"))),"Actual script/native Git fixture did not expose its external marker.");
+            DateTime stamp=File.GetLastWriteTimeUtc(marker);File.WriteAllText(marker,"MARKER-B\n");File.SetLastWriteTimeUtc(marker,stamp);
+            byte[] second=await wrapped.GetFileBytesAsync(Literal,p.Second);
+            Check(Calls("cat-file")==calls+2 && second.SequenceEqual(native.Concat(Encoding.UTF8.GetBytes("MARKER-B\n"))) && !second.SequenceEqual(first),"Stable script bytes and constant environment retained stale output instead of invoking both real reads.");
+            Check(GitCommandCache.Shared.Snapshot().Select(entry=>entry.Id).SequenceEqual(admitted) && GitCommandCache.Shared.RetainedBytes==retained,"Unclosed Git script admitted new data or altered an independent native entry.");
+            Check(File.ReadAllBytes(script).SequenceEqual(scriptBytes) && Environment.GetEnvironmentVariable("GE_CACHE_WRAPPER_MARKER")==marker,"Fixture changed executable bytes or environment identity to manufacture a miss.");
+            GitCommandLogEntry[] completed=GitCommandLog.Snapshot().Where(entry=>entry.Id>lastId && entry.Command=="git cat-file").ToArray();
+            Check(completed.Length==2 && completed.All(entry=>entry is { IsRunning:false, ExitCode:0, Cancelled:false, ProcessId:>0 } && !LinuxProcessState.IsRunning(entry.ProcessId!.Value)),"Actual wrapper reads did not complete and drain their real recorded processes.");
+            string[] records=File.ReadAllLines(actors);Check(records.Length==2,"Script failed to expose both actual shell/native-child pairs.");
+            foreach(string record in records)
+            {
+                string[] ids=record.Split(' ',StringSplitOptions.RemoveEmptyEntries);
+                Check(ids.Length==2 && int.TryParse(ids[0],out int shell) && int.TryParse(ids[1],out int child) && shell>0 && child>0
+                    && !LinuxProcessState.IsRunning(shell) && !LinuxProcessState.IsRunning(child),"Owned wrapper or native Git child survived its awaited read.");
+            }
+        }
+        finally{Environment.SetEnvironmentVariable("GE_CACHE_WRAPPER_MARKER",previous);}
+    }
     private static string Quote(string value)=>"'"+value.Replace("'","'\"'\"'",StringComparison.Ordinal)+"'";
     private static void WriteExecutable(string path,string text)
     {
         if(!OperatingSystem.IsLinux()){throw new PlatformNotSupportedException("Native cache reader fixtures require Linux.");}
         File.WriteAllText(path,text);File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
-    }
-    private sealed class DiffGate : IDisposable
-    {
-        internal string Executable{get;}
-        private readonly string _marker,_release;
-        internal int ProcessId{get;private set;}
-        internal int ChildId{get;private set;}
-        internal DiffGate(RepositoryFixture fixture)
-        {
-            Executable=Path.Combine(fixture.Root,"actual diff gate");_marker=Executable+".pids";_release=Executable+".release";
-            WriteExecutable(Executable,"#!/bin/sh\nmatch=no\nfor arg in \"$@\"; do test \"$arg\" != diff || match=yes; done\nif test \"$match\" = yes && test ! -f "+Quote(_release)+"; then\n"
-                +" sleep 60 &\n child=$!\n printf '%s %s\\n' \"$$\" \"$child\" > "+Quote(_marker+".tmp")+"\n mv "+Quote(_marker+".tmp")+" "+Quote(_marker)+"\n"
-                +" while test ! -f "+Quote(_release)+"; do sleep 0.02; done\n kill \"$child\" 2>/dev/null || :\n wait \"$child\" 2>/dev/null || :\nfi\nexec /usr/bin/git \"$@\"\n");
-        }
-        internal async Task Ready()
-        {
-            Stopwatch timer=Stopwatch.StartNew();while(timer.Elapsed<TimeSpan.FromSeconds(15))
-            {
-                if(File.Exists(_marker))
-                {
-                    string[] values=File.ReadAllText(_marker).Split((char[]?)null,StringSplitOptions.RemoveEmptyEntries);
-                    if(values.Length==2 && int.TryParse(values[0],out int pid) && int.TryParse(values[1],out int child)
-                        && GitCommandLog.Snapshot().Any(entry=>entry.Command=="git diff" && entry.IsRunning && entry.ProcessId==pid))
-                    {ProcessId=pid;ChildId=child;Check(LinuxProcessState.IsRunning(pid)&&LinuxProcessState.IsRunning(child),"Gate actor witness absent.");return;}
-                }
-                await Task.Delay(10);
-            }
-            throw new InvalidOperationException("Real diff factory did not reach private gate.");
-        }
-        internal void Release()=>File.WriteAllText(_release,"release\n");
-        public void Dispose()=>Release();
     }
 }

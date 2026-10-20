@@ -9,7 +9,7 @@ public sealed partial class GitRepository
     private readonly SemaphoreSlim _commandCacheAuthorityGate = new(1, 1);
     private readonly Dictionary<string, CommandCacheAuthority> _commandCacheAuthorities = new(StringComparer.Ordinal);
     private static readonly UTF8Encoding CacheUtf8 = new(false, true);
-    private sealed record CommandCacheAuthority(string EnvironmentIdentity, string Fingerprint, string NativeIdentity,
+    private sealed record CommandCacheAuthority(string EnvironmentIdentity, string Fingerprint, string NativeIdentity, string GitExecutablePath,
         IReadOnlyList<string> Files, IReadOnlyList<string> RecursiveDirectories, string? AttributesRoot,
         bool DifftasticVerified, bool DiffDependenciesVerified, bool BlameDependenciesVerified);
 
@@ -67,6 +67,10 @@ public sealed partial class GitRepository
         IReadOnlyDictionary<string, string?> effective, IReadOnlyDictionary<string, string?>? overrides,
         string environmentIdentity, IReadOnlyList<string> inputFiles, bool attributesRequired, CancellationToken token)
     {
+        // A Git script/interpreter can read arbitrary external files without changing its argv/env/image.
+        // Its byte hash is not an authority for those inputs. Preserve native fresh execution instead.
+        string? git = ResolveCommandCacheExecutable(execution.Executable, effective, Path);
+        if (git is null || !IsCommandCacheNativeGitExecutable(git)) { return null; }
         // Discover effective GIT_DIR/WORK_TREE/COMMON_DIR afresh. Info can describe an older binding.
         GitRunner discoveryRunner = new(GitExecutionEnvironment.Capture(execution.Options, effective));
         GitRepositoryInfo info = await DiscoverRepositoryAsync(Path, discoveryRunner, token).ConfigureAwait(false);
@@ -155,8 +159,6 @@ public sealed partial class GitRepository
                 }
             }
         }
-        string? git = ResolveCommandCacheExecutable(execution.Executable, effective, Path);
-        if (git is null) { return null; }
         foreach (string candidate in CommandCacheExecutableCandidates(execution.Executable, effective, Path)) { Add(candidate); }
         // These native variables include missing default roots and respect disabled system/global files.
         // Unsupported older Git => uncached read, never a new error in the reader.
@@ -270,7 +272,7 @@ public sealed partial class GitRepository
             foreach (string candidate in CommandCacheExecutableCandidates(tool, effective, Path)) { Add(candidate); }
             dftVerified = ResolveCommandCacheExecutable(tool, effective, Path) is not null;
         }
-        CommandCacheAuthority seed = new(environmentIdentity, "", nativeIdentity, files.Order(StringComparer.Ordinal).ToArray(),
+        CommandCacheAuthority seed = new(environmentIdentity, "", nativeIdentity, git, files.Order(StringComparer.Ordinal).ToArray(),
             recursive.Order(StringComparer.Ordinal).ToArray(), attributesRequired && !info.IsBare ? info.RootPath : null,
             dftVerified, diffVerified, blameVerified);
         // A second native config read closes the discovery window without trusting a half-read include graph.
@@ -292,6 +294,44 @@ public sealed partial class GitRepository
             || part.EndsWith(".lock", StringComparison.OrdinalIgnoreCase))) { return null; }
         // Without a trailing slash the prefix can match sibling refs: close its parent namespace.
         return replaceBase.EndsWith('/') ? trimmed : System.IO.Path.GetDirectoryName(trimmed);
+    }
+
+    private static bool IsCommandCacheNativeGitExecutable(string path)
+    {
+        GitRulesLocation location = GitRulesFiles.Resolve(path);
+        GitRulesIdentity? identity = GitRulesIdentity.ReadPath(location.Path);
+        if (identity?.IsRegular != true) { return false; }
+        using FileStream file = new(location.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        if (GitRulesIdentity.ReadHandle(file.SafeFileHandle) != identity) { return false; }
+        bool native = IsCommandCacheNativeGitImage(path, location.Path, file);
+        GitRulesFiles.CheckLocation(location, GitRulesFiles.Resolve(path));
+        return native && GitRulesIdentity.ReadPath(location.Path) == identity;
+    }
+
+    private static bool IsCommandCacheNativeGitImage(string path, string resolvedPath, Stream file)
+    {
+        // The qualified portable product currently runs on Linux. Other image formats stay fresh.
+        if (!OperatingSystem.IsLinux() || IsInterpreter(path) || IsInterpreter(resolvedPath)) { return false; }
+        Span<byte> header = stackalloc byte[20]; int length = 0;
+        while (length < header.Length)
+        {
+            int count = file.Read(header[length..]);
+            if (count == 0) { return false; }
+            length += count;
+        }
+        file.Position = 0;
+        if (!header[..4].SequenceEqual(new byte[] { 0x7f, (byte)'E', (byte)'L', (byte)'F' })
+            || header[4] is not (1 or 2) || header[5] is not (1 or 2) || header[6] != 1) { return false; }
+        int type = header[5] == 1 ? header[16] | header[17] << 8 : header[17] | header[16] << 8;
+        return type is 2 or 3; // ET_EXEC or ET_DYN (PIE), never a shebang/text script or relocatable image.
+
+        static bool IsInterpreter(string value)
+        {
+            string name = System.IO.Path.GetFileNameWithoutExtension(value).ToLowerInvariant();
+            return name is "sh" or "bash" or "dash" or "ash" or "zsh" or "ksh" or "fish" or "csh" or "tcsh"
+                or "env" or "busybox" or "python" or "python2" or "python3" or "perl" or "ruby" or "node" or "nodejs"
+                or "php" or "lua" or "tclsh" or "wish" or "pwsh" or "powershell" or "dotnet" or "mono" or "java";
+        }
     }
 
     private static bool IsCommandCacheDifftasticTokenVerifiable(string token)
@@ -411,6 +451,9 @@ public sealed partial class GitRepository
             Add(OperatingSystem.IsWindows() ? File.GetAttributes(location.Path).ToString() : File.GetUnixFileMode(location.Path).ToString());
             await using FileStream file = new(location.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 65536, FileOptions.Asynchronous);
             if (GitRulesIdentity.ReadHandle(file.SafeFileHandle) != identity) { throw new IOException("Cache dependency was replaced."); }
+            // Bind classification to the same opened image whose bytes become this fingerprint.
+            if (path == authority.GitExecutablePath && !IsCommandCacheNativeGitImage(path, location.Path, file))
+            { throw new NotSupportedException("Git executable dependencies are not closed for command caching."); }
             byte[] digest = await SHA256.HashDataAsync(file, token).ConfigureAwait(false); hash.AppendData(digest);
             GitRulesFiles.CheckLocation(location, GitRulesFiles.Resolve(path));
             if (GitRulesIdentity.ReadPath(location.Path) != identity) { throw new IOException("Cache dependency was replaced."); }
