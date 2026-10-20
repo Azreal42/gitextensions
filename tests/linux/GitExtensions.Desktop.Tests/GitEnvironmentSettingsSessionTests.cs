@@ -190,6 +190,9 @@ public sealed class GitEnvironmentSettingsSessionTests
         Assert.That(host.Session.Checklist.CheckAtStartup, Is.EqualTo(!good));
         Assert.That(File.ReadAllBytes(new PreferencesStore().FilePath), Is.EqualTo(desktopPreferences));
         Assert.That(f.RepositoryData(), Is.EqualTo(before));
+        host.Window.Content = host.Session.SshPage; Pump(host.Window);
+        Assert.That(Field<TextBlock>(host.Window, "SshEnvironmentInformation").Text,
+            Does.Contain("SSH executable version check:").And.Contain("SSH authentication has not been tested."));
     }
 
     [AvaloniaTest]

@@ -148,11 +148,11 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
             _lifetime.Token.ThrowIfCancellationRequested();
             LastScan = result; HasProblems = !result.AllGood || _baseline.Error is not null;
             Page.SetEnvironmentInformation(result.EnvironmentInformation);
-            SshPage.SetDiagnostic(result.Diagnostic);
             bool publicationFailed = false;
             if (result.AllGood && _baseline.Error is null && _baseline.Preferences.CheckAtStartup)
             { publicationFailed = !SaveStartupFlag(false); HasProblems |= publicationFailed; }
             Checklist.Render(result.Checks, _baseline.Preferences.CheckAtStartup);
+            SshPage.SetDiagnostic(result.Diagnostic);
             if (!publicationFailed) { ShowError(_baseline.Error?.Message); }
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
