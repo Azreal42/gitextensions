@@ -63,7 +63,12 @@ public sealed class AdvancedSettingsConsumerTests
             Assert.That(checkout.CanExecuteDefault, Is.EqualTo(useDefault));
             if (useDefault)
             {
-                await checkout.ExecuteDefaultAsync(f.Owner, CancellationToken.None);
+                Task execution = checkout.ExecuteDefaultAsync(f.Owner, CancellationToken.None);
+                await PushProcessTestDriver.UntilAsync(f.Owner, () => f.Owner.OwnedWindows.Any(window => window.IsVisible && window.Name == "SuppressibleConfirmation"));
+                Window question = f.Owner.OwnedWindows.Single(window => window.IsVisible && window.Name == "SuppressibleConfirmation");
+                Assert.That(question.Owner, Is.SameAs(f.Owner));
+                PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(question, "ConfirmationNo"));
+                await execution;
                 Assert.That(checkout.Succeeded, Is.True, checkout.LastError); Assert.That((await git.Repository.GetStatusAsync()).Branch, Is.EqualTo("target"));
                 Assert.That((await git.Repository.GetStashesAsync()).Count, Is.EqualTo(1));
                 Assert.That((await git.GitAsync("stash", "show", "-p", "stash@{0}")).StandardOutput, Does.Contain("dirty preserved by advanced setting"));
