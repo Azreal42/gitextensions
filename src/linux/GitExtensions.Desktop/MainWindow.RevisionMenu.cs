@@ -55,7 +55,7 @@ public sealed partial class MainWindow
         };
         object[] commands =
             [
-                _revisionCopy, new Separator(), _revisionCheckoutBranches, _revisionPushBranches, _revisionMergeBranches, BuildRebaseMenu(),
+                .. BuildRevisionBisectMenuItems(), _revisionCopy, new Separator(), _revisionCheckoutBranches, _revisionPushBranches, _revisionMergeBranches, BuildRebaseMenu(),
                 RevisionAction("RevisionResetCurrent", "resetCurrentBranchToHereToolStripMenuItem", "Reset c&urrent branch to here...", ResetAsync, "ResetCurrentBranchToHere.png", true),
                 new Separator(), _revisionSelectInLeftPanel, createBranch,
                 RevisionAction("RevisionResetAnother", "resetAnotherBranchToHereToolStripMenuItem", "Reset an&other branch to here...", ResetAnotherBranchAsync, "ResetAnotherBranchToHere.png", true),
@@ -70,7 +70,7 @@ public sealed partial class MainWindow
             ];
         _revisionContext = new ContextMenu { Name = "RevisionContextMenu", ItemsSource = commands };
         InitializeFocusedRevisionMenu(commands);
-        _revisionContext.Opening += (_, _) => { BeginRevisionContextMenu(); PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); ComposeRevisionContextMenu(_focusedRevisionMenu); RefreshRevisionScriptMenu(); };
+        _revisionContext.Opening += (_, _) => { BeginRevisionContextMenu(); CaptureRevisionBisectTarget(); PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); ComposeRevisionContextMenu(_focusedRevisionMenu); RefreshRevisionScriptMenu(); };
         _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
         _revisionContext.Closed += (_, _) => EndRevisionContextMenu();
         _revisionContext.AddHandler(KeyDownEvent, async (_, args) =>
@@ -131,6 +131,7 @@ public sealed partial class MainWindow
         _revisionContext.IsEnabled = selected;
         foreach ((MenuItem item, bool worktree, Func<bool>? available) in _revisionActions)
         { item.IsEnabled = selected && (!worktree || !_repository!.IsBare) && (available?.Invoke() ?? true); }
+        RefreshRevisionBisectMenu();
         if (_revisionCopy is not null) { _revisionCopy.IsEnabled = selected; }
         GitReference? clicked = CurrentRevisionContextReference();
         bool includesCurrentBranch = clicked is not null ? clicked.IsBranch && clicked.IsCurrent
