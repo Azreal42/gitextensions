@@ -4,4 +4,4 @@ AdvancedSettingsPage reprend six champs utiles de la page Windows : toujours aff
 
 AdvancedSettingsSession écrit uniquement les intentions modifiées dans les trois profils existants. Les conflits observés arrêtent la sauvegarde ; les reçus par fichier permettent de conserver les publications acquises et de réessayer le reste. Cancel abandonne le brouillon suivant, sans transaction globale. Le Save typé de PreferencesStore conserve seulement les clés étrangères de premier niveau valides ; il ne devient pas un writer CAS pour tous ses champs.
 
-Updates/RC, console et DontShowHelpImages restent hors de cette page partielle ; SSH est distinct. N2 partiel, [preuves et périmètre](../../../todo.md#portable-workflows--perimetre-verifie).
+Les deux options Updates/RC et leur consommateur hebdomadaire complètent cette page dans [ADR0133](../../distribution/updates/0133-weekly-update-admission.md). Console et DontShowHelpImages restent hors périmètre ; SSH est distinct. N2 partiel, [preuves et périmètre](../../../todo.md#portable-workflows--perimetre-verifie).

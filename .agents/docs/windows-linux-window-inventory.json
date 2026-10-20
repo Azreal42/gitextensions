@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "3a2d4cc85775257110a4f6f3a01a4ff8762d2474",
-  "source_digest_sha256": "81ce1385ba84aa763390903d8f11c0b137591bfbd8d0459dcb74a7f6c3509a1d",
-  "scanned_csharp_files": 2456,
+  "code_reference_commit": "d165480713d30878f5795c28d7cfcc375ead428e",
+  "source_digest_sha256": "37e40acc177535cd84616ab09830cd1a04890e9f2d8bd4d44f0aae4a51d5d8af",
+  "scanned_csharp_files": 2461,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -46,54 +46,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/portable-workflows-20261020/desktop-full-02/results/desktop.trx",
-    "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
-    "trx_sha256": "b2aa3823721e58b25ecee03c333947d2f5d416fd23fee646eb86cad4cc0b7bed",
+    "trx": "artifacts/linux/update-scheduler-20261020/desktop-full-03/results/desktop.trx",
+    "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+    "trx_sha256": "1f5ba14ea98321c5aefb731172115779ef9a15da3fdc54f5e47cc0336f24b122",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
-        "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+        "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+        "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
         "primary_execution": false,
-        "reexecuted_on_candidate": false,
-        "passed": 1057,
-        "total": 1057,
-        "execution_result": "artifacts/linux/portable-workflows-20261020/core-full-01/result.json",
-        "execution_result_sha256": "068dc8fd09fe92edda1cc695dc837bb311ae1c1924a218f53aa3234605e906f5",
+        "reexecuted_on_candidate": true,
+        "passed": 1062,
+        "total": 1062,
+        "execution_result": "artifacts/linux/update-scheduler-20261020/core-full-01/result.json",
+        "execution_result_sha256": "3906a3d67766693061eb1de940093feb3523366c236acd5f2454f76807a61127",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
-          "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
+          "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
+          "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
-          "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
+          "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
+          "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
         },
-        "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
+        "comparison_scope": "Fresh complete suites on the exact committed candidate in the clean worktree. Declared source/config and binary manifests are equal; five unrelated primary Modal changes remain excluded."
       },
       "plugins": {
-        "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
-        "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+        "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+        "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
         "primary_execution": false,
-        "reexecuted_on_candidate": false,
+        "reexecuted_on_candidate": true,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/portable-workflows-20261020/plugins-full-01/result.json",
-        "execution_result_sha256": "d0a714f8f11b2823a92762da7742be74f3e0fc30269bf99bb9a99303a47ff8d0",
+        "execution_result": "artifacts/linux/update-scheduler-20261020/plugins-full-01/result.json",
+        "execution_result_sha256": "71b36699e0fed115dfbd088748e9a4da036c2e0fe9ae3afb04ff70d7b380ffbc",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
-          "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
+          "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
+          "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
-          "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
+          "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
+          "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
         },
-        "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
+        "comparison_scope": "Fresh complete suites on the exact committed candidate in the clean worktree. Declared source/config and binary manifests are equal; five unrelated primary Modal changes remain excluded."
       }
     },
     "current_linux_code_equivalent": false,
@@ -1540,7 +1540,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowDonateAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 151,
+          "line": 143,
           "kind": "window"
         },
         {
@@ -1875,8 +1875,8 @@
       "feature": "Recherche et téléchargement de mises à jour",
       "group": "information",
       "level": "N2",
-      "implemented": "Fenêtre Help compacte possédée et traduite ; recherche manuelle des releases publiques du fork, choix de préversions, sélection SemVer et paquet de la bonne architecture. Téléchargement borné et annulable, taille/SHA-256 vérifiés, liens et ouverture explicite du paquet par le bureau ; erreurs/Retry et fin réelle des opérations avant destruction du client testés (ADR0132).",
-      "remaining": "Aucune release Linux publiée à ce jour ; contrôle hebdomadaire et préférences durables à raccorder. Ouverture du paquet ne certifie pas son installation. Interaction native, OS vierge, Wayland/DPI/accessibilité et téléchargement d’une vraie release publique non qualifiés ; suites complètes non réexécutées pour ce lot.",
+      "implemented": "Fenêtre Help compacte possédée et traduite ; recherche manuelle ou contrôle hebdomadaire des releases publiques du fork, choix de préversions initialisé depuis Advanced, filtre GitHub/SemVer et paquet de la bonne architecture. Admission au démarrage et refresh grille/dashboard/F5, puis Apply des options Updates ; tentative UTC durable sous XDG_STATE_HOME avant HTTP et verrou coopératif. Notification différée jusqu’à Main actif/libre/sans modale, préférences relues ; erreur automatique sans interruption, manuel indépendant de l’horodatage. Téléchargement borné/annulable, taille/SHA-256 et liens explicites conservés (ADR0132/0133). Suites complètes, natif source ciblé EN/clair et FR/sombre, puis paquet exact/installation DPKG isolée vérifiés ; périmètres distincts dans le TODO.",
+      "remaining": "Publication initiale et téléchargement d’une vraie release publique à qualifier ; ouvrir le paquet ne certifie pas son installation. Interaction native étendue, paquet interactif, OS vierge et Wayland/DPI/accessibilité restent ouverts ; les suites complètes et le natif source ciblé du lot hebdomadaire sont acquis, sans succès GitHub public ni téléchargement natif déduits.",
       "visual": "rapproche",
       "linux": [
         {
@@ -1903,12 +1903,32 @@
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowUpdatesAsync",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 123,
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Updates.cs",
+          "line": 68,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.UpdateCheckStateStore",
+          "label": "UpdateCheckStateStore",
+          "source": "src/linux/GitExtensions.Desktop/UpdateCheckStateStore.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.MainWindow",
+          "label": "MainWindow.RequestAutomaticUpdateCheck",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Updates.cs",
+          "line": 27,
           "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
@@ -1918,25 +1938,38 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/LinuxUpdateClientTests.cs",
           "test_class": "LinuxUpdateClientTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 34,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdateCheckStateStoreTests.cs",
+          "test_class": "UpdateCheckStateStoreTests",
+          "passed_in_reference_run": 11,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatesDialogTests.cs",
           "test_class": "UpdatesDialogTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 18,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatesMenuIntegrationTests.cs",
           "test_class": "UpdatesMenuIntegrationTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 4,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/ui/0060-shared-classic-menus.md",
-        ".agents/docs/adr/distribution/updates/0132-linux-updates.md"
+        ".agents/docs/adr/distribution/updates/0132-linux-updates.md",
+        ".agents/docs/adr/distribution/updates/0133-weekly-update-admission.md"
       ]
     },
     {
@@ -7086,6 +7119,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
           "test_class": "AvatarCommitInfoTests",
           "passed_in_reference_run": 1,
@@ -7328,19 +7367,25 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsPageTests.cs",
           "test_class": "SshSettingsPageTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 6,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -8269,8 +8314,8 @@
       "feature": "Paramètres avancés",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Six champs Windows utiles : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes. Brouillon commun Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) vide et littéral hérité inconnu conservé sans écriture implicite.",
-      "remaining": "Page partielle : Updates/RC, aide et activation console Windows hors lot ; AlwaysAdvanced demeure Remotes-only et SSH reste distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu.",
+      "implemented": "Huit champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes, contrôle hebdomadaire et préversions Updates. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133).",
+      "remaining": "Page partielle : aide et activation console Windows restent absentes ; AlwaysAdvanced demeure Remotes-only et SSH distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu.",
       "visual": "integre",
       "linux": [
         {
@@ -8314,6 +8359,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
@@ -8324,12 +8375,19 @@
           "test_class": "SettingsNavigationTests",
           "passed_in_reference_run": 20,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/remotes/0067-remote-settings.md",
         ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
-        ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md"
+        ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md",
+        ".agents/docs/adr/distribution/updates/0133-weekly-update-admission.md"
       ]
     },
     {
@@ -8444,6 +8502,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -8641,13 +8705,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -8734,7 +8804,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyRepositoryBranchVisibilityAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Repositories.cs",
-          "line": 228,
+          "line": 229,
           "kind": "window"
         },
         {
@@ -8875,6 +8945,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -9126,13 +9202,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -9741,7 +9823,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 171,
+          "line": 163,
           "kind": "window"
         }
       ],
@@ -9779,8 +9861,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         }
       ],
       "adr": [
@@ -10376,6 +10458,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
           "test_class": "AvatarCommitInfoTests",
           "passed_in_reference_run": 1,
@@ -10582,13 +10670,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -10736,6 +10830,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -10909,13 +11009,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -11290,6 +11396,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
           "test_class": "AvatarCommitInfoTests",
           "passed_in_reference_run": 1,
@@ -11646,8 +11758,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SubmoduleConflictDialogTests.cs",
@@ -11659,6 +11771,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -12022,6 +12140,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
           "test_class": "AvatarCommitInfoTests",
           "passed_in_reference_run": 1,
@@ -12192,13 +12316,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -12279,7 +12409,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 171,
+          "line": 163,
           "kind": "window"
         }
       ],
@@ -12437,6 +12567,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -12658,13 +12794,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -12758,6 +12900,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -12931,13 +13079,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -13171,6 +13325,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
           "test_class": "AvatarCommitInfoTests",
           "passed_in_reference_run": 1,
@@ -13359,13 +13519,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -13538,6 +13704,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
           "test_class": "AppearanceSettingsSessionTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -13723,13 +13895,19 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
           "test_class": "TruncatePathPreferencesTests",
           "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -13868,14 +14046,14 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsPageTests.cs",
           "test_class": "SshSettingsPageTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 6,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
           "test_class": "SshSettingsSessionTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         }
       ],
       "adr": [
@@ -16132,8 +16310,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptFilePickerTests.cs",
           "test_class": "ScriptFilePickerTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 14,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
@@ -19267,6 +19445,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
           "line": 15
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.Updates.cs",
+          "line": 6
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",

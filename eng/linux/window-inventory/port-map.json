@@ -2284,20 +2284,26 @@
         "UpdatesDialog",
         "LinuxUpdateClient",
         "LinuxReleaseVersion",
-        "MainWindow@ShowUpdatesAsync"
+        "MainWindow@ShowUpdatesAsync",
+        "UpdateCheckStateStore",
+        "MainWindow@RequestAutomaticUpdateCheck"
       ],
-      "implemented": "Fenêtre Help compacte possédée et traduite ; recherche manuelle des releases publiques du fork, choix de préversions, sélection SemVer et paquet de la bonne architecture. Téléchargement borné et annulable, taille/SHA-256 vérifiés, liens et ouverture explicite du paquet par le bureau ; erreurs/Retry et fin réelle des opérations avant destruction du client testés (ADR0132).",
-      "remaining": "Aucune release Linux publiée à ce jour ; contrôle hebdomadaire et préférences durables à raccorder. Ouverture du paquet ne certifie pas son installation. Interaction native, OS vierge, Wayland/DPI/accessibilité et téléchargement d’une vraie release publique non qualifiés ; suites complètes non réexécutées pour ce lot.",
+      "implemented": "Fenêtre Help compacte possédée et traduite ; recherche manuelle ou contrôle hebdomadaire des releases publiques du fork, choix de préversions initialisé depuis Advanced, filtre GitHub/SemVer et paquet de la bonne architecture. Admission au démarrage et refresh grille/dashboard/F5, puis Apply des options Updates ; tentative UTC durable sous XDG_STATE_HOME avant HTTP et verrou coopératif. Notification différée jusqu’à Main actif/libre/sans modale, préférences relues ; erreur automatique sans interruption, manuel indépendant de l’horodatage. Téléchargement borné/annulable, taille/SHA-256 et liens explicites conservés (ADR0132/0133). Suites complètes, natif source ciblé EN/clair et FR/sombre, puis paquet exact/installation DPKG isolée vérifiés ; périmètres distincts dans le TODO.",
+      "remaining": "Publication initiale et téléchargement d’une vraie release publique à qualifier ; ouvrir le paquet ne certifie pas son installation. Interaction native étendue, paquet interactif, OS vierge et Wayland/DPI/accessibilité restent ouverts ; les suites complètes et le natif source ciblé du lot hebdomadaire sont acquis, sans succès GitHub public ni téléchargement natif déduits.",
       "visual": "rapproche",
       "tests": [
         "ClassicMenuTests",
         "LinuxUpdateClientTests",
         "UpdatesDialogTests",
-        "UpdatesMenuIntegrationTests"
+        "UpdatesMenuIntegrationTests",
+        "UpdateCheckStateStoreTests",
+        "AutomaticUpdatesTests",
+        "UpdatePreferencesTests"
       ],
       "adr": [
         "0060",
-        "0132"
+        "0132",
+        "0133"
       ]
     },
     "GitUI.CommandsDialogs.FormCommandlineHelp": {
@@ -2607,20 +2613,23 @@
         "AdvancedSettingsSession",
         "file:src/linux/GitExtensions.Desktop/AdvancedSettingsValues.cs"
       ],
-      "implemented": "Six champs Windows utiles : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes. Brouillon commun Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) vide et littéral hérité inconnu conservé sans écriture implicite.",
-      "remaining": "Page partielle : Updates/RC, aide et activation console Windows hors lot ; AlwaysAdvanced demeure Remotes-only et SSH reste distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu.",
+      "implemented": "Huit champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes, contrôle hebdomadaire et préversions Updates. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133).",
+      "remaining": "Page partielle : aide et activation console Windows restent absentes ; AlwaysAdvanced demeure Remotes-only et SSH distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu.",
       "visual": "integre",
       "tests": [
         "RemotesDialogTests",
         "SettingsNavigationTests",
         "AdvancedSettingsPageTests",
         "AdvancedSettingsSessionTests",
-        "AdvancedSettingsConsumerTests"
+        "AdvancedSettingsConsumerTests",
+        "UpdatePreferencesTests",
+        "AutomaticUpdatesTests"
       ],
       "adr": [
         "0067",
         "0096",
-        "0129"
+        "0129",
+        "0133"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage": {

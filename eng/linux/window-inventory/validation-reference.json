@@ -1,11 +1,11 @@
 {
-  "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
-  "trx": "artifacts/linux/portable-workflows-20261020/desktop-full-02/results/desktop.trx",
-  "trx_sha256": "b2aa3823721e58b25ecee03c333947d2f5d416fd23fee646eb86cad4cc0b7bed",
+  "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+  "trx": "artifacts/linux/update-scheduler-20261020/desktop-full-03/results/desktop.trx",
+  "trx_sha256": "1f5ba14ea98321c5aefb731172115779ef9a15da3fdc54f5e47cc0336f24b122",
   "counters": {
-    "total": "3441",
-    "executed": "3441",
-    "passed": "3441",
+    "total": "3566",
+    "executed": "3566",
+    "passed": "3566",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -74,6 +74,9 @@
     },
     "AskpassTests": {
       "Passed": 11
+    },
+    "AutomaticUpdatesTests": {
+      "Passed": 15
     },
     "AvailableEncodingsDialogTests": {
       "Passed": 24
@@ -612,6 +615,9 @@
     "LanguagePreferencesTests": {
       "Passed": 26
     },
+    "LinuxUpdateClientTests": {
+      "Passed": 34
+    },
     "MainFileStatusListTests": {
       "Passed": 5
     },
@@ -804,6 +810,9 @@
     "ScriptEventWorkflowTests": {
       "Passed": 14
     },
+    "ScriptFilePickerTests": {
+      "Passed": 14
+    },
     "ScriptHotkeysTests": {
       "Passed": 2
     },
@@ -833,6 +842,12 @@
     },
     "SimpleHelpDisplayDialogTests": {
       "Passed": 6
+    },
+    "SshSettingsPageTests": {
+      "Passed": 6
+    },
+    "SshSettingsSessionTests": {
+      "Passed": 9
     },
     "StashMenuTests": {
       "Passed": 19
@@ -864,6 +879,18 @@
     "UndoBisectWorkflowTests": {
       "Passed": 19
     },
+    "UpdateCheckStateStoreTests": {
+      "Passed": 11
+    },
+    "UpdatePreferencesTests": {
+      "Passed": 14
+    },
+    "UpdatesDialogTests": {
+      "Passed": 18
+    },
+    "UpdatesMenuIntegrationTests": {
+      "Passed": 4
+    },
     "ViewerEscapeHostTests": {
       "Passed": 3
     },
@@ -894,64 +921,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
-      "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+      "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+      "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
       "primary_execution": false,
-      "reexecuted_on_candidate": false,
-      "passed": 1057,
-      "total": 1057,
-      "execution_result": "artifacts/linux/portable-workflows-20261020/core-full-01/result.json",
-      "execution_result_sha256": "068dc8fd09fe92edda1cc695dc837bb311ae1c1924a218f53aa3234605e906f5",
+      "reexecuted_on_candidate": true,
+      "passed": 1062,
+      "total": 1062,
+      "execution_result": "artifacts/linux/update-scheduler-20261020/core-full-01/result.json",
+      "execution_result_sha256": "3906a3d67766693061eb1de940093feb3523366c236acd5f2454f76807a61127",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
-        "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
+        "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
+        "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
-        "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
+        "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
+        "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
       },
-      "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
+      "comparison_scope": "Fresh complete suites on the exact committed candidate in the clean worktree. Declared source/config and binary manifests are equal; five unrelated primary Modal changes remain excluded."
     },
     "plugins": {
-      "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
-      "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+      "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+      "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
       "primary_execution": false,
-      "reexecuted_on_candidate": false,
+      "reexecuted_on_candidate": true,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/portable-workflows-20261020/plugins-full-01/result.json",
-      "execution_result_sha256": "d0a714f8f11b2823a92762da7742be74f3e0fc30269bf99bb9a99303a47ff8d0",
+      "execution_result": "artifacts/linux/update-scheduler-20261020/plugins-full-01/result.json",
+      "execution_result_sha256": "71b36699e0fed115dfbd088748e9a4da036c2e0fe9ae3afb04ff70d7b380ffbc",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
-        "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
+        "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
+        "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
-        "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
+        "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
+        "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
       },
-      "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
+      "comparison_scope": "Fresh complete suites on the exact committed candidate in the clean worktree. Declared source/config and binary manifests are equal; five unrelated primary Modal changes remain excluded."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
-    "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+    "worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
+    "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
     "primary_execution": false,
-    "reexecuted_on_candidate": false,
+    "reexecuted_on_candidate": true,
     "source_equivalence": {
-      "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
-      "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
+      "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
+      "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
     },
     "root_review": {
-      "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
-      "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
+      "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
+      "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
     },
-    "meaning": "Fresh complete W11 suites on the reviewed source. Five unrelated primary Modal edits stay distinct; no whole-primary full run, installed interaction or global parity inferred."
+    "meaning": "Fresh complete suites on this committed source. Five primary Modal changes remain separate; no installed interaction or global parity inferred."
   }
 }
