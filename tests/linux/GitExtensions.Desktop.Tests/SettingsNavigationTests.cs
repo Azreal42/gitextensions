@@ -142,14 +142,14 @@ public sealed class SettingsNavigationTests
     public async Task NavigationRetainsDraftControlsAndCancelDoesNotPublishThem()
     {
         await using Scope f = new(); (DesktopSettingsDialog dialog, Task<bool> result) = f.Open();
-        SettingsNavigationTestDriver.Select(dialog, "Advanced"); TextBox symbol = Field<TextBox>(dialog, "SettingsNormaliseSymbol"); Edit(dialog, symbol, "draft-symbol");
+        SettingsNavigationTestDriver.Select(dialog, "Advanced"); ComboBox symbol = Field<ComboBox>(dialog, "SettingsNormaliseSymbol"); AdvancedSettingsUiDriver.ChooseSymbol(dialog, "-");
         SettingsNavigationTestDriver.Select(dialog, "Scripts");
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "btnAdd")); Edit(dialog, Field<TextBox>(dialog, "ScriptName"), "Unsaved navigation script");
         Edit(dialog, Field<TextBox>(dialog, "ScriptCommand"), "/bin/true"); ScriptsSettingsPage scripts = Field<ScriptsSettingsPage>(dialog, "ScriptsSettingsPage");
         SettingsNavigationTestDriver.Select(dialog, "Fonts"); AppearanceFontsSettingsPage fonts = Field<AppearanceFontsSettingsPage>(dialog, "AppearanceFontsSettingsPage");
         PushProcessTestDriver.Pointer(Field<CheckBox>(dialog, "ShowEolMarkerAsGlyph"));
         SettingsNavigationTestDriver.Select(dialog, "General"); SettingsNavigationTestDriver.Select(dialog, "Advanced");
-        Assert.That(Field<TextBox>(dialog, "SettingsNormaliseSymbol"), Is.SameAs(symbol)); Assert.That(symbol.Text, Is.EqualTo("draft-symbol"));
+        Assert.That(Field<ComboBox>(dialog, "SettingsNormaliseSymbol"), Is.SameAs(symbol)); Assert.That(((AdvancedSymbolChoice)symbol.SelectedItem!).Value, Is.EqualTo("-"));
         SettingsNavigationTestDriver.Select(dialog, "Scripts");
         Assert.That(Field<ScriptsSettingsPage>(dialog, "ScriptsSettingsPage"), Is.SameAs(scripts)); Assert.That(scripts.Draft.Single().Name, Is.EqualTo("Unsaved navigation script"));
         SettingsNavigationTestDriver.Select(dialog, "Fonts");
@@ -167,7 +167,7 @@ public sealed class SettingsNavigationTests
         Assert.That(dialog.Result.MaxRevisionGraphCommits, Is.EqualTo(321));
         Assert.That(dialog.Result.HistoryLimit, Is.EqualTo(300), "The General ceiling does not change the internal batch size.");
         EditHistory(dialog, "654"); SettingsNavigationTestDriver.Select(dialog, "Advanced");
-        Edit(dialog, Field<TextBox>(dialog, "SettingsNormaliseSymbol"), "later-draft");
+        AdvancedSettingsUiDriver.ChooseSymbol(dialog, "-");
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "CancelDesktopSettings"));
         Assert.That(await result, Is.True, "Windows FormSettings reports OK on closing after a successful Apply.");
         Assert.That(f.Publications.Count, Is.EqualTo(1)); Assert.That(dialog.Result.MaxRevisionGraphCommits, Is.EqualTo(321));
@@ -183,13 +183,13 @@ public sealed class SettingsNavigationTests
         if (publicationFailure) { f.PublishFailure = new IOException("fixture publication failed"); }
         else
         {
-            SettingsNavigationTestDriver.Select(dialog, "Advanced"); Edit(dialog, Field<TextBox>(dialog, "SettingsNormaliseSymbol"), "");
+            EditQuickSearch(dialog, "-1");
         }
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "ApplyDesktopSettings")); Pump(dialog);
         Assert.That(Field<TextBlock>(dialog, "SettingsNotice").Text, Is.Not.Empty); Assert.That(f.Publications, Is.Empty);
         Assert.That(dialog.IsVisible, Is.True); Assert.That(result.IsCompleted, Is.False);
         if (publicationFailure) { f.PublishFailure = null; }
-        else { Edit(dialog, Field<TextBox>(dialog, "SettingsNormaliseSymbol"), "_"); }
+        else { EditQuickSearch(dialog, "4000"); }
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "ApplyDesktopSettings")); Pump(dialog);
         Assert.That(Field<TextBlock>(dialog, "SettingsNotice").Text, Is.Null.Or.Empty);
         Assert.That(f.Publications.Select(value => value.MaxRevisionGraphCommits), Is.EqualTo(new[] { 321 }));
@@ -263,14 +263,17 @@ public sealed class SettingsNavigationTests
     }
 
     [AvaloniaTest]
-    [TestCase("Advanced", "SettingsNormaliseSymbol", "")]
+    [TestCase("General", "RevisionGridQuickSearchTimeout", "-1")]
     [TestCase("Sorting", "txtPrioBranchNames", "[")]
     public async Task FailedValidationSelectsAndFocusesThePageThatNeedsCorrection(string id, string field, string value)
     {
         await using Scope f = new(); (DesktopSettingsDialog dialog, Task<bool> result) = f.Open();
-        SettingsNavigationTestDriver.Select(dialog, id); Edit(dialog, Field<TextBox>(dialog, field), value);
+        SettingsNavigationTestDriver.Select(dialog, id);
+        Control invalid = Field<Control>(dialog, field);
+        TextBox input = invalid as TextBox ?? invalid.GetVisualDescendants().OfType<TextBox>().Single();
+        Edit(dialog, input, value);
         SettingsNavigationTestDriver.Select(dialog, "Appearance"); PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings")); Pump(dialog);
-        Assert.That(dialog.Navigation.SelectedPage.Id, Is.EqualTo(id)); Assert.That(Field<TextBox>(dialog, field).IsKeyboardFocusWithin, Is.True);
+        Assert.That(dialog.Navigation.SelectedPage.Id, Is.EqualTo(id)); Assert.That(input.IsKeyboardFocusWithin, Is.True);
         Assert.That(Field<TextBlock>(dialog, "SettingsNotice").Text, Is.Not.Empty); Assert.That(result.IsCompleted, Is.False); Assert.That(f.Publications, Is.Empty);
     }
 
@@ -316,6 +319,12 @@ public sealed class SettingsNavigationTests
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "btnAdd")); Assert.That(scripts.Draft.Count, Is.EqualTo(initialCount + 2));
         PushProcessTestDriver.Pointer(Field<Button>(dialog, "CancelDesktopSettings")); Assert.That(await result, Is.False);
         Assert.That(f.ScriptSaves, Is.Zero); Assert.That(f.Publications, Is.Empty);
+    }
+
+    private static void EditQuickSearch(DesktopSettingsDialog dialog, string value)
+    {
+        SettingsNavigationTestDriver.Select(dialog, "General");
+        Edit(dialog, Field<NumericUpDown>(dialog, "RevisionGridQuickSearchTimeout").GetVisualDescendants().OfType<TextBox>().Single(), value);
     }
 
     private static void EditHistory(DesktopSettingsDialog dialog, string value)

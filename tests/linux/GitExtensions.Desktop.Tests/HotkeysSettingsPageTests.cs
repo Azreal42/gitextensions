@@ -223,10 +223,8 @@ public sealed class HotkeysSettingsPageTests
         }
         else
         {
-            SettingsNavigationTestDriver.Select(f.Dialog, "Advanced"); Pump(f.Dialog);
-            CheckBox normalise = Field<CheckBox>(f.Dialog, "SettingsNormaliseBranches");
-            if (normalise.IsChecked != true) { PushProcessTestDriver.Pointer(normalise); }
-            Edit(f.Dialog, Field<TextBox>(f.Dialog, "SettingsNormaliseSymbol"), "");
+            SettingsNavigationTestDriver.Select(f.Dialog, "General"); Pump(f.Dialog);
+            Edit(f.Dialog, Field<NumericUpDown>(f.Dialog, "RevisionGridQuickSearchTimeout").GetVisualDescendants().OfType<TextBox>().Single(), "-1");
         }
         PushProcessTestDriver.Pointer(f.Button("SaveDesktopSettings")); Pump(f.Dialog);
         Assert.That(f.Result.IsCompleted, Is.False); Assert.That(f.Saves, Is.Zero); Assert.That(f.Dialog.Result, Is.SameAs(initial));

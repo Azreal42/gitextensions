@@ -113,13 +113,13 @@ public sealed class GitEnvironmentSettingsHostTests
     public async Task ValidationOrAnEarlierSaveFailurePreventsGitPublicationAndRescanning(bool failHotkeys)
     {
         await using Host f = new(); f.Open();
-        if (!failHotkeys) { SettingsNavigationTestDriver.Select(f.Dialog, "Advanced"); Edit(f.Dialog, "SettingsNormaliseSymbol", ""); }
+        if (!failHotkeys) { SettingsNavigationTestDriver.Select(f.Dialog, "General"); Edit(f.Dialog, "RevisionGridQuickSearchTimeout", "-1"); }
         SettingsNavigationTestDriver.Select(f.Dialog, "GitPaths"); Edit(f.Dialog, "GitPath", f.SelectedGit);
         await f.ShowChecklistAndWaitAsync(); f.ClearProbeLog();
         if (failHotkeys) { f.HotkeyFailure = new IOException("hotkey profile locked <literal>"); }
         Click(f.Dialog, "Rescan"); Pump(f.Dialog);
         string notice = Field<TextBlock>(f.Dialog, "SettingsNotice").Text ?? "";
-        Assert.That(notice, Does.Contain(failHotkeys ? "hotkey profile locked <literal>" : "Enter a valid history limit and replacement symbol."));
+        Assert.That(notice, Does.Contain(failHotkeys ? "hotkey profile locked <literal>" : "Enter a quick search timeout between 100 and 1,000,000 milliseconds."));
         Assert.That(f.Dialog.IsVisible, Is.True); Assert.That(f.Session.Page.IsDirty, Is.True);
         Assert.That(f.EnvironmentStore.Load().Preferences.GitExecutable, Is.EqualTo(f.InitialGit));
         Assert.That(GitEnvironment.Options.Executable, Is.EqualTo(f.InitialGit));
@@ -133,7 +133,9 @@ public sealed class GitEnvironmentSettingsHostTests
     private static void Click(Window window, string name) { Pump(window); PushProcessTestDriver.Pointer(Field<Control>(window, name)); Pump(window); }
     private static void Edit(Window window, string name, string text)
     {
-        TextBox editor = Field<TextBox>(window, name); editor.BringIntoView(); Pump(window); PushProcessTestDriver.Pointer(editor);
+        Control control = Field<Control>(window, name);
+        TextBox editor = control as TextBox ?? control.GetVisualDescendants().OfType<TextBox>().Single();
+        editor.BringIntoView(); Pump(window); PushProcessTestDriver.Pointer(editor);
         Press(window, PhysicalKey.A, RawInputModifiers.Control); Press(window, PhysicalKey.Backspace);
         if (text.Length > 0) { window.KeyTextInput(text); } Pump(window); Assert.That(editor.Text, Is.EqualTo(text));
     }
