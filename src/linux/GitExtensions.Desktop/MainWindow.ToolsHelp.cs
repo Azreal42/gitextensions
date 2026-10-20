@@ -293,7 +293,7 @@ public sealed partial class MainWindow
                 // become saved defaults. Sorting retains its existing explicit Settings publication;
                 // other temporary View choices remain in this Browse.
                 AppearanceSettingsPublication appearancePublication = appearance.Save(appearanceDraft,
-                    preferences, _historyView, settings.HistorySortResult);
+                    preferences, _historyView, settings.HistorySortResult, token);
                 settings.AcceptAppearanceSaved(appearancePublication);
                 _historyView = appearancePublication.History;
                 bool branchVisibilityChanged = preferences.ShowRepoCurrentBranch != _preferences.ShowRepoCurrentBranch;

@@ -103,6 +103,41 @@ internal sealed class HistoryViewPreferencesStore
         return Decode(snapshot.Document);
     }
 
+    internal HistoryViewPreferences ReadAppearanceBaseline() => Decode(ReadDocument().Document);
+
+    /// <summary>Only Appearance's three explicit View intentions may change; retain every other JSON node.</summary>
+    internal bool SaveAppearance(HistoryViewPreferences savedBaseline, HistoryViewPreferences draft,
+        IReadOnlyList<string> edited, CancellationToken token)
+    {
+        ArgumentNullException.ThrowIfNull(savedBaseline); ArgumentNullException.ThrowIfNull(draft);
+        ArgumentNullException.ThrowIfNull(edited); token.ThrowIfCancellationRequested();
+        if (edited.Count == 0) { return false; }
+        // Validate every requested field before any IO or mutation. This is not a general typed Save replacement.
+        foreach (string name in edited) { _ = AppearanceValue(draft, name); }
+        var snapshot = ReadDocument(); HistoryViewPreferences current = Decode(snapshot.Document);
+        bool written = false;
+        foreach (string name in edited)
+        {
+            object wanted = AppearanceValue(draft, name), actual = AppearanceValue(current, name);
+            if (!Equals(actual, AppearanceValue(savedBaseline, name)) && !Equals(actual, wanted))
+            { throw new IOException("History view preferences changed after Appearance opened."); }
+            if (Equals(actual, wanted)) { continue; }
+            snapshot.Document[name] = name == nameof(HistoryViewPreferences.Sort)
+                ? JsonValue.Create((int)draft.Sort) : JsonValue.Create((bool)wanted);
+            written = true;
+        }
+        if (written) { Publish(snapshot.Existed, snapshot.Bytes, snapshot.Document, token); }
+        return written;
+    }
+
+    private static object AppearanceValue(HistoryViewPreferences value, string name) => name switch
+    {
+        nameof(HistoryViewPreferences.RelativeDate) => value.RelativeDate,
+        nameof(HistoryViewPreferences.ShowAvatar) => value.ShowAvatar,
+        nameof(HistoryViewPreferences.Sort) when Enum.IsDefined(value.Sort) => value.Sort,
+        _ => throw new ArgumentException("Only RelativeDate, ShowAvatar and a valid Sort are Appearance intentions.", nameof(name))
+    };
+
     private static HistoryViewPreferences Decode(JsonObject document)
         => document.Deserialize<HistoryViewPreferences>() ?? throw new JsonException("Invalid history view preferences.");
 

@@ -91,6 +91,35 @@ public static class RevisionHistoryRow
         return (dark ? DarkBackgrounds : LightBackgrounds)[index];
     }
 
+    // RevisionDataGridView.GetForeground and GetCommitBodyForeground use separate state tables.
+    // Classic ControlText/HighlightText/GrayText map to the existing Light/Dark text palette.
+    private static readonly IBrush NonRelativeDarkSubject = Brush.Parse("#c0c0c0");
+    private static readonly IBrush NonRelativeSelectedLightSubject = Brush.Parse("#bcbcbc");
+    private static readonly IBrush NonRelativeSelectedDarkSubject = Brush.Parse("#ebebd7");
+    private static readonly IBrush RelativeSelectedLightBody = Brush.Parse("#bcbcbc");
+    private static readonly IBrush SelectedDarkBody = Brush.Parse("#aaaa96");
+    private static readonly IBrush NonRelativeLightBody = Brush.Parse("#989898");
+    private static readonly IBrush NonRelativeDarkBody = Brush.Parse("#828282");
+    private static readonly IBrush NonRelativeSelectedLightBody = Brush.Parse("#a1a1a1");
+
+    internal static IBrush ForegroundFor(bool selected, bool selectionFocused, bool nonRelative, bool dark)
+        => (nonRelative, selected && selectionFocused) switch
+        {
+            (false, false) => dark ? DarkText : Brushes.Black,
+            (false, true) => dark ? DarkText : Brushes.White,
+            (true, false) => dark ? NonRelativeDarkSubject : Brushes.Gray,
+            (true, true) => dark ? NonRelativeSelectedDarkSubject : NonRelativeSelectedLightSubject
+        };
+
+    internal static IBrush CommitBodyForegroundFor(bool selected, bool nonRelative, bool dark)
+        => (nonRelative, selected) switch
+        {
+            (false, false) => Brushes.Gray,
+            (false, true) => dark ? SelectedDarkBody : RelativeSelectedLightBody,
+            (true, false) => dark ? NonRelativeDarkBody : NonRelativeLightBody,
+            (true, true) => dark ? SelectedDarkBody : NonRelativeSelectedLightBody
+        };
+
     private static bool IsAuthored(GitCommit? commit, string? authoredEmail) => commit is not null && !string.IsNullOrWhiteSpace(commit.AuthorEmail)
         && string.Equals(commit.AuthorEmail, authoredEmail, StringComparison.OrdinalIgnoreCase);
 
@@ -206,10 +235,10 @@ public static class RevisionHistoryRow
             Background = BackgroundFor(_commit, _selected, _selectionFocused, _authoredEmail, _rowIndex, _alternateBackground, dark);
             // The host row is 20px, while its content retains the original compact 18px. Fill both consistently.
             if (this.FindAncestorOfType<ListBoxItem>() is { } item) { item.Background = Background; }
-            IBrush foreground = dark ? _dim && !_selected ? Brushes.Gray : DarkText : _selected && _selectionFocused ? Brushes.White : _dim ? Brushes.Gray : Brushes.Black;
+            IBrush foreground = ForegroundFor(_selected, _selectionFocused, _dim, dark);
             foreach (TextBlock text in TextCells) { text.Foreground = foreground; }
             foreach (MessageCell message in Children.OfType<MessageCell>())
-            { message.Details.Foreground = _selected && _selectionFocused ? dark ? DarkText : Brushes.White : Brushes.Gray; }
+            { message.Details.Foreground = CommitBodyForegroundFor(_selected, _dim, dark); }
             if (AuthorName is not null) { AuthorName.FontWeight = IsAuthored(_commit, _authoredEmail) ? FontWeight.Bold : _application.Weight; }
             ApplyBuildColor();
         }

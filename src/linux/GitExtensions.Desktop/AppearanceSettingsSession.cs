@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace GitExtensions.Linux.Desktop;
 
 internal sealed record AppearanceSettingsPublication(DesktopPreferences Desktop, HistoryViewPreferences History,
@@ -11,13 +9,19 @@ internal sealed class AppearanceSettingsSession
     private readonly PreferencesStore _desktop = new();
     private readonly HistoryViewPreferencesStore _history = new();
     private AppearanceSettingsValues _baseline;
+    private HistoryViewPreferences? _savedHistoryBaseline;
+    private readonly Exception? _historyLoadError;
+    private GitLogSort _initialSort;
 
     internal AppearanceSettingsValues Initial { get; private set; }
 
     internal AppearanceSettingsSession(DesktopPreferences initial, HistoryViewPreferences activeView)
     {
         ArgumentNullException.ThrowIfNull(initial); ArgumentNullException.ThrowIfNull(activeView);
-        Initial = _baseline = Read(initial, activeView);
+        Initial = _baseline = Read(initial, activeView); _initialSort = activeView.Sort;
+        try { _savedHistoryBaseline = _history.ReadAppearanceBaseline(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        { _historyLoadError = error; }
     }
 
     /// <summary>General's publisher performs the desktop write; unchanged Appearance fields retain peer edits.</summary>
@@ -59,10 +63,10 @@ internal sealed class AppearanceSettingsSession
 
     /// <summary>Save only Appearance's edited View fields; an unchanged active View remains session-only.</summary>
     internal AppearanceSettingsPublication Save(AppearanceSettingsValues draft, DesktopPreferences acceptedDesktop,
-        HistoryViewPreferences activeView, GitLogSort? sort = null)
+        HistoryViewPreferences activeView, GitLogSort? sort = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(draft); ArgumentNullException.ThrowIfNull(acceptedDesktop);
-        ArgumentNullException.ThrowIfNull(activeView); Validate(draft);
+        ArgumentNullException.ThrowIfNull(activeView); Validate(draft); cancellationToken.ThrowIfCancellationRequested();
         if (sort is { } selectedSort && !Enum.IsDefined(selectedSort)) { throw new ArgumentOutOfRangeException(nameof(sort)); }
         // General has already published the merged desktop values. If History fails below,
         // retry must not reinterpret those completed intentions as new edits over a peer's save.
@@ -70,38 +74,35 @@ internal sealed class AppearanceSettingsSession
         DesktopSaved(draft);
         bool relativeChanged = draft.RelativeDate != _baseline.RelativeDate;
         bool avatarChanged = draft.ShowAvatar != _baseline.ShowAvatar;
-        if (relativeChanged || avatarChanged || sort is not null)
+        // Settings supplies a non-null sort even on an unrelated Apply. It is an intention only after a real edit.
+        bool sortChanged = sort is { } wantedSort && wantedSort != _initialSort;
+        List<string> edited = [];
+        if (relativeChanged) { edited.Add(nameof(HistoryViewPreferences.RelativeDate)); }
+        if (avatarChanged) { edited.Add(nameof(HistoryViewPreferences.ShowAvatar)); }
+        if (sortChanged) { edited.Add(nameof(HistoryViewPreferences.Sort)); }
+        if (edited.Count != 0)
         {
-            // The legacy store returns defaults on read failure. An explicit Settings write must
-            // report a corrupt/unreadable profile rather than overwrite it with those defaults.
-            ReadableHistory();
-            HistoryViewPreferences latest = _history.Load();
-            HistoryViewPreferences saved = latest with
+            if (_savedHistoryBaseline is null)
+            { throw new InvalidDataException("History view preferences were unreadable. Reopen Settings before saving Appearance.", _historyLoadError); }
+            HistoryViewPreferences desired = _savedHistoryBaseline with
             {
-                RelativeDate = relativeChanged ? draft.RelativeDate : latest.RelativeDate,
-                ShowAvatar = avatarChanged ? draft.ShowAvatar : latest.ShowAvatar,
-                Sort = sort ?? latest.Sort
+                RelativeDate = relativeChanged ? draft.RelativeDate : _savedHistoryBaseline.RelativeDate,
+                ShowAvatar = avatarChanged ? draft.ShowAvatar : _savedHistoryBaseline.ShowAvatar,
+                Sort = sortChanged ? sort!.Value : _savedHistoryBaseline.Sort
             };
-            if (saved != latest) { _history.Save(saved); }
+            _history.SaveAppearance(_savedHistoryBaseline, desired, edited, cancellationToken);
+            // Acknowledge only intentions saved successfully, never unseen peer fields.
+            _savedHistoryBaseline = desired;
         }
         HistoryViewPreferences active = activeView with
         {
             RelativeDate = relativeChanged ? draft.RelativeDate : activeView.RelativeDate,
             ShowAvatar = avatarChanged ? draft.ShowAvatar : activeView.ShowAvatar,
-            Sort = sort ?? activeView.Sort
+            Sort = sortChanged ? sort!.Value : activeView.Sort
         };
+        _initialSort = active.Sort;
         Initial = _baseline = Read(acceptedDesktop, active);
         return new(acceptedDesktop, active, Initial);
-    }
-
-    private void ReadableHistory()
-    {
-        if (Directory.Exists(_history.FilePath)) { throw new IOException("A settings profile is a directory: " + _history.FilePath); }
-        if (!File.Exists(_history.FilePath)) { return; }
-        using JsonDocument document = JsonDocument.Parse(File.ReadAllBytes(_history.FilePath));
-        if (document.RootElement.ValueKind != JsonValueKind.Object
-            || JsonSerializer.Deserialize<HistoryViewPreferences>(document.RootElement) is null)
-        { throw new JsonException("Invalid history view settings profile: " + _history.FilePath); }
     }
 
     private void Validate(AppearanceSettingsValues draft)

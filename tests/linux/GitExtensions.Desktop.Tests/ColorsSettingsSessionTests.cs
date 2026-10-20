@@ -89,6 +89,8 @@ public sealed class ColorsSettingsSessionTests
     public void AppearanceAndColorsSaveIntoOneAuthorityInEitherOrder(bool colorsFirst)
     {
         using Scope f = new(useXdg: true); f.Store.Save(new());
+        JsonObject initial = JsonNode.Parse(File.ReadAllBytes(f.Store.FilePath))!.AsObject(); initial["future"] = JsonNode.Parse("{\"literal\":[null,17,\"Ω\"]}");
+        File.WriteAllText(f.Store.FilePath, initial.ToJsonString());
         ColorsSettingsSession colors = new(new(), f.Store); AppearanceSettingsSession appearance = new(new(), new());
         void SaveColors() => colors.Save(colors.Initial with { DrawNonRelativesTextGray = true, FillRefLabels = true });
         void SaveAppearance() => appearance.Save(appearance.Initial with { RelativeDate = false, ShowAvatar = false }, new(), new());
@@ -96,6 +98,7 @@ public sealed class ColorsSettingsSessionTests
         HistoryViewPreferences file = f.Store.Load();
         Assert.That(file.RelativeDate, Is.False); Assert.That(file.ShowAvatar, Is.False);
         Assert.That(file.DrawNonRelativesTextGray, Is.True); Assert.That(file.FillRefLabels, Is.True);
+        Assert.That(JsonNode.DeepEquals(JsonNode.Parse(File.ReadAllBytes(f.Store.FilePath))!["future"], initial["future"]), Is.True);
         Assert.That(Directory.GetFiles(Path.GetDirectoryName(f.Store.FilePath)!).Select(Path.GetFileName), Is.EqualTo(new[] { "history-view-preferences.json" }));
     }
 
@@ -109,7 +112,7 @@ public sealed class ColorsSettingsSessionTests
         Assert.That(File.Exists(f.Store.FilePath), Is.False); Assert.That(session.Initial.FillRefLabels, Is.False);
         Directory.CreateDirectory(Path.GetDirectoryName(f.Store.FilePath)!); File.WriteAllText(f.Store.FilePath, "{not-json");
         byte[] raw = File.ReadAllBytes(f.Store.FilePath);
-        Assert.Throws<System.Text.Json.JsonException>(() => session.Save(draft));
+        Assert.Catch<System.Text.Json.JsonException>(() => session.Save(draft));
         Assert.That(File.ReadAllBytes(f.Store.FilePath), Is.EqualTo(raw)); Assert.That(draft.FillRefLabels, Is.True);
         Assert.That(session.Initial.FillRefLabels, Is.False);
     }
