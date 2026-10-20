@@ -67,6 +67,7 @@ public sealed partial class MainWindow
         object[] scripts = ScriptMenuItems.Build(_scripts, script => script.AddToRevisionGridContextMenu,
             script => () => RunScriptAsync(script), !_busy && _repository is not null, _translations, "RevisionGridControl");
         _revisionScriptItems = ScriptMenuItems.ReplaceOwned(_revisionContext, _revisionScriptItems, scripts);
+        ArrangeRevisionContributions();
     }
     internal ScriptHostSelection CaptureScriptSelection(FileMenuSelection? files = null)
         => CaptureScriptSelection(files, out _);

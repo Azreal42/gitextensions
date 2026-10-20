@@ -422,7 +422,7 @@ internal sealed class DesktopSettingsDialog : Window
                     _consoleStylePage.AcceptSaved(_consoleStyleSession.Save(_consoleStylePage.Draft));
                 }
                 catch (OperationCanceledException) when (closeWhenIdle) { return false; }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Xml.XmlException
+                catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Xml.XmlException
                     or ArgumentException or InvalidOperationException or JsonException)
                 {
                     Navigation.SelectPage(activeSavePage, true);
@@ -436,7 +436,7 @@ internal sealed class DesktopSettingsDialog : Window
                 return !closeWhenIdle;
             }
             catch (OperationCanceledException) when (_detailedCancellation.IsCancellationRequested) { return false; }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Xml.XmlException
+            catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Xml.XmlException
                 or ArgumentException or InvalidOperationException or JsonException)
             { Navigation.SelectPage(activeSavePage, true); notice.Text = translations.Translate("Unable to save settings.") + " " + error.Message; return false; }
             finally

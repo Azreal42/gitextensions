@@ -39,7 +39,7 @@ public sealed partial class RemotesDialog : RepositoryDialog
     {
         if (preselectRemote is not null && preselectLocalBranch is not null) { throw new ArgumentException("Select either a remote or a local branch, not both."); }
         _preselectRemote = preselectRemote; _preselectLocalBranch = preselectLocalBranch;
-        _showAdvanced = showAdvanced || new PreferencesStore().Load().AlwaysShowAdvancedOptions;
+        _showAdvanced = showAdvanced || AdvancedOptionsVisibility.Capture();
         Name = "RemotesDialog"; Width = 950; Height = 400; MinWidth = 950; MinHeight = 360;
         ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         ClassicChoiceAppearance.Apply(this, "original-remotes");

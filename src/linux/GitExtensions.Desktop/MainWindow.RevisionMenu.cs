@@ -44,26 +44,35 @@ public sealed partial class MainWindow
         DesktopHotkeys.Bind(createTag, "Browse", "CreateTag");
         DesktopHotkeys.Bind(_revisionRenameBranches, "RevisionGrid", "RenameRef");
         DesktopHotkeys.Bind(_revisionDeleteBranches, "RevisionGrid", "DeleteRef");
-        _revisionContext = new ContextMenu
+        _revisionPushBranches = new() { Name = "RevisionPushBranch", Header = RevisionHeader("tsmiPushBranch", "Pus&h branch..."), Icon = OriginalIconImage("Push.png") };
+        _revisionMergeBranches = new() { Name = "RevisionMergeBranch", Header = RevisionHeader("mergeBranchToolStripMenuItem", "&Merge into current branch..."), Icon = OriginalIconImage("Merge.png") };
+        _revisionDeleteTags = new() { Name = "RevisionDeleteTag", Header = RevisionHeader("deleteTagToolStripMenuItem", "&Delete tag..."), Icon = OriginalIconImage("TagDelete.png") };
+        _revisionSelectInLeftPanel = new() { Name = "RevisionSelectInLeftPanel", Header = RevisionHeader("tsmiSelectInLeftPanel", "Se&lect in left panel"), Icon = OriginalIconImage("FileTree.png") };
+        _revisionSelectInLeftPanel.Click += async (_, args) =>
         {
-            Name = "RevisionContextMenu", ItemsSource = new object[]
-            {
-                _revisionCopy, new Separator(), _revisionCheckoutBranches, BuildRebaseMenu(),
+            if (args.Source == _revisionSelectInLeftPanel && _revisionSelectInLeftPanel.IsEnabled && _selectRevisionInLeftPanel is { } select)
+            { try { await select(); } catch (Exception error) { AppendOutput(error.Message); _state.Text = error.Message; } }
+        };
+        object[] commands =
+            [
+                _revisionCopy, new Separator(), _revisionCheckoutBranches, _revisionPushBranches, _revisionMergeBranches, BuildRebaseMenu(),
                 RevisionAction("RevisionResetCurrent", "resetCurrentBranchToHereToolStripMenuItem", "Reset c&urrent branch to here...", ResetAsync, "ResetCurrentBranchToHere.png", true),
-                new Separator(), createBranch, _revisionRenameBranches, _revisionDeleteBranches,
+                new Separator(), _revisionSelectInLeftPanel, createBranch,
                 RevisionAction("RevisionResetAnother", "resetAnotherBranchToHereToolStripMenuItem", "Reset an&other branch to here...", ResetAnotherBranchAsync, "ResetAnotherBranchToHere.png", true),
-                new Separator(), createTag, new Separator(),
+                _revisionRenameBranches, _revisionDeleteBranches,
+                new Separator(), createTag, _revisionDeleteTags, new Separator { Name = "RevisionCommitSeparator" },
                 RevisionAction("RevisionCheckout", "checkoutRevisionToolStripMenuItem", "Checkout this commit...", CheckoutRevisionWithConfirmationAsync, "checkout.png", true),
                 RevisionAction("RevisionRevert", "revertCommitToolStripMenuItem", "Re&vert this commit...", RevertAsync, "RevertCommit.png", true),
                 RevisionAction("RevisionCherryPick", "cherryPickCommitToolStripMenuItem", "Cherr&y pick this commit...", CherryPickAsync, "CherryPick.png", true),
                 RevisionAction("RevisionArchive", "archiveRevisionToolStripMenuItem", "Arch&ive this commit...", ExportArchiveAsync, "ArchiveRevision.png"),
-                BuildRevisionAdvancedMenu(), new Separator(), BuildComparisonMenu(), new Separator(), BuildRevisionNavigateMenu(), BuildRevisionViewMenu(),
+                BuildRevisionAdvancedMenu(), new Separator(), BuildComparisonMenu(), new Separator { Name = "RevisionNavigateSeparator" }, BuildRevisionNavigateMenu(), BuildRevisionViewMenu(),
                 BuildGitHubActionsShowBuildPageMenu(), BuildServerPullRequestPageMenu()
-            }
-        };
-        _revisionContext.Opening += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
+            ];
+        _revisionContext = new ContextMenu { Name = "RevisionContextMenu", ItemsSource = commands };
+        InitializeFocusedRevisionMenu(commands);
+        _revisionContext.Opening += (_, _) => { BeginRevisionContextMenu(); PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); ComposeRevisionContextMenu(_focusedRevisionMenu); RefreshRevisionScriptMenu(); };
         _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
-        _revisionContext.Closed += (_, _) => QueuePendingRevisionDetails();
+        _revisionContext.Closed += (_, _) => EndRevisionContextMenu();
         _revisionContext.AddHandler(KeyDownEvent, async (_, args) =>
             await WithRevisionActionFocusAsync(() => HandleShortcutsAsync(_revisionContext, args)), RoutingStrategies.Tunnel);
         _commits.AddHandler(PointerPressedEvent, (_, args) =>
@@ -84,6 +93,7 @@ public sealed partial class MainWindow
                 finally { _selectingRevisionForContextMenu = false; }
             }
             if (commit is not null) { row!.Focus(); }
+            CaptureRevisionPointerContext(args, commit, source);
         }, RoutingStrategies.Tunnel);
         PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu();
         return _revisionContext;
@@ -113,15 +123,29 @@ public sealed partial class MainWindow
 
     private void RefreshRevisionContextMenu()
     {
+        EnsureRevisionContextRepository();
         RefreshHistoryMenuStates();
+        RefreshRebaseMenu();
         if (_revisionContext is null) { return; }
         bool selected = !_busy && _repository is not null && SelectedComparisonCommits().Length > 0;
         _revisionContext.IsEnabled = selected;
         foreach ((MenuItem item, bool worktree, Func<bool>? available) in _revisionActions)
         { item.IsEnabled = selected && (!worktree || !_repository!.IsBare) && (available?.Invoke() ?? true); }
         if (_revisionCopy is not null) { _revisionCopy.IsEnabled = selected; }
+        GitReference? clicked = CurrentRevisionContextReference();
+        bool includesCurrentBranch = clicked is not null ? clicked.IsBranch && clicked.IsCurrent
+            : _navigationReferences.Any(reference => reference.IsBranch && reference.IsCurrent
+                && reference.RevisionHash == (_commits.SelectedItem as GitCommit)?.Hash);
         foreach (MenuItem? group in new[] { _revisionCheckoutBranches, _revisionRenameBranches, _revisionDeleteBranches })
-        { if (group is not null) { group.IsEnabled = selected && (group == _revisionRenameBranches || !_repository!.IsBare) && group.Items.OfType<MenuItem>().Any(); } }
+        {
+            if (group is null) { continue; }
+            group.IsEnabled = selected && (group == _revisionRenameBranches || !_repository!.IsBare) && group.Items.OfType<MenuItem>().Any();
+            group.IsVisible = group.IsEnabled || group == _revisionDeleteBranches && selected && includesCurrentBranch;
+        }
+        if (_revisionPushBranches is not null) { _revisionPushBranches.IsVisible = _revisionPushBranches.IsEnabled = selected && !_repository!.IsBare && _revisionPushBranches.Items.OfType<MenuItem>().Any(); }
+        if (_revisionMergeBranches is not null) { _revisionMergeBranches.IsVisible = _revisionMergeBranches.IsEnabled = selected && !_repository!.IsBare && _revisionMergeBranches.Items.OfType<MenuItem>().Any(); }
+        if (_revisionDeleteTags is not null) { _revisionDeleteTags.IsVisible = _revisionDeleteTags.IsEnabled = selected && _revisionDeleteTags.Items.OfType<MenuItem>().Any(); }
+        if (_revisionSelectInLeftPanel is not null) { _revisionSelectInLeftPanel.IsVisible = _revisionSelectInLeftPanel.IsEnabled = selected && (_selectRevisionInLeftPanel is not null || _revisionSelectInLeftPanel.Items.OfType<MenuItem>().Any()); }
         RefreshRevisionAdvancedMenu();
     }
 
@@ -130,27 +154,31 @@ public sealed partial class MainWindow
         if (_revisionCheckoutBranches is null || _revisionRenameBranches is null || _revisionDeleteBranches is null) { return; }
         GitRepository? repository = _repository;
         string? hash = (_commits.SelectedItem as GitCommit)?.Hash;
-        GitReference[] refs = _navigationReferences.Where(reference => reference.Hash == hash && reference.SymbolicTarget is null)
+        GitReference? clicked = CurrentRevisionContextReference();
+        GitReference[] refs = _navigationReferences.Where(reference => reference.RevisionHash == hash && reference.SymbolicTarget is null
+            && (clicked is null || reference.Name == clicked.Name))
             .OrderBy(reference => reference.IsRemote).ThenBy(reference => reference.ShortName, StringComparer.OrdinalIgnoreCase).ToArray();
-        MenuItem Entry(GitReference reference, Func<Task> action)
+        MenuItem Entry(GitReference reference, Func<Task> action, bool restoreGridFocus)
         {
             MenuItem item = new() { Header = new TextBlock { Text = reference.ShortName }, Tag = reference,
-                Icon = OriginalIconImage(reference.IsRemote ? "BranchRemote.png" : "BranchLocal.png") };
+                Icon = OriginalIconImage(reference.IsTag ? "Tag.png" : reference.IsRemote ? "BranchRemote.png" : "BranchLocal.png") };
             item.Click += async (_, args) =>
             {
-                if (args.Source != item || _busy || repository is null || repository != _repository) { return; }
-                try { await WithRevisionActionFocusAsync(action); } catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
+                if (args.Source != item || _busy || repository is null || repository != _repository
+                    || (_commits.SelectedItem as GitCommit)?.Hash != hash) { return; }
+                try { if (restoreGridFocus) { await WithRevisionActionFocusAsync(action); } else { await action(); } }
+                catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
             };
             return item;
         }
-        object[] Entries(IEnumerable<GitReference> choices, Func<GitReference, Task> action)
+        object[] Entries(IEnumerable<GitReference> choices, Func<GitReference, Task> action, bool restoreGridFocus = true)
         {
             List<object> items = []; bool local = false;
             foreach (GitReference reference in choices)
             {
                 if (reference.IsRemote && local) { items.Add(new Separator()); local = false; }
                 if (reference.IsBranch) { local = true; }
-                items.Add(Entry(reference, () => action(reference)));
+                items.Add(Entry(reference, () => action(reference), restoreGridFocus));
             }
             return items.ToArray();
         }
@@ -160,6 +188,35 @@ public sealed partial class MainWindow
             reference => RenameRevisionBranchAsync(repository!, reference));
         _revisionDeleteBranches.ItemsSource = Entries(refs.Where(reference => (reference.IsBranch || reference.IsRemote) && !reference.IsCurrent),
             reference => DeleteRevisionBranchAsync(repository!, reference));
+        if (_revisionPushBranches is not null) { _revisionPushBranches.ItemsSource = Entries(refs.Where(reference => reference.IsBranch), reference => PushRevisionReferenceAsync(repository!, reference)); }
+        if (_revisionMergeBranches is not null)
+        {
+            _revisionMergeBranches.ItemsSource = Entries(refs.Where(reference => reference.IsTag || (reference.IsBranch || reference.IsRemote) && !reference.IsCurrent),
+                reference => MergeRevisionReferenceAsync(repository!, reference.Name));
+            // Windows still offers the selected commit when there is no eligible named ref.
+            if (_revisionMergeBranches.Items.Count == 0 && hash is not null && !refs.Any(reference => reference.IsCurrent))
+            {
+                MenuItem commit = new() { Header = new TextBlock { Text = hash }, Tag = hash, Icon = OriginalIconImage("CommitId.png") };
+                commit.Click += async (_, args) =>
+                {
+                    if (args.Source == commit && !_busy && repository is not null && repository == _repository
+                        && (_commits.SelectedItem as GitCommit)?.Hash == hash)
+                    { await WithRevisionActionFocusAsync(() => MergeRevisionReferenceAsync(repository, hash)); }
+                };
+                _revisionMergeBranches.ItemsSource = new[] { commit };
+            }
+        }
+        if (_revisionDeleteTags is not null) { _revisionDeleteTags.ItemsSource = Entries(refs.Where(reference => reference.IsTag), reference => DeleteRevisionBranchAsync(repository!, reference)); }
+        if (_revisionSelectInLeftPanel is not null)
+        {
+            GitReference[] targets = refs.Where(reference => reference.IsBranch || reference.IsRemote || reference.IsTag).ToArray();
+            GitReference? single = targets.Length == 1 ? targets[0] : null;
+            _selectRevisionInLeftPanel = single is null ? null : () => repository == _repository
+                && (_commits.SelectedItem as GitCommit)?.Hash == hash
+                ? SelectRevisionReferenceInLeftPanelAsync(single) : Task.CompletedTask;
+            _revisionSelectInLeftPanel.Tag = single;
+            _revisionSelectInLeftPanel.ItemsSource = single is null ? Entries(targets, SelectRevisionReferenceInLeftPanelAsync, restoreGridFocus: false) : Array.Empty<object>();
+        }
     }
 
     private async Task RenameRevisionBranchAsync(GitRepository repository, GitReference reference)
@@ -194,6 +251,7 @@ public sealed partial class MainWindow
     {
         if (_revisionCopy is null) { return; }
         GitCommit[] selected = SelectedComparisonCommits();
+        GitReference? clicked = CurrentRevisionContextReference();
         List<object> items = [];
         MenuItem Copy(string label, string value, string icon, Func<Task<string>>? readValue = null)
         {
@@ -212,7 +270,8 @@ public sealed partial class MainWindow
         foreach ((string label, bool tags, string icon) in new[] { ("Branches", false, "Branch.png"), ("Tags", true, "Tag.png") })
         {
             string[] names = _navigationReferences.Where(reference => selected.Any(commit => commit.Hash == reference.RevisionHash)
-                && (tags ? reference.IsTag : reference.IsBranch || reference.IsRemote) && reference.SymbolicTarget is null)
+                && (tags ? reference.IsTag : reference.IsBranch || reference.IsRemote) && reference.SymbolicTarget is null
+                && (clicked is null || reference.Name == clicked.Name))
                 .Select(reference => reference.ShortName).Distinct(StringComparer.Ordinal).ToArray();
             if (names.Length == 0) { continue; }
             items.Add(new MenuItem { Header = T(label), IsEnabled = false });

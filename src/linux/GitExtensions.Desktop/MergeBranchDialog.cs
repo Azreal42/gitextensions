@@ -47,7 +47,7 @@ public sealed class MergeBranchDialog : RepositoryDialog
         _initialRevision = revision; _resolve = resolveConflictsAsync; _afterSubmodules = afterSubmoduleUpdate;
         _lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bool showHelpImages = OriginalCommandHelpVisibility.Capture();
-        Name = "MergeBranchDialog"; Title = Text("$this", "Merge"); Width = showHelpImages ? 790 : 500; MinWidth = 500; Height = 530; MinHeight = 450;
+        Name = "MergeBranchDialog"; Title = Text("$this", "Merge"); Width = showHelpImages ? 790 : 500; MinWidth = showHelpImages ? 790 : 500; Height = 530; MinHeight = 450;
         _ff.Content = Text("fastForward", "Keep a single branch line if possible (fast forward)");
         _noff.Content = Text("noFastForward", "Always create a new merge commit");
         Set(_noCommit, "noCommit", "Do not commit"); Set(_advanced, "advanced", "Show advanced options");
@@ -76,6 +76,7 @@ public sealed class MergeBranchDialog : RepositoryDialog
         StackPanel buttons = ExportDialogControls.Buttons(_merge, cancel); DockPanel.SetDock(buttons, Dock.Bottom); Root.Children.Add(buttons); Root.Children.Add(new ScrollViewer { Content = _body });
         Track(_revision, _ff, _noff, _noCommit, _advanced, _strategyEnabled, _strategy, _squash, _unrelated, _log, _count, _customMessage, _message);
         _ff.IsChecked = true;
+        _advanced.IsChecked = AdvancedOptionsVisibility.Capture();
         _revision.PropertyChanged += (_, change) => { if (change.Property == ComboBox.TextProperty) { UpdateActions(); } };
         foreach (ToggleButton choice in new ToggleButton[] { _ff, _noff, _advanced, _strategyEnabled, _customMessage, _log })
         { choice.IsCheckedChanged += (_, _) => OptionsChanged(); }
@@ -85,7 +86,11 @@ public sealed class MergeBranchDialog : RepositoryDialog
             { _invalidLogCount = false; _count.Minimum = 0; _count.Maximum = 100; }
             SaveLogPreference(); UpdateActions();
         };
-        if (_help is { } help) { help.ExpandedChanged += (_, _) => Width = help.IsExpanded ? 790 : 500; }
+        if (_help is { } help)
+        {
+            MinWidth = help.IsExpanded ? 790 : 500;
+            help.ExpandedChanged += (_, _) => { MinWidth = help.IsExpanded ? 790 : 500; Width = MinWidth; };
+        }
         Closed += (_, _) => { _lifetime.Cancel(); _help?.Dispose(); };
         OptionsChanged();
         void Set(CheckBox box, string item, string source) => box.Content = Text(item, source);

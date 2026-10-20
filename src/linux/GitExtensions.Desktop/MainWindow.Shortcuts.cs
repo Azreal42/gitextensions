@@ -7,6 +7,37 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
+    private KeyEventArgs? _contextGestureKeyDown;
+    private Control? _contextGestureTarget;
+
+    private void InitializeKeyboardContextGesture()
+    {
+        AddHandler(KeyDownEvent, (_, args) =>
+        {
+            _contextGestureKeyDown = null; _contextGestureTarget = null;
+            if (args.Key == Key.F10 && args.KeyModifiers == KeyModifiers.Shift
+                && FocusManager?.GetFocusedElement() is Control target && TopLevel.GetTopLevel(target) == this)
+            { _contextGestureKeyDown = args; _contextGestureTarget = target; }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        // Control's native ContextRequested handling runs on KeyUp. Fall back only
+        // after it, so Win32/native mappings open once and X11/headless gain the
+        // Windows gesture without changing application-wide platform settings.
+        AddHandler(KeyUpEvent, (_, args) =>
+        {
+            if (args.Key != Key.F10) { return; }
+            KeyEventArgs? down = _contextGestureKeyDown; Control? target = _contextGestureTarget;
+            _contextGestureKeyDown = null; _contextGestureTarget = null;
+            if (args.Handled || down?.Handled != false || args.KeyModifiers != KeyModifiers.Shift
+                || _busy || _lifetime.IsCancellationRequested || target is null || !target.IsEffectivelyVisible
+                || !target.IsEffectivelyEnabled || TopLevel.GetTopLevel(target) != this
+                || !ReferenceEquals(FocusManager?.GetFocusedElement(), target)) { return; }
+            // Retain configured KeyDown command precedence. Ask the actual input
+            // control, so file trees and editors keep their own context menu.
+            ContextRequestedEventArgs request = new(); target.RaiseEvent(request);
+            args.Handled = request.Handled;
+        }, Avalonia.Interactivity.RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
     // Defaults from HotkeySettingsManager/FormBrowse and RevisionGridControl.
     private async void HandleShortcuts(object? sender, KeyEventArgs e) => await HandleShortcutsAsync(sender, e);
 

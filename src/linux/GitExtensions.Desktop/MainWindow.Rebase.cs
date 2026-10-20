@@ -13,9 +13,9 @@ public sealed partial class MainWindow
 
     private MenuItem BuildRebaseMenu()
     {
-        _rebaseImmediate = MenuAction("Selected commit", () => OpenHistoryRebaseAsync(interactive: false, immediate: true));
-        _rebaseInteractive = MenuAction("Selected commit interactively...", () => OpenHistoryRebaseAsync(interactive: true, immediate: true));
-        _rebaseAdvanced = MenuAction("Selected commit with advanced options...", RebaseAsync);
+        _rebaseImmediate = MenuAction("Selected commit", () => ContextHistoryRebaseAsync(interactive: false, immediate: true));
+        _rebaseInteractive = MenuAction("Selected commit interactively...", () => ContextHistoryRebaseAsync(interactive: true, immediate: true));
+        _rebaseAdvanced = MenuAction("Selected commit with advanced options...", () => ContextHistoryRebaseAsync(interactive: false));
         _rebaseImmediate.Name = "HistoryRebaseImmediate";
         _rebaseInteractive.Name = "HistoryRebaseInteractive";
         _rebaseAdvanced.Name = "HistoryRebaseAdvanced";
@@ -33,17 +33,19 @@ public sealed partial class MainWindow
     private void RefreshRebaseMenu()
     {
         if (_rebaseContext is null) { return; }
+        BindContextRebaseCommand();
         int count = SelectedComparisonCommits().Length;
         bool available = !_busy && _repository is { IsBare: false };
+        bool hasTarget = CurrentRevisionContextReference()?.IsCurrent != true;
         _rebaseContext.IsEnabled = available && count > 0;
-        _rebaseImmediate!.IsEnabled = _rebaseInteractive!.IsEnabled = available && count == 1;
-        _rebaseAdvanced!.IsEnabled = available && count is 1 or 2;
+        _rebaseImmediate!.IsEnabled = _rebaseInteractive!.IsEnabled = available && hasTarget && count == 1;
+        _rebaseAdvanced!.IsEnabled = available && hasTarget && count is 1 or 2;
     }
 
     private Task RebaseAsync() => OpenHistoryRebaseAsync(interactive: false);
     private Task InteractiveRebaseAsync() => OpenHistoryRebaseAsync(interactive: true);
 
-    private async Task OpenHistoryRebaseAsync(bool interactive, bool immediate = false)
+    private async Task OpenHistoryRebaseAsync(bool interactive, bool immediate = false, string? ontoOverride = null)
     {
         if (_repository is null || _busy || _repository.IsBare) { return; }
         GitRepository repository = _repository;
@@ -58,7 +60,7 @@ public sealed partial class MainWindow
         string? from = selected.Length == 2 ? selected[1].Hash : null;
         GitStatus? status = from is null ? null : await repository.GetStatusAsync(_lifetime.Token);
         if (_repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
-        await ShowRebaseDialogAsync(selected.FirstOrDefault()?.Hash, from,
+        await ShowRebaseDialogAsync(ontoOverride ?? selected.FirstOrDefault()?.Hash, from,
             status is null ? null : status.IsDetached ? "HEAD" : status.Branch ?? "HEAD", interactive, immediate);
     }
 

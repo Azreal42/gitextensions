@@ -28,8 +28,8 @@ public sealed class RevisionContextMenuTests
         using Fixture fixture = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         Assert.That((await fixture.Git.RunAsync(fixture.Repository, ["branch", "context-target", "HEAD"])).Success, Is.True); await fixture.Window.OpenRepositoryAsync(fixture.Repository);
         MainWindow main = fixture.Window; ListBox history = History(main); ContextMenu menu = history.ContextMenu!;
-        string[] expected = ["Copy to clipboard", "|", "Checkout branch...", "Rebase current branch on", "Reset current branch to here...", "|",
-            "Create new branch here...", "Rename branch...", "Delete branch...", "Reset another branch to here...", "|", "Create new tag here...", "|",
+        string[] expected = ["Copy to clipboard", "|", "Checkout branch...", "Push branch...", "Merge into current branch...", "Rebase current branch on", "Reset current branch to here...", "|",
+            "Select in left panel", "Create new branch here...", "Reset another branch to here...", "Rename branch...", "Delete branch...", "|", "Create new tag here...", "|",
             "Checkout this commit...", "Revert this commit...", "Cherry pick this commit...", "Archive this commit...", "Advanced", "|", "Compare", "|", "Navigate", "View"];
         foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
         {

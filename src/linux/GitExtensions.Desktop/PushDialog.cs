@@ -22,6 +22,7 @@ public sealed class PushDialog : RepositoryDialog
     private readonly PushPreferencesStore _store = new();
     private readonly CloneSourcesStore _destinationHistory = new();
     private readonly Func<Window, CancellationToken, Task>? _afterSubmoduleUpdateAsync;
+    private readonly string? _initialBranch;
     private PushPreferences _preferences;
     private readonly RadioButton _toRemote = new() { Name = "PushToRemote", GroupName = "PushDestinationMode", IsChecked = true };
     private readonly RadioButton _toUrl = new() { Name = "PushToUrl", GroupName = "PushDestinationMode" };
@@ -54,10 +55,12 @@ public sealed class PushDialog : RepositoryDialog
     public bool Cancelled { get; private set; }
     public GitProcessDialogResult? LastProcess { get; private set; }
 
-    public PushDialog(GitRepository repository, Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null) : base(repository, "Push")
+    public PushDialog(GitRepository repository, Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync = null,
+        string? initialBranch = null) : base(repository, "Push")
     {
         ConsoleStylePresentation.Bind(_output);
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
+        _initialBranch = initialBranch;
         _preferences = _store.Load();
         _url.ItemsSource = _destinationHistory.Load();
         Width = 760; MinWidth = 620; SizeToContent = SizeToContent.Height;
@@ -79,7 +82,8 @@ public sealed class PushDialog : RepositoryDialog
         _browse = Action("PushBrowse", "Browse…", async () => { string? folder = await ExportDialogControls.FolderAsync(this, C("_selectDestinationDirectory", "Please select a destination directory")); if (folder is not null) { _url.Text = folder; } });
         _browse.Content = Label("folderBrowserButton1", "Bro&wse...");
         _showOptions = new() { Name = "PushShowOptions", Content = C("ShowOptions", "Show options"), Height = 24, HorizontalAlignment = HorizontalAlignment.Left };
-        _showOptions.Click += (_, _) => { _options.IsVisible = true; _showOptions.IsVisible = false; };
+        _showOptions.Click += (_, _) => ShowAdvancedOptions();
+        if (AdvancedOptionsVisibility.Capture()) { ShowAdvancedOptions(); }
         Track(_showOptions);
         Button cancel = new() { Name = "CancelPush", Content = T("Cancel"), IsCancel = true };
         cancel.Click += (_, _) => Close();
@@ -133,7 +137,12 @@ public sealed class PushDialog : RepositoryDialog
         }
     }
 
-    private static AutoCompleteBox Input(string name) => new() { Name = name, Height = 24, MinimumPrefixLength = 0, FilterMode = AutoCompleteFilterMode.ContainsOrdinal, IsTextCompletionEnabled = true };
+    private void ShowAdvancedOptions()
+    {
+        _options.IsVisible = true; _showOptions.IsVisible = false;
+    }
+
+    private static AutoCompleteBox Input(string name) => new() { Name = name, Height = 24, Padding = new Thickness(4, 2), MinimumPrefixLength = 0, FilterMode = AutoCompleteFilterMode.ContainsOrdinal, IsTextCompletionEnabled = true };
     private string C(string item, string source, string property = "Text") => Translations.Translate("FormPush", item, property, source);
     private string A(string item, string source) => Translations.TranslateAccessKeys("FormPush", item, "Text", source);
     private Control Label(string item, string source, Control? target = null) => new Label
@@ -172,9 +181,10 @@ public sealed class PushDialog : RepositoryDialog
             _source.ItemsSource = new[] { AllRefs, "HEAD" }.Concat(_references.Where(reference => reference.IsBranch).Select(reference => reference.ShortName)).ToArray();
             // Selecting the initial item updates both the editable text and
             // its template TextBox, even while modal activation is pending.
-            _source.SelectedItem = current;
+            string source = _initialBranch ?? current;
+            _source.SelectedItem = source;
             _tag.ItemsSource = new[] { AllRefs }.Concat(_references.Where(reference => reference.IsTag).Select(reference => reference.ShortName)).ToArray(); _tag.SelectedItem = AllRefs;
-            string? configured = Config("branch." + _currentBranch + ".remote");
+            string? configured = Config("branch." + source + ".remote");
             _remote.ItemsSource = _remotes.Select(remote => remote.Name).ToArray();
             _remote.SelectedItem = _remotes.FirstOrDefault(remote => remote.Name.Equals(configured, StringComparison.OrdinalIgnoreCase))?.Name
                 ?? _remotes.FirstOrDefault(remote => remote.Name.Equals("origin", StringComparison.OrdinalIgnoreCase))?.Name ?? _remotes.FirstOrDefault()?.Name;
