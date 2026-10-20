@@ -1,6 +1,6 @@
 # ADR 0078 · Saisies des scripts
 
-Statut : pont UI consommé par le runtime, suites complètes de la source `19bbfed70` acceptées ; paquet exact vérifié ; natif S01 du runtime ciblé. Les trois saisies conservent leurs niveaux N1 et leur audit natif ouvert.
+Statut : pont UI consommé par le runtime, suites complètes de la source `19bbfed70` acceptées ; paquet exact vérifié ; natif S01 du runtime ciblé. Les trois saisies conservent leurs niveaux N1 et leur audit natif ouvert dans cette référence. Cette référence reste historique ; les compléments qualifiés de l’[ADR0126](0126-generic-prompts.md) portent QuickStringSelector et SimplePrompt à N2 sur leurs parcours testés. FilePrompt reste N1.
 
 Reprendre FormQuickStringSelector, FormFilePrompt et SimplePrompt sans perdre la saisie ni confondre sélection et acceptation.
 

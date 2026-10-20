@@ -1,11 +1,11 @@
 {
-  "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
-  "trx": "artifacts/linux/jenkins-20261020/desktop-full-01/results/desktop.trx",
-  "trx_sha256": "c2119df31ba1e39b0c96056300da45b3b57e104faee7f2f661af7cfe93d4ec31",
+  "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+  "trx": "artifacts/linux/portable-workflows-20261020/desktop-full-02/results/desktop.trx",
+  "trx_sha256": "b2aa3823721e58b25ecee03c333947d2f5d416fd23fee646eb86cad4cc0b7bed",
   "counters": {
-    "total": "3217",
-    "executed": "3217",
-    "passed": "3217",
+    "total": "3441",
+    "executed": "3441",
+    "passed": "3441",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -23,6 +23,15 @@
   "classes": {
     "AddSubmoduleDialogTests": {
       "Passed": 17
+    },
+    "AdvancedSettingsConsumerTests": {
+      "Passed": 7
+    },
+    "AdvancedSettingsPageTests": {
+      "Passed": 6
+    },
+    "AdvancedSettingsSessionTests": {
+      "Passed": 19
     },
     "AnnotatedReferencePresentationTests": {
       "Passed": 5
@@ -50,6 +59,9 @@
     },
     "AppearanceSettingsSessionTests": {
       "Passed": 14
+    },
+    "AppearanceViewIntentTests": {
+      "Passed": 10
     },
     "ArtificialHistoryRevisionTests": {
       "Passed": 7
@@ -144,6 +156,9 @@
     "BrowserSelectionTests": {
       "Passed": 7
     },
+    "BugReportDialogTests": {
+      "Passed": 15
+    },
     "BuildServerCredentialsDialogTests": {
       "Passed": 17
     },
@@ -191,6 +206,15 @@
     },
     "CloneProcessDialogTests": {
       "Passed": 8
+    },
+    "ColorsSettingsConsumerTests": {
+      "Passed": 26
+    },
+    "ColorsSettingsPageTests": {
+      "Passed": 4
+    },
+    "ColorsSettingsSessionTests": {
+      "Passed": 15
     },
     "CommandlineHelpDialogTests": {
       "Passed": 11
@@ -269,6 +293,15 @@
     },
     "ComparisonSelectionTests": {
       "Passed": 12
+    },
+    "ConfirmationsSettingsPageTests": {
+      "Passed": 14
+    },
+    "ConfirmationsSettingsSessionTests": {
+      "Passed": 19
+    },
+    "ConfirmationsWorkflowTests": {
+      "Passed": 14
     },
     "ConflictRoutingTests": {
       "Passed": 9
@@ -366,11 +399,26 @@
     "EditableFileViewTests": {
       "Passed": 11
     },
+    "ErrorReportRoutingTests": {
+      "Passed": 10
+    },
+    "ExceptionDetailDialogTests": {
+      "Passed": 2
+    },
+    "ExceptionReportProjectionTests": {
+      "Passed": 8
+    },
     "ExportDialogTests": {
       "Passed": 13
     },
     "FileContentTests": {
       "Passed": 6
+    },
+    "FileEditorConsumerTests": {
+      "Passed": 8
+    },
+    "FileEditorDialogTests": {
+      "Passed": 17
     },
     "FileEncodingViewTests": {
       "Passed": 6
@@ -441,6 +489,9 @@
     "FontStreamLifetimeTests": {
       "Passed": 1
     },
+    "ForkCloneDialogTests": {
+      "Passed": 18
+    },
     "FormEditDialogTests": {
       "Passed": 8
     },
@@ -458,6 +509,9 @@
     },
     "GeneralSettingsSessionTests": {
       "Passed": 23
+    },
+    "GenericPromptHostTests": {
+      "Passed": 12
     },
     "GitConfigAdvancedSettingsPageTests": {
       "Passed": 19
@@ -840,64 +894,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
-      "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+      "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+      "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
-      "passed": 1026,
-      "total": 1026,
-      "execution_result": "artifacts/linux/jenkins-20261020/core-full-01/result.json",
-      "execution_result_sha256": "4b6d8e4079025a943feba8fd632099ce32ac258030ae401278b02f14ceabec08",
+      "passed": 1057,
+      "total": 1057,
+      "execution_result": "artifacts/linux/portable-workflows-20261020/core-full-01/result.json",
+      "execution_result_sha256": "068dc8fd09fe92edda1cc695dc837bb311ae1c1924a218f53aa3234605e906f5",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
-        "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
+        "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
+        "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
-        "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
+        "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
+        "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
       },
-      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh complete suites in W7; no exclusions. One verified Core display-name rename is explicit in the lineage review."
+      "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
     },
     "plugins": {
-      "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
-      "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+      "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+      "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
       "execution_kind": "worktree",
-      "execution_worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
+      "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": false,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/jenkins-20261020/plugins-full-01/result.json",
-      "execution_result_sha256": "cb21e535b01a6cb3a9e125b94f07ea56c240d7b826d2920f3772390e1ec3a23d",
+      "execution_result": "artifacts/linux/portable-workflows-20261020/plugins-full-01/result.json",
+      "execution_result_sha256": "d0a714f8f11b2823a92762da7742be74f3e0fc30269bf99bb9a99303a47ff8d0",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
-        "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
+        "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
+        "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
-        "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
+        "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
+        "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
       },
-      "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh complete suites in W7; no exclusions. One verified Core display-name rename is explicit in the lineage review."
+      "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
-    "worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
-    "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+    "worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
+    "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
     "primary_execution": false,
     "reexecuted_on_candidate": false,
     "source_equivalence": {
-      "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
-      "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
+      "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
+      "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
     },
     "root_review": {
-      "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
-      "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
+      "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
+      "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
     },
-    "meaning": "Fresh complete suites run in frozen W7. The primary preserves five unrelated Modal edits; the controlled import is not whole-primary equivalence or a primary full run. Native source and exact Debian artifact retain their separate scopes."
+    "meaning": "Fresh complete W11 suites on the reviewed source. Five unrelated primary Modal edits stay distinct; no whole-primary full run, installed interaction or global parity inferred."
   }
 }

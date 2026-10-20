@@ -1,16 +1,35 @@
 # TODO
 
-Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/jenkins-20261020/window-inventory-syntax-01.json) : 2395 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
+Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/portable-workflows-20261020/window-inventory-syntax-01.json) : 2444 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
+
+Les preuves courantes portent sur `b745524c1` ; les anciennes références gardent leur source et leur périmètre.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `63812eebc` : 3217/3217 Desktop (272 classes), 1026/1026 Core, 35/35 Plugins** ; **99 fenêtres métier : 8 N1, 40 N2, 50 N3, 1 hors périmètre ; 32 pages : 4 N1, 27 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `b745524c1` : 3441/3441 Desktop (290 classes), 1057/1057 Core, 35/35 Plugins** ; **99 fenêtres métier : 2 N1, 46 N2, 50 N3, 1 hors périmètre ; 32 pages : 1 N1, 30 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
 
-Les [suites de référence](../../artifacts/linux/jenkins-20261020/review/root-full-review.json) ont tourné sur W7 figé ; l’[import contrôlé](../../artifacts/linux/jenkins-20261020/review/source-import-review.json) préserve les cinq modifications Modal distinctes du primaire, sans réexécution ni équivalence globale revendiquée. Paquet et natif gardent les périmètres décrits ci-dessous ; les anciennes preuves restent liées à leurs sources.
+Les [suites complètes](../../artifacts/linux/portable-workflows-20261020/review/root-full-review.json) ont tourné sur W11 figé ; l’[import contrôlé de 91 chemins](../../artifacts/linux/portable-workflows-20261020/review/source-import-review.json) préserve les cinq modifications Modal distinctes du primaire, sans réexécution ni équivalence globale revendiquée. Les [preuves W7](../../artifacts/linux/jenkins-20261020/review/root-full-review.json) restent historiques.
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
+
+## Portable workflows — perimetre verifie
+
+Source `b745524c1` : [3441/3441 Desktop, 1057/1057 Core, 35/35 Plugins](../../artifacts/linux/portable-workflows-20261020/review/root-full-review.json), 290 classes Desktop. [Lignée des tests](../../artifacts/linux/portable-workflows-20261020/review/test-lineage-review.json) : scénarios W7 conservés ; une identité de validation adaptée au symbole vide désormais valide, sans affaiblir le contrôle d’erreur.
+
+- [x] FormEditor (ADR0123) : fichiers existants, menus Edit Browse/Compare et vrai config local ; sauvegarde BOM/codec, recherche, dirty-close et effets partiels couverts par les suites. Natif EN/clair : F4 Browse, Cancel conserve le brouillon et les octets, Ctrl+S écrit le texte exact sans newline ajoutée. Aucun nouveau geste natif Compare/config ni lancement CLI editor qualifié.
+- [x] Fork/Clone (ADR0124) : sélection/parent, POST sans rejeu, clone Git et upstream. Natif EN/clair : recherche, fork accepté conservé après HTTP503 secondaire, vrai clone et remotes vérifiés sur fixture privée ; aucun compte ni service GitHub réel certifié.
+- [x] Confirmations (ADR0125) : 13/17 choix Windows et leurs consommateurs testés. Colors (ADR0128) : 5/6 options Graph. Natif EN/clair : Apply/Cancel avec comparaison exacte des profils, champs étrangers préservés ; badges conservés au redémarrage FR/sombre. Multicolor/CSS/thèmes Windows et quatre confirmations restent absents.
+- [x] QuickStringSelector/SimplePrompt (ADR0126) : sélecteur EN/FR ancré, vrai script de choix de remote, Rename/Move avec nouveau prompt après validation inchangée et fermeture sans mutation. FilePrompt reste N1 : picker natif sans token d’annulation.
+- [x] Rapport et détail récupérables (ADR0127) : projection/copie et consentements couverts par les suites. Natif EN/clair depuis une erreur Git réelle : onglets, propriété Message, détail au clavier, fermeture enfant puis Ignore et retour au dépôt. Send/Quit externe et circuit fatal NBug non exercés nativement.
+- [x] Advanced (ADR0129) : six champs et trois profils, symbole vide valide, intentions et reçus partiels testés. Natif EN/clair puis FR/sombre : AlwaysAdvanced et `(none)` appliqués puis retrouvés au redémarrage. Updates/RC, console et aide Windows hors lot ; SSH distinct.
+
+[Natif source](../../artifacts/linux/portable-workflows-20261020/native-02/root-native-review.json) : 88 commandes, 85 captures inspectées, deux fermetures normales ; premier clic bleu puis Haut/Bas sans perte du focus. Parcours limités à X11 privé. L’arbre Settings FR peut défiler horizontalement sur un libellé long ; Wayland/IME/DPI/accessibilité et interaction du paquet installé sur le poste restent ouverts. L’essai natif01 interrompu ne qualifie aucun parcours.
+
+[Paquet `7.2.1-linux-alpha`](../../artifacts/linux/snapshots/b745524c1/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 049 344 octets, SHA256 `d8966641dddd617329a25c9da218dd518ea3c21a0476af1d5c021344e239a245` ; [cinq phases vérifiées](../../artifacts/linux/portable-workflows-20261020/review/root-package-review.json), dont installation/lancement dans une racine isolée. Ce résultat ne vaut pas installation du nouveau paquet sur le poste.
+
+Restent N1 : Updates (flux et installateur Windows à remplacer par une publication Linux), FilePrompt (arrêt du picker natif non garanti) et SSH (PuTTY/Pageant/registre Windows et autorité Git à adapter). Les neuf promotions N1→N2 restent partielles ; aucun N4 et les 13 familles historiques restent ouvertes.
 
 ## Livré et vérifié
 

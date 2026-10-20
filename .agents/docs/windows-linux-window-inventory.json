@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "63812eebc4b0994f625b7da259cee72735c46dd4",
-  "source_digest_sha256": "6101f66f96c7d01aa11b7490c52313bc33a377184fdf8901c58d40d8988a0520",
-  "scanned_csharp_files": 2395,
+  "code_reference_commit": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+  "source_digest_sha256": "389bda059ffa4230f8995a210b03f05d73bb9d7264b59379926f6b38cbe4762d",
+  "scanned_csharp_files": 2444,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,19 +26,19 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 104,
+    "linux_window_types": 108,
     "linux_abstract_bases": 4,
-    "linux_dynamic_factories": 32,
+    "linux_dynamic_factories": 35,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N1": 8,
-      "N2": 40,
+      "N1": 2,
+      "N2": 46,
       "N3": 50,
       "NA": 1
     },
     "settings_levels": {
-      "N1": 4,
-      "N2": 27,
+      "N1": 1,
+      "N2": 30,
       "NA": 1
     },
     "system_dialog_sites": 366,
@@ -48,54 +48,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/jenkins-20261020/desktop-full-01/results/desktop.trx",
-    "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
-    "trx_sha256": "c2119df31ba1e39b0c96056300da45b3b57e104faee7f2f661af7cfe93d4ec31",
+    "trx": "artifacts/linux/portable-workflows-20261020/desktop-full-02/results/desktop.trx",
+    "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+    "trx_sha256": "b2aa3823721e58b25ecee03c333947d2f5d416fd23fee646eb86cad4cc0b7bed",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
-        "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+        "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+        "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
-        "passed": 1026,
-        "total": 1026,
-        "execution_result": "artifacts/linux/jenkins-20261020/core-full-01/result.json",
-        "execution_result_sha256": "4b6d8e4079025a943feba8fd632099ce32ac258030ae401278b02f14ceabec08",
+        "passed": 1057,
+        "total": 1057,
+        "execution_result": "artifacts/linux/portable-workflows-20261020/core-full-01/result.json",
+        "execution_result_sha256": "068dc8fd09fe92edda1cc695dc837bb311ae1c1924a218f53aa3234605e906f5",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
-          "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
+          "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
+          "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
-          "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
+          "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
+          "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
         },
-        "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh complete suites in W7; no exclusions. One verified Core display-name rename is explicit in the lineage review."
+        "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
       },
       "plugins": {
-        "source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
-        "execution_source_sha": "63812eebc4b0994f625b7da259cee72735c46dd4",
+        "source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
+        "execution_source_sha": "b745524c1a4bac859d14d5b84b28ac2d0a72551d",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/jenkins-integration/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/portable-workflows/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": false,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/jenkins-20261020/plugins-full-01/result.json",
-        "execution_result_sha256": "cb21e535b01a6cb3a9e125b94f07ea56c240d7b826d2920f3772390e1ec3a23d",
+        "execution_result": "artifacts/linux/portable-workflows-20261020/plugins-full-01/result.json",
+        "execution_result_sha256": "d0a714f8f11b2823a92762da7742be74f3e0fc30269bf99bb9a99303a47ff8d0",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/jenkins-20261020/review/root-full-review.json",
-          "sha256": "cf6349e2a6279040f9aba582275e242ea162f0da592e09e7de23d425c5d63bcd"
+          "path": "artifacts/linux/portable-workflows-20261020/review/root-full-review.json",
+          "sha256": "b63cf16e7a603ddf5722b475a6b491b192f1f25db0ff797b48009e2f341b5be5"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/jenkins-20261020/review/source-import-review.json",
-          "sha256": "316834e5a6e338b76eb118f5aab3f1a0eac89ee6e3363cd50921ac94c3a61b84"
+          "path": "artifacts/linux/portable-workflows-20261020/review/source-import-review.json",
+          "sha256": "bc07878d79325bd7cb1f1c5fb80813ddd8f0ec4fca4790251d97f17c5137a9bb"
         },
-        "comparison_scope": "All declared source/config extension and selected binary manifests stable and equal across all three fresh complete suites in W7; no exclusions. One verified Core display-name rename is explicit in the lineage review."
+        "comparison_scope": "Fresh complete suites in W11; all declared source/config and selected binary manifests exactly equal across runs. This is not all assets or a primary checkout full run; the primary retains five unrelated Modal edits."
       }
     },
     "current_linux_code_equivalent": false,
@@ -428,36 +428,75 @@
       "category": "windows",
       "feature": "Rapport d’erreur",
       "group": "information",
-      "level": "N1",
-      "implemented": "Message d’erreur et ouverture du tracker GitHub, avec copie d’informations système.",
-      "remaining": "Collecte détaillée, formulaire NBug et circuit complet de rapport d’exception non portés.",
-      "visual": "externe",
+      "level": "N2",
+      "implemented": "Action View details du statut vers rapport récupérable possédé, sans modal automatique dans le catch : contexte connu figé, onglets/propriétés/détails, copie explicite et description. Send and Quit prévisualise/confirme la destination avant le launcher ; pas de soumission HTTP automatique. Actions/enfants/fermeture drainés, décision Quit rendue au parent.",
+      "remaining": "Le circuit fatal NBug Windows et ses hooks de crash sont distincts ; aucune garantie de récupération d’un processus corrompu. Variantes natives, accessibilité et interaction installée restent ouvertes.",
+      "visual": "rapproche",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.BuildHelpMenu",
-          "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 100,
+          "id": "GitExtensions.Linux.Desktop.BugReportDialog",
+          "label": "BugReportDialog",
+          "source": "src/linux/GitExtensions.Desktop/BugReportDialog.cs",
+          "line": 14,
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.Dialogs",
-          "label": "Dialogs.ShowErrorAsync",
-          "source": "src/linux/GitExtensions.Desktop/Dialogs.cs",
+          "id": "GitExtensions.Linux.Desktop.DesktopErrorReporter",
+          "label": "DesktopErrorReporter",
+          "source": "src/linux/GitExtensions.Desktop/DesktopErrorReporter.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ExceptionReportSnapshot",
+          "label": "ExceptionReportSnapshot",
+          "source": "src/linux/GitExtensions.Desktop/ExceptionReportSnapshot.cs",
+          "line": 12,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ExceptionDetailsControl",
+          "label": "ExceptionDetailsControl",
+          "source": "src/linux/GitExtensions.Desktop/ExceptionDetailsControl.cs",
           "line": 14,
           "kind": "component"
+        },
+        {
+          "label": "MainWindow.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
-          "test_class": "ClassicMenuTests",
-          "passed_in_reference_run": 9,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BugReportDialogTests.cs",
+          "test_class": "BugReportDialogTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ErrorReportRoutingTests.cs",
+          "test_class": "ErrorReportRoutingTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ExceptionReportProjectionTests.cs",
+          "test_class": "ExceptionReportProjectionTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/MessageDialogTests.cs",
+          "test_class": "MessageDialogTests",
+          "passed_in_reference_run": 10,
           "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/ui/0060-shared-classic-menus.md"
+        ".agents/docs/adr/ui/0060-shared-classic-menus.md",
+        ".agents/docs/adr/ui/dialogs/0127-recoverable-error-report.md"
       ]
     },
     {
@@ -482,41 +521,56 @@
       "category": "windows",
       "feature": "Détail d’exception",
       "group": "information",
-      "level": "N1",
-      "implemented": "Message d’erreur simple et journal Git disponibles.",
-      "remaining": "Vue hiérarchique/stack trace de l’exception Windows absente.",
-      "visual": "generique",
+      "level": "N2",
+      "implemented": "Projection figée de l’arbre d’exception, propriétés sélectionnables et détail long readonly ; cycles et getters défaillants isolés, copie/focus et fermeture partagés avec le rapport récupérable.",
+      "remaining": "Circuit fatal NBug distinct et audit natif étendu des exceptions/propriétés/plateformes ouverts ; aucun N4 ni collecte machine exhaustive certifiée.",
+      "visual": "rapproche",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.Dialogs",
-          "label": "Dialogs.ShowErrorAsync",
-          "source": "src/linux/GitExtensions.Desktop/Dialogs.cs",
+          "id": "GitExtensions.Linux.Desktop.ExceptionDetailsControl",
+          "label": "ExceptionDetailsControl",
+          "source": "src/linux/GitExtensions.Desktop/ExceptionDetailsControl.cs",
           "line": 14,
           "kind": "component"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.GitCommandLogWindow",
-          "label": "GitCommandLogWindow",
-          "source": "src/linux/GitExtensions.Desktop/GitCommandLogWindow.cs",
-          "line": 9,
+          "id": "GitExtensions.Linux.Desktop.ExceptionDetailDialog",
+          "label": "ExceptionDetailDialog",
+          "source": "src/linux/GitExtensions.Desktop/ExceptionDetailDialog.cs",
+          "line": 12,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ExceptionReportSnapshot",
+          "label": "ExceptionReportSnapshot",
+          "source": "src/linux/GitExtensions.Desktop/ExceptionReportSnapshot.cs",
+          "line": 12,
+          "kind": "component"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
-          "test_class": "ClassicMenuTests",
-          "passed_in_reference_run": 9,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BugReportDialogTests.cs",
+          "test_class": "BugReportDialogTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
-          "test_class": "FontConsumerTests",
-          "passed_in_reference_run": 14,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ExceptionDetailDialogTests.cs",
+          "test_class": "ExceptionDetailDialogTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ExceptionReportProjectionTests.cs",
+          "test_class": "ExceptionReportProjectionTests",
+          "passed_in_reference_run": 8,
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/ui/dialogs/0127-recoverable-error-report.md"
+      ]
     },
     {
       "id": "GitExtensions.Plugins.CreateLocalBranches.CreateLocalBranchesForm",
@@ -1718,7 +1772,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 368,
+          "line": 390,
           "kind": "window"
         },
         {
@@ -2093,6 +2147,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
@@ -2156,6 +2216,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -2635,7 +2701,7 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab et Azure conservent l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120).",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab et Azure conservent l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours.",
       "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
@@ -2773,6 +2839,47 @@
           "source": "src/linux/GitExtensions.Desktop/TextEditDialog.cs",
           "line": 11,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileEditorDialog",
+          "label": "FileEditorDialog",
+          "source": "src/linux/GitExtensions.Desktop/FileEditorDialog.cs",
+          "line": 18,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ForkCloneDialog",
+          "label": "ForkCloneDialog",
+          "source": "src/linux/GitExtensions.Desktop/ForkCloneDialog.cs",
+          "line": 16,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopErrorReporter",
+          "label": "DesktopErrorReporter",
+          "source": "src/linux/GitExtensions.Desktop/DesktopErrorReporter.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ColorsSettingsPage",
+          "label": "ColorsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ColorsSettingsPage.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConfirmationsSettingsPage",
+          "label": "ConfirmationsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ConfirmationsSettingsPage.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.Scripts.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Scripts.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
@@ -2855,6 +2962,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
           "passed_in_reference_run": 10,
@@ -2879,6 +2992,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CreateBranchInitializationFocusTests.cs",
           "test_class": "CreateBranchInitializationFocusTests",
           "passed_in_reference_run": 11,
@@ -2894,6 +3013,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/DonateMenuIntegrationTests.cs",
           "test_class": "DonateMenuIntegrationTests",
           "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ErrorReportRoutingTests.cs",
+          "test_class": "ErrorReportRoutingTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorConsumerTests.cs",
+          "test_class": "FileEditorConsumerTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorDialogTests.cs",
+          "test_class": "FileEditorDialogTests",
+          "passed_in_reference_run": 17,
           "results_present": true
         },
         {
@@ -2969,9 +3106,21 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ForkCloneDialogTests.cs",
+          "test_class": "ForkCloneDialogTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FormEditDialogTests.cs",
           "test_class": "FormEditDialogTests",
           "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GenericPromptHostTests.cs",
+          "test_class": "GenericPromptHostTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -3102,7 +3251,13 @@
         ".agents/docs/adr/ui/dialogs/0115-donate.md",
         ".agents/docs/adr/extensions/ci/0116-jenkins.md",
         ".agents/docs/adr/workflows/references/0118-checkout-revision.md",
-        ".agents/docs/adr/ui/dialogs/0120-in-memory-text-viewer.md"
+        ".agents/docs/adr/ui/dialogs/0120-in-memory-text-viewer.md",
+        ".agents/docs/adr/workflows/files/0123-file-editor.md",
+        ".agents/docs/adr/extensions/github/0124-fork-and-clone.md",
+        ".agents/docs/adr/preferences/confirmations/0125-confirmations.md",
+        ".agents/docs/adr/workflows/scripts/0126-generic-prompts.md",
+        ".agents/docs/adr/ui/dialogs/0127-recoverable-error-report.md",
+        ".agents/docs/adr/preferences/colors/0128-graph-colors.md"
       ]
     },
     {
@@ -3155,6 +3310,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BranchMenuTests.cs",
           "test_class": "BranchMenuTests",
@@ -3306,14 +3467,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutCommitAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 426,
+          "line": 439,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithScriptEventsAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 129,
+          "line": 174,
           "kind": "window"
         },
         {
@@ -3828,7 +3989,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitBranchChoiceDialog",
           "label": "CommitBranchChoiceDialog",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
-          "line": 228,
+          "line": 212,
           "kind": "window"
         },
         {
@@ -3855,7 +4016,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitPreferencesStore",
           "label": "CommitPreferencesStore.LoadForSuperprojectStaging",
           "source": "src/linux/GitExtensions.Desktop/CommitPreferencesStore.cs",
-          "line": 38,
+          "line": 39,
           "kind": "component"
         },
         {
@@ -3907,6 +4068,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
@@ -4025,6 +4192,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -4272,6 +4445,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorConsumerTests.cs",
+          "test_class": "FileEditorConsumerTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileMenuFocusedSelectionTests.cs",
           "test_class": "FileMenuFocusedSelectionTests",
           "passed_in_reference_run": 10,
@@ -4383,6 +4562,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
           "passed_in_reference_run": 47,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -4767,7 +4952,7 @@
       "feature": "Comparaison/diff autonome",
       "group": "files",
       "level": "N2",
-      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque. La liste partagée suit les quatre modes de troncature globale ; texte affiché et ancien nom restent distincts des chemins et endpoints Git, avec limites communes Compact/submodule (ADR0100).",
+      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque. La liste partagée suit les quatre modes de troncature globale ; texte affiché et ancien nom restent distincts des chemins et endpoints Git, avec limites communes Compact/submodule (ADR0100). Edit working file utilise FileEditorWorkflow/Dialog avec ligne/codec du lecteur admissible et refresh après effets acquis (ADR0123) ; Rename/Move utilise le SimplePrompt commun avec brouillon/retry (ADR0126). Les preuves natives des autres hôtes ne sont pas transférées.",
       "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Audit étendu des scripts ouvert ; Visual Studio indisponible. Découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
       "visual": "integre",
       "extra_evidence": [
@@ -4796,6 +4981,27 @@
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
           "line": 15,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileEditorDialog",
+          "label": "FileEditorDialog",
+          "source": "src/linux/GitExtensions.Desktop/FileEditorDialog.cs",
+          "line": 18,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileEditorWorkflow",
+          "label": "FileEditorWorkflow",
+          "source": "src/linux/GitExtensions.Desktop/FileEditorWorkflow.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileMenuOperations",
+          "label": "FileMenuOperations",
+          "source": "src/linux/GitExtensions.Desktop/FileMenuOperations.cs",
+          "line": 8,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -4833,6 +5039,18 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonSelectionTests.cs",
           "test_class": "ComparisonSelectionTests",
           "passed_in_reference_run": 12,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorConsumerTests.cs",
+          "test_class": "FileEditorConsumerTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorDialogTests.cs",
+          "test_class": "FileEditorDialogTests",
+          "passed_in_reference_run": 17,
           "results_present": true
         },
         {
@@ -4875,6 +5093,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralDiffAlgorithmTests.cs",
           "test_class": "GeneralDiffAlgorithmTests",
           "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GenericPromptHostTests.cs",
+          "test_class": "GenericPromptHostTests",
+          "passed_in_reference_run": 12,
           "results_present": true
         },
         {
@@ -4944,7 +5168,9 @@
         ".agents/docs/adr/ui/0080-shared-file-menus.md",
         ".agents/docs/adr/workflows/files/0081-hidden-index-flags.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/workflows/files/0123-file-editor.md",
+        ".agents/docs/adr/workflows/scripts/0126-generic-prompts.md"
       ]
     },
     {
@@ -4969,54 +5195,81 @@
       "category": "windows",
       "feature": "Éditeur interne de fichiers",
       "group": "files",
-      "level": "N1",
-      "implemented": "Ouverture par xdg-open/éditeur choisi ; éditeur Avalonia spécialisé pour les messages de rebase.",
-      "remaining": "Éditeur de fichier générique avec sauvegarde, recherche/remplacement et avertissement de fermeture non porté.",
-      "visual": "externe",
+      "level": "N2",
+      "implemented": "Éditeur de fichiers existants depuis Edit Browse/Compare et le config local réel ; lecteur/recherche/undo partagés, ligne/codec capturés, BOM présent ou absent conservé, Save explicite et dirty-close possédé. Writer optimiste commun aux primitives des règles, sans newline ajoutée ni création de fichier manquant.",
+      "remaining": "CLI editor hors lot ; contrôle optimiste sans transaction interprocessus, effets d’une écriture commencée conservés. Audit natif étendu des fonctions FileViewer Windows, codecs/plateformes et interactions installées ouvert.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core de sauvegarde des fichiers existants",
+          "source": "tests/linux/GitExtensions.Core.Tests/EditableFileScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.FileMenuOperations",
-          "label": "FileMenuOperations.ExecuteAsync",
-          "source": "src/linux/GitExtensions.Desktop/FileMenuOperations.cs",
-          "line": 37,
+          "id": "GitExtensions.Linux.Desktop.FileEditorDialog",
+          "label": "FileEditorDialog",
+          "source": "src/linux/GitExtensions.Desktop/FileEditorDialog.cs",
+          "line": 18,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileEditorWorkflow",
+          "label": "FileEditorWorkflow",
+          "source": "src/linux/GitExtensions.Desktop/FileEditorWorkflow.cs",
+          "line": 9,
           "kind": "component"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.NativeRebaseEditorWindow",
-          "label": "NativeRebaseEditorWindow",
-          "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
-          "line": 50,
-          "kind": "window"
+          "id": "GitExtensions.Linux.EditableFileStore",
+          "label": "EditableFileStore",
+          "source": "src/linux/GitExtensions.Core/EditableFileStore.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "label": "EditableFileSnapshot.cs",
+          "source": "src/linux/GitExtensions.Core/EditableFileSnapshot.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "MainWindow.Browser.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "CompareRevisionsDialog.FileMenus.cs",
+          "source": "src/linux/GitExtensions.Desktop/CompareRevisionsDialog.FileMenus.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FilePaneParityTests.cs",
-          "test_class": "FilePaneParityTests",
-          "passed_in_reference_run": 7,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorConsumerTests.cs",
+          "test_class": "FileEditorConsumerTests",
+          "passed_in_reference_run": 8,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
-          "test_class": "LanguagePreferencesTests",
-          "passed_in_reference_run": 26,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorDialogTests.cs",
+          "test_class": "FileEditorDialogTests",
+          "passed_in_reference_run": 17,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/NativeRebaseEditorTests.cs",
-          "test_class": "NativeRebaseEditorTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/RebaseDialogTests.cs",
-          "test_class": "RebaseDialogTests",
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RulesFileEditorDialogTests.cs",
+          "test_class": "RulesFileEditorDialogTests",
           "passed_in_reference_run": 19,
           "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/ui/0080-shared-file-menus.md"
+        ".agents/docs/adr/ui/0080-shared-file-menus.md",
+        ".agents/docs/adr/workflows/files/0123-file-editor.md"
       ]
     },
     {
@@ -5619,6 +5872,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
@@ -5713,6 +5972,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BranchMenuTests.cs",
           "test_class": "BranchMenuTests",
@@ -5981,6 +6246,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
           "passed_in_reference_run": 9,
@@ -5996,6 +6267,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSuperprojectTests.cs",
           "test_class": "CommitSuperprojectTests",
           "passed_in_reference_run": 21,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6483,6 +6760,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConflictRoutingTests.cs",
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
@@ -6591,8 +6874,8 @@
       "feature": "Paramètres de l’application",
       "group": "settings",
       "level": "N2",
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109.",
-      "remaining": "N2 : pages Windows absentes, autres fournisseurs CI et pages Plugins manquantes ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (13/17), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes.",
+      "remaining": "N2 : options/pages Windows restantes et variantes des pages Plugins ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "linux": [
         {
@@ -6613,7 +6896,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 403,
+          "line": 416,
           "kind": "window"
         },
         {
@@ -6664,9 +6947,69 @@
           "source": "src/linux/GitExtensions.Desktop/Controls/SettingsNavigationView.cs",
           "line": 22,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConfirmationsSettingsPage",
+          "label": "ConfirmationsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ConfirmationsSettingsPage.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ColorsSettingsPage",
+          "label": "ColorsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ColorsSettingsPage.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConfirmationsSettingsSession",
+          "label": "ConfirmationsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ConfirmationsSettingsSession.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ColorsSettingsSession",
+          "label": "ColorsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ColorsSettingsSession.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AdvancedSettingsPage",
+          "label": "AdvancedSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AdvancedSettingsPage.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AdvancedSettingsSession",
+          "label": "AdvancedSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/AdvancedSettingsSession.cs",
+          "line": 10,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsSessionTests.cs",
+          "test_class": "AdvancedSettingsSessionTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
@@ -6692,6 +7035,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceViewIntentTests.cs",
+          "test_class": "AppearanceViewIntentTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
           "test_class": "AvatarCommitInfoTests",
           "passed_in_reference_run": 1,
@@ -6713,6 +7062,42 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsSessionTests.cs",
+          "test_class": "ColorsSettingsSessionTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsSessionTests.cs",
+          "test_class": "ConfirmationsSettingsSessionTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -6913,7 +7298,10 @@
         ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
         ".agents/docs/adr/ui/dialogs/0107-contributors-and-console-style.md",
         ".agents/docs/adr/preferences/revision-links/0108-revision-links.md",
-        ".agents/docs/adr/extensions/ci/0109-github-actions.md"
+        ".agents/docs/adr/extensions/ci/0109-github-actions.md",
+        ".agents/docs/adr/preferences/confirmations/0125-confirmations.md",
+        ".agents/docs/adr/preferences/colors/0128-graph-colors.md",
+        ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md"
       ]
     },
     {
@@ -7403,58 +7791,50 @@
       "category": "windows",
       "feature": "Fork puis clone via un hébergeur",
       "group": "hosting",
-      "level": "N1",
-      "implemented": "Clone d’une URL saisie manuellement.",
-      "remaining": "Création du fork et sélection de dépôt/compte via le fournisseur absentes.",
-      "visual": "adapte",
+      "level": "N2",
+      "implemented": "Menu Git hosts vers My repositories/Search/Get from user, détails/parent liés à l’identité puis clone Git et upstream optionnel. Profil Hosting explicite ; POST unique sans rejeu automatique, fork accepté conservé après erreur du GET secondaire, fermeture et processus possédés.",
+      "remaining": "GitHub réel/Enterprise, permissions et préparation distante du fork non certifiés par le transport synthétique. Autres hébergeurs et variantes natives/installation ouvertes ; clone acquis et upstream échoué restent des effets distincts.",
+      "visual": "rapproche",
+      "extra_evidence": [
+        {
+          "label": "Scénarios Core du client Fork/Clone",
+          "source": "tests/linux/GitExtensions.Core.Tests/GitHubForkCloneScenarios.cs",
+          "line": 1
+        }
+      ],
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.CloneDialog",
-          "label": "CloneDialog",
-          "source": "src/linux/GitExtensions.Desktop/CloneDialog.cs",
-          "line": 19,
+          "id": "GitExtensions.Linux.Desktop.ForkCloneDialog",
+          "label": "ForkCloneDialog",
+          "source": "src/linux/GitExtensions.Desktop/ForkCloneDialog.cs",
+          "line": 16,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubHostingClient",
+          "label": "GitHubHostingClient",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingApiClient.cs",
+          "line": 16,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.ForkClone.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.ForkClone.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CloneBranchLoadingTests.cs",
-          "test_class": "CloneBranchLoadingTests",
-          "passed_in_reference_run": 6,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CloneCompletionTests.cs",
-          "test_class": "CloneCompletionTests",
-          "passed_in_reference_run": 6,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CloneHistoryTests.cs",
-          "test_class": "CloneHistoryTests",
-          "passed_in_reference_run": 10,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CloneInitDialogTests.cs",
-          "test_class": "CloneInitDialogTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/CloneProcessDialogTests.cs",
-          "test_class": "CloneProcessDialogTests",
-          "passed_in_reference_run": 8,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
-          "test_class": "DialogAccessKeyTests",
-          "passed_in_reference_run": 4,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ForkCloneDialogTests.cs",
+          "test_class": "ForkCloneDialogTests",
+          "passed_in_reference_run": 18,
           "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/extensions/github/0124-fork-and-clone.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.RepoHosting.ViewPullRequestsForm",
@@ -7830,162 +8210,49 @@
       "category": "settings",
       "feature": "Paramètres avancés",
       "group": "settings-pages",
-      "level": "N1",
-      "implemented": "Normalisation des noms, symbole de remplacement et affichage initial des options avancées de Remotes. Page Advanced dédiée dans l’arbre, brouillons conservés et publication Apply/OK commune ; ADR0096.",
-      "remaining": "Page partielle N1 : aide, checkout par défaut, mises à jour/RC, émulateur console et autres options Windows à porter.",
+      "level": "N2",
+      "implemented": "Six champs Windows utiles : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes. Brouillon commun Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) vide et littéral hérité inconnu conservé sans écriture implicite.",
+      "remaining": "Page partielle : Updates/RC, aide et activation console Windows hors lot ; AlwaysAdvanced demeure Remotes-only et SSH reste distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu.",
       "visual": "integre",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
-          "label": "DesktopSettingsDialog",
-          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 14,
-          "kind": "window"
+          "id": "GitExtensions.Linux.Desktop.AdvancedSettingsPage",
+          "label": "AdvancedSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/AdvancedSettingsPage.cs",
+          "line": 15,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.AdvancedSettingsSession",
+          "label": "AdvancedSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/AdvancedSettingsSession.cs",
+          "line": 10,
+          "kind": "component"
+        },
+        {
+          "label": "AdvancedSettingsValues.cs",
+          "source": "src/linux/GitExtensions.Desktop/AdvancedSettingsValues.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
-          "test_class": "AppearanceDictionaryTests",
-          "passed_in_reference_run": 15,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
-          "test_class": "AppearanceSettingsConsumerTests",
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsLayoutTests.cs",
-          "test_class": "AppearanceSettingsLayoutTests",
-          "passed_in_reference_run": 2,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
-          "test_class": "AppearanceSettingsSessionTests",
-          "passed_in_reference_run": 14,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
-          "test_class": "AvatarCommitInfoTests",
-          "passed_in_reference_run": 1,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
-          "test_class": "AvatarSettingsConsumerTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
-          "test_class": "BrowseStartupTests",
-          "passed_in_reference_run": 14,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
-          "test_class": "ClassicMenuTests",
-          "passed_in_reference_run": 9,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
-          "test_class": "DetailedSettingsPageTests",
-          "passed_in_reference_run": 23,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
-          "test_class": "FileHistoryPreferencesTests",
-          "passed_in_reference_run": 5,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FilePathPresentationIntegrationTests.cs",
-          "test_class": "FilePathPresentationIntegrationTests",
-          "passed_in_reference_run": 19,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
-          "test_class": "FontSettingsTests",
-          "passed_in_reference_run": 18,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralBrowseStatusTests.cs",
-          "test_class": "GeneralBrowseStatusTests",
-          "passed_in_reference_run": 28,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralSettingsSessionTests.cs",
-          "test_class": "GeneralSettingsSessionTests",
-          "passed_in_reference_run": 23,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
-          "test_class": "GitConfigurationPageTests",
-          "passed_in_reference_run": 21,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
-          "test_class": "GitEnvironmentSettingsHostTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
-          "test_class": "GitEnvironmentStartupTests",
-          "passed_in_reference_run": 5,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
-          "test_class": "GitToolsSettingsDialogTests",
-          "passed_in_reference_run": 13,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
-          "test_class": "HistorySortDefaultTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
-          "test_class": "HotkeysSettingsPageTests",
-          "passed_in_reference_run": 26,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
-          "test_class": "LanguagePreferencesTests",
-          "passed_in_reference_run": 26,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PluginRootIntroductionPageTests.cs",
-          "test_class": "PluginRootIntroductionPageTests",
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
-          "test_class": "ReferenceSortingNavigationTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
-          "test_class": "ReferenceSortingSettingsTests",
-          "passed_in_reference_run": 10,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsSessionTests.cs",
+          "test_class": "AdvancedSettingsSessionTests",
+          "passed_in_reference_run": 19,
           "results_present": true
         },
         {
@@ -7995,39 +8262,16 @@
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
-          "test_class": "RepositoryBranchVisibilityTests",
-          "passed_in_reference_run": 27,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
-          "test_class": "ScriptsSettingsPageTests",
-          "passed_in_reference_run": 15,
-          "results_present": true
-        },
-        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
           "test_class": "SettingsNavigationTests",
           "passed_in_reference_run": 20,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/SimpleHelpDisplayDialogTests.cs",
-          "test_class": "SimpleHelpDisplayDialogTests",
-          "passed_in_reference_run": 6,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
-          "test_class": "TruncatePathPreferencesTests",
-          "passed_in_reference_run": 15,
           "results_present": true
         }
       ],
       "adr": [
         ".agents/docs/adr/workflows/remotes/0067-remote-settings.md",
-        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md"
+        ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
+        ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md"
       ]
     },
     {
@@ -8109,6 +8353,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -8154,6 +8410,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -8369,7 +8643,7 @@
           "id": "GitExtensions.Linux.Desktop.AppearanceSettingsSession",
           "label": "AppearanceSettingsSession",
           "source": "src/linux/GitExtensions.Desktop/AppearanceSettingsSession.cs",
-          "line": 9,
+          "line": 7,
           "kind": "component"
         },
         {
@@ -8389,7 +8663,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyHistoryViewPresentation",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs",
-          "line": 67,
+          "line": 69,
           "kind": "window"
         },
         {
@@ -8424,7 +8698,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyTheme",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 585,
+          "line": 650,
           "kind": "window"
         },
         {
@@ -8497,6 +8771,18 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
@@ -8588,6 +8874,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitCompletionIntegrationTests.cs",
           "test_class": "CommitCompletionIntegrationTests",
           "passed_in_reference_run": 6,
@@ -8603,6 +8901,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitSpellingTests.cs",
           "test_class": "CommitSpellingTests",
           "passed_in_reference_run": 30,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -9430,186 +9734,75 @@
       "category": "settings",
       "feature": "Personnalisation des couleurs",
       "group": "settings-pages",
-      "level": "N1",
-      "implemented": "Thème, palette classique et quelques choix du lecteur.",
-      "remaining": "Éditeur complet des couleurs/thèmes Windows absent.",
+      "level": "N2",
+      "implemented": "Cinq des six options Graph Windows publiées aux consommateurs : fonds alternés, gris des non-apparentés et de leur texte, auteur et fond des labels. Intents View temporaires séparés des défauts édités ; fusion des seuls champs voulus, inconnus préservés et conflits observés refusés, publication sans reconstruire les lignes.",
+      "remaining": "MulticolorBranches et éditeur CSS/thèmes/variations Windows absents ; thème Linux conservé dans Appearance. Audit natif étendu des hôtes/palettes, DPI/accessibilité et interactions installées ouvert.",
       "visual": "integre",
       "linux": [
         {
-          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
-          "label": "DesktopSettingsDialog",
-          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
-          "line": 14,
-          "kind": "window"
+          "id": "GitExtensions.Linux.Desktop.ColorsSettingsPage",
+          "label": "ColorsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ColorsSettingsPage.cs",
+          "line": 11,
+          "kind": "component"
         },
         {
-          "id": "GitExtensions.Desktop.Controls.DiffViewerAppearanceMenu",
-          "label": "DiffViewerAppearanceMenu",
-          "source": "src/linux/GitExtensions.Desktop/Controls/DiffViewerAppearanceMenu.cs",
-          "line": 18,
+          "id": "GitExtensions.Linux.Desktop.ColorsSettingsSession",
+          "label": "ColorsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ColorsSettingsSession.cs",
+          "line": 6,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.HistoryViewPreferencesStore",
+          "label": "HistoryViewPreferencesStore",
+          "source": "src/linux/GitExtensions.Desktop/HistoryViewPreferencesStore.cs",
+          "line": 38,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Desktop.Controls.RevisionHistoryRow",
+          "label": "RevisionHistoryRow",
+          "source": "src/linux/GitExtensions.Desktop/Controls/RevisionHistoryRow.cs",
+          "line": 19,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Desktop.Controls.CommitGraph",
+          "label": "CommitGraph",
+          "source": "src/linux/GitExtensions.Desktop/Controls/CommitGraph.cs",
+          "line": 12,
+          "kind": "component"
+        },
+        {
+          "label": "ColorsSettingsValues.cs",
+          "source": "src/linux/GitExtensions.Desktop/ColorsSettingsValues.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
-          "test_class": "AppearanceDictionaryTests",
-          "passed_in_reference_run": 15,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
-          "test_class": "AppearanceSettingsConsumerTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsLayoutTests.cs",
-          "test_class": "AppearanceSettingsLayoutTests",
-          "passed_in_reference_run": 2,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
-          "test_class": "AppearanceSettingsSessionTests",
-          "passed_in_reference_run": 14,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
-          "test_class": "AvatarCommitInfoTests",
-          "passed_in_reference_run": 1,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
-          "test_class": "AvatarSettingsConsumerTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
-          "test_class": "BrowseStartupTests",
-          "passed_in_reference_run": 14,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
-          "test_class": "ClassicMenuTests",
-          "passed_in_reference_run": 9,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
-          "test_class": "DetailedSettingsPageTests",
-          "passed_in_reference_run": 23,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
-          "test_class": "FileHistoryPreferencesTests",
-          "passed_in_reference_run": 5,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FilePathPresentationIntegrationTests.cs",
-          "test_class": "FilePathPresentationIntegrationTests",
-          "passed_in_reference_run": 19,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
-          "test_class": "FontSettingsTests",
-          "passed_in_reference_run": 18,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralBrowseStatusTests.cs",
-          "test_class": "GeneralBrowseStatusTests",
-          "passed_in_reference_run": 28,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralSettingsSessionTests.cs",
-          "test_class": "GeneralSettingsSessionTests",
-          "passed_in_reference_run": 23,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
-          "test_class": "GitConfigurationPageTests",
-          "passed_in_reference_run": 21,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
-          "test_class": "GitEnvironmentSettingsHostTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
-          "test_class": "GitEnvironmentStartupTests",
-          "passed_in_reference_run": 5,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
-          "test_class": "GitToolsSettingsDialogTests",
-          "passed_in_reference_run": 13,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
-          "test_class": "HistorySortDefaultTests",
-          "passed_in_reference_run": 7,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
-          "test_class": "HotkeysSettingsPageTests",
-          "passed_in_reference_run": 26,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
-          "test_class": "LanguagePreferencesTests",
-          "passed_in_reference_run": 26,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/PluginRootIntroductionPageTests.cs",
-          "test_class": "PluginRootIntroductionPageTests",
-          "passed_in_reference_run": 6,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
-          "test_class": "ReferenceSortingNavigationTests",
-          "passed_in_reference_run": 4,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
-          "test_class": "ReferenceSortingSettingsTests",
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceViewIntentTests.cs",
+          "test_class": "AppearanceViewIntentTests",
           "passed_in_reference_run": 10,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
-          "test_class": "RemotesDialogTests",
-          "passed_in_reference_run": 25,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
-          "test_class": "RepositoryBranchVisibilityTests",
-          "passed_in_reference_run": 27,
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
           "results_present": true
         },
         {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
-          "test_class": "ScriptsSettingsPageTests",
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsSessionTests.cs",
+          "test_class": "ColorsSettingsSessionTests",
           "passed_in_reference_run": 15,
           "results_present": true
         },
@@ -9618,21 +9811,11 @@
           "test_class": "SettingsNavigationTests",
           "passed_in_reference_run": 20,
           "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/SimpleHelpDisplayDialogTests.cs",
-          "test_class": "SimpleHelpDisplayDialogTests",
-          "passed_in_reference_run": 6,
-          "results_present": true
-        },
-        {
-          "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
-          "test_class": "TruncatePathPreferencesTests",
-          "passed_in_reference_run": 15,
-          "results_present": true
         }
       ],
-      "adr": []
+      "adr": [
+        ".agents/docs/adr/preferences/colors/0128-graph-colors.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.CommitDialogSettingsPage",
@@ -9670,6 +9853,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitAndPushWorkflowTests.cs",
           "test_class": "CommitAndPushWorkflowTests",
@@ -9734,6 +9923,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitTemplateDialogTests.cs",
           "test_class": "CommitTemplateDialogTests",
           "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -9851,20 +10046,61 @@
       "category": "settings",
       "feature": "Gestion des confirmations",
       "group": "settings-pages",
-      "level": "N1",
-      "implemented": "Quelques choix mémorisables dans les workflows.",
-      "remaining": "Pas de page globale listant et réinitialisant les confirmations Windows.",
+      "level": "N2",
+      "implemented": "Treize des dix-sept confirmations Windows regroupées, inversion et triétats conservés ; profils XDG déjà consommés par les workflows. Apply/Cancel commun, seuls champs édités fusionnés, inconnus conservés, conflits observés refusés et reçus par fichier.",
+      "remaining": "Suppression de branche non fusionnée, confirmation de checkout, autopop après checkout et second abort absents. Pas de transaction entre profils ; Cancel ne révoque pas Apply. Variantes natives étendues et interactions installées ouvertes.",
       "visual": "integre",
       "linux": [
         {
-          "label": "BrowseCommandPreferencesStore.cs",
-          "source": "src/linux/GitExtensions.Desktop/BrowseCommandPreferencesStore.cs",
+          "id": "GitExtensions.Linux.Desktop.ConfirmationsSettingsPage",
+          "label": "ConfirmationsSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/ConfirmationsSettingsPage.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ConfirmationsSettingsSession",
+          "label": "ConfirmationsSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ConfirmationsSettingsSession.cs",
+          "line": 11,
+          "kind": "component"
+        },
+        {
+          "label": "ConfirmationsSettingsValues.cs",
+          "source": "src/linux/GitExtensions.Desktop/ConfirmationsSettingsValues.cs",
           "line": 1,
           "kind": "source"
         }
       ],
-      "tests": [],
-      "adr": []
+      "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsSessionTests.cs",
+          "test_class": "ConfirmationsSettingsSessionTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
+          "test_class": "ConfirmationsWorkflowTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        }
+      ],
+      "adr": [
+        ".agents/docs/adr/preferences/confirmations/0125-confirmations.md"
+      ]
     },
     {
       "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ConsoleStyleSettingsPage",
@@ -10027,6 +10263,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -10072,6 +10320,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -10354,6 +10620,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -10399,6 +10677,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -10740,7 +11036,7 @@
           "id": "GitExtensions.Linux.Desktop.GeneralSettingsPage",
           "label": "GeneralSettingsPage",
           "source": "src/linux/GitExtensions.Desktop/GeneralSettingsPage.cs",
-          "line": 15,
+          "line": 16,
           "kind": "component"
         },
         {
@@ -10868,6 +11164,18 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
@@ -11001,6 +11309,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
           "passed_in_reference_run": 47,
@@ -11010,6 +11330,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationIntegrationTests.cs",
           "test_class": "CommitInformationIntegrationTests",
           "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -11306,7 +11632,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowGitToolsSettingsAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 537,
+          "line": 602,
           "kind": "window"
         },
         {
@@ -11397,14 +11723,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 403,
+          "line": 416,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 535,
+          "line": 600,
           "kind": "window"
         },
         {
@@ -11565,6 +11891,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -11610,6 +11948,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -11947,6 +12303,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -12010,6 +12378,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -12232,6 +12618,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -12277,6 +12675,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -12606,6 +13022,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -12651,6 +13079,24 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -12940,6 +13386,18 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
@@ -12988,6 +13446,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationPresentationTests.cs",
           "test_class": "CommitInformationPresentationTests",
           "passed_in_reference_run": 28,
@@ -12997,6 +13467,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitInformationViewTests.cs",
           "test_class": "CommitInformationViewTests",
           "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -13380,7 +13856,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddSubmoduleAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 433,
+          "line": 492,
           "kind": "window"
         }
       ],
@@ -14917,6 +15393,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileEditorConsumerTests.cs",
+          "test_class": "FileEditorConsumerTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FileMenuFocusedSelectionTests.cs",
           "test_class": "FileMenuFocusedSelectionTests",
           "passed_in_reference_run": 10,
@@ -15475,9 +15957,9 @@
       "category": "windows",
       "feature": "Saisie demandée par un script",
       "group": "helpers",
-      "level": "N1",
-      "implemented": "Fenêtre dédiée présente, avec consommateur Scripts : titre/label littéraux, défaut non trimé, vide accepté, un seul bouton OK. Échap est traité uniquement dans txtUserInput : désélection puis annulation ; Tab vers OK puis Échap laisse la fenêtre ouverte. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. UserInput consommé par le runtime ; libellé/défaut exacts, vide accepté et règles Échap du champ conservés.",
-      "remaining": "Audit natif des hôtes/retours clavier, Wayland et DPI ouvert ; aucun Cancel global inventé.",
+      "level": "N2",
+      "implemented": "Saisie Scripts littérale existante et route Rename/Move commune : un OK, défaut conservé, nouvelle Window par essai, retry après erreur native et revalidation avant écriture. Échap désélectionne le champ puis annule ; aucun Cancel global inventé. Le writer et les dossiers sont inchangés.",
+      "remaining": "N2 limité aux routes et gestes Root qualifiés ; variantes natives d’autres hôtes, Wayland/DPI/accessibilité ouvertes. Les différences de création de parents/dossiers du writer Windows sont hors ce complément UI.",
       "visual": "rapproche",
       "linux": [
         {
@@ -15486,9 +15968,29 @@
           "source": "src/linux/GitExtensions.Desktop/SimplePromptDialog.cs",
           "line": 12,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptPreparationDispatcher",
+          "label": "ScriptPreparationDispatcher",
+          "source": "src/linux/GitExtensions.Desktop/ScriptPreparationDispatcher.cs",
+          "line": 19,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.FileMenuOperations",
+          "label": "FileMenuOperations",
+          "source": "src/linux/GitExtensions.Desktop/FileMenuOperations.cs",
+          "line": 8,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GenericPromptHostTests.cs",
+          "test_class": "GenericPromptHostTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
           "test_class": "ScriptInputDialogTests",
@@ -15510,7 +16012,8 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
-        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0126-generic-prompts.md"
       ]
     },
     {
@@ -15687,9 +16190,9 @@
       "category": "windows",
       "feature": "Choix rapide de texte utilisé par les scripts",
       "group": "navigation",
-      "level": "N1",
-      "implemented": "Fenêtre de saisie dédiée présente, avec consommateur Scripts : tri CurrentCulture, doublons et chaînes vides conservés, première sélection, huit lignes, mesure bornée à 100 caractères ; Select/Entrée/double-clic et résultat Accepted/Cancelled explicite. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. Choix de remote consommé par le runtime, avec le contrat UI existant et acceptation explicite.",
-      "remaining": "Autres hôtes et variantes natives, Wayland et DPI ouverts ; anciennes preuves du pont distinctes du nouveau runtime.",
+      "level": "N2",
+      "implemented": "Contrat Scripts dédié conservé : tri culturel, doublons/vides, sélection puis acceptation explicite. Clé XLF commune corrigée ; ancre graphe capturée avec la sélection avant await, fitting partagé une fois après mesure sous garde propriétaire/token, sans recentrage après déplacement ; fallback hors Browse conservé.",
+      "remaining": "Autres hôtes, en-têtes/choix nuls, traductions/thèmes étendus, Wayland/DPI/accessibilité ouverts ; seuls les gestes réellement qualifiés sont couverts.",
       "visual": "rapproche",
       "linux": [
         {
@@ -15698,9 +16201,34 @@
           "source": "src/linux/GitExtensions.Desktop/QuickStringSelectorDialog.cs",
           "line": 7,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptPreparationDispatcher",
+          "label": "ScriptPreparationDispatcher",
+          "source": "src/linux/GitExtensions.Desktop/ScriptPreparationDispatcher.cs",
+          "line": 19,
+          "kind": "component"
+        },
+        {
+          "label": "DesktopScriptExecutor.cs",
+          "source": "src/linux/GitExtensions.Desktop/DesktopScriptExecutor.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "MainWindow.QuickReferences.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.QuickReferences.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GenericPromptHostTests.cs",
+          "test_class": "GenericPromptHostTests",
+          "passed_in_reference_run": 12,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
           "test_class": "ScriptInputDialogTests",
@@ -15722,7 +16250,8 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
-        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0126-generic-prompts.md"
       ]
     },
     {
@@ -16804,6 +17333,30 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.BugReportDialog",
+      "name": "BugReportDialog",
+      "source": "src/linux/GitExtensions.Desktop/BugReportDialog.cs",
+      "line": 14,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/BugReportDialog.cs",
+          "line": 14
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "BugReporter.BugReportForm",
+          "name": "BugReportForm",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.BuildServerCredentialsDialog",
       "name": "BuildServerCredentialsDialog",
       "source": "src/linux/GitExtensions.Desktop/BuildServerCredentialsDialog.cs",
@@ -17057,11 +17610,6 @@
           "level": "N2"
         },
         {
-          "id": "GitUI.CommandsDialogs.RepoHosting.ForkAndCloneForm",
-          "name": "ForkAndCloneForm",
-          "level": "N1"
-        },
-        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.GeneralSettingsPage",
           "name": "GeneralSettingsPage",
           "level": "N2"
@@ -17097,11 +17645,11 @@
       "id": "GitExtensions.Linux.Desktop.CommitBranchChoiceDialog",
       "name": "CommitBranchChoiceDialog",
       "source": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
-      "line": 228,
+      "line": 212,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.Branches.cs",
-          "line": 228
+          "line": 212
         }
       ],
       "bases": [
@@ -17589,11 +18137,6 @@
           "level": "N2"
         },
         {
-          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AdvancedSettingsPage",
-          "name": "AdvancedSettingsPage",
-          "level": "N1"
-        },
-        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
           "name": "AppearanceFontsSettingsPage",
           "level": "N2"
@@ -17602,11 +18145,6 @@
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceSettingsPage",
           "name": "AppearanceSettingsPage",
           "level": "N2"
-        },
-        {
-          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.ColorsSettingsPage",
-          "name": "ColorsSettingsPage",
-          "level": "N1"
         },
         {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.DetailedSettingsPage",
@@ -17681,6 +18219,30 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.ExceptionDetailDialog",
+      "name": "ExceptionDetailDialog",
+      "source": "src/linux/GitExtensions.Desktop/ExceptionDetailDialog.cs",
+      "line": 12,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/ExceptionDetailDialog.cs",
+          "line": 12
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "BugReporter.ExceptionDetailView",
+          "name": "ExceptionDetailView",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
       "name": "ExportRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
@@ -17709,6 +18271,41 @@
         {
           "id": "GitUI.HelperDialogs.FormChooseCommit",
           "name": "FormChooseCommit",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.FileEditorDialog",
+      "name": "FileEditorDialog",
+      "source": "src/linux/GitExtensions.Desktop/FileEditorDialog.cs",
+      "line": 18,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/FileEditorDialog.cs",
+          "line": 18
+        }
+      ],
+      "bases": [
+        "IDisposable",
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormBrowse",
+          "name": "FormBrowse",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.FormDiff",
+          "name": "FormDiff",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.FormEditor",
+          "name": "FormEditor",
           "level": "N2"
         }
       ],
@@ -17874,6 +18471,39 @@
       "note": ""
     },
     {
+      "id": "GitExtensions.Linux.Desktop.ForkCloneDialog",
+      "name": "ForkCloneDialog",
+      "source": "src/linux/GitExtensions.Desktop/ForkCloneDialog.cs",
+      "line": 16,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/ForkCloneDialog.Clone.cs",
+          "line": 6
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/ForkCloneDialog.cs",
+          "line": 16
+        }
+      ],
+      "bases": [
+        "StartupRepositoryDialog"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.FormBrowse",
+          "name": "FormBrowse",
+          "level": "N2"
+        },
+        {
+          "id": "GitUI.CommandsDialogs.RepoHosting.ForkAndCloneForm",
+          "name": "ForkAndCloneForm",
+          "level": "N2"
+        }
+      ],
+      "note": ""
+    },
+    {
       "id": "GitExtensions.Linux.Desktop.FormatPatchDialog",
       "name": "FormatPatchDialog",
       "source": "src/linux/GitExtensions.Desktop/FormatPatchDialog.cs",
@@ -17913,11 +18543,6 @@
       ],
       "abstract": false,
       "windows": [
-        {
-          "id": "BugReporter.ExceptionDetailView",
-          "name": "ExceptionDetailView",
-          "level": "N1"
-        },
         {
           "id": "GitUI.CommandsDialogs.BrowseDialog.FormGitCommandLog",
           "name": "FormGitCommandLog",
@@ -18239,7 +18864,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 16
+          "line": 17
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.BrowserReads.cs",
@@ -18247,6 +18872,10 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Cleanup.cs",
+          "line": 3
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.Colors.cs",
           "line": 3
         },
         {
@@ -18279,6 +18908,10 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.FocusRestoration.cs",
+          "line": 6
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.ForkClone.cs",
           "line": 6
         },
         {
@@ -18387,7 +19020,7 @@
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Scripts.cs",
-          "line": 11
+          "line": 12
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Shortcuts.cs",
@@ -18427,11 +19060,6 @@
       ],
       "abstract": false,
       "windows": [
-        {
-          "id": "BugReporter.BugReportForm",
-          "name": "BugReportForm",
-          "level": "N1"
-        },
         {
           "id": "GitUI.CommandsDialogs.BrowseDialog.FormDonate",
           "name": "FormDonate",
@@ -18653,11 +19281,6 @@
       ],
       "abstract": false,
       "windows": [
-        {
-          "id": "GitUI.CommandsDialogs.FormEditor",
-          "name": "FormEditor",
-          "level": "N1"
-        },
         {
           "id": "GitUI.CommandsDialogs.FormRebase",
           "name": "FormRebase",
@@ -18947,7 +19570,7 @@
         {
           "id": "GitUI.UserControls.RevisionGrid.FormQuickStringSelector",
           "name": "FormQuickStringSelector",
-          "level": "N1"
+          "level": "N2"
         }
       ],
       "note": ""
@@ -19475,7 +20098,7 @@
         {
           "id": "GitUI.ScriptsEngine.SimplePrompt",
           "name": "SimplePrompt",
-          "level": "N1"
+          "level": "N2"
         }
       ],
       "note": ""
@@ -19851,6 +20474,16 @@
     },
     {
       "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.BugReportDialog",
+      "path": "src/linux/GitExtensions.Desktop/BugReportDialog.cs",
+      "line": 198,
+      "method": "ConfirmExternalAsync",
+      "text": "new() { Name = \"ConfirmExternalErrorReport\", Title = Text(\"_title\", \"Error Report\"), Width = 620, Height = 470,",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.CleanupRepositoryDialog",
       "path": "src/linux/GitExtensions.Desktop/CleanupRepositoryDialog.cs",
       "line": 144,
@@ -19866,6 +20499,16 @@
       "line": 262,
       "method": "ConfirmCommitWarningAsync",
       "text": "new() { Name = \"CommitValidation\", Title = C(\"_commitValidationCaption\", \"Commit validation\"), Width = 520, SizeToContent = SizeToContent.Height,",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.ConfirmationPrompt",
+      "path": "src/linux/GitExtensions.Desktop/ConfirmationPrompt.cs",
+      "line": 20,
+      "method": "ShowAsync",
+      "text": "new() { Name = \"SuppressibleConfirmation\", Title = title, Width = 530, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
       "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
     },
@@ -19893,7 +20536,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.Dialogs",
       "path": "src/linux/GitExtensions.Desktop/Dialogs.cs",
-      "line": 27,
+      "line": 33,
       "method": "ShowMessageCoreAsync",
       "text": "new() { Name = \"MessageDialog\", Title = title, Width = 520,",
       "platform": "linux",
@@ -19903,7 +20546,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.Dialogs",
       "path": "src/linux/GitExtensions.Desktop/Dialogs.cs",
-      "line": 60,
+      "line": 66,
       "method": "PromptAsync",
       "text": "new()",
       "platform": "linux",
@@ -19913,9 +20556,19 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.Dialogs",
       "path": "src/linux/GitExtensions.Desktop/Dialogs.cs",
-      "line": 110,
+      "line": 116,
       "method": "ConfirmChoiceAsync",
       "text": "new()",
+      "platform": "linux",
+      "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
+    },
+    {
+      "type": "Window",
+      "owner": "GitExtensions.Linux.Desktop.FileEditorDialog",
+      "path": "src/linux/GitExtensions.Desktop/FileEditorDialog.cs",
+      "line": 246,
+      "method": "AskSaveAsync",
+      "text": "new() { Name = \"FileEditorSaveQuestion\", Title = C(\"_saveChangesCaption\", \"Text\", \"Save changes\"), Width = 420,",
       "platform": "linux",
       "role": "Fenêtre créée dans cette méthode ; voir les usages/équivalences de son propriétaire."
     },
@@ -19943,7 +20596,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 421,
+      "line": 434,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -20053,7 +20706,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 574,
+      "line": 575,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",
@@ -24271,8 +24924,7 @@
   ],
   "group_levels": {
     "navigation": {
-      "N1": 1,
-      "N2": 3,
+      "N2": 4,
       "N3": 3
     },
     "repositories": {
@@ -24292,8 +24944,7 @@
       "N3": 1
     },
     "files": {
-      "N1": 1,
-      "N2": 4,
+      "N2": 5,
       "N3": 12
     },
     "maintenance": {
@@ -24301,19 +24952,18 @@
       "N3": 1
     },
     "helpers": {
-      "N1": 2,
-      "N2": 5
+      "N1": 1,
+      "N2": 6
     },
     "settings": {
       "N2": 4
     },
     "hosting": {
-      "N1": 1,
-      "N2": 3
+      "N2": 4
     },
     "information": {
-      "N1": 3,
-      "N2": 4,
+      "N1": 1,
+      "N2": 6,
       "N3": 2
     },
     "platform": {
@@ -24326,8 +24976,8 @@
       "N3": 5
     },
     "settings-pages": {
-      "N1": 4,
-      "N2": 21,
+      "N1": 1,
+      "N2": 24,
       "NA": 1
     },
     "ci-settings": {

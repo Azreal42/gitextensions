@@ -825,3 +825,17 @@ Le présentateur CI commun fournit une liste et des liens externes, pas le rappo
 La revue statique Azure a corrigé une autorisation PAT fondée sur des substituts syntaxiques de template : seules les variables réelles du dépôt créent le contexte autorisé. Le launcher de Token management et son erreur sont possédés avec Settings. Les essais Azure01/02 ont aussi distingué le vrai défaut de fermeture propriétaire, les gestes de badge et le double adorner Avalonia ; les essais échoués restent dans `artifacts/linux/azuredevops-20261019/`.
 
 La revue statique Jenkins a séparé historique en cache et nouvelles émissions : une ancienne fin ne doit pas bloquer un running neuf, les diagnostics d'une limite disparaissent à la récupération réelle, et le watcher ne reçoit pas un build éliminé par le plafond global. Les identifiants dépendent de l'endpoint complet, y compris son chemin. Ces constats statiques ne sont pas présentés comme des exécutions échouées. Repères : ADR0114/0116 et `artifacts/linux/jenkins-20261020/review/`.
+
+## Portable workflows — limites et corrections
+
+FormEditor garde dirty après échec et signale une écriture commencée non vérifiée : contrôles optimistes, restauration des permissions et drainage ne forment pas une transaction contre les éditeurs externes. Les règles conservent leur writer/newline propre.
+
+Deux écarts de revue Fork/Clone ont été corrigés avant qualification : conserver le fork accepté avant le GET secondaire et vérifier l’identité des détails avant publication. Ils ne sont pas présentés comme des tests exécutés en échec. Le clone acquis et son upstream éventuel restent des effets séparés ; aucune répétition automatique du POST.
+
+Confirmations acquitte chaque profil séparément ; Colors distingue intentions View temporaires et défauts édités. Cancel ne revient pas sur Apply acquis. Le rapport récupérable ne prétend pas couvrir le circuit fatal NBug. Le picker FilePrompt sans token reste un arrêt natif non garanti, même si ses retours tardifs sont écartés.
+
+Advanced utilise également des reçus partiels. La conservation des clés étrangères par PreferencesStore.Save est limitée au premier niveau valide ; les objets typés et les autres champs gardent leur contrat antérieur.
+
+Les essais rouges restent conservés : compilation et ciblés initiaux, puis targeted04 (324/327) et desktop-full01 interrompu après le défaut de contrat IO connu. Corrections : focus du vrai champ invalide, navigation clavier du symbole et IOException explicite pour une destination de préférences qui est un dossier. L’assertion IOException historique reste stricte ; les suites fraîches sur b745 passent 3441/1057/35.
+
+Natif01 interrompu (sortie 130) n’est pas accepté ; natif02 a terminé normalement et garde ses propres preuves. Le premier générateur d’inventaire a refusé l’ancienne carte sans BugReportDialog après un scan Roslyn réussi ; après mise à jour de la carte, génération et contrôle exact ont réussi (2444 fichiers, zéro diagnostic).
