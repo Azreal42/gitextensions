@@ -143,6 +143,36 @@ public sealed class AdvancedSettingsSessionTests
         Assert.That(JsonNode.Parse(File.ReadAllBytes(store.FilePath)), Is.InstanceOf<JsonObject>());
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ActiveDesktopValuesAreNotImplicitIntentionsAndCannotReplaceTheDurableSymbolConflictBaseline(bool peerChangedToActiveValue)
+    {
+        using Scope f = new();
+        f.Write("preferences.json", "{\"AutoNormaliseBranchName\":true,\"AutoNormaliseSymbol\":\"_\",\"AlwaysShowAdvancedOptions\":false,\"peer\":17}");
+        AdvancedSettingsSession session = new(f.Directory, new() { AutoNormaliseBranchName = false, AutoNormaliseSymbol = "-", AlwaysShowAdvancedOptions = true });
+        Assert.That(session.Initial.AutoNormaliseBranchName, Is.False); Assert.That(session.Initial.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(session.Initial.AlwaysShowAdvancedOptions, Is.True);
+        byte[] original = File.ReadAllBytes(f.PathFor("preferences.json")); List<AdvancedSettingsSaveReceipt> receipts = [];
+        session.Save(session.Initial, receipts.Add); Assert.That(receipts, Is.Empty); Assert.That(File.ReadAllBytes(f.PathFor("preferences.json")), Is.EqualTo(original));
+        AdvancedSettingsValues draft = session.Initial with { AutoNormaliseSymbol = "" };
+        if (peerChangedToActiveValue)
+        {
+            f.Write("preferences.json", "{\"AutoNormaliseSymbol\":\"-\",\"peer\":18}"); byte[] peer = File.ReadAllBytes(f.PathFor("preferences.json"));
+            Assert.Throws<IOException>(() => session.Save(draft, receipts.Add));
+            Assert.That(File.ReadAllBytes(f.PathFor("preferences.json")), Is.EqualTo(peer)); Assert.That(receipts, Is.Empty);
+            Assert.That(session.Initial.AutoNormaliseSymbol, Is.EqualTo("-"));
+        }
+        else
+        {
+            session.Save(draft, receipts.Add);
+            Assert.That(receipts.Single().Fields.Select(item => item.Name), Is.EqualTo(new[] { "AutoNormaliseSymbol" }));
+            Assert.That(f.Read("preferences.json")["AutoNormaliseSymbol"]!.GetValue<string>(), Is.Empty);
+            Assert.That(f.Read("preferences.json")["AutoNormaliseBranchName"]!.GetValue<bool>(), Is.True);
+            Assert.That(f.Read("preferences.json")["AlwaysShowAdvancedOptions"]!.GetValue<bool>(), Is.False);
+            Assert.That(f.Read("preferences.json")["peer"]!.GetValue<int>(), Is.EqualTo(17));
+            Assert.That(session.Initial.AutoNormaliseBranchName, Is.False); Assert.That(session.Initial.AlwaysShowAdvancedOptions, Is.True);
+        }
+    }
+
     private sealed class Scope : IDisposable
     {
         internal string Directory { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "advanced-session-" + Guid.NewGuid().ToString("N"));

@@ -10,18 +10,26 @@ internal sealed record AdvancedSettingsSaveReceipt(string Profile, AdvancedSetti
 internal sealed class AdvancedSettingsSession
 {
     private readonly string _directory;
+    private AdvancedSettingsValues _durable = new();
     private readonly Dictionary<string, Exception> _errors = new(StringComparer.Ordinal);
     internal AdvancedSettingsValues Initial { get; private set; } = new();
     internal IReadOnlyDictionary<string, Exception> LoadErrors => _errors;
 
-    internal AdvancedSettingsSession(string? profileDirectory = null)
+    internal AdvancedSettingsSession(string? profileDirectory = null, DesktopPreferences? initialDesktop = null)
     {
         _directory = profileDirectory ?? Path.GetDirectoryName(new PreferencesStore().FilePath)!;
         foreach (IGrouping<string, AdvancedSetting> group in AdvancedSettingsCatalog.Fields.GroupBy(setting => setting.Profile))
         {
-            try { Initial = ReadValues(Read(Path.Combine(_directory, group.Key)).Document, group, Initial); }
+            try { _durable = ReadValues(Read(Path.Combine(_directory, group.Key)).Document, group, _durable); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException) { _errors[group.Key] = error; }
         }
+        // Active caller values are the visible draft baseline, never a substitute for the durable CAS baseline.
+        Initial = initialDesktop is null ? _durable : _durable with
+        {
+            AutoNormaliseBranchName = initialDesktop.AutoNormaliseBranchName,
+            AutoNormaliseSymbol = initialDesktop.AutoNormaliseSymbol,
+            AlwaysShowAdvancedOptions = initialDesktop.AlwaysShowAdvancedOptions
+        };
     }
 
     /// <summary>General may write its desktop file first. Defer these fields to this session's own CAS publication.</summary>
@@ -48,11 +56,11 @@ internal sealed class AdvancedSettingsSession
             if (edited.Any(setting => setting.IsSymbol) && draft.AutoNormaliseSymbol is not ("_" or "-" or ""))
             { throw new ArgumentException("Choose a replacement symbol from the list.", nameof(draft)); }
             string path = Path.Combine(_directory, group.Key); Snapshot snapshot = Read(path);
-            AdvancedSettingsValues current = ReadValues(snapshot.Document, edited, Initial);
+            AdvancedSettingsValues current = ReadValues(snapshot.Document, edited, _durable);
             foreach (AdvancedSetting setting in edited)
             {
                 object actual = current.Get(setting.Name), wanted = draft.Get(setting.Name);
-                if (!Equals(actual, Initial.Get(setting.Name)) && !Equals(actual, wanted))
+                if (!Equals(actual, _durable.Get(setting.Name)) && !Equals(actual, wanted))
                 { throw new IOException("Advanced preferences changed after Settings opened: " + group.Key); }
             }
             bool written = false;
@@ -65,7 +73,12 @@ internal sealed class AdvancedSettingsSession
             }
             if (written) { Publish(path, snapshot, cancellationToken); }
             // Acknowledge only this file's edited keys before calling the host or attempting the next file.
-            foreach (AdvancedSetting setting in edited) { Initial = Initial.With(setting.Name, draft.Get(setting.Name)); }
+            foreach (AdvancedSetting setting in edited)
+            {
+                object value = draft.Get(setting.Name);
+                Initial = Initial.With(setting.Name, value);
+                _durable = _durable.With(setting.Name, value);
+            }
             accepted?.Invoke(new(group.Key, Initial, Array.AsReadOnly(edited), written));
         }
         return Initial;

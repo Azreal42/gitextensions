@@ -172,9 +172,9 @@ internal sealed class PortableHelperSettingsFixture : IDisposable
     internal void Track(Window window) => _windows.Add(window);
     internal Window NewOwner()
     { Window owner = new() { Width = 1100, Height = 800, RequestedThemeVariant = Theme }; Track(owner); owner.Show(); Pump(owner); return owner; }
-    internal (DesktopSettingsDialog, Task<bool>) Open(string initialPage, Window? owner = null)
+    internal (DesktopSettingsDialog, Task<bool>) Open(string initialPage, Window? owner = null, DesktopPreferences? initial = null)
     {
-        DesktopSettingsDialog settings = new(new(), Translations, false, fileHistoryPreferences: new(), hotkeys: new(), fonts: new(),
+        DesktopSettingsDialog settings = new(initial ?? new(), Translations, false, fileHistoryPreferences: new(), hotkeys: new(), fonts: new(),
             scripts: Scripts.Load(), saveScripts: (baseline, draft) => { ScriptSaves++; return Scripts.SaveChanges(baseline, draft); },
             publishSettings: _ => { Publications++; return Task.CompletedTask; }, initialPage: initialPage)
         { RequestedThemeVariant = Theme };

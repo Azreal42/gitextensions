@@ -101,7 +101,7 @@ internal sealed class DesktopSettingsDialog : Window
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
         ConfirmationsSettingsSession = confirmations ?? new();
         _confirmationsSettingsPage = new(ConfirmationsSettingsSession, translations);
-        AdvancedSettingsSession = advancedSettings ?? new();
+        AdvancedSettingsSession = advancedSettings ?? new(initialDesktop: initial);
         _advancedSettingsPage = new(AdvancedSettingsSession, translations);
         ColorsSettingsSession = colors ?? new(new HistoryViewPreferencesStore().Load());
         _colorsSettingsPage = new(ColorsSettingsSession.Initial, translations);

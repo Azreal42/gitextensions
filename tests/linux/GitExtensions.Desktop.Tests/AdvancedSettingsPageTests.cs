@@ -63,7 +63,7 @@ public sealed class AdvancedSettingsPageTests
         AdvancedSettingsUiDriver.Set(settings, "chkUseLocalChangesAction", false); AdvancedSettingsUiDriver.ChooseSymbol(settings, "-");
         PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); Assert.That(await completion, Is.True);
         AdvancedSettingsUiDriver.SameProfiles(accepted);
-        (DesktopSettingsDialog reopened, Task<bool> reopenedCompletion) = f.Open("Advanced");
+        (DesktopSettingsDialog reopened, Task<bool> reopenedCompletion) = f.Open("Advanced", initial: new PreferencesStore().Load());
         Assert.That(AdvancedSettingsUiDriver.Field<AdvancedSettingsPage>(reopened, "AdvancedSettingsPage").Draft, Is.EqualTo(new AdvancedSettingsSession().Initial));
         PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(reopened, "CancelDesktopSettings")); await reopenedCompletion;
         AdvancedSettingsUiDriver.SameProfiles(accepted);
@@ -94,17 +94,67 @@ public sealed class AdvancedSettingsPageTests
     {
         using PortableHelperSettingsFixture f = new(); string path = new PreferencesStore().FilePath;
         Directory.CreateDirectory(Path.GetDirectoryName(path)!); File.WriteAllText(path, "{ \"AutoNormaliseSymbol\": \"foreign-token\", \"foreign\": [17,null] }\n"); byte[] before = File.ReadAllBytes(path);
-        (DesktopSettingsDialog settings, Task<bool> completion) = f.Open("Advanced");
+        (DesktopSettingsDialog settings, Task<bool> completion) = f.Open("Advanced", initial: new PreferencesStore().Load());
         ComboBox symbol = AdvancedSettingsUiDriver.Field<ComboBox>(settings, "SettingsNormaliseSymbol");
         Assert.That(symbol.SelectedItem, Is.Null); Assert.That(symbol.PlaceholderText, Is.EqualTo("foreign-token"));
         Assert.That(symbol.Items.OfType<AdvancedSymbolChoice>().Select(choice => choice.Value), Is.EqualTo(new[] { "_", "-", "" }));
         Assert.That(AdvancedSettingsUiDriver.Field<AdvancedSettingsPage>(settings, "AdvancedSettingsPage").Draft.AutoNormaliseSymbol, Is.EqualTo("foreign-token"));
         PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); await completion;
         Assert.That(File.ReadAllBytes(path), Is.EqualTo(before));
-        (settings, completion) = f.Open("Advanced"); AdvancedSettingsUiDriver.ChooseSymbol(settings, ""); await AdvancedSettingsUiDriver.Apply(f, settings, 1);
+        (settings, completion) = f.Open("Advanced", initial: new PreferencesStore().Load()); AdvancedSettingsUiDriver.ChooseSymbol(settings, ""); await AdvancedSettingsUiDriver.Apply(f, settings, 1);
         Assert.That(new PreferencesStore().Load().AutoNormaliseSymbol, Is.Empty);
         Assert.That(JsonNode.DeepEquals(JsonNode.Parse(File.ReadAllBytes(path))!["foreign"], JsonNode.Parse("[17,null]")), Is.True);
         PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); await completion;
+    }
+
+    [AvaloniaTest]
+    public async Task DirectConstructorKeepsActiveDesktopValuesBeforePublicationAndCancelNeverWritesThemImplicitly()
+    {
+        using PortableHelperSettingsFixture f = new();
+        DesktopPreferences initial = new() { AutoNormaliseBranchName = false, AutoNormaliseSymbol = "-", AlwaysShowAdvancedOptions = true };
+        Dictionary<string, byte[]> before = AdvancedSettingsUiDriver.Profiles(); int publications = 0;
+        (DesktopSettingsDialog settings, Task<bool> completion) = Open();
+        AssertActive(settings); Assert.That(settings.Result, Is.SameAs(initial));
+        PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); Assert.That(await completion, Is.False);
+        Assert.That(publications, Is.Zero); AdvancedSettingsUiDriver.SameProfiles(before);
+
+        (settings, completion) = Open(); AssertActive(settings);
+        PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "ApplyDesktopSettings"));
+        await PushProcessTestDriver.UntilAsync(settings, () => publications == 1 && settings.Navigation.IsEnabled);
+        Assert.That(AdvancedSettingsUiDriver.Field<TextBlock>(settings, "SettingsNotice").Text, Is.Null.Or.Empty);
+        AssertActive(settings); Assert.That(settings.Result.AutoNormaliseBranchName, Is.False);
+        Assert.That(settings.Result.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(settings.Result.AlwaysShowAdvancedOptions, Is.True);
+        AdvancedSettingsUiDriver.SameProfiles(before);
+        PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); Assert.That(await completion, Is.True);
+        AdvancedSettingsUiDriver.SameProfiles(before);
+
+        AdvancedSettingsSession explicitSession = new(); (settings, completion) = Open(explicitSession);
+        Assert.That(settings.AdvancedSettingsSession, Is.SameAs(explicitSession));
+        Assert.That(AdvancedSettingsUiDriver.Field<AdvancedSettingsPage>(settings, "AdvancedSettingsPage").Draft, Is.EqualTo(explicitSession.Initial));
+        Assert.That(explicitSession.Initial.AutoNormaliseSymbol, Is.EqualTo("_"), "The optional fallback must not overwrite an explicitly injected session.");
+        PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); Assert.That(await completion, Is.False);
+        AdvancedSettingsUiDriver.SameProfiles(before);
+
+        (DesktopSettingsDialog, Task<bool>) Open(AdvancedSettingsSession? injected = null)
+        {
+            DesktopSettingsDialog dialog = new(initial, f.Translations, false, fileHistoryPreferences: new(), hotkeys: new(), fonts: new(), scripts: f.Scripts.Load(),
+                publishSettings: draft =>
+                {
+                    publications++;
+                    Assert.That(draft.Result.AutoNormaliseBranchName, Is.False);
+                    Assert.That(draft.Result.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(draft.Result.AlwaysShowAdvancedOptions, Is.True);
+                    return Task.CompletedTask;
+                }, initialPage: "Advanced", advancedSettings: injected);
+            f.Track(dialog); Task<bool> result = dialog.ShowDialog<bool>(f.Owner); PortableHelperSettingsFixture.Pump(dialog); return (dialog, result);
+        }
+        static void AssertActive(DesktopSettingsDialog dialog)
+        {
+            AdvancedSettingsValues shown = AdvancedSettingsUiDriver.Field<AdvancedSettingsPage>(dialog, "AdvancedSettingsPage").Draft;
+            Assert.That(shown.AutoNormaliseBranchName, Is.False); Assert.That(shown.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(shown.AlwaysShowAdvancedOptions, Is.True);
+            Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "SettingsNormaliseBranches").IsChecked, Is.False);
+            Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "SettingsAdvancedOptions").IsChecked, Is.True);
+            Assert.That(((AdvancedSymbolChoice)AdvancedSettingsUiDriver.Field<ComboBox>(dialog, "SettingsNormaliseSymbol").SelectedItem!).Value, Is.EqualTo("-"));
+        }
     }
 }
 
