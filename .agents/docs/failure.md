@@ -839,3 +839,9 @@ Advanced utilise également des reçus partiels. La conservation des clés étra
 Les essais rouges restent conservés : compilation et ciblés initiaux, puis targeted04 (324/327) et desktop-full01 interrompu après le défaut de contrat IO connu. Corrections : focus du vrai champ invalide, navigation clavier du symbole et IOException explicite pour une destination de préférences qui est un dossier. L’assertion IOException historique reste stricte ; les suites fraîches sur b745 passent 3441/1057/35.
 
 Natif01 interrompu (sortie 130) n’est pas accepté ; natif02 a terminé normalement et garde ses propres preuves. Le premier générateur d’inventaire a refusé l’ancienne carte sans BugReportDialog après un scan Roslyn réussi ; après mise à jour de la carte, génération et contrôle exact ont réussi (2444 fichiers, zéro diagnostic).
+
+## SSH — autorité et observations à conserver
+
+GIT_SSH est un exécutable littéral, pas une commande shell. Ne pas effacer GIT_SSH_COMMAND/core.sshCommand ni forcer ssh.variant pour rendre le choix applicatif dominant. Ne pas conclure qu’un -V du binaire choisi valide une commande prioritaire ou l’authentification. Plink/Pageant/PuTTYgen existent sous Unix ; registre, détection .exe et WaitForInputIdle sont les frontières Windows à remplacer.
+
+Une opération de dépôt fige son runner ; un nouveau GitRunner indépendant ne partage pas ce scope. Le premier scénario SSH confondait ces deux autorités : il utilise désormais les vrais remote heads du même dépôt. Une observation d’A doit disparaître après édition/Apply de B ; la publication instantanée du flag startup ne doit pas effacer le diagnostic du scan qui vient de réussir. Régressions dédiées dans les tests SSH/environnement. Les builds initiaux refusés (import TextWrapping puis garde Unix des fixtures) sont conservés dans le lot ; aucun n’est compté comme réussite. [Validation courante](todo.md#ssh--perimetre-verifie).

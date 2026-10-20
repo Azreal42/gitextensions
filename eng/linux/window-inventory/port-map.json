@@ -1984,9 +1984,10 @@
         "ConfirmationsSettingsSession",
         "ColorsSettingsSession",
         "AdvancedSettingsPage",
-        "AdvancedSettingsSession"
+        "AdvancedSettingsSession",
+        "SshSettingsPage"
       ],
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (13/17), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes.",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (13/17), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130).",
       "remaining": "N2 : options/pages Windows restantes et variantes des pages Plugins ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "tests": [
@@ -2013,7 +2014,9 @@
         "AppearanceViewIntentTests",
         "AdvancedSettingsPageTests",
         "AdvancedSettingsSessionTests",
-        "AdvancedSettingsConsumerTests"
+        "AdvancedSettingsConsumerTests",
+        "SshSettingsPageTests",
+        "SshSettingsSessionTests"
       ],
       "adr": [
         "0060",
@@ -2029,7 +2032,8 @@
         "0109",
         "0125",
         "0128",
-        "0129"
+        "0129",
+        "0130"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2829,7 +2833,7 @@
         "MainWindow@CheckStartupEnvironmentAsync",
         "MainWindow@ShowSettingsPageAsync"
       ],
-      "implemented": "Neuf observations dans l’ordre Git, identité Global, éditeur, Merge, Diff, sh, SSH, langue et HOME ; couleurs, noms XLF, erreurs et corrections guidées accessibles sans dépôt. SSH sonde sa version locale ; outils configurés sans exécution. Case publiée seule immédiatement, auto-off après neuf Good et publication réussie. Save and rescan sauvegarde les pages avant lecture ; Cancel conserve les publications et fermeture/annulation drainent les acteurs connus. Source1deed : reprise CLI, case instantanée/auto-off et redémarrage vérifiés en anglais/clair/X11.",
+      "implemented": "Neuf observations dans l’ordre Git, identité Global, éditeur, Merge, Diff, sh, SSH, langue et HOME ; couleurs, noms XLF, erreurs et corrections guidées accessibles sans dépôt. SSH sonde sa version locale ; outils configurés sans exécution. Case publiée seule immédiatement, auto-off après neuf Good et publication réussie. Save and rescan sauvegarde les pages avant lecture ; Cancel conserve les publications et fermeture/annulation drainent les acteurs connus. Source1deed : reprise CLI, case instantanée/auto-off et redémarrage vérifiés en anglais/clair/X11. ADR0130 : la sonde teste le client SSH littéral publié ; les commandes prioritaires GIT_SSH_COMMAND/core.sshCommand sont signalées sans les exécuter, Repair rejoint SSH.",
       "remaining": "N2 : aucun test réseau/authentification SSH ni exécution des outils externes déduit de ces observations. États Windows de registre/extensions/PuTTY non simulés. Corrections/pickers/erreurs et variantes natives étendues, arbre Settings complet et paquet interactif restent à auditer. Politique de versions Linux 2.38 et diagnostic Windows 2.43/2.53 à aligner.",
       "visual": "rapproche",
       "tests": [
@@ -2837,10 +2841,12 @@
         "GitEnvironmentSettingsHostTests",
         "GitEnvironmentSettingsSessionTests",
         "GitEnvironmentChecklistTests",
-        "GitEnvironmentStartupTests"
+        "GitEnvironmentStartupTests",
+        "SshSettingsSessionTests"
       ],
       "adr": [
-        "0095"
+        "0095",
+        "0130"
       ],
       "extra_evidence": [
         {
@@ -3343,16 +3349,37 @@
     "GitUI.CommandsDialogs.SettingsDialog.Pages.SshSettingsPage": {
       "feature": "Configuration SSH/PuTTY",
       "group": "settings-pages",
-      "level": "N1",
+      "level": "N2",
       "linux": [
+        "SshSettingsPage",
+        "GitEnvironmentSettingsSession",
+        "GitEnvironmentPreferencesStore",
+        "GitExecutionEnvironment",
+        "GitEnvironmentDiagnostics",
         "GitProcessDialog",
         "AskpassWindow"
       ],
-      "implemented": "Git/OpenSSH, helpers et askpass système.",
-      "remaining": "Page de choix/configuration SSH et gestion guidée des outils absente ; PuTTY spécifique Windows.",
-      "visual": "integre",
-      "tests": [],
-      "adr": []
+      "implemented": "Choix natif ou autre exécutable littéral, page Git Extensions et icône Key Windows, Browse et aide EN/FR. Profil/session communs à Paths : Apply/Cancel, conflits, Reload et case instantanée sans publication des brouillons. GIT_SSH enfant consommé par Git, priorités de configuration et contextes par opération conservés ; diagnostic local et Repair raccordés. Source c358d990f : 132 Desktop et Core 6/93/5 ciblés, vrais clone/fetch/push locaux via SSH simulé. Natif X11 EN/clair puis FR/sombre : Apply, Cancel, client -V choisi, persistance et retour natif après deux vrais redémarrages.",
+      "remaining": "N2 : Plink/PuTTYgen/Pageant existent sous Unix ; agent possédé, socket/durée de vie, chargement des clés des remotes, action CLI PuTTYgen et interactivité Plink restent à adapter. Authentification serveur, clés matérielles, picker natif et variantes étendues non qualifiés ; quelques diagnostics historiques restent anglais. Aucun full réexécuté, nouveau paquet non encore qualifié à cette source.",
+      "visual": "rapproche",
+      "tests": [
+        "SshSettingsPageTests",
+        "SshSettingsSessionTests",
+        "GitEnvironmentSettingsSessionTests",
+        "GitEnvironmentSettingsHostTests",
+        "GitEnvironmentTransportTests",
+        "SettingsNavigationTests"
+      ],
+      "adr": [
+        "0130"
+      ],
+      "extra_evidence": [
+        {
+          "label": "Vrai Git : transport local via client SSH littéral, priorités natives, snapshots et sondes sans exécution des commandes configurées",
+          "source": "tests/linux/GitExtensions.Core.Tests/SshEnvironmentScenarios.cs",
+          "line": 1
+        }
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.PluginRootIntroductionPage": {
       "feature": "Introduction aux plugins",

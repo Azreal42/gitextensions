@@ -1,18 +1,28 @@
 # TODO
 
-Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/portable-workflows-20261020/window-inventory-syntax-01.json) : 2444 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
+Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/ssh-settings-20261020/inventory-01/syntax.json) : 2448 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
 
-Les preuves courantes portent sur `b745524c1` ; les anciennes références gardent leur source et leur périmètre.
+La suite complète de référence porte sur `b745524c1` ; le lot SSH `c358d990f` a son ciblé et son natif séparés. Les anciennes références gardent leur source et leur périmètre.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `b745524c1` : 3441/3441 Desktop (290 classes), 1057/1057 Core, 35/35 Plugins** ; **99 fenêtres métier : 2 N1, 46 N2, 50 N3, 1 hors périmètre ; 32 pages : 1 N1, 30 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `b745524c1` : 3441/3441 Desktop (290 classes), 1057/1057 Core, 35/35 Plugins** ; **99 fenêtres métier : 2 N1, 46 N2, 50 N3, 1 hors périmètre ; 32 pages : 0 N1, 31 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
 
 Les [suites complètes](../../artifacts/linux/portable-workflows-20261020/review/root-full-review.json) ont tourné sur W11 figé ; l’[import contrôlé de 91 chemins](../../artifacts/linux/portable-workflows-20261020/review/source-import-review.json) préserve les cinq modifications Modal distinctes du primaire, sans réexécution ni équivalence globale revendiquée. Les [preuves W7](../../artifacts/linux/jenkins-20261020/review/root-full-review.json) restent historiques.
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
+
+## SSH — perimetre verifie
+
+Source `c358d990f` : [compilation des trois projets et ciblé vérifiés](../../artifacts/linux/ssh-settings-20261020/review/root-targeted-review.json), **132/132 Desktop et 104/104 Core** (6 environnement, 93 compatibilité, 5 SSH). Les suites complètes de référence restent celles de b745 ; elles n’ont pas été réexécutées pour ce lot.
+
+- [x] Page SSH sous Git Extensions, icône/contrôles Windows, choix natif ou exécutable littéral. Apply/Cancel/Reload, profils antérieurs, champs inconnus, conflits, startup isolé et picker possédé testés. Vrais clone/fetch/push et remote heads sur dépôt local via client simulé ; priorités Git, contextes engagés, scripts et console conservés. [ADR0130](adr/preferences/environment/0130-native-ssh-settings.md).
+- [x] [Natif source X11](../../artifacts/linux/ssh-settings-20261020/review/root-native-review.json) : 44 commandes, 40 captures inspectées, trois vrais lancements/fermetures à 0 ; EN/clair puis FR/sombre. Repair place le focus dans la page existante, Apply publie le chemin exact, Cancel abandonne B en conservant A, A survit au redémarrage et le mode natif au suivant. Deux vrais probes A/-V ; profil étranger préservé. Aucun serveur SSH/authentification, Pageant, picker natif, Wayland/DPI/accessibilité ni interaction du paquet certifié.
+- [ ] Paquet de cette source : publication et vérification isolée à terminer ; dernier paquet qualifié b745 ci-dessous.
+
+SSH passe N1→N2. Plink, Pageant et PuTTYgen ne sont pas exclus par la plateforme : restent socket/durée de vie d’un agent possédé, chargement des clés des remotes, action CLI PuTTYgen et interactivité Plink. Les cinq modifications Modal préexistantes du primaire restent hors source qualifiée ; les 13 familles historiques restent ouvertes.
 
 ## Portable workflows — perimetre verifie
 
@@ -29,7 +39,7 @@ Source `b745524c1` : [3441/3441 Desktop, 1057/1057 Core, 35/35 Plugins](../../ar
 
 [Paquet `7.2.1-linux-alpha`](../../artifacts/linux/snapshots/b745524c1/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 049 344 octets, SHA256 `d8966641dddd617329a25c9da218dd518ea3c21a0476af1d5c021344e239a245` ; [cinq phases vérifiées](../../artifacts/linux/portable-workflows-20261020/review/root-package-review.json), dont installation/lancement dans une racine isolée. Ce résultat ne vaut pas installation du nouveau paquet sur le poste.
 
-Restent N1 : Updates (flux et installateur Windows à remplacer par une publication Linux), FilePrompt (arrêt du picker natif non garanti) et SSH (PuTTY/Pageant/registre Windows et autorité Git à adapter). Les neuf promotions N1→N2 restent partielles ; aucun N4 et les 13 familles historiques restent ouvertes.
+Après le lot SSH ci-dessus, restent N1 : Updates (flux et installateur Windows à remplacer par une publication Linux) et FilePrompt (arrêt du picker natif non garanti). Les compléments SSH/Pageant restent identifiés sous N2. Les neuf promotions N1→N2 du lot Portable workflows restent partielles ; aucun N4 et les 13 familles historiques restent ouvertes.
 
 ## Livré et vérifié
 
@@ -141,7 +151,7 @@ Restent N1 : Updates (flux et installateur Windows à remplacer par une publicat
 
 - Focus : les retours ciblés des menus, outils, prompts et du changement vers File tree sont corrigés et vérifiés dans les périmètres ci-dessous. Étendre les variantes de panneaux, thèmes, traductions et plateformes ; Browse reste N2.
 - Compare/Browse : listes, groupes et menus communs avec paire/métadonnées par feuille, mutations ciblées, outils/fichiers mémorisés et vraie console interactive. Restent Visual Studio, audit étendu des scripts et découverte/réglages complets des outils, présélection gitlink, cas First vide/root initial et gestes de plage sans oracle Windows validé. Reprise des fichiers masqués par Skip/Assume et première flèche après retrait vérifiées via Commit → Unstaged → Settings ; File tree historique ne sert pas de lecteur des flags live. Stage/Unstage natifs et variantes non atteintes restent à auditer. FormDiff/Browse restent N2 ; ADR 0016/0080/0081.
-- Scripts : éditeur brouillon XDG, plan argv avant Quote, runner possédé, catalogue/menus/touches par ID et raccords Before/After validés par les suites complètes ; paquet exact et natif S01 ciblé vérifiés, voir la section dédiée. Les trois saisies restent N1. Étendre natif, erreurs de profil, outils/OS, icônes associées et programmes shell complexes ; ADR 0057/0078.
+- Scripts : éditeur brouillon XDG, plan argv avant Quote, runner possédé, catalogue/menus/touches par ID et raccords Before/After validés par les suites complètes ; paquet exact et natif S01 ciblé vérifiés, voir la section dédiée. QuickStringSelector et SimplePrompt sont N2 (ADR0126) ; FilePrompt reste N1. Étendre natif, erreurs de profil, outils/OS, icônes associées et programmes shell complexes ; ADR 0057/0078.
 - Préférences : compléments de raccourcis ADR0089 et audit étendu de la page Scripts ; treize champs Config et encodages partagés vérifiés (ADR0093/0094), Global hors dépôt et pages Git/Checklist portés N2 sur le périmètre ADR0095 ; découverte exhaustive et audit natif étendu ouverts. Fonts/EOL porté au redémarrage sur le périmètre ADR0091 ; langue ADR0090 portée sur son périmètre ciblé ; réglages globaux/locaux/distribués. Tri/priorités ADR 0082 : remotes vides/inactifs et variantes natives ; CommitInfo partagé ADR 0083 : suites complètes, paquet exact et natif Browse ciblé vérifiés ; autres hôtes/variantes encore ouverts, liens associés/avatar/Markdown/mailto et audit étendu encore ouverts. Badges et QuickRef gardent leurs comparateurs distincts.
 - Navigation : parcours Parent/Child porté sur le périmètre ADR0088 ; étendre l’audit natif des filtres, ordres, hôtes et gestes. Navigate Windows n’ouvre pas de picker ; liens Parents/Children de CommitInfo disponibles. Compléments CI/superproject et autres hébergeurs restent ouverts ; PR GitHub partielles dans ADR0110.
 - Réseau : raccords Scripts Before/After et chemin Process par remote validés par les suites complètes ; paquet exact vérifié ; audit natif des événements encore ouvert. Variantes multi-URL/atomic, destination locale Fetch/source URL, reprises différées et fermetures natives des propriétaires restent à étendre.
@@ -456,6 +466,6 @@ Source `95f628aea7d29db61f21fc81458ac1779b9204fa` : **3001/3001 Desktop (256 cla
 
 - [ ] Rapport HTML CI embarqué, services/authentifications réels, GCM/SSO et audit étendu Wayland/IME/DPI/accessibilité ; interactions du paquet installé distinctes des tests et de DPKG isolé.
 - [ ] Resserrer la table Recovery : les SHA complets se replient en lignes trop hautes dans le parcours natif W7. Conserver la copie littérale des hashes.
-- [ ] Tranche suivante préparée : FormEditor, Fork/Clone GitHub et Confirmations. Sources et tests candidats distincts ; aucune qualification transférée avant leur exécution.
+- [x] Tranche qualifiée sur b745 (ADR0123–0129, périmètres partiels ci-dessus) : FormEditor, Fork/Clone GitHub et Confirmations. Suites, natif source et paquet gardent leurs preuves et limites dédiées.
 
 Les niveaux N2 de ces neuf entrées restent partiels ; les treize familles globales restent ouvertes, aucun N4.
