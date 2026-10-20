@@ -33,6 +33,8 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly GeneralSettingsPage _generalSettingsPage;
     internal ConfirmationsSettingsSession ConfirmationsSettingsSession { get; }
     private readonly ConfirmationsSettingsPage _confirmationsSettingsPage;
+    internal AdvancedSettingsSession AdvancedSettingsSession { get; }
+    private readonly AdvancedSettingsPage _advancedSettingsPage;
     internal ColorsSettingsSession ColorsSettingsSession { get; }
     private readonly ColorsSettingsPage _colorsSettingsPage;
     internal AppearanceSettingsValues AppearanceSettingsResult { get; private set; }
@@ -88,7 +90,9 @@ internal sealed class DesktopSettingsDialog : Window
         Func<Window, Task>? configureGitAdvanced = null,
         ConfirmationsSettingsSession? confirmations = null,
         ColorsSettingsSession? colors = null,
-        Func<ColorsSettingsValues, CancellationToken, ColorsSettingsPublication>? publishColors = null)
+        Func<ColorsSettingsValues, CancellationToken, ColorsSettingsPublication>? publishColors = null,
+        AdvancedSettingsSession? advancedSettings = null,
+        Action<AdvancedSettingsSaveReceipt>? publishAdvanced = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -97,6 +101,8 @@ internal sealed class DesktopSettingsDialog : Window
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
         ConfirmationsSettingsSession = confirmations ?? new();
         _confirmationsSettingsPage = new(ConfirmationsSettingsSession, translations);
+        AdvancedSettingsSession = advancedSettings ?? new();
+        _advancedSettingsPage = new(AdvancedSettingsSession, translations);
         ColorsSettingsSession = colors ?? new(new HistoryViewPreferencesStore().Load());
         _colorsSettingsPage = new(ColorsSettingsSession.Initial, translations);
         DetailedSettingsSession = detailedSettings ?? new(null, initial);
@@ -132,12 +138,7 @@ internal sealed class DesktopSettingsDialog : Window
             if (closingOwner is { } owner)
             { Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
         };
-        CheckBox normalise = new() { Name = "SettingsNormaliseBranches", Content = translations.Translate("Auto normalise branch name"), IsChecked = initial.AutoNormaliseBranchName };
-        CheckBox advanced = new() { Name = "SettingsAdvancedOptions", Content = translations.Translate("Always show advanced options"), IsChecked = initial.AlwaysShowAdvancedOptions };
-        TextBox symbol = new() { Name = "SettingsNormaliseSymbol", Text = initial.AutoNormaliseSymbol, Width = 150 };
         TextBlock notice = new() { Name = "SettingsNotice", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 0, 12, 6) };
-        StackPanel advancedFields = new() { Name = "AdvancedSettingsPage", Margin = new Thickness(12), Spacing = 10 };
-        advancedFields.Children.Add(normalise); GeneralField(advancedFields, "Replacement symbol", symbol); advancedFields.Children.Add(advanced);
         Button configuration = new() { Name = "OpenGitConfiguration", Content = translations.Translate("Edit Git configuration") + "…", IsEnabled = canConfigureGit, HorizontalAlignment = HorizontalAlignment.Left };
         configuration.Click += (_, _) => { OpenGitConfiguration = true; Close(false); };
         Button tools = new() { Name = "OpenGitToolsConfiguration", Content = translations.Translate("Git configuration") + "…", IsEnabled = configureGitTools is not null, HorizontalAlignment = HorizontalAlignment.Left };
@@ -197,7 +198,7 @@ internal sealed class DesktopSettingsDialog : Window
             new("BuildServerIntegration", PageTitle("BuildServerIntegrationSettingsPage", "Build server integration"), _buildServerSettingsPage, "Integration.png"),
             new("Scripts", PageTitle("ScriptsSettingsPage", "Scripts"), scriptsPage, "Console.png"),
             new("Hotkeys", PageTitle("HotkeysSettingsPage", "Hotkeys"), hotkeysPage, "Hotkey.png"),
-            new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), advancedFields, "AdvancedSettings.png", Children:
+            new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), _advancedSettingsPage, "AdvancedSettings.png", Children:
             [ new("Confirmations", PageTitle("ConfirmationsSettingsPage", "Confirmations"), _confirmationsSettingsPage, "BisectGood.png") ]),
             new("Detailed", PageTitle("DetailedSettingsPage", "Detailed"), _detailedSettingsPage, "Settings.png")
         ];
@@ -301,8 +302,6 @@ internal sealed class DesktopSettingsDialog : Window
                 { Navigation.SelectPage("General", true); notice.Text = generalValidation; return false; }
                 if (!_appearanceSettingsPage.Validate(out string? appearanceValidation))
                 { Navigation.SelectPage("Appearance", true); notice.Text = appearanceValidation; return false; }
-                if (normalise.IsChecked == true && string.IsNullOrWhiteSpace(symbol.Text))
-                { Navigation.SelectPage("Advanced", true); notice.Text = translations.Translate("Enter a valid history limit and replacement symbol."); symbol.Focus(); return false; }
                 foreach (TextBox input in new[] { branches, remotes })
                 {
                     try { GitReferencePriorities.Validate(input.Text ?? ""); }
@@ -343,6 +342,7 @@ internal sealed class DesktopSettingsDialog : Window
                 { Navigation.SelectPage("GitPaths", true); return false; }
                 GeneralSettingsResult = _generalSettingsPage.Draft;
                 AppearanceSettingsResult = _appearanceSettingsPage.Draft;
+                AdvancedSettingsValues advancedDraft = _advancedSettingsPage.Draft;
                 Result = initial with
                 {
                     Theme = AppearanceSettingsResult.Theme, Language = AppearanceSettingsResult.Language,
@@ -355,7 +355,7 @@ internal sealed class DesktopSettingsDialog : Window
                     AvatarProvider = AppearanceSettingsResult.AvatarProvider,
                     AvatarFallbackType = AppearanceSettingsResult.AvatarFallbackType,
                     CustomAvatarTemplate = AppearanceSettingsResult.CustomAvatarTemplate,
-                    AutoNormaliseBranchName = normalise.IsChecked == true, AutoNormaliseSymbol = symbol.Text ?? "_", AlwaysShowAdvancedOptions = advanced.IsChecked == true,
+                    AutoNormaliseBranchName = advancedDraft.AutoNormaliseBranchName, AutoNormaliseSymbol = advancedDraft.AutoNormaliseSymbol, AlwaysShowAdvancedOptions = advancedDraft.AlwaysShowAdvancedOptions,
                     UseBrowseForFileHistory = GeneralSettingsResult.UseBrowseForFileHistory,
                     MaxRevisionGraphCommits = GeneralSettingsResult.MaxRevisionGraphCommits,
                     RevisionGridQuickSearchTimeout = GeneralSettingsResult.RevisionGridQuickSearchTimeout,
@@ -387,6 +387,14 @@ internal sealed class DesktopSettingsDialog : Window
                 }
                 try
                 {
+                    activeSavePage = "Advanced";
+                    AdvancedSettingsSession.Save(_advancedSettingsPage.Draft, receipt =>
+                    {
+                        _advancedSettingsPage.AcceptSaved(receipt);
+                        Result = AdvancedSettingsValues.ApplyDesktop(Result, receipt.Values, receipt.Fields);
+                        saved |= receipt.Written;
+                        publishAdvanced?.Invoke(receipt);
+                    }, _detailedCancellation.Token);
                     activeSavePage = "Colors";
                     ColorsSettingsPublication colorsSaved = publishColors is null
                         ? ColorsSettingsSession.Save(_colorsSettingsPage.Draft, cancellationToken: _detailedCancellation.Token)
@@ -515,12 +523,6 @@ internal sealed class DesktopSettingsDialog : Window
             if (Navigation.SelectedPage.Id == "Checklist" && gitEnvironment is not null) { await gitEnvironment.ScanAsync(); }
         };
 
-        void GeneralField(StackPanel target, string label, Control editor)
-        {
-            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-            row.Children.Add(new TextBlock { Text = translations.Translate(label), VerticalAlignment = VerticalAlignment.Center });
-            Grid.SetColumn(editor, 1); row.Children.Add(editor); target.Children.Add(row);
-        }
         void SortingField(int row, string label, Control editor, string? help = null)
         {
             TextBlock caption = new() { Text = translations.Translate(label), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };

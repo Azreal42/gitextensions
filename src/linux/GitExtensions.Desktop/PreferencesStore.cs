@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -85,11 +86,24 @@ public sealed class PreferencesStore
     {
         ArgumentNullException.ThrowIfNull(preferences);
         preferences = preferences with { Dictionary = GitDictionaryName.NormalizeDisabledIdentity(preferences.Dictionary) };
+        JsonObject document = JsonSerializer.SerializeToNode(preferences)!.AsObject();
+        try
+        {
+            if (JsonNode.Parse(File.ReadAllText(FilePath)) is JsonObject existing)
+            {
+                // Retain only foreign top-level properties; typed fields keep their historical Save contract.
+                foreach ((string name, JsonNode? value) in existing)
+                { if (!document.ContainsKey(name)) { document[name] = value?.DeepClone(); } }
+            }
+        }
+        catch (FileNotFoundException) { }
+        catch (DirectoryNotFoundException) { }
+        catch (JsonException) { /* Explicit typed Save historically repairs invalid/non-object profiles. */ }
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
         string temporary = FilePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            File.WriteAllText(temporary, JsonSerializer.Serialize(preferences, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(temporary, document.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
             File.Move(temporary, FilePath, overwrite: true);
         }
         finally

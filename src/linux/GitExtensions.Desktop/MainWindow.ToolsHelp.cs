@@ -167,6 +167,7 @@ public sealed partial class MainWindow
         DesktopPreferences initial = _preferencesStore.Load();
         GeneralSettingsSession general = new(initial, fileHistory);
         ConfirmationsSettingsSession confirmations = new();
+        AdvancedSettingsSession advanced = new();
         AppearanceSettingsSession appearance = new(initial, _historyView);
         ColorsSettingsSession colors = new(_historyView);
         // Reuse the runtime already bound to this mapped Main, including explicitly bound hosts.
@@ -204,7 +205,9 @@ public sealed partial class MainWindow
             openSettingsUrlAsync: OpenWebAsync,
             configureGitAdvanced: owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
                 ? ShowGitToolsSettingsAsync(owner, advanced: true) : Task.CompletedTask, confirmations: confirmations,
-            colors: colors, publishColors: (draft, ct) => PublishColorsSettings(colors, draft, ct));
+            colors: colors, publishColors: (draft, ct) => PublishColorsSettings(colors, draft, ct),
+            advancedSettings: advanced, publishAdvanced: receipt =>
+            { _preferences = AdvancedSettingsValues.ApplyDesktop(_preferences, receipt.Values, receipt.Fields); });
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
@@ -257,6 +260,8 @@ public sealed partial class MainWindow
                     RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
                 });
                 preferences = detailed.MergeDesktop(preferences);
+                // The visible Result keeps its draft contract; this writer defers Advanced to its strict CAS receipts.
+                preferences = advanced.MergeDesktop(preferences);
                 bool histogramChanged = settings.GeneralSettingsResult.UseHistogramDiffAlgorithm != general.Initial.UseHistogramDiffAlgorithm;
                 GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences,
                     desktopSaved: acceptedDesktop =>
