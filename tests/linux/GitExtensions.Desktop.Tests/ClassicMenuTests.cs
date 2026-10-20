@@ -202,7 +202,8 @@ public sealed class ClassicMenuTests
         Assert.That(box.Text, Does.Contain("git status").And.Contain(f.Repository));
         Click(Find(f.Window, "gitcommandLogToolStripMenuItem"));
         Assert.That(f.Window.OwnedWindows.OfType<GitCommandLogWindow>().Count(), Is.EqualTo(1));
-        log.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ClearGitCommandLog").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        ListBox logItems = log.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "LogItems");
+        logItems.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "mnuClear").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         Assert.That(box.Text, Is.Empty); Assert.That(GitCommandLog.Snapshot(), Is.Empty);
         log.Close();
     }

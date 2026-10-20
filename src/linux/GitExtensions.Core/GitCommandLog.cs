@@ -4,18 +4,31 @@ namespace GitExtensions.Linux;
 public static class GitCommandLog
 {
     private static readonly object Gate = new();
-    private static readonly Queue<GitCommandLogEntry> Entries = new();
+    private static readonly LinkedList<GitCommandLogEntry> Entries = new();
+    private static readonly Dictionary<long, LinkedListNode<GitCommandLogEntry>> ActiveEntries = new();
+    private static long _nextId;
     public const int Capacity = 500;
     private static readonly HashSet<string> Verbs = new(["add", "am", "apply", "archive", "bisect", "blame", "branch", "cat-file", "check-attr", "check-ignore", "check-mailmap", "check-ref-format", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "count-objects", "describe", "diff", "difftool", "fetch", "for-each-ref", "format-patch", "fsck", "gc", "grep", "hash-object", "init", "log", "ls-files", "ls-remote", "ls-tree", "merge", "merge-base", "mergetool", "notes", "pull", "push", "range-diff", "rebase", "reflog", "remote", "reset", "restore", "rev-list", "rev-parse", "revert", "rm", "show", "show-ref", "stash", "status", "submodule", "switch", "symbolic-ref", "tag", "update-index", "update-ref", "version", "worktree"], StringComparer.Ordinal);
 
+    /// <summary>A metadata change is available. Observers run outside the log lock; UI consumers marshal themselves.</summary>
+    public static event Action? Changed;
+
     public static IReadOnlyList<GitCommandLogEntry> Snapshot()
     {
-        lock (Gate) { return Entries.ToArray(); }
+        lock (Gate) { return Array.AsReadOnly(Entries.ToArray()); }
     }
 
-    public static void Clear() { lock (Gate) { Entries.Clear(); } }
+    public static void Clear()
+    {
+        lock (Gate)
+        {
+            if (Entries.Count == 0) { return; }
+            Entries.Clear(); ActiveEntries.Clear();
+        }
+        NotifyChanged();
+    }
 
-    internal static void Record(IReadOnlyList<string> arguments, string directory, DateTimeOffset started, TimeSpan elapsed, int? exitCode, bool cancelled)
+    internal static long Begin(IReadOnlyList<string> arguments, string directory, DateTimeOffset started)
     {
         // Git's global options may precede the verb. Only keep a recognized verb,
         // never a positional argument which could contain a credential or key.
@@ -28,12 +41,59 @@ public static class GitCommandLog
             if (Verbs.Contains(argument)) { command += " " + argument; }
             break;
         }
+
+        long id;
         lock (Gate)
         {
-            while (Entries.Count >= Capacity) { Entries.Dequeue(); }
-            Entries.Enqueue(new(command, directory, started, elapsed, exitCode, cancelled));
+            id = ++_nextId;
+            GitCommandLogEntry entry = new(command, directory, started, TimeSpan.Zero, null, false) { Id = id, IsRunning = true };
+            ActiveEntries.Add(id, Entries.AddLast(entry));
+            if (Entries.Count > Capacity)
+            {
+                long removed = Entries.First!.Value.Id;
+                Entries.RemoveFirst(); ActiveEntries.Remove(removed);
+            }
+        }
+        NotifyChanged();
+        return id;
+    }
+
+    internal static void SetProcessId(long id, int processId)
+    {
+        lock (Gate)
+        {
+            if (processId <= 0 || !ActiveEntries.TryGetValue(id, out LinkedListNode<GitCommandLogEntry>? node)
+                || !node.Value.IsRunning || node.Value.ProcessId is not null) { return; }
+            node.Value = node.Value with { ProcessId = processId };
+        }
+        NotifyChanged();
+    }
+
+    internal static void Complete(long id, TimeSpan elapsed, int? exitCode, bool cancelled)
+    {
+        lock (Gate)
+        {
+            if (!ActiveEntries.Remove(id, out LinkedListNode<GitCommandLogEntry>? node)) { return; }
+            node.Value = node.Value with { Duration = elapsed, ExitCode = exitCode, Cancelled = cancelled, IsRunning = false };
+        }
+        NotifyChanged();
+    }
+
+    private static void NotifyChanged()
+    {
+        Action? observers = Changed;
+        if (observers is null) { return; }
+        foreach (Action observer in observers.GetInvocationList())
+        {
+            try { observer(); }
+            catch (Exception) { /* Diagnostics must never change the Git operation or retain observer faults. */ }
         }
     }
 }
 
-public sealed record GitCommandLogEntry(string Command, string Directory, DateTimeOffset Started, TimeSpan Duration, int? ExitCode, bool Cancelled);
+public sealed record GitCommandLogEntry(string Command, string Directory, DateTimeOffset Started, TimeSpan Duration, int? ExitCode, bool Cancelled)
+{
+    public long Id { get; init; }
+    public int? ProcessId { get; init; }
+    public bool IsRunning { get; init; }
+}

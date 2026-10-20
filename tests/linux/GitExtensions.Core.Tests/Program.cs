@@ -175,6 +175,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. CleanScenarios.All,
     .. HistoryRemovalScenarios.All,
     .. GitProcessStreamingScenarios.All,
+    .. GitCommandLogScenarios.All,
     .. PullFetchScenarios.All,
     .. PullAdvancedScenarios.All,
     .. BranchFilterScenarios.All,
@@ -262,6 +263,7 @@ if (args.Contains("--commit-completion-only", StringComparer.Ordinal)) { tests =
 if (args.Contains("--superproject-only", StringComparer.Ordinal)) { tests = SuperprojectScenarios.All.ToArray(); }
 if (args.Contains("--ssh-environment-only", StringComparer.Ordinal)) { tests = SshEnvironmentScenarios.All.ToArray(); }
 if (args.Contains("--git-environment-only", StringComparer.Ordinal)) { tests = GitEnvironmentScenarios.All.ToArray(); }
+if (args.Contains("--command-log-only", StringComparer.Ordinal)) { tests = GitCommandLogScenarios.All.ToArray(); }
 if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal))
 { tests = [.. GitProcessStreamingScenarios.All, .. ToolConfigurationScenarios.All, .. ScriptScenarios.All, .. ScriptRuntimeScenarios.All,
     .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All, .. HistoryRemovalScenarios.All]; }

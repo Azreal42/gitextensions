@@ -15,7 +15,6 @@ namespace GitExtensions.Linux.Desktop;
 public sealed partial class MainWindow
 {
     private readonly List<(MenuItem Item, bool Worktree)> _externalToolMenus = [];
-    private GitCommandLogWindow? _commandLogWindow;
     internal Func<ProcessStartInfo, Process?> ExternalLauncher { get; set; } = Process.Start;
     private static string DesktopVersion => typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "7.2.1-linux-alpha";
     private const string ForkUrl = LinuxUpdateClient.RepositoryUrl;
@@ -152,9 +151,7 @@ public sealed partial class MainWindow
 
     private Task ShowCommandLogAsync()
     {
-        if (_commandLogWindow is { IsVisible: true }) { _commandLogWindow.Activate(); return Task.CompletedTask; }
-        _commandLogWindow = new GitCommandLogWindow(_translations);
-        _commandLogWindow.Show(this);
+        GitCommandLogWindow.ShowOrActivate(this, _translations);
         return Task.CompletedTask;
     }
 

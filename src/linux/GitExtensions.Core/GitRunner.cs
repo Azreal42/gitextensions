@@ -156,6 +156,12 @@ public sealed class GitRunner
         int? exitCode = null;
         GitProcessLaunch? launch = null;
         Exception? failure = null;
+        long? logId = applyGitEnvironment ? GitCommandLog.Begin(arguments, workingDirectory, started) : null;
+        Action<int>? startedObserver = processStarted;
+        if (logId is long id)
+        {
+            startedObserver = processId => { GitCommandLog.SetProcessId(id, processId); processStarted?.Invoke(processId); };
+        }
         try
         {
             if (OperatingSystem.IsLinux())
@@ -164,14 +170,14 @@ public sealed class GitRunner
                     : GitProcessLaunch.Configure(startInfo, executionEnvironment.GetVariable("PATH") ?? "");
             }
             cancellationToken.ThrowIfCancellationRequested();
-            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, processStarted).ConfigureAwait(false);
+            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, startedObserver).ConfigureAwait(false);
             exitCode = result.ExitCode;
             return result;
         }
         catch (Exception exception) { failure = exception; throw; }
         finally
         {
-            if (applyGitEnvironment) { GitCommandLog.Record(arguments, workingDirectory, started, elapsed.Elapsed, exitCode, failure is OperationCanceledException); }
+            if (logId is long completedId) { GitCommandLog.Complete(completedId, elapsed.Elapsed, exitCode, failure is OperationCanceledException); }
             if (OperatingSystem.IsLinux() && launch is not null)
             {
                 try { launch.Dispose(); }
