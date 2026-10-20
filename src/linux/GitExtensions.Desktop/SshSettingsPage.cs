@@ -68,13 +68,13 @@ internal sealed class SshSettingsPage : UserControl
         _loading = true;
         try { _baseline = published; _executable.Text = published; _other.IsChecked = published.Length > 0; _native.IsChecked = published.Length == 0; }
         finally { _loading = false; }
-        _revision++; ShowError(null); UpdateEnabled();
+        _revision++; _information.Text = ""; ShowError(null); UpdateEnabled();
     }
     internal void RebasePublished(string published)
     {
         if (_invalidated) { return; }
         if (!IsDirty) { AcceptSaved(published); }
-        else { _baseline = published; _revision++; }
+        else { _baseline = published; _revision++; _information.Text = ""; }
     }
     internal void SetDiagnostic(GitEnvironmentDiagnostic diagnostic)
     {
@@ -88,7 +88,7 @@ internal sealed class SshSettingsPage : UserControl
     internal void Invalidate() { _invalidated = true; _revision++; UpdateEnabled(); }
     internal void FocusClient() { if (_other.IsChecked == true) { _executable.Focus(); } else { _native.Focus(); } }
     private string Text(string name, string fallback) => _translations.Translate("SshSettingsPage", name, "Text", fallback);
-    private void Changed() { if (!_loading && !_invalidated) { _revision++; UpdateEnabled(); ShowError(null); } }
+    private void Changed() { if (!_loading && !_invalidated) { _revision++; _information.Text = ""; UpdateEnabled(); ShowError(null); } }
     private void UpdateEnabled()
     {
         _body.IsEnabled = !_invalidated && !_busy && !IsBusy;

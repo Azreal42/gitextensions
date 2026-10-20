@@ -5,6 +5,7 @@ using Avalonia.Headless.NUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using GitExtensions.Linux.Desktop.Localization;
 using NUnit.Framework;
@@ -52,6 +53,23 @@ public sealed class SshSettingsPageTests
         page.RebasePublished("new published"); Assert.That(page.Draft, Is.EqualTo("pending"));
         Field<RadioButton>(host.Window, "OpenSSH").IsChecked = true;
         page.RebasePublished("another external"); Assert.That(page.Draft, Is.Empty); Assert.That(page.IsDirty, Is.True);
+    }
+
+    [AvaloniaTest]
+    public void EditingApplyingOrReloadingCannotDisplayAnotherExecutablesVersionCheck()
+    {
+        SshSettingsPage page = new("ssh A", Catalog()); using Host host = new(page);
+        GitExecutableDiagnostic probe = new("ssh A", new GitResult(0, "version", ""), null);
+        GitEnvironmentDiagnostic diagnostic = new(probe, probe, probe, null, null, null, [])
+        { SshConfiguration = new(GitSshCommandSource.GitSsh) };
+        page.SetDiagnostic(diagnostic);
+        Assert.That(Field<TextBlock>(host.Window, "SshEnvironmentInformation").Text, Does.Contain("ssh A"));
+        page.AcceptSaved("ssh B"); Assert.That(Field<TextBlock>(host.Window, "SshEnvironmentInformation").Text, Is.Empty);
+        page.SetDiagnostic(diagnostic); Field<TextBox>(host.Window, "OtherSsh").Text = "ssh C";
+        Assert.That(Field<TextBlock>(host.Window, "SshEnvironmentInformation").Text, Is.Empty);
+        page.SetDiagnostic(diagnostic); page.RebasePublished("ssh D");
+        Assert.That(Field<TextBlock>(host.Window, "SshEnvironmentInformation").Text, Is.Empty);
+        Assert.That(page.Draft, Is.EqualTo("ssh C"));
     }
 
     [AvaloniaTest]
