@@ -7,6 +7,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Observation | Cause / suite |
 | --- | --- |
 | Tableau Recovery trop haut | Le rendu natif du lot Jenkins montre les SHA complets repliés dans des colonnes étroites ; rapprocher les lignes simples du tableau Windows sans modifier les hashes copiés. [Capture](../../artifacts/linux/jenkins-20261020/native-01/frames/0047-click.png). |
+| Flux Updates sans publication Linux | Au 20/10/2026, aucune release du fork ; les artifacts CI ne sont pas des assets de release. Le dialogue ne transforme pas cette absence en erreur réseau ni en promesse de paquet. |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |
 | APT sur OS vierge non exécuté | Installation/lancement DPKG isolés utilisent les dépendances hôte ; la simulation APT ne clôt pas ce gate. |
@@ -58,6 +59,14 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Done avant récupération d’un Push rejeté | Le hook de fin précède Done/fermeture ; le Pull imbriqué et son acquittement précèdent la reprise dans le même Process. |
 | Sortie d’une ancienne tentative attribuée au nouveau transfert | Vider la console courante au redémarrage ; garder distinctes les sorties natives des tentatives. |
 | Clôture imbriquée tardive ou deuxième Close transforme un succès en annulation | Observer la clôture du propriétaire avant le veto d’un enfant occupé ; arrêter les continuations, attendre Git, garder l’issue native et rendre la fermeture finale idempotente. |
+
+## Mises à jour — résolus
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Publication RID refusée par NU1004 | Le verrou générique ne contient pas linux-x64. Générer le verrou RID dans obj et vérifier que sa section de base conserve toutes les dépendances verrouillées. [Échec réel](../../artifacts/linux/updates-20261020/package-01/publish.log). |
+| Vérification GUI sans Xvfb dans PATH | Le serveur privé existe sous artifacts/linux/tools/xvfb/root/usr/bin ; le rendre accessible dans l’environnement de validation, avec un bus D-Bus possédé. L’absence de prérequis n’est pas une panne du paquet. [Essai conservé](../../artifacts/linux/updates-20261020/package-02/verify-deb.log). |
+| Retry sans effet après échec d’un lien sans digest | Mémoriser l’action échouée, y compris le launcher ; restaurer le statut après succès. Régression par vrai clic dans `UpdatesDialogTests`. |
 
 ## Lecteurs et UI — résolus
 

@@ -14,6 +14,15 @@ Les [suites complètes](../../artifacts/linux/portable-workflows-20261020/review
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
+## Mises à jour Linux — périmètre vérifié
+
+Source `3a2d4cc85` : compilation des trois projets sans avertissement ; [64/64 tests Desktop ciblés](../../artifacts/linux/updates-20261020/review/root-targeted-review.json), dont les menus classiques. Quatre captures headless EN/FR clair/sombre inspectées. Les suites complètes restent la référence b745 ; les cinq fichiers Modal préexistants sont hors source qualifiée.
+
+- [x] Help ouvre Updates possédé et traduit ; flux public du fork, ordre SemVer, architecture/nom/URL et SHA-256 contrôlés. Annulation, délais/corps bornés, erreurs/Retry, liens et second geste d’ouverture du paquet couverts. [ADR0132](adr/distribution/updates/0132-linux-updates.md).
+- [ ] Publication initiale sur GitHub (aucune release au 20/10), préférences durables et contrôle hebdomadaire ; succès de l’installation par le gestionnaire du bureau et interactions natives/Wayland/DPI/accessibilité à qualifier.
+
+Updates passe N1→N2 sur ce périmètre ; aucun N4. Il n’y a plus de fenêtre métier N1, mais les 13 familles et les compléments N2/N3 restent ouverts. [Paquet 3a2d4cc85](../../artifacts/linux/snapshots/3a2d4cc85-updates/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : **40 070 828 octets**, [vérification](../../artifacts/linux/updates-20261020/review/root-package-review.json). Publication/assemblage, contrôle et démarrage après extraction, installation/lancement DPKG isolés réussis ; 402 fichiers, contenu publish/extrait et manifestes vérifiés. SHA-256 `1015b302e6cf2f6ac9056bd379fce995c84bb5bfc7e726025577a2f0dadf4792`. Aucun push ni installation hôte ; interactions Updates natives et vraie release publique non qualifiées.
+
 ## Sélecteur de fichiers — périmètre vérifié
 
 Source `5356de767` : [build et ciblé vérifiés](../../artifacts/linux/file-picker-20261020/review/root-targeted-review.json), **58/58 Desktop et 38/38 Core Scripts**. Les suites complètes de référence restent sur b745 ; les cinq modifications Modal préexistantes restent hors source qualifiée.
@@ -22,7 +31,7 @@ Source `5356de767` : [build et ciblé vérifiés](../../artifacts/linux/file-pic
 - [x] [Natif source X11](../../artifacts/linux/file-picker-20261020/review/root-native-review.json) : 49 commandes, 46 captures inspectées, deux fermetures normales EN/clair puis FR/sombre. Vrai menu Run script et toolbar, Cancel conserve le texte sans exécution ; sélection multiple puis nom édité remplacent la sélection et arrivent exactement dans les argv des deux vrais scripts. Dépôt, fichiers d’entrée et profils Scripts/environnement préservés.
 - [x] [Paquet exact 5356](../../artifacts/linux/snapshots/5356de767/deb/gitextensions_7.2.1~linux-alpha_amd64.deb), **40 055 836 octets**, [vérifié](../../artifacts/linux/file-picker-20261020/review/root-package-review.json) : cinq phases à 0, 402 fichiers/460 entrées, contenu archive/publish/extraction et traductions contrôlés ; installation DPKG et démarrage isolés. Aucun push ni installation hôte ; interaction installée et OS vierge non qualifiés.
 
-FilePrompt passe N1→N2 sur ce périmètre ; Updates reste N1. Sélecteur Avalonia local aux scripts, sans portail GTK/KDE ; variantes Wayland/IME/DPI/accessibilité ouvertes. Aucun N4 ; les 13 familles historiques restent ouvertes.
+FilePrompt passe N1→N2 sur ce périmètre ; Updates est traité dans le lot ci-dessus. Sélecteur Avalonia local aux scripts, sans portail GTK/KDE ; variantes Wayland/IME/DPI/accessibilité ouvertes. Aucun N4 ; les 13 familles historiques restent ouvertes.
 
 ## SSH — perimetre verifie
 
@@ -49,7 +58,7 @@ Source `b745524c1` : [3441/3441 Desktop, 1057/1057 Core, 35/35 Plugins](../../ar
 
 [Paquet `7.2.1-linux-alpha`](../../artifacts/linux/snapshots/b745524c1/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 049 344 octets, SHA256 `d8966641dddd617329a25c9da218dd518ea3c21a0476af1d5c021344e239a245` ; [cinq phases vérifiées](../../artifacts/linux/portable-workflows-20261020/review/root-package-review.json), dont installation/lancement dans une racine isolée. Ce résultat ne vaut pas installation du nouveau paquet sur le poste.
 
-Après les lots SSH et FilePrompt ci-dessus, seul Updates reste N1 (flux et installateur Windows à remplacer par une publication Linux). Les compléments SSH/Pageant restent identifiés sous N2. Les neuf promotions N1→N2 du lot Portable workflows restent partielles ; aucun N4 et les 13 familles historiques restent ouvertes.
+Après les lots SSH, FilePrompt et Updates ci-dessus, aucun écran métier ne reste N1 ; les compléments, dont la publication et le contrôle automatique des mises à jour, restent ouverts. Les compléments SSH/Pageant restent identifiés sous N2. Les neuf promotions N1→N2 du lot Portable workflows restent partielles ; aucun N4 et les 13 familles historiques restent ouvertes.
 
 ## Livré et vérifié
 

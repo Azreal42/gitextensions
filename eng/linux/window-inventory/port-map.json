@@ -2279,18 +2279,25 @@
     "GitUI.CommandsDialogs.BrowseDialog.FormUpdates": {
       "feature": "Recherche et téléchargement de mises à jour",
       "group": "information",
-      "level": "N1",
+      "level": "N2",
       "linux": [
-        "MainWindow@BuildHelpMenu"
+        "UpdatesDialog",
+        "LinuxUpdateClient",
+        "LinuxReleaseVersion",
+        "MainWindow@ShowUpdatesAsync"
       ],
-      "implemented": "Ouverture manuelle des releases du fork.",
-      "remaining": "Recherche automatique, téléchargement, canal et UI d’updater non portés.",
-      "visual": "externe",
+      "implemented": "Fenêtre Help compacte possédée et traduite ; recherche manuelle des releases publiques du fork, choix de préversions, sélection SemVer et paquet de la bonne architecture. Téléchargement borné et annulable, taille/SHA-256 vérifiés, liens et ouverture explicite du paquet par le bureau ; erreurs/Retry et fin réelle des opérations avant destruction du client testés (ADR0132).",
+      "remaining": "Aucune release Linux publiée à ce jour ; contrôle hebdomadaire et préférences durables à raccorder. Ouverture du paquet ne certifie pas son installation. Interaction native, OS vierge, Wayland/DPI/accessibilité et téléchargement d’une vraie release publique non qualifiés ; suites complètes non réexécutées pour ce lot.",
+      "visual": "rapproche",
       "tests": [
-        "ClassicMenuTests"
+        "ClassicMenuTests",
+        "LinuxUpdateClientTests",
+        "UpdatesDialogTests",
+        "UpdatesMenuIntegrationTests"
       ],
       "adr": [
-        "0060"
+        "0060",
+        "0132"
       ]
     },
     "GitUI.CommandsDialogs.FormCommandlineHelp": {

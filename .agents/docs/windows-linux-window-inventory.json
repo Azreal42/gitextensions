@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "5356de767e7e8663b44f6f974bd77855fe884bb5",
-  "source_digest_sha256": "5791eb759e2c09e188625b71e6462222ae22e2d18482690c9a484b2f5ed7eaeb",
-  "scanned_csharp_files": 2450,
+  "code_reference_commit": "3a2d4cc85775257110a4f6f3a01a4ff8762d2474",
+  "source_digest_sha256": "81ce1385ba84aa763390903d8f11c0b137591bfbd8d0459dcb74a7f6c3509a1d",
+  "scanned_csharp_files": 2456,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,13 +26,12 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 109,
+    "linux_window_types": 110,
     "linux_abstract_bases": 4,
     "linux_dynamic_factories": 35,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N1": 1,
-      "N2": 47,
+      "N2": 48,
       "N3": 50,
       "NA": 1
     },
@@ -1541,7 +1540,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowDonateAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 142,
+          "line": 151,
           "kind": "window"
         },
         {
@@ -1875,16 +1874,37 @@
       "category": "windows",
       "feature": "Recherche et téléchargement de mises à jour",
       "group": "information",
-      "level": "N1",
-      "implemented": "Ouverture manuelle des releases du fork.",
-      "remaining": "Recherche automatique, téléchargement, canal et UI d’updater non portés.",
-      "visual": "externe",
+      "level": "N2",
+      "implemented": "Fenêtre Help compacte possédée et traduite ; recherche manuelle des releases publiques du fork, choix de préversions, sélection SemVer et paquet de la bonne architecture. Téléchargement borné et annulable, taille/SHA-256 vérifiés, liens et ouverture explicite du paquet par le bureau ; erreurs/Retry et fin réelle des opérations avant destruction du client testés (ADR0132).",
+      "remaining": "Aucune release Linux publiée à ce jour ; contrôle hebdomadaire et préférences durables à raccorder. Ouverture du paquet ne certifie pas son installation. Interaction native, OS vierge, Wayland/DPI/accessibilité et téléchargement d’une vraie release publique non qualifiés ; suites complètes non réexécutées pour ce lot.",
+      "visual": "rapproche",
       "linux": [
         {
+          "id": "GitExtensions.Linux.Desktop.UpdatesDialog",
+          "label": "UpdatesDialog",
+          "source": "src/linux/GitExtensions.Desktop/UpdatesDialog.cs",
+          "line": 15,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.LinuxUpdateClient",
+          "label": "LinuxUpdateClient",
+          "source": "src/linux/GitExtensions.Desktop/LinuxUpdateClient.cs",
+          "line": 19,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.LinuxReleaseVersion",
+          "label": "LinuxReleaseVersion",
+          "source": "src/linux/GitExtensions.Desktop/LinuxReleaseVersion.cs",
+          "line": 7,
+          "kind": "component"
+        },
+        {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
-          "label": "MainWindow.BuildHelpMenu",
+          "label": "MainWindow.ShowUpdatesAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 100,
+          "line": 123,
           "kind": "window"
         }
       ],
@@ -1894,10 +1914,29 @@
           "test_class": "ClassicMenuTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LinuxUpdateClientTests.cs",
+          "test_class": "LinuxUpdateClientTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatesDialogTests.cs",
+          "test_class": "UpdatesDialogTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatesMenuIntegrationTests.cs",
+          "test_class": "UpdatesMenuIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         }
       ],
       "adr": [
-        ".agents/docs/adr/ui/0060-shared-classic-menus.md"
+        ".agents/docs/adr/ui/0060-shared-classic-menus.md",
+        ".agents/docs/adr/distribution/updates/0132-linux-updates.md"
       ]
     },
     {
@@ -9702,7 +9741,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 162,
+          "line": 171,
           "kind": "window"
         }
       ],
@@ -12240,7 +12279,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 162,
+          "line": 171,
           "kind": "window"
         }
       ],
@@ -19265,7 +19304,7 @@
         {
           "id": "GitUI.CommandsDialogs.BrowseDialog.FormUpdates",
           "name": "FormUpdates",
-          "level": "N1"
+          "level": "N2"
         },
         {
           "id": "GitUI.CommandsDialogs.FormBrowse",
@@ -20612,6 +20651,30 @@
       "abstract": false,
       "windows": [],
       "note": "Confirmation Undo ; variante du menu de FormBrowse."
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.UpdatesDialog",
+      "name": "UpdatesDialog",
+      "source": "src/linux/GitExtensions.Desktop/UpdatesDialog.cs",
+      "line": 15,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/UpdatesDialog.cs",
+          "line": 15
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.CommandsDialogs.BrowseDialog.FormUpdates",
+          "name": "FormUpdates",
+          "level": "N2"
+        }
+      ],
+      "note": ""
     },
     {
       "id": "GitExtensions.Linux.Desktop.ViewPullRequestsDialog",
@@ -25172,8 +25235,7 @@
       "N2": 4
     },
     "information": {
-      "N1": 1,
-      "N2": 6,
+      "N2": 7,
       "N3": 2
     },
     "platform": {
