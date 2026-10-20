@@ -208,7 +208,11 @@ public sealed partial class MainWindow
                 ? ShowGitToolsSettingsAsync(owner, advanced: true) : Task.CompletedTask, confirmations: confirmations,
             colors: colors, publishColors: (draft, ct) => PublishColorsSettings(colors, draft, ct),
             advancedSettings: advanced, publishAdvanced: receipt =>
-            { _preferences = AdvancedSettingsValues.ApplyDesktop(_preferences, receipt.Values, receipt.Fields); });
+            {
+                _preferences = AdvancedSettingsValues.ApplyDesktop(_preferences, receipt.Values, receipt.Fields);
+                if (receipt.Fields.Any(field => field.Name is nameof(AdvancedSettingsValues.CheckForUpdates) or nameof(AdvancedSettingsValues.CheckForReleaseCandidates)))
+                { RequestAutomaticUpdateCheck(); }
+            });
         bool accepted = await dialog.ShowDialog<bool>(this);
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }

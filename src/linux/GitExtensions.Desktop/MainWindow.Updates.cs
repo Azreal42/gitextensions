@@ -5,7 +5,9 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private bool _automaticUpdatesBound, _automaticUpdatesStarted;
+    private bool _automaticUpdatesBound;
+    private UpdateCheckStateStore? _automaticUpdatesState;
+    private Func<DateTimeOffset>? _automaticUpdatesClock;
     private Task _automaticUpdatesCompletion = Task.CompletedTask;
     private CancellationTokenSource? _automaticUpdateCancellation;
     private UpdatesDialog? _updatesDialog;
@@ -16,12 +18,17 @@ public sealed partial class MainWindow
     {
         if (_automaticUpdatesBound) { return; }
         _automaticUpdatesBound = true;
-        Opened += (_, _) =>
-        {
-            if (_automaticUpdatesStarted || _lifetime.IsCancellationRequested) { return; }
-            _automaticUpdatesStarted = true;
-            _automaticUpdatesCompletion = CheckAutomaticUpdatesAsync(state ?? new(), clock ?? (() => DateTimeOffset.UtcNow));
-        };
+        _automaticUpdatesState = state ?? new(); _automaticUpdatesClock = clock ?? (() => DateTimeOffset.UtcNow);
+        Opened += (_, _) => RequestAutomaticUpdateCheck();
+    }
+
+    // Windows retries this admission on revision/dashboard refresh, including a long-lived Browse.
+    // The week claim, and one outstanding owner, prevent duplicate network work.
+    private void RequestAutomaticUpdateCheck()
+    {
+        if (!_automaticUpdatesBound || !_opened || !IsVisible || _lifetime.IsCancellationRequested
+            || !_automaticUpdatesCompletion.IsCompleted || _updatesDialog is { IsVisible: true }) { return; }
+        _automaticUpdatesCompletion = CheckAutomaticUpdatesAsync(_automaticUpdatesState!, _automaticUpdatesClock!);
     }
 
     private async Task CheckAutomaticUpdatesAsync(UpdateCheckStateStore state, Func<DateTimeOffset> clock)

@@ -158,6 +158,7 @@ public sealed partial class MainWindow
         _dashboard?.Refresh();
         BeginRepositoryBranchRead();
         await Task.WhenAll(RepositoryBranchLoading, _dashboard?.MetadataLoading ?? Task.CompletedTask);
+        RequestAutomaticUpdateCheck();
     }
 
     private async Task RecentRepositorySettingsAsync()

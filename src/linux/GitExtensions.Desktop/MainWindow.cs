@@ -657,6 +657,7 @@ public sealed partial class MainWindow : Window
             else { _changesContent?.ClearImage(); _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
         }
         finally { _refreshing = false; RememberRevisionNavigation(); UpdateHistoryPresentation(); }
+        RequestAutomaticUpdateCheck();
     }
 
     private async Task RunAsync(string label, Func<GitRepository, Task> action, bool refresh = true, bool requireRepository = true)

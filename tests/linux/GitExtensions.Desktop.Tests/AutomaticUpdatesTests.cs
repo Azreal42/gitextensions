@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
+using Avalonia.Input;
+using Avalonia.Input.Raw;
 using Avalonia.VisualTree;
 using GitExtensions.Linux.Desktop;
 using NUnit.Framework;
@@ -153,6 +156,45 @@ public sealed class AutomaticUpdatesTests
         dialog.Close(); await Until(() => f.Clients[1].Disposed, f.Main); Assert.That(f.Opened, Is.Empty);
     }
 
+    [AvaloniaTest]
+    public async Task RealDashboardF5RechecksALongLivedWindowAfterAWeekButNeverDuplicatesAnOutstandingRequest()
+    {
+        await using Host f = new(); UpdatesTestClient first = f.Clients.Single();
+        f.Now = f.Now.AddDays(8); PressF5(f.Main); await Task.Delay(150); Pump(f.Main);
+        Assert.That(f.Clients.Count, Is.EqualTo(1), "Even after a week, an outstanding request keeps its single owner.");
+        first.Searches[0].Result.SetResult(new(null, false)); await Finish(f);
+        PressF5(f.Main); await Until(() => f.Clients.Count == 2, f.Main);
+        Assert.That(f.Clients[1].Searches[0].IncludePrereleases, Is.False);
+        f.Clients[1].Searches[0].Result.SetResult(new(null, false)); await Finish(f);
+        byte[] state = File.ReadAllBytes(f.State.FilePath); PressF5(f.Main); await Task.Delay(150); Pump(f.Main);
+        Assert.That(f.Clients.Count, Is.EqualTo(2)); Assert.That(File.ReadAllBytes(f.State.FilePath), Is.EqualTo(state));
+        Assert.That(f.Main.OwnedWindows, Is.Empty); Assert.That(f.Opened, Is.Empty);
+    }
+
+    [AvaloniaTest]
+    public async Task TheActualAdvancedApplyActivatesWeeklyChecksAndTheSavedReleaseCandidateChoiceWithoutRestart()
+    {
+        await using Host f = new(enabledPreference: false);
+        MenuItem tools = f.Main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Name == "ToolsMenu");
+        PushProcessTestDriver.Pointer(tools); Pump(f.Main);
+        PushProcessTestDriver.Pointer(tools.Items.OfType<MenuItem>().Single(item => item.Name == "settingsToolStripMenuItem"));
+        await Until(() => f.Main.OwnedWindows.OfType<DesktopSettingsDialog>().Any(), f.Main);
+        DesktopSettingsDialog settings = f.Main.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
+        SettingsNavigationTestDriver.Select(settings, "Advanced");
+        AdvancedSettingsUiDriver.Set(settings, "chkCheckForUpdates", true); AdvancedSettingsUiDriver.Set(settings, "chkCheckForRCVersions", true);
+        PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "ApplyDesktopSettings"));
+        await Until(() => f.Clients.Count == 1 && settings.Navigation.IsEnabled, settings);
+        Assert.That(f.Store.Load().CheckForUpdates && f.Store.Load().CheckForReleaseCandidates, Is.True);
+        Assert.That(f.Clients[0].Searches[0].IncludePrereleases, Is.True); Assert.That(File.Exists(f.State.FilePath), Is.True);
+        Assert.That(f.Main.OwnedWindows.OfType<UpdatesDialog>(), Is.Empty, "Applying Settings cannot replace its still-open modal with an update notification.");
+        f.Clients[0].Searches[0].Result.SetResult(new(null, false)); await Finish(f);
+        PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings"));
+        await Until(() => !settings.IsVisible, f.Main); Assert.That(f.Opened, Is.Empty);
+    }
+
+    private static void PressF5(Window main)
+    { main.KeyPressQwerty(PhysicalKey.F5, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.F5, RawInputModifiers.None); Pump(main); }
+
     private static LinuxUpdateRelease Available(bool prerelease)
     {
         string version = prerelease ? "8.0.0-linux-alpha.1" : "8.0.0"; string package = "gitextensions_" + version.Replace('-', '~') + "_amd64.deb";
@@ -179,6 +221,7 @@ public sealed class AutomaticUpdatesTests
         internal UpdateCheckStateStore State { get; }
         internal List<UpdatesTestClient> Clients { get; } = [];
         internal List<string> Opened { get; } = [];
+        internal DateTimeOffset Now { get; set; } = DateTimeOffset.Parse("2026-10-20T10:00:00Z", CultureInfo.InvariantCulture);
         internal Host(bool enabledPreference = true, bool includePrereleases = false, bool enable = true, bool ignoreCancellation = false)
         {
             Directory.CreateDirectory(_temporary); Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(_temporary, "config"));
@@ -192,7 +235,7 @@ public sealed class AutomaticUpdatesTests
         {
             Main = new MainWindow(); Main.ExternalLauncher = info => { Opened.Add(info.ArgumentList.Single()); return null; };
             Main.UpdatesClientFactory = () => { UpdatesTestClient client = new() { IgnoreCancellation = _ignoreCancellation }; Clients.Add(client); return client; };
-            if (enable) { Main.EnableAutomaticUpdates(State, () => DateTimeOffset.Parse("2026-10-20T10:00:00Z", CultureInfo.InvariantCulture)); }
+            if (enable) { Main.EnableAutomaticUpdates(State, () => Now); }
             Main.Show(); Main.Activate(); Pump(Main);
         }
         internal async Task Restart()
