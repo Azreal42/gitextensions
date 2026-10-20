@@ -28,7 +28,7 @@ public sealed partial class GitRepository
         if (options.IgnoreWhitespace) { arguments.Add("--ignore-all-space"); }
         arguments.AddRange([parent, revisions.Revision, "--", previousPath]);
         if (path != previousPath) { arguments.Add(path); }
-        string patch = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        string patch = (await RunCachedAsync(GitCachedReadKind.Diff, arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
         int line = selected.Line.OriginalLine;
         // Original GitBlameParser: use the last zero-context hunk above the
         // selected line, accounting for additions/deletions within that hunk.

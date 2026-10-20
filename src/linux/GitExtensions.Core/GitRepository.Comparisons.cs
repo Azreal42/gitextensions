@@ -59,10 +59,10 @@ public sealed partial class GitRepository
         if (!Enum.IsDefined(from.Kind) || !Enum.IsDefined(to.Kind)) { throw new ArgumentOutOfRangeException(nameof(from)); }
         if (from.Kind == GitCompareRevisionKind.EmptyTree || to.Kind == GitCompareRevisionKind.EmptyTree) { return null; }
         GitStatus status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
-        string? first = from.Kind == GitCompareRevisionKind.Commit ? await ResolveRevisionAsync(from.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
-        string? second = to.Kind == GitCompareRevisionKind.Commit ? await ResolveRevisionAsync(to.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
+        string? first = from.Kind == GitCompareRevisionKind.Commit ? await ResolveCachedReadRevisionAsync(from.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
+        string? second = to.Kind == GitCompareRevisionKind.Commit ? await ResolveCachedReadRevisionAsync(to.Revision, cancellationToken).ConfigureAwait(false) : status.Head;
         if (first is null || second is null || first == second) { return null; }
-        GitResult result = await ExecuteAsync(["merge-base", first, second], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
+        GitResult result = await RunCachedAsync(GitCachedReadKind.Graph, ["merge-base", first, second], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
         return result.Success ? ReadOutputLine(result.StandardOutput) : null;
     }
 
@@ -74,9 +74,9 @@ public sealed partial class GitRepository
         if (from.Kind == GitCompareRevisionKind.EmptyTree || to.Kind == GitCompareRevisionKind.EmptyTree) { return null; }
         GitStatus status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
         if (status.Head is null && (from.Kind != GitCompareRevisionKind.Commit || to.Kind != GitCompareRevisionKind.Commit)) { return null; }
-        string first = await ResolveRevisionAsync(from.Kind == GitCompareRevisionKind.Commit ? from.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
-        string second = await ResolveRevisionAsync(to.Kind == GitCompareRevisionKind.Commit ? to.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
-        string[] fields = (await ExecuteAsync(["rev-list", "--left-right", "--count", first + "..." + second, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput
+        string first = await ResolveCachedReadRevisionAsync(from.Kind == GitCompareRevisionKind.Commit ? from.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
+        string second = await ResolveCachedReadRevisionAsync(to.Kind == GitCompareRevisionKind.Commit ? to.Revision : "HEAD", cancellationToken).ConfigureAwait(false);
+        string[] fields = (await RunCachedAsync(GitCachedReadKind.Graph, ["rev-list", "--left-right", "--count", first + "..." + second, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput
             .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         return new(int.Parse(fields[0], CultureInfo.InvariantCulture), int.Parse(fields[1], CultureInfo.InvariantCulture));
     }
@@ -115,7 +115,8 @@ public sealed partial class GitRepository
         arguments.Add("--");
         if (file.OriginalPath is not null) { arguments.Add(ValidatePath(file.OriginalPath)); }
         arguments.Add(path);
-        return new(arguments);
+        return new(arguments, CacheKind: (first.Kind is GitCompareRevisionKind.Commit or GitCompareRevisionKind.EmptyTree)
+            && (second.Kind is GitCompareRevisionKind.Commit or GitCompareRevisionKind.EmptyTree) ? GitCachedReadKind.Diff : null);
     }
 
     public async Task<byte[]> GetComparisonFileBytesAsync(GitCompareRevision revision, string path, CancellationToken cancellationToken = default)
@@ -203,7 +204,7 @@ public sealed partial class GitRepository
                 token, standardInput: "").ConfigureAwait(false)).StandardOutput);
             return revision with { Revision = empty };
         }
-        if (revision.Kind == GitCompareRevisionKind.Commit) { return revision with { Revision = await ResolveRevisionAsync(revision.Revision, token).ConfigureAwait(false) }; }
+        if (revision.Kind == GitCompareRevisionKind.Commit) { return revision with { Revision = await ResolveCachedReadRevisionAsync(revision.Revision, token).ConfigureAwait(false) }; }
         await EnsureWorktreeAsync(token).ConfigureAwait(false);
         return revision with { Revision = "" };
     }

@@ -29,9 +29,15 @@ public sealed partial class GitRepository
         EncodeGrepArguments(user, encoding, matching, patterns);
         EncodeGrepArguments(expression, encoding, matching, patterns);
         cancellationToken.ThrowIfCancellationRequested();
-        string? revision = options.Revision is null ? null : await ResolveRevisionAsync(options.Revision, cancellationToken).ConfigureAwait(false);
+        string? revision = options.Revision is null ? null : await ResolveCachedReadRevisionAsync(options.Revision, cancellationToken).ConfigureAwait(false);
         if (revision is null) { await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false); }
         string temporary = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "gitextensions-grep-" + Guid.NewGuid().ToString("N"));
+        Dictionary<string, string> patternIdentities = new(StringComparer.Ordinal);
+        Task<GitBinaryResult> ReadGrepAsync(IReadOnlyList<string> arguments)
+            => revision is null
+                ? _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken)
+                : RunCachedBinaryAsync(GitCachedReadKind.Grep, arguments, cancellationToken,
+                    normalizedArguments: arguments.Select(argument => patternIdentities.GetValueOrDefault(argument, argument)).ToArray());
         try
         {
             Directory.CreateDirectory(temporary);
@@ -39,6 +45,7 @@ public sealed partial class GitRepository
             {
                 string file = System.IO.Path.Combine(temporary, i.ToString(CultureInfo.InvariantCulture) + ".pattern");
                 await File.WriteAllBytesAsync(file, patterns[i], cancellationToken).ConfigureAwait(false);
+                patternIdentities.Add(file, "\0pattern-sha256:" + CacheHash(patterns[i]));
                 matching = matching.Select(argument => argument == "\0" + i.ToString(CultureInfo.InvariantCulture) ? file : argument).ToList();
             }
             List<string> arguments = ["--literal-pathspecs", "grep", "-I", "--basic-regexp", .. matching];
@@ -59,7 +66,7 @@ public sealed partial class GitRepository
                 // source-line stream; binary notices have no reliable coordinates.
                 List<string> nativeFiles = [.. arguments]; nativeFiles.RemoveAt(2);
                 nativeFiles.Insert(sourceIndex - 1, "--files-with-matches");
-                GitBinaryResult files = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. nativeFiles], cancellationToken).ConfigureAwait(false);
+                GitBinaryResult files = await ReadGrepAsync(nativeFiles).ConfigureAwait(false);
                 if (!files.Success && files.ExitCode != 1) { throw new GitCommandException(nativeFiles, new(files.ExitCode, "", files.StandardError)); }
                 matchingFiles = SplitGrepPaths(files.StandardOutput).Select(path => StripGrepRevision(path, revision)).ToArray();
                 matchingDiagnostics = files.StandardError;
@@ -70,7 +77,7 @@ public sealed partial class GitRepository
                 // a real filename, so obtain Git's ordered, NUL-delimited matching-file
                 // list to distinguish exact headers from separators without guessing.
                 List<string> fileArguments = [.. arguments]; fileArguments.Insert(sourceIndex, "--files-with-matches");
-                GitBinaryResult files = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. fileArguments], cancellationToken).ConfigureAwait(false);
+                GitBinaryResult files = await ReadGrepAsync(fileArguments).ConfigureAwait(false);
                 if (!files.Success && files.ExitCode != 1) { throw new GitCommandException(fileArguments, new(files.ExitCode, "", files.StandardError)); }
                 List<GitGrepMatch> contextMatches = []; StringBuilder diagnostics = new(files.StandardError);
                 foreach (byte[] path in SplitGrepPaths(files.StandardOutput))
@@ -82,14 +89,14 @@ public sealed partial class GitRepository
                     // An exact known header makes a filename beginning with --\n distinct
                     // from a context separator, even when both names exist in the repository.
                     List<string> oneFile = arguments.Take(arguments.IndexOf("--") + 1).ToList(); oneFile.Add(name);
-                    GitBinaryResult file = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. oneFile], cancellationToken).ConfigureAwait(false);
+                    GitBinaryResult file = await ReadGrepAsync(oneFile).ConfigureAwait(false);
                     if (!file.Success && file.ExitCode != 1) { throw new GitCommandException(oneFile, new(file.ExitCode, "", file.StandardError)); }
                     contextMatches.AddRange(ParseGrepMatches(file.StandardOutput, null, encoding.WebName, context: true, expectedPath: path));
                     diagnostics.Append(file.StandardError);
                 }
                 return CreateGrepResult(null, options.Cached, encoding.WebName, contextMatches, matchingFiles, matchingDiagnostics + diagnostics);
             }
-            GitBinaryResult result = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken).ConfigureAwait(false);
+            GitBinaryResult result = await ReadGrepAsync(arguments).ConfigureAwait(false);
             if (!result.Success && result.ExitCode != 1)
             { throw new GitCommandException(arguments, new(result.ExitCode, "", result.StandardError)); }
             return CreateGrepResult(revision, options.Cached, encoding.WebName, ParseGrepMatches(result.StandardOutput, revision, encoding.WebName, state.Context), matchingFiles, matchingDiagnostics + result.StandardError);

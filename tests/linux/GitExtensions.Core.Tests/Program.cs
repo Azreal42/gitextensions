@@ -177,6 +177,8 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. GitProcessStreamingScenarios.All,
     .. GitCommandLogScenarios.All,
     .. GitCommandLogCaptureScenarios.All,
+    .. GitCommandCacheScenarios.All,
+    .. GitCommandCacheReaderScenarios.All,
     .. PullFetchScenarios.All,
     .. PullAdvancedScenarios.All,
     .. BranchFilterScenarios.All,
@@ -266,6 +268,9 @@ if (args.Contains("--ssh-environment-only", StringComparer.Ordinal)) { tests = S
 if (args.Contains("--git-environment-only", StringComparer.Ordinal)) { tests = GitEnvironmentScenarios.All.ToArray(); }
 if (args.Contains("--command-log-only", StringComparer.Ordinal)) { tests = GitCommandLogScenarios.All.ToArray(); }
 if (args.Contains("--command-log-capture-only", StringComparer.Ordinal)) { tests = GitCommandLogCaptureScenarios.All.ToArray(); }
+if (args.Contains("--command-cache-only", StringComparer.Ordinal)) { tests = GitCommandCacheScenarios.All.ToArray(); }
+if (args.Contains("--command-cache-readers-only", StringComparer.Ordinal)) { tests = GitCommandCacheReaderScenarios.All.ToArray(); }
+if (args.Contains("--command-cache-all-only", StringComparer.Ordinal)) { tests = [.. GitCommandCacheScenarios.All, .. GitCommandCacheReaderScenarios.All]; }
 if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal))
 { tests = [.. GitProcessStreamingScenarios.All, .. ToolConfigurationScenarios.All, .. ScriptScenarios.All, .. ScriptRuntimeScenarios.All,
     .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All, .. HistoryRemovalScenarios.All]; }

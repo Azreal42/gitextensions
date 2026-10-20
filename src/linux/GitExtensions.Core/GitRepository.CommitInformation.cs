@@ -29,7 +29,7 @@ public sealed partial class GitRepository
         if (contacts.Length != 2) { throw new InvalidDataException("Git omitted a mapped commit identity."); }
         GitCommitIdentity author = CommitInformationIdentity(contacts[0], authorDate);
         GitCommitIdentity committer = CommitInformationIdentity(contacts[1], committerDate);
-        GitResult message = await ExecuteAsync(["--no-optional-locks", "show", "--no-patch", "--no-show-signature", "--no-notes",
+        GitResult message = await RunCachedAsync(GitCachedReadKind.Metadata, ["--no-optional-locks", "show", "--no-patch", "--no-show-signature", "--no-notes",
             "--no-ext-diff", "--no-textconv", "--encoding=UTF-8", "--format=format:%s%x00%b%x00%B", commit, "--"], cancellationToken).ConfigureAwait(false);
         string[] text = message.StandardOutput.Split('\0', 3);
         if (text.Length != 3) { throw new InvalidDataException("Git omitted the commit message separator."); }
@@ -169,7 +169,7 @@ public sealed partial class GitRepository
 
     private async Task<(string Type, byte[] Data)> ReadCommitInformationObjectAsync(string oid, CancellationToken token)
     {
-        GitResult result = await ExecuteAsync(["--no-optional-locks", "cat-file", "--batch"], token, standardInput: oid + "\n").ConfigureAwait(false);
+        GitResult result = await RunCachedAsync(GitCachedReadKind.Metadata, ["--no-optional-locks", "cat-file", "--batch"], token, standardInput: oid + "\n").ConfigureAwait(false);
         byte[] bytes = result.StandardOutputBytes;
         int newline = Array.IndexOf(bytes, (byte)'\n');
         if (newline < 0) { throw new InvalidDataException("Git omitted the object record header."); }

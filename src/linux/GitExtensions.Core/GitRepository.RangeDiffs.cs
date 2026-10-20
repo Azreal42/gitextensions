@@ -86,32 +86,32 @@ public sealed partial class GitRepository
         // Keep both explicit bounds. Upstream calculated these for four selections but lost them before executing Git.
         arguments.AddRange([resolved.First.BaseRevision + ".." + resolved.First.TipRevision, resolved.Second.BaseRevision + ".." + resolved.Second.TipRevision]);
         if (paths.Length > 0) { arguments.AddRange(["--", .. paths]); }
-        return new(arguments);
+        return new(arguments, CacheKind: GitCachedReadKind.RangeDiff);
     }
 
     private Task<string> ResolveRangeRevisionAsync(string revision, CancellationToken cancellationToken)
     {
         if (ObjectId.TryParse(revision, out ObjectId id) && id.IsZeroOrArtificial)
         { throw new ArgumentException("Range-diff requires real commit tips and bases; zero and artificial revisions are unavailable.", nameof(revision)); }
-        return ResolveRevisionAsync(revision, cancellationToken);
+        return ResolveCachedReadRevisionAsync(revision, cancellationToken);
     }
 
     private async Task<GitRangeDiffComparison> BuildRangeDiffComparisonAsync(string baseA, string first, string baseB, string second,
         string common, int selectionCount, CancellationToken cancellationToken)
     {
-        int countA = int.Parse((await ExecuteAsync(["rev-list", "--count", baseA + ".." + first, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput.Trim(), CultureInfo.InvariantCulture);
-        int countB = int.Parse((await ExecuteAsync(["rev-list", "--count", baseB + ".." + second, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput.Trim(), CultureInfo.InvariantCulture);
+        int countA = int.Parse((await RunCachedAsync(GitCachedReadKind.Graph, ["rev-list", "--count", baseA + ".." + first, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput.Trim(), CultureInfo.InvariantCulture);
+        int countB = int.Parse((await RunCachedAsync(GitCachedReadKind.Graph, ["rev-list", "--count", baseB + ".." + second, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput.Trim(), CultureInfo.InvariantCulture);
         return new(new(baseA, first, countA), new(baseB, second, countB), common, selectionCount);
     }
 
     private async Task<string?> GetDiffMergeBaseAsync(string first, string second, CancellationToken cancellationToken)
     {
-        GitResult result = await ExecuteAsync(["merge-base", first, second], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
+        GitResult result = await RunCachedAsync(GitCachedReadKind.Graph, ["merge-base", first, second], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false);
         return result.Success ? ReadOutputLine(result.StandardOutput) : null;
     }
 
     private async Task<bool> IsDiffAncestorAsync(string ancestor, string descendant, CancellationToken cancellationToken)
-        => (await ExecuteAsync(["merge-base", "--is-ancestor", ancestor, descendant], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false)).Success;
+        => (await RunCachedAsync(GitCachedReadKind.Graph, ["merge-base", "--is-ancestor", ancestor, descendant], cancellationToken, allowedExitCodes: [1]).ConfigureAwait(false)).Success;
 
     private async Task<Version> GetRangeDiffGitVersionAsync(CancellationToken cancellationToken)
     {

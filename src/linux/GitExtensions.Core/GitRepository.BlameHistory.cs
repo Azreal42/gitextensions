@@ -121,7 +121,7 @@ public sealed partial class GitRepository
     public async Task<IReadOnlyList<GitBlameLine>> GetBlameAsync(string path, string? revision = null, CancellationToken cancellationToken = default)
     {
         path = ValidatePath(path);
-        string? target = revision is null ? null : await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
+        string? target = revision is null ? null : await ResolveCachedReadRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         Encoding encoding = GitFileEncodingCodec.GetEncoding(await GetFileEncodingNameAsync(cancellationToken).ConfigureAwait(false));
         string output = await ReadFileBlameOutputAsync(path, target, new(), encoding, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
@@ -135,7 +135,7 @@ public sealed partial class GitRepository
     {
         path = ValidatePath(path);
         options ??= new();
-        string? target = revision is null ? null : await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
+        string? target = revision is null ? null : await ResolveCachedReadRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         byte[] bytes;
         if (target is null) { await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false); bytes = await File.ReadAllBytesAsync(System.IO.Path.Combine(Path, path), cancellationToken).ConfigureAwait(false); }
         else { bytes = await GetFileBytesAsync(path, target, cancellationToken).ConfigureAwait(false); }
@@ -181,7 +181,9 @@ public sealed partial class GitRepository
         if (options.DetectCopies) { arguments.Add("-C"); }
         if (target is not null) { arguments.Add(target); }
         arguments.AddRange(["--", path]);
-        GitBinaryResult result = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken).ConfigureAwait(false);
+        GitBinaryResult result = target is null
+            ? await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken).ConfigureAwait(false)
+            : await RunCachedBinaryAsync(GitCachedReadKind.Blame, arguments, cancellationToken).ConfigureAwait(false);
         if (!result.Success) { throw new GitCommandException(arguments, new(result.ExitCode, "", result.StandardError)); }
         return DecodeFileBlameOutput(result.StandardOutput, encoding, cancellationToken);
     }

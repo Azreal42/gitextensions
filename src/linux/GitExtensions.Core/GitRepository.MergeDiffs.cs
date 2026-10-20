@@ -5,7 +5,7 @@ public sealed partial class GitRepository
     public async Task<GitCombinedDiff> GetCombinedDiffAsync(string revision, IReadOnlyList<string>? paths = null,
         CancellationToken cancellationToken = default)
     {
-        string target = await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
+        string target = await ResolveCachedReadRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<string> parents = await GetActualDiffParentsAsync(target, cancellationToken).ConfigureAwait(false);
         string[] literalPaths = paths is null || paths.Count == 0 ? [] : ValidatePaths(paths);
         if (parents.Count < 2) { return new(target, parents, []); }
@@ -28,7 +28,7 @@ public sealed partial class GitRepository
         options ??= new();
         GitComparisonDiffOptions display = options.DiffOptions ?? new();
         ValidateComparisonOptions(display);
-        string target = await ResolveRevisionAsync(diff.Revision, cancellationToken).ConfigureAwait(false);
+        string target = await ResolveCachedReadRevisionAsync(diff.Revision, cancellationToken).ConfigureAwait(false);
         if ((await GetActualDiffParentsAsync(target, cancellationToken).ConfigureAwait(false)).Count < 2)
         { throw new ArgumentException("Combined diff requires a merge commit.", nameof(diff)); }
         string path = ValidatePath(file.Path);
@@ -38,7 +38,7 @@ public sealed partial class GitRepository
         if (options.UseHistogram && !display.UseHistogram) { arguments.Add("--histogram"); }
         AddComparisonOptions(arguments, display);
         arguments.AddRange([target, "--", path]);
-        return new(arguments);
+        return new(arguments, CacheKind: GitCachedReadKind.Diff);
     }
 
     /// <summary>Upstream FileStatusDiffCalculator groups in caller order: B,A; B,BASE,A; or B,baseB,A,baseA.</summary>
@@ -49,7 +49,7 @@ public sealed partial class GitRepository
         cancellationToken.ThrowIfCancellationRequested();
         if (revisions.Count == 0) { return []; }
         List<GitRevisionDiffGroup> groups = [];
-        string target = await ResolveRevisionAsync(revisions[0], cancellationToken).ConfigureAwait(false);
+        string target = await ResolveCachedReadRevisionAsync(revisions[0], cancellationToken).ConfigureAwait(false);
         if (revisions.Count == 1)
         {
             IReadOnlyList<string> parents = await GetActualDiffParentsAsync(target, cancellationToken).ConfigureAwait(false);
@@ -67,7 +67,7 @@ public sealed partial class GitRepository
             return groups;
         }
 
-        string first = await ResolveRevisionAsync(revisions[showDiffForAllParents && revisions.Count == 4 ? 2 : revisions.Count - 1], cancellationToken).ConfigureAwait(false);
+        string first = await ResolveCachedReadRevisionAsync(revisions[showDiffForAllParents && revisions.Count == 4 ? 2 : revisions.Count - 1], cancellationToken).ConfigureAwait(false);
         GitRevisionChanges comparison = await GetRevisionChangesAsync(target, first, cancellationToken).ConfigureAwait(false);
         groups.Add(new(GitRevisionDiffGroupKind.Comparison, target, first, comparison.Files));
         if (!showDiffForAllParents || revisions.Count > 4) { return groups; }
@@ -76,7 +76,7 @@ public sealed partial class GitRepository
         {
             foreach (string selected in revisions.Skip(1))
             {
-                string revision = await ResolveRevisionAsync(selected, cancellationToken).ConfigureAwait(false);
+                string revision = await ResolveCachedReadRevisionAsync(selected, cancellationToken).ConfigureAwait(false);
                 if (revision == first || revision == target) { continue; }
                 GitRevisionChanges additional = await GetRevisionChangesAsync(target, revision, cancellationToken).ConfigureAwait(false);
                 groups.Add(new(GitRevisionDiffGroupKind.Comparison, target, revision, additional.Files));
@@ -96,6 +96,6 @@ public sealed partial class GitRepository
     }
 
     private async Task<IReadOnlyList<string>> GetActualDiffParentsAsync(string revision, CancellationToken cancellationToken)
-        => (await ExecuteAsync(["rev-list", "--parents", "-n", "1", revision, "--"], cancellationToken).ConfigureAwait(false))
+        => (await RunCachedAsync(GitCachedReadKind.Graph, ["rev-list", "--parents", "-n", "1", revision, "--"], cancellationToken).ConfigureAwait(false))
             .StandardOutput.TrimEnd('\r', '\n').Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).ToArray();
 }

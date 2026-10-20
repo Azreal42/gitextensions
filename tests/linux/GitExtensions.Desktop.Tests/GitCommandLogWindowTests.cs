@@ -58,7 +58,7 @@ public sealed class GitCommandLogWindowTests
         await using Fixture f = await Fixture.Create(); GitCommandLogWindow log = f.Open(language, dark); f.Add("status"); await Ready(log, 1);
         Dictionary<string, byte[]> before = f.Profile.Material();
         Assert.That(log.Width, Is.EqualTo(659)); Assert.That(log.Height, Is.EqualTo(470)); Assert.That(log.MinWidth, Is.EqualTo(400)); Assert.That(log.MinHeight, Is.EqualTo(240));
-        Assert.That(log.ShowInTaskbar, Is.True); Assert.That(Field<TabControl>(log, "CommandLogTabs").Items.Count, Is.EqualTo(1));
+        Assert.That(log.ShowInTaskbar, Is.True); Assert.That(Field<TabControl>(log, "CommandLogTabs").Items.OfType<TabItem>().Select(page => page.Name), Is.EqualTo(new[] { "tabPageCommandLog", "tabPageCommandCache" }));
         Assert.That(Field<TabItem>(log, "tabPageCommandLog").Header, Is.EqualTo(language == "fr" ? "Journal des commandes" : "Command log"));
         Assert.That(Field<GridSplitter>(log, "CommandLogSplitter").ResizeDirection, Is.EqualTo(GridResizeDirection.Rows));
         ListBox list = List(log); Assert.That(list.IsKeyboardFocusWithin, Is.True);

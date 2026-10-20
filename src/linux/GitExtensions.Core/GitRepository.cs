@@ -106,13 +106,13 @@ public sealed partial class GitRepository
 
     public async Task<IReadOnlyList<GitTreeEntry>> GetTreeAsync(string revision = "HEAD", string? path = null, CancellationToken cancellationToken = default)
     {
-        List<string> arguments = ["ls-tree", "-r", "-z", "--full-tree", await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false), "--"];
+        List<string> arguments = ["ls-tree", "-r", "-z", "--full-tree", await ResolveCachedReadRevisionAsync(revision, cancellationToken).ConfigureAwait(false), "--"];
         if (path is not null)
         {
             arguments.Add(ValidatePath(path));
         }
 
-        GitResult result = await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false);
+        GitResult result = await RunCachedAsync(GitCachedReadKind.Tree, arguments, cancellationToken).ConfigureAwait(false);
         return result.StandardOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(entry =>
         {
             int tab = entry.IndexOf('\t');
@@ -123,9 +123,9 @@ public sealed partial class GitRepository
 
     public async Task<byte[]> GetFileBytesAsync(string path, string revision = "HEAD", CancellationToken cancellationToken = default)
     {
-        string commit = await ResolveRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
+        string commit = await ResolveCachedReadRevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         string[] arguments = ["cat-file", "blob", commit + ":" + ValidatePath(path)];
-        GitBinaryResult result = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken).ConfigureAwait(false);
+        GitBinaryResult result = await RunCachedBinaryAsync(GitCachedReadKind.Blob, arguments, cancellationToken).ConfigureAwait(false);
         if (!result.Success)
         {
             throw new GitCommandException(arguments, new GitResult(result.ExitCode, "", result.StandardError));

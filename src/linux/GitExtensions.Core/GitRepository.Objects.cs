@@ -15,12 +15,17 @@ public sealed partial class GitRepository
         => WithMutationAsync(token => ScanLostObjectsAsync(options ?? new(), saveLostFound: false, token), cancellationToken);
 
     /// <summary>Reads a full SHA1/SHA256 object identity, including packed/alternate objects and unpeeled annotated tags.</summary>
-    public async Task<GitObjectData> ReadObjectAsync(string objectId, CancellationToken cancellationToken = default)
+    public Task<GitObjectData> ReadObjectAsync(string objectId, CancellationToken cancellationToken = default)
+        => ReadObjectCoreAsync(objectId, cachePreview: false, cancellationToken);
+
+    private async Task<GitObjectData> ReadObjectCoreAsync(string objectId, bool cachePreview, CancellationToken cancellationToken)
     {
         string oid = ValidateObjectId(objectId);
         await GetInfoAsync(cancellationToken).ConfigureAwait(false);
         string[] arguments = ["--no-replace-objects", "cat-file", "--batch"];
-        GitBinaryResult result = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken, Encoding.ASCII.GetBytes(oid + "\n")).ConfigureAwait(false);
+        GitBinaryResult result = cachePreview
+            ? await RunCachedBinaryAsync(GitCachedReadKind.Object, arguments, cancellationToken, Encoding.ASCII.GetBytes(oid + "\n")).ConfigureAwait(false)
+            : await _runner.RunBinaryAsync(Path, [.. GlobalOptions, .. arguments], cancellationToken, Encoding.ASCII.GetBytes(oid + "\n")).ConfigureAwait(false);
         if (!result.Success) { throw ObjectCommandError(arguments, result); }
         int newline = Array.IndexOf(result.StandardOutput, (byte)'\n');
         if (newline < 0) { throw new InvalidDataException("Git omitted the object record header."); }
@@ -47,7 +52,7 @@ public sealed partial class GitRepository
         string encodingName = "utf-8", suggested = "file.txt";
         try
         {
-            data = await ReadObjectAsync(oid, cancellationToken).ConfigureAwait(false);
+            data = await ReadObjectCoreAsync(oid, cachePreview: true, cancellationToken).ConfigureAwait(false);
             encodingName = displayOptions?.FileEncodingName is string overrideName ? GitFileEncodingCodec.GetEncoding(overrideName).WebName
                 : await GetFileEncodingNameAsync(cancellationToken).ConfigureAwait(false);
             if (data.Type == GitLostObjectType.Blob)
@@ -77,7 +82,7 @@ public sealed partial class GitRepository
                 { PatchBytes = patch.StandardOutput, FileEncodingName = encodingName, IsLosslessPatch = decoded.IsLossless, UseGitColoring = useColor };
                 return new(oid, data, decoded.Text, document, encodingName, "commit.patch", null);
             }
-            GitBinaryResult pretty = await _runner.RunBinaryAsync(Path, [.. GlobalOptions, "--no-replace-objects", "cat-file", "-p", oid], cancellationToken).ConfigureAwait(false);
+            GitBinaryResult pretty = await RunCachedBinaryAsync(GitCachedReadKind.Object, ["--no-replace-objects", "cat-file", "-p", oid], cancellationToken).ConfigureAwait(false);
             if (!pretty.Success) { throw ObjectCommandError(["cat-file", "-p", oid], pretty); }
             return new(oid, data, ObjectUtf8.GetString(pretty.StandardOutput), null, "utf-8", suggested, null);
         }

@@ -22,9 +22,8 @@ public sealed partial class GitRepository
         if (source.Kind == GitCompareRevisionKind.EmptyTree) { return []; }
         if (source.Kind == GitCompareRevisionKind.Commit)
         {
-            string commit = ReadOutputLine((await ExecuteAsync(["--no-optional-locks", "rev-parse", "--verify", "--end-of-options", ValidateValue(source.Revision) + "^{commit}"],
-                cancellationToken).ConfigureAwait(false)).StandardOutput);
-            string tree = (await ExecuteAsync(["--no-optional-locks", "--literal-pathspecs", "ls-tree", "-r", "-z", "--full-tree", commit, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput;
+            string commit = await ResolveCachedReadRevisionAsync(ValidateValue(source.Revision), cancellationToken).ConfigureAwait(false);
+            string tree = (await RunCachedAsync(GitCachedReadKind.Tree, ["--no-optional-locks", "--literal-pathspecs", "ls-tree", "-r", "-z", "--full-tree", commit, "--"], cancellationToken).ConfigureAwait(false)).StandardOutput;
             List<GitComparisonTreeEntry> committed = [];
             foreach (string record in ReadTreeRecords(tree))
             {
