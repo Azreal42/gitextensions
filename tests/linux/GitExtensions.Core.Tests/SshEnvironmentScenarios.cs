@@ -16,6 +16,7 @@ internal static class SshEnvironmentScenarios
     private static string Quote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
     private static string Tool(string root, string name, string body)
     {
+        if (OperatingSystem.IsWindows()) { throw new PlatformNotSupportedException("Native SSH fixtures require Unix executables."); }
         string path = Path.Combine(root, name); File.WriteAllText(path, "#!/bin/sh\n" + body);
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return path;
     }
@@ -102,10 +103,10 @@ internal static class SshEnvironmentScenarios
             using (existing.BeginOperation())
             {
                 GitEnvironment.Configure(new() { Executable = "/usr/bin/git", SshExecutable = b });
-                await Run(new GitRunner(), fixture.Root, "ls-remote", url);
-                await Run(new GitRunner(), fixture.Root, "ls-remote", url);
+                Check((await existing.GetRemoteHeadsAsync(url)).Count == 1, "The first captured remote read failed.");
+                Check((await existing.GetRemoteHeadsAsync(url)).Count == 1, "The second captured remote read failed.");
             }
-            await Run(new GitRunner(), fixture.Root, "ls-remote", url);
+            Check((await existing.GetRemoteHeadsAsync(url)).Count == 1, "The new remote read failed.");
             string echo = Tool(fixture.Root, "show ssh", "printf '%s' \"$GIT_SSH\"\n");
             ScriptProcessResult script = await new ScriptProcessRunner().RunAsync(echo, fixture.Root, [], executionEnvironment: snapshot);
             Check(script.Success && Encoding.UTF8.GetString(script.StandardOutputBytes) == a, "A delayed script reread the new SSH preference.");
