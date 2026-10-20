@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "d165480713d30878f5795c28d7cfcc375ead428e",
-  "source_digest_sha256": "37e40acc177535cd84616ab09830cd1a04890e9f2d8bd4d44f0aae4a51d5d8af",
-  "scanned_csharp_files": 2461,
+  "code_reference_commit": "eb41998b6b2e7cb7cedd8505f1a9bed01add8a03",
+  "source_digest_sha256": "982690c719663f0397023793710d6969877d3abee9dff2954ff9ee4173d40c48",
+  "scanned_csharp_files": 2463,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -5922,8 +5922,8 @@
       "feature": "Fusion de branche",
       "group": "operations",
       "level": "N3",
-      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite.",
-      "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso. Valeurs hors0–100 conservées visiblement, action bloquée jusqu’à correction explicite ; nouveau parcours natif et audit de toutes les variantes encore ouverts.",
+      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
+      "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso. Valeurs hors0–100 conservées visiblement, action bloquée jusqu’à correction explicite ; nouveau parcours natif et audit de toutes les variantes encore ouverts. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts.",
       "visual": "rapproche",
       "linux": [
         {
@@ -5939,6 +5939,20 @@
           "source": "src/linux/GitExtensions.Desktop/ResolveConflictsDialog.cs",
           "line": 13,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.OriginalCommandHelp",
+          "label": "OriginalCommandHelp",
+          "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelp.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.OriginalCommandHelpVisibility",
+          "label": "OriginalCommandHelpVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelpVisibility.cs",
+          "line": 6,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -5953,6 +5967,12 @@
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -5983,7 +6003,8 @@
         ".agents/docs/adr/workflows/merges/0043-merge-and-conflicts.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
-        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md",
+        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md"
       ]
     },
     {
@@ -6163,8 +6184,8 @@
       "feature": "Pull et Fetch",
       "group": "network",
       "level": "N2",
-      "implemented": "Remote/URL, branches, merge/rebase/fetch, tags/prune, autostash, sous-modules et sortie continue. BeforePull/Fetch puis AfterFetch/Pull aux frontières Windows après autostash ; paire différée consommée une fois après reprise. QuickFetch/FetchAll de Browse raccordés aussi. Le conflit reconnu conserve son résultat nonzero après les After ; sa question de résolution peut être reportée explicitement. Le bouton legacy Fetch all câblé hors disposition visible n’est pas une route native disponible.",
-      "remaining": "Toutes les reprises et variantes natives/fermetures restent ouvertes ; étendre scripts, conflits et paires différées. Pas de transfert du natif Pull antérieur.",
+      "implemented": "Remote/URL, branches, merge/rebase/fetch, tags/prune, autostash, sous-modules et sortie continue. BeforePull/Fetch puis AfterFetch/Pull aux frontières Windows après autostash ; paire différée consommée une fois après reprise. QuickFetch/FetchAll de Browse raccordés aussi. Le conflit reconnu conserve son résultat nonzero après les After ; sa question de résolution peut être reportée explicitement. Le bouton legacy Fetch all câblé hors disposition visible n’est pas une route native disponible. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Stash reste sur une ligne à largeur naturelle/MinWidth ; le minimum du footer est mesuré une fois à Opened pour les traductions longues. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
+      "remaining": "Toutes les reprises et variantes natives/fermetures restent ouvertes ; étendre scripts, conflits et paires différées. Pas de transfert du natif Pull antérieur. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts.",
       "visual": "rapproche",
       "linux": [
         {
@@ -6180,6 +6201,20 @@
           "source": "src/linux/GitExtensions.Desktop/GitProcessDialog.cs",
           "line": 28,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.OriginalCommandHelp",
+          "label": "OriginalCommandHelp",
+          "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelp.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.OriginalCommandHelpVisibility",
+          "label": "OriginalCommandHelpVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelpVisibility.cs",
+          "line": 6,
+          "kind": "component"
         }
       ],
       "tests": [
@@ -6200,6 +6235,12 @@
           "test_class": "ConflictRoutingTests",
           "passed_in_reference_run": 9,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullAdvancedDialogTests.cs",
@@ -6263,7 +6304,8 @@
         ".agents/docs/adr/workflows/remotes/0059-pull-window-appearance.md",
         ".agents/docs/adr/workflows/submodules/0071-submodule-conflicts.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
-        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md"
+        ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
+        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md"
       ]
     },
     {
@@ -6421,8 +6463,8 @@
       "feature": "Rebase et reprise",
       "group": "operations",
       "level": "N2",
-      "implemented": "Rebase normal/interactif, plan, Continue/Abort/Skip et état durable.",
-      "remaining": "Parité de toutes les commandes, variantes et workflows intégrés Windows encore ouverte ; audit natif étendu non clos.",
+      "implemented": "Rebase normal/interactif, plan, Continue/Abort/Skip et état durable. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
+      "remaining": "Parité de toutes les commandes, variantes et workflows intégrés Windows encore ouverte ; audit natif étendu non clos. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts.",
       "visual": "rapproche",
       "linux": [
         {
@@ -6436,7 +6478,7 @@
           "id": "GitExtensions.Linux.Desktop.RebaseRevisionPicker",
           "label": "RebaseRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/RebaseDialog.cs",
-          "line": 366,
+          "line": 372,
           "kind": "window"
         },
         {
@@ -6445,9 +6487,29 @@
           "source": "src/linux/GitExtensions.Desktop/NativeRebaseEditorApplication.cs",
           "line": 50,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.OriginalCommandHelp",
+          "label": "OriginalCommandHelp",
+          "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelp.cs",
+          "line": 13,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.OriginalCommandHelpVisibility",
+          "label": "OriginalCommandHelpVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelpVisibility.cs",
+          "line": 6,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
           "test_class": "LanguagePreferencesTests",
@@ -6516,7 +6578,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/history/0047-native-rebase.md"
+        ".agents/docs/adr/workflows/history/0047-native-rebase.md",
+        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md"
       ]
     },
     {
@@ -7287,6 +7350,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -7736,7 +7805,7 @@
           "id": "GitExtensions.Linux.Desktop.RebaseDialog",
           "label": "RebaseDialog.ShowPatchAsync",
           "source": "src/linux/GitExtensions.Desktop/RebaseDialog.cs",
-          "line": 332,
+          "line": 338,
           "kind": "window"
         }
       ],
@@ -8314,8 +8383,8 @@
       "feature": "Paramètres avancés",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Huit champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes, contrôle hebdomadaire et préversions Updates. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133).",
-      "remaining": "Page partielle : aide et activation console Windows restent absentes ; AlwaysAdvanced demeure Remotes-only et SSH distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu.",
+      "implemented": "Neuf champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes, contrôle hebdomadaire et préversions Updates, masquage global des images d’aide. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133/0134). ADR0134 : neuvième champ DontShowHelpImages false par défaut, contrôle chkDontSHowHelpImages et consommateurs Pull/Merge/Rebase ; masquage complet à l’ouverture, états Show/Hide locaux indépendants et fallback visible sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; Apply acquis et Cancel du brouillon inverse préservent les octets. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
+      "remaining": "Page partielle : activation console Windows reste absente ; AlwaysAdvanced demeure Remotes-only et SSH distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu. Réactivation globale et restauration locale après réactivation couvertes headless, pas en natif ; aucune opération Git native qualifiée. OS vierge, Wayland/IME/DPI/accessibilité et interaction installée ouverts.",
       "visual": "integre",
       "linux": [
         {
@@ -8365,6 +8434,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
           "test_class": "RemotesDialogTests",
           "passed_in_reference_run": 25,
@@ -8387,7 +8462,8 @@
         ".agents/docs/adr/workflows/remotes/0067-remote-settings.md",
         ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
         ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md",
-        ".agents/docs/adr/distribution/updates/0133-weekly-update-admission.md"
+        ".agents/docs/adr/distribution/updates/0133-weekly-update-admission.md",
+        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md"
       ]
     },
     {
@@ -8635,6 +8711,12 @@
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -9126,6 +9208,12 @@
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -10584,6 +10672,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -10939,6 +11033,12 @@
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -11654,6 +11754,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -12248,6 +12354,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -12702,6 +12814,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -13009,6 +13127,12 @@
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -13433,6 +13557,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
           "test_class": "HistorySortDefaultTests",
           "passed_in_reference_run": 7,
@@ -13825,6 +13955,12 @@
           "test_class": "GitToolsSettingsDialogTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -14754,6 +14890,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
           "test_class": "HotkeyHostDialogTests",
           "passed_in_reference_run": 26,
@@ -15033,6 +15175,12 @@
           "test_class": "GitProcessDialogTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -15317,6 +15465,12 @@
           "test_class": "GitProcessDialogTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -15651,7 +15805,7 @@
           "id": "GitExtensions.Linux.Desktop.RebaseRevisionPicker",
           "label": "RebaseRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/RebaseDialog.cs",
-          "line": 366,
+          "line": 372,
           "kind": "window"
         },
         {
@@ -17072,6 +17226,12 @@
           "test_class": "GitProcessDialogTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -20040,11 +20200,11 @@
       "id": "GitExtensions.Linux.Desktop.RebaseRevisionPicker",
       "name": "RebaseRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/RebaseDialog.cs",
-      "line": 366,
+      "line": 372,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/RebaseDialog.cs",
-          "line": 366
+          "line": 372
         }
       ],
       "bases": [
@@ -21102,7 +21262,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 356,
+      "line": 358,
       "method": "UpdateSubmodulesAfterPullAsync",
       "text": "new() { Name = \"ConfirmInitializePullSubmodules\", Title = C(\"_questionInitSubmodulesCaption\", \"Submodules\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocatio",
       "platform": "linux",
@@ -21112,7 +21272,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 386,
+      "line": 388,
       "method": "OfferAutoStashPopAsync",
       "text": "new() { Name = \"ConfirmPopPullAutoStash\", Title = C(\"_applyStashedItemsAgainCaption\", \"Auto stash\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = Wind",
       "platform": "linux",
@@ -21122,7 +21282,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 429,
+      "line": 431,
       "method": "ConfirmMismatchAsync",
       "text": "new() { Name = \"ConfirmPullRemoteMismatch\", Title = T(\"Remote branch not specified\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocati",
       "platform": "linux",
@@ -21132,7 +21292,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 440,
+      "line": 442,
       "method": "ConfirmRebaseAsync",
       "text": "new() { Name = \"ConfirmRebasePull\", Title = T(\"Rebase merge commit?\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner ",
       "platform": "linux",
@@ -21142,7 +21302,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 456,
+      "line": 458,
       "method": "ConfirmDetachedAsync",
       "text": "new() { Name = \"ConfirmDetachedPull\", Title = T(\"Pull\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner }",
       "platform": "linux",
@@ -21152,7 +21312,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PullDialog",
       "path": "src/linux/GitExtensions.Desktop/PullDialog.cs",
-      "line": 473,
+      "line": 475,
       "method": "ConfirmPruneAsync",
       "text": "new() { Name = \"ConfirmFetchPruneAll\", Title = T(\"Fetch and prune all\"), Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwne",
       "platform": "linux",
@@ -21172,7 +21332,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.RebaseDialog",
       "path": "src/linux/GitExtensions.Desktop/RebaseDialog.cs",
-      "line": 346,
+      "line": 352,
       "method": "ShowPatchAsync",
       "text": "new() { Name = \"RebasePatchDiff\", Title = T(\"Diff\"), Width = 900, Height = 600,",
       "platform": "linux",

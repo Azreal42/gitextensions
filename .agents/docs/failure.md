@@ -73,6 +73,18 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Probes de nouveau processus sans SDK local | Trois tests historiques recherchent `.dotnet/dotnet` dans les parents du checkout. Fournir une copie physique du SDK isolé ; 3/3 probes puis full03 verts, sans changement produit. [Preuve](../../artifacts/linux/update-scheduler-20261020/review/runtime-environment-review.json). |
 | Préflight natif avec empreintes héritées obsolètes | Vérifier les paquets Git/libXtst installés avant de lier leurs empreintes actuelles ; conserver les scripts et l’essai refusé. Aucune application ne démarre avant ce contrôle. [Preuve](../../artifacts/linux/update-scheduler-20261020/review/native-preflight-01.json). |
 
+## Images d’aide — contrats et régressions
+
+Le ciblé01 passait 248/248, mais sa capture française coupait Stash. Le ciblé02 renforcé (247/248) a exposé un débordement de 4 px en aide repliée. Après correction, [ciblé03 248/248 et six rendus revus](../../artifacts/linux/help-images-20261020/review/root-targeted-review.json), puis [natif source EN/FR borné](../../artifacts/linux/help-images-20261020/review/root-native-review.json). Le [paquet exact](../../artifacts/linux/help-images-20261020/review/root-package-review.json) est qualifié séparément en DPKG isolé ; interaction installée ouverte.
+
+| Piège | Règle retenue |
+| --- | --- |
+| Confondre masquage global et repli local | Retirer le contrôle entier sans changer IsExpanded ni publier command-help-preferences ; restauration locale couverte headless, pas en natif. |
+| Masquer seulement l’image | Traiter body/footer, largeurs et viewport Rebase ; capturer aussi dans le constructeur de l’enfant de reprise. |
+| Réparer un profil pour une préférence cosmétique | Aide visible après erreur de lecture ; conserver les octets et la barrière d’édition explicite dans Advanced. |
+| Bouton dans la fenêtre, glyphes français coupés | Width130/AccessText Wrap ne suffisaient pas. Largeur Auto/MinWidth, texte mono-ligne et oracle vérifiant le libellé entier. |
+| Footer débordant en aide repliée | Mesurer les commandes ensemble une fois à Opened après styles/fontes, puis intégrer aide, marges et espacement au minimum. |
+
 ## Lecteurs et UI — résolus
 
 | Piège | Cause / règle retenue |
