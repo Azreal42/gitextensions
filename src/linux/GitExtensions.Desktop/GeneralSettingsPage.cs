@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using GitExtensions.Extensibility.Git;
 using GitExtensions.Linux.Desktop.Localization;
 
@@ -24,6 +25,7 @@ internal sealed class GeneralSettingsPage : UserControl
     private readonly Button _browse;
     private readonly TextBlock _notice = new() { Name = "GeneralSettingsNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap };
     private GeneralSettingsValues _accepted;
+    private Control? _invalidControl;
     private bool _loading, _picking;
     private long _pickerRevision;
 
@@ -139,6 +141,7 @@ internal sealed class GeneralSettingsPage : UserControl
 
     internal bool Validate(out string? error)
     {
+        _invalidControl = null;
         if (_limit.IsChecked == true && !IsInteger(_maxCommits, 0, 1000000))
         { return Invalid(_maxCommits, "Enter a whole number of commits between 0 and 1,000,000.", out error); }
         if (!IsInteger(_quickSearch, 100, 1000000))
@@ -248,7 +251,14 @@ internal sealed class GeneralSettingsPage : UserControl
         if (input.Text is string text && decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal number))
         { input.Value = number; }
     }
+    internal void FocusInvalidControl()
+    {
+        Control? target = _invalidControl is NumericUpDown number
+            ? number.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() : _invalidControl;
+        if (target?.IsEffectivelyVisible == true && target.IsEffectivelyEnabled)
+        { target.BringIntoView(); target.Focus(); }
+    }
     private bool Invalid(Control control, string message, out string? error)
-    { error = _translations.Translate(message); ShowError(error); control.Focus(); return false; }
+    { _invalidControl = control; error = _translations.Translate(message); ShowError(error); FocusInvalidControl(); return false; }
     private void ShowError(string? error) { _notice.Text = error; _notice.IsVisible = !string.IsNullOrEmpty(error); }
 }

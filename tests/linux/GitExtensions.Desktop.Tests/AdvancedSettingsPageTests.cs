@@ -173,6 +173,11 @@ internal static class AdvancedSettingsUiDriver
         ComboBox box = Field<ComboBox>(window, "SettingsNormaliseSymbol"); box.BringIntoView(); PortableHelperSettingsFixture.Pump(window);
         int index = box.Items.OfType<AdvancedSymbolChoice>().Select(choice => choice.Value).ToList().IndexOf(value); Assert.That(index, Is.GreaterThanOrEqualTo(0));
         PushProcessTestDriver.Pointer(box); Assert.That(box.IsDropDownOpen, Is.True);
+        if (box.SelectedIndex < 0)
+        {
+            PortableHelperSettingsFixture.Press(window, PhysicalKey.ArrowDown);
+            Assert.That(box.ContainerFromIndex(0)?.IsFocused, Is.True);
+        }
         PortableHelperSettingsFixture.Press(window, PhysicalKey.Home);
         for (int step = 0; step < index; step++) { PortableHelperSettingsFixture.Press(window, PhysicalKey.ArrowDown); }
         PortableHelperSettingsFixture.Press(window, PhysicalKey.Enter);

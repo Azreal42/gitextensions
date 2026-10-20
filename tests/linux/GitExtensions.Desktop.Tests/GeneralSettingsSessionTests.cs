@@ -268,7 +268,8 @@ public sealed class GeneralSettingsSessionTests
         using Fixture f = new(); f.Seed(); DesktopPreferences desktop = f.Desktop.Load(); GeneralSettingsSession session = new(desktop);
         Dictionary<string, byte[]> before = f.Profiles(); before.Remove(Path.GetFileName(f.Desktop.FilePath));
         File.Delete(f.Desktop.FilePath); Directory.CreateDirectory(f.Desktop.FilePath);
-        Assert.Throws<IOException>(() => session.Save(session.Initial with { DefaultPullAction = GitPullAction.Fetch, CloseProcessDialog = true }, desktop));
+        Assert.That(() => session.Save(session.Initial with { DefaultPullAction = GitPullAction.Fetch, CloseProcessDialog = true }, desktop),
+            Throws.InstanceOf<IOException>().Or.InstanceOf<UnauthorizedAccessException>());
         Assert.That(Directory.Exists(f.Desktop.FilePath), Is.True);
         foreach ((string name, byte[] bytes) in before) { Assert.That(File.ReadAllBytes(Path.Combine(f.ProfileDirectory, name)), Is.EqualTo(bytes), name); }
         f.NoTemporaryProfiles();

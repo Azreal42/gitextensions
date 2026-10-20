@@ -299,7 +299,7 @@ internal sealed class DesktopSettingsDialog : Window
                 if (!_consoleStylePage.Validate(out string? consoleValidation))
                 { Navigation.SelectPage("ConsoleStyle", true); notice.Text = consoleValidation; return false; }
                 if (!_generalSettingsPage.Validate(out string? generalValidation))
-                { Navigation.SelectPage("General", true); notice.Text = generalValidation; return false; }
+                { Navigation.SelectPage("General"); _generalSettingsPage.FocusInvalidControl(); notice.Text = generalValidation; return false; }
                 if (!_appearanceSettingsPage.Validate(out string? appearanceValidation))
                 { Navigation.SelectPage("Appearance", true); notice.Text = appearanceValidation; return false; }
                 foreach (TextBox input in new[] { branches, remotes })
