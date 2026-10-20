@@ -22,7 +22,7 @@ public sealed class MergeBranchDialog : RepositoryDialog
     private readonly NumericUpDown _count = new() { Name = "MergeLogCount", Minimum = 0, Maximum = 100, Value = 20, Height = 24, Width = 65 };
     private readonly TextBox _message = new() { Name = "MergeMessage", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 72 };
     private readonly StackPanel _advancedPanel;
-    private readonly OriginalCommandHelp _help;
+    private readonly OriginalCommandHelp? _help;
     private readonly Grid _body;
     private readonly Button _merge, _strategyHelp;
     private readonly MergePreferencesStore _store = new();
@@ -46,7 +46,8 @@ public sealed class MergeBranchDialog : RepositoryDialog
     {
         _initialRevision = revision; _resolve = resolveConflictsAsync; _afterSubmodules = afterSubmoduleUpdate;
         _lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Name = "MergeBranchDialog"; Title = Text("$this", "Merge"); Width = 790; MinWidth = 500; Height = 530; MinHeight = 450;
+        bool showHelpImages = OriginalCommandHelpVisibility.Capture();
+        Name = "MergeBranchDialog"; Title = Text("$this", "Merge"); Width = showHelpImages ? 790 : 500; MinWidth = 500; Height = 530; MinHeight = 450;
         _ff.Content = Text("fastForward", "Keep a single branch line if possible (fast forward)");
         _noff.Content = Text("noFastForward", "Always create a new merge commit");
         Set(_noCommit, "noCommit", "Do not commit"); Set(_advanced, "advanced", "Show advanced options");
@@ -66,9 +67,10 @@ public sealed class MergeBranchDialog : RepositoryDialog
         _advancedPanel = new() { Name = "MergeAdvancedPanel", Spacing = 3, Children = { _strategyEnabled, strategyRow, _squash, _unrelated,
             new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { _log, _count } }, _customMessage, _message } };
         StackPanel choices = new() { Spacing = 3, Children = { fields, _ff, _noff, _noCommit, _advanced, _advancedPanel } };
-        _help = new("HelpCommandMerge", "HelpCommandMergeFastForward", "MergeBranches", "Hover to see scenario when fast forward is possible.");
-        _body = new() { Margin = new Thickness(8), ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 8 };
-        _body.Children.Add(_help); Border group = ExportDialogControls.Group(Text("groupBox1", "Merge"), choices); Grid.SetColumn(group, 1); _body.Children.Add(group);
+        _help = showHelpImages ? new("HelpCommandMerge", "HelpCommandMergeFastForward", "MergeBranches", "Hover to see scenario when fast forward is possible.") : null;
+        _body = new() { Margin = new Thickness(8), ColumnDefinitions = new ColumnDefinitions(showHelpImages ? "Auto,*" : "*"), ColumnSpacing = showHelpImages ? 8 : 0 };
+        if (_help is not null) { _body.Children.Add(_help); }
+        Border group = ExportDialogControls.Group(Text("groupBox1", "Merge"), choices); Grid.SetColumn(group, showHelpImages ? 1 : 0); _body.Children.Add(group);
         _merge = Action("ExecuteMerge", "Merge", ExecuteAsync); _merge.Content = new AccessText { Text = Translations.TranslateAccessKeys("FormMergeBranch", "Ok", "Text", "&Merge") }; _merge.IsDefault = true; _merge.MinWidth = 90; _merge.Height = 25;
         Button cancel = new() { Name = "CancelMerge", Content = T("Cancel"), IsCancel = true, MinWidth = 90, Height = 25 }; cancel.Click += (_, _) => Close();
         StackPanel buttons = ExportDialogControls.Buttons(_merge, cancel); DockPanel.SetDock(buttons, Dock.Bottom); Root.Children.Add(buttons); Root.Children.Add(new ScrollViewer { Content = _body });
@@ -83,8 +85,8 @@ public sealed class MergeBranchDialog : RepositoryDialog
             { _invalidLogCount = false; _count.Minimum = 0; _count.Maximum = 100; }
             SaveLogPreference(); UpdateActions();
         };
-        _help.ExpandedChanged += (_, _) => Width = _help.IsExpanded ? 790 : 500;
-        Closed += (_, _) => { _lifetime.Cancel(); _help.Dispose(); };
+        if (_help is { } help) { help.ExpandedChanged += (_, _) => Width = help.IsExpanded ? 790 : 500; }
+        Closed += (_, _) => { _lifetime.Cancel(); _help?.Dispose(); };
         OptionsChanged();
         void Set(CheckBox box, string item, string source) => box.Content = Text(item, source);
     }
@@ -110,7 +112,7 @@ public sealed class MergeBranchDialog : RepositoryDialog
         _invalidLogCount = count is < 0 or > 100; _acceptedLog = (log, count);
         _loaded = !info.IsBare; OptionsChanged();
         Status.Text = _invalidLogCount ? T("The saved merge log count is outside 0–100. Choose a value in this dialog before merging. The saved setting has not been changed.") + " (" + count + ")" : "";
-        Width = _help.IsExpanded ? 790 : 500;
+        Width = _help?.IsExpanded == true ? 790 : 500;
     }, cancellationToken: _lifetime.Token);
     private void OptionsChanged()
     {
@@ -119,7 +121,7 @@ public sealed class MergeBranchDialog : RepositoryDialog
         if (_noff.IsChecked == true) { _squash.IsChecked = false; }
         _advancedPanel.IsVisible = _advanced.IsChecked == true; _strategy.IsVisible = _strategyEnabled.IsChecked == true;
         _strategyHelp.IsVisible = _strategyEnabled.IsChecked == true;
-        _help.UseAlternateOnHover = _ff.IsChecked == true;
+        if (_help is not null) { _help.UseAlternateOnHover = _ff.IsChecked == true; }
         SaveLogPreference(); UpdateActions();
     }
     private void SaveLogPreference()

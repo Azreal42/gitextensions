@@ -11,6 +11,7 @@ public sealed class AdvancedSettingsSessionTests
     [TestCase("AlwaysShowCheckoutDialog", "reference-preferences.json")]
     [TestCase("UseDefaultCheckoutChanges", "reference-preferences.json")]
     [TestCase("CommitAndPushForcedWhenAmend", "commit-preferences.json")]
+    [TestCase("DontShowHelpImages", "preferences.json")]
     public void MissingChoiceWritesOnlyItsExistingAuthorityAndKeepsForeignKeys(string name, string profile)
     {
         using Scope f = new(); f.Write(profile, "{\"foreign\":{\"literal\":[null,17,\"Ω\"]},\"peer\":false}");

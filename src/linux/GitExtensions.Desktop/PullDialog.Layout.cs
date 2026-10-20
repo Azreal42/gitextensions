@@ -26,6 +26,7 @@ public sealed partial class PullDialog
     private readonly Control _statusRow;
     private OriginalCommandHelp? _help;
     private GitPullAction _presentedMode = GitPullAction.None;
+    private double _footerCommandsMinimumWidth;
 
     private static ComboBox PullChoice(string name) => new()
     {
@@ -50,7 +51,9 @@ public sealed partial class PullDialog
         _prune.Margin = _pruneTags.Margin = _unshallow.Margin = new Thickness(6, 0, 0, 0);
         foreach (Button button in new[] { _manage, _browse, _execute, _resolve, _stash, _continue, _abort })
         { button.Height = 24; button.MinHeight = 0; button.CornerRadius = new CornerRadius(2); }
-        _execute.Width = 122; _resolve.Width = 138; _stash.Width = 130;
+        _execute.Width = 122; _resolve.Width = 138; _stash.MinWidth = 130;
+        // The compact footer has one line; let translated stash captions request their full width.
+        if (_stash.Content is AccessText stashCaption) { stashCaption.TextWrapping = TextWrapping.NoWrap; }
         _execute.Bind(BorderBrushProperty, new DynamicResourceExtension("ClassicHighlightBrush"));
 
         Grid source = new() { ColumnDefinitions = new("138,*,150"), RowDefinitions = new("Auto,Auto"), ColumnSpacing = 6 };
@@ -80,20 +83,27 @@ public sealed partial class PullDialog
                 _unshallow, _prune, _pruneTags, _conflicts, _output
             }
         };
-        Grid body = new() { Name = "PullLayout", Margin = new Thickness(10), ColumnDefinitions = new("Auto,*"), ColumnSpacing = 12 };
-        body.Children.Add(_helpHost);
+        Grid body = new() { Name = "PullLayout", Margin = new Thickness(10), ColumnDefinitions = new(_showHelpImages ? "Auto,*" : "*"), ColumnSpacing = _showHelpImages ? 12 : 0 };
+        if (_showHelpImages) { body.Children.Add(_helpHost); }
         ScrollViewer options = new() { Name = "PullOptionsScroll", Content = choices, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        Grid.SetColumn(options, 1); body.Children.Add(options);
+        Grid.SetColumn(options, _showHelpImages ? 1 : 0); body.Children.Add(options);
 
-        Grid footer = new() { Name = "PullFooter", Margin = new Thickness(10, 8), ColumnDefinitions = new("Auto,*"), ColumnSpacing = 12 };
-        footer.Children.Add(_footerSpacer);
+        Grid footer = new() { Name = "PullFooter", Margin = new Thickness(10, 8), ColumnDefinitions = new(_showHelpImages ? "Auto,*" : "*"), ColumnSpacing = _showHelpImages ? 12 : 0 };
+        if (_showHelpImages) { footer.Children.Add(_footerSpacer); }
         Grid commands = new() { ColumnDefinitions = new("Auto,Auto,Auto,*,Auto"), RowDefinitions = new("Auto,Auto"), ColumnSpacing = 8 };
         Grid.SetColumnSpan(_recovery, 5); commands.Children.Add(_recovery);
         foreach (Control control in new Control[] { _resolve, _stash, _autoStash, _execute }) { Grid.SetRow(control, 1); }
         commands.Children.Add(_resolve); Grid.SetColumn(_stash, 1); commands.Children.Add(_stash);
         Grid.SetColumn(_autoStash, 2); commands.Children.Add(_autoStash);
         Grid.SetColumn(_execute, 4); commands.Children.Add(_execute);
-        Grid.SetColumn(commands, 1); footer.Children.Add(commands);
+        Grid.SetColumn(commands, _showHelpImages ? 1 : 0); footer.Children.Add(commands);
+        Opened += (_, _) =>
+        {
+            // Measure once after styles/fonts are attached, before accepting a compact footer width.
+            commands.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            _footerCommandsMinimumWidth = Math.Ceiling(commands.DesiredSize.Width);
+            ResizeForHelp();
+        };
         Border footerBackground = ClassicChrome.Border(footer, new Thickness(0, 1, 0, 0));
         footerBackground.Bind(BackgroundProperty, new DynamicResourceExtension("ClassicControlBrush"));
         DockPanel.SetDock(footerBackground, Dock.Bottom); Root.Children.Add(footerBackground); Root.Children.Add(body);
@@ -149,7 +159,8 @@ public sealed partial class PullDialog
         _presentedMode = Mode;
         if (fetch) { _localBranch.Text = ""; }
         _execute.Content = PullIconLabel("ArrowDown.png", new AccessText { Text = T(fetch ? "Fetch" : "Pull") });
-        _help?.Dispose(); _helpHost.Child = null;
+        _help?.Dispose(); _help = null; _helpHost.Child = null;
+        if (!_showHelpImages) { ResizeForHelp(); return; }
         _help = new(fetch ? "HelpPullFetch" : Mode == GitPullAction.Rebase ? "HelpPullRebase" : "HelpPullMerge",
             Mode == GitPullAction.Merge ? "HelpPullMergeFastForward" : null, "Pull",
             Mode == GitPullAction.Merge ? "Hover to see scenario when fast forward is possible." : null)
@@ -175,9 +186,9 @@ public sealed partial class PullDialog
 
     private void ResizeForHelp()
     {
-        double width = _help?.IsExpanded == true ? 305 : 40, delta = width - _helpHost.Width;
+        double width = !_showHelpImages ? 0 : _help?.IsExpanded == true ? 305 : 40, delta = width - _helpHost.Width;
         _helpHost.Width = _footerSpacer.Width = width;
-        MinWidth = _help?.IsExpanded == true ? 920 : 650;
+        MinWidth = Math.Max(_help?.IsExpanded == true ? 920 : 650, _footerCommandsMinimumWidth + 20 + width + (_showHelpImages ? 12 : 0));
         Width = Math.Max(MinWidth, Width + delta);
     }
 

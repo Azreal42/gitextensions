@@ -20,8 +20,8 @@ public sealed class AdvancedSettingsPageTests
         using PortableHelperSettingsFixture f = new(language, dark);
         (DesktopSettingsDialog settings, Task<bool> completion) = f.Open("Advanced");
         AdvancedSettingsPage page = AdvancedSettingsUiDriver.Field<AdvancedSettingsPage>(settings, "AdvancedSettingsPage");
-        Assert.That(page.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(7));
-        Assert.That(page.GetVisualDescendants().OfType<Control>().Any(control => control.Name is "chkConsoleEmulator" or "chkDontSHowHelpImages"), Is.False);
+        Assert.That(page.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(8));
+        Assert.That(page.GetVisualDescendants().OfType<Control>().Any(control => control.Name == "chkConsoleEmulator"), Is.False);
         foreach (AdvancedSetting setting in AdvancedSettingsCatalog.Fields.Where(setting => !setting.IsSymbol))
         {
             CheckBox box = AdvancedSettingsUiDriver.Field<CheckBox>(settings, setting.Control); box.BringIntoView(); PortableHelperSettingsFixture.Pump(settings);
@@ -113,7 +113,7 @@ public sealed class AdvancedSettingsPageTests
     public async Task DirectConstructorKeepsActiveDesktopValuesBeforePublicationAndCancelNeverWritesThemImplicitly()
     {
         using PortableHelperSettingsFixture f = new();
-        DesktopPreferences initial = new() { AutoNormaliseBranchName = false, AutoNormaliseSymbol = "-", AlwaysShowAdvancedOptions = true, CheckForUpdates = false, CheckForReleaseCandidates = true };
+        DesktopPreferences initial = new() { AutoNormaliseBranchName = false, AutoNormaliseSymbol = "-", AlwaysShowAdvancedOptions = true, CheckForUpdates = false, CheckForReleaseCandidates = true, DontShowHelpImages = true };
         Dictionary<string, byte[]> before = AdvancedSettingsUiDriver.Profiles(); int publications = 0;
         (DesktopSettingsDialog settings, Task<bool> completion) = Open();
         AssertActive(settings); Assert.That(settings.Result, Is.SameAs(initial));
@@ -126,7 +126,7 @@ public sealed class AdvancedSettingsPageTests
         Assert.That(AdvancedSettingsUiDriver.Field<TextBlock>(settings, "SettingsNotice").Text, Is.Null.Or.Empty);
         AssertActive(settings); Assert.That(settings.Result.AutoNormaliseBranchName, Is.False);
         Assert.That(settings.Result.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(settings.Result.AlwaysShowAdvancedOptions, Is.True);
-        Assert.That(settings.Result.CheckForUpdates, Is.False); Assert.That(settings.Result.CheckForReleaseCandidates, Is.True);
+        Assert.That(settings.Result.CheckForUpdates, Is.False); Assert.That(settings.Result.CheckForReleaseCandidates, Is.True); Assert.That(settings.Result.DontShowHelpImages, Is.True);
         AdvancedSettingsUiDriver.SameProfiles(before);
         PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "CancelDesktopSettings")); Assert.That(await completion, Is.True);
         AdvancedSettingsUiDriver.SameProfiles(before);
@@ -146,7 +146,7 @@ public sealed class AdvancedSettingsPageTests
                     publications++;
                     Assert.That(draft.Result.AutoNormaliseBranchName, Is.False);
                     Assert.That(draft.Result.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(draft.Result.AlwaysShowAdvancedOptions, Is.True);
-                    Assert.That(draft.Result.CheckForUpdates, Is.False); Assert.That(draft.Result.CheckForReleaseCandidates, Is.True);
+                    Assert.That(draft.Result.CheckForUpdates, Is.False); Assert.That(draft.Result.CheckForReleaseCandidates, Is.True); Assert.That(draft.Result.DontShowHelpImages, Is.True);
                     return Task.CompletedTask;
                 }, initialPage: "Advanced", advancedSettings: injected);
             f.Track(dialog); Task<bool> result = dialog.ShowDialog<bool>(f.Owner); PortableHelperSettingsFixture.Pump(dialog); return (dialog, result);
@@ -155,11 +155,12 @@ public sealed class AdvancedSettingsPageTests
         {
             AdvancedSettingsValues shown = AdvancedSettingsUiDriver.Field<AdvancedSettingsPage>(dialog, "AdvancedSettingsPage").Draft;
             Assert.That(shown.AutoNormaliseBranchName, Is.False); Assert.That(shown.AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(shown.AlwaysShowAdvancedOptions, Is.True);
-            Assert.That(shown.CheckForUpdates, Is.False); Assert.That(shown.CheckForReleaseCandidates, Is.True);
+            Assert.That(shown.CheckForUpdates, Is.False); Assert.That(shown.CheckForReleaseCandidates, Is.True); Assert.That(shown.DontShowHelpImages, Is.True);
             Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "SettingsNormaliseBranches").IsChecked, Is.False);
             Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "SettingsAdvancedOptions").IsChecked, Is.True);
             Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "chkCheckForUpdates").IsChecked, Is.False);
             Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "chkCheckForRCVersions").IsChecked, Is.True);
+            Assert.That(AdvancedSettingsUiDriver.Field<CheckBox>(dialog, "chkDontSHowHelpImages").IsChecked, Is.True);
             Assert.That(((AdvancedSymbolChoice)AdvancedSettingsUiDriver.Field<ComboBox>(dialog, "SettingsNormaliseSymbol").SelectedItem!).Value, Is.EqualTo("-"));
         }
     }

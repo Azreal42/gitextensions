@@ -24,6 +24,7 @@ internal sealed class AdvancedSettingsPage : UserControl
         StackPanel checkout = new() { Spacing = 1 }, general = new() { Spacing = 1 }, commit = new() { Spacing = 1 }, updates = new() { Spacing = 1 };
         Add(checkout, nameof(AdvancedSettingsValues.AlwaysShowCheckoutDialog));
         Add(checkout, nameof(AdvancedSettingsValues.UseDefaultCheckoutChanges));
+        Add(general, nameof(AdvancedSettingsValues.DontShowHelpImages));
         Add(general, nameof(AdvancedSettingsValues.AlwaysShowAdvancedOptions));
         Add(general, nameof(AdvancedSettingsValues.AutoNormaliseBranchName));
         List<AdvancedSymbolChoice> symbols = [new("_", "_"), new("-", "-"), new("", "(none)")];

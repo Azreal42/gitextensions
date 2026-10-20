@@ -15,6 +15,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed partial class PullDialog : RepositoryDialog
 {
     private readonly GitPullAction _initialAction;
+    private readonly bool _showHelpImages;
     private readonly string? _initialRemote, _initialBranch;
     private readonly Func<CancellationToken, Task>? _afterSubmoduleUpdateAsync;
     private readonly Func<Window, GitRepository, bool, CancellationToken, Task>? _resolveConflictsAsync;
@@ -59,6 +60,7 @@ public sealed partial class PullDialog : RepositoryDialog
         ConsoleStylePresentation.Bind(_output);
         if (!PullPreferencesStore.IsToolbarAction(action)) { throw new ArgumentOutOfRangeException(nameof(action)); }
         _initialAction = action;
+        _showHelpImages = Controls.OriginalCommandHelpVisibility.Capture();
         _initialRemote = remote; _initialBranch = branch;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _resolveConflictsAsync = resolveConflictsAsync;

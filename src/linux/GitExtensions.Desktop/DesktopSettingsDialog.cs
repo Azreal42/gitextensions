@@ -359,6 +359,7 @@ internal sealed class DesktopSettingsDialog : Window
                     CustomAvatarTemplate = AppearanceSettingsResult.CustomAvatarTemplate,
                     AutoNormaliseBranchName = advancedDraft.AutoNormaliseBranchName, AutoNormaliseSymbol = advancedDraft.AutoNormaliseSymbol, AlwaysShowAdvancedOptions = advancedDraft.AlwaysShowAdvancedOptions,
                     CheckForUpdates = advancedDraft.CheckForUpdates, CheckForReleaseCandidates = advancedDraft.CheckForReleaseCandidates,
+                    DontShowHelpImages = advancedDraft.DontShowHelpImages,
                     UseBrowseForFileHistory = GeneralSettingsResult.UseBrowseForFileHistory,
                     MaxRevisionGraphCommits = GeneralSettingsResult.MaxRevisionGraphCommits,
                     RevisionGridQuickSearchTimeout = GeneralSettingsResult.RevisionGridQuickSearchTimeout,

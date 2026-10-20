@@ -36,6 +36,7 @@ public sealed record DesktopPreferences
     public bool AutoNormaliseBranchName { get; init; } = true;
     public string AutoNormaliseSymbol { get; init; } = "_";
     public bool AlwaysShowAdvancedOptions { get; init; }
+    public bool DontShowHelpImages { get; init; }
     public bool CheckForUpdates { get; init; } = true;
     public bool CheckForReleaseCandidates { get; init; }
     public bool UseBrowseForFileHistory { get; init; } = true;

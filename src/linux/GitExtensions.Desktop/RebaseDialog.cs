@@ -50,7 +50,8 @@ public sealed class RebaseDialog : RepositoryDialog
         bool interactiveInitial = false, Func<Window, GitRepository, bool, CancellationToken, Task>? resolveConflictsAsync = null,
         CancellationToken cancellationToken = default) : base(repository, "Rebase")
     {
-        Name = "RebaseDialog"; Title = Text("$this", "Rebase"); Width = 1050; Height = 500; MinWidth = 900; MinHeight = 460;
+        bool showHelpImages = OriginalCommandHelpVisibility.Capture();
+        Name = "RebaseDialog"; Title = Text("$this", "Rebase"); Width = showHelpImages ? 1050 : 745; Height = 500; MinWidth = showHelpImages ? 900 : 620; MinHeight = 460;
         ConstrainStatusHeight("RebaseCommandOutput", 60);
         _initialOnto = initialOnto; _initialFrom = initialFrom; _initialTo = initialTo; _token = cancellationToken;
         _resolveConflictsAsync = resolveConflictsAsync; _interactive.IsChecked = interactiveInitial;
@@ -109,11 +110,16 @@ public sealed class RebaseDialog : RepositoryDialog
         foreach (Button action in new[] { _addFiles, _commit, _editTodo, _skip }) { action.Margin = new Thickness(0, 0, 6, 0); }
         Grid.SetRow(actions, 2); controls.Children.Add(actions);
         Control patches = CreatePatchGrid(); Grid.SetRow(patches, 1); controls.Children.Add(patches);
-        OriginalCommandHelp help = new("HelpCommandRebase", settingsId: "Rebase", hoverNotice: Text("PanelLeftImage", "Hover to see scenario when fast forward is possible.", "IsOnHoverShowImage2NoticeText"));
-        ScrollViewer helpViewport = new() { Name = "RebaseHelpViewport", Content = help, Width = help.IsExpanded ? 305 : double.NaN,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        Grid body = new() { ColumnDefinitions = new("Auto,*"), ClipToBounds = true }; body.Children.Add(helpViewport); Grid.SetColumn(controls, 1); body.Children.Add(controls); Root.Children.Add(body);
-        help.ExpandedChanged += (_, _) => { MinWidth = help.IsExpanded ? 900 : 620; helpViewport.Width = help.IsExpanded ? 305 : double.NaN; };
+        Grid body = new() { ColumnDefinitions = new(showHelpImages ? "Auto,*" : "*"), ClipToBounds = true };
+        if (showHelpImages)
+        {
+            OriginalCommandHelp help = new("HelpCommandRebase", settingsId: "Rebase", hoverNotice: Text("PanelLeftImage", "Hover to see scenario when fast forward is possible.", "IsOnHoverShowImage2NoticeText"));
+            ScrollViewer helpViewport = new() { Name = "RebaseHelpViewport", Content = help, Width = help.IsExpanded ? 305 : double.NaN,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            body.Children.Add(helpViewport);
+            help.ExpandedChanged += (_, _) => { MinWidth = help.IsExpanded ? 900 : 620; helpViewport.Width = help.IsExpanded ? 305 : double.NaN; };
+        }
+        Grid.SetColumn(controls, showHelpImages ? 1 : 0); body.Children.Add(controls); Root.Children.Add(body);
         Track(_onto, _to, _from, _interactive, _merges, _autosquash, _autostash, _ignoreDate, _authorDate, _updateRefs, _range, _patches);
         foreach (CheckBox flag in new[] { _interactive, _ignoreDate, _authorDate, _range }) { flag.IsCheckedChanged += (_, _) => UpdateActions(); }
         _patches.DoubleTapped += async (_, args) => { args.Handled = true; await ShowPatchAsync(); };
