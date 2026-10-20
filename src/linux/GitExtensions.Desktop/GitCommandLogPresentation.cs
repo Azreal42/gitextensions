@@ -8,15 +8,20 @@ namespace GitExtensions.Linux.Desktop;
 internal static class GitCommandLogPresentation
 {
     internal static string Line(GitCommandLogEntry entry, TranslationCatalog translations)
-        => $"{entry.Started:HH:mm:ss.fff} {(entry.IsRunning ? translations.Translate("running") : entry.Duration.TotalMilliseconds.ToString("N0", CultureInfo.CurrentCulture) + " ms"),9} {entry.ProcessId,7} {Exit(entry, translations),3} {entry.Command}";
+        => $"{entry.Started:HH:mm:ss.fff} {(entry.IsRunning ? translations.Translate("running") : entry.Duration.TotalMilliseconds.ToString("N0", CultureInfo.CurrentCulture) + " ms"),9} {entry.ProcessId,7} {(entry.IsOnMainThread == true ? "UI" : "  ")} {Exit(entry, translations),3} {entry.Command}";
 
     internal static string Detail(GitCommandLogEntry entry, TranslationCatalog translations)
         => $"{translations.Translate("Command")}:     {entry.Command}\n"
             + $"{translations.Translate("Working dir")}: {entry.Directory}\n"
             + $"{translations.Translate("Process ID")}:  {entry.ProcessId?.ToString(CultureInfo.InvariantCulture) ?? translations.Translate("unknown")}\n"
             + $"{translations.Translate("Started at")}:  {entry.Started:O}\n"
+            + $"{translations.Translate("UI Thread?")}:  {Ui(entry, translations)}\n"
             + $"{translations.Translate("Duration")}:    {(entry.IsRunning ? translations.Translate("still running") : entry.Duration.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture) + " ms")}\n"
-            + $"{translations.Translate("Exit code")}:   {Exit(entry, translations)}";
+            + $"{translations.Translate("Exit code")}:   {Exit(entry, translations)}\n"
+            + $"{translations.Translate("Call stack")}:  {(string.IsNullOrEmpty(entry.CallStack) ? translations.Translate("not captured") : "\n" + entry.CallStack)}";
+
+    private static string Ui(GitCommandLogEntry entry, TranslationCatalog translations)
+        => entry.IsOnMainThread is bool observed ? observed.ToString() : translations.Translate("unknown");
 
     private static string Exit(GitCommandLogEntry entry, TranslationCatalog translations)
         => entry.IsRunning ? "" : entry.Cancelled ? translations.Translate("Cancelled")
@@ -31,7 +36,8 @@ internal static class GitCommandLogPresentation
             string[] fields = [entry.Started.ToString("O", CultureInfo.InvariantCulture),
                 entry.IsRunning ? "" : entry.Duration.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture),
                 entry.ProcessId?.ToString(CultureInfo.InvariantCulture) ?? "", entry.ExitCode?.ToString(CultureInfo.InvariantCulture) ?? "",
-                entry.Cancelled ? "true" : "false", entry.IsRunning ? "true" : "false", entry.Command, entry.Directory];
+                entry.Cancelled ? "true" : "false", entry.IsRunning ? "true" : "false", entry.Command, entry.Directory,
+                entry.IsOnMainThread is bool observed ? observed ? "true" : "false" : "", entry.CallStack ?? ""];
             // CSV quotes preserve embedded delimiters/newlines. TXT escapes control
             // characters so each command remains exactly one physical tabbed line.
             text.AppendJoin(separator, fields.Select(field => csv ? Quote(field, separator) : Escape(field))).Append('\n');

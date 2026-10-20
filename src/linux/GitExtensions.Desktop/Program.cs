@@ -74,6 +74,7 @@ internal static class Program
             GitEnvironmentPreferencesLoadResult environment = new GitEnvironmentPreferencesStore().Load();
             GitEnvironment.Configure(GitEnvironmentSettingsSession.Options(environment.Preferences));
             DesktopLanguage.ApplyPreferredCulture();
+            CommandLogCapturePreferences.InitializeRuntimeAsync().GetAwaiter().GetResult();
             Exception? preparationError = null;
             try { StartupRequest = DesktopStartupDispatcher.PrepareAsync(startup, Environment.CurrentDirectory).GetAwaiter().GetResult(); }
             catch (Exception error) when (!SmokeTest && startup.Mode == DesktopStartupMode.Browse && GitEnvironmentStartup.IsExecutableUnavailable(error))
@@ -96,8 +97,12 @@ internal static class Program
             finally
             {
                 // The UI loop has actually ended. Never create a runtime or dispatch new UI work here.
-                if ((builder.Instance as App)?.ExistingAvatarRuntime is { } avatars)
-                { avatars.ShutdownAsync().GetAwaiter().GetResult(); }
+                try { CommandLogCapturePreferences.DrainAsync().GetAwaiter().GetResult(); }
+                finally
+                {
+                    if ((builder.Instance as App)?.ExistingAvatarRuntime is { } avatars)
+                    { avatars.ShutdownAsync().GetAwaiter().GetResult(); }
+                }
             }
         }
         catch (Exception exception)
@@ -110,5 +115,6 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure(() => new App(true))
         .UsePlatformDetect()
         .WithInterFont()
+        .AfterSetup(static _ => CommandLogCapturePreferences.InstallDispatcherProbe())
         .LogToTrace();
 }

@@ -146,6 +146,8 @@ public sealed class GitRunner
             }
         }
 
+        // Freeze caller metadata before askpass can await and continue on a worker.
+        GitCommandLogLaunchContext logContext = applyGitEnvironment ? GitCommandLog.CaptureLaunchContext() : default;
         if (applyAskpass)
         {
             await ApplyAskpassAsync(startInfo, arguments, cancellationToken, executionEnvironment).ConfigureAwait(false);
@@ -156,7 +158,7 @@ public sealed class GitRunner
         int? exitCode = null;
         GitProcessLaunch? launch = null;
         Exception? failure = null;
-        long? logId = applyGitEnvironment ? GitCommandLog.Begin(arguments, workingDirectory, started) : null;
+        long? logId = applyGitEnvironment ? GitCommandLog.BeginWithContext(arguments, workingDirectory, started, logContext) : null;
         Action<int>? startedObserver = processStarted;
         if (logId is long id)
         {

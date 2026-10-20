@@ -35,11 +35,16 @@ internal sealed class GitCommandLogWindow : Window
     private readonly List<ContextMenu> _menus = [];
     private readonly TranslationCatalog _translations;
     private readonly CancellationTokenSource _lifetime = new();
-    private bool _closed, _subscribed, _refreshing, _busy;
+    private readonly CommandLogCapturePreferences _capturePreferences = new();
+    private readonly CheckBox _capture = new() { Name = "chkCaptureCallStacks", IsEnabled = false, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _captureNotice = new() { Name = "CommandLogCaptureNotice", IsVisible = false, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(4, 2) };
+    private CommandLogCaptureState? _captureState;
+    private bool _settingCapture;
+    private bool _closed, _subscribed, _refreshing, _busy, _captureLoading;
     private int _queued;
     internal Func<FilePickerSaveOptions, Task<IStorageFile?>>? SaveFilePicker { get; set; }
     internal Task Work { get; private set; } = Task.CompletedTask;
-    internal bool IsBusy => _busy;
+    internal bool IsBusy => _busy || _captureLoading;
 
     internal static GitCommandLogWindow ShowOrActivate(Window owner, TranslationCatalog translations)
     {
@@ -88,12 +93,17 @@ internal sealed class GitCommandLogWindow : Window
         CheckBox wrap = new() { Name = "chkWordWrap", Content = Original("chkWordWrap", "Word wrap"), IsChecked = true, VerticalAlignment = VerticalAlignment.Center };
         top.IsCheckedChanged += (_, _) => Topmost = top.IsChecked == true;
         wrap.IsCheckedChanged += (_, _) => _text.TextWrapping = wrap.IsChecked == true ? TextWrapping.Wrap : TextWrapping.NoWrap;
-        StackPanel footer = new() { Name = "CommandLogOptions", Orientation = Orientation.Horizontal, Spacing = 8,
-            Margin = new Thickness(4, 3), Children = { top, wrap } };
-        DockPanel.SetDock(footer, Dock.Bottom); Content = new DockPanel { Children = { footer, tabs } };
+        _capture.Content = Original("chkCaptureCallStacks", "Capture call stacks");
+        _capture.IsCheckedChanged += (_, _) =>
+        { if (!_settingCapture && _capture.IsEnabled) { bool desired = _capture.IsChecked == true; Start(() => SaveCaptureAsync(desired)); } };
+        WrapPanel footer = new() { Name = "CommandLogOptions", Orientation = Orientation.Horizontal, ItemSpacing = 8, LineSpacing = 2,
+            Margin = new Thickness(4, 3), Children = { top, wrap, _capture } };
+        StackPanel options = new() { Children = { _captureNotice, footer } };
+        DockPanel.SetDock(options, Dock.Bottom); Content = new DockPanel { Children = { options, tabs } };
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         KeyDown += (_, args) => { if (!args.Handled && args.Key == Key.Escape && OwnedWindows.All(window => !window.IsVisible) && _menus.All(menu => !menu.IsOpen)) { args.Handled = true; Close(); } };
-        Opened += (_, _) => { GitCommandLog.Changed += Changed; _subscribed = true; Refresh(); _items.Focus(); };
+        Opened += (_, _) =>
+        { GitCommandLog.Changed += Changed; _subscribed = true; _captureLoading = true; Refresh(); _items.Focus(); Work = LoadCaptureAsync(); };
         Closed += (_, _) =>
         {
             Volatile.Write(ref _closed, true);
@@ -122,7 +132,7 @@ internal sealed class GitCommandLogWindow : Window
 
     private void OnKeyDown(object? sender, KeyEventArgs args)
     {
-        if (args.Handled || args.KeyModifiers != KeyModifiers.Control || _closed || _busy) { return; }
+        if (args.Handled || args.KeyModifiers != KeyModifiers.Control || _closed || IsBusy) { return; }
         switch (args.Key)
         {
             case Key.C when !(_text.IsKeyboardFocusWithin && _text.SelectionStart != _text.SelectionEnd):
@@ -190,13 +200,44 @@ internal sealed class GitCommandLogWindow : Window
     }
     private void UpdateCommands()
     {
-        foreach (MenuItem item in _saveItems) { item.IsEnabled = !_busy && _rows.Count != 0; }
-        foreach (MenuItem item in _copyItems) { item.IsEnabled = !_busy && _items.SelectedItem is LogRow && Clipboard is not null; }
-        foreach (MenuItem item in _clearItems) { item.IsEnabled = !_busy && _rows.Count != 0; }
+        _capture.IsEnabled = !IsBusy && _captureState is { Snapshot: not null, Error: null };
+        foreach (MenuItem item in _saveItems) { item.IsEnabled = !IsBusy && _rows.Count != 0; }
+        foreach (MenuItem item in _copyItems) { item.IsEnabled = !IsBusy && _items.SelectedItem is LogRow && Clipboard is not null; }
+        foreach (MenuItem item in _clearItems) { item.IsEnabled = !IsBusy && _rows.Count != 0; }
+    }
+    private async Task LoadCaptureAsync()
+    {
+        try
+        {
+            CommandLogCaptureState value = await _capturePreferences.LoadAsync(_lifetime.Token);
+            if (!_closed) { SetCaptureState(value); }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        finally { _captureLoading = false; if (!_closed) { UpdateCommands(); } }
+    }
+    private async Task SaveCaptureAsync(bool desired)
+    {
+        CommandLogCaptureState before = _captureState ?? throw new InvalidOperationException("Call stack settings have not loaded.");
+        try
+        {
+            CommandLogCaptureState accepted = await _capturePreferences.SetAsync(before, desired, _lifetime.Token);
+            if (!_closed) { SetCaptureState(accepted); }
+        }
+        catch (Exception error) when (CommandLogCapturePreferences.IsPreferenceError(error))
+        { if (!_closed) { SetCaptureState(new(before.Enabled, null, error)); } }
+    }
+    private void SetCaptureState(CommandLogCaptureState value)
+    {
+        _captureState = value; _settingCapture = true;
+        try { _capture.IsChecked = value.Enabled; }
+        finally { _settingCapture = false; }
+        _captureNotice.Text = value.Error is null ? "" : _translations.Translate("Unable to load or save call stack capture settings.") + " "
+            + value.Error.Message + " " + _translations.Translate("Close and reopen the journal after repairing or reloading the settings.");
+        _captureNotice.IsVisible = value.Error is not null;
     }
     private void Start(Func<Task> action)
     {
-        if (_closed || _busy) { return; }
+        if (_closed || IsBusy) { return; }
         Work = ExecuteAsync();
         async Task ExecuteAsync()
         {

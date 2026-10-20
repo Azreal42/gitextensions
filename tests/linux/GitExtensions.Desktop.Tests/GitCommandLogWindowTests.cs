@@ -32,7 +32,7 @@ public sealed class GitCommandLogWindowTests
     public void CsvExportPreservesUnicodeQuotesCarriageReturnsAndTheCultureSeparator(string culture, string separator)
     {
         GitCommandLogEntry entry = new("git status", "répertoire,;\"quoted\"\r\nnext\tpart", Started, TimeSpan.FromMilliseconds(12.5), 7, true) { Id = 1, ProcessId = 42 };
-        string expected = "2026-10-20T12:34:56.0000000+00:00" + separator + "12.5" + separator + "42" + separator + "7" + separator + "true" + separator + "false" + separator + "git status" + separator + "\"répertoire,;\"\"quoted\"\"\r\nnext\tpart\"\n";
+        string expected = "2026-10-20T12:34:56.0000000+00:00" + separator + "12.5" + separator + "42" + separator + "7" + separator + "true" + separator + "false" + separator + "git status" + separator + "\"répertoire,;\"\"quoted\"\"\r\nnext\tpart\"" + separator + separator + "\n";
         Assert.That(GitCommandLogPresentation.Export([entry], true, CultureInfo.GetCultureInfo(culture)), Is.EqualTo(expected));
         Assert.That(entry.Directory, Is.EqualTo("répertoire,;\"quoted\"\r\nnext\tpart"));
     }
@@ -43,7 +43,7 @@ public sealed class GitCommandLogWindowTests
         CultureInfo culture = CultureInfo.InvariantCulture;
         Assert.That(GitCommandLogPresentation.Export([], false, culture), Is.Empty); Assert.That(GitCommandLogPresentation.Export([], true, culture), Is.Empty);
         GitCommandLogEntry running = new("git log", "λ\\folder\tpart\r\nnext", Started, TimeSpan.Zero, null, false) { Id = 1, IsRunning = true };
-        Assert.That(GitCommandLogPresentation.Export([running], false, culture), Is.EqualTo("2026-10-20T12:34:56.0000000+00:00\t\t\t\tfalse\ttrue\tgit log\tλ\\\\folder\\tpart\\r\\nnext\n"));
+        Assert.That(GitCommandLogPresentation.Export([running], false, culture), Is.EqualTo("2026-10-20T12:34:56.0000000+00:00\t\t\t\tfalse\ttrue\tgit log\tλ\\\\folder\\tpart\\r\\nnext\t\t\n"));
         GitCommandLogEntry[] rows = Enumerable.Range(1, 500).Select(index => running with { Id = index }).ToArray();
         string txt = GitCommandLogPresentation.Export(rows, false, culture), csv = GitCommandLogPresentation.Export(rows, true, culture);
         Assert.That(txt.Count(character => character == '\n'), Is.EqualTo(500));
@@ -74,7 +74,7 @@ public sealed class GitCommandLogWindowTests
         Assert.That(top.IsChecked, Is.False); Assert.That(wrap.IsChecked, Is.True); Assert.That(detail.TextWrapping, Is.EqualTo(TextWrapping.Wrap));
         PushProcessTestDriver.Pointer(top); PushProcessTestDriver.Pointer(wrap);
         Assert.That(log.Topmost, Is.True); Assert.That(detail.TextWrapping, Is.EqualTo(TextWrapping.NoWrap));
-        Assert.That(log.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(2)); f.Profile.AssertMaterial(before);
+        Assert.That(log.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(3)); f.Profile.AssertMaterial(before);
         using var frame = log.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
     }
 
@@ -348,7 +348,7 @@ public sealed class GitCommandLogWindowTests
     private static MenuItem Menu(GitCommandLogWindow log, string name) => List(log).ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == name);
     private static async Task<IStorageFile> StorageFile(Window owner, string path)
     { IStorageFile? file = await owner.StorageProvider.TryGetFileFromPathAsync(new Uri(path)); Assert.That(file, Is.Not.Null, "The picker must supply a real IStorageFile."); return file!; }
-    private static async Task Ready(GitCommandLogWindow log, int count) { await Until(() => List(log).Items.Count == count); Pump(log); }
+    private static async Task Ready(GitCommandLogWindow log, int count) { await Until(() => List(log).Items.Count == count && !log.IsBusy); Pump(log); }
     private static void Press(TopLevel window, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None)
     { window.KeyPressQwerty(key, modifiers); window.KeyReleaseQwerty(key, modifiers); Pump(window); }
     private static void Pump(TopLevel window) => DetailedSettingsUiHost.Pump(window);
