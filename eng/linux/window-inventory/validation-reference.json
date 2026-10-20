@@ -1,11 +1,11 @@
 {
-  "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
-  "trx": "artifacts/linux/command-log-20261020/desktop-full-01/results/desktop.trx",
-  "trx_sha256": "b5c2572e3ce7018123d7fbd6bebf9813c2d3edb255099e8f281bf13794ca09da",
+  "source_sha": "00197e8a43ad13e0c527eeaa0a0e8f7658023e49",
+  "trx": "artifacts/linux/command-cache-20261020/desktop-full-02/results/desktop.trx",
+  "trx_sha256": "1adaddcd2c7989dc0192650495a32d2888c3bd495a152361db53ef1a6b70f1c6",
   "counters": {
-    "total": "3662",
-    "executed": "3662",
-    "passed": "3662",
+    "total": "3699",
+    "executed": "3699",
+    "passed": "3699",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -226,6 +226,12 @@
       "Passed": 4
     },
     "ColorsSettingsSessionTests": {
+      "Passed": 15
+    },
+    "CommandCacheWindowTests": {
+      "Passed": 14
+    },
+    "CommandLogCaptureTests": {
       "Passed": 15
     },
     "CommandlineHelpDialogTests": {
@@ -493,7 +499,7 @@
       "Passed": 25
     },
     "FontConsumerTests": {
-      "Passed": 14
+      "Passed": 18
     },
     "FontPreferencesStoreTests": {
       "Passed": 18
@@ -529,7 +535,7 @@
       "Passed": 12
     },
     "GitCommandLogWindowTests": {
-      "Passed": 13
+      "Passed": 17
     },
     "GitConfigAdvancedSettingsPageTests": {
       "Passed": 19
@@ -939,64 +945,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
-      "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+      "source_sha": "00197e8a43ad13e0c527eeaa0a0e8f7658023e49",
+      "execution_source_sha": "00197e8a43ad13e0c527eeaa0a0e8f7658023e49",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
-      "passed": 1072,
-      "total": 1072,
-      "execution_result": "artifacts/linux/command-log-20261020/core-full-01/result.json",
-      "execution_result_sha256": "ebce534cbb7e7410894e4b166c78ced9e0c4ec0111294129de5d83d09dad0570",
+      "passed": 1135,
+      "total": 1135,
+      "execution_result": "artifacts/linux/command-cache-20261020/core-full-02/result.json",
+      "execution_result_sha256": "8c5ef16bf14882f85b679ad6931d7f6a3c03e97ca2e5e3a7edb92c2bc18eca67",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
-        "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
+        "path": "artifacts/linux/command-cache-20261020/review/root-full-review.json",
+        "sha256": "1012f82c2a31934bc05956e5018695c3bf71ffda465012c239da20f9d06d4b7d"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
-        "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
+        "path": "artifacts/linux/command-cache-20261020/review/source-import-review-02.json",
+        "sha256": "9e818e5ea21b710b2e00f10194cca01d2ede24bdcccd8716955c102bd7a81000"
       },
-      "comparison_scope": "Fresh complete suite on exact committed ed86 source in clean worktree; five unrelated primary Modal changes excluded."
+      "comparison_scope": "Fresh complete suite on exact C2 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
     },
     "plugins": {
-      "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
-      "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+      "source_sha": "00197e8a43ad13e0c527eeaa0a0e8f7658023e49",
+      "execution_source_sha": "00197e8a43ad13e0c527eeaa0a0e8f7658023e49",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/command-log-20261020/plugins-full-01/result.json",
-      "execution_result_sha256": "07f2ef9f0c775907471f65f74682e613e354c6e8c320bac4291e86c3328a5d65",
+      "execution_result": "artifacts/linux/command-cache-20261020/plugins-full-02/result.json",
+      "execution_result_sha256": "15aa27f8891a5e05c49ac764095ed7ee72eb7e35583cbde4d52c97df2c64ceed",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
-        "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
+        "path": "artifacts/linux/command-cache-20261020/review/root-full-review.json",
+        "sha256": "1012f82c2a31934bc05956e5018695c3bf71ffda465012c239da20f9d06d4b7d"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
-        "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
+        "path": "artifacts/linux/command-cache-20261020/review/source-import-review-02.json",
+        "sha256": "9e818e5ea21b710b2e00f10194cca01d2ede24bdcccd8716955c102bd7a81000"
       },
-      "comparison_scope": "Fresh complete suite on exact committed ed86 source in clean worktree; five unrelated primary Modal changes excluded."
+      "comparison_scope": "Fresh complete suite on exact C2 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
     "worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
-    "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+    "execution_source_sha": "00197e8a43ad13e0c527eeaa0a0e8f7658023e49",
     "primary_execution": false,
     "reexecuted_on_candidate": true,
     "source_equivalence": {
-      "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
-      "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
+      "path": "artifacts/linux/command-cache-20261020/review/source-import-review-02.json",
+      "sha256": "9e818e5ea21b710b2e00f10194cca01d2ede24bdcccd8716955c102bd7a81000"
     },
     "root_review": {
-      "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
-      "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
+      "path": "artifacts/linux/command-cache-20261020/review/root-full-review.json",
+      "sha256": "1012f82c2a31934bc05956e5018695c3bf71ffda465012c239da20f9d06d4b7d"
     },
-    "meaning": "Fresh complete suites on this committed source; five primary Modal changes separate. Native source and isolated Debian checks have their own qualifications; no global parity inferred."
+    "meaning": "Fresh complete suites on the exact C2 committed sources. Primary Modal edits and documentation remain separate; native and isolated Debian scopes have independent reviews. No global parity inferred."
   }
 }

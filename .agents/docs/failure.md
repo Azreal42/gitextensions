@@ -932,3 +932,13 @@ Une opération de dépôt fige son runner ; un nouveau GitRunner indépendant ne
 Écarter un résultat tardif et attendre BrowseCompletion ne ferme pas un picker natif sans token. Le picker géré possédé ADR0131 remplace ce chemin pour les scripts. Son modèle Avalonia 11.3.22 ignore la saisie FileName lors d’Open : accepter directement ce modèle peut retourner l’ancienne sélection. L’adaptateur distingue sélection inchangée et saisie, vérifie les fichiers et conserve les noms littéraux.
 
 Les ciblés01/02 du lot `file-picker-20261020` ont révélé un renommage interdit d’un contrôle déjà stylé dans TemplateApplied ; le test signale maintenant l’exception réelle plutôt qu’un simple délai d’ouverture. Le premier run a été arrêté après échec avéré, puis ses acteurs retirés. Après correction, ciblé04 passe 58 Desktop et 38 Core Scripts ; ni les essais rouges ni les captures headless ne qualifient un parcours natif.
+
+## Cache des commandes — essais conservés et corrections C2
+
+Le [Desktop C1](../../artifacts/linux/command-cache-20261020/desktop-full-01/desktop.log) a été interrompu par SIGTERM avant TRX : 3542 lignes Passed/11 Failed ne forment pas un verdict complet. La [revue de phase indépendante](../../artifacts/linux/command-cache-20261020/desktop-full-01/root-interrupted-phase-review.json) conserve le retrait malgré result.results vide.
+
+Dix échecs venaient des scripts Git non fermés : [témoin rouge 49/50](../../artifacts/linux/command-cache-20261020/review/root-script-regression-red-review.json), puis [50/50 sur C2](../../artifacts/linux/command-cache-20261020/review/root-targeted-review-02.json). Recovery affichait encore un objet supprimé ; son API fraîche conserve maintenant l’erreur portable, sans assimiler ce choix à Windows.
+
+L’ancien test ClassicSettings levait Click sur OK désactivé par le scan automatique GitEnvironmentSession. Le [diagnostic ciblé08](../../artifacts/linux/command-cache-20261020/targeted-08/desktop.log) enregistre enabled=False/busy=True ; le test attend désormais la disponibilité avant son clic.
+
+[Native02](../../artifacts/linux/command-cache-20261020/native-02/root-retirement-review.json) a fermé normalement l’application puis retiré le contrôleur à 130 : mousebind Titlebar absent du fixture Openbox privé, aucun défaut produit prouvé. Seul [native03](../../artifacts/linux/command-cache-20261020/review/root-native-review.json) porte l’acceptation Root. Les [fulls C2](../../artifacts/linux/command-cache-20261020/review/root-full-review.json) et le [paquet exact](../../artifacts/linux/command-cache-20261020/review/root-package-review.json) sont acquis ; l’[inventaire02](../../artifacts/linux/command-cache-20261020/review/root-inventory-review-02.json) a été régénéré et contrôlé.
