@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "eb41998b6b2e7cb7cedd8505f1a9bed01add8a03",
-  "source_digest_sha256": "982690c719663f0397023793710d6969877d3abee9dff2954ff9ee4173d40c48",
-  "scanned_csharp_files": 2463,
+  "code_reference_commit": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+  "source_digest_sha256": "606708f55f308b787dfd6ff04f928459cfde1d4413a1a24f37cc3c5ba8c3bcaf",
+  "scanned_csharp_files": 2467,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -46,54 +46,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/update-scheduler-20261020/desktop-full-03/results/desktop.trx",
-    "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
-    "trx_sha256": "1f5ba14ea98321c5aefb731172115779ef9a15da3fdc54f5e47cc0336f24b122",
+    "trx": "artifacts/linux/advanced-options-20261020/desktop-full-01/results/desktop.trx",
+    "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+    "trx_sha256": "d668725772436cd476f8d846193e65b400f438d62766f9297f81135d0ff10a71",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
-        "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+        "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+        "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": true,
         "passed": 1062,
         "total": 1062,
-        "execution_result": "artifacts/linux/update-scheduler-20261020/core-full-01/result.json",
-        "execution_result_sha256": "3906a3d67766693061eb1de940093feb3523366c236acd5f2454f76807a61127",
+        "execution_result": "artifacts/linux/advanced-options-20261020/core-full-01/result.json",
+        "execution_result_sha256": "229275df86a8427501a769a69ffa9f2322e4fb58e702e6a06bdc488badb7df12",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
-          "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
+          "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
+          "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
-          "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
+          "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
+          "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
         },
-        "comparison_scope": "Fresh complete suites on the exact committed candidate in the clean worktree. Declared source/config and binary manifests are equal; five unrelated primary Modal changes remain excluded."
+        "comparison_scope": "Fresh complete suite on exact committed ac59 source in clean worktree; five unrelated primary Modal changes excluded."
       },
       "plugins": {
-        "source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
-        "execution_source_sha": "d165480713d30878f5795c28d7cfcc375ead428e",
+        "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+        "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
         "execution_kind": "worktree",
-        "execution_worktree": "/home/az42/.codex/worktrees/updates-scheduler/gitextensions",
+        "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": true,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/update-scheduler-20261020/plugins-full-01/result.json",
-        "execution_result_sha256": "71b36699e0fed115dfbd088748e9a4da036c2e0fe9ae3afb04ff70d7b380ffbc",
+        "execution_result": "artifacts/linux/advanced-options-20261020/plugins-full-01/result.json",
+        "execution_result_sha256": "4056edc42af23dcf1b1a811043646eb6120d2a0cc0adba54a840c74603b0ab79",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/update-scheduler-20261020/review/root-full-review.json",
-          "sha256": "931cb2d9b0006ae846f714983d51b5391ce6ab985fd1a50cbe247c74e4a09e12"
+          "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
+          "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/update-scheduler-20261020/review/source-import-review.json",
-          "sha256": "c81ba8cb62f35478f05ed35c3f8659d98f3efe87aedd8b618c7a5f286871a395"
+          "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
+          "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
         },
-        "comparison_scope": "Fresh complete suites on the exact committed candidate in the clean worktree. Declared source/config and binary manifests are equal; five unrelated primary Modal changes remain excluded."
+        "comparison_scope": "Fresh complete suite on exact committed ac59 source in clean worktree; five unrelated primary Modal changes excluded."
       }
     },
     "current_linux_code_equivalent": false,
@@ -1704,6 +1704,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GoToCommitDialogTests.cs",
           "test_class": "GoToCommitDialogTests",
           "passed_in_reference_run": 15,
@@ -2772,8 +2778,8 @@
       "feature": "Navigation principale, historique, menus, fichiers",
       "group": "navigation",
       "level": "N2",
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab et Azure conservent l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours.",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab et Azure conservent l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours. ADR0135 : menu de badge ciblé par défaut, Maj/global complet et Ctrl prioritaire, avec ref complète/RevisionHash filtrée dans les deux formes. Branche/tag homonymes et tag annoté restent distincts ; hors badge/clavier et fermeture effacent l’ancien contexte. Push/Merge/Delete tag/Select in left panel réutilisent les consommateurs partagés ; ciblage Rebase gardé pendant refresh, retour grille ou intention arbre sans filtre/reconstruction. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert. ADR0135 ne clôt pas les groupes NestledVirtualRef Windows, commandes artificielles/stash ni Advanced/Bisect complets ; preuves du lot dans TODO ; autres variantes natives ouvertes.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -2951,9 +2957,34 @@
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Scripts.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.AdvancedOptionsVisibility",
+          "label": "AdvancedOptionsVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AdvancedOptionsVisibility.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.FocusedRevisionMenu.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.FocusedRevisionMenu.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "MainWindow.Shortcuts.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Shortcuts.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AnnotatedReferencePresentationTests.cs",
           "test_class": "AnnotatedReferencePresentationTests",
@@ -3177,6 +3208,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ForkCloneDialogTests.cs",
           "test_class": "ForkCloneDialogTests",
           "passed_in_reference_run": 18,
@@ -3267,6 +3304,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionContextMenuTests.cs",
+          "test_class": "RevisionContextMenuTests",
+          "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionLinksControllerTests.cs",
           "test_class": "RevisionLinksControllerTests",
           "passed_in_reference_run": 7,
@@ -3328,7 +3371,8 @@
         ".agents/docs/adr/preferences/confirmations/0125-confirmations.md",
         ".agents/docs/adr/workflows/scripts/0126-generic-prompts.md",
         ".agents/docs/adr/ui/dialogs/0127-recoverable-error-report.md",
-        ".agents/docs/adr/preferences/colors/0128-graph-colors.md"
+        ".agents/docs/adr/preferences/colors/0128-graph-colors.md",
+        ".agents/docs/adr/preferences/advanced/0135-shared-advanced-options.md"
       ]
     },
     {
@@ -3531,7 +3575,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 184,
+          "line": 241,
           "kind": "window"
         },
         {
@@ -5922,7 +5966,7 @@
       "feature": "Fusion de branche",
       "group": "operations",
       "level": "N3",
-      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
+      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source. ADR0135 : case Advanced initialisée au global avant OptionsChanged puis librement repliable, sans réimposition aux relectures ni nouveau choix Git. Minimum adapté à l’aide dépliée ; états locaux d’aide indépendants. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
       "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso. Valeurs hors0–100 conservées visiblement, action bloquée jusqu’à correction explicite ; nouveau parcours natif et audit de toutes les variantes encore ouverts. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts.",
       "visual": "rapproche",
       "linux": [
@@ -5953,9 +5997,22 @@
           "source": "src/linux/GitExtensions.Desktop/Controls/OriginalCommandHelpVisibility.cs",
           "line": 6,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.AdvancedOptionsVisibility",
+          "label": "AdvancedOptionsVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AdvancedOptionsVisibility.cs",
+          "line": 6,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
           "test_class": "ConfirmationsWorkflowTests",
@@ -5969,10 +6026,16 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -6004,7 +6067,8 @@
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
         ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md",
-        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md"
+        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md",
+        ".agents/docs/adr/preferences/advanced/0135-shared-advanced-options.md"
       ]
     },
     {
@@ -6239,8 +6303,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullAdvancedDialogTests.cs",
@@ -6331,7 +6395,7 @@
       "feature": "Push",
       "group": "network",
       "level": "N2",
-      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow. Option Detailed raccordée au multibranche : ls-remote dans le contexte capturé du dépôt et Process possédé, liste distante complète sans fetch ni choix implicite ; erreur/annulation sans repli local.",
+      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow. Option Detailed raccordée au multibranche : ls-remote dans le contexte capturé du dépôt et Process possédé, liste distante complète sans fetch ni choix implicite ; erreur/annulation sans repli local. ADR0135 : expansion commune au global capturé à l’ouverture et au clic Show options, sans persistance locale ni modification des options Git. initialBranch présélectionne la source et son remote configuré en conservant le vrai checkout/statut et les mappings ; aucun Push automatique. Éditeurs 24 px avec padding compact et oracle de viewport réelle. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
       "remaining": "PR hébergeurs, Abort/fermetures et audit étendu des scripts/reprises et de la lecture serveur dans le paquet encore ouverts.",
       "visual": "rapproche",
       "linux": [
@@ -6355,9 +6419,22 @@
           "source": "src/linux/GitExtensions.Desktop/GitProcessDialog.cs",
           "line": 28,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.AdvancedOptionsVisibility",
+          "label": "AdvancedOptionsVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AdvancedOptionsVisibility.cs",
+          "line": 6,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
@@ -6386,6 +6463,12 @@
           "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsWorkflowTests.cs",
           "test_class": "ConfirmationsWorkflowTests",
           "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
           "results_present": true
         },
         {
@@ -6437,7 +6520,8 @@
         ".agents/docs/adr/workflows/remotes/0055-owned-push-process.md",
         ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
-        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md"
+        ".agents/docs/adr/preferences/detailed/0105-detailed-graph-and-xml-settings.md",
+        ".agents/docs/adr/preferences/advanced/0135-shared-advanced-options.md"
       ]
     },
     {
@@ -6505,10 +6589,22 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
@@ -6652,8 +6748,8 @@
       "feature": "Configuration des remotes",
       "group": "network",
       "level": "N3",
-      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture.",
-      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation.",
+      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture. ADR0135 : capture globale par nouvelle fenêtre via le lecteur cosmétique commun, défaut false sans réparation ; override showAdvanced court-circuité conservé. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
+      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation. Le natif ADR0135 ne qualifie pas une nouvelle interaction Remotes ; consommateur couvert par le ciblé, audit étendu ouvert.",
       "visual": "rapproche",
       "extra_evidence": [
         {
@@ -6669,9 +6765,22 @@
           "source": "src/linux/GitExtensions.Desktop/RemotesDialog.cs",
           "line": 15,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.AdvancedOptionsVisibility",
+          "label": "AdvancedOptionsVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AdvancedOptionsVisibility.cs",
+          "line": 6,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CommitBranchTests.cs",
           "test_class": "CommitBranchTests",
@@ -6710,7 +6819,8 @@
         }
       ],
       "adr": [
-        ".agents/docs/adr/workflows/remotes/0067-remote-settings.md"
+        ".agents/docs/adr/workflows/remotes/0067-remote-settings.md",
+        ".agents/docs/adr/preferences/advanced/0135-shared-advanced-options.md"
       ]
     },
     {
@@ -7134,6 +7244,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -7148,7 +7264,7 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsSessionTests.cs",
           "test_class": "AdvancedSettingsSessionTests",
-          "passed_in_reference_run": 19,
+          "passed_in_reference_run": 20,
           "results_present": true
         },
         {
@@ -7352,8 +7468,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -8383,8 +8499,8 @@
       "feature": "Paramètres avancés",
       "group": "settings-pages",
       "level": "N2",
-      "implemented": "Neuf champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes, contrôle hebdomadaire et préversions Updates, masquage global des images d’aide. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133/0134). ADR0134 : neuvième champ DontShowHelpImages false par défaut, contrôle chkDontSHowHelpImages et consommateurs Pull/Merge/Rebase ; masquage complet à l’ouverture, états Show/Hide locaux indépendants et fallback visible sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; Apply acquis et Cancel du brouillon inverse préservent les octets. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
-      "remaining": "Page partielle : activation console Windows reste absente ; AlwaysAdvanced demeure Remotes-only et SSH distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu. Réactivation globale et restauration locale après réactivation couvertes headless, pas en natif ; aucune opération Git native qualifiée. OS vierge, Wayland/IME/DPI/accessibilité et interaction installée ouverts.",
+      "implemented": "Neuf champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées partagées, contrôle hebdomadaire et préversions Updates, masquage global des images d’aide. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133/0134). ADR0134 : neuvième champ DontShowHelpImages false par défaut, contrôle chkDontSHowHelpImages et consommateurs Pull/Merge/Rebase ; masquage complet à l’ouverture, états Show/Hide locaux indépendants et fallback visible sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; Apply acquis et Cancel du brouillon inverse préservent les octets. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source. ADR0135 prolonge AlwaysAdvanced sur Push/Merge/Remotes/menu : capture par fenêtre/popup et états locaux indépendants, défaut cosmétique false sans réparation. SaveAll présente InvalidDataException en gardant le brouillon Apply/OK et la barrière de profil illisible. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
+      "remaining": "Page partielle : activation console Windows reste absente ; SSH reste distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu. Réactivation globale et restauration locale après réactivation couvertes headless, pas en natif ; aucune opération Git native qualifiée. OS vierge, Wayland/IME/DPI/accessibilité et interaction installée ouverts. Le complément AlwaysAdvanced ne certifie pas la parité globale des menus ou des consommateurs ; preuves du lot dans TODO ; autres variantes natives ouvertes.",
       "visual": "integre",
       "linux": [
         {
@@ -8406,9 +8522,29 @@
           "source": "src/linux/GitExtensions.Desktop/AdvancedSettingsValues.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.Controls.AdvancedOptionsVisibility",
+          "label": "AdvancedOptionsVisibility",
+          "source": "src/linux/GitExtensions.Desktop/Controls/AdvancedOptionsVisibility.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 14,
+          "kind": "window"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
@@ -8424,7 +8560,31 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsSessionTests.cs",
           "test_class": "AdvancedSettingsSessionTests",
-          "passed_in_reference_run": 19,
+          "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
+          "test_class": "AppearanceDictionaryTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsLayoutTests.cs",
+          "test_class": "AppearanceSettingsLayoutTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         },
         {
@@ -8434,10 +8594,148 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
+          "test_class": "FileHistoryPreferencesTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FilePathPresentationIntegrationTests.cs",
+          "test_class": "FilePathPresentationIntegrationTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralBrowseStatusTests.cs",
+          "test_class": "GeneralBrowseStatusTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralSettingsSessionTests.cs",
+          "test_class": "GeneralSettingsSessionTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
+          "test_class": "GitConfigurationPageTests",
+          "passed_in_reference_run": 21,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
+          "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/PluginRootIntroductionPageTests.cs",
+          "test_class": "PluginRootIntroductionPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
@@ -8446,9 +8744,39 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
           "test_class": "SettingsNavigationTests",
           "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SimpleHelpDisplayDialogTests.cs",
+          "test_class": "SimpleHelpDisplayDialogTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
+          "test_class": "SshSettingsSessionTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
+          "test_class": "TruncatePathPreferencesTests",
+          "passed_in_reference_run": 15,
           "results_present": true
         },
         {
@@ -8463,7 +8791,8 @@
         ".agents/docs/adr/preferences/navigation/0096-settings-tree-host.md",
         ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md",
         ".agents/docs/adr/distribution/updates/0133-weekly-update-admission.md",
-        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md"
+        ".agents/docs/adr/preferences/advanced/0134-global-command-help-visibility.md",
+        ".agents/docs/adr/preferences/advanced/0135-shared-advanced-options.md"
       ]
     },
     {
@@ -8544,6 +8873,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
@@ -8715,8 +9050,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -8988,6 +9323,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -9212,8 +9553,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -10510,6 +10851,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -10674,8 +11021,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -10891,6 +11238,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -11037,8 +11390,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -11460,6 +11813,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -11756,8 +12115,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -12210,6 +12569,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -12356,8 +12721,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -12646,6 +13011,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -12816,8 +13187,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -12985,6 +13356,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -13131,8 +13508,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -13413,6 +13790,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -13559,8 +13942,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -13801,6 +14184,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
@@ -13959,8 +14348,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
@@ -14800,6 +15189,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
@@ -14878,6 +15273,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FormEditDialogTests.cs",
           "test_class": "FormEditDialogTests",
           "passed_in_reference_run": 8,
@@ -14892,8 +15293,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -15087,6 +15488,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
@@ -15165,6 +15572,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FormEditDialogTests.cs",
           "test_class": "FormEditDialogTests",
           "passed_in_reference_run": 8,
@@ -15179,8 +15592,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -15377,6 +15790,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
@@ -15455,6 +15874,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FormEditDialogTests.cs",
           "test_class": "FormEditDialogTests",
           "passed_in_reference_run": 8,
@@ -15469,8 +15894,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -17138,6 +17563,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BlameOptionsTests.cs",
           "test_class": "BlameOptionsTests",
           "passed_in_reference_run": 7,
@@ -17216,6 +17647,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FocusedRevisionMenuTests.cs",
+          "test_class": "FocusedRevisionMenuTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FormEditDialogTests.cs",
           "test_class": "FormEditDialogTests",
           "passed_in_reference_run": 8,
@@ -17230,8 +17667,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
           "test_class": "HelpImagesPreferencesTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 9,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
@@ -18701,6 +19138,11 @@
           "level": "N2"
         },
         {
+          "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AdvancedSettingsPage",
+          "name": "AdvancedSettingsPage",
+          "level": "N2"
+        },
+        {
           "id": "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage",
           "name": "AppearanceFontsSettingsPage",
           "level": "N2"
@@ -19473,6 +19915,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.FocusRestoration.cs",
           "line": 6
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.FocusedRevisionMenu.cs",
+          "line": 10
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ForkClone.cs",
@@ -21242,7 +21688,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Rebase.cs",
-      "line": 75,
+      "line": 77,
       "method": "ConfirmHistoryRebaseAsync",
       "text": "new()",
       "platform": "linux",
@@ -21322,7 +21768,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.PushDialog",
       "path": "src/linux/GitExtensions.Desktop/PushDialog.cs",
-      "line": 575,
+      "line": 585,
       "method": "ChoiceAsync",
       "text": "new() { Name = name, Title = title, Width = 580, SizeToContent = SizeToContent.Height, CanResize = false, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeV",
       "platform": "linux",

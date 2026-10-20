@@ -73,6 +73,25 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Probes de nouveau processus sans SDK local | Trois tests historiques recherchent `.dotnet/dotnet` dans les parents du checkout. Fournir une copie physique du SDK isolé ; 3/3 probes puis full03 verts, sans changement produit. [Preuve](../../artifacts/linux/update-scheduler-20261020/review/runtime-environment-review.json). |
 | Préflight natif avec empreintes héritées obsolètes | Vérifier les paquets Git/libXtst installés avant de lier leurs empreintes actuelles ; conserver les scripts et l’essai refusé. Aucune application ne démarre avant ce contrôle. [Preuve](../../artifacts/linux/update-scheduler-20261020/review/native-preflight-01.json). |
 
+## Options avancées — régressions et qualification séparée
+
+| Piège | Cause / règle retenue |
+| --- | --- |
+| Apply d’un profil Advanced illisible échappe au thread UI | Session.Save refuse correctement la baseline avec InvalidDataException ; ajouter ce type aux deux filtres SaveAll. Message, brouillon Apply/OK et publications acquises conservés, aucun repair implicite. |
+| Boîte Push 24 px mais ligne éditable coupée | AutoComplete transmet le padding Fluent 10,6,6,5 à son TextBox ; padding local 4,2, sans augmenter Height. Vérifier TextPresenter dans la viewport et le contrôle parent, au repos/focus/édition. |
+| Maj+F10 absent sous X11 ou ouvre deux fois | La configuration Win32 ajoute ce geste, la générique non. Fallback KeyUp seulement si KeyDown/natif non traités et focus inchangé ; conserver la vraie touche du test et le menu du File tree focalisé, sans Open de secours. |
+| Cible/focus perdus au refresh ou à la fermeture | Garder nom complet et RevisionHash, invocation Rebase séparée du hit-test effacé ; l’intention Select-left invalide le rappel grille, sans filtre/reconstruction. Scripts avant CI/PR et séparateurs Other suivent Windows. |
+
+| Essai conservé | Résultat et suite |
+| --- | --- |
+| [Panneaux01](../../artifacts/linux/advanced-options-20261020/panels-early-01/results/desktop.trx) puis [02](../../artifacts/linux/advanced-options-20261020/panels-early-02/results/desktop.trx) | 15 exécutés / 13 passés / 2 échecs sur la barrière Settings, puis 15/15 après correction. Douze captures initiales ont révélé le texte Push coupé ; quatre Push corrigées inspectées. Preuves préliminaires seules, sessions 15818/1 et 72114/0 conservées. |
+| [Ciblé01](../../artifacts/linux/advanced-options-20261020/targeted-01/results/desktop.trx) | 243 exécutés / 242 passés / 1 échec : attente Maj+F10 ligne 219. Session 22761/1 retirée/stable ; vraie route clavier corrigée, aucun transfert des 242 succès. |
+| [Ciblé02](../../artifacts/linux/advanced-options-20261020/targeted-02/results/desktop.trx) | 247 exécutés / 246 passés / 1 échec : helper envoie KeyUp Escape au dialogue déjà fermé par KeyDown (« TopLevel must be a headless window »). Test corrigé : attendre fermeture/focus naturel, relâcher sur MainWindow ; produit inchangé pour cette correction. |
+| [Build05](../../artifacts/linux/advanced-options-20261020/build-05/desktop.log) | Deux CS7036 test-only : RawInputModifiers manquant sur KeyPress/KeyRelease ; argument RawInputModifiers.None explicite, sans changement produit. |
+| [Ciblé03](../../artifacts/linux/advanced-options-20261020/review/root-targeted-review.json) et [équivalence source](../../artifacts/linux/advanced-options-20261020/review/source-import-review.json) | Source ac59ad500b, 247/247, 19 classes et 12 captures inspectées ; session réelle 49368/0 retirée, source/binaires stables. Build07 trois projets sans avertissement, 43713/0. |
+
+[Natif01 revu par Root](../../artifacts/linux/advanced-options-20261020/review/root-native-review.json) : périmètre X11 source EN/FR accepté, 93 commandes/90 captures/21 checkpoints et deux fermetures applicatives wait0, mais **contrôleur 66910/1 conservé**. Commande 61 : Root a envoyé keysym au lieu de key, KeyError avant input/image inchangée ; vraie Escape 62 réussie. Deux préflights clients avec vue /proc restreinte avaient été refusés avant opération ; [recheck même hôte corrigé](../../artifacts/linux/advanced-options-20261020/process-view-recheck.json) confirme les 305 anciennes identités retirées, puis 38 identités natives retirées. Ne pas convertir ce défaut opérateur en succès technique global ni l’étendre au paquet. Suites complètes acquises sur ac59 (3616 Desktop, 1062 Core, 35 Plugins), paquet exact isolé et inventaire qualifiés séparément ; preuves et limites dans TODO.
+
 ## Images d’aide — contrats et régressions
 
 Le ciblé01 passait 248/248, mais sa capture française coupait Stash. Le ciblé02 renforcé (247/248) a exposé un débordement de 4 px en aide repliée. Après correction, [ciblé03 248/248 et six rendus revus](../../artifacts/linux/help-images-20261020/review/root-targeted-review.json), puis [natif source EN/FR borné](../../artifacts/linux/help-images-20261020/review/root-native-review.json). Le [paquet exact](../../artifacts/linux/help-images-20261020/review/root-package-review.json) est qualifié séparément en DPKG isolé ; interaction installée ouverte.

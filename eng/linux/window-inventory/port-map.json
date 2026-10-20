@@ -118,10 +118,13 @@
         "DesktopErrorReporter",
         "ColorsSettingsPage",
         "ConfirmationsSettingsPage",
-        "file:src/linux/GitExtensions.Desktop/MainWindow.Scripts.cs"
+        "file:src/linux/GitExtensions.Desktop/MainWindow.Scripts.cs",
+        "AdvancedOptionsVisibility",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.FocusedRevisionMenu.cs",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.Shortcuts.cs"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab et Azure conservent l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours.",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitLab et Azure conservent l’exclusion Windows du rapport embarqué. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours. ADR0135 : menu de badge ciblé par défaut, Maj/global complet et Ctrl prioritaire, avec ref complète/RevisionHash filtrée dans les deux formes. Branche/tag homonymes et tag annoté restent distincts ; hors badge/clavier et fermeture effacent l’ancien contexte. Push/Merge/Delete tag/Select in left panel réutilisent les consommateurs partagés ; ciblage Rebase gardé pendant refresh, retour grille ou intention arbre sans filtre/reconstruction. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert. ADR0135 ne clôt pas les groupes NestledVirtualRef Windows, commandes artificielles/stash ni Advanced/Bisect complets ; preuves du lot dans TODO ; autres variantes natives ouvertes.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -177,7 +180,10 @@
         "ErrorReportRoutingTests",
         "GenericPromptHostTests",
         "ColorsSettingsConsumerTests",
-        "ConfirmationsWorkflowTests"
+        "ConfirmationsWorkflowTests",
+        "AdvancedOptionsVisibilityTests",
+        "FocusedRevisionMenuTests",
+        "RevisionContextMenuTests"
       ],
       "adr": [
         "0031",
@@ -216,7 +222,8 @@
         "0125",
         "0126",
         "0127",
-        "0128"
+        "0128",
+        "0135"
       ],
       "extra_evidence": [
         {
@@ -906,23 +913,26 @@
         "MergeBranchDialog",
         "ResolveConflictsDialog",
         "OriginalCommandHelp",
-        "OriginalCommandHelpVisibility"
+        "OriginalCommandHelpVisibility",
+        "AdvancedOptionsVisibility"
       ],
-      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
+      "implemented": "Choix branche/révision, options de merge, aide et résolution de conflits. BeforeMerge puis AfterMerge selon succès ou conflit retenu ; aucune règle After-success générique. AddLog/count reprennent la résolution XML brute et les changements instantanés, y compris avant Cancel ; héritage sans écriture Distributed, count0 sans flag et import JSON local sur geste explicite. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source. ADR0135 : case Advanced initialisée au global avant OptionsChanged puis librement repliable, sans réimposition aux relectures ni nouveau choix Git. Minimum adapté à l’aide dépliée ; états locaux d’aide indépendants. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
       "remaining": "Toutes les variantes de stratégie, conflits et événements de scripts ne sont pas certifiées iso. Valeurs hors0–100 conservées visiblement, action bloquée jusqu’à correction explicite ; nouveau parcours natif et audit de toutes les variantes encore ouverts. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts.",
       "visual": "rapproche",
       "tests": [
         "MergeBranchDialogTests",
         "ScriptEventWorkflowTests",
         "MergeDetailedSettingsTests",
-        "HelpImagesPreferencesTests"
+        "HelpImagesPreferencesTests",
+        "AdvancedOptionsVisibilityTests"
       ],
       "adr": [
         "0043",
         "0057",
         "0078",
         "0105",
-        "0134"
+        "0134",
+        "0135"
       ]
     },
     "GitUI.CommandsDialogs.FormResolveConflicts": {
@@ -1086,16 +1096,18 @@
       "linux": [
         "PushDialog",
         "RemotesDialog",
-        "GitProcessDialog"
+        "GitProcessDialog",
+        "AdvancedOptionsVisibility"
       ],
-      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow. Option Detailed raccordée au multibranche : ls-remote dans le contexte capturé du dépôt et Process possédé, liste distante complète sans fetch ni choix implicite ; erreur/annulation sans repli local.",
+      "implemented": "Branches/tags/mappings, tracking, force/lease, récursion et reprise après rejet. Paire Before/AfterPush autour de l’opération ; la reprise après rejet conserve cette paire autour du Pull enfant sans replay à chaque tentative. Le refus de récupération ou de BeforePush conserve le retour aux options ; un arrêt owner/token/Process scelle le workflow. Option Detailed raccordée au multibranche : ls-remote dans le contexte capturé du dépôt et Process possédé, liste distante complète sans fetch ni choix implicite ; erreur/annulation sans repli local. ADR0135 : expansion commune au global capturé à l’ouverture et au clic Show options, sans persistance locale ni modification des options Git. initialBranch présélectionne la source et son remote configuré en conservant le vrai checkout/statut et les mappings ; aucun Push automatique. Éditeurs 24 px avec padding compact et oracle de viewport réelle. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
       "remaining": "PR hébergeurs, Abort/fermetures et audit étendu des scripts/reprises et de la lecture serveur dans le paquet encore ouverts.",
       "visual": "rapproche",
       "tests": [
         "PushDialogTests",
         "PushProcessDialogTests",
         "ScriptEventWorkflowTests",
-        "PushDetailedSettingsTests"
+        "PushDetailedSettingsTests",
+        "AdvancedOptionsVisibilityTests"
       ],
       "adr": [
         "0036",
@@ -1103,7 +1115,8 @@
         "0055",
         "0057",
         "0078",
-        "0105"
+        "0105",
+        "0135"
       ]
     },
     "GitUI.CommandsDialogs.FormRemotes": {
@@ -1111,20 +1124,23 @@
       "group": "network",
       "level": "N3",
       "linux": [
-        "RemotesDialog"
+        "RemotesDialog",
+        "AdvancedOptionsVisibility"
       ],
-      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture.",
-      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation.",
+      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture. ADR0135 : capture globale par nouvelle fenêtre via le lecteur cosmétique commun, défaut false sans réparation ; override showAdvanced court-circuité conservé. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
+      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation. Le natif ADR0135 ne qualifie pas une nouvelle interaction Remotes ; consommateur couvert par le ciblé, audit étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "RemotesDialogTests",
         "RemoteReferenceColorTests",
         "PushDialogTests",
         "PullLayoutTests",
-        "RemotesTrackingValidationTests"
+        "RemotesTrackingValidationTests",
+        "AdvancedOptionsVisibilityTests"
       ],
       "adr": [
-        "0067"
+        "0067",
+        "0135"
       ],
       "extra_evidence": [
         {
@@ -2623,10 +2639,12 @@
       "linux": [
         "AdvancedSettingsPage",
         "AdvancedSettingsSession",
-        "file:src/linux/GitExtensions.Desktop/AdvancedSettingsValues.cs"
+        "file:src/linux/GitExtensions.Desktop/AdvancedSettingsValues.cs",
+        "AdvancedOptionsVisibility",
+        "DesktopSettingsDialog"
       ],
-      "implemented": "Neuf champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées de Remotes, contrôle hebdomadaire et préversions Updates, masquage global des images d’aide. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133/0134). ADR0134 : neuvième champ DontShowHelpImages false par défaut, contrôle chkDontSHowHelpImages et consommateurs Pull/Merge/Rebase ; masquage complet à l’ouverture, états Show/Hide locaux indépendants et fallback visible sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; Apply acquis et Cancel du brouillon inverse préservent les octets. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
-      "remaining": "Page partielle : activation console Windows reste absente ; AlwaysAdvanced demeure Remotes-only et SSH distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu. Réactivation globale et restauration locale après réactivation couvertes headless, pas en natif ; aucune opération Git native qualifiée. OS vierge, Wayland/IME/DPI/accessibilité et interaction installée ouverts.",
+      "implemented": "Neuf champs Windows : Checkout toujours affiché et action locale par défaut, Commit & Push forcé avec lease en Amend, normalisation/symbole et options avancées partagées, contrôle hebdomadaire et préversions Updates, masquage global des images d’aide. Groupe Updates original ; valeurs par défaut true/false, tooltip Linux alpha/bêta et consommateurs manuels/automatiques communs. Brouillon Settings, trois profils existants, intentions modifiées et reçus par fichier ; symbole _/-/(none) et littéral hérité inconnu conservés sans écriture implicite (ADR0129/0133/0134). ADR0134 : neuvième champ DontShowHelpImages false par défaut, contrôle chkDontSHowHelpImages et consommateurs Pull/Merge/Rebase ; masquage complet à l’ouverture, états Show/Hide locaux indépendants et fallback visible sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; Apply acquis et Cancel du brouillon inverse préservent les octets. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source. ADR0135 prolonge AlwaysAdvanced sur Push/Merge/Remotes/menu : capture par fenêtre/popup et états locaux indépendants, défaut cosmétique false sans réparation. SaveAll présente InvalidDataException en gardant le brouillon Apply/OK et la barrière de profil illisible. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
+      "remaining": "Page partielle : activation console Windows reste absente ; SSH reste distinct. Écritures optimistes par profil sans transaction globale ; le Save typé ne préserve que les clés étrangères valides de premier niveau. Hôtes, thèmes/langues et interactions installées à auditer au-delà du périmètre Root retenu. Réactivation globale et restauration locale après réactivation couvertes headless, pas en natif ; aucune opération Git native qualifiée. OS vierge, Wayland/IME/DPI/accessibilité et interaction installée ouverts. Le complément AlwaysAdvanced ne certifie pas la parité globale des menus ou des consommateurs ; preuves du lot dans TODO ; autres variantes natives ouvertes.",
       "visual": "integre",
       "tests": [
         "RemotesDialogTests",
@@ -2636,14 +2654,16 @@
         "AdvancedSettingsConsumerTests",
         "UpdatePreferencesTests",
         "AutomaticUpdatesTests",
-        "HelpImagesPreferencesTests"
+        "HelpImagesPreferencesTests",
+        "AdvancedOptionsVisibilityTests"
       ],
       "adr": [
         "0067",
         "0096",
         "0129",
         "0133",
-        "0134"
+        "0134",
+        "0135"
       ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.AppearanceFontsSettingsPage": {
