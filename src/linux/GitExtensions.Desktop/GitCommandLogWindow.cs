@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
@@ -59,7 +61,14 @@ internal sealed class GitCommandLogWindow : Window
         _items.ItemsSource = _rows;
         _items.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>()) { Setters =
         { new Setter(TemplatedControl.PaddingProperty, new Thickness(2, 0)), new Setter(Layoutable.MinHeightProperty, 16d), new Setter(Layoutable.HeightProperty, 16d) } });
-        ScrollViewer.SetHorizontalScrollBarVisibility(_text, ScrollBarVisibility.Auto);
+        // Keep TextBox's native Wrap => Disabled / NoWrap => Auto horizontal binding.
+        // Classic application fonts on template controls must not replace this fixed face.
+        _text.Styles.Add(new Style(selector => selector.OfType<TextBox>().Template().OfType<TextPresenter>().Name("PART_TextPresenter"))
+        { Setters =
+        {
+            new Setter(TextElement.FontFamilyProperty, _text.FontFamily), new Setter(TextElement.FontSizeProperty, _text.FontSize),
+            new Setter(TextElement.FontWeightProperty, _text.FontWeight), new Setter(TextElement.FontStyleProperty, _text.FontStyle)
+        } });
         ScrollViewer.SetVerticalScrollBarVisibility(_text, ScrollBarVisibility.Auto);
         _items.ItemTemplate = new FuncDataTemplate<LogRow>((_, _) => new TextBlock
         { FontFamily = _items.FontFamily, FontSize = 12, FontWeight = FontWeight.Normal, FontStyle = FontStyle.Normal,

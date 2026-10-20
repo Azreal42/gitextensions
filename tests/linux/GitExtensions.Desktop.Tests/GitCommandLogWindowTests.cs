@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
@@ -75,6 +76,44 @@ public sealed class GitCommandLogWindowTests
         Assert.That(log.Topmost, Is.True); Assert.That(detail.TextWrapping, Is.EqualTo(TextWrapping.NoWrap));
         Assert.That(log.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(2)); f.Profile.AssertMaterial(before);
         using var frame = log.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+    }
+
+    [AvaloniaTest]
+    [TestCase("en", false)] [TestCase("en", true)] [TestCase("fr", false)] [TestCase("fr", true)]
+    public async Task WordWrapReflowsTheActualDetailViewportAndReturnsToHorizontalScrollingWhenUnchecked(string language, bool dark)
+    {
+        await using Fixture f = await Fixture.Create(); GitCommandLogWindow log = f.Open(language, dark);
+        f.Add("status", "/literal-working-directory/" + string.Join('/', Enumerable.Repeat("long-directory-for-wrapping", 24)));
+        await Ready(log, 1); TextBox detail = Detail(log); CheckBox wrap = Field<CheckBox>(log, "chkWordWrap");
+        ListBox list = List(log); object? source = list.ItemsSource, selected = list.SelectedItem;
+        string text = detail.Text!; int logicalLines = text.Split('\n').Length;
+        Dictionary<string, byte[]> profile = f.Profile.Material(); string repository = f.Material();
+        ScrollViewer scroll = detail.GetVisualDescendants().OfType<ScrollViewer>().Single(control => control.Name == "PART_ScrollViewer");
+        TextPresenter presenter = detail.GetVisualDescendants().OfType<TextPresenter>().Single(control => control.Name == "PART_TextPresenter");
+        int wrappedLines = AssertWrapped();
+        PushProcessTestDriver.Pointer(wrap); Pump(log);
+        Assert.That(wrap.IsChecked, Is.False); Assert.That(presenter.TextWrapping, Is.EqualTo(TextWrapping.NoWrap));
+        Assert.That(scroll.HorizontalScrollBarVisibility, Is.EqualTo(ScrollBarVisibility.Auto));
+        Assert.That(scroll.Extent.Width, Is.GreaterThan(scroll.Viewport.Width + 10), "The unchecked detail must really scroll horizontally.");
+        Assert.That(detail.GetLineCount(), Is.EqualTo(logicalLines)); Assert.That(presenter.TextLayout.TextLines.Count, Is.EqualTo(logicalLines));
+        PushProcessTestDriver.Pointer(wrap); Pump(log); Assert.That(AssertWrapped(), Is.EqualTo(wrappedLines));
+        log.Width = 440; Pump(log); Assert.That(AssertWrapped(), Is.GreaterThan(wrappedLines), "A narrower real viewport must compose more visual lines.");
+        log.Width = 659; Pump(log); Assert.That(AssertWrapped(), Is.EqualTo(wrappedLines));
+        Assert.That(Detail(log), Is.SameAs(detail)); Assert.That(detail.Text, Is.EqualTo(text));
+        Assert.That(list.ItemsSource, Is.SameAs(source)); Assert.That(list.SelectedItem, Is.SameAs(selected));
+        f.Profile.AssertMaterial(profile); Assert.That(f.Material(), Is.EqualTo(repository));
+        using var frame = log.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+
+        int AssertWrapped()
+        {
+            Assert.That(wrap.IsChecked, Is.True); Assert.That(presenter.TextWrapping, Is.EqualTo(TextWrapping.Wrap));
+            Assert.That(scroll.HorizontalScrollBarVisibility, Is.EqualTo(ScrollBarVisibility.Disabled));
+            Assert.That(scroll.Viewport.Width, Is.GreaterThan(0)); Assert.That(double.IsFinite(presenter.TextLayout.MaxWidth), Is.True);
+            Assert.That(presenter.TextLayout.MaxWidth, Is.LessThanOrEqualTo(scroll.Viewport.Width + 1));
+            Assert.That(scroll.Extent.Width, Is.LessThanOrEqualTo(scroll.Viewport.Width + 1), "Wrapping constrains the rendered content to the viewport.");
+            int actual = detail.GetLineCount(); Assert.That(actual, Is.GreaterThan(logicalLines), "Check composed lines, not only TextBox.TextWrapping.");
+            Assert.That(presenter.TextLayout.TextLines.Count, Is.EqualTo(actual)); return actual;
+        }
     }
 
     [AvaloniaTest]

@@ -145,10 +145,57 @@ public sealed class FontConsumerTests
             Assert.That(output.FontSize, Is.EqualTo(12));
             Assert.That(output.FontWeight, Is.EqualTo(FontWeight.Normal));
             Assert.That(output.FontStyle, Is.EqualTo(FontStyle.Normal));
+            TextPresenter actual = output.GetVisualDescendants().OfType<TextPresenter>().Single(control => control.Name == "PART_TextPresenter");
+            Assert.That(actual.FontFamily, Is.EqualTo(new FontFamily("DejaVu Sans Mono")));
+            Assert.That(actual.FontSize, Is.EqualTo(12)); Assert.That(actual.FontWeight, Is.EqualTo(FontWeight.Normal)); Assert.That(actual.FontStyle, Is.EqualTo(FontStyle.Normal));
             Assert.That(fonts.For(DesktopFontRole.Application).Style, Is.EqualTo(FontStyle.Italic));
             Assert.That(fonts.For(DesktopFontRole.Application).Weight, Is.EqualTo(FontWeight.Bold));
         }
         finally { log.Close(); noticeHost.Close(); }
+    }
+
+    [AvaloniaTest]
+    [TestCase("en", false)] [TestCase("en", true)] [TestCase("fr", false)] [TestCase("fr", true)]
+    public void CommandLogActualPresenterAndListKeepTheFixedFaceUnderDistinctApplicationFonts(string language, bool dark)
+    {
+        using Profile profile = new(DistinctFonts with { Application = new("DejaVu Serif", 12, true, true) });
+        DesktopFontSession fonts = DesktopFonts.Active; GitCommandLog.Clear();
+        long id = (long)typeof(GitCommandLog).GetMethod("Begin", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, new object[] { new[] { "status" }, "/literal-font-preview-directory", DateTimeOffset.UnixEpoch })!;
+        typeof(GitCommandLog).GetMethod("Complete", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, new object[] { id, TimeSpan.FromMilliseconds(12), 0, false });
+        GitCommandLogWindow log = new(TranslationCatalog.Load(Path.Combine(AppContext.BaseDirectory, "Translation"), CultureInfo.GetCultureInfo(language)))
+            { RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light };
+        log.Styles.Add(ClassicStyles.Create(fonts));
+        try
+        {
+            log.Show(); Pump(log);
+            Assert.That(fonts.For(DesktopFontRole.Application).Family, Is.EqualTo(new FontFamily("DejaVu Serif")));
+            Assert.That(fonts.For(DesktopFontRole.Application).Style, Is.EqualTo(FontStyle.Italic));
+            Assert.That(fonts.For(DesktopFontRole.Application).Weight, Is.EqualTo(FontWeight.Bold));
+            TextBox detail = Field<TextBox>(log, "GitCommandLogText"); ListBox list = Field<ListBox>(log, "LogItems");
+            object? source = list.ItemsSource, selected = list.SelectedItem; string? text = detail.Text;
+            Assert.That(text, Does.Contain("git status")); AssertFixed();
+            detail.Focus(); Pump(log); Assert.That(detail.IsKeyboardFocusWithin, Is.True); AssertFixed();
+            log.MouseMove(detail.TranslatePoint(new Point(10, 10), log)!.Value); Pump(log); Assert.That(detail.IsPointerOver, Is.True); AssertFixed();
+            log.RequestedThemeVariant = dark ? ThemeVariant.Light : ThemeVariant.Dark; Pump(log); AssertFixed();
+            log.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light; Pump(log); AssertFixed();
+            Assert.That(detail.Text, Is.EqualTo(text)); Assert.That(list.ItemsSource, Is.SameAs(source)); Assert.That(list.SelectedItem, Is.SameAs(selected));
+            using var frame = log.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+
+            void AssertFixed()
+            {
+                TextPresenter presenter = detail.GetVisualDescendants().OfType<TextPresenter>().Single(control => control.Name == "PART_TextPresenter");
+                Assert.That(presenter.FontFamily, Is.EqualTo(new FontFamily("DejaVu Sans Mono")), "The actual rendered template must keep the fixed face.");
+                Assert.That(presenter.FontSize, Is.EqualTo(12)); Assert.That(presenter.FontWeight, Is.EqualTo(FontWeight.Normal)); Assert.That(presenter.FontStyle, Is.EqualTo(FontStyle.Normal));
+                Assert.That(presenter.TextLayout.TextLines.Count, Is.GreaterThan(0));
+                ListBoxItem row = (ListBoxItem)list.ContainerFromIndex(0)!;
+                TextBlock rowText = row.GetVisualDescendants().OfType<TextBlock>().Single(block => block.Text?.Contains("git status", StringComparison.Ordinal) == true);
+                Assert.That(rowText.FontFamily, Is.EqualTo(new FontFamily("DejaVu Sans Mono"))); Assert.That(rowText.FontSize, Is.EqualTo(12));
+                Assert.That(rowText.FontWeight, Is.EqualTo(FontWeight.Normal)); Assert.That(rowText.FontStyle, Is.EqualTo(FontStyle.Normal));
+            }
+        }
+        finally { log.Close(); GitCommandLog.Clear(); }
     }
 
     [AvaloniaTest]
