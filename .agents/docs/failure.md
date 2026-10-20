@@ -16,6 +16,10 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 | Avertissements IBus lors du lancement hôte | `Destroy` absent de `org.freedesktop.IBus.Service` dans le journal Avalonia. Effet sur la saisie et lien avec une fermeture non établis ; ne pas déduire un crash de ces seuls avertissements. [Journal](../../artifacts/linux/snapshots/aae27bff4/proofs/host-desktop-launch-20261015-01.log). |
 | Lecture de branches Clone laisse des descendants actifs derrière un relais | Interrompre le relais avant de capturer ses enfants peut perdre l’ancre de descendants aux pipes intermédiaires. Capture avant signaux vérifiée par trois régressions avant/après et un Abort Clone natif clair sur `aae27bff4` ; reprise de la requête de branches et autres variantes encore requises. SID seul reste insuffisant ; nettoyage de l’ancien essai distinct de la réussite produit. |
 
+## Bisect contextuel
+
+Le [premier natif](../../artifacts/linux/bisect-context-20261020/native-01/root-retirement-review.json) a reçu SIGTERM dans son contrôleur avant tout verdict : sortie réelle 130, application arrêtée par nettoyage, trois captures et aucun checkpoint. Il est rejeté ; l’émetteur du signal n’est pas établi. La reprise dans une session PTY privée a ses [preuves propres](../../artifacts/linux/bisect-context-20261020/review/root-native-review.json) : deux fermetures normales, huit checkpoints et retrait indépendant. Aucun changement produit n’a été requis. Le ciblé 103/103 est distinct de ces essais natifs.
+
 ## Git et état des workflows — résolus
 
 | Piège | Cause / règle retenue |

@@ -1,6 +1,6 @@
 # TODO
 
-Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn actuel](../../artifacts/linux/advanced-options-20261020/review/root-inventory-review.json) : 2467 fichiers C#, zéro diagnostic**. Les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
+Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn du lot Bisect](../../artifacts/linux/bisect-context-20261020/review/root-inventory-review.json) : 2471 fichiers C#, zéro diagnostic**. Les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
 
 La dernière suite complète de référence porte sur `ac59ad500`. Les anciennes preuves conservent leur source et leur périmètre ; elles ne sont pas transférées implicitement aux changements suivants.
 
@@ -13,6 +13,18 @@ La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) dis
 Les [suites complètes](../../artifacts/linux/advanced-options-20261020/review/root-full-review.json) ont tourné sur la source exacte figée dans un worktree propre ; l’[équivalence de source](../../artifacts/linux/advanced-options-20261020/review/source-import-review.json) conserve les cinq modifications Modal distinctes du primaire, sans qualification de l’ensemble du checkout modifié.
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; sorties/cache/stacks/export du journal Git ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
+
+## Bisect contextuel
+
+[ADR0137](adr/desktop/browse/0137-revision-bisect-actions.md) : quatre commandes Bad/Good/Skip/Stop en tête des menus sujet/badge pendant une session réelle. Le classement capture le SHA choisi, distinct du checkout et de l’ancre multisélection ; Stop reset sans SHA. Process false pour les verdicts, true pour Stop de la grille ; fenêtre historique à cinq boutons conservée séparément. Aucun script bisect run UI n’est déclaré porté.
+
+- [x] [Source bab820090 et équivalence](../../artifacts/linux/bisect-context-20261020/review/source-import-review.json) : trois fichiers, cinq modifications Modal préservées séparément ; build-02 des trois projets sans avertissement/erreur.
+- [x] [Ciblé 103/103, six classes](../../artifacts/linux/bisect-context-20261020/review/root-targeted-review.json), dont 21 nouveaux cas et 82 identités historiques conservées. Clics/Ctrl/Maj+F10, SHA différente du checkout, badges, garde bare/session/dépôt, worktree lié, sorties 0/2, erreur/Abort après effet Git acquis, rafraîchissement et premières flèches vérifiés. Sources/binaires stables et acteurs retirés ; aucune nouvelle suite complète.
+- [x] [Natif X11 privé EN clair / FR sombre](../../artifacts/linux/bisect-context-20261020/review/root-native-review.json) : 39 requêtes, 36 captures inspectées et huit checkpoints ; Good/Skip sur SHA ciblée, acquittement et première Haut/Bas, Stop restaure HEAD/branche et retire le groupe. Deux fermetures normales à 0 ; profils/config/objets/références ordinaires conservés et acteurs retirés. Essai01 interrompu à 130 rejeté et conservé.
+- [x] [Paquet exact bab820090](../../artifacts/linux/snapshots/bab820090/deb/gitextensions_7.2.1~linux-alpha_amd64.deb), 40,084,492 octets, SHA256 `e92cf94cfa8d9638c5026712d918eccac5a4168cde2c5371f0dfc62244ffd765` ; [sept phases à 0](../../artifacts/linux/bisect-context-20261020/review/root-package-review.json), publish/extrait, 402 fichiers/MD5, Skia/français et installation/lancement DPKG isolés vérifiés. Aucune installation hôte ni interaction du paquet déduite.
+- [x] [Inventaire régénéré et contrôlé](../../artifacts/linux/bisect-context-20261020/review/root-inventory-review.json) : 2471 C#, zéro diagnostic, mêmes 139 évaluations et niveaux ; 99 fenêtres métier et 32 pages. Les anciennes preuves L18 et ac59 gardent leurs portées.
+
+Browse N2 et FormBisect N3 inchangés ; ac59 reste la dernière référence complète Desktop/Core/Plugins, avec Core frais distinct L18. Treize familles ouvertes, aucun N4. Le natif couvre Good/Skip et Stop sur histoires linéaires locales ; Bad, multisélection/clavier et erreurs/annulations relèvent ici du ciblé headless. Autres variantes natives, Wayland/IME/DPI/accessibilité et interactions installées restent ouvertes.
 
 ## Rapport CI Windows — périmètre ciblé
 
