@@ -113,7 +113,7 @@ public sealed class FilePaneParityTests
         Window prompt = main.OwnedWindows.Single(window => window.Title == "Rename / move");
         TextBox name = prompt.GetVisualDescendants().OfType<TextBox>().Single();
         Assert.That(name.Text, Is.EqualTo("src/deep")); name.Text = "src/renamed";
-        Click(prompt.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "Rename / move")); await Idle(main);
+        Click(prompt.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "btnOk")); await Idle(main);
         Assert.That(Directory.Exists(Path.Combine(f.Repository, "src/deep")), Is.False);
         Assert.That(await File.ReadAllTextAsync(Path.Combine(f.Repository, "src/renamed/file_name.txt")), Is.EqualTo("dirty worktree\n"));
         Assert.That(await File.ReadAllTextAsync(Path.Combine(f.Repository, "src/renamed/other.txt")), Is.EqualTo("other dirty\n"));

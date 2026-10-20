@@ -120,7 +120,9 @@ public sealed class BugReportDialogTests
         TreeView tree = f.Field<TreeView>("exceptionTreeView"); TreeViewItem root = tree.Items.OfType<TreeViewItem>().Single();
         Assert.That(root.IsExpanded, Is.True);
         TreeViewItem secondItem = root.Items.OfType<TreeViewItem>().ElementAt(1);
-        secondItem.BringIntoView(); PortableHelperSettingsFixture.Pump(f.Dialog); PushProcessTestDriver.Pointer((Control)secondItem.Header!);
+        Control header = ((Control)secondItem.Header!).GetVisualAncestors().OfType<Control>()
+            .First(control => control.Name == "PART_HeaderPresenter");
+        header.BringIntoView(); PortableHelperSettingsFixture.Pump(f.Dialog); PushProcessTestDriver.Pointer(header);
         Assert.That(((ExceptionReportNode)secondItem.Tag!).Message, Is.EqualTo("second"));
         Assert.That(secondItem.Items.OfType<TreeViewItem>().Single().Tag, Is.SameAs(f.Snapshot.Root.Children[1].Children.Single()));
         Assert.That(tree.IsKeyboardFocusWithin, Is.True);

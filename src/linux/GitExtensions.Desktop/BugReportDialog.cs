@@ -26,19 +26,21 @@ internal sealed class BugReportDialog : Window
     private Task _work = Task.CompletedTask;
     private bool _busy, _closing, _closed, _disposed, _closeScheduled;
     private BugReportDecision _decision;
+    private Window? _closingOwner;
     internal Task Completion => _work;
     internal bool IsBusy => _busy;
     internal ExceptionReportSnapshot Snapshot => _snapshot;
 
     internal BugReportDialog(ExceptionReportSnapshot snapshot, ExceptionReportContext context, TranslationCatalog translations,
         Func<string, CancellationToken, Task>? copyText = null, Func<Uri, CancellationToken, Task>? openIssue = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Action? ownerCloseRequested = null)
     {
         _snapshot = snapshot; _context = context; _translations = translations; _copyText = copyText; _openIssue = openIssue;
         _lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         Name = "BugReportForm"; Title = "Git Extensions " + Text("_title", "Error Report");
         Width = 558; Height = 469; MinWidth = 420; MinHeight = 340; CanMinimize = false; Topmost = true;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false;
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         DesktopFonts.Apply(this, DesktopFontRole.Application);
         _details = new(snapshot.Root, translations, property => StartAsync(() => OpenPropertyAsync(property)));
         TabControl tabs = new() { Name = "mainTabs", Items =
@@ -71,12 +73,24 @@ internal sealed class BugReportDialog : Window
         };
         Closing += (_, args) =>
         {
+            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing && _closingOwner is null)
+            {
+                _closingOwner = Owner as Window;
+                // Avalonia asks children first. Invalidate the host report now, before a busy child defers its close.
+                ownerCloseRequested?.Invoke();
+            }
             if (!context.CanIgnore && _decision == BugReportDecision.Dismiss && !_closing && !_lifetime.IsCancellationRequested)
             { args.Cancel = true; return; }
             BeginClose();
             if (!_work.IsCompleted) { args.Cancel = true; ScheduleClose(); }
         };
-        Closed += (_, _) => _closed = true;
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            Window? owner = _closingOwner; _closingOwner = null;
+            // Resume the original owner close only after this child has drained its work.
+            if (owner is not null) { Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
+        };
         UpdateActions();
     }
 

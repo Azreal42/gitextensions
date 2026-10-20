@@ -755,7 +755,8 @@ public sealed partial class MainWindow : Window
         try
         {
             BugReportDecision decision = await Dialogs.ShowErrorAsync(this, snapshot, context, _translations, cancellation.Token,
-                ErrorReportCopyTextAsync, (uri, token) => { token.ThrowIfCancellationRequested(); return OpenWebAsync(uri.AbsoluteUri); });
+                ErrorReportCopyTextAsync, (uri, token) => { token.ThrowIfCancellationRequested(); return OpenWebAsync(uri.AbsoluteUri); },
+                ownerCloseRequested: InvalidateErrorReport);
             quit = decision == BugReportDecision.Quit && !cancellation.IsCancellationRequested && generation == _errorGeneration;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }

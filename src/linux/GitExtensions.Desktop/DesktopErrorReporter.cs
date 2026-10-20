@@ -10,10 +10,11 @@ internal static class DesktopErrorReporter
 
     internal static async Task<BugReportDecision> ShowAsync(Window owner, ExceptionReportSnapshot snapshot,
         ExceptionReportContext context, TranslationCatalog translations, CancellationToken token,
-        Func<string, CancellationToken, Task>? copyText = null, Func<Uri, CancellationToken, Task>? openIssue = null)
+        Func<string, CancellationToken, Task>? copyText = null, Func<Uri, CancellationToken, Task>? openIssue = null,
+        Action? ownerCloseRequested = null)
     {
         if (token.IsCancellationRequested || !owner.IsVisible) { return BugReportDecision.Dismiss; }
-        BugReportDialog dialog = new(snapshot, context, translations, copyText, openIssue, token) { RequestedThemeVariant = owner.ActualThemeVariant };
+        BugReportDialog dialog = new(snapshot, context, translations, copyText, openIssue, token, ownerCloseRequested) { RequestedThemeVariant = owner.ActualThemeVariant };
         using CancellationTokenRegistration cancellation = token.Register(() => Dispatcher.UIThread.Post(() => { dialog.BeginClose(); dialog.Close(); }));
         try { return await dialog.ShowDialog<BugReportDecision>(owner); }
         finally

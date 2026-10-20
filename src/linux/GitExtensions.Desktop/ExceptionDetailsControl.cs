@@ -13,8 +13,8 @@ namespace GitExtensions.Linux.Desktop;
 
 internal sealed class ExceptionDetailsControl : UserControl
 {
-    private readonly TreeView _tree = new() { Name = "exceptionTreeView", Height = 60 };
-    private readonly ListBox _properties = new() { Name = "exceptionDetailsListView", SelectionMode = SelectionMode.Single };
+    private readonly TreeView _tree = new() { Name = "exceptionTreeView", Height = 60, Focusable = true };
+    private readonly ListBox _properties = new() { Name = "exceptionDetailsListView", SelectionMode = SelectionMode.Single, Focusable = true };
     internal ExceptionReportNode? SelectedException => (_tree.SelectedItem as TreeViewItem)?.Tag as ExceptionReportNode;
 
     internal ExceptionDetailsControl(ExceptionReportNode root, TranslationCatalog translations, Func<ExceptionReportProperty, Task> openDetail)

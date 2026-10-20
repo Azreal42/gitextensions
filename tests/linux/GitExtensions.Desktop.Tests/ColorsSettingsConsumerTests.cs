@@ -28,11 +28,21 @@ public sealed class ColorsSettingsConsumerTests
         await git.Repository.CreateBranchAsync("side"); await git.ChangeAsync("side content\n", "Side colors commit\n\nInline body from unrelated branch");
         await git.Repository.CheckoutAsync("main"); await git.ChangeAsync("main content\n", "Main colors commit");
         new PreferencesStore().Save(new() { Theme = dark ? "Dark" : "Light", Language = "English" });
-        new HistoryViewPreferencesStore().Save(new());
-        MainWindow main = new() { Width = 1440, Height = 900 }; main.Show();
+        new HistoryViewPreferencesStore().Save(new() { ShowBuildStatusText = true });
+        string ciSha = await git.Repository.ResolveRevisionAsync("HEAD");
+        GitHubActionsSettingsSession ciSettings = new(git.Repository); await ciSettings.InitializeAsync(default);
+        foreach ((string key, string value) in new[] { (GitHubActionsSettings.EnableKey, "true"),
+            (GitHubActionsSettings.ProviderKey, "GitHub Actions"), (GitHubActionsSettings.OwnerKey, "colors"),
+            (GitHubActionsSettings.RepositoryKey, "repo") }) { ciSettings.Set(GitDistributedSettingsScope.Local, key, value); }
+        await ciSettings.SaveFilesAsync(default);
+        MainWindow main = new() { Width = 1440, Height = 900, GitHubActionsPollInterval = Timeout.InfiniteTimeSpan };
+        int requests = 0;
+        main.GitHubActionsClientFactory = settings => new(settings, new ColorsStatusHandler(ciSha, () => requests++));
+        main.Show();
         try
         {
             await main.OpenRepositoryAsync(git.Repository.Path); await Idle(main);
+            await PushProcessTestDriver.UntilAsync(main, () => main.BuildServerStatusFor(ciSha) is not null);
             ListBox history = Field<ListBox>(main, "RevisionHistory"); object source = history.ItemsSource!;
             GitCommit selected = history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Subject == "Main colors commit");
             GitCommit unrelated = history.ItemsSource!.OfType<GitCommit>().Single(commit => commit.Subject == "Side colors commit");
@@ -40,9 +50,9 @@ public sealed class ColorsSettingsConsumerTests
             Control row = Row(history, selected), other = Row(history, unrelated);
             Border badge = row.GetVisualDescendants().OfType<Border>().First(control => control.Name == "RevisionReference");
             CommitGraph graph = main.GetVisualDescendants().OfType<CommitGraph>().Single();
-            BuildServerRun run = new("synthetic", "colors", "Synthetic CI retained", BuildServerBuildStatus.Success,
-                [selected.Hash], DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch, null);
-            RevisionHistoryRow.ApplyProviderBuildStatus(row, new(selected.Hash, BuildServerBuildStatus.Success, [run]), true, true);
+            string ciCaption = main.BuildServerStatusFor(selected.Hash)!.Text;
+            Assert.That(ciCaption, Does.Contain("Colors CI"));
+            int requestsBefore = requests;
             Control ci = Field<StackPanel>(row, "RevisionBuildStatusCell");
             TextBlock ciText = Field<TextBlock>(row, "RevisionBuildStatus"); string ciTooltip = (string)ToolTip.GetTip(ci)!;
             DesktopSettingsDialog settings = await Settings(main);
@@ -51,7 +61,8 @@ public sealed class ColorsSettingsConsumerTests
             GitCommandLog.Clear(); await Apply(settings, () => new HistoryViewPreferencesStore().Load().FillRefLabels);
             Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected));
             Assert.That(Row(history, selected), Is.SameAs(row)); Assert.That(Row(history, unrelated), Is.SameAs(other));
-            Assert.That(Field<StackPanel>(row, "RevisionBuildStatusCell"), Is.SameAs(ci)); Assert.That(ciText.Text, Is.EqualTo("Synthetic CI retained"));
+            Assert.That(Field<StackPanel>(row, "RevisionBuildStatusCell"), Is.SameAs(ci)); Assert.That(ciText.Text, Is.EqualTo(ciCaption));
+            Assert.That(requests, Is.EqualTo(requestsBefore), "A Colors Apply must not restart the real CI controller.");
             Assert.That(ToolTip.GetTip(ci), Is.EqualTo(ciTooltip));
             Assert.That(row.GetVisualDescendants().OfType<Border>().First(control => control.Name == "RevisionReference"), Is.SameAs(badge));
             Assert.That(badge.Background, Is.InstanceOf<LinearGradientBrush>());
@@ -77,7 +88,9 @@ public sealed class ColorsSettingsConsumerTests
             Assert.That(new HistoryViewPreferencesStore().Load().FillRefLabels, Is.True); Assert.That(badge.Background, Is.InstanceOf<LinearGradientBrush>());
         }
         finally { await Close(main); }
-        MainWindow restarted = new() { Width = 1440, Height = 900 }; restarted.Show();
+        MainWindow restarted = new() { Width = 1440, Height = 900, GitHubActionsPollInterval = Timeout.InfiniteTimeSpan };
+        restarted.GitHubActionsClientFactory = settings => new(settings, new ColorsStatusHandler(ciSha, () => requests++));
+        restarted.Show();
         try
         {
             await restarted.OpenRepositoryAsync(git.Repository.Path); await Idle(restarted);
@@ -297,6 +310,18 @@ public sealed class ColorsSettingsConsumerTests
             PushProcessTestDriver.Pointer(row); Assert.That(history.IsKeyboardFocusWithin, Is.True);
         }
         finally { await Close(main); }
+    }
+
+    private sealed class ColorsStatusHandler(string sha, Action requested) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested(); requested();
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            { Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(new
+            { workflow_runs = new[] { new { id = 17, workflow_id = 5, head_sha = sha, name = "Colors CI",
+                status = "completed", conclusion = "success", html_url = "https://github.com/colors/repo/actions/runs/17" } } })) });
+        }
     }
 
     private static byte[] Region(Window owner, Control control)

@@ -13,8 +13,9 @@ internal static class Dialogs
 {
     internal static Task<BugReportDecision> ShowErrorAsync(Window owner, ExceptionReportSnapshot snapshot,
         ExceptionReportContext context, TranslationCatalog translations, CancellationToken cancellationToken,
-        Func<string, CancellationToken, Task>? copyText = null, Func<Uri, CancellationToken, Task>? openIssue = null)
-        => DesktopErrorReporter.ShowAsync(ActiveOwner(owner), snapshot, context, translations, cancellationToken, copyText, openIssue);
+        Func<string, CancellationToken, Task>? copyText = null, Func<Uri, CancellationToken, Task>? openIssue = null,
+        Action? ownerCloseRequested = null)
+        => DesktopErrorReporter.ShowAsync(ActiveOwner(owner), snapshot, context, translations, cancellationToken, copyText, openIssue, ownerCloseRequested);
 
     public static Task ShowErrorAsync(Window owner, string message)
         => ShowMessageCoreAsync(owner, TranslationCatalog.LoadDefault().Translate("Error"), message, null, default);
