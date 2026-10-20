@@ -14018,4 +14018,44 @@ Détails : Est {1} attendu {2}</target>
       </trans-unit>
     </body>
   </file>
+  <file datatype="plaintext" original="ScriptFilePickerDialog" source-language="en" target-language="fr">
+    <body>
+      <trans-unit id="FileNameWatermark.Text">
+        <source>File name</source>
+        <target>Nom du fichier</target>
+      </trans-unit>
+      <trans-unit id="ShowHiddenFilesText.Text">
+        <source>Show hidden files</source>
+        <target>Afficher les fichiers cachés</target>
+      </trans-unit>
+      <trans-unit id="OkText.Text">
+        <source>Open</source>
+        <target>Ouvrir</target>
+      </trans-unit>
+      <trans-unit id="CancelText.Text">
+        <source>Cancel</source>
+        <target>Annuler</target>
+      </trans-unit>
+      <trans-unit id="NameColumn.Text">
+        <source>Name</source>
+        <target>Nom</target>
+      </trans-unit>
+      <trans-unit id="DateModifiedColumn.Text">
+        <source>Date modified</source>
+        <target>Date de modification</target>
+      </trans-unit>
+      <trans-unit id="TypeColumn.Text">
+        <source>Type</source>
+        <target>Type</target>
+      </trans-unit>
+      <trans-unit id="SizeColumn.Text">
+        <source>Size</source>
+        <target>Taille</target>
+      </trans-unit>
+      <trans-unit id="InvalidFiles.Text">
+        <source>Select existing local files.</source>
+        <target>Sélectionnez des fichiers locaux existants.</target>
+      </trans-unit>
+    </body>
+  </file>
 </xliff>

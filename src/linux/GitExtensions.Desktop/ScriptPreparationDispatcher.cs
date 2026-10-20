@@ -182,8 +182,8 @@ internal sealed class ScriptPreparationDispatcher
             finally
             {
                 dialog.Close();
-                // The native picker cannot be cancelled through its API. Never
-                // return prepared text while an outstanding browse can still finish.
+                // Drain the owned picker (or an injected provider) before exposing
+                // prepared text, including when the prompt or owner closes.
                 if (dialog is FilePromptDialog files) { await files.BrowseCompletion; }
                 if (ReferenceEquals(_active, dialog)) { _active = null; }
             }
