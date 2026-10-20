@@ -1,11 +1,11 @@
 {
-  "source_sha": "7097618c1002105a7802cd044036e6efc094146a",
-  "trx": "artifacts/linux/command-log-geometry-20261020/desktop-full-02/results/desktop.trx",
-  "trx_sha256": "b17e92b26665dc58db0b3633dbb435bcdee3e9df85f8cd55729a265f9a4e6694",
+  "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+  "trx": "artifacts/linux/command-log-external-process-20261020/desktop-full-01/results/desktop.trx",
+  "trx_sha256": "acabb391f63e60331880430245dab829761f2e3b37eb738b4583c435636f92f6",
   "counters": {
-    "total": "3740",
-    "executed": "3740",
-    "passed": "3740",
+    "total": "3763",
+    "executed": "3763",
+    "passed": "3763",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -435,6 +435,9 @@
     "ExportDialogTests": {
       "Passed": 13
     },
+    "ExternalProcessCommandLogTests": {
+      "Passed": 14
+    },
     "FileContentTests": {
       "Passed": 6
     },
@@ -626,6 +629,9 @@
     },
     "HotkeysSettingsPageTests": {
       "Passed": 26
+    },
+    "InteractiveConsoleCommandLogTests": {
+      "Passed": 5
     },
     "InteractiveFileConsoleSocketTests": {
       "Passed": 4
@@ -840,6 +846,9 @@
     "ScriptEventWorkflowTests": {
       "Passed": 14
     },
+    "ScriptExternalCommandLogTests": {
+      "Passed": 4
+    },
     "ScriptFilePickerTests": {
       "Passed": 14
     },
@@ -951,64 +960,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "7097618c1002105a7802cd044036e6efc094146a",
-      "execution_source_sha": "7097618c1002105a7802cd044036e6efc094146a",
+      "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+      "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
-      "passed": 1135,
-      "total": 1135,
-      "execution_result": "artifacts/linux/command-log-geometry-20261020/core-full-01/result.json",
-      "execution_result_sha256": "8ed3e00f00e3327e74afe5d98b7410704b49448380f881af60da0652cca0582e",
+      "passed": 1144,
+      "total": 1144,
+      "execution_result": "artifacts/linux/command-log-external-process-20261020/core-full-01/result.json",
+      "execution_result_sha256": "17827f6a80dffaa0624181f83ef36af51d7aeb9083a81c558cf5f7a8b6759282",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/command-log-geometry-20261020/review/root-full-review.json",
-        "sha256": "d4ffa764ad4580413aa5dada110ba92d57ae2f851ca3895c1a0602b2670089bd"
+        "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
+        "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/command-log-geometry-20261020/review/source-import-review-02.json",
-        "sha256": "80d8e287ebf3df6e307d1547dfae504faa92d79b0851f8acaa846c4874c315a8"
+        "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
+        "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
       },
-      "comparison_scope": "Fresh complete suite on exact C3 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
+      "comparison_scope": "Fresh complete suite on exact C4 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
     },
     "plugins": {
-      "source_sha": "7097618c1002105a7802cd044036e6efc094146a",
-      "execution_source_sha": "7097618c1002105a7802cd044036e6efc094146a",
+      "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+      "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
-      "passed": 35,
-      "total": 35,
-      "execution_result": "artifacts/linux/command-log-geometry-20261020/plugins-full-01/result.json",
-      "execution_result_sha256": "a14134f22c225616d101f02e32ce9f8d9c3ddf5f7c6cd06c0c635e854ca35b2b",
+      "passed": 37,
+      "total": 37,
+      "execution_result": "artifacts/linux/command-log-external-process-20261020/plugins-full-01/result.json",
+      "execution_result_sha256": "dc9e14247ac2e80df59a1a9a2bda0ea414c18079b975749a2893d09b920923c6",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/command-log-geometry-20261020/review/root-full-review.json",
-        "sha256": "d4ffa764ad4580413aa5dada110ba92d57ae2f851ca3895c1a0602b2670089bd"
+        "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
+        "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/command-log-geometry-20261020/review/source-import-review-02.json",
-        "sha256": "80d8e287ebf3df6e307d1547dfae504faa92d79b0851f8acaa846c4874c315a8"
+        "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
+        "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
       },
-      "comparison_scope": "Fresh complete suite on exact C3 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
+      "comparison_scope": "Fresh complete suite on exact C4 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
     "worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
-    "execution_source_sha": "7097618c1002105a7802cd044036e6efc094146a",
+    "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
     "primary_execution": false,
     "reexecuted_on_candidate": true,
     "source_equivalence": {
-      "path": "artifacts/linux/command-log-geometry-20261020/review/source-import-review-02.json",
-      "sha256": "80d8e287ebf3df6e307d1547dfae504faa92d79b0851f8acaa846c4874c315a8"
+      "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
+      "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
     },
     "root_review": {
-      "path": "artifacts/linux/command-log-geometry-20261020/review/root-full-review.json",
-      "sha256": "d4ffa764ad4580413aa5dada110ba92d57ae2f851ca3895c1a0602b2670089bd"
+      "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
+      "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
     },
-    "meaning": "Fresh complete suites on the exact C3 committed sources. Primary Modal edits and documentation remain separate; native geometry and isolated Debian scopes have independent reviews. No global parity inferred."
+    "meaning": "Fresh complete suites on the exact C4 committed sources. Primary Modal edits and documentation remain separate; native external-process journal and isolated Debian scopes have independent reviews. No global parity inferred."
   }
 }

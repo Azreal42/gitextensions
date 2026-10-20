@@ -1,18 +1,33 @@
 # TODO
 
-Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et périmètre. **[Relevé Roslyn L23](../../artifacts/linux/command-log-geometry-20261020/review/root-inventory-review.json) : 2489 fichiers C#, zéro diagnostic**. Les cinq modifications Modal préexistantes restent distinctes de la source testée.
+Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et périmètre. **[Relevé Roslyn L24](../../artifacts/linux/command-log-external-process-20261020/review/root-inventory-review.json) : 2497 fichiers C#, zéro diagnostic**. Les cinq modifications Modal préexistantes restent distinctes de la source testée.
 
-Les [suites complètes C3](../../artifacts/linux/command-log-geometry-20261020/review/root-full-review.json) portent sur `7097618c1002105a7802cd044036e6efc094146a` ; la référence et la matrice sont actualisées sur cette source. Les preuves C2 et antérieures conservent leur périmètre.
+Les [suites complètes C4](../../artifacts/linux/command-log-external-process-20261020/review/root-full-review.json) portent sur `61c883092983a58cfba053cdda28cd25adc0e6bd` ; la référence et la matrice sont actualisées sur cette source. C3 et les lots antérieurs restent historiques, sans transfert de qualification.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 ## État détaillé par fenêtre
 
-La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `7097618c1` : 3740/3740 Desktop (309 classes), 1135/1135 Core, 35/35 Plugins** ; **99 fenêtres métier : 0 N0/N1, 48 N2, 50 N3, 1 hors périmètre ; 32 pages : 0 N0/N1, 31 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
+La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) distingue présence et parité. **Référence `61c883092` : 3763/3763 Desktop (312 classes), 1144/1144 Core, 37/37 Plugins** ; **99 fenêtres métier : 0 N0/N1, 48 N2, 50 N3, 1 hors périmètre ; 32 pages : 0 N0/N1, 31 N2, 1 hors périmètre**. Aucun N4 ni pourcentage de travail déduit des comptes.
 
 Historique ed86 : les [suites complètes](../../artifacts/linux/command-log-20261020/review/root-full-review.json) ont tourné sur la source exacte figée dans un worktree propre ; l’[équivalence de source](../../artifacts/linux/command-log-20261020/review/source-import-review.json) conserve les cinq modifications Modal distinctes du primaire, sans qualification de l’ensemble du checkout modifié.
 
-Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; compléments du cache réel ADR0140 ouverts ; autres processus du journal Git ouverts (piles/thread UI traités par ADR0139) ; arguments, sorties et erreurs brutes exclus du journal de métadonnées (ADR0138), distinct de l’onglet cache explicite ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; compléments du cache réel ADR0140 ouverts ; audit étendu des processus externes ADR0142 (piles/thread UI traités par ADR0139) ; arguments, sorties et erreurs brutes exclus du journal de métadonnées (ADR0138), distinct de l’onglet cache explicite ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
+
+## Processus externes du journal
+
+[ADR0142](adr/ui/dialogs/0142-command-log-external-processes.md) : outils, scripts, builds et console partagent le journal. Une attente UI annulée reste distincte de la fin d’une application détachée ; seules les fins réellement observées ont un code.
+
+| Preuve réelle liée à la source `61c883092` | Périmètre |
+|---|---|
+| [Source](../../artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json) / [build](../../artifacts/linux/command-log-external-process-20261020/build-05/root-compilation-review.json) | Équivalence importée, trois projets sans diagnostic, source/acteurs protégés |
+| [Ciblé](../../artifacts/linux/command-log-external-process-20261020/review/root-targeted-review.json) | 329/329 Desktop ; Core : externe 9, journal 10, capture 12, cache 50, scripts 38 ; Plugins 37 ; identités et attente réelles |
+| [Suites complètes C4](../../artifacts/linux/command-log-external-process-20261020/review/root-full-review.json) | 3763/3763 Desktop (312 classes), 1144/1144 Core, 37/37 Plugins ; identités historiques retenues |
+| [Natif source](../../artifacts/linux/command-log-external-process-20261020/review/root-native-review.json) | Acceptation Root séparée, 72 requêtes/18 checkpoints, 2 fermetures normales et 316 identités retirées |
+| [Paquet exact](../../artifacts/linux/command-log-external-process-20261020/review/root-package-review.json) | 40133120 octets, SHA256 `c01e357c9268493915004014cc7eb55356603bb1ce859f4e8d0c607302265bdf`, 402 fichiers/MD5, sept phases à 0 ; DPKG/démarrage isolés |
+| [Inventaire](../../artifacts/linux/command-log-external-process-20261020/review/root-inventory-review.json) | 2497 C#, zéro diagnostic ; seule fiche FormGitCommandLog enrichie, N2/aspect inchangés, treize familles ouvertes et cinq Modal distincts |
+
+Les essais infructueux et leurs corrections restent dans l’[historique](failure.md#journal-des-processus-externes--fixtures). Le natif couvre les gestes observés sur source sous X11 privé, en anglais clair et français sombre. L’installation isolée ne certifie pas l’interaction du paquet sur le bureau utilisateur ; variantes étendues et autres fenêtres restent ouvertes. N2 et les treize familles globales restent inchangés.
 
 ## Géométrie du journal
 

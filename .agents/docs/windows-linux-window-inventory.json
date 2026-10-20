@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "7097618c1002105a7802cd044036e6efc094146a",
-  "source_digest_sha256": "906308a8c1cea55fb9a12690b71fc96e92e2fc8ec93c91e0c20ba86148d4b462",
-  "scanned_csharp_files": 2489,
+  "code_reference_commit": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+  "source_digest_sha256": "91965113cc95892b99e05a737c87e909800a2c257413045d7f78a95d25d0ad20",
+  "scanned_csharp_files": 2497,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -46,54 +46,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/command-log-geometry-20261020/desktop-full-02/results/desktop.trx",
-    "source_sha": "7097618c1002105a7802cd044036e6efc094146a",
-    "trx_sha256": "b17e92b26665dc58db0b3633dbb435bcdee3e9df85f8cd55729a265f9a4e6694",
+    "trx": "artifacts/linux/command-log-external-process-20261020/desktop-full-01/results/desktop.trx",
+    "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+    "trx_sha256": "acabb391f63e60331880430245dab829761f2e3b37eb738b4583c435636f92f6",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "7097618c1002105a7802cd044036e6efc094146a",
-        "execution_source_sha": "7097618c1002105a7802cd044036e6efc094146a",
+        "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+        "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
         "execution_kind": "worktree",
         "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": true,
-        "passed": 1135,
-        "total": 1135,
-        "execution_result": "artifacts/linux/command-log-geometry-20261020/core-full-01/result.json",
-        "execution_result_sha256": "8ed3e00f00e3327e74afe5d98b7410704b49448380f881af60da0652cca0582e",
+        "passed": 1144,
+        "total": 1144,
+        "execution_result": "artifacts/linux/command-log-external-process-20261020/core-full-01/result.json",
+        "execution_result_sha256": "17827f6a80dffaa0624181f83ef36af51d7aeb9083a81c558cf5f7a8b6759282",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/command-log-geometry-20261020/review/root-full-review.json",
-          "sha256": "d4ffa764ad4580413aa5dada110ba92d57ae2f851ca3895c1a0602b2670089bd"
+          "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
+          "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/command-log-geometry-20261020/review/source-import-review-02.json",
-          "sha256": "80d8e287ebf3df6e307d1547dfae504faa92d79b0851f8acaa846c4874c315a8"
+          "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
+          "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
         },
-        "comparison_scope": "Fresh complete suite on exact C3 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
+        "comparison_scope": "Fresh complete suite on exact C4 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
       },
       "plugins": {
-        "source_sha": "7097618c1002105a7802cd044036e6efc094146a",
-        "execution_source_sha": "7097618c1002105a7802cd044036e6efc094146a",
+        "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+        "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
         "execution_kind": "worktree",
         "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": true,
-        "passed": 35,
-        "total": 35,
-        "execution_result": "artifacts/linux/command-log-geometry-20261020/plugins-full-01/result.json",
-        "execution_result_sha256": "a14134f22c225616d101f02e32ce9f8d9c3ddf5f7c6cd06c0c635e854ca35b2b",
+        "passed": 37,
+        "total": 37,
+        "execution_result": "artifacts/linux/command-log-external-process-20261020/plugins-full-01/result.json",
+        "execution_result_sha256": "dc9e14247ac2e80df59a1a9a2bda0ea414c18079b975749a2893d09b920923c6",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/command-log-geometry-20261020/review/root-full-review.json",
-          "sha256": "d4ffa764ad4580413aa5dada110ba92d57ae2f851ca3895c1a0602b2670089bd"
+          "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
+          "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/command-log-geometry-20261020/review/source-import-review-02.json",
-          "sha256": "80d8e287ebf3df6e307d1547dfae504faa92d79b0851f8acaa846c4874c315a8"
+          "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
+          "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
         },
-        "comparison_scope": "Fresh complete suite on exact C3 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
+        "comparison_scope": "Fresh complete suite on exact C4 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
       }
     },
     "current_linux_code_equivalent": false,
@@ -1548,7 +1548,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowDonateAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 142,
+          "line": 143,
           "kind": "window"
         },
         {
@@ -1619,8 +1619,8 @@
       "feature": "Journal des commandes Git",
       "group": "information",
       "level": "N2",
-      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Lifecycle/rendu acb0a6c9f conserve ses preuves distinctes dans TODO. ADR0139 ajoute les piles opt-in, détails/export sûrs et indicateur du thread appelant capturé avant await askpass. Clé XML Windows Log.CaptureCallStacks false par défaut, writer CAS partagé et publication ordonnée, drain hors UI des effets acquis. Symboles des Assembly approuvées seulement, 32 frames/256 caractères-frame/4096 caractères-pile, aucune donnée brute. Source c000aafc5 : ciblés, Core complet frais, natif source X11 privé EN/FR et paquet exact acquis par leurs preuves distinctes dans TODO ; Desktop/Plugins complets ed86 restent historiques. ADR0140 : vrai cache explicite 50/LRU, budgets 8 MiB bruts par entrée/64 MiB retenus, contexte dépôt/env/config/FS et overrides vérifiés ; second onglet avec clés/sorties réelles, PrintableChars Windows, Clear indépendant et sélection par Id. Les scripts Git non fermés restent frais ; Recovery utilise son API fraîche pour conserver l’erreur objet supprimé. Le journal sûr et son export restent distincts des données brutes affichées. C2 00197e8a4 : suites complètes, natif03 EN clair/FR sombre accepté par Root et paquet exact acquis ; preuves et limites dans TODO. ADR0141 : taille/position normales, Maximized restauré et Minimized normalisé ; F12 vivant conserve son activation. État XDG distinct et inconnus conservés. Source 7097618c1 : suites complètes 3740/1135/35, natif source privé X11 EN/FR borné et paquet exact isolé vérifiés séparément ; limites dans TODO.",
-      "remaining": "Notes/mailmap, références mobiles, index/worktree, Recovery/fsck et shows composites restent frais ; autorités non vérifiables et outils/expansions non fermés bypassent. Journal des autres processus reste ouvert. Arguments, sorties/erreurs bruts et copie complète restent exclus du seul journal de métadonnées et de son export, distinct de l’onglet cache explicite. Recherche absente de cette fenêtre Windows ; libellés anglais de métadonnées également présents dans Windows, sans écart de traduction établi. Natif03 reste borné à ses huit constats Root X11 EN clair/FR sombre ; autres variantes, interaction installée et release non qualifiées. Les preuves acb0/ed86 ne sont pas transférées. Défilement du détail après changement de ligne : la profondeur précédente a été observée ; retour en tête et caret restent à qualifier. Windows affecte RichTextBox.Text dans SelectedIndexChanged sans reset explicite : un écart Windows certain n’est pas établi.",
+      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Lifecycle/rendu acb0a6c9f conserve ses preuves distinctes dans TODO. ADR0139 ajoute les piles opt-in, détails/export sûrs et indicateur du thread appelant capturé avant await askpass. Clé XML Windows Log.CaptureCallStacks false par défaut, writer CAS partagé et publication ordonnée, drain hors UI des effets acquis. Symboles des Assembly approuvées seulement, 32 frames/256 caractères-frame/4096 caractères-pile, aucune donnée brute. Source c000aafc5 : ciblés, Core complet frais, natif source X11 privé EN/FR et paquet exact acquis par leurs preuves distinctes dans TODO ; Desktop/Plugins complets ed86 restent historiques. ADR0140 : vrai cache explicite 50/LRU, budgets 8 MiB bruts par entrée/64 MiB retenus, contexte dépôt/env/config/FS et overrides vérifiés ; second onglet avec clés/sorties réelles, PrintableChars Windows, Clear indépendant et sélection par Id. Les scripts Git non fermés restent frais ; Recovery utilise son API fraîche pour conserver l’erreur objet supprimé. Le journal sûr et son export restent distincts des données brutes affichées. C2 00197e8a4 : suites complètes, natif03 EN clair/FR sombre accepté par Root et paquet exact acquis ; preuves et limites dans TODO. ADR0141 : taille/position normales, Maximized restauré et Minimized normalisé ; F12 vivant conserve son activation. État XDG distinct et inconnus conservés. Source 7097618c1 : suites complètes 3740/1135/35, natif source privé X11 EN/FR borné et paquet exact isolé vérifiés séparément ; limites dans TODO. ADR0142 : outils externes intégrés, scripts, builds et console interactive publient leur descripteur neutre, PID observé et fin dans le même journal sûr. Une attente UI annulée ne tue ni ne termine fictivement une application détachée ; scripts et console gardent leurs propres gardes et drain. Erreur de protocole et handoff sans observation ne deviennent pas des codes Git inventés. C4 61c883092 : suites complètes 3763/1144/37, natif source et paquet isolé liés à leurs preuves distinctes dans TODO.",
+      "remaining": "Notes/mailmap, références mobiles, index/worktree, Recovery/fsck et shows composites restent frais ; autorités non vérifiables et outils/expansions non fermés bypassent. Processus externes intégrés couverts sur le périmètre ADR0142 ; variantes natives étendues et interactions installées restent ouvertes. Arguments, sorties/erreurs bruts et copie complète restent exclus du seul journal de métadonnées et de son export, distinct de l’onglet cache explicite. Recherche absente de cette fenêtre Windows ; libellés anglais de métadonnées également présents dans Windows, sans écart de traduction établi. Natif03 reste borné à ses huit constats Root X11 EN clair/FR sombre ; autres variantes, interaction installée et release non qualifiées. Les preuves acb0/ed86 ne sont pas transférées. Défilement du détail après changement de ligne : la profondeur précédente a été observée ; retour en tête et caret restent à qualifier. Windows affecte RichTextBox.Text dans SelectedIndexChanged sans reset explicite : un écart Windows certain n’est pas établi.",
       "visual": "rapproche",
       "linux": [
         {
@@ -1641,7 +1641,7 @@
           "id": "GitExtensions.Linux.GitCommandLog",
           "label": "GitCommandLog",
           "source": "src/linux/GitExtensions.Core/GitCommandLog.cs",
-          "line": 4,
+          "line": 6,
           "kind": "component"
         },
         {
@@ -1709,6 +1709,50 @@
           "source": "src/linux/GitExtensions.Desktop/CommandLogWindowPlacementState.cs",
           "line": 17,
           "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.LoggedExternalProcess",
+          "label": "LoggedExternalProcess",
+          "source": "src/linux/GitExtensions.Desktop/LoggedExternalProcess.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "GitCommandLogProcess.cs",
+          "source": "src/linux/GitExtensions.Core/GitCommandLogProcess.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "ScriptProcessRunner.cs",
+          "source": "src/linux/GitExtensions.Core/Scripts/ScriptProcessRunner.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "DesktopScriptExecutor.cs",
+          "source": "src/linux/GitExtensions.Desktop/DesktopScriptExecutor.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.InteractiveFileConsoleLauncher",
+          "label": "InteractiveFileConsoleLauncher",
+          "source": "src/linux/GitExtensions.Desktop/InteractiveFileConsoleLauncher.cs",
+          "line": 14,
+          "kind": "component"
+        },
+        {
+          "label": "AutoCompileSubmodulesService.cs",
+          "source": "src/linux/GitExtensions.Plugins/AutoCompileSubmodulesService.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "GourceProcess.cs",
+          "source": "src/linux/GitExtensions.Plugins/GourceProcess.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
@@ -1737,6 +1781,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Plugins.Tests/ExternalBuildCommandLogScenarios.cs",
+          "test_class": "ExternalBuildCommandLogScenarios",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ExternalProcessCommandLogTests.cs",
+          "test_class": "ExternalProcessCommandLogTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
           "test_class": "FontConsumerTests",
           "passed_in_reference_run": 18,
@@ -1761,6 +1817,12 @@
           "results_present": false
         },
         {
+          "source": "tests/linux/GitExtensions.Core.Tests/GitCommandLogExternalScenarios.cs",
+          "test_class": "GitCommandLogExternalScenarios",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Core.Tests/GitCommandLogScenarios.cs",
           "test_class": "GitCommandLogScenarios",
           "passed_in_reference_run": 0,
@@ -1771,6 +1833,18 @@
           "test_class": "GitCommandLogWindowTests",
           "passed_in_reference_run": 17,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/InteractiveConsoleCommandLogTests.cs",
+          "test_class": "InteractiveConsoleCommandLogTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptExternalCommandLogTests.cs",
+          "test_class": "ScriptExternalCommandLogTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
         }
       ],
       "adr": [
@@ -1778,7 +1852,8 @@
         ".agents/docs/adr/ui/dialogs/0138-command-journal-lifecycle.md",
         ".agents/docs/adr/ui/dialogs/0139-command-journal-call-stacks.md",
         ".agents/docs/adr/ui/dialogs/0140-command-cache.md",
-        ".agents/docs/adr/ui/dialogs/0141-command-log-window-placement.md"
+        ".agents/docs/adr/ui/dialogs/0141-command-log-window-placement.md",
+        ".agents/docs/adr/ui/dialogs/0142-command-log-external-processes.md"
       ]
     },
     {
@@ -9442,7 +9517,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyTheme",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 650,
+          "line": 656,
           "kind": "window"
         },
         {
@@ -10445,7 +10520,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 160,
+          "line": 161,
           "kind": "window"
         }
       ],
@@ -12503,7 +12578,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowGitToolsSettingsAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 602,
+          "line": 608,
           "kind": "window"
         },
         {
@@ -12601,7 +12676,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 600,
+          "line": 606,
           "kind": "window"
         },
         {
@@ -13079,7 +13154,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 160,
+          "line": 161,
           "kind": "window"
         }
       ],
@@ -14957,7 +15032,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddSubmoduleAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 492,
+          "line": 493,
           "kind": "window"
         }
       ],
