@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "bab820090c29a2c8bb7cffbc2acede3e619079a2",
-  "source_digest_sha256": "07d1b1932213ed7b333b1bd7da379aa6a5df5875858f5cf95ad264e688314d29",
-  "scanned_csharp_files": 2471,
+  "code_reference_commit": "acb0a6c9f25adf31d561aa5d52bea40f06924713",
+  "source_digest_sha256": "66f3df7c7d689a33aa9c745deefe967bc4171fe8725ebc64092bb51d0bef1a20",
+  "scanned_csharp_files": 2474,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -46,54 +46,54 @@
     "in_progress_screens": 0
   },
   "validation_reference": {
-    "trx": "artifacts/linux/advanced-options-20261020/desktop-full-01/results/desktop.trx",
-    "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
-    "trx_sha256": "d668725772436cd476f8d846193e65b400f438d62766f9297f81135d0ff10a71",
+    "trx": "artifacts/linux/command-log-20261020/desktop-full-01/results/desktop.trx",
+    "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+    "trx_sha256": "b5c2572e3ce7018123d7fbd6bebf9813c2d3edb255099e8f281bf13794ca09da",
     "reference_snapshot": "eng/linux/window-inventory/validation-reference.json",
     "additional_suites": {
       "core": {
-        "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
-        "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+        "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+        "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
         "execution_kind": "worktree",
         "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": true,
-        "passed": 1062,
-        "total": 1062,
-        "execution_result": "artifacts/linux/advanced-options-20261020/core-full-01/result.json",
-        "execution_result_sha256": "229275df86a8427501a769a69ffa9f2322e4fb58e702e6a06bdc488badb7df12",
+        "passed": 1072,
+        "total": 1072,
+        "execution_result": "artifacts/linux/command-log-20261020/core-full-01/result.json",
+        "execution_result_sha256": "ebce534cbb7e7410894e4b166c78ced9e0c4ec0111294129de5d83d09dad0570",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
-          "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
+          "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
+          "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
-          "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
+          "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
+          "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
         },
-        "comparison_scope": "Fresh complete suite on exact committed ac59 source in clean worktree; five unrelated primary Modal changes excluded."
+        "comparison_scope": "Fresh complete suite on exact committed ed86 source in clean worktree; five unrelated primary Modal changes excluded."
       },
       "plugins": {
-        "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
-        "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+        "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+        "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
         "execution_kind": "worktree",
         "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
         "primary_execution": false,
         "reexecuted_on_candidate": true,
         "passed": 35,
         "total": 35,
-        "execution_result": "artifacts/linux/advanced-options-20261020/plugins-full-01/result.json",
-        "execution_result_sha256": "4056edc42af23dcf1b1a811043646eb6120d2a0cc0adba54a840c74603b0ab79",
+        "execution_result": "artifacts/linux/command-log-20261020/plugins-full-01/result.json",
+        "execution_result_sha256": "07f2ef9f0c775907471f65f74682e613e354c6e8c320bac4291e86c3328a5d65",
         "execution_exit_code": 0,
         "parent_verification": {
-          "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
-          "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
+          "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
+          "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
         },
         "source_equivalence": {
-          "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
-          "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
+          "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
+          "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
         },
-        "comparison_scope": "Fresh complete suite on exact committed ac59 source in clean worktree; five unrelated primary Modal changes excluded."
+        "comparison_scope": "Fresh complete suite on exact committed ed86 source in clean worktree; five unrelated primary Modal changes excluded."
       }
     },
     "current_linux_code_equivalent": false,
@@ -1429,8 +1429,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BisectRevisionContextTests.cs",
           "test_class": "BisectRevisionContextTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/GitProcessDialogTests.cs",
@@ -1548,7 +1548,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowDonateAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 143,
+          "line": 142,
           "kind": "window"
         },
         {
@@ -1619,16 +1619,36 @@
       "feature": "Journal des commandes Git",
       "group": "information",
       "level": "N2",
-      "implemented": "Journal borné, F12, durées/exit codes et effacement, sans arguments sensibles.",
-      "remaining": "Sorties détaillées, cache, stacks, export et recherche du journal Windows non portés ; la fenêtre Linux affiche seulement les métadonnées de fin de commandes.",
+      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Ciblé 44/44 Desktop et 10/10 Core lié à acb0a6c9f ; suites complètes, natif et paquet ont leurs preuves distinctes dans TODO.",
+      "remaining": "Vrai cache de résultats et son onglet, piles, indicateur UI-thread, journal des autres processus et taille/position restent ouverts. Arguments, stderr/erreurs bruts et copie de commande complète restent exclus par le contrat de confidentialité Linux ; aucun faux cache. La recherche est absente de cette fenêtre Windows. Restauration WM de groupe puis F12, variantes natives et interaction du paquet se qualifient séparément ; la restauration Minimized→Normal par F12 entre Browse est couverte par le ciblé.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.GitCommandLogWindow",
           "label": "GitCommandLogWindow",
           "source": "src/linux/GitExtensions.Desktop/GitCommandLogWindow.cs",
-          "line": 9,
+          "line": 24,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.GitCommandLogPresentation",
+          "label": "GitCommandLogPresentation",
+          "source": "src/linux/GitExtensions.Desktop/GitCommandLogPresentation.cs",
+          "line": 8,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.GitCommandLog",
+          "label": "GitCommandLog",
+          "source": "src/linux/GitExtensions.Core/GitCommandLog.cs",
+          "line": 4,
+          "kind": "component"
+        },
+        {
+          "label": "MainWindow.ToolsHelp.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
@@ -1643,10 +1663,23 @@
           "test_class": "FontConsumerTests",
           "passed_in_reference_run": 14,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Core.Tests/GitCommandLogScenarios.cs",
+          "test_class": "GitCommandLogScenarios",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitCommandLogWindowTests.cs",
+          "test_class": "GitCommandLogWindowTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
         }
       ],
       "adr": [
-        ".agents/docs/adr/ui/0060-shared-classic-menus.md"
+        ".agents/docs/adr/ui/0060-shared-classic-menus.md",
+        ".agents/docs/adr/ui/dialogs/0138-command-journal-lifecycle.md"
       ]
     },
     {
@@ -3077,8 +3110,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BisectRevisionContextTests.cs",
           "test_class": "BisectRevisionContextTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 21,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseDiffHotkeysTests.cs",
@@ -3113,8 +3146,8 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BuildReportParityTests.cs",
           "test_class": "BuildReportParityTests",
-          "passed_in_reference_run": 0,
-          "results_present": false
+          "passed_in_reference_run": 12,
+          "results_present": true
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/CheckoutRevisionDialogTests.cs",
@@ -10313,7 +10346,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 163,
+          "line": 160,
           "kind": "window"
         }
       ],
@@ -12947,7 +12980,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowSettingsPageAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
-          "line": 163,
+          "line": 160,
           "kind": "window"
         }
       ],
@@ -19598,11 +19631,11 @@
       "id": "GitExtensions.Linux.Desktop.GitCommandLogWindow",
       "name": "GitCommandLogWindow",
       "source": "src/linux/GitExtensions.Desktop/GitCommandLogWindow.cs",
-      "line": 9,
+      "line": 24,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/GitCommandLogWindow.cs",
-          "line": 9
+          "line": 24
         }
       ],
       "bases": [

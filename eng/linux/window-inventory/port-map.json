@@ -2223,16 +2223,23 @@
       "group": "information",
       "level": "N2",
       "linux": [
-        "GitCommandLogWindow"
+        "GitCommandLogWindow",
+        "GitCommandLogPresentation",
+        "GitCommandLog",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs"
       ],
-      "implemented": "Journal borné, F12, durées/exit codes et effacement, sans arguments sensibles.",
-      "remaining": "Sorties détaillées, cache, stacks, export et recherche du journal Windows non portés ; la fenêtre Linux affiche seulement les métadonnées de fin de commandes.",
+      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Ciblé 44/44 Desktop et 10/10 Core lié à acb0a6c9f ; suites complètes, natif et paquet ont leurs preuves distinctes dans TODO.",
+      "remaining": "Vrai cache de résultats et son onglet, piles, indicateur UI-thread, journal des autres processus et taille/position restent ouverts. Arguments, stderr/erreurs bruts et copie de commande complète restent exclus par le contrat de confidentialité Linux ; aucun faux cache. La recherche est absente de cette fenêtre Windows. Restauration WM de groupe puis F12, variantes natives et interaction du paquet se qualifient séparément ; la restauration Minimized→Normal par F12 entre Browse est couverte par le ciblé.",
       "visual": "rapproche",
       "tests": [
-        "ClassicMenuTests"
+        "ClassicMenuTests",
+        "FontConsumerTests",
+        "GitCommandLogWindowTests",
+        "GitCommandLogScenarios"
       ],
       "adr": [
-        "0060"
+        "0060",
+        "0138"
       ]
     },
     "GitUI.CommandsDialogs.BrowseDialog.FormChangeLog": {

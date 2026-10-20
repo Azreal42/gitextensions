@@ -1,11 +1,11 @@
 {
-  "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
-  "trx": "artifacts/linux/advanced-options-20261020/desktop-full-01/results/desktop.trx",
-  "trx_sha256": "d668725772436cd476f8d846193e65b400f438d62766f9297f81135d0ff10a71",
+  "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+  "trx": "artifacts/linux/command-log-20261020/desktop-full-01/results/desktop.trx",
+  "trx_sha256": "b5c2572e3ce7018123d7fbd6bebf9813c2d3edb255099e8f281bf13794ca09da",
   "counters": {
-    "total": "3616",
-    "executed": "3616",
-    "passed": "3616",
+    "total": "3662",
+    "executed": "3662",
+    "passed": "3662",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -21,274 +21,214 @@
     "pending": "0"
   },
   "classes": {
-    "UndoBisectWorkflowTests": {
-      "Passed": 19
-    },
-    "GitProcessDialogTests": {
-      "Passed": 15
-    },
-    "DiffViewerSearchTests": {
-      "Passed": 16
-    },
-    "CleanupCommandLineTests": {
-      "Passed": 15
-    },
-    "SettingsNavigationTests": {
-      "Passed": 20
-    },
-    "AvatarServiceTests": {
-      "Passed": 15
-    },
-    "PushDetailedSettingsTests": {
-      "Passed": 7
-    },
-    "FilePathPresentationIntegrationTests": {
-      "Passed": 19
-    },
-    "TeamCityIntegrationTests": {
-      "Passed": 7
-    },
-    "AvatarProtocolTests": {
-      "Passed": 39
-    },
-    "InteractiveFileConsoleTests": {
-      "Passed": 7
-    },
-    "QuickGitRefSelectorDialogTests": {
-      "Passed": 23
-    },
-    "AskpassModesWindowTests": {
-      "Passed": 12
-    },
-    "LinuxUpdateClientTests": {
-      "Passed": 34
-    },
-    "AutomaticUpdatesTests": {
-      "Passed": 15
-    },
-    "AskpassProtocolTests": {
-      "Passed": 46
-    },
-    "RecoverLostObjectsDialogTests": {
+    "AddSubmoduleDialogTests": {
       "Passed": 17
     },
-    "NetSpellUnicodeTests": {
-      "Passed": 6
-    },
-    "MessageDialogTests": {
-      "Passed": 10
-    },
-    "GeneralSettingsSessionTests": {
-      "Passed": 23
-    },
-    "ReflogDialogTests": {
+    "AdvancedOptionsVisibilityTests": {
       "Passed": 15
     },
-    "BranchNameNormalizationTests": {
+    "AdvancedSettingsConsumerTests": {
       "Passed": 7
     },
-    "ComparisonFileStatusListTests": {
-      "Passed": 22
+    "AdvancedSettingsPageTests": {
+      "Passed": 6
     },
-    "WorktreeDialogTests": {
-      "Passed": 14
-    },
-    "RulesFileEditorDialogTests": {
-      "Passed": 19
-    },
-    "GeneralBrowseStatusTests": {
-      "Passed": 28
-    },
-    "GenericPromptHostTests": {
-      "Passed": 12
-    },
-    "FileHistoryTraversalSettingsTests": {
-      "Passed": 16
-    },
-    "TranslationCatalogTests": {
-      "Passed": 11
-    },
-    "AppearanceViewIntentTests": {
-      "Passed": 10
-    },
-    "ParentChildNavigationTests": {
+    "AdvancedSettingsSessionTests": {
       "Passed": 20
-    },
-    "DiffViewerPreferencesTests": {
-      "Passed": 7
-    },
-    "CommitTemplateDialogTests": {
-      "Passed": 25
-    },
-    "ScriptsPreferencesConcurrencyTests": {
-      "Passed": 12
-    },
-    "ComparisonSelectionTests": {
-      "Passed": 12
-    },
-    "LanguagePreferencesTests": {
-      "Passed": 26
-    },
-    "DictionaryServiceTests": {
-      "Passed": 39
-    },
-    "PullProcessDialogTests": {
-      "Passed": 9
-    },
-    "GitEnvironmentSettingsPagesTests": {
-      "Passed": 15
-    },
-    "ScriptLaunchIntegrationTests": {
-      "Passed": 7
-    },
-    "TruncatePathPreferencesTests": {
-      "Passed": 15
-    },
-    "HelpImagesPreferencesTests": {
-      "Passed": 9
-    },
-    "FilePaneParityTests": {
-      "Passed": 7
-    },
-    "BrowseDiffHotkeysTests": {
-      "Passed": 11
-    },
-    "SshSettingsSessionTests": {
-      "Passed": 9
-    },
-    "ScriptsPreferencesStoreTests": {
-      "Passed": 8
-    },
-    "AppVeyorSettingsPageTests": {
-      "Passed": 21
-    },
-    "ColorsSettingsConsumerTests": {
-      "Passed": 26
-    },
-    "PushDialogTests": {
-      "Passed": 25
-    },
-    "RevisionGraphOptionsTests": {
-      "Passed": 28
-    },
-    "DesktopFontsTests": {
-      "Passed": 7
-    },
-    "ParentChildNavigationHistoryTests": {
-      "Passed": 19
-    },
-    "StashMenuTests": {
-      "Passed": 19
-    },
-    "AvatarCacheTests": {
-      "Passed": 27
-    },
-    "ColorsSettingsSessionTests": {
-      "Passed": 15
-    },
-    "InteractiveFileConsoleSocketTests": {
-      "Passed": 4
-    },
-    "MainWindowBusyFocusTests": {
-      "Passed": 19
-    },
-    "ViewerHostLoadFailureTests": {
-      "Passed": 5
-    },
-    "ClassicMenuTests": {
-      "Passed": 9
-    },
-    "DiffViewerReadingTests": {
-      "Passed": 11
-    },
-    "FileViewerHotkeysTests": {
-      "Passed": 10
-    },
-    "OriginalCommandHelpTests": {
-      "Passed": 5
-    },
-    "GitEnvironmentTransportTests": {
-      "Passed": 6
-    },
-    "ConfirmationsWorkflowTests": {
-      "Passed": 14
-    },
-    "FocusedRevisionMenuTests": {
-      "Passed": 25
-    },
-    "ConfirmationsSettingsPageTests": {
-      "Passed": 14
-    },
-    "AvailableEncodingsDialogTests": {
-      "Passed": 24
-    },
-    "FilePathPresentationTests": {
-      "Passed": 52
-    },
-    "JenkinsSettingsPageTests": {
-      "Passed": 32
-    },
-    "FontConsumerTests": {
-      "Passed": 14
-    },
-    "FontPreferencesStoreTests": {
-      "Passed": 18
-    },
-    "DetailedSettingsPageTests": {
-      "Passed": 23
-    },
-    "DiffViewerAppearanceMenuTests": {
-      "Passed": 4
-    },
-    "PullLayoutTests": {
-      "Passed": 8
-    },
-    "ScriptsSettingsPageTests": {
-      "Passed": 15
-    },
-    "SshSettingsPageTests": {
-      "Passed": 6
-    },
-    "ConsoleStyleSettingsTests": {
-      "Passed": 19
     },
     "AnnotatedReferencePresentationTests": {
       "Passed": 5
     },
-    "DictionaryPreferencesTests": {
-      "Passed": 22
+    "AppVeyorIntegrationTests": {
+      "Passed": 6
     },
-    "GitLabSettingsPageTests": {
+    "AppVeyorRepositoryVariablesTests": {
+      "Passed": 7
+    },
+    "AppVeyorSettingsPageTests": {
+      "Passed": 21
+    },
+    "AppearanceDictionaryTests": {
+      "Passed": 15
+    },
+    "AppearanceSettingsConsumerTests": {
+      "Passed": 7
+    },
+    "AppearanceSettingsLayoutTests": {
+      "Passed": 2
+    },
+    "AppearanceSettingsPageTests": {
+      "Passed": 15
+    },
+    "AppearanceSettingsSessionTests": {
+      "Passed": 14
+    },
+    "AppearanceViewIntentTests": {
+      "Passed": 10
+    },
+    "ArtificialHistoryRevisionTests": {
+      "Passed": 7
+    },
+    "AskpassModesWindowTests": {
+      "Passed": 12
+    },
+    "AskpassProtocolTests": {
+      "Passed": 46
+    },
+    "AskpassTests": {
+      "Passed": 11
+    },
+    "AutomaticUpdatesTests": {
+      "Passed": 15
+    },
+    "AvailableEncodingsDialogTests": {
       "Passed": 24
     },
-    "FileMenuControllerTests": {
+    "AvatarActivationTests": {
+      "Passed": 2
+    },
+    "AvatarCacheTests": {
+      "Passed": 27
+    },
+    "AvatarCommitInfoTests": {
+      "Passed": 1
+    },
+    "AvatarProtocolTests": {
+      "Passed": 39
+    },
+    "AvatarServiceTests": {
+      "Passed": 15
+    },
+    "AvatarSettingsConsumerTests": {
+      "Passed": 4
+    },
+    "AvatarSettingsPageTests": {
+      "Passed": 2
+    },
+    "AvatarSettingsPublicationTests": {
+      "Passed": 10
+    },
+    "AvatarWindowLifetimeTests": {
+      "Passed": 3
+    },
+    "AzureDevOpsIntegrationTests": {
+      "Passed": 7
+    },
+    "AzureDevOpsSettingsPageTests": {
+      "Passed": 42
+    },
+    "BisectRevisionContextTests": {
+      "Passed": 21
+    },
+    "BlameAvatarTests": {
+      "Passed": 4
+    },
+    "BlameDialogTests": {
+      "Passed": 3
+    },
+    "BlameEncodingPositionTests": {
+      "Passed": 8
+    },
+    "BlameNavigationTests": {
+      "Passed": 4
+    },
+    "BlameOptionsTests": {
+      "Passed": 7
+    },
+    "BranchHistoryFilterTests": {
+      "Passed": 11
+    },
+    "BranchMenuTests": {
+      "Passed": 11
+    },
+    "BranchNameNormalizationTests": {
+      "Passed": 7
+    },
+    "BrowseCommitGraphTests": {
+      "Passed": 2
+    },
+    "BrowseDiffHotkeysTests": {
+      "Passed": 11
+    },
+    "BrowseLayoutTests": {
+      "Passed": 7
+    },
+    "BrowseStartupTests": {
+      "Passed": 14
+    },
+    "BrowserHotkeysTests": {
+      "Passed": 8
+    },
+    "BrowserScriptCommandsTests": {
+      "Passed": 2
+    },
+    "BrowserSelectionTests": {
+      "Passed": 7
+    },
+    "BugReportDialogTests": {
+      "Passed": 15
+    },
+    "BuildReportParityTests": {
+      "Passed": 12
+    },
+    "BuildServerCredentialsDialogTests": {
       "Passed": 17
+    },
+    "BuildServerCredentialsStoreTests": {
+      "Passed": 45
+    },
+    "CheckoutInitialLayoutTests": {
+      "Passed": 3
+    },
+    "CheckoutRevisionDialogTests": {
+      "Passed": 16
+    },
+    "CheckoutSubmoduleTests": {
+      "Passed": 12
     },
     "CherryPickDialogTests": {
       "Passed": 18
     },
-    "QuickReferenceWorkflowTests": {
-      "Passed": 8
+    "ClassicMenuTests": {
+      "Passed": 9
     },
-    "CompactNavigationTreeTests": {
-      "Passed": 4
+    "ClassicRadioPaletteTests": {
+      "Passed": 1
     },
-    "CommitCompletionIntegrationTests": {
-      "Passed": 6
+    "ClassicStylesTests": {
+      "Passed": 2
     },
-    "RemoteBranchDeletionDialogTests": {
-      "Passed": 14
+    "CleanupCommandLineTests": {
+      "Passed": 15
     },
     "CleanupRepositoryDialogTests": {
       "Passed": 17
     },
-    "RenameCompareMenuTests": {
-      "Passed": 5
+    "CloneBranchLoadingTests": {
+      "Passed": 6
     },
-    "CommitGraphControlTests": {
-      "Passed": 2
+    "CloneCompletionTests": {
+      "Passed": 6
     },
-    "AskpassTests": {
+    "CloneHistoryTests": {
+      "Passed": 10
+    },
+    "CloneInitDialogTests": {
+      "Passed": 7
+    },
+    "CloneProcessDialogTests": {
+      "Passed": 8
+    },
+    "ColorsSettingsConsumerTests": {
+      "Passed": 26
+    },
+    "ColorsSettingsPageTests": {
+      "Passed": 4
+    },
+    "ColorsSettingsSessionTests": {
+      "Passed": 15
+    },
+    "CommandlineHelpDialogTests": {
       "Passed": 11
     },
     "CommitAndPushWorkflowTests": {
@@ -297,696 +237,765 @@
     "CommitBranchTests": {
       "Passed": 47
     },
-    "FileStatusListViewTests": {
-      "Passed": 9
-    },
-    "BuildServerCredentialsDialogTests": {
-      "Passed": 17
-    },
     "CommitCompletionControllerTests": {
       "Passed": 27
     },
-    "GeneralSettingsPageTests": {
-      "Passed": 20
-    },
-    "ResetRevertDialogTests": {
-      "Passed": 12
-    },
-    "TeamCityBuildChooserDialogTests": {
-      "Passed": 28
-    },
-    "DonateMenuIntegrationTests": {
-      "Passed": 4
-    },
-    "AzureDevOpsSettingsPageTests": {
-      "Passed": 42
-    },
-    "BrowseStartupTests": {
-      "Passed": 14
-    },
-    "DiffViewerComparisonPreferencesTests": {
-      "Passed": 10
-    },
-    "RemotesDialogTests": {
-      "Passed": 25
-    },
-    "FileHistoryPreferencesTests": {
-      "Passed": 5
-    },
-    "ExportDialogTests": {
-      "Passed": 13
-    },
-    "GitEnvironmentPreferencesTests": {
-      "Passed": 36
-    },
-    "ViewerWholeFileHostTests": {
-      "Passed": 2
-    },
-    "RevisionQuickSearchTests": {
-      "Passed": 42
-    },
-    "GoToCommitFocusTests": {
-      "Passed": 16
-    },
-    "DiffViewerNonprintingTests": {
+    "CommitCompletionIntegrationTests": {
       "Passed": 6
     },
-    "SubmoduleConflictDialogTests": {
-      "Passed": 14
-    },
-    "HotkeyHostDialogTests": {
-      "Passed": 26
-    },
-    "DiffViewerRenderingPreferencesTests": {
-      "Passed": 8
-    },
-    "GitHubPullRequestFetchTests": {
-      "Passed": 11
-    },
-    "PullRequestDialogsTests": {
-      "Passed": 24
-    },
-    "BrowserSelectionTests": {
-      "Passed": 7
-    },
-    "ScriptPluginOwnershipTests": {
-      "Passed": 3
-    },
-    "CommitSuperprojectTests": {
-      "Passed": 21
-    },
-    "UpdatePreferencesTests": {
-      "Passed": 14
-    },
-    "CloneCompletionTests": {
-      "Passed": 6
-    },
-    "BranchMenuTests": {
-      "Passed": 11
-    },
-    "RepositoryBranchVisibilityTests": {
-      "Passed": 27
-    },
-    "BlameEncodingPositionTests": {
-      "Passed": 8
-    },
-    "CommitSpellingTests": {
-      "Passed": 30
-    },
-    "GitToolsSettingsDialogTests": {
-      "Passed": 13
-    },
-    "CommitInformationIntegrationTests": {
-      "Passed": 10
-    },
-    "ScriptPreparationDispatcherTests": {
-      "Passed": 21
-    },
-    "ForkCloneDialogTests": {
-      "Passed": 18
-    },
-    "RepositoryDialogTests": {
-      "Passed": 5
-    },
-    "AppearanceSettingsSessionTests": {
-      "Passed": 14
-    },
-    "CommitMessageFormattingTests": {
-      "Passed": 28
-    },
-    "DistributedSettingsWorkspaceTests": {
-      "Passed": 6
-    },
-    "ReferenceDialogTests": {
-      "Passed": 14
-    },
-    "GeneralSettingsBehaviorTests": {
-      "Passed": 24
-    },
-    "RebaseDialogTests": {
-      "Passed": 19
-    },
-    "GitHubHostingPreferencesStoreTests": {
-      "Passed": 19
-    },
-    "FileEditorDialogTests": {
-      "Passed": 17
-    },
-    "FileHistoryInlineBlameTests": {
-      "Passed": 14
-    },
-    "PluginRootIntroductionPageTests": {
-      "Passed": 6
-    },
-    "DetailedSettingsSessionTests": {
-      "Passed": 15
+    "CommitCompletionSpellingRaceTests": {
+      "Passed": 1
     },
     "CommitDialogTests": {
       "Passed": 12
     },
-    "GitConfigAdvancedSettingsPageTests": {
-      "Passed": 19
-    },
-    "DiffViewerToolbarTests": {
-      "Passed": 3
-    },
-    "CommandlineHelpDialogTests": {
-      "Passed": 11
-    },
-    "DashboardTests": {
-      "Passed": 6
-    },
-    "NativeDiffViewerSettingsDialogTests": {
-      "Passed": 4
-    },
-    "ScriptFilePickerTests": {
-      "Passed": 14
-    },
-    "BuildServerCredentialsStoreTests": {
-      "Passed": 45
-    },
-    "FindLargeFilesDialogTests": {
+    "CommitDisplayFilterTests": {
       "Passed": 9
     },
-    "ContributorsDialogTests": {
-      "Passed": 7
+    "CommitGraphControlTests": {
+      "Passed": 2
     },
-    "ReferenceSortingNavigationTests": {
-      "Passed": 4
-    },
-    "GitEnvironmentSettingsSessionTests": {
-      "Passed": 10
-    },
-    "FontSettingsTests": {
-      "Passed": 18
-    },
-    "UpdateCheckStateStoreTests": {
-      "Passed": 11
-    },
-    "CloneHistoryTests": {
-      "Passed": 10
-    },
-    "AdvancedSettingsConsumerTests": {
-      "Passed": 7
-    },
-    "RebaseUnreadableTodoTests": {
-      "Passed": 4
-    },
-    "AppearanceSettingsConsumerTests": {
-      "Passed": 7
-    },
-    "JenkinsIntegrationTests": {
+    "CommitGraphLayoutTests": {
       "Passed": 9
-    },
-    "BranchHistoryFilterTests": {
-      "Passed": 11
-    },
-    "CheckoutRevisionDialogTests": {
-      "Passed": 16
-    },
-    "ReferenceSortingSettingsTests": {
-      "Passed": 10
-    },
-    "DialogAccessKeyTests": {
-      "Passed": 4
-    },
-    "CommitMessageWorkflowTests": {
-      "Passed": 13
-    },
-    "AdvancedOptionsVisibilityTests": {
-      "Passed": 15
-    },
-    "CommitInformationViewTests": {
-      "Passed": 7
     },
     "CommitIndexFlagTests": {
       "Passed": 11
     },
-    "MergeBranchDialogTests": {
+    "CommitInformationIntegrationTests": {
+      "Passed": 10
+    },
+    "CommitInformationPresentationTests": {
+      "Passed": 28
+    },
+    "CommitInformationViewTests": {
       "Passed": 7
     },
-    "CheckoutSubmoduleTests": {
-      "Passed": 12
-    },
-    "RevisionLinksControllerTests": {
-      "Passed": 7
-    },
-    "ScriptHotkeysTests": {
-      "Passed": 2
+    "CommitMessageFormattingTests": {
+      "Passed": 28
     },
     "CommitMessagePreferencesStoreTests": {
       "Passed": 17
     },
-    "FileMenuFocusedSelectionTests": {
-      "Passed": 10
-    },
-    "PullMenuTests": {
-      "Passed": 20
-    },
-    "CloneProcessDialogTests": {
-      "Passed": 8
-    },
-    "GeneralDiffAlgorithmTests": {
-      "Passed": 10
-    },
-    "SubmodulesDialogTests": {
+    "CommitMessageWorkflowTests": {
       "Passed": 13
     },
-    "GoToCommitDialogTests": {
-      "Passed": 15
-    },
-    "ViewerHostReadingTests": {
-      "Passed": 9
-    },
-    "ErrorReportRoutingTests": {
-      "Passed": 10
-    },
-    "GitConfigurationPageTests": {
-      "Passed": 21
-    },
-    "AppVeyorRepositoryVariablesTests": {
-      "Passed": 7
-    },
-    "SimpleHelpDisplayDialogTests": {
+    "CommitSelectionFilterTests": {
       "Passed": 6
     },
-    "HotkeysSettingsPageTests": {
-      "Passed": 26
+    "CommitSpellingTests": {
+      "Passed": 30
     },
-    "RootPullRequestWorkflowTests": {
+    "CommitSuperprojectTests": {
+      "Passed": 21
+    },
+    "CommitTemplateDialogTests": {
+      "Passed": 25
+    },
+    "CompactNavigationTreeTests": {
       "Passed": 4
     },
-    "AddSubmoduleDialogTests": {
-      "Passed": 17
+    "ComparisonFileMenuTests": {
+      "Passed": 6
     },
-    "BugReportDialogTests": {
-      "Passed": 15
+    "ComparisonFileStatusListTests": {
+      "Passed": 22
     },
-    "BrowseLayoutTests": {
+    "ComparisonGroupsDialogTests": {
+      "Passed": 16
+    },
+    "ComparisonSelectionTests": {
+      "Passed": 12
+    },
+    "ConfirmationsSettingsPageTests": {
+      "Passed": 14
+    },
+    "ConfirmationsSettingsSessionTests": {
+      "Passed": 19
+    },
+    "ConfirmationsWorkflowTests": {
+      "Passed": 14
+    },
+    "ConflictRoutingTests": {
+      "Passed": 9
+    },
+    "ConsoleStyleSettingsTests": {
+      "Passed": 19
+    },
+    "ContributorsDialogTests": {
       "Passed": 7
     },
     "CreateBranchInitializationFocusTests": {
       "Passed": 11
     },
-    "RemotesTrackingValidationTests": {
-      "Passed": 2
-    },
-    "ScriptInputDialogTests": {
-      "Passed": 23
-    },
-    "AvatarSettingsPublicationTests": {
-      "Passed": 10
-    },
-    "CommitSelectionFilterTests": {
+    "DashboardTests": {
       "Passed": 6
     },
-    "RevisionContextFocusTests": {
-      "Passed": 11
-    },
-    "GitEnvironmentStartupTests": {
-      "Passed": 5
-    },
-    "AppearanceSettingsPageTests": {
-      "Passed": 15
-    },
-    "PullAdvancedDialogTests": {
-      "Passed": 15
-    },
-    "HotkeyCatalogTests": {
-      "Passed": 17
-    },
-    "GitHubHostingSettingsDialogTests": {
-      "Passed": 4
-    },
-    "LanguageCatalogTests": {
+    "DesktopFontsTests": {
       "Passed": 7
     },
-    "FileHistoryWorkflowTests": {
-      "Passed": 13
+    "DetailedGraphPublicationTests": {
+      "Passed": 6
     },
-    "RemoteReferenceColorTests": {
-      "Passed": 4
-    },
-    "FileHistoryDialogTests": {
-      "Passed": 5
-    },
-    "GitEnvironmentChecklistTests": {
-      "Passed": 18
-    },
-    "GitHubActionsDesktopTests": {
-      "Passed": 7
-    },
-    "CommitDisplayFilterTests": {
-      "Passed": 9
-    },
-    "DiffViewerRenderingMenuTests": {
-      "Passed": 4
-    },
-    "ViewerEscapeHostTests": {
-      "Passed": 3
-    },
-    "WindowsBrowseReferenceTests": {
-      "Passed": 8
-    },
-    "ConflictRoutingTests": {
-      "Passed": 9
-    },
-    "RecentRepositoriesSettingsDialogTests": {
-      "Passed": 9
-    },
-    "ExceptionDetailDialogTests": {
+    "DetailedSettingsMigrationTests": {
       "Passed": 2
     },
-    "UpdatesDialogTests": {
-      "Passed": 18
+    "DetailedSettingsPageTests": {
+      "Passed": 23
     },
-    "GitEnvironmentSettingsHostTests": {
-      "Passed": 7
+    "DetailedSettingsSessionTests": {
+      "Passed": 15
     },
-    "ConfirmationsSettingsSessionTests": {
-      "Passed": 19
-    },
-    "FileEditorConsumerTests": {
-      "Passed": 8
-    },
-    "CloneInitDialogTests": {
-      "Passed": 7
-    },
-    "RenameCompareDialogTests": {
-      "Passed": 14
-    },
-    "GrepDialogTests": {
-      "Passed": 7
-    },
-    "BlameAvatarTests": {
+    "DialogAccessKeyTests": {
       "Passed": 4
     },
-    "HotkeyPreferencesStoreTests": {
-      "Passed": 14
+    "DictionaryPreferencesTests": {
+      "Passed": 22
     },
-    "RevisionLinksSettingsPageTests": {
-      "Passed": 9
-    },
-    "BrowserHotkeysTests": {
-      "Passed": 8
+    "DictionaryServiceTests": {
+      "Passed": 39
     },
     "DiffFormatsTests": {
       "Passed": 8
     },
-    "AdvancedSettingsSessionTests": {
-      "Passed": 20
+    "DiffPresentationTests": {
+      "Passed": 11
     },
-    "MainFileStatusListTests": {
-      "Passed": 5
+    "DiffViewTests": {
+      "Passed": 4
     },
-    "RebaseJournalRecoveryTests": {
-      "Passed": 9
+    "DiffViewerAppearanceMenuTests": {
+      "Passed": 4
     },
-    "AppearanceDictionaryTests": {
-      "Passed": 15
+    "DiffViewerComparisonMenuTests": {
+      "Passed": 7
     },
-    "BlameDialogTests": {
-      "Passed": 3
+    "DiffViewerComparisonPreferencesTests": {
+      "Passed": 10
     },
-    "FormEditDialogTests": {
+    "DiffViewerNonprintingLongLineTests": {
+      "Passed": 6
+    },
+    "DiffViewerNonprintingTests": {
+      "Passed": 6
+    },
+    "DiffViewerPreferencesTests": {
+      "Passed": 7
+    },
+    "DiffViewerReadingTests": {
+      "Passed": 11
+    },
+    "DiffViewerRenderingMenuTests": {
+      "Passed": 4
+    },
+    "DiffViewerRenderingPreferencesTests": {
       "Passed": 8
     },
-    "FileHistoryBrowseTests": {
-      "Passed": 9
+    "DiffViewerSearchTests": {
+      "Passed": 16
+    },
+    "DiffViewerToolbarOverflowTests": {
+      "Passed": 4
+    },
+    "DiffViewerToolbarTests": {
+      "Passed": 3
+    },
+    "DistributedSettingsWorkspaceTests": {
+      "Passed": 6
+    },
+    "DonateDialogTests": {
+      "Passed": 10
+    },
+    "DonateMenuIntegrationTests": {
+      "Passed": 4
+    },
+    "EditableFileViewTests": {
+      "Passed": 11
+    },
+    "ErrorReportRoutingTests": {
+      "Passed": 10
+    },
+    "ExceptionDetailDialogTests": {
+      "Passed": 2
+    },
+    "ExceptionReportProjectionTests": {
+      "Passed": 8
+    },
+    "ExportDialogTests": {
+      "Passed": 13
+    },
+    "FileContentTests": {
+      "Passed": 6
+    },
+    "FileEditorConsumerTests": {
+      "Passed": 8
+    },
+    "FileEditorDialogTests": {
+      "Passed": 17
     },
     "FileEncodingViewTests": {
       "Passed": 6
     },
-    "CommitInformationPresentationTests": {
-      "Passed": 28
+    "FileHistoryBrowseTests": {
+      "Passed": 9
     },
-    "MergeDetailedSettingsTests": {
-      "Passed": 6
+    "FileHistoryDialogTests": {
+      "Passed": 5
     },
-    "RebasePlanDialogTests": {
-      "Passed": 1
+    "FileHistoryEmptyTreeMenuTests": {
+      "Passed": 3
     },
-    "ProxyGourceDialogTests": {
-      "Passed": 8
+    "FileHistoryInitialComparisonRefreshTests": {
+      "Passed": 5
     },
-    "UpdatesMenuIntegrationTests": {
-      "Passed": 4
+    "FileHistoryInlineBlameTests": {
+      "Passed": 14
     },
-    "RangeDiffWorkflowTests": {
+    "FileHistoryPreferencesTests": {
+      "Passed": 5
+    },
+    "FileHistoryTraversalSettingsTests": {
+      "Passed": 16
+    },
+    "FileHistoryWorkflowTests": {
+      "Passed": 13
+    },
+    "FileMenuAdditionalOperationsTests": {
+      "Passed": 5
+    },
+    "FileMenuControllerTests": {
+      "Passed": 17
+    },
+    "FileMenuFocusedSelectionTests": {
+      "Passed": 10
+    },
+    "FilePaneParityTests": {
       "Passed": 7
     },
-    "DiffPresentationTests": {
+    "FilePathPresentationIntegrationTests": {
+      "Passed": 19
+    },
+    "FilePathPresentationTests": {
+      "Passed": 52
+    },
+    "FileStatusListBuilderTests": {
+      "Passed": 10
+    },
+    "FileStatusListViewTests": {
+      "Passed": 9
+    },
+    "FileViewerHotkeysTests": {
+      "Passed": 10
+    },
+    "FindLargeFilesDialogTests": {
+      "Passed": 9
+    },
+    "FocusedRevisionMenuTests": {
+      "Passed": 25
+    },
+    "FontConsumerTests": {
+      "Passed": 14
+    },
+    "FontPreferencesStoreTests": {
+      "Passed": 18
+    },
+    "FontSettingsTests": {
+      "Passed": 18
+    },
+    "FontStreamLifetimeTests": {
+      "Passed": 1
+    },
+    "ForkCloneDialogTests": {
+      "Passed": 18
+    },
+    "FormEditDialogTests": {
+      "Passed": 8
+    },
+    "GeneralBrowseStatusTests": {
+      "Passed": 28
+    },
+    "GeneralDiffAlgorithmTests": {
+      "Passed": 10
+    },
+    "GeneralSettingsBehaviorTests": {
+      "Passed": 24
+    },
+    "GeneralSettingsPageTests": {
+      "Passed": 20
+    },
+    "GeneralSettingsSessionTests": {
+      "Passed": 23
+    },
+    "GenericPromptHostTests": {
+      "Passed": 12
+    },
+    "GitCommandLogWindowTests": {
+      "Passed": 13
+    },
+    "GitConfigAdvancedSettingsPageTests": {
+      "Passed": 19
+    },
+    "GitConfigurationPageTests": {
+      "Passed": 21
+    },
+    "GitEnvironmentChecklistTests": {
+      "Passed": 18
+    },
+    "GitEnvironmentPreferencesTests": {
+      "Passed": 36
+    },
+    "GitEnvironmentSettingsHostTests": {
+      "Passed": 7
+    },
+    "GitEnvironmentSettingsPagesTests": {
+      "Passed": 15
+    },
+    "GitEnvironmentSettingsSessionTests": {
+      "Passed": 10
+    },
+    "GitEnvironmentStartupTests": {
+      "Passed": 5
+    },
+    "GitEnvironmentTransportTests": {
+      "Passed": 6
+    },
+    "GitHubActionsDesktopTests": {
+      "Passed": 7
+    },
+    "GitHubHostingPreferencesStoreTests": {
+      "Passed": 19
+    },
+    "GitHubHostingSettingsDialogTests": {
+      "Passed": 4
+    },
+    "GitHubPullRequestFetchTests": {
       "Passed": 11
     },
     "GitLabIntegrationTests": {
       "Passed": 8
     },
-    "RevisionContextMenuTests": {
-      "Passed": 8
+    "GitLabSettingsPageTests": {
+      "Passed": 24
     },
-    "ScriptEventWorkflowTests": {
-      "Passed": 14
+    "GitProcessDialogTests": {
+      "Passed": 15
     },
-    "RevisionHistoryRowTests": {
+    "GitToolsSettingsDialogTests": {
+      "Passed": 13
+    },
+    "GoToCommitDialogTests": {
+      "Passed": 15
+    },
+    "GoToCommitFocusTests": {
+      "Passed": 16
+    },
+    "GourceAvatarProviderTests": {
       "Passed": 6
     },
-    "CloneBranchLoadingTests": {
-      "Passed": 6
-    },
-    "DiffViewerComparisonMenuTests": {
+    "GrepDialogTests": {
       "Passed": 7
     },
-    "RevisionLinksSettingsSessionTests": {
-      "Passed": 13
+    "HelpImagesPreferencesTests": {
+      "Passed": 9
+    },
+    "HistoryMenuParityTests": {
+      "Passed": 7
+    },
+    "HistorySortDefaultTests": {
+      "Passed": 7
+    },
+    "HotkeyCatalogTests": {
+      "Passed": 17
+    },
+    "HotkeyHostDialogTests": {
+      "Passed": 26
+    },
+    "HotkeyPreferencesStoreTests": {
+      "Passed": 14
+    },
+    "HotkeysSettingsPageTests": {
+      "Passed": 26
+    },
+    "InteractiveFileConsoleSocketTests": {
+      "Passed": 4
+    },
+    "InteractiveFileConsoleTests": {
+      "Passed": 7
+    },
+    "JenkinsIntegrationTests": {
+      "Passed": 9
+    },
+    "JenkinsSettingsPageTests": {
+      "Passed": 32
+    },
+    "LanguageCatalogTests": {
+      "Passed": 7
+    },
+    "LanguagePreferencesTests": {
+      "Passed": 26
+    },
+    "LinuxUpdateClientTests": {
+      "Passed": 34
+    },
+    "MainFileStatusListTests": {
+      "Passed": 5
+    },
+    "MainWindowBusyFocusTests": {
+      "Passed": 19
+    },
+    "MainWindowClassicTests": {
+      "Passed": 6
     },
     "MainWindowDiffShortcutTests": {
       "Passed": 2
     },
-    "AdvancedSettingsPageTests": {
-      "Passed": 6
+    "MainWindowRebaseTests": {
+      "Passed": 3
     },
-    "ComparisonGroupsDialogTests": {
-      "Passed": 16
+    "MainWindowSelectionTests": {
+      "Passed": 4
     },
-    "FileStatusListBuilderTests": {
-      "Passed": 10
+    "MainWindowWorkflowTests": {
+      "Passed": 1
     },
-    "DetailedGraphPublicationTests": {
-      "Passed": 6
-    },
-    "CommitGraphLayoutTests": {
-      "Passed": 9
-    },
-    "EditableFileViewTests": {
-      "Passed": 11
-    },
-    "DonateDialogTests": {
-      "Passed": 10
-    },
-    "ClassicStylesTests": {
-      "Passed": 2
-    },
-    "FileContentTests": {
-      "Passed": 6
-    },
-    "BlameOptionsTests": {
+    "MergeBranchDialogTests": {
       "Passed": 7
     },
-    "StatisticsDialogTests": {
+    "MergeDetailedSettingsTests": {
+      "Passed": 6
+    },
+    "MessageDialogTests": {
+      "Passed": 10
+    },
+    "NativeDiffViewerSettingsDialogTests": {
       "Passed": 4
     },
     "NativeRebaseEditorTests": {
       "Passed": 7
     },
-    "BlameNavigationTests": {
-      "Passed": 4
-    },
-    "AvatarSettingsPageTests": {
-      "Passed": 2
-    },
-    "DiffViewerToolbarOverflowTests": {
-      "Passed": 4
-    },
-    "AvatarSettingsConsumerTests": {
-      "Passed": 4
-    },
-    "WorktreeNavigationTests": {
-      "Passed": 4
-    },
-    "ExceptionReportProjectionTests": {
-      "Passed": 8
-    },
-    "CommitCompletionSpellingRaceTests": {
-      "Passed": 1
-    },
-    "AzureDevOpsIntegrationTests": {
-      "Passed": 7
-    },
-    "ComparisonFileMenuTests": {
+    "NetSpellUnicodeTests": {
       "Passed": 6
     },
-    "MainWindowClassicTests": {
-      "Passed": 6
-    },
-    "FileHistoryInitialComparisonRefreshTests": {
+    "OriginalCommandHelpTests": {
       "Passed": 5
     },
-    "ViewerRenderingHostTests": {
-      "Passed": 1
+    "ParentChildNavigationHistoryTests": {
+      "Passed": 19
     },
-    "RevisionDiffGroupTests": {
-      "Passed": 6
-    },
-    "MainWindowRebaseTests": {
-      "Passed": 3
-    },
-    "FileMenuAdditionalOperationsTests": {
-      "Passed": 5
-    },
-    "DiffViewTests": {
-      "Passed": 4
-    },
-    "SubmoduleRemovalDialogTests": {
-      "Passed": 8
-    },
-    "CheckoutInitialLayoutTests": {
-      "Passed": 3
-    },
-    "HistoryMenuParityTests": {
-      "Passed": 7
-    },
-    "FileHistoryEmptyTreeMenuTests": {
-      "Passed": 3
-    },
-    "FontStreamLifetimeTests": {
-      "Passed": 1
-    },
-    "AppVeyorIntegrationTests": {
-      "Passed": 6
-    },
-    "AvatarActivationTests": {
-      "Passed": 2
-    },
-    "AppearanceSettingsLayoutTests": {
-      "Passed": 2
-    },
-    "DiffViewerNonprintingLongLineTests": {
-      "Passed": 6
-    },
-    "ArtificialHistoryRevisionTests": {
-      "Passed": 7
-    },
-    "MainWindowSelectionTests": {
-      "Passed": 4
-    },
-    "RevisionAvatarRenderingTests": {
-      "Passed": 3
-    },
-    "ReferenceMenuTests": {
-      "Passed": 4
-    },
-    "RebaseLayoutTests": {
-      "Passed": 4
-    },
-    "AvatarWindowLifetimeTests": {
-      "Passed": 3
+    "ParentChildNavigationTests": {
+      "Passed": 20
     },
     "PluginLifecycleTests": {
       "Passed": 4
     },
-    "ColorsSettingsPageTests": {
-      "Passed": 4
-    },
-    "HistorySortDefaultTests": {
-      "Passed": 7
-    },
-    "DetailedSettingsMigrationTests": {
-      "Passed": 2
-    },
-    "BrowserScriptCommandsTests": {
-      "Passed": 2
-    },
-    "GourceAvatarProviderTests": {
+    "PluginRootIntroductionPageTests": {
       "Passed": 6
     },
-    "AvatarCommitInfoTests": {
+    "ProxyGourceDialogTests": {
+      "Passed": 8
+    },
+    "PullAdvancedDialogTests": {
+      "Passed": 15
+    },
+    "PullLayoutTests": {
+      "Passed": 8
+    },
+    "PullMenuTests": {
+      "Passed": 20
+    },
+    "PullProcessDialogTests": {
+      "Passed": 9
+    },
+    "PullRequestDialogsTests": {
+      "Passed": 24
+    },
+    "PushDetailedSettingsTests": {
+      "Passed": 7
+    },
+    "PushDialogTests": {
+      "Passed": 25
+    },
+    "QuickGitRefSelectorDialogTests": {
+      "Passed": 23
+    },
+    "QuickReferenceWorkflowTests": {
+      "Passed": 8
+    },
+    "RangeDiffWorkflowTests": {
+      "Passed": 7
+    },
+    "RebaseDialogTests": {
+      "Passed": 19
+    },
+    "RebaseJournalRecoveryTests": {
+      "Passed": 9
+    },
+    "RebaseLayoutTests": {
+      "Passed": 4
+    },
+    "RebasePlanDialogTests": {
+      "Passed": 1
+    },
+    "RebaseUnreadableTodoTests": {
+      "Passed": 4
+    },
+    "RecentRepositoriesSettingsDialogTests": {
+      "Passed": 9
+    },
+    "RecoverLostObjectsDialogTests": {
+      "Passed": 17
+    },
+    "ReferenceDialogTests": {
+      "Passed": 14
+    },
+    "ReferenceMenuTests": {
+      "Passed": 4
+    },
+    "ReferenceSortingNavigationTests": {
+      "Passed": 4
+    },
+    "ReferenceSortingSettingsTests": {
+      "Passed": 10
+    },
+    "ReflogDialogTests": {
+      "Passed": 15
+    },
+    "RemoteBranchDeletionDialogTests": {
+      "Passed": 14
+    },
+    "RemoteReferenceColorTests": {
+      "Passed": 4
+    },
+    "RemotesDialogTests": {
+      "Passed": 25
+    },
+    "RemotesTrackingValidationTests": {
+      "Passed": 2
+    },
+    "RenameCompareDialogTests": {
+      "Passed": 14
+    },
+    "RenameCompareMenuTests": {
+      "Passed": 5
+    },
+    "RepositoryBranchVisibilityTests": {
+      "Passed": 27
+    },
+    "RepositoryDialogTests": {
+      "Passed": 5
+    },
+    "ResetRevertDialogTests": {
+      "Passed": 12
+    },
+    "RevisionAdvancedTests": {
+      "Passed": 10
+    },
+    "RevisionAvatarRenderingTests": {
+      "Passed": 3
+    },
+    "RevisionContextFocusTests": {
+      "Passed": 11
+    },
+    "RevisionContextMenuTests": {
+      "Passed": 8
+    },
+    "RevisionDiffGroupTests": {
+      "Passed": 6
+    },
+    "RevisionGraphOptionsTests": {
+      "Passed": 28
+    },
+    "RevisionHistoryRowTests": {
+      "Passed": 6
+    },
+    "RevisionLinksControllerTests": {
+      "Passed": 7
+    },
+    "RevisionLinksSettingsPageTests": {
+      "Passed": 9
+    },
+    "RevisionLinksSettingsSessionTests": {
+      "Passed": 13
+    },
+    "RevisionQuickSearchTests": {
+      "Passed": 42
+    },
+    "RootPullRequestWorkflowTests": {
+      "Passed": 4
+    },
+    "RulesFileEditorDialogTests": {
+      "Passed": 19
+    },
+    "ScriptEventWorkflowTests": {
+      "Passed": 14
+    },
+    "ScriptFilePickerTests": {
+      "Passed": 14
+    },
+    "ScriptHotkeysTests": {
+      "Passed": 2
+    },
+    "ScriptInputDialogTests": {
+      "Passed": 23
+    },
+    "ScriptLaunchIntegrationTests": {
+      "Passed": 7
+    },
+    "ScriptPluginOwnershipTests": {
+      "Passed": 3
+    },
+    "ScriptPreparationDispatcherTests": {
+      "Passed": 21
+    },
+    "ScriptsPreferencesConcurrencyTests": {
+      "Passed": 12
+    },
+    "ScriptsPreferencesStoreTests": {
+      "Passed": 8
+    },
+    "ScriptsSettingsPageTests": {
+      "Passed": 15
+    },
+    "SettingsNavigationTests": {
+      "Passed": 20
+    },
+    "SimpleHelpDisplayDialogTests": {
+      "Passed": 6
+    },
+    "SshSettingsPageTests": {
+      "Passed": 6
+    },
+    "SshSettingsSessionTests": {
+      "Passed": 9
+    },
+    "StashMenuTests": {
+      "Passed": 19
+    },
+    "StatisticsDialogTests": {
+      "Passed": 4
+    },
+    "SubmoduleConflictDialogTests": {
+      "Passed": 14
+    },
+    "SubmoduleRemovalDialogTests": {
+      "Passed": 8
+    },
+    "SubmodulesDialogTests": {
+      "Passed": 13
+    },
+    "TeamCityBuildChooserDialogTests": {
+      "Passed": 28
+    },
+    "TeamCityIntegrationTests": {
+      "Passed": 7
+    },
+    "TranslationCatalogTests": {
+      "Passed": 11
+    },
+    "TruncatePathPreferencesTests": {
+      "Passed": 15
+    },
+    "UndoBisectWorkflowTests": {
+      "Passed": 19
+    },
+    "UpdateCheckStateStoreTests": {
+      "Passed": 11
+    },
+    "UpdatePreferencesTests": {
+      "Passed": 14
+    },
+    "UpdatesDialogTests": {
+      "Passed": 18
+    },
+    "UpdatesMenuIntegrationTests": {
+      "Passed": 4
+    },
+    "ViewerEscapeHostTests": {
+      "Passed": 3
+    },
+    "ViewerHostLoadFailureTests": {
+      "Passed": 5
+    },
+    "ViewerHostReadingTests": {
+      "Passed": 9
+    },
+    "ViewerRenderingHostTests": {
       "Passed": 1
     },
     "ViewerTruncatedPreviewTests": {
       "Passed": 1
     },
-    "RevisionAdvancedTests": {
-      "Passed": 10
-    },
-    "ClassicRadioPaletteTests": {
-      "Passed": 1
-    },
-    "BrowseCommitGraphTests": {
+    "ViewerWholeFileHostTests": {
       "Passed": 2
     },
-    "MainWindowWorkflowTests": {
-      "Passed": 1
+    "WindowsBrowseReferenceTests": {
+      "Passed": 8
+    },
+    "WorktreeDialogTests": {
+      "Passed": 14
+    },
+    "WorktreeNavigationTests": {
+      "Passed": 4
     }
   },
   "additional_suites": {
     "core": {
-      "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
-      "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+      "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+      "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
-      "passed": 1062,
-      "total": 1062,
-      "execution_result": "artifacts/linux/advanced-options-20261020/core-full-01/result.json",
-      "execution_result_sha256": "229275df86a8427501a769a69ffa9f2322e4fb58e702e6a06bdc488badb7df12",
+      "passed": 1072,
+      "total": 1072,
+      "execution_result": "artifacts/linux/command-log-20261020/core-full-01/result.json",
+      "execution_result_sha256": "ebce534cbb7e7410894e4b166c78ced9e0c4ec0111294129de5d83d09dad0570",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
-        "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
+        "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
+        "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
-        "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
+        "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
+        "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
       },
-      "comparison_scope": "Fresh complete suite on exact committed ac59 source in clean worktree; five unrelated primary Modal changes excluded."
+      "comparison_scope": "Fresh complete suite on exact committed ed86 source in clean worktree; five unrelated primary Modal changes excluded."
     },
     "plugins": {
-      "source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
-      "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+      "source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
+      "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
       "passed": 35,
       "total": 35,
-      "execution_result": "artifacts/linux/advanced-options-20261020/plugins-full-01/result.json",
-      "execution_result_sha256": "4056edc42af23dcf1b1a811043646eb6120d2a0cc0adba54a840c74603b0ab79",
+      "execution_result": "artifacts/linux/command-log-20261020/plugins-full-01/result.json",
+      "execution_result_sha256": "07f2ef9f0c775907471f65f74682e613e354c6e8c320bac4291e86c3328a5d65",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
-        "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
+        "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
+        "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
-        "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
+        "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
+        "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
       },
-      "comparison_scope": "Fresh complete suite on exact committed ac59 source in clean worktree; five unrelated primary Modal changes excluded."
+      "comparison_scope": "Fresh complete suite on exact committed ed86 source in clean worktree; five unrelated primary Modal changes excluded."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
     "worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
-    "execution_source_sha": "ac59ad500bd46b619d4a655389578b7aaab49bec",
+    "execution_source_sha": "ed86ec42b209a15ab598bc714f10ecb444e2afb4",
     "primary_execution": false,
     "reexecuted_on_candidate": true,
     "source_equivalence": {
-      "path": "artifacts/linux/advanced-options-20261020/review/source-import-review.json",
-      "sha256": "1e9a1b4ccf36029e6cf8c5c4e103541beb7db2f7933e65ccd8fdbd946d6c2334"
+      "path": "artifacts/linux/command-log-20261020/review/source-import-review.json",
+      "sha256": "8bcc26040246543c73de18be344d32271948463b1c0ee3183b42cb9efaa988a8"
     },
     "root_review": {
-      "path": "artifacts/linux/advanced-options-20261020/review/root-full-review.json",
-      "sha256": "dcf2f257d3dcbfe47c4785673a2c6497e5f5d0d87338cb54f98b3bade7fa201d"
+      "path": "artifacts/linux/command-log-20261020/review/root-full-review.json",
+      "sha256": "7d5e8d3ad9a9936c56e87922294cf3743462c01c86c8e641a9b1a70cb81173cc"
     },
     "meaning": "Fresh complete suites on this committed source; five primary Modal changes separate. Native source and isolated Debian checks have their own qualifications; no global parity inferred."
   }
