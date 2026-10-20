@@ -16064,7 +16064,7 @@
       "group": "helpers",
       "level": "N2",
       "implemented": "Formulaire Windows compact et saisie exacte ; seule chaîne vide annulée par OK. Browse géré possédé, multisélection depuis « . », sélection ou noms saisis, fichiers locaux existants cités selon Windows ; Cancel conserve le texte et revient au champ. Annulation token/parent ferme le vrai picker et son erreur possédée avant la fin de préparation ; contexte et UserFiles restent ceux du runtime partagé. Source 5356de767 : 58/58 Desktop et 38/38 Core Scripts ciblés ; cas normaux, noms littéraux et fermetures testés. Natif source EN/clair puis FR/sombre : vrai menu/toolbar, Cancel sans exécution, sélection multiple et nom édité jusqu’aux argv exacts du script ; deux fermetures normales.",
-      "remaining": "Sélecteur Avalonia géré local aux scripts, sans intégration portail GTK/KDE ; descriptions de dossiers/volumes parfois anglaises. Annulation token/parent et erreur drainée couvertes headless, pas exercées nativement. Paquet de cette source à qualifier séparément ; aucun full réexécuté. Variantes Wayland/IME/DPI/accessibilité ouvertes.",
+      "remaining": "Sélecteur Avalonia géré local aux scripts, sans intégration portail GTK/KDE ; descriptions de dossiers/volumes parfois anglaises. Annulation token/parent et erreur drainée couvertes headless, pas exercées nativement. Paquet exact de cette source vérifié en DPKG isolé ; interaction installée non auditée et aucun full réexécuté. Variantes Wayland/IME/DPI/accessibilité ouvertes.",
       "visual": "rapproche",
       "linux": [
         {

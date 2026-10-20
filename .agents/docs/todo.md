@@ -20,7 +20,7 @@ Source `5356de767` : [build et ciblé vérifiés](../../artifacts/linux/file-pic
 
 - [x] FilePrompt conserve formulaire, texte et citation Windows ; le vrai picker géré se ferme sur annulation token/parent, avec drainage de son erreur possédée. Multisélection, saisie remplaçant une sélection précédente, chemins littéraux, dossiers et refus de fichiers inexistants couverts. [ADR0131](adr/workflows/scripts/0131-owned-file-picker.md).
 - [x] [Natif source X11](../../artifacts/linux/file-picker-20261020/review/root-native-review.json) : 49 commandes, 46 captures inspectées, deux fermetures normales EN/clair puis FR/sombre. Vrai menu Run script et toolbar, Cancel conserve le texte sans exécution ; sélection multiple puis nom édité remplacent la sélection et arrivent exactement dans les argv des deux vrais scripts. Dépôt, fichiers d’entrée et profils Scripts/environnement préservés.
-- [ ] Paquet exact de cette source : à vérifier séparément.
+- [x] [Paquet exact 5356](../../artifacts/linux/snapshots/5356de767/deb/gitextensions_7.2.1~linux-alpha_amd64.deb), **40 055 836 octets**, [vérifié](../../artifacts/linux/file-picker-20261020/review/root-package-review.json) : cinq phases à 0, 402 fichiers/460 entrées, contenu archive/publish/extraction et traductions contrôlés ; installation DPKG et démarrage isolés. Aucun push ni installation hôte ; interaction installée et OS vierge non qualifiés.
 
 FilePrompt passe N1→N2 sur ce périmètre ; Updates reste N1. Sélecteur Avalonia local aux scripts, sans portail GTK/KDE ; variantes Wayland/IME/DPI/accessibilité ouvertes. Aucun N4 ; les 13 familles historiques restent ouvertes.
 
