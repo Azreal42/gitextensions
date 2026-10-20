@@ -35,9 +35,11 @@ public sealed class SshSettingsSessionTests
     [TestCase("42")]
     public void InvalidSshProfileIsPreservedRatherThanSilentlyReset(string invalid)
     {
-        using Fixture f = new(); string json = File.ReadAllText(f.Store.FilePath).TrimEnd().TrimEnd('}') + ",\"SshExecutable\":" + invalid + "}";
+        using Fixture f = new(); string previous = File.ReadAllText(f.Store.FilePath);
+        string json = previous[..previous.LastIndexOf('}')] + ",\"SshExecutable\":" + invalid + "}";
         File.WriteAllText(f.Store.FilePath, json); GitEnvironmentPreferencesLoadResult loaded = f.Store.Load();
-        Assert.That(loaded.Error, Is.Not.Null); Assert.Throws<InvalidDataException>(() => f.Store.SaveChanges(loaded, new()));
+        Assert.That(loaded.Error, Is.TypeOf<JsonException>()); Assert.That(loaded.Error!.Message, Is.EqualTo("SshExecutable must be a string."));
+        Assert.Throws<InvalidDataException>(() => f.Store.SaveChanges(loaded, new()));
         Assert.That(File.ReadAllText(f.Store.FilePath), Is.EqualTo(json));
     }
 
@@ -112,6 +114,27 @@ public sealed class SshSettingsSessionTests
             Assert.That(session.OperationCompletion.IsCompleted, Is.True);
         }
         finally { picker.TrySetResult(null); if (dialog.IsVisible) { await session.OperationCompletion; dialog.Close(); } owner.Close(); }
+    }
+
+    [Test]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task GlobalOnlyDiagnosticsRetainRelativeSshPathsFromTheInvokingDirectory(bool applicationChoice)
+    {
+        if (OperatingSystem.IsWindows()) { Assert.Ignore("Unix executable fixture"); return; }
+        using Fixture f = new(); string root = Path.GetDirectoryName(Path.GetDirectoryName(f.Store.FilePath))!;
+        string ssh = Path.Combine(root, "relative ssh"); File.WriteAllText(ssh, "#!/bin/sh\ntest \"$1\" = -V || exit 7\nprintf 'fixture version\\n' >&2\n");
+        File.SetUnixFileMode(ssh, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        GitEnvironmentOptions options = new() { Executable = "/usr/bin/git", SshExecutable = applicationChoice ? "./relative ssh" : "" };
+        Dictionary<string, string?> values = new() { ["PATH"] = "/bin:/usr/bin", ["HOME"] = root, ["GIT_CONFIG_GLOBAL"] = "/dev/null", ["GIT_CONFIG_NOSYSTEM"] = "1" };
+        if (!applicationChoice) { values["GIT_SSH"] = "./relative ssh"; }
+        GitExecutionEnvironment inherited = GitExecutionEnvironment.Capture(options, values);
+        using GitConfigurationContext context = GitConfigurationContext.Create(null, inherited, root);
+        GitEnvironmentDiagnostic diagnostic = await GitEnvironmentDiagnostics.ProbeAsync(context.Environment, context.Repository.Path);
+        Assert.That(diagnostic.Ssh.Success, Is.True, diagnostic.Ssh.Error);
+        Assert.That(diagnostic.Ssh.Executable, Is.EqualTo(ssh));
+        Assert.That(diagnostic.Ssh.Result!.StandardError, Is.EqualTo("fixture version\n"));
+        Assert.That(inherited.GetVariable("GIT_SSH"), Is.EqualTo("./relative ssh"));
     }
 
     [Test]
