@@ -52,8 +52,8 @@ public sealed partial class ForkCloneDialog : StartupRepositoryDialog
         : base("Remote repository fork and clone")
     {
         ArgumentNullException.ThrowIfNull(client); _client = client; _authenticated = authenticated;
-        _openUrl = openUrl ?? (uri => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
-            { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }));
+        _openUrl = openUrl ?? (uri => LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
+            { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource));
         Name = "ForkAndCloneForm"; Title = "GitHub: " + Tr("$this", "Remote repository fork and clone");
         Width = 744; Height = 552; MinWidth = 650; MinHeight = 500; SizeToContent = SizeToContent.Manual; CanResize = true;
         ShowInTaskbar = false; CanMinimize = false; ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;

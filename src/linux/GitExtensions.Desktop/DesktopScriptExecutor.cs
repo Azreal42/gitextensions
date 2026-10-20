@@ -49,6 +49,7 @@ internal static class DesktopScriptExecutor
         ScriptHostSelection selection = browse is null ? new(Files: files) : browse.CaptureScriptSelection(files, out selectorAnchor);
         if (lifetime.Position is { } position)
         { var reading = position(); selection = selection with { LineNumber = reading.Line, ColumnNumber = reading.Column }; }
+        GitCommandLogProcessContext journalContext = GitCommandLog.CaptureProcessContext();
         CapturedScriptContext captured = await ScriptHostContext.CaptureAsync(repository, selection, cancellation);
         ScriptPreparationResult prepared = await new ScriptPreparationDispatcher(owner, captured.Context, captured.References,
             selectorPosition: selectorAnchor, selectorPlacement: selectorAnchor is PixelPoint anchor ? dialog => MainWindow.FitQuickSelectorLocation(owner, dialog, anchor) : null).PrepareAsync(script, cancellation);
@@ -71,7 +72,7 @@ internal static class DesktopScriptExecutor
         {
             if (executable.Length == 0) { return true; }
             ScriptProcessResult navigation = await new ScriptProcessRunner().RunAsync(executable, repository.Path, arguments, cancellation,
-                executionEnvironment: captured.Context.ExecutionEnvironment);
+                executionEnvironment: captured.Context.ExecutionEnvironment, journalKind: GitCommandLogProcessKind.UserScript, journalContext: journalContext);
             if (browse is null) { return false; }
             string revision = Encoding.UTF8.GetString(navigation.StandardOutputBytes).Split('\n')[0].TrimEnd('\r');
             // The Windows adapter uses stdout even after a nonzero native exit;
@@ -84,12 +85,13 @@ internal static class DesktopScriptExecutor
             // Do not tie a detached command to a short-lived workflow operation token.
             // Its owner lifetime still cancels and drains it when the window closes.
             cancellation.ThrowIfCancellationRequested();
-            return await lifetime.StartAsync(executable, repository.Path, arguments, browse, captured.Context.ExecutionEnvironment);
+            return await lifetime.StartAsync(executable, repository.Path, arguments, browse, captured.Context.ExecutionEnvironment, journalContext);
         }
         GitProcessDialogResult outcome = await GitProcessDialog.ShowAsync(owner, repository.Path,
             script.GetDisplayName() + ": " + executable + " " + plan.ArgumentPlan.Preview, true,
             async (processToken, output) => ToGitResult(await new ScriptProcessRunner().RunAsync(executable, repository.Path, arguments,
-                processToken, outputReceived: output, executionEnvironment: captured.Context.ExecutionEnvironment)), cancellation, preserveStreamedOutput: true);
+                processToken, outputReceived: output, executionEnvironment: captured.Context.ExecutionEnvironment,
+                journalKind: GitCommandLogProcessKind.UserScript, journalContext: journalContext)), cancellation, preserveStreamedOutput: true);
         return !outcome.OwnerCloseRequested && !outcome.WorkflowStopRequested && outcome.Success;
     }
 
@@ -160,7 +162,7 @@ internal static class DesktopScriptExecutor
         }
 
         internal async Task<bool> StartAsync(string executable, string directory, IReadOnlyList<string> arguments, MainWindow? browse,
-            GitExecutionEnvironment? executionEnvironment = null)
+            GitExecutionEnvironment? executionEnvironment = null, GitCommandLogProcessContext? journalContext = null)
         {
             Token.ThrowIfCancellationRequested();
             executionEnvironment ??= GitEnvironment.Current;
@@ -175,7 +177,8 @@ internal static class DesktopScriptExecutor
                 try
                 {
                     ScriptProcessResult result = await new ScriptProcessRunner().RunAsync(executable, directory, arguments, Token,
-                        processStarted: _ => started.TrySetResult(true), executionEnvironment: executionEnvironment);
+                        processStarted: _ => started.TrySetResult(true), executionEnvironment: executionEnvironment,
+                        journalKind: GitCommandLogProcessKind.UserScript, journalContext: journalContext);
                     started.TrySetResult(false);
                     if (!result.Success) { browse?.ReportScriptOutput("Script exited with code " + result.ExitCode + ".\n" + Encoding.UTF8.GetString(result.StandardErrorBytes)); }
                 }

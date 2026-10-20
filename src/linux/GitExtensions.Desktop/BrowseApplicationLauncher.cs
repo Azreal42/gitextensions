@@ -11,16 +11,16 @@ internal static class BrowseApplicationLauncher
     internal static Task OpenAsync(string repositoryPath, CancellationToken token, string applicationDirectory)
     {
         token.ThrowIfCancellationRequested();
-        using Process process = Process.Start(CreateStartInfo(repositoryPath, applicationDirectory))
-            ?? throw new InvalidOperationException("The Git Extensions browser process could not be started.");
+        if (!LoggedExternalProcess.Start(CreateStartInfo(repositoryPath, applicationDirectory), GitCommandLogProcessKind.Browse, cancellationToken: token).HasProcess)
+        { throw new InvalidOperationException("The Git Extensions browser process could not be started."); }
         return Task.CompletedTask;
     }
 
     internal static Task OpenAsync(BrowseRequest request, CancellationToken token, string? applicationDirectory = null)
     {
         token.ThrowIfCancellationRequested();
-        using Process process = Process.Start(CreateStartInfo(request, applicationDirectory))
-            ?? throw new InvalidOperationException("The Git Extensions browser process could not be started.");
+        if (!LoggedExternalProcess.Start(CreateStartInfo(request, applicationDirectory), GitCommandLogProcessKind.Browse, cancellationToken: token).HasProcess)
+        { throw new InvalidOperationException("The Git Extensions browser process could not be started."); }
         return Task.CompletedTask;
     }
 

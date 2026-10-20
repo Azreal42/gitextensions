@@ -177,6 +177,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. HistoryRemovalScenarios.All,
     .. GitProcessStreamingScenarios.All,
     .. GitCommandLogScenarios.All,
+    .. GitCommandLogExternalScenarios.All,
     .. GitCommandLogCaptureScenarios.All,
     .. GitCommandCacheScenarios.All,
     .. GitCommandCacheReaderScenarios.All,
@@ -268,6 +269,7 @@ if (args.Contains("--superproject-only", StringComparer.Ordinal)) { tests = Supe
 if (args.Contains("--ssh-environment-only", StringComparer.Ordinal)) { tests = SshEnvironmentScenarios.All.ToArray(); }
 if (args.Contains("--git-environment-only", StringComparer.Ordinal)) { tests = GitEnvironmentScenarios.All.ToArray(); }
 if (args.Contains("--command-log-only", StringComparer.Ordinal)) { tests = GitCommandLogScenarios.All.ToArray(); }
+if (args.Contains("--command-log-external-only", StringComparer.Ordinal)) { tests = GitCommandLogExternalScenarios.All.ToArray(); }
 if (args.Contains("--command-log-capture-only", StringComparer.Ordinal)) { tests = GitCommandLogCaptureScenarios.All.ToArray(); }
 if (args.Contains("--command-cache-only", StringComparer.Ordinal)) { tests = GitCommandCacheScenarios.All.ToArray(); }
 if (args.Contains("--command-cache-readers-only", StringComparer.Ordinal)) { tests = GitCommandCacheReaderScenarios.All.ToArray(); }

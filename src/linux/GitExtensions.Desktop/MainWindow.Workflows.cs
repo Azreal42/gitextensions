@@ -455,7 +455,8 @@ public sealed partial class MainWindow
     {
         Uri? uri = SelectedRemote().BrowseUri;
         if (uri is null) { throw new InvalidOperationException("This remote has no recognized web URL."); }
-        Process.Start(new ProcessStartInfo("xdg-open") { ArgumentList = { uri.AbsoluteUri }, UseShellExecute = false });
+        LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { ArgumentList = { uri.AbsoluteUri }, UseShellExecute = false },
+            GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token);
         return Task.CompletedTask;
     }
 
@@ -553,13 +554,18 @@ public sealed partial class MainWindow
         await dialog.ShowDialog(WorkflowOwner);
     }, refresh: false);
 
-    private Task FileHistoryAsync() => RunAsync("File history", async r =>
+    private Task FileHistoryAsync()
     {
-        string path = _fileTreeView?.SelectedFolderPath ?? _filePath.Text ?? "";
-        if (path.Length == 0) { throw new InvalidOperationException(T("Select a file or folder first.")); }
-        await FileHistoryWorkflow.OpenAsync(WorkflowOwner, r, path, _fileTreeView?.SelectedFolderPath is not null,
-            _selectedArtificialHistoryRevision ?? new(CurrentRevision), Token, info => ExternalLauncher(info));
-    }, refresh: false);
+        _lifetime.Token.ThrowIfCancellationRequested();
+        GitCommandLogProcessContext journalContext = GitCommandLog.CaptureProcessContext();
+        return RunAsync("File history", async r =>
+        {
+            string path = _fileTreeView?.SelectedFolderPath ?? _filePath.Text ?? "";
+            if (path.Length == 0) { throw new InvalidOperationException(T("Select a file or folder first.")); }
+            await FileHistoryWorkflow.OpenAsync(WorkflowOwner, r, path, _fileTreeView?.SelectedFolderPath is not null,
+                _selectedArtificialHistoryRevision ?? new(CurrentRevision), Token, info => ExternalLauncher(info), journalContext: journalContext);
+        }, refresh: false);
+    }
 
     private Task SearchAsync() => ShowFileGrepDialogAsync();
 
@@ -633,7 +639,7 @@ public sealed partial class MainWindow
         // Ctrl+G follows the selected Linux console and uses the captured Git environment.
         ProcessStartInfo info = ConsoleStyleTerminal.CreateStartInfo("bash", [],
             _repository.ExecutionEnvironment, waitForExit: false, workingDirectory: _repository.Path);
-        ExternalLauncher(info);
+        LoggedExternalProcess.Start(info, GitCommandLogProcessKind.TerminalLauncher, ExternalLauncher, cancellationToken: _lifetime.Token);
         return Task.CompletedTask;
     }
 

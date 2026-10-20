@@ -17,7 +17,7 @@ internal sealed class PullRequestDiscussionView : ScrollViewer
     internal Func<Uri, Task> OpenLink { get; set; } = uri =>
     {
         ProcessStartInfo start = new("xdg-open") { UseShellExecute = false }; start.ArgumentList.Add(uri.AbsoluteUri);
-        using Process? process = Process.Start(start); return Task.CompletedTask;
+        LoggedExternalProcess.Start(start, GitCommandLogProcessKind.OpenResource); return Task.CompletedTask;
     };
     internal event Action<string>? LinkError;
     internal PullRequestDiscussionView()

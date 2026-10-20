@@ -145,7 +145,7 @@ public sealed class PluginDialog : RepositoryDialog
                 if (link.Uri.Scheme is not ("http" or "https")) { continue; }
                 _links.Children.Add(Action("PluginLink" + _links.Children.Count, link.Label, () =>
                 {
-                    Process.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { link.Uri.AbsoluteUri } });
+                    LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { link.Uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource);
                     return Task.CompletedTask;
                 }));
             }

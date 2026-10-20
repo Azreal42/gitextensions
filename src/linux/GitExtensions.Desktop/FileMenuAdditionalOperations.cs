@@ -58,6 +58,8 @@ internal sealed class FileMenuAdditionalOperations
         EnsureCurrent(selection);
         ObserveRepository(selection.Repository);
         if (selection.IsDisplayOnly) { throw new InvalidOperationException("This comparison is for display only."); }
+        GitCommandLogProcessContext? journalContext = command is FileMenuCommand.OpenSubmodule or FileMenuCommand.InteractiveAdd
+            or FileMenuCommand.ResetChunk ? GitCommandLog.CaptureProcessContext() : null;
         switch (command)
         {
             case FileMenuCommand.Stage:
@@ -97,7 +99,7 @@ internal sealed class FileMenuAdditionalOperations
             case FileMenuCommand.ResetSubmodule:
             case FileMenuCommand.StashSubmodule:
             case FileMenuCommand.CommitSubmodule:
-                await SubmodulesAsync(command, selection); return;
+                await SubmodulesAsync(command, selection, journalContext); return;
             case FileMenuCommand.InteractiveAdd:
             case FileMenuCommand.ResetChunk:
                 await RunAsync(command == FileMenuCommand.InteractiveAdd ? "Interactive add" : "Reset chunk of file", selection, async token =>
@@ -108,8 +110,9 @@ internal sealed class FileMenuAdditionalOperations
                         (arguments, cancellation) =>
                         {
                             launchedArguments = arguments;
-                            return InteractiveFileConsoleLauncher.RunAsync(Owner, selection.Repository.Path,
-                                selection.Repository.ExecutionEnvironment, arguments, cancellation);
+                            GitExecutionEnvironment environment = selection.Repository.ExecutionEnvironment;
+                            return InteractiveFileConsoleLauncher.RunWithTerminalAsync(Owner, selection.Repository.Path,
+                                environment.Executable, arguments, cancellation, null, executionEnvironment: environment, journalContext: journalContext);
                         }, token);
                     if (!result.Success) { throw new GitCommandException(launchedArguments, result); }
                 }, true); return;
@@ -167,7 +170,7 @@ internal sealed class FileMenuAdditionalOperations
     private Task RunAsync(string label, FileMenuSelection selection, Func<CancellationToken, Task> action, bool changes)
         => _run(label, async token => { EnsureCurrent(selection); token.ThrowIfCancellationRequested(); await action(token); }, changes);
 
-    private async Task SubmodulesAsync(FileMenuCommand command, FileMenuSelection selection)
+    private async Task SubmodulesAsync(FileMenuCommand command, FileMenuSelection selection, GitCommandLogProcessContext? journalContext)
     {
         string[] modulePaths = selection.Leaves.Where(leaf => leaf.IsSubmodule).Select(leaf => leaf.File.Path).Distinct(StringComparer.Ordinal).ToArray();
         if (modulePaths.Length == 0) { throw new InvalidOperationException("Select submodules first."); }
@@ -208,8 +211,9 @@ internal sealed class FileMenuAdditionalOperations
                 switch (command)
                 {
                     case FileMenuCommand.OpenSubmodule:
-                        using (_launch(BrowseApplicationLauncher.CreateStartInfo(child.Path))
-                            ?? throw new InvalidOperationException("The Git Extensions browser could not be started.")) { }
+                        if (!LoggedExternalProcess.Start(BrowseApplicationLauncher.CreateStartInfo(child.Path),
+                            GitCommandLogProcessKind.Browse, _launch, journalContext, cancellationToken: token).HasProcess)
+                        { throw new InvalidOperationException("The Git Extensions browser could not be started."); }
                         break;
                     case FileMenuCommand.ResetSubmodule:
                         await child.ResetAsync("HEAD", GitResetMode.Hard, token);

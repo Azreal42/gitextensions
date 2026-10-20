@@ -25,6 +25,7 @@ internal static class GitCommandLogPresentation
 
     private static string Exit(GitCommandLogEntry entry, TranslationCatalog translations)
         => entry.IsRunning ? "" : entry.Cancelled ? translations.Translate("Cancelled")
+            : entry.IsUnobserved ? translations.Translate("unknown")
             : entry.ExitCode?.ToString(CultureInfo.InvariantCulture) ?? translations.Translate("Failed");
 
     internal static string Export(IReadOnlyList<GitCommandLogEntry> snapshot, bool csv, CultureInfo culture)
@@ -35,7 +36,7 @@ internal static class GitCommandLogPresentation
         {
             string[] fields = [entry.Started.ToString("O", CultureInfo.InvariantCulture),
                 entry.IsRunning ? "" : entry.Duration.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture),
-                entry.ProcessId?.ToString(CultureInfo.InvariantCulture) ?? "", entry.ExitCode?.ToString(CultureInfo.InvariantCulture) ?? "",
+                entry.ProcessId?.ToString(CultureInfo.InvariantCulture) ?? "", entry.IsUnobserved ? "unknown" : entry.ExitCode?.ToString(CultureInfo.InvariantCulture) ?? "",
                 entry.Cancelled ? "true" : "false", entry.IsRunning ? "true" : "false", entry.Command, entry.Directory,
                 entry.IsOnMainThread is bool observed ? observed ? "true" : "false" : "", entry.CallStack ?? ""];
             // CSV quotes preserve embedded delimiters/newlines. TXT escapes control

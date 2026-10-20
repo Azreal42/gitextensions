@@ -37,6 +37,9 @@ internal sealed class FileMenuOperations
     internal async Task ExecuteAsync(FileMenuCommand command, FileMenuSelection selection)
     {
         EnsureCurrent(selection);
+        GitCommandLogProcessContext? journalContext = command is FileMenuCommand.OpenWorkingFile or FileMenuCommand.OpenWorkingFileWith
+            or FileMenuCommand.OpenRevisionFile or FileMenuCommand.OpenRevisionFileWith or FileMenuCommand.ShowInFolder
+            or FileMenuCommand.FileHistory or FileMenuCommand.Blame ? GitCommandLog.CaptureProcessContext() : null;
         switch (command)
         {
             case FileMenuCommand.CopyRelativePosix:
@@ -49,11 +52,11 @@ internal sealed class FileMenuOperations
             case FileMenuCommand.OpenWorkingFile:
             case FileMenuCommand.OpenWorkingFileWith:
                 string? app = command == FileMenuCommand.OpenWorkingFileWith ? await ChooseApplicationAsync(selection) : "xdg-open";
-                if (app is not null) { Launch(Path.Combine(selection.Repository.Path, selection.Paths.Single()), app, selection); }
+                if (app is not null) { Launch(Path.Combine(selection.Repository.Path, selection.Paths.Single()), app, selection, journalContext); }
                 return;
             case FileMenuCommand.OpenRevisionFile:
             case FileMenuCommand.OpenRevisionFileWith:
-                await OpenRevisionAsync(selection, command == FileMenuCommand.OpenRevisionFileWith); return;
+                await OpenRevisionAsync(selection, command == FileMenuCommand.OpenRevisionFileWith, journalContext); return;
             case FileMenuCommand.SaveAs: await SaveAsync(selection); return;
             case FileMenuCommand.ResetToFirst:
             case FileMenuCommand.ResetToSecond: await ResetAsync(selection, command == FileMenuCommand.ResetToFirst); return;
@@ -66,14 +69,14 @@ internal sealed class FileMenuOperations
                 string full = Path.Combine(selection.Repository.Path, selection.CopyPaths.FirstOrDefault() ?? selection.Paths[0]);
                 string directory = Directory.Exists(full) ? full : Path.GetDirectoryName(full)!;
                 while (!Directory.Exists(directory) && Path.GetDirectoryName(directory) is string parent) { directory = parent; }
-                Launch(directory, "xdg-open", selection); return;
+                Launch(directory, "xdg-open", selection, journalContext); return;
             case FileMenuCommand.FileHistory:
                 FileMenuLeaf history = selection.Leaves.First();
                 if (selection.Leaves.Select(leaf => leaf.Second).Distinct().Count() != 1) { throw new InvalidOperationException("Select files from one revision for file history."); }
                 await RunAsync("File history", selection, async token =>
                 {
                     await FileHistoryWorkflow.OpenAsync(Owner, selection.Repository, selection.Folder ?? history.File.Path,
-                        selection.Folder is not null, history.Second, token, _launch);
+                        selection.Folder is not null, history.Second, token, _launch, journalContext: journalContext);
                 }, false); return;
             case FileMenuCommand.Blame:
                 FileMenuLeaf blame = selection.Leaves.Single();
@@ -82,7 +85,7 @@ internal sealed class FileMenuOperations
                     if (blame.Second.Kind != GitCompareRevisionKind.Commit)
                     {
                         await FileHistoryWorkflow.OpenAsync(Owner, selection.Repository, blame.File.Path, false,
-                            blame.Second, token, _launch, initialBlame: true);
+                            blame.Second, token, _launch, initialBlame: true, journalContext: journalContext);
                         return;
                     }
                     var reading = ReadingPosition(blame);
@@ -111,8 +114,9 @@ internal sealed class FileMenuOperations
         => _run(label, async token => { EnsureCurrent(selection); token.ThrowIfCancellationRequested(); await operation(token); }, changes);
     private void EnsureCurrent(FileMenuSelection selection)
     { _lifetime.ThrowIfCancellationRequested(); if (!_isCurrent(selection) || !_owner.IsVisible) { throw new InvalidOperationException(_translate("The file selection has changed.")); } }
-    private void Launch(string path, string application, FileMenuSelection selection)
-    { EnsureCurrent(selection); _launch(new ProcessStartInfo(application) { UseShellExecute = false, WorkingDirectory = selection.Repository.Path, ArgumentList = { path } }); }
+    private void Launch(string path, string application, FileMenuSelection selection, GitCommandLogProcessContext? journalContext)
+    { EnsureCurrent(selection); LoggedExternalProcess.Start(new ProcessStartInfo(application) { UseShellExecute = false, WorkingDirectory = selection.Repository.Path, ArgumentList = { path } },
+        GitCommandLogProcessKind.OpenResource, _launch, journalContext, cancellationToken: _lifetime); }
     private async Task<string?> ChooseApplicationAsync(FileMenuSelection selection)
     {
         string[]? values = await Dialogs.PromptAsync(Owner, _translate("Open with"), (_translate("Application executable"), "/usr/bin/"));
@@ -187,7 +191,7 @@ internal sealed class FileMenuOperations
             { await _run("Refresh after file edit", _ => Task.CompletedTask, true); }
         }
     }
-    private async Task OpenRevisionAsync(FileMenuSelection selection, bool withApplication)
+    private async Task OpenRevisionAsync(FileMenuSelection selection, bool withApplication, GitCommandLogProcessContext? journalContext)
     {
         string? application = withApplication ? await ChooseApplicationAsync(selection) : "xdg-open";
         if (application is null) { return; } EnsureCurrent(selection);
@@ -203,7 +207,7 @@ internal sealed class FileMenuOperations
             string file = Path.Combine(directory, Path.GetFileName(leaf.File.Path));
             await File.WriteAllBytesAsync(file, bytes, token);
             if (!OperatingSystem.IsWindows()) { File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
-            Launch(file, application, selection);
+            Launch(file, application, selection, journalContext);
         }, false);
     }
     private async Task SaveAsync(FileMenuSelection selection)

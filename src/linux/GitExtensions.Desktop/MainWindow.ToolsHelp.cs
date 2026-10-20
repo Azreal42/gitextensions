@@ -91,10 +91,10 @@ public sealed partial class MainWindow
         ProcessStartInfo info = new(executable) { WorkingDirectory = _repository.Path, UseShellExecute = false };
         environment.ApplyTo(info);
         if (tool == "gui") { info.ArgumentList.Add("gui"); }
-        using Process? process = ExternalLauncher(info);
-        if (process is null) { return; }
-        await process.WaitForExitAsync(_lifetime.Token);
-        if (process.ExitCode != 0) { throw new InvalidOperationException(T(tool == "gui" ? "Git GUI could not be started. Check that git-gui is installed." : "GitK could not be started. Check that gitk is installed.")); }
+        LoggedExternalProcess process = LoggedExternalProcess.Start(info, tool == "gui" ? GitCommandLogProcessKind.GitGui : GitCommandLogProcessKind.Gitk,
+            ExternalLauncher, cancellationToken: _lifetime.Token);
+        int? exit = await process.WaitAsync(_lifetime.Token);
+        if (exit is not null && exit != 0) { throw new InvalidOperationException(T(tool == "gui" ? "Git GUI could not be started. Check that git-gui is installed." : "GitK could not be started. Check that gitk is installed.")); }
     }
 
     private MenuItem BuildHelpMenu()
@@ -121,7 +121,8 @@ public sealed partial class MainWindow
 
     private Task OpenWebAsync(string url)
     {
-        ExternalLauncher(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } });
+        LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } },
+            GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token);
         return Task.CompletedTask;
     }
 

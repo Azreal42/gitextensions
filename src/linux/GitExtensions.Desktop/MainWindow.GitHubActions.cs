@@ -406,7 +406,7 @@ public sealed partial class MainWindow
     {
         Uri? uri = run?.PageUri;
         if (!_gitHubActionsEnabled || uri is null || _gitHubActionsClosing) { return Task.CompletedTask; }
-        try { using Process? process = ExternalLauncher(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }); }
+        try { LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token); }
         catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
         { SetGitHubActionsError("The build page could not be opened in the browser."); }
         return Task.CompletedTask;

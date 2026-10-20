@@ -70,7 +70,7 @@ internal sealed class DonateDialog : Window
 
     private static void OpenInBrowser(Uri uri)
     {
-        using Process? process = Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+        LoggedExternalProcess.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }, GitCommandLogProcessKind.OpenResource);
     }
 
     private static FuncControlTemplate<Button> BadgeTemplate() => new((button, scope) =>

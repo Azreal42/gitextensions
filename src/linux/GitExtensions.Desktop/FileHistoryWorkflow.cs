@@ -8,9 +8,10 @@ internal static class FileHistoryWorkflow
 {
     internal static async Task OpenAsync(Window owner, GitRepository repository, string path, bool directory,
         GitCompareRevision selected, CancellationToken token, Func<ProcessStartInfo, Process?>? launch = null,
-        bool initialBlame = false)
+        bool initialBlame = false, GitCommandLogProcessContext? journalContext = null)
     {
         token.ThrowIfCancellationRequested();
+        journalContext ??= GitCommandLog.CaptureProcessContext();
         if (directory && path.Length == 0) { path = "."; }
         if (new PreferencesStore().Load().UseBrowseForFileHistory)
         {
@@ -18,8 +19,8 @@ internal static class FileHistoryWorkflow
                 new BrowsePathFilter(path, directory ? BrowsePathKind.Directory : BrowsePathKind.File), selected);
             ProcessStartInfo info = BrowseApplicationLauncher.CreateStartInfo(request);
             token.ThrowIfCancellationRequested();
-            using Process process = (launch ?? Process.Start)(info)
-                ?? throw new IOException("The Git Extensions file history browser could not be started.");
+            if (!LoggedExternalProcess.Start(info, GitCommandLogProcessKind.Browse, launch, journalContext, cancellationToken: token).HasProcess)
+            { throw new IOException("The Git Extensions file history browser could not be started."); }
             // Browse is an independent application. Closing this owner must not cancel its history.
             return;
         }

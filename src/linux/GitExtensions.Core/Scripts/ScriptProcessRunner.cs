@@ -14,13 +14,14 @@ public sealed class ScriptProcessRunner
         IReadOnlyList<string> arguments, CancellationToken cancellationToken = default,
         IReadOnlyDictionary<string, string?>? environment = null,
         Action<GitProcessOutput>? outputReceived = null, Action<ScriptProcessStarted>? processStarted = null,
-        GitExecutionEnvironment? executionEnvironment = null)
+        GitExecutionEnvironment? executionEnvironment = null,
+        GitCommandLogProcessKind? journalKind = null, GitCommandLogProcessContext? journalContext = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executable); ArgumentNullException.ThrowIfNull(workingDirectory);
         ArgumentNullException.ThrowIfNull(arguments);
         GitRunner runner = executionEnvironment is null ? new(executable) : new(executionEnvironment.WithExecutable(executable));
         GitBinaryResult result = await runner.RunExternalBinaryAsync(workingDirectory, arguments,
-            cancellationToken, environment, outputReceived, processStarted is null ? null : pid => processStarted(new(pid))).ConfigureAwait(false);
+            cancellationToken, environment, outputReceived, processStarted is null ? null : pid => processStarted(new(pid)), journalKind, journalContext).ConfigureAwait(false);
         return new(result.ExitCode, result.StandardOutput, result.StandardErrorBytes);
     }
 }

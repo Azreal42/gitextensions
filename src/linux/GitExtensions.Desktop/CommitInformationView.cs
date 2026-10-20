@@ -30,7 +30,7 @@ public sealed class CommitInformationView : UserControl, IDisposable
     internal Func<Uri, Task> RevisionLinkLauncher { get; set; } = uri =>
     {
         ProcessStartInfo start = new("xdg-open") { UseShellExecute = false };
-        start.ArgumentList.Add(uri.AbsoluteUri); using Process? process = Process.Start(start);
+        start.ArgumentList.Add(uri.AbsoluteUri); LoggedExternalProcess.Start(start, GitCommandLogProcessKind.OpenResource);
         return Task.CompletedTask;
     };
     private readonly Grid _header = new() { ColumnDefinitions = new("Auto,*"), ColumnSpacing = 12, Margin = new(8, 8, 16, 8) };

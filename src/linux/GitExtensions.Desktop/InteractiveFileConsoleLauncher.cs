@@ -27,15 +27,19 @@ public static class InteractiveFileConsoleLauncher
 
     internal static async Task<GitResult> RunWithTerminalAsync(Window owner, string repositoryPath, string gitExecutable,
         IReadOnlyList<string> arguments, CancellationToken cancellationToken, Func<string, IReadOnlyList<string>, Process>? startTerminal, string? helperExecutable = null,
-        GitExecutionEnvironment? executionEnvironment = null)
+        GitExecutionEnvironment? executionEnvironment = null, GitCommandLogProcessContext? journalContext = null)
     {
         if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("Interactive file actions require a Linux terminal."); }
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(owner);
+        ValidateRequest(repositoryPath, gitExecutable, arguments);
+        journalContext ??= GitCommandLog.CaptureProcessContext();
         using CancellationTokenSource lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         bool closeRequested = false;
         void Closing(object? sender, WindowClosingEventArgs args)
         { closeRequested = true; args.Cancel = true; lifetime.Cancel(); }
         owner.Closing += Closing;
-        try { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable, executionEnvironment); }
+        try { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable, executionEnvironment, journalContext); }
         finally
         {
             owner.Closing -= Closing;
@@ -46,9 +50,11 @@ public static class InteractiveFileConsoleLauncher
     [SupportedOSPlatform("linux")]
     internal static async Task<GitResult> RunCoreAsync(string repositoryPath, string gitExecutable,
         IReadOnlyList<string> arguments, CancellationToken token, Func<string, IReadOnlyList<string>, Process>? startTerminal = null, string? helperExecutable = null,
-        GitExecutionEnvironment? executionEnvironment = null)
+        GitExecutionEnvironment? executionEnvironment = null, GitCommandLogProcessContext? journalContext = null)
     {
         token.ThrowIfCancellationRequested();
+        ValidateRequest(repositoryPath, gitExecutable, arguments);
+        journalContext ??= GitCommandLog.CaptureProcessContext();
         executionEnvironment ??= GitExecutionEnvironment.Capture(new() { Executable = gitExecutable });
         if (executionEnvironment.Executable != gitExecutable)
         { throw new ArgumentException("The interactive Git executable must match its captured environment.", nameof(executionEnvironment)); }
@@ -61,6 +67,9 @@ public static class InteractiveFileConsoleLauncher
         SafeFileHandle? peer = null;
         StreamWriter? writer = null;
         Task? peerExit = null;
+        GitCommandLogProcessOperation? journal = null;
+        bool authenticated = false, reported = false;
+        Exception? failure = null;
         try
         {
             listener.Bind(new UnixDomainSocketEndPoint(socketPath));
@@ -73,6 +82,8 @@ public static class InteractiveFileConsoleLauncher
             File.SetUnixFileMode(requestPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             string executable = helperExecutable ?? Path.Combine(AppContext.BaseDirectory, "GitExtensions");
             if (!File.Exists(executable)) { throw new FileNotFoundException("The interactive Git console application is unavailable.", executable); }
+            token.ThrowIfCancellationRequested();
+            journal = GitCommandLog.StartProcess(GitCommandLogProcessKind.InteractiveConsole, repositoryPath, journalContext);
             terminal = startTerminal is not null ? startTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath])
                 : StartTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath], executionEnvironment);
             using CancellationTokenSource opening = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -89,6 +100,8 @@ public static class InteractiveFileConsoleLauncher
             InteractiveFileConsoleHello hello = await InteractiveFileConsoleProtocol.ReadAsync<InteractiveFileConsoleHello>(reader, opening.Token);
             if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(hello.Nonce), Encoding.UTF8.GetBytes(request.Nonce)))
             { throw new InvalidDataException("The interactive Git console handshake did not match this operation."); }
+            authenticated = true;
+            journal.SetProcessId(peerPid); // The nonce-authenticated console host, not its terminal broker or Git child.
             token.ThrowIfCancellationRequested();
             await writer.WriteLineAsync("ACK"); // Git must not start before this authenticated acknowledgement.
             Task<InteractiveFileConsoleResult> resultRead = InteractiveFileConsoleProtocol.ReadAsync<InteractiveFileConsoleResult>(reader);
@@ -99,19 +112,49 @@ public static class InteractiveFileConsoleLauncher
             InteractiveFileConsoleResult result = await resultRead;
             await peerExit; // Keep the caller's mutation lock until the helper has drained Git and actually exited.
             await terminal.WaitForExitAsync(CancellationToken.None);
+            reported = true;
+            journal.Complete(result.Cancelled || result.Error is not null ? null : result.ExitCode, result.Cancelled);
             if (result.Cancelled) { throw new OperationCanceledException("Interactive Git was cancelled after its private processes stopped.", token); }
             if (result.Error is not null) { throw new IOException(result.Error); }
             return new(result.ExitCode, "", result.ExitCode == 0 ? "" : "Interactive Git exited with code " + result.ExitCode + ". See the terminal output.");
         }
+        catch (Exception error) { failure = error; throw; }
         finally
         {
             // EOF is also cancellation for an authenticated helper. Never kill a terminal server or user terminal.
             if (writer is not null)
             { try { await writer.WriteLineAsync("CANCEL"); } catch (IOException) { } catch (ObjectDisposedException) { } }
             connection?.Dispose();
-            if (peerExit is not null) { await peerExit; }
-            writer?.Dispose(); peer?.Dispose(); terminal?.Dispose();
-            listener.Dispose();
+            try
+            {
+                if (peerExit is not null) { await peerExit; }
+            }
+            finally
+            {
+                if (journal is not null && !reported)
+                {
+                    if (terminal is null) { journal.Complete(null, failure is OperationCanceledException); }
+                    else if (authenticated && failure is OperationCanceledException && peerExit?.IsCompletedSuccessfully == true)
+                    { journal.Complete(null, cancelled: true); }
+                    else { journal.CompleteUnobserved(); }
+                }
+                writer?.Dispose(); peer?.Dispose(); terminal?.Dispose();
+                listener.Dispose();
+            }
+        }
+    }
+
+    private static void ValidateRequest(string repositoryPath, string gitExecutable, IReadOnlyList<string> arguments)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(repositoryPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(gitExecutable);
+        ArgumentNullException.ThrowIfNull(arguments);
+        if (repositoryPath.Contains('\0') || gitExecutable.Contains('\0'))
+        { throw new ArgumentException("Interactive launch values cannot contain NUL."); }
+        foreach (string argument in arguments)
+        {
+            ArgumentNullException.ThrowIfNull(argument);
+            if (argument.Contains('\0')) { throw new ArgumentException("Interactive arguments cannot contain NUL.", nameof(arguments)); }
         }
     }
 

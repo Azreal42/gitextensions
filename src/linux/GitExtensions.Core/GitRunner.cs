@@ -87,9 +87,10 @@ public sealed class GitRunner
     // The same native ownership/drain engine without Git-specific environment or authentication policy.
     internal Task<GitBinaryResult> RunExternalBinaryAsync(string workingDirectory, IReadOnlyList<string> arguments,
         CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? environment,
-        Action<GitProcessOutput>? outputReceived, Action<int>? processStarted)
+        Action<GitProcessOutput>? outputReceived, Action<int>? processStarted,
+        GitCommandLogProcessKind? journalKind = null, GitCommandLogProcessContext? journalContext = null)
         => RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, null, environment,
-            applyAskpass: false, outputReceived, applyGitEnvironment: false, processStarted, ExecutionEnvironment);
+            applyAskpass: false, outputReceived, applyGitEnvironment: false, processStarted, ExecutionEnvironment, journalKind, journalContext);
 
     private async Task<GitBinaryResult> RunBinaryCoreAsync(
         string workingDirectory,
@@ -99,9 +100,11 @@ public sealed class GitRunner
         IReadOnlyDictionary<string, string?>? environment,
         bool applyAskpass,
         Action<GitProcessOutput>? outputReceived = null,
-        bool applyGitEnvironment = true, Action<int>? processStarted = null, GitExecutionEnvironment? executionEnvironment = null)
+        bool applyGitEnvironment = true, Action<int>? processStarted = null, GitExecutionEnvironment? executionEnvironment = null,
+        GitCommandLogProcessKind? journalKind = null, GitCommandLogProcessContext? journalContext = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (journalKind is { } origin && !Enum.IsDefined(origin)) { throw new ArgumentOutOfRangeException(nameof(journalKind)); }
         executionEnvironment ??= ExecutionEnvironment;
         ProcessStartInfo startInfo = new(executionEnvironment.Executable)
         {
@@ -148,21 +151,30 @@ public sealed class GitRunner
 
         // Freeze caller metadata before askpass can await and continue on a worker.
         GitCommandLogLaunchContext logContext = applyGitEnvironment ? GitCommandLog.CaptureLaunchContext() : default;
+        GitCommandLogProcessContext? externalContext = journalKind is not null
+            ? journalContext ?? GitCommandLog.CaptureProcessContext() : null;
         if (applyAskpass)
         {
             await ApplyAskpassAsync(startInfo, arguments, cancellationToken, executionEnvironment).ConfigureAwait(false);
         }
 
+        if (journalKind is not null) { cancellationToken.ThrowIfCancellationRequested(); }
         DateTimeOffset started = DateTimeOffset.Now;
         Stopwatch elapsed = Stopwatch.StartNew();
         int? exitCode = null;
         GitProcessLaunch? launch = null;
         Exception? failure = null;
         long? logId = applyGitEnvironment ? GitCommandLog.BeginWithContext(arguments, workingDirectory, started, logContext) : null;
+        GitCommandLogProcessOperation? externalLog = journalKind is { } kind
+            ? GitCommandLog.StartProcess(kind, workingDirectory, externalContext) : null;
         Action<int>? startedObserver = processStarted;
         if (logId is long id)
         {
             startedObserver = processId => { GitCommandLog.SetProcessId(id, processId); processStarted?.Invoke(processId); };
+        }
+        if (externalLog is not null)
+        {
+            startedObserver = processId => { externalLog.SetProcessId(processId); processStarted?.Invoke(processId); };
         }
         try
         {
@@ -180,6 +192,7 @@ public sealed class GitRunner
         finally
         {
             if (logId is long completedId) { GitCommandLog.Complete(completedId, elapsed.Elapsed, exitCode, failure is OperationCanceledException); }
+            externalLog?.Complete(exitCode, failure is OperationCanceledException);
             if (OperatingSystem.IsLinux() && launch is not null)
             {
                 try { launch.Dispose(); }

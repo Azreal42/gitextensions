@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace GitExtensions.Linux;
 
 /// <summary>Bounded, process-local diagnostics. Arguments, environment, stdin and output are never retained.</summary>
@@ -13,6 +15,27 @@ public static class GitCommandLog
     public static void ConfigureCapture(GitCommandLogCapturePolicy policy)
     { ArgumentNullException.ThrowIfNull(policy); Volatile.Write(ref _capturePolicy, policy); }
     internal static GitCommandLogLaunchContext CaptureLaunchContext() => CapturePolicy.Capture();
+    public static GitCommandLogProcessContext CaptureProcessContext() => new(CaptureLaunchContext());
+
+    public static GitCommandLogProcessOperation StartProcess(GitCommandLogProcessKind kind, string directory,
+        GitCommandLogProcessContext? context = null)
+    {
+        if (!Enum.IsDefined(kind)) { throw new ArgumentOutOfRangeException(nameof(kind)); }
+        ArgumentNullException.ThrowIfNull(directory);
+        if (directory.Contains('\0')) { throw new ArgumentException("A process directory cannot contain NUL.", nameof(directory)); }
+        string command = kind switch
+        {
+            GitCommandLogProcessKind.UserScript => "script", GitCommandLogProcessKind.Build => "build",
+            GitCommandLogProcessKind.GitGui => "git gui", GitCommandLogProcessKind.Gitk => "gitk",
+            GitCommandLogProcessKind.OpenResource => "open resource", GitCommandLogProcessKind.Browse => "browse",
+            GitCommandLogProcessKind.TerminalLauncher => "terminal launcher", GitCommandLogProcessKind.InteractiveConsole => "interactive console host",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+        GitCommandLogLaunchContext capture = context?.Value ?? CaptureLaunchContext();
+        Stopwatch elapsed = Stopwatch.StartNew();
+        return new(BeginCommand(command, directory, DateTimeOffset.Now, capture), elapsed);
+    }
+
     private static readonly HashSet<string> Verbs = new(["add", "am", "apply", "archive", "bisect", "blame", "branch", "cat-file", "check-attr", "check-ignore", "check-mailmap", "check-ref-format", "checkout", "cherry-pick", "clean", "clone", "commit", "config", "count-objects", "describe", "diff", "diff-tree", "difftool", "fetch", "for-each-ref", "format-patch", "fsck", "gc", "grep", "hash-object", "init", "log", "ls-files", "ls-remote", "ls-tree", "merge", "merge-base", "mergetool", "notes", "pull", "push", "range-diff", "rebase", "reflog", "remote", "reset", "restore", "rev-list", "rev-parse", "revert", "rm", "show", "show-ref", "stash", "status", "submodule", "switch", "symbolic-ref", "tag", "update-index", "update-ref", "version", "worktree"], StringComparer.Ordinal);
 
     /// <summary>A metadata change is available. Observers run outside the log lock; UI consumers marshal themselves.</summary>
@@ -50,6 +73,11 @@ public static class GitCommandLog
             break;
         }
 
+        return BeginCommand(command, directory, started, context);
+    }
+
+    private static long BeginCommand(string command, string directory, DateTimeOffset started, GitCommandLogLaunchContext context)
+    {
         long id;
         lock (Gate)
         {
@@ -79,11 +107,17 @@ public static class GitCommandLog
     }
 
     internal static void Complete(long id, TimeSpan elapsed, int? exitCode, bool cancelled)
+        => CompleteEntry(id, elapsed, exitCode, cancelled, unobserved: false);
+
+    internal static void CompleteUnobserved(long id, TimeSpan elapsed)
+        => CompleteEntry(id, elapsed, null, cancelled: false, unobserved: true);
+
+    private static void CompleteEntry(long id, TimeSpan elapsed, int? exitCode, bool cancelled, bool unobserved)
     {
         lock (Gate)
         {
             if (!ActiveEntries.Remove(id, out LinkedListNode<GitCommandLogEntry>? node)) { return; }
-            node.Value = node.Value with { Duration = elapsed, ExitCode = exitCode, Cancelled = cancelled, IsRunning = false };
+            node.Value = node.Value with { Duration = elapsed, ExitCode = exitCode, Cancelled = cancelled, IsRunning = false, IsUnobserved = unobserved };
         }
         NotifyChanged();
     }
@@ -105,6 +139,7 @@ public sealed record GitCommandLogEntry(string Command, string Directory, DateTi
     public long Id { get; init; }
     public int? ProcessId { get; init; }
     public bool IsRunning { get; init; }
+    public bool IsUnobserved { get; init; }
     public string? CallStack { get; init; }
     public bool? IsOnMainThread { get; init; }
 }

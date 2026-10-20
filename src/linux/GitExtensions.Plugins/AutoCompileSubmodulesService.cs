@@ -34,6 +34,8 @@ public sealed class AutoCompileSubmodulesService
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(confirmAsync);
         if (!actionSucceeded || !options.Enabled || !Directory.Exists(repository.Path)) { return new([]); }
+        cancellationToken.ThrowIfCancellationRequested();
+        GitCommandLogProcessContext journalContext = GitCommandLog.CaptureProcessContext();
         await _operation.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -57,7 +59,8 @@ public sealed class AutoCompileSubmodulesService
                     string[] buildArguments = arguments.Any(argument => argument.Contains("$(SOLUTION)", StringComparison.Ordinal))
                         ? arguments.Select(argument => argument.Replace("$(SOLUTION)", solution, StringComparison.Ordinal)).ToArray()
                         : [solution, .. arguments];
-                    GitResult result = await GourceProcess.RunAsync(options.Executable, repository.Path, buildArguments, cancellationToken).ConfigureAwait(false);
+                    GitResult result = await GourceProcess.RunAsync(options.Executable, repository.Path, buildArguments, cancellationToken,
+                        GitCommandLogProcessKind.Build, journalContext).ConfigureAwait(false);
                     builds.Add(new(solution, decision, result));
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }

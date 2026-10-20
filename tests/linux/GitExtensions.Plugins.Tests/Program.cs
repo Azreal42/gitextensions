@@ -24,7 +24,8 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("release notes honour range, order, Unicode bodies and HTML escaping", ReleaseNotesAsync),
     ("invalid ranges and cancelled execution leave the repository untouched", InvalidAndCancelledAsync),
 ];
-tests = [.. tests, .. StatisticsScenarios.All, .. LocalAutomationScenarios.All];
+tests = [.. tests, .. StatisticsScenarios.All, .. LocalAutomationScenarios.All, .. ExternalBuildCommandLogScenarios.All];
+if (args.Contains("--external-build-command-log-only", StringComparer.Ordinal)) { tests = ExternalBuildCommandLogScenarios.All.ToArray(); }
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)
 {

@@ -247,7 +247,7 @@ public sealed partial class MainWindow
     private Task OpenRepositoryFolderAsync()
     {
         if (_repository is not null)
-        { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { _repository.Path } }); }
+        { LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { _repository.Path } }, GitCommandLogProcessKind.OpenResource); }
         return Task.CompletedTask;
     }
     private void UpdateBrowserToolbar(GitStatus status)

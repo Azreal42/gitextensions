@@ -58,34 +58,58 @@ internal static class GourceProcess
         return info;
     }
 
-    internal static async Task<GitResult> RunAsync(string executable, string directory, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    internal static async Task<GitResult> RunAsync(string executable, string directory, IReadOnlyList<string> arguments, CancellationToken cancellationToken,
+        GitCommandLogProcessKind? journalKind = null, GitCommandLogProcessContext? journalContext = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (journalKind is { } kind && !Enum.IsDefined(kind)) { throw new ArgumentOutOfRangeException(nameof(journalKind)); }
         ProcessStartInfo info = StartInfo(executable, directory, arguments);
         info.RedirectStandardOutput = info.RedirectStandardError = true;
         using Process process = new() { StartInfo = info };
-        process.Start();
-        using CancellationTokenRegistration registration = cancellationToken.Register(() =>
-        {
-            try { if (!process.HasExited) { process.Kill(entireProcessTree: true); } }
-            catch (InvalidOperationException) { }
-            catch (System.ComponentModel.Win32Exception) { }
-        });
-        Task<string> output = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        Task<string> error = process.StandardError.ReadToEndAsync(cancellationToken);
+        // The post-update caller freezes UI/stack metadata before its first await.
+        journalContext = journalKind is not null ? journalContext ?? GitCommandLog.CaptureProcessContext() : null;
+        cancellationToken.ThrowIfCancellationRequested();
+        GitCommandLogProcessOperation? journal = journalKind is { } origin ? GitCommandLog.StartProcess(origin, directory, journalContext) : null;
+        bool started = false, drained = false;
+        int? exitCode = null;
+        Exception? failure = null;
         try
         {
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            return new(process.ExitCode, await output.ConfigureAwait(false), await error.ConfigureAwait(false));
+            process.Start(); started = true;
+            journal?.SetProcessId(process.Id);
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            {
+                try { if (!process.HasExited) { process.Kill(entireProcessTree: true); } }
+                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception) { }
+            });
+            Task<string> output = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            Task<string> error = process.StandardError.ReadToEndAsync(cancellationToken);
+            try
+            {
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                string standardOutput = await output.ConfigureAwait(false), standardError = await error.ConfigureAwait(false);
+                drained = true; exitCode = process.ExitCode;
+                return new(exitCode.Value, standardOutput, standardError);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Keep the existing real native wait and pipe drainage on owned build cancellation.
+                await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+                try { await Task.WhenAll(output, error).ConfigureAwait(false); }
+                catch (OperationCanceledException) { }
+                drained = true;
+                throw;
+            }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (Exception error) { failure = error; throw; }
+        finally
         {
-            // Cancellation of WaitForExitAsync alone does not reap a killed Unix
-            // child. Wait for its actual exit before returning to the host.
-            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-            try { await Task.WhenAll(output, error).ConfigureAwait(false); }
-            catch (OperationCanceledException) { }
-            throw;
+            if (journal is not null)
+            {
+                if (!started || drained) { journal.Complete(exitCode, failure is OperationCanceledException); }
+                else { journal.CompleteUnobserved(); } // Unexpected observation failure does not invent an exit or kill an external app.
+            }
         }
     }
 }

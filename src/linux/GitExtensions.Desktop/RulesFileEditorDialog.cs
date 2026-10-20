@@ -29,8 +29,8 @@ public sealed class RulesFileEditorDialog : RepositoryDialog
     {
         _kind = kind;
         _category = kind switch { GitRulesFileKind.Attributes => "FormGitAttributes", GitRulesFileKind.MailMap => "FormMailMap", _ => "FormGitIgnore" };
-        _openLink = openLink ?? (uri => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
-            { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }));
+        _openLink = openLink ?? (uri => LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
+            { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource));
         Name = "RulesFileEditorDialog"; Title = T("Edit " + FileName(kind));
         bool ignore = IsIgnore;
         Width = 634; Height = ignore ? 623 : 474; MinWidth = ignore ? 634 : 500; MinHeight = ignore ? 460 : 320;

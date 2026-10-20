@@ -106,7 +106,7 @@ public sealed class GourceDialog : RepositoryDialog
     {
         Button button = Action(name, label, () =>
         {
-            Process.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } });
+            LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } }, GitCommandLogProcessKind.OpenResource);
             return Task.CompletedTask;
         });
         button.Content = new TextBlock { Text = T(label), TextDecorations = TextDecorations.Underline };
