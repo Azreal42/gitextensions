@@ -24,6 +24,7 @@ namespace GitExtensions.Linux.Desktop;
 internal sealed class GitCommandLogWindow : Window
 {
     private static GitCommandLogWindow? _instance;
+    private readonly CommandLogWindowPlacement _placement;
     private readonly TextBox _text = new() { Name = "GitCommandLogText", IsReadOnly = true, AcceptsReturn = true,
         FontFamily = new FontFamily("DejaVu Sans Mono"), FontSize = 12, FontWeight = FontWeight.Normal, FontStyle = FontStyle.Normal,
         TextWrapping = TextWrapping.Wrap, BorderThickness = default, Margin = default };
@@ -73,6 +74,7 @@ internal sealed class GitCommandLogWindow : Window
         Name = "GitCommandLogWindow"; Title = Original("$this", "Git Command Log");
         Width = 659; Height = 470; MinWidth = 400; MinHeight = 240; ShowInTaskbar = true;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        _placement = new(this);
         _items.ItemsSource = _rows;
         _cacheItems.ItemsSource = _cacheRows;
         foreach (ListBox list in new[] { _items, _cacheItems })
@@ -139,6 +141,7 @@ internal sealed class GitCommandLogWindow : Window
         Closed += (_, _) =>
         {
             Volatile.Write(ref _closed, true);
+            _placement.Closed();
             if (_subscribed) { GitCommandLog.Changed -= Changed; GitCommandCache.Shared.Changed -= CacheChanged; _subscribed = false; }
             _lifetime.Cancel(); foreach (ContextMenu menu in _menus) { menu.Close(); }
             if (ReferenceEquals(_instance, this)) { _instance = null; }
