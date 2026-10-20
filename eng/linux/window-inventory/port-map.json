@@ -3360,7 +3360,7 @@
         "AskpassWindow"
       ],
       "implemented": "Choix natif ou autre exécutable littéral, page Git Extensions et icône Key Windows, Browse et aide EN/FR. Profil/session communs à Paths : Apply/Cancel, conflits, Reload et case instantanée sans publication des brouillons. GIT_SSH enfant consommé par Git, priorités de configuration et contextes par opération conservés ; diagnostic local et Repair raccordés. Source c358d990f : 132 Desktop et Core 6/93/5 ciblés, vrais clone/fetch/push locaux via SSH simulé. Natif X11 EN/clair puis FR/sombre : Apply, Cancel, client -V choisi, persistance et retour natif après deux vrais redémarrages.",
-      "remaining": "N2 : Plink/PuTTYgen/Pageant existent sous Unix ; agent possédé, socket/durée de vie, chargement des clés des remotes, action CLI PuTTYgen et interactivité Plink restent à adapter. Authentification serveur, clés matérielles, picker natif et variantes étendues non qualifiés ; quelques diagnostics historiques restent anglais. Aucun full réexécuté, nouveau paquet non encore qualifié à cette source.",
+      "remaining": "N2 : Plink/PuTTYgen/Pageant existent sous Unix ; agent possédé, socket/durée de vie, chargement des clés des remotes, action CLI PuTTYgen et interactivité Plink restent à adapter. Authentification serveur, clés matérielles, picker natif et variantes étendues non qualifiés ; quelques diagnostics historiques restent anglais. Aucun full réexécuté ; paquet de cette source vérifié en DPKG isolé, interaction installée non auditée.",
       "visual": "rapproche",
       "tests": [
         "SshSettingsPageTests",

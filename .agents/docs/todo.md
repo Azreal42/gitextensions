@@ -2,7 +2,7 @@
 
 Mise à jour : 20 octobre 2026. Les validations restent liées à leur source et à leur périmètre. **[Relevé Roslyn frais](../../artifacts/linux/ssh-settings-20261020/inventory-01/syntax.json) : 2448 fichiers C#, zéro diagnostic** ; les cinq modifications Modal préexistantes du checkout restent distinctes de la source testée.
 
-La suite complète de référence porte sur `b745524c1` ; le lot SSH `c358d990f` a son ciblé et son natif séparés. Les anciennes références gardent leur source et leur périmètre.
+La suite complète de référence porte sur `b745524c1` ; le lot SSH `c358d990f` a son ciblé, son natif source et son paquet isolé séparés. Les anciennes références gardent leur source et leur périmètre.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
@@ -20,7 +20,7 @@ Source `c358d990f` : [compilation des trois projets et ciblé vérifiés](../../
 
 - [x] Page SSH sous Git Extensions, icône/contrôles Windows, choix natif ou exécutable littéral. Apply/Cancel/Reload, profils antérieurs, champs inconnus, conflits, startup isolé et picker possédé testés. Vrais clone/fetch/push et remote heads sur dépôt local via client simulé ; priorités Git, contextes engagés, scripts et console conservés. [ADR0130](adr/preferences/environment/0130-native-ssh-settings.md).
 - [x] [Natif source X11](../../artifacts/linux/ssh-settings-20261020/review/root-native-review.json) : 44 commandes, 40 captures inspectées, trois vrais lancements/fermetures à 0 ; EN/clair puis FR/sombre. Repair place le focus dans la page existante, Apply publie le chemin exact, Cancel abandonne B en conservant A, A survit au redémarrage et le mode natif au suivant. Deux vrais probes A/-V ; profil étranger préservé. Aucun serveur SSH/authentification, Pageant, picker natif, Wayland/DPI/accessibilité ni interaction du paquet certifié.
-- [ ] Paquet de cette source : publication et vérification isolée à terminer ; dernier paquet qualifié b745 ci-dessous.
+- [x] [Paquet exact c358](../../artifacts/linux/snapshots/c358d990f/deb/gitextensions_7.2.1~linux-alpha_amd64.deb), **40 058 040 octets**, [vérifié](../../artifacts/linux/ssh-settings-20261020/review/root-package-review.json) : cinq phases à 0, 402 fichiers/460 entrées, contenu publish/archive/extraction et payload contrôlés ; DPKG et démarrage isolés. Copies SDK/cache physiques dédiées. Aucun paquet installé sur l’hôte, aucun push ; interaction installée et OS vierge non qualifiés.
 
 SSH passe N1→N2. Plink, Pageant et PuTTYgen ne sont pas exclus par la plateforme : restent socket/durée de vie d’un agent possédé, chargement des clés des remotes, action CLI PuTTYgen et interactivité Plink. Les cinq modifications Modal préexistantes du primaire restent hors source qualifiée ; les 13 familles historiques restent ouvertes.
 
