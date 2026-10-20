@@ -2226,20 +2226,26 @@
         "GitCommandLogWindow",
         "GitCommandLogPresentation",
         "GitCommandLog",
-        "file:src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs"
+        "file:src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
+        "GitCommandLogCapturePolicy",
+        "CommandLogCapturePreferences",
+        "file:src/linux/GitExtensions.Desktop/Program.cs"
       ],
-      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Ciblé 44/44 Desktop et 10/10 Core lié à acb0a6c9f ; suites complètes, natif et paquet ont leurs preuves distinctes dans TODO.",
-      "remaining": "Vrai cache de résultats et son onglet, piles, indicateur UI-thread, journal des autres processus et taille/position restent ouverts. Arguments, stderr/erreurs bruts et copie de commande complète restent exclus par le contrat de confidentialité Linux ; aucun faux cache. La recherche est absente de cette fenêtre Windows. Restauration WM de groupe puis F12, variantes natives et interaction du paquet se qualifient séparément ; la restauration Minimized→Normal par F12 entre Browse est couverte par le ciblé.",
+      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Lifecycle/rendu acb0a6c9f conserve ses preuves distinctes dans TODO. ADR0139 ajoute les piles opt-in, détails/export sûrs et indicateur du thread appelant capturé avant await askpass. Clé XML Windows Log.CaptureCallStacks false par défaut, writer CAS partagé et publication ordonnée, drain hors UI des effets acquis. Symboles des Assembly approuvées seulement, 32 frames/256 caractères-frame/4096 caractères-pile, aucune donnée brute. Source c000aafc5 : ciblés, Core complet frais, natif source X11 privé EN/FR et paquet exact acquis par leurs preuves distinctes dans TODO ; Desktop/Plugins complets ed86 restent historiques.",
+      "remaining": "Vrai cache de résultats et son onglet, journal des autres processus et taille/position restent ouverts. Arguments, stderr/erreurs bruts et copie de commande complète restent exclus par le contrat de confidentialité Linux ; aucun faux cache. Recherche absente de cette fenêtre Windows ; libellés anglais de métadonnées également présents dans Windows, sans écart de traduction établi. Variantes natives et interaction installée restent à qualifier séparément. Les preuves acb0/ed86 ne sont pas transférées. Défilement du détail après changement de ligne : la profondeur précédente a été observée ; retour en tête et caret restent à qualifier. Windows affecte RichTextBox.Text dans SelectedIndexChanged sans reset explicite : un écart Windows certain n’est pas établi.",
       "visual": "rapproche",
       "tests": [
         "ClassicMenuTests",
         "FontConsumerTests",
         "GitCommandLogWindowTests",
-        "GitCommandLogScenarios"
+        "GitCommandLogScenarios",
+        "CommandLogCaptureTests",
+        "GitCommandLogCaptureScenarios"
       ],
       "adr": [
         "0060",
-        "0138"
+        "0138",
+        "0139"
       ]
     },
     "GitUI.CommandsDialogs.BrowseDialog.FormChangeLog": {

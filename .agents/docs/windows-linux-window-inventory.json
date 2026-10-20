@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "acb0a6c9f25adf31d561aa5d52bea40f06924713",
-  "source_digest_sha256": "66f3df7c7d689a33aa9c745deefe967bc4171fe8725ebc64092bb51d0bef1a20",
-  "scanned_csharp_files": 2474,
+  "code_reference_commit": "c000aafc526fc969ce26c8bfc9d4e8f404f2d15e",
+  "source_digest_sha256": "5b062b7aa26383707216e4cd42b1bf7835770d7e4d9be98c64fb880539ff9e5e",
+  "scanned_csharp_files": 2478,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -1619,8 +1619,8 @@
       "feature": "Journal des commandes Git",
       "group": "information",
       "level": "N2",
-      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Ciblé 44/44 Desktop et 10/10 Core lié à acb0a6c9f ; suites complètes, natif et paquet ont leurs preuves distinctes dans TODO.",
-      "remaining": "Vrai cache de résultats et son onglet, piles, indicateur UI-thread, journal des autres processus et taille/position restent ouverts. Arguments, stderr/erreurs bruts et copie de commande complète restent exclus par le contrat de confidentialité Linux ; aucun faux cache. La recherche est absente de cette fenêtre Windows. Restauration WM de groupe puis F12, variantes natives et interaction du paquet se qualifient séparément ; la restauration Minimized→Normal par F12 entre Browse est couverte par le ciblé.",
+      "implemented": "Journal de métadonnées du lancement au PID confirmé puis à la fin, Id stables, ordre de lancement et borne 500 sans résurrection après Clear/éviction. Fenêtre globale F12, liste/détail, sélection ancienne conservée ou suivi de la dernière ligne, réparation locale du focus après recyclage, menus/icônes et Ctrl+S/C/L Windows. Copie du descripteur, export explicite TXT/CSV Unicode/culturel, wrap/topmost locaux et invalidation à la fermeture. Retour à la ligne et police du vrai présentateur contrôlés avec le viewport, les clics, tailles et thèmes. Lifecycle/rendu acb0a6c9f conserve ses preuves distinctes dans TODO. ADR0139 ajoute les piles opt-in, détails/export sûrs et indicateur du thread appelant capturé avant await askpass. Clé XML Windows Log.CaptureCallStacks false par défaut, writer CAS partagé et publication ordonnée, drain hors UI des effets acquis. Symboles des Assembly approuvées seulement, 32 frames/256 caractères-frame/4096 caractères-pile, aucune donnée brute. Source c000aafc5 : ciblés, Core complet frais, natif source X11 privé EN/FR et paquet exact acquis par leurs preuves distinctes dans TODO ; Desktop/Plugins complets ed86 restent historiques.",
+      "remaining": "Vrai cache de résultats et son onglet, journal des autres processus et taille/position restent ouverts. Arguments, stderr/erreurs bruts et copie de commande complète restent exclus par le contrat de confidentialité Linux ; aucun faux cache. Recherche absente de cette fenêtre Windows ; libellés anglais de métadonnées également présents dans Windows, sans écart de traduction établi. Variantes natives et interaction installée restent à qualifier séparément. Les preuves acb0/ed86 ne sont pas transférées. Défilement du détail après changement de ligne : la profondeur précédente a été observée ; retour en tête et caret restent à qualifier. Windows affecte RichTextBox.Text dans SelectedIndexChanged sans reset explicite : un écart Windows certain n’est pas établi.",
       "visual": "rapproche",
       "linux": [
         {
@@ -1649,6 +1649,26 @@
           "source": "src/linux/GitExtensions.Desktop/MainWindow.ToolsHelp.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.GitCommandLogCapturePolicy",
+          "label": "GitCommandLogCapturePolicy",
+          "source": "src/linux/GitExtensions.Core/GitCommandLogCapturePolicy.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.CommandLogCapturePreferences",
+          "label": "CommandLogCapturePreferences",
+          "source": "src/linux/GitExtensions.Desktop/CommandLogCapturePreferences.cs",
+          "line": 9,
+          "kind": "component"
+        },
+        {
+          "label": "Program.cs",
+          "source": "src/linux/GitExtensions.Desktop/Program.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
@@ -1659,10 +1679,22 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommandLogCaptureTests.cs",
+          "test_class": "CommandLogCaptureTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/FontConsumerTests.cs",
           "test_class": "FontConsumerTests",
           "passed_in_reference_run": 14,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Core.Tests/GitCommandLogCaptureScenarios.cs",
+          "test_class": "GitCommandLogCaptureScenarios",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Core.Tests/GitCommandLogScenarios.cs",
@@ -1679,7 +1711,8 @@
       ],
       "adr": [
         ".agents/docs/adr/ui/0060-shared-classic-menus.md",
-        ".agents/docs/adr/ui/dialogs/0138-command-journal-lifecycle.md"
+        ".agents/docs/adr/ui/dialogs/0138-command-journal-lifecycle.md",
+        ".agents/docs/adr/ui/dialogs/0139-command-journal-call-stacks.md"
       ]
     },
     {
