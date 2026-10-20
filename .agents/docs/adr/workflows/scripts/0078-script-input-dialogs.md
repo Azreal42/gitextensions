@@ -13,3 +13,5 @@ FilePrompt conserve la saisie exacte ; seule la chaîne vide est annulée par OK
 DesktopScriptExecutor consomme le résultat et son ExecutionPlan, sans seconde série de prompts. Fermeture du propriétaire ou token annulent la session avant lancement ; le cycle de vie natif relève du [contrat runtime](../../extensions/scripts/0057-pure-script-preparation.md).
 
 Repères : ScriptPreparationDispatcher, QuickItemSelectorDialog, QuickStringSelectorDialog, FilePromptDialog, SimplePromptDialog et ScriptInputDialogControls. Restent ouverts : picker natif, autres hôtes/variantes, Wayland, DPI et accessibilité. Les anciennes suites du pont n’attestent pas le nouveau runner ; les [suites complètes 19bb](../../../../../artifacts/linux/scripts-runtime-20261018/full-02/parent-verification.json) lui sont propres. Paquet exact et runtime S01 ciblé vérifiés ; audit natif des saisies ouvert : [TODO](../../../todo.md#validation-courante--scripts-runtime).
+
+Le picker FilePrompt est désormais possédé et annulable sur le périmètre de l’[ADR0131](0131-owned-file-picker.md) ; les limites N1 ci-dessus décrivent la référence historique.

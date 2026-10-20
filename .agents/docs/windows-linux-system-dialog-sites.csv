@@ -286,7 +286,7 @@ MessageBox/TaskDialog,src/app/GitUI/NBugReports/UIReporter.cs,329,GitUI.NBugRepo
 MessageBox/TaskDialog,src/app/GitUI/NBugReports/UIReporter.cs,339,GitUI.NBugReports.UIReporter,ReportError,TaskDialog.ShowDialog,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,
 MessageBox/TaskDialog,src/app/GitUI/NBugReports/UIReporter.cs,356,GitUI.NBugReports.UIReporter,ReportFailedToLoadAnAssembly,TaskDialog.ShowDialog,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,
 MessageBox/TaskDialog,src/app/GitUI/Plugin/FailedPluginWrapper.cs,48,GitUI.FailedPluginWrapper,Execute,MessageBoxes.Show,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,
-OpenFileDialog,src/app/GitUI/ScriptsEngine/FormFilePrompt.cs,32,GitUI.ScriptsEngine.FormFilePrompt,btnBrowse_Click,construction,N1,NON_AUDITE_INDIVIDUELLEMENT,FilePromptDialog
+OpenFileDialog,src/app/GitUI/ScriptsEngine/FormFilePrompt.cs,32,GitUI.ScriptsEngine.FormFilePrompt,btnBrowse_Click,construction,N2,NON_AUDITE_INDIVIDUELLEMENT,FilePromptDialog; ScriptFilePickerDialog; ScriptPreparationDispatcher
 MessageBox/TaskDialog,src/app/GitUI/ScriptsEngine/ScriptsManager.ScriptRunner.cs,123,GitUI.ScriptsEngine.ScriptsManager.ScriptRunner,RunScriptInternal,MessageBoxes.Show,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,
 MessageBox/TaskDialog,src/app/GitUI/ScriptsEngine/ScriptsManager.ScriptRunner.cs,135,GitUI.ScriptsEngine.ScriptsManager.ScriptRunner,RunScriptInternal,MessageBoxes.Show,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,
 MessageBox/TaskDialog,src/app/GitUI/Theming/ThemeModule.cs,55,GitUI.Theming.ThemeModule,LoadThemeSettings,MessageBoxes.ShowError,CONTROL/HELPER,NON_AUDITE_INDIVIDUELLEMENT,

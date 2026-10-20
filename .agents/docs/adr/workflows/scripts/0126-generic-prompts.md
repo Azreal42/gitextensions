@@ -7,3 +7,5 @@ Rename/Move réutilise SimplePrompt : brouillon littéral conservé, nouvelle Wi
 FilePrompt est inchangé : le picker ne reçoit aucun CancellationToken. Écarter une réponse tardive et attendre BrowseCompletion ne prouve ni son arrêt ni sa fermeture native.
 
 QuickStringSelector et SimplePrompt sont N2 sur les parcours testés ; FilePrompt conserve N1. [Périmètre vérifié](../../../todo.md#portable-workflows--perimetre-verifie).
+
+Le picker FilePrompt est désormais possédé et annulable sur le périmètre de l’[ADR0131](0131-owned-file-picker.md) ; les limites N1 ci-dessus décrivent la référence historique.

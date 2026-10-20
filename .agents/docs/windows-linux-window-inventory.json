@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "c358d990fcf47f229315dae6f6e204d2c74155d4",
-  "source_digest_sha256": "acc67f265cdd0a68cd6dc377c60c9d3df25ecf770fb5c94a594fd0bdef656937",
-  "scanned_csharp_files": 2448,
+  "code_reference_commit": "5356de767e7e8663b44f6f974bd77855fe884bb5",
+  "source_digest_sha256": "5791eb759e2c09e188625b71e6462222ae22e2d18482690c9a484b2f5ed7eaeb",
+  "scanned_csharp_files": 2450,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,13 +26,13 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 108,
+    "linux_window_types": 109,
     "linux_abstract_bases": 4,
     "linux_dynamic_factories": 35,
     "windows_dynamic_hosts": 2,
     "windows_levels": {
-      "N1": 2,
-      "N2": 46,
+      "N1": 1,
+      "N2": 47,
       "N3": 50,
       "NA": 1
     },
@@ -13867,7 +13867,7 @@
       "group": "settings-pages",
       "level": "N2",
       "implemented": "Paramètres persistants des huit plugins et services BackgroundFetch/AutoCompile.",
-      "remaining": "Pas de page intégrée pour tous les plugins Windows ; providers CI absents.",
+      "remaining": "Pas de page générique intégrée pour tous les plugins Windows ; les six fournisseurs CI ont leurs pages dédiées, avec leurs périmètres et limites propres.",
       "visual": "integre",
       "linux": [
         {
@@ -16062,20 +16062,40 @@
       "category": "windows",
       "feature": "Choix de fichier demandé par un script",
       "group": "helpers",
-      "level": "N1",
-      "implemented": "Fenêtre dédiée présente, avec consommateur Scripts : saisie exacte, seule chaîne vide annulée par OK ; Browse multisélection depuis « . », fichiers locaux existants cités selon Windows, remplacement complet et CancelBrowse conservant le texte ; erreurs et réponses tardives gardées. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. UserFiles consommé par le runtime ; chaîne exacte, Browse et résultat explicite conservés, drainage BrowseCompletion attendu.",
-      "remaining": "Picker natif à auditer : API sans CancellationToken, réponses tardives gardées mais arrêt/fermeture native non garantis. Variantes OS/DPI ouvertes.",
+      "level": "N2",
+      "implemented": "Formulaire Windows compact et saisie exacte ; seule chaîne vide annulée par OK. Browse géré possédé, multisélection depuis « . », sélection ou noms saisis, fichiers locaux existants cités selon Windows ; Cancel conserve le texte et revient au champ. Annulation token/parent ferme le vrai picker et son erreur possédée avant la fin de préparation ; contexte et UserFiles restent ceux du runtime partagé. Source 5356de767 : 58/58 Desktop et 38/38 Core Scripts ciblés ; cas normaux, noms littéraux et fermetures testés. Natif source EN/clair puis FR/sombre : vrai menu/toolbar, Cancel sans exécution, sélection multiple et nom édité jusqu’aux argv exacts du script ; deux fermetures normales.",
+      "remaining": "Sélecteur Avalonia géré local aux scripts, sans intégration portail GTK/KDE ; descriptions de dossiers/volumes parfois anglaises. Annulation token/parent et erreur drainée couvertes headless, pas exercées nativement. Paquet de cette source à qualifier séparément ; aucun full réexécuté. Variantes Wayland/IME/DPI/accessibilité ouvertes.",
       "visual": "rapproche",
       "linux": [
         {
           "id": "GitExtensions.Linux.Desktop.FilePromptDialog",
           "label": "FilePromptDialog",
           "source": "src/linux/GitExtensions.Desktop/FilePromptDialog.cs",
+          "line": 14,
+          "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptFilePickerDialog",
+          "label": "ScriptFilePickerDialog",
+          "source": "src/linux/GitExtensions.Desktop/ScriptFilePickerDialog.cs",
           "line": 15,
           "kind": "window"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ScriptPreparationDispatcher",
+          "label": "ScriptPreparationDispatcher",
+          "source": "src/linux/GitExtensions.Desktop/ScriptPreparationDispatcher.cs",
+          "line": 19,
+          "kind": "component"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptFilePickerTests.cs",
+          "test_class": "ScriptFilePickerTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptInputDialogTests.cs",
           "test_class": "ScriptInputDialogTests",
@@ -16097,7 +16117,8 @@
       ],
       "adr": [
         ".agents/docs/adr/workflows/scripts/0078-script-input-dialogs.md",
-        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md"
+        ".agents/docs/adr/extensions/scripts/0057-pure-script-preparation.md",
+        ".agents/docs/adr/workflows/scripts/0131-owned-file-picker.md"
       ]
     },
     {
@@ -18534,11 +18555,11 @@
       "id": "GitExtensions.Linux.Desktop.FilePromptDialog",
       "name": "FilePromptDialog",
       "source": "src/linux/GitExtensions.Desktop/FilePromptDialog.cs",
-      "line": 15,
+      "line": 14,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/FilePromptDialog.cs",
-          "line": 15
+          "line": 14
         }
       ],
       "bases": [
@@ -18549,7 +18570,7 @@
         {
           "id": "GitUI.ScriptsEngine.FormFilePrompt",
           "name": "FormFilePrompt",
-          "level": "N1"
+          "level": "N2"
         }
       ],
       "note": ""
@@ -20193,6 +20214,30 @@
           "id": "GitUI.CommandsDialogs.FormMailMap",
           "name": "FormMailMap",
           "level": "N3"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "GitExtensions.Linux.Desktop.ScriptFilePickerDialog",
+      "name": "ScriptFilePickerDialog",
+      "source": "src/linux/GitExtensions.Desktop/ScriptFilePickerDialog.cs",
+      "line": 15,
+      "sources": [
+        {
+          "path": "src/linux/GitExtensions.Desktop/ScriptFilePickerDialog.cs",
+          "line": 15
+        }
+      ],
+      "bases": [
+        "Window"
+      ],
+      "abstract": false,
+      "windows": [
+        {
+          "id": "GitUI.ScriptsEngine.FormFilePrompt",
+          "name": "FormFilePrompt",
+          "level": "N2"
         }
       ],
       "note": ""
@@ -25118,8 +25163,7 @@
       "N3": 1
     },
     "helpers": {
-      "N1": 1,
-      "N2": 6
+      "N2": 7
     },
     "settings": {
       "N2": 4

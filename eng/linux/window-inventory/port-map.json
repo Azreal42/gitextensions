@@ -1798,21 +1798,25 @@
     "GitUI.ScriptsEngine.FormFilePrompt": {
       "feature": "Choix de fichier demandé par un script",
       "group": "helpers",
-      "level": "N1",
+      "level": "N2",
       "linux": [
-        "FilePromptDialog"
+        "FilePromptDialog",
+        "ScriptFilePickerDialog",
+        "ScriptPreparationDispatcher"
       ],
-      "implemented": "Fenêtre dédiée présente, avec consommateur Scripts : saisie exacte, seule chaîne vide annulée par OK ; Browse multisélection depuis « . », fichiers locaux existants cités selon Windows, remplacement complet et CancelBrowse conservant le texte ; erreurs et réponses tardives gardées. Pont interne de préparation typée : contexte figé, demande sur thread UI, refus/annulation distincts et attente BrowseCompletion. UserFiles consommé par le runtime ; chaîne exacte, Browse et résultat explicite conservés, drainage BrowseCompletion attendu.",
-      "remaining": "Picker natif à auditer : API sans CancellationToken, réponses tardives gardées mais arrêt/fermeture native non garantis. Variantes OS/DPI ouvertes.",
+      "implemented": "Formulaire Windows compact et saisie exacte ; seule chaîne vide annulée par OK. Browse géré possédé, multisélection depuis « . », sélection ou noms saisis, fichiers locaux existants cités selon Windows ; Cancel conserve le texte et revient au champ. Annulation token/parent ferme le vrai picker et son erreur possédée avant la fin de préparation ; contexte et UserFiles restent ceux du runtime partagé. Source 5356de767 : 58/58 Desktop et 38/38 Core Scripts ciblés ; cas normaux, noms littéraux et fermetures testés. Natif source EN/clair puis FR/sombre : vrai menu/toolbar, Cancel sans exécution, sélection multiple et nom édité jusqu’aux argv exacts du script ; deux fermetures normales.",
+      "remaining": "Sélecteur Avalonia géré local aux scripts, sans intégration portail GTK/KDE ; descriptions de dossiers/volumes parfois anglaises. Annulation token/parent et erreur drainée couvertes headless, pas exercées nativement. Paquet de cette source à qualifier séparément ; aucun full réexécuté. Variantes Wayland/IME/DPI/accessibilité ouvertes.",
       "visual": "rapproche",
       "tests": [
         "ScriptInputDialogTests",
+        "ScriptFilePickerTests",
         "ScriptPreparationDispatcherTests",
         "ScriptLaunchIntegrationTests"
       ],
       "adr": [
         "0078",
-        "0057"
+        "0057",
+        "0131"
       ]
     },
     "GitUI.FindAndReplaceForm": {
@@ -3410,7 +3414,7 @@
         "MainWindow@ShowPluginAsync"
       ],
       "implemented": "Paramètres persistants des huit plugins et services BackgroundFetch/AutoCompile.",
-      "remaining": "Pas de page intégrée pour tous les plugins Windows ; providers CI absents.",
+      "remaining": "Pas de page générique intégrée pour tous les plugins Windows ; les six fournisseurs CI ont leurs pages dédiées, avec leurs périmètres et limites propres.",
       "visual": "integre",
       "tests": [],
       "adr": []
