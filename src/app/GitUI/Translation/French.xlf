@@ -9789,6 +9789,38 @@ Par conséquent le bouton Annuler n&apos;annule AUCUN changement fait.</target>
         <target>Téléchargez la dernière version de .NET Desktop Runtime. Consultez la documentation pour savoir comment installer le runtime .NET sans privilèges administratifs.</target>
         
       </trans-unit>
+      <trans-unit id="_includePrereleases.Text">
+        <source>Include pre-releases</source>
+        <target>Inclure les préversions</target>
+      </trans-unit>
+      <trans-unit id="_downloadPackage.Text">
+        <source>Download &amp;update...</source>
+        <target>Télécharger la &amp;mise à jour...</target>
+      </trans-unit>
+      <trans-unit id="_openPackage.Text">
+        <source>&amp;Open package...</source>
+        <target>&amp;Ouvrir le paquet...</target>
+      </trans-unit>
+      <trans-unit id="_downloaded.Text">
+        <source>Package downloaded to {0}. Open it with your desktop package installer to install the update.</source>
+        <target>Paquet téléchargé dans {0}. Ouvrez-le avec le gestionnaire de paquets du bureau pour installer la mise à jour.</target>
+      </trans-unit>
+      <trans-unit id="_checkFailed.Text">
+        <source>The update operation failed. You can retry.</source>
+        <target>La recherche ou le téléchargement a échoué. Vous pouvez réessayer.</target>
+      </trans-unit>
+      <trans-unit id="_noLinuxRelease.Text">
+        <source>No compatible Linux package has been published on the fork releases.</source>
+        <target>Aucun paquet Linux compatible n’a encore été publié dans les releases du fork.</target>
+      </trans-unit>
+      <trans-unit id="_unverified.Text">
+        <source>Verification information is unavailable. Use Direct Download.</source>
+        <target>Les informations de vérification sont indisponibles. Utilisez le téléchargement direct.</target>
+      </trans-unit>
+      <trans-unit id="_retry.Text">
+        <source>&amp;Retry</source>
+        <target>&amp;Réessayer</target>
+      </trans-unit>
     </body>
   </file>
   <file datatype="plaintext" original="FormVerify" source-language="en" target-language="fr">

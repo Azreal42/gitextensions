@@ -18,7 +18,8 @@ public sealed partial class MainWindow
     private GitCommandLogWindow? _commandLogWindow;
     internal Func<ProcessStartInfo, Process?> ExternalLauncher { get; set; } = Process.Start;
     private static string DesktopVersion => typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "7.2.1-linux-alpha";
-    private const string ForkUrl = "https://github.com/Azreal42/gitextensions";
+    private const string ForkUrl = LinuxUpdateClient.RepositoryUrl;
+    internal Func<ILinuxUpdateClient> UpdatesClientFactory { get; set; } = () => new LinuxUpdateClient();
 
     private MenuItem OriginalAction(string category, string name, string label, string? icon, Func<Task> action, KeyGesture? gesture = null)
     {
@@ -114,9 +115,17 @@ public sealed partial class MainWindow
             OriginalAction(category, "donateToolStripMenuItem", "&Donate", "DollarSign.png", ShowDonateAsync),
             telemetry,
             OriginalAction(category, "reportAnIssueToolStripMenuItem", "&Report an issue", "BugReport.png", ReportIssueAsync),
-            OriginalAction(category, "checkForUpdatesToolStripMenuItem", "Check for &updates", "CheckForUpdates.png", () => OpenWebAsync(ForkUrl + "/releases")),
+            OriginalAction(category, "checkForUpdatesToolStripMenuItem", "Check for &updates", "CheckForUpdates.png", ShowUpdatesAsync),
             OriginalAction(category, "aboutToolStripMenuItem", "&About", "information.png", ShowAboutAsync)
         }};
+    }
+
+    private async Task ShowUpdatesAsync()
+    {
+        using ILinuxUpdateClient client = UpdatesClientFactory();
+        UpdatesDialog dialog = new(client, DesktopVersion, OpenWebAsync, _translations) { RequestedThemeVariant = ActualThemeVariant };
+        try { await dialog.ShowDialog(this); }
+        finally { await dialog.Retirement; }
     }
 
     private Task OpenWebAsync(string url)
