@@ -57,6 +57,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 (string Name, Func<Task> Run)[] tests =
 [
     .. GitEnvironmentScenarios.All,
+    .. SshEnvironmentScenarios.All,
     .. UnixSocketDirectoryScenarios.All,
     .. FileHistoryGraphScenarios.All,
     .. QuickSearchMessageScenarios.All,
@@ -259,6 +260,7 @@ if (args.Contains("--file-menu-difftools-only", StringComparer.Ordinal)) { tests
 if (args.Contains("--tool-config-only", StringComparer.Ordinal)) { tests = ToolConfigurationScenarios.All.ToArray(); }
 if (args.Contains("--commit-completion-only", StringComparer.Ordinal)) { tests = CommitCompletionScenarios.All.ToArray(); }
 if (args.Contains("--superproject-only", StringComparer.Ordinal)) { tests = SuperprojectScenarios.All.ToArray(); }
+if (args.Contains("--ssh-environment-only", StringComparer.Ordinal)) { tests = SshEnvironmentScenarios.All.ToArray(); }
 if (args.Contains("--git-environment-only", StringComparer.Ordinal)) { tests = GitEnvironmentScenarios.All.ToArray(); }
 if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal))
 { tests = [.. GitProcessStreamingScenarios.All, .. ToolConfigurationScenarios.All, .. ScriptScenarios.All, .. ScriptRuntimeScenarios.All,

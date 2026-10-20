@@ -37,8 +37,14 @@ internal sealed class GitConfigurationContext : IDisposable
             string executable = environment.Executable;
             if (!Path.IsPathFullyQualified(executable) && executable.Contains(Path.DirectorySeparatorChar))
             { executable = Path.GetFullPath(executable, origin); }
+            string ssh = environment.Options.SshExecutable;
+            if (ssh.Contains(Path.DirectorySeparatorChar) && !Path.IsPathFullyQualified(ssh))
+            { ssh = Path.GetFullPath(ssh, origin); }
+            if (values.GetValueOrDefault("GIT_SSH") is { Length: > 0 } inheritedSsh
+                && inheritedSsh.Contains(Path.DirectorySeparatorChar) && !Path.IsPathFullyQualified(inheritedSsh))
+            { values["GIT_SSH"] = Path.GetFullPath(inheritedSsh, origin); }
             values["GIT_CEILING_DIRECTORIES"] = temporary;
-            GitExecutionEnvironment isolated = GitExecutionEnvironment.Capture(environment.Options with { Executable = executable, HomeDirectory = null, ToolsDirectory = null }, values);
+            GitExecutionEnvironment isolated = GitExecutionEnvironment.Capture(environment.Options with { Executable = executable, HomeDirectory = null, ToolsDirectory = null, SshExecutable = ssh }, values);
             return new(new(temporary, isolated.CreateRunner()), isolated, temporary);
         }
         catch { Directory.Delete(temporary); throw; }

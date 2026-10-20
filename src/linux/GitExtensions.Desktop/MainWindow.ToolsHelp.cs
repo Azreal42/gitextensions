@@ -227,6 +227,10 @@ public sealed partial class MainWindow
                         id == GitEnvironmentCheckId.GlobalIdentity ? GitConfigurationField.UserName : id == GitEnvironmentCheckId.Editor ? GitConfigurationField.Editor : null);
                     await environment.ScanAsync();
                     break;
+                case GitEnvironmentCheckId.Ssh:
+                    if (owner is DesktopSettingsDialog sshSettings) { sshSettings.Navigation.SelectPage("GitSsh", focusContent: true); }
+                    Avalonia.Threading.Dispatcher.UIThread.Post(environment.SshPage.FocusClient);
+                    break;
                 case GitEnvironmentCheckId.Translation:
                     if (owner is DesktopSettingsDialog appearanceSettings) { appearanceSettings.Navigation.SelectPage("Appearance", focusContent: true); }
                     Avalonia.Threading.Dispatcher.UIThread.Post(() => owner.GetLogicalDescendants().OfType<ComboBox>().FirstOrDefault(control => control.Name == "Language")?.Focus());

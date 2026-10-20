@@ -14,10 +14,13 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
     private TaskCompletionSource? _completion;
     internal GitEnvironmentSettingsPage Page { get; }
     internal ChecklistSettingsPage Checklist { get; }
-    internal bool IsBusy { get; private set; }
+    private bool _scanBusy;
+    internal SshSettingsPage SshPage { get; }
+    internal bool IsBusy => _scanBusy || SshPage.IsBusy;
+    internal string ValidationPage { get; private set; } = "GitPaths";
     internal bool HasProblems { get; private set; } = true;
     internal CancellationToken CancellationToken => _lifetime.Token;
-    internal Task OperationCompletion => _completion?.Task ?? Task.CompletedTask;
+    internal Task OperationCompletion => Task.WhenAll(_completion?.Task ?? Task.CompletedTask, SshPage.OperationCompletion);
     internal event Action? BusyChanged;
     internal event Action? Settled;
     internal Func<Task<bool>>? SaveAllRequested { get; set; }
@@ -30,6 +33,13 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
         _store = store; _translations = translations; _repository = repository;
         _lifetime = CancellationTokenSource.CreateLinkedTokenSource(ownerToken);
         _baseline = store.Load(); Page = new(_baseline.Preferences, translations); Checklist = new(translations);
+        SshPage = new(_baseline.Preferences.SshExecutable, translations, _lifetime.Token);
+        SshPage.BusyChanged += () =>
+        {
+            if (_disposed) { return; }
+            Page.SetBusy(IsBusy); Checklist.SetBusy(IsBusy); BusyChanged?.Invoke();
+        };
+        SshPage.Settled += () => Settled?.Invoke();
         Checklist.CheckAtStartupChanged = SetCheckAtStartup;
         Checklist.SaveAndRescanRequested = async () =>
         {
@@ -48,22 +58,32 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
     {
         Executable = preferences.GitExecutable.Length == 0 ? "git" : preferences.GitExecutable,
         ToolsDirectory = preferences.ToolsDirectory.Length == 0 ? null : preferences.ToolsDirectory,
-        HomeDirectory = preferences.CustomHomeDirectory
+        HomeDirectory = preferences.CustomHomeDirectory,
+        SshExecutable = preferences.SshExecutable
     };
+
+    internal bool Validate(out string? error)
+    {
+        ValidationPage = "GitPaths";
+        if (!Page.Validate(out error)) { return false; }
+        ValidationPage = "GitSsh";
+        if (!SshPage.Validate(out error)) { return false; }
+        ValidationPage = "GitPaths"; return true;
+    }
 
     internal bool TrySave()
     {
         if (_disposed || _lifetime.IsCancellationRequested || IsBusy) { return false; }
-        if (_baseline.Error is not null && !Page.IsDirty) { return true; }
-        if (!Page.Validate(out string? validation)) { ShowError(validation); return false; }
+        if (_baseline.Error is not null && !Page.IsDirty && !SshPage.IsDirty) { return true; }
+        if (!Validate(out string? validation)) { ShowError(validation); return false; }
         try
         {
-            GitEnvironmentPreferences draft = Page.Draft;
+            GitEnvironmentPreferences draft = Page.Draft with { SshExecutable = SshPage.Draft };
             _ = GitExecutionEnvironment.Capture(Options(draft));
             GitEnvironmentPreferencesLoadResult saved = _store.SaveChanges(_baseline, draft);
             GitEnvironment.Configure(Options(saved.Preferences));
             if (Options(_baseline.Preferences) != Options(saved.Preferences)) { LastScan = null; HasProblems = true; }
-            _baseline = saved; Page.AcceptSaved(saved.Preferences); ShowError(null);
+            _baseline = saved; Page.AcceptSaved(saved.Preferences); SshPage.AcceptSaved(saved.Preferences.SshExecutable); ShowError(null);
             Checklist.Render(LastScan?.Checks ?? [], saved.Preferences.CheckAtStartup);
             return true;
         }
@@ -78,7 +98,7 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
         if (latest.Error is not null) { ShowError(latest.Error.Message); return; }
         if (Options(_baseline.Preferences) != Options(latest.Preferences)) { LastScan = null; HasProblems = true; }
         GitEnvironment.Configure(Options(latest.Preferences));
-        _baseline = latest; Page.RebasePublished(latest.Preferences);
+        _baseline = latest; Page.RebasePublished(latest.Preferences); SshPage.RebasePublished(latest.Preferences.SshExecutable);
         Checklist.Render(LastScan?.Checks ?? [], Page.Draft.CheckAtStartup);
         ShowError(null);
     }
@@ -94,7 +114,7 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
         try
         {
             GitEnvironmentPreferencesLoadResult saved = _store.SaveChanges(_baseline, _baseline.Preferences with { CheckAtStartup = value });
-            _baseline = saved; Page.RebasePublished(saved.Preferences);
+            _baseline = saved; Page.RebasePublished(saved.Preferences); SshPage.RebasePublished(saved.Preferences.SshExecutable);
             Checklist.Render(LastScan?.Checks ?? [], saved.Preferences.CheckAtStartup);
             ShowError(null); return true;
         }
@@ -109,16 +129,16 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
     {
         if (_disposed || IsBusy || _lifetime.IsCancellationRequested) { return; }
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously); _completion = completion;
-        IsBusy = true;
+        _scanBusy = true;
         try
         {
-            Page.SetBusy(true); Checklist.SetBusy(true); BusyChanged?.Invoke();
+            Page.SetBusy(true); SshPage.SetBusy(true); Checklist.SetBusy(true); BusyChanged?.Invoke();
             // Scans describe published settings. Draft edits are published only by Save all / OK.
             GitEnvironmentPreferencesLoadResult latest = _store.Load();
             if (latest.Error is null)
             {
                 GitEnvironment.Configure(Options(latest.Preferences));
-                Page.RebasePublished(latest.Preferences);
+                Page.RebasePublished(latest.Preferences); SshPage.RebasePublished(latest.Preferences.SshExecutable);
             }
             _baseline = latest;
             GitExecutionEnvironment environment = _baseline.Error is null
@@ -128,6 +148,7 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
             _lifetime.Token.ThrowIfCancellationRequested();
             LastScan = result; HasProblems = !result.AllGood || _baseline.Error is not null;
             Page.SetEnvironmentInformation(result.EnvironmentInformation);
+            SshPage.SetDiagnostic(result.Diagnostic);
             bool publicationFailed = false;
             if (result.AllGood && _baseline.Error is null && _baseline.Preferences.CheckAtStartup)
             { publicationFailed = !SaveStartupFlag(false); HasProblems |= publicationFailed; }
@@ -139,17 +160,17 @@ internal sealed class GitEnvironmentSettingsSession : IDisposable
         { HasProblems = true; if (!_disposed) { ShowError(error.Message); } }
         finally
         {
-            IsBusy = false;
-            try { if (!_disposed) { Page.SetBusy(false); Checklist.SetBusy(false); BusyChanged?.Invoke(); } }
+            _scanBusy = false;
+            try { if (!_disposed) { Page.SetBusy(false); SshPage.SetBusy(false); Checklist.SetBusy(false); BusyChanged?.Invoke(); } }
             finally { completion.TrySetResult(); Settled?.Invoke(); }
         }
     }
 
-    internal void Cancel() => _lifetime.Cancel();
-    internal void ShowError(string? message) { Page.ShowError(message); Checklist.ShowError(message); }
+    internal void Cancel() { _lifetime.Cancel(); SshPage.Invalidate(); }
+    internal void ShowError(string? message) { Page.ShowError(message); SshPage.ShowError(message); Checklist.ShowError(message); }
     public void Dispose()
     {
         if (_disposed) { return; }
-        _disposed = true; _lifetime.Cancel(); Page.Invalidate(); Checklist.Invalidate(); _lifetime.Dispose();
+        _disposed = true; _lifetime.Cancel(); Page.Invalidate(); SshPage.Invalidate(); Checklist.Invalidate(); _lifetime.Dispose();
     }
 }

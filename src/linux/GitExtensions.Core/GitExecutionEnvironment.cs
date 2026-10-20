@@ -9,6 +9,7 @@ public sealed record GitEnvironmentOptions
     public string Executable { get; init; } = "git";
     public string? ToolsDirectory { get; init; }
     public string? HomeDirectory { get; init; }
+    public string SshExecutable { get; init; } = "";
 }
 
 /// <summary>An immutable execution context shared by a command, its probes, and an entire owned operation.</summary>
@@ -29,7 +30,7 @@ public sealed class GitExecutionEnvironment
     {
         ArgumentNullException.ThrowIfNull(options);
         string executable = string.IsNullOrEmpty(options.Executable) ? "git" : options.Executable;
-        foreach (string? value in new[] { executable, options.ToolsDirectory, options.HomeDirectory })
+        foreach (string? value in new[] { executable, options.ToolsDirectory, options.HomeDirectory, options.SshExecutable })
         { if (value?.Contains('\0') == true) { throw new ArgumentException("Git environment paths cannot contain NUL.", nameof(options)); } }
         Dictionary<string, string?> values = inheritedEnvironment is null
             ? Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>()
@@ -43,6 +44,9 @@ public sealed class GitExecutionEnvironment
         }
         foreach (string name in values.Where(pair => pair.Value is null).Select(pair => pair.Key).ToArray()) { values.Remove(name); }
         if (options.HomeDirectory is not null) { values["HOME"] = options.HomeDirectory; }
+        // GIT_SSH is a literal executable. Git retains authority over GIT_SSH_COMMAND,
+        // core.sshCommand, ssh.variant, the inherited agent and per-call overrides.
+        if (!string.IsNullOrEmpty(options.SshExecutable)) { values["GIT_SSH"] = options.SshExecutable; }
         return new(options with { Executable = executable }, values);
     }
 

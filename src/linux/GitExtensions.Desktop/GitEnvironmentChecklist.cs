@@ -38,11 +38,15 @@ internal static class GitEnvironmentChecklist
         checks.Add(diagnostic.Shell.Success
             ? Check(GitEnvironmentCheckId.Shell, GitEnvironmentCheckStatus.Good, "_linuxToolsSshFound", "Linux tools (sh) found on your computer.")
             : Check(GitEnvironmentCheckId.Shell, GitEnvironmentCheckStatus.Error, "_linuxToolsSshNotFound", "Linux tools (sh) not found. To solve this problem you can set the correct path in settings.") with { Message = Text("_linuxToolsSshNotFound", "Linux tools (sh) not found. To solve this problem you can set the correct path in settings.") + " " + Failure(diagnostic.Shell) });
-        checks.Add(Check(GitEnvironmentCheckId.Ssh, diagnostic.Ssh.Success ? GitEnvironmentCheckStatus.Good : GitEnvironmentCheckStatus.Error,
+        GitSshConfiguration? sshConfiguration = diagnostic.SshConfiguration;
+        GitEnvironmentCheckStatus sshStatus = sshConfiguration?.Source == GitSshCommandSource.Unavailable ? GitEnvironmentCheckStatus.Unavailable
+            : sshConfiguration?.HasCommandOverride == true ? GitEnvironmentCheckStatus.Warning
+            : diagnostic.Ssh.Success ? GitEnvironmentCheckStatus.Good : GitEnvironmentCheckStatus.Error;
+        checks.Add(Check(GitEnvironmentCheckId.Ssh, sshStatus,
             "LocalSshProbe", diagnostic.Ssh.Success ? "SSH responds to a local version check. Authentication has not been tested."
                 : "SSH could not complete a local version check. Authentication has not been tested.") with
         { Message = translations.Translate(diagnostic.Ssh.Success ? "SSH responds to a local version check. Authentication has not been tested."
-            : "SSH could not complete a local version check. Authentication has not been tested.") + (diagnostic.Ssh.Success ? "" : " " + Failure(diagnostic.Ssh)) });
+            : "SSH could not complete a local version check. Authentication has not been tested.") + (diagnostic.Ssh.Success ? "" : " " + Failure(diagnostic.Ssh)) + " " + DescribeSshCommand(diagnostic, translations) });
         checks.Add(CheckTranslation());
         checks.Add(CheckHome());
         token.ThrowIfCancellationRequested();
@@ -174,6 +178,7 @@ internal static class GitEnvironmentChecklist
             foreach (string path in diagnostic.GlobalConfigCandidates) { text.AppendLine(translations.Translate("Global configuration candidate:") + " " + path); }
             text.AppendLine(translations.Translate("sh local probe:") + " " + ProbeInformation(diagnostic.Shell));
             text.AppendLine(translations.Translate("ssh local version probe:") + " " + ProbeInformation(diagnostic.Ssh));
+            text.AppendLine(DescribeSshCommand(diagnostic, translations));
             text.AppendLine(translations.Translate("SSH authentication has not been tested."));
             foreach (string line in toolInformation) { text.AppendLine(line); }
             foreach (GitToolConfigurationScopeSnapshot scope in new[] { global, effective })
@@ -213,4 +218,13 @@ internal static class GitEnvironmentChecklist
         }
         return (false, false);
     }
+    internal static string DescribeSshCommand(GitEnvironmentDiagnostic diagnostic, TranslationCatalog translations)
+        => diagnostic.SshConfiguration?.Source switch
+        {
+            GitSshCommandSource.GitSshCommand => translations.Translate("Git uses GIT_SSH_COMMAND. This command was not executed by the version check."),
+            GitSshCommandSource.CoreSshCommand => translations.Translate("Git uses core.sshCommand. This command was not executed by the version check."),
+            GitSshCommandSource.GitSsh => translations.Translate("Git uses the GIT_SSH executable; SSH variants and agents follow native Git settings."),
+            GitSshCommandSource.Path => translations.Translate("Git uses ssh from PATH."),
+            _ => translations.Translate("Unable to determine the Git SSH command:") + " " + diagnostic.SshConfiguration?.Error
+        };
 }

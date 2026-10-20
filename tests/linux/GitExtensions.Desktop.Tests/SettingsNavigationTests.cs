@@ -32,7 +32,7 @@ public sealed class SettingsNavigationTests
         TreeView tree = Field<TreeView>(dialog, "SettingsNavigationTree");
         Assert.That(tree.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "Checklist", "Git", "Plugins" }));
         TreeViewItem extensions = Nodes(tree).Single(node => Id(node) == "Checklist"), git = Nodes(tree).Single(node => Id(node) == "Git");
-        Assert.That(extensions.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "General", "Appearance", "RevisionLinks", "BuildServerIntegration", "Scripts", "Hotkeys", "Advanced", "Detailed" }));
+        Assert.That(extensions.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "General", "Appearance", "RevisionLinks", "BuildServerIntegration", "Scripts", "Hotkeys", "Advanced", "Detailed", "GitSsh" }));
         Assert.That(Nodes(tree).Single(node => Id(node) == "Appearance").Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "Sorting", "Colors", "Fonts", "ConsoleStyle" }));
         Assert.That(git.Items.OfType<TreeViewItem>().Select(Id), Is.EqualTo(new[] { "GitPaths", "Config" }));
         Assert.That(((Control)extensions.Header!).GetVisualDescendants().OfType<TextBlock>().Single().Text, Is.EqualTo("Git Extensions"));
@@ -42,7 +42,7 @@ public sealed class SettingsNavigationTests
             ["Checklist"] = "git-extensions-logo-16px.png", ["General"] = "GeneralSettings.png", ["Appearance"] = "Appearance.png",
             ["Sorting"] = "SortBy.png", ["Colors"] = "Colors.png", ["Fonts"] = "Font.png", ["ConsoleStyle"] = "Console.png",
             ["RevisionLinks"] = "Link.png", ["BuildServerIntegration"] = "Integration.png", ["Scripts"] = "Console.png", ["Hotkeys"] = "Hotkey.png",
-            ["Detailed"] = "Settings.png", ["Advanced"] = "AdvancedSettings.png", ["Confirmations"] = "BisectGood.png", ["Git"] = "GitLogo16.png", ["GitPaths"] = "FolderOpen.png", ["Config"] = "GeneralSettings.png", ["Plugins"] = "plugin.png"
+            ["Detailed"] = "Settings.png", ["Advanced"] = "AdvancedSettings.png", ["Confirmations"] = "BisectGood.png", ["Git"] = "GitLogo16.png", ["GitPaths"] = "FolderOpen.png", ["GitSsh"] = "Key.png", ["Config"] = "GeneralSettings.png", ["Plugins"] = "plugin.png"
         };
         foreach (TreeViewItem node in Nodes(tree))
         {

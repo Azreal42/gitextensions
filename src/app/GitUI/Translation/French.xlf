@@ -12734,6 +12734,42 @@ Quand OpenSSH est utilisé, des fenêtres de console sont affichés!
 </target>
         
       </trans-unit>
+      <trans-unit id="NativeSsh.Text">
+        <source>Use Git SSH settings (OpenSSH by default)</source>
+        <target>Utiliser les réglages SSH de Git (OpenSSH par défaut)</target>
+      </trans-unit>
+      <trans-unit id="SshHelp.Text">
+        <source>Choose an executable, without arguments or shell quoting. Git Extensions applies it as GIT_SSH to child processes. GIT_SSH_COMMAND and core.sshCommand take precedence. SSH agents, keys and host verification follow your native SSH configuration.</source>
+        <target>Choisissez un exécutable, sans arguments ni guillemets de shell. Git Extensions le transmet aux processus enfants via GIT_SSH. GIT_SSH_COMMAND et core.sshCommand sont prioritaires. Les agents, clés et vérifications des hôtes suivent votre configuration SSH native.</target>
+      </trans-unit>
+      <trans-unit id="EmptySsh.Text">
+        <source>Choose an SSH executable or use Git SSH settings.</source>
+        <target>Choisissez un exécutable SSH ou utilisez les réglages SSH de Git.</target>
+      </trans-unit>
+      <trans-unit id="SshCommandEnvironment.Text">
+        <source>Git uses GIT_SSH_COMMAND. This command was not executed by the version check.</source>
+        <target>Git utilise GIT_SSH_COMMAND. Cette commande n’a pas été exécutée par le contrôle de version.</target>
+      </trans-unit>
+      <trans-unit id="SshCommandConfig.Text">
+        <source>Git uses core.sshCommand. This command was not executed by the version check.</source>
+        <target>Git utilise core.sshCommand. Cette commande n’a pas été exécutée par le contrôle de version.</target>
+      </trans-unit>
+      <trans-unit id="SshExecutable.Text">
+        <source>Git uses the GIT_SSH executable; SSH variants and agents follow native Git settings.</source>
+        <target>Git utilise l’exécutable GIT_SSH ; la variante SSH et les agents suivent les réglages natifs de Git.</target>
+      </trans-unit>
+      <trans-unit id="SshPath.Text">
+        <source>Git uses ssh from PATH.</source>
+        <target>Git utilise ssh depuis le PATH.</target>
+      </trans-unit>
+      <trans-unit id="SshUnavailable.Text">
+        <source>Unable to determine the Git SSH command:</source>
+        <target>Impossible de déterminer la commande SSH de Git :</target>
+      </trans-unit>
+      <trans-unit id="SshVersion.Text">
+        <source>SSH executable version check:</source>
+        <target>Contrôle de version de l’exécutable SSH :</target>
+      </trans-unit>
     </body>
   </file>
   <file datatype="plaintext" original="TagMenuItemsStrings" source-language="en" target-language="fr">

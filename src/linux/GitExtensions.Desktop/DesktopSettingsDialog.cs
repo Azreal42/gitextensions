@@ -202,11 +202,13 @@ internal sealed class DesktopSettingsDialog : Window
             [ new("Confirmations", PageTitle("ConfirmationsSettingsPage", "Confirmations"), _confirmationsSettingsPage, "BisectGood.png") ]),
             new("Detailed", PageTitle("DetailedSettingsPage", "Detailed"), _detailedSettingsPage, "Settings.png")
         ];
+        if (gitEnvironment is not null)
+        { extensionChildren = [.. extensionChildren, new("GitSsh", PageTitle("SshSettingsPage", "SSH"), gitEnvironment.SshPage, "Key.png")]; }
         List<SettingsNavigationPage> roots = [];
         List<SettingsNavigationPage> gitChildren = [];
         if (gitEnvironment is not null)
         {
-            gitEnvironment.Checklist.Margin = gitEnvironment.Page.Margin = new Thickness(12);
+            gitEnvironment.Checklist.Margin = gitEnvironment.Page.Margin = gitEnvironment.SshPage.Margin = new Thickness(12);
             roots.Add(new("Checklist", PageTitle("ChecklistSettingsPage", "Checklist"), gitEnvironment.Checklist,
                 "git-extensions-logo-16px.png", IsInstantSave: true, Children: extensionChildren, NavigationTitle: "Git Extensions"));
             gitChildren.Add(new("GitPaths", PageTitle("GitSettingsPage", "Paths"), gitEnvironment.Page, "FolderOpen.png"));
@@ -311,8 +313,8 @@ internal sealed class DesktopSettingsDialog : Window
                 { Navigation.SelectPage("Scripts", true); notice.Text = scriptValidation; return false; }
                 if (!fontsPage.Validate(out string? fontValidation))
                 { Navigation.SelectPage("Fonts", true); notice.Text = fontValidation; return false; }
-                if (gitEnvironment is not null && !gitEnvironment.Page.Validate(out string? environmentValidation))
-                { Navigation.SelectPage("GitPaths", true); notice.Text = environmentValidation; return false; }
+                if (gitEnvironment is not null && !gitEnvironment.Validate(out string? environmentValidation))
+                { Navigation.SelectPage(gitEnvironment.ValidationPage, true); notice.Text = environmentValidation; return false; }
                 if (scriptsPage.IsDirty)
                 {
                     try
@@ -339,7 +341,7 @@ internal sealed class DesktopSettingsDialog : Window
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
                 { Navigation.SelectPage("Fonts", true); fontsPage.ShowSaveError(error); notice.Text = translations.Translate("Unable to save font preferences.") + " " + error.Message; return false; }
                 if (gitEnvironment is not null && !gitEnvironment.TrySave())
-                { Navigation.SelectPage("GitPaths", true); return false; }
+                { Navigation.SelectPage(gitEnvironment.ValidationPage, true); return false; }
                 GeneralSettingsResult = _generalSettingsPage.Draft;
                 AppearanceSettingsResult = _appearanceSettingsPage.Draft;
                 AdvancedSettingsValues advancedDraft = _advancedSettingsPage.Draft;
@@ -496,7 +498,7 @@ internal sealed class DesktopSettingsDialog : Window
         {
             Title = translations.Translate("Settings") + " - " + page.Title;
             instantSaveNotice.IsVisible = page.IsInstantSave;
-            if (reloadEnvironment is not null) { reloadEnvironment.IsVisible = page.Id is "Checklist" or "GitPaths"; }
+            if (reloadEnvironment is not null) { reloadEnvironment.IsVisible = page.Id is "Checklist" or "GitPaths" or "GitSsh"; }
             if (IsVisible)
             {
                 _lastSelectedPage = page.Id;

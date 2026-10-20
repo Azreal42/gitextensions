@@ -7,6 +7,7 @@ internal sealed record GitEnvironmentPreferences
 {
     public string GitExecutable { get; init; } = "";
     public string ToolsDirectory { get; init; } = "";
+    public string SshExecutable { get; init; } = "";
     public string? CustomHomeDirectory { get; init; }
     public bool CheckAtStartup { get; init; } = true;
 }
@@ -18,7 +19,7 @@ internal sealed record GitEnvironmentPreferencesLoadResult(GitEnvironmentPrefere
 internal sealed class GitEnvironmentPreferencesStore
 {
     private static readonly UTF8Encoding Utf8 = new(false, true);
-    private static readonly HashSet<string> Known = ["Version", "GitExecutable", "ToolsDirectory", "CustomHomeDirectory", "CheckAtStartup"];
+    private static readonly HashSet<string> Known = ["Version", "GitExecutable", "ToolsDirectory", "CustomHomeDirectory", "CheckAtStartup", "SshExecutable"];
     internal string FilePath { get; }
 
     internal GitEnvironmentPreferencesStore(string? directory = null)
@@ -78,8 +79,8 @@ internal sealed class GitEnvironmentPreferencesStore
 
     internal static void Validate(GitEnvironmentPreferences value)
     {
-        ArgumentNullException.ThrowIfNull(value.GitExecutable); ArgumentNullException.ThrowIfNull(value.ToolsDirectory);
-        foreach (string? text in new[] { value.GitExecutable, value.ToolsDirectory, value.CustomHomeDirectory })
+        ArgumentNullException.ThrowIfNull(value.GitExecutable); ArgumentNullException.ThrowIfNull(value.ToolsDirectory); ArgumentNullException.ThrowIfNull(value.SshExecutable);
+        foreach (string? text in new[] { value.GitExecutable, value.ToolsDirectory, value.CustomHomeDirectory, value.SshExecutable })
         { if (text?.Contains('\0') == true) { throw new ArgumentException("A Git environment path cannot contain NUL."); } }
     }
 
@@ -102,6 +103,7 @@ internal sealed class GitEnvironmentPreferencesStore
         GitEnvironmentPreferences preferences = new()
         {
             GitExecutable = ReadString("GitExecutable"), ToolsDirectory = ReadString("ToolsDirectory"),
+            SshExecutable = root.TryGetProperty("SshExecutable", out _) ? ReadString("SshExecutable") : "",
             CustomHomeDirectory = home.ValueKind == JsonValueKind.Null ? null : home.GetString(), CheckAtStartup = check.GetBoolean()
         };
         Validate(preferences); return new(preferences, true, bytes, FilePath);
@@ -121,7 +123,11 @@ internal sealed class GitEnvironmentPreferencesStore
             }
             writer.WriteNumber("Version", 1); writer.WriteString("GitExecutable", value.GitExecutable);
             writer.WriteString("ToolsDirectory", value.ToolsDirectory); writer.WriteString("CustomHomeDirectory", value.CustomHomeDirectory);
-            writer.WriteBoolean("CheckAtStartup", value.CheckAtStartup); writer.WriteEndObject();
+            writer.WriteBoolean("CheckAtStartup", value.CheckAtStartup);
+            // Keep the old profile shape until an SSH choice is first published.
+            if (value.SshExecutable.Length > 0 || document?.RootElement.TryGetProperty("SshExecutable", out _) == true)
+            { writer.WriteString("SshExecutable", value.SshExecutable); }
+            writer.WriteEndObject();
         }
         return output.ToArray();
     }
