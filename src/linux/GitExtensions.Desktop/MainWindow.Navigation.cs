@@ -67,6 +67,7 @@ public sealed partial class MainWindow
             try { await OpenWorktreePathAsync(worktree.Path, confirm: true); }
             catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
         };
+        ConfigureNavigationSelection();
         ConfigureReferenceSortingMenu();
         panel.Children.Add(Controls.ClassicTreeViewAppearance.Wrap(_navigation));
         return panel;
@@ -102,6 +103,11 @@ public sealed partial class MainWindow
     private void UpdateBrowserNavigation(IReadOnlyList<GitReference> references, IReadOnlyList<GitStash> stashes,
         IReadOnlyList<GitSubmodule> submodules, IReadOnlyList<GitWorktree> worktrees)
     {
+        if (_navigationSelectionRepository != _repository)
+        {
+            _navigationMarkedKeys.Clear(); _navigationMarkedVersion++;
+            _navigationSelectionRepository = _repository;
+        }
         _navigationReferences = references; _navigationStashes = stashes; _navigationSubmodules = submodules; _navigationWorktrees = worktrees;
         RebuildNavigation();
         RefreshWorktreeMenu();
@@ -129,7 +135,9 @@ public sealed partial class MainWindow
         {
             TreeViewItem node = new() { Header = IconLabel(caption, icon, translate: false), Tag = tag,
                 IsExpanded = filter.Length > 0 || (_navigationExpansion.TryGetValue(key, out bool previous) ? previous : expanded) };
-            if (children is not null) { node.ItemsSource = children.ToArray(); }
+            TreeViewItem[] descendants = children?.ToArray() ?? [];
+            if (children is not null) { node.ItemsSource = descendants; }
+            _navigationSelectionChildren[key] = descendants.Select(child => _navigationKeys[child]).ToArray();
             if (tag is GitReference { IsCurrent: true } && node.Header is StackPanel label)
             { label.Children.OfType<TextBlock>().Single().FontWeight = FontWeight.Bold; }
             ToolTip.SetTip(node, caption); _navigationKeys[node] = key; return node;
@@ -178,7 +186,6 @@ public sealed partial class MainWindow
                 GitWorktree worktree = _navigationWorktrees[i];
                 string path = i != 0 && prefix.Length != 0 ? paths[i][prefix.Length..] : paths[i];
                 string caption = WorktreeDisplayName(worktree, path);
-                if (!Matches(caption) && !Matches(worktree.Path)) { continue; }
                 TreeViewItem node = Node("worktree:" + worktree.Path, caption, "WorkTree.png", worktree);
                 node.ContextMenu = BuildWorktreeNodeMenu(worktree);
                 bool current = IsCurrentWorktreePath(worktree.Path), exists = Directory.Exists(worktree.Path);
@@ -201,34 +208,65 @@ public sealed partial class MainWindow
             }
         }
         KeyValuePair<TreeViewItem, string>[] previousKeys = _navigationKeys.ToArray();
+        KeyValuePair<string, string[]>[] previousChildren = _navigationSelectionChildren.ToArray();
         object? previousSelection = _navigation.SelectedItem;
         _updatingNavigation = true;
         try
         {
-            _navigation.SelectedItem = null; _navigationKeys.Clear();
+            _navigation.SelectedItem = null; _navigationKeys.Clear(); _navigationSelectionChildren.Clear();
             List<TreeViewItem> groups = [];
+            // Build one complete hierarchy through the existing node factories.
+            // The search only changes presentation: Ctrl+Shift still reaches
+            // logical descendants hidden by that search, as in RepoObjectsTree.
+            TreeViewItem[] VisibleNodes(IEnumerable<TreeViewItem> source)
+            {
+                List<TreeViewItem> visible = [];
+                foreach (TreeViewItem node in source)
+                {
+                    TreeViewItem[] children = VisibleNodes(node.Items.OfType<TreeViewItem>());
+                    string caption = ((StackPanel)node.Header!).Children.OfType<TextBlock>().Single().Text ?? "";
+                    string key = _navigationKeys[node];
+                    bool matches = node.Tag switch
+                    {
+                        GitReference reference => Matches(reference.ShortName),
+                        NavigationFolder => children.Length > 0,
+                        GitWorktree worktree => Matches(caption) || Matches(worktree.Path),
+                        _ => Matches(key.StartsWith("submodule:", StringComparison.Ordinal) ? key[10..] : caption)
+                    };
+                    if (filter.Length == 0 || matches)
+                    {
+                        if (node.Items.Count > 0) { node.ItemsSource = children; }
+                        visible.Add(node);
+                    }
+                }
+                return visible.ToArray();
+            }
             void Group(string name, string icon, IEnumerable<TreeViewItem> children)
             {
                 TreeViewItem[] nodes = children.ToArray();
-                if (_navigationGroups[name] && (filter.Length == 0 || nodes.Length > 0))
+                TreeViewItem root = Node("group:" + name, T(name), icon, new NavigationGroup(name), nodes, name != "Tags");
+                TreeViewItem[] visible = VisibleNodes(nodes);
+                if (_navigationGroups[name] && (filter.Length == 0 || visible.Length > 0))
                 {
-                    TreeViewItem root = Node("group:" + name, T(name), icon, new NavigationGroup(name), nodes, name != "Tags");
+                    root.ItemsSource = visible;
                     if (name == "Worktrees") { root.ContextMenu = BuildWorktreeRootMenu(); }
                     groups.Add(root);
                 }
             }
-            Group("Branches", "LocalBranchRoot.png", References("Branches", GitReferencePriorities.OrderByPriority(_navigationReferences.Where(reference => reference.IsBranch && Matches(reference.ShortName)), reference => reference.ShortName, _preferences.PrioritizedBranchNames)));
-            Group("Remotes", "RemoteBranchRoot.png", ReferenceRemoteNodes(_navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null && Matches(reference.ShortName)), References, Node));
-            Group("Tags", "TagHorizontal.png", References("Tags", _navigationReferences.Where(reference => reference.IsTag && Matches(reference.ShortName))));
-            Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Where(module => Matches(module.Path)).Select(module =>
+            Group("Branches", "LocalBranchRoot.png", References("Branches", GitReferencePriorities.OrderByPriority(_navigationReferences.Where(reference => reference.IsBranch), reference => reference.ShortName, _preferences.PrioritizedBranchNames)));
+            Group("Remotes", "RemoteBranchRoot.png", ReferenceRemoteNodes(_navigationReferences.Where(reference => reference.IsRemote && reference.SymbolicTarget is null), References, Node));
+            Group("Tags", "TagHorizontal.png", References("Tags", _navigationReferences.Where(reference => reference.IsTag)));
+            Group("Submodules", "FolderSubmodule.png", _navigationSubmodules.Select(module =>
             {
                 GitSubmoduleBrowseStatus? status = GeneralSubmoduleStatus(module);
                 TreeViewItem node = Node("submodule:" + module.Path, module.Path + status?.CountSuffix, GeneralSubmoduleIcon(status), "Submodules");
                 if (status is not null) { ToolTip.SetTip(node, status.Error ?? T(status.State.ToString()) + (status.IsDirty ? " · " + T("Local changes") : "")); }
                 return node;
             }));
-            Group("Stashes", "stash.png", _navigationStashes.Where(stash => Matches(stash.Subject)).Select(stash => Node("stash:" + stash.Reference, stash.Subject, "stash.png", "Stashes")));
+            Group("Stashes", "stash.png", _navigationStashes.Select(stash => Node("stash:" + stash.Reference, stash.Subject, "stash.png", "Stashes")));
             Group("Worktrees", "WorkTree.png", Worktrees());
+            if (_navigationMarkedKeys.RemoveWhere(key => !_navigationSelectionChildren.ContainsKey(key)) > 0) { _navigationMarkedVersion++; }
+            ApplyNavigationMarks();
             _navigationAppliedFilter = filter;
             _navigation.ItemsSource = groups;
             _navigation.SelectedItem = NavigationItems().FirstOrDefault(node => _navigationKeys.GetValueOrDefault(node) == _navigationSelectionKey);
@@ -239,6 +277,8 @@ public sealed partial class MainWindow
             // and selection rather than publishing a partially rebuilt hierarchy.
             _navigationKeys.Clear();
             foreach ((TreeViewItem node, string key) in previousKeys) { _navigationKeys[node] = key; }
+            _navigationSelectionChildren.Clear();
+            foreach ((string key, string[] children) in previousChildren) { _navigationSelectionChildren[key] = children; }
             _navigation.SelectedItem = previousSelection; LastException = error; _state.Text = error.Message;
         }
         finally { _updatingNavigation = false; }

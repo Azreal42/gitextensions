@@ -47,6 +47,17 @@ public sealed partial class MainWindow
                 await ShowOwnedAsync(dialog);
                 SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
             }
+            else if (plugin is DeleteUnusedBranchesPlugin)
+            {
+                DeleteUnusedBranchesDialog dialog = new(repository, values, (settings, token) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
+                    SavePluginSettings(plugin.Descriptor, settings);
+                    return Task.CompletedTask;
+                });
+                dialog.Opened += async (_, _) => await dialog.InitializeAsync();
+                await ShowOwnedAsync(dialog);
+            }
             else if (plugin is FindLargeFilesPlugin)
             {
                 FindLargeFilesDialog dialog = new(repository, values);

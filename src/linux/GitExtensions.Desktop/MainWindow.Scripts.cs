@@ -108,6 +108,7 @@ public sealed partial class MainWindow
         await RunAsync(script.GetDisplayName(), async current =>
         {
             using IDisposable operation = current.BeginOperation();
+            MarkStandaloneMayHaveRepositoryChanges(!script.RunInBackground);
             try { await DesktopScriptExecutor.ExecuteAsync(owner ?? WorkflowOwner, current, script, Token, files); }
             finally
             {

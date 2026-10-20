@@ -412,6 +412,7 @@ public sealed class RevisionQuickSearchTests
         Assert.That(Field<Control>(scope.Main, "WorkingRevisions").IsEffectivelyVisible, Is.False);
         foreach (string term in new[] { "111", "222", "working directory", "commit index" })
         {
+            await scope.WaitForIndependentMouseClickAsync();
             await scope.ClickCommitAsync(scope.Head);
             GitCommit? realPrefixMatch = term is "111" or "222"
                 ? scope.History.Items.OfType<GitCommit>().FirstOrDefault(commit => commit.Hash.StartsWith(term, StringComparison.Ordinal)) : null;
@@ -653,6 +654,19 @@ public sealed class RevisionQuickSearchTests
             Point point = row.TranslatePoint(new Point(Math.Min(200, row.Bounds.Width / 2), row.Bounds.Height / 2), main)!.Value;
             Assert.That((main.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(row), Is.True, "The real commit row must receive the click.");
             main.MouseMove(point); main.MouseDown(point, MouseButton.Left, modifiers); main.MouseUp(point, MouseButton.Left, modifiers); Pump(main);
+        }
+        internal async Task WaitForIndependentMouseClickAsync()
+        {
+            TimeSpan doubleTap = main.PlatformSettings?.GetDoubleTapTime(PointerType.Mouse)
+                ?? throw new InvalidOperationException("The actual platform double-tap interval is unavailable.");
+            if (doubleTap < TimeSpan.Zero) { throw new InvalidOperationException("The platform double-tap interval is invalid."); }
+            // Round the requested delay strictly above the actual platform maximum;
+            // no fixed 500ms assumption. The elapsed-time check also requires a strict gap.
+            long milliseconds = checked((long)Math.Ceiling(doubleTap.TotalMilliseconds) + 1);
+            Stopwatch elapsed = Stopwatch.StartNew();
+            await Task.Delay(TimeSpan.FromMilliseconds(milliseconds));
+            while (elapsed.Elapsed <= doubleTap) { await Task.Yield(); }
+            Pump(main);
         }
         internal async Task ClickCommitAsync(string hash) { ClickCommit(hash); await IdleAsync(); Assert.That(History.IsKeyboardFocusWithin, Is.True); }
         internal void Type(string value) { foreach (char character in value) { main.KeyTextInput(character.ToString()); } Pump(main); }

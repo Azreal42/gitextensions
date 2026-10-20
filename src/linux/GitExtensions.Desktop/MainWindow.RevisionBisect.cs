@@ -87,7 +87,7 @@ public sealed partial class MainWindow
                         token.ThrowIfCancellationRequested();
                         if (_repository != target.Repository || !HasRevisionBisectSession(repository))
                         { throw new InvalidOperationException("The bisect session is no longer active."); }
-                        commandStarted = true;
+                        commandStarted = true; MarkStandaloneMayHaveRepositoryChanges();
                         return verdict is null ? repository.ResetBisectAsync(cancellationToken: token, outputReceived: output)
                             : repository.MarkBisectAsync(verdict.Value, target.Hash, token, output);
                     }, Token);

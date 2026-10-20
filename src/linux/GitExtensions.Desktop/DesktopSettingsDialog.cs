@@ -31,6 +31,8 @@ internal sealed class DesktopSettingsDialog : Window
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
     internal GeneralSettingsValues GeneralSettingsResult { get; private set; }
     private readonly GeneralSettingsPage _generalSettingsPage;
+    internal CommitDialogSettingsSession CommitDialogSettingsSession { get; }
+    private readonly CommitDialogSettingsPage _commitDialogSettingsPage;
     internal BlameViewerSettingsSession BlameViewerSettingsSession { get; }
     private readonly BlameViewerSettingsPage _blameViewerSettingsPage;
     internal ConfirmationsSettingsSession ConfirmationsSettingsSession { get; }
@@ -95,13 +97,17 @@ internal sealed class DesktopSettingsDialog : Window
         Func<ColorsSettingsValues, CancellationToken, ColorsSettingsPublication>? publishColors = null,
         AdvancedSettingsSession? advancedSettings = null,
         Action<AdvancedSettingsSaveReceipt>? publishAdvanced = null,
-        BlameViewerSettingsSession? blameViewerSettings = null)
+        BlameViewerSettingsSession? blameViewerSettings = null,
+        CommitDialogSettingsSession? commitDialogSettings = null,
+        Action<CommitDialogSettingsSaveReceipt>? publishCommitDialogSettings = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         GeneralSettingsResult = generalSettings ?? new GeneralSettingsSession(initial, FileHistoryResult).Initial;
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
+        CommitDialogSettingsSession = commitDialogSettings ?? new(initialDesktop: initial);
+        _commitDialogSettingsPage = new(CommitDialogSettingsSession, translations);
         BlameViewerSettingsSession = blameViewerSettings ?? new();
         _blameViewerSettingsPage = new(BlameViewerSettingsSession, translations);
         ConfirmationsSettingsSession = confirmations ?? new();
@@ -206,7 +212,8 @@ internal sealed class DesktopSettingsDialog : Window
             new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), _advancedSettingsPage, "AdvancedSettings.png", Children:
             [ new("Confirmations", PageTitle("ConfirmationsSettingsPage", "Confirmations"), _confirmationsSettingsPage, "BisectGood.png") ]),
             new("Detailed", PageTitle("DetailedSettingsPage", "Detailed"), _detailedSettingsPage, "Settings.png", Children:
-            [ new("BlameViewer", PageTitle("BlameViewerSettingsPage", "Blame viewer"), _blameViewerSettingsPage, "Blame.png") ])
+            [ new("Commit", PageTitle("CommitDialogSettingsPage", "Commit dialog"), _commitDialogSettingsPage, "CommitSummary.png"),
+              new("BlameViewer", PageTitle("BlameViewerSettingsPage", "Blame viewer"), _blameViewerSettingsPage, "Blame.png") ])
         ];
         if (gitEnvironment is not null)
         { extensionChildren = [.. extensionChildren, new("GitSsh", PageTitle("SshSettingsPage", "SSH"), gitEnvironment.SshPage, "Key.png")]; }
@@ -304,6 +311,8 @@ internal sealed class DesktopSettingsDialog : Window
                 await _revisionLinksSettingsPage.PrepareSaveAsync(_detailedCancellation.Token);
                 activeSavePage = "BuildServerIntegration";
                 _buildServerSettingsPage.PrepareSave();
+                if (!_commitDialogSettingsPage.Validate(out string? commitValidation))
+                { Navigation.SelectPage("Commit", true); notice.Text = commitValidation; return false; }
                 if (!_consoleStylePage.Validate(out string? consoleValidation))
                 { Navigation.SelectPage("ConsoleStyle", true); notice.Text = consoleValidation; return false; }
                 if (!_generalSettingsPage.Validate(out string? generalValidation))
@@ -415,6 +424,14 @@ internal sealed class DesktopSettingsDialog : Window
                     BlameSettingsSaveReceipt blameSaved = BlameViewerSettingsSession.Save(_blameViewerSettingsPage.Draft, _detailedCancellation.Token);
                     _blameViewerSettingsPage.AcceptSaved(blameSaved);
                     saved |= blameSaved.Written;
+                    activeSavePage = "Commit";
+                    CommitDialogSettingsSession.Save(_commitDialogSettingsPage.Draft, receipt =>
+                    {
+                        _commitDialogSettingsPage.AcceptSaved(receipt); saved |= receipt.Written;
+                        if (receipt.Desktop is { } desktop) { Result = Result with { ProvideAutocompletion = desktop.ProvideAutocompletion }; }
+                        CommitDialogSettingsPublication.Publish(receipt);
+                        publishCommitDialogSettings?.Invoke(receipt);
+                    }, _detailedCancellation.Token);
                     activeSavePage = "Confirmations";
                     ConfirmationsSettingsSession.Save(_confirmationsSettingsPage.Draft, receipt =>
                     { _confirmationsSettingsPage.AcceptSaved(receipt); saved |= receipt.Written; }, _detailedCancellation.Token);

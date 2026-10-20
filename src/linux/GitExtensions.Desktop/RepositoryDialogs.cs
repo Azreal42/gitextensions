@@ -37,6 +37,7 @@ public abstract class RepositoryDialog : Window
         _statusBorder = ClassicChrome.Border(Status, new Thickness(0, 1, 0, 0), new Thickness(10, 5));
         DockPanel.SetDock(_statusBorder, Dock.Bottom);
         Root.Children.Add(_statusBorder);
+        _ = new DeferredOwnerCloseReplay(this);
         Closing += (_, args) =>
         {
             if (IsBusy) { args.Cancel = true; _closeWhenIdle = true; _operation?.Cancel(); }
@@ -49,6 +50,8 @@ public abstract class RepositoryDialog : Window
 
     internal bool IsBusy { get; private set; }
     public bool HasRepositoryChanges { get; private set; }
+    private bool _repositoryMutationAttempted;
+    internal bool MayHaveRepositoryChanges => HasRepositoryChanges || _repositoryMutationAttempted;
     public bool ScriptMayHaveChangedRepository { get; private set; }
     public string? LastError { get; private set; }
     internal Exception? LastException { get; private set; }
@@ -56,7 +59,19 @@ public abstract class RepositoryDialog : Window
     protected string T(string source) => _translations.Translate(source);
     protected TranslationCatalog Translations => _translations;
     protected void Track(params Control[] controls) => _inputs.AddRange(controls);
-    protected void MarkRepositoryChanged() => HasRepositoryChanges = true;
+    protected void MarkRepositoryChanged()
+    { HasRepositoryChanges = true; PublishStandaloneRepositoryMutationAttempt(); }
+    // Public outcome adapters can retain uncertainty without claiming an acquired effect.
+    protected void MarkRepositoryMutationAttempted()
+    { _repositoryMutationAttempted = true; PublishStandaloneRepositoryMutationAttempt(); }
+    private void PublishStandaloneRepositoryMutationAttempt()
+    {
+        // Modal FileHistory/Blame/Compare children can mutate even though opening them is a read.
+        for (Window? current = Owner as Window; current is not null; current = current.Owner as Window)
+        {
+            if (current is MainWindow host) { host.AcceptStandaloneRepositoryMutationAttempt(Repository); break; }
+        }
+    }
     private protected async Task<bool> RunScriptEventAsync(ScriptWorkflowScope scope, ScriptEvent scriptEvent)
     {
         try { return await scope.RunAsync(scriptEvent); }
@@ -122,6 +137,8 @@ public abstract class RepositoryDialog : Window
         Status.Text = T(label) + "…";
         try
         {
+            // Keep the historical acquired-effects flag separate from a native attempt which may fail/cancel after effects.
+            if (changes) { MarkRepositoryMutationAttempted(); }
             await action(_operation.Token);
             HasRepositoryChanges |= changes;
         }

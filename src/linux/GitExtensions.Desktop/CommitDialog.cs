@@ -221,6 +221,7 @@ public sealed partial class CommitDialog : Window
         ConfigureList(_stagedView, true);
         _interactive.AddRange([_filter, _message, _amend, _resetAuthor, _author, _sign, _signingKey, _kind, _target]);
         Content = BuildLayout();
+        InitializeCommitDialogSettings();
         DesktopHotkeys.BindToolTip(_filter, "Commit", "ToggleSelectionFilter", C("_selectionFilterToolTip", "Enter a regular expression to select unstaged files."));
         _filter.PropertyChanged += async (_, change) =>
         {

@@ -1,10 +1,14 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace GitExtensions.Linux.Desktop;
 
 /// <summary>AppSettings defaults used by FormCommit. Signing, author and NoVerify remain session choices.</summary>
 public sealed record CommitPreferences
 {
+    public bool ShowCommitAndPush { get; init; } = true;
+    public bool ShowResetWorkTreeChanges { get; init; } = true;
+    public bool ShowResetAllChanges { get; init; } = true;
     public bool CloseAfterEachCommit { get; init; } = true;
     public bool CloseWhenAllChangesCommitted { get; init; } = true;
     public bool RefreshOnFormFocus { get; init; }
@@ -52,7 +56,20 @@ public sealed class CommitPreferencesStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(temporary, JsonSerializer.Serialize(preferences.Normalize(), new JsonSerializerOptions { WriteIndented = true }));
+            JsonObject document = JsonSerializer.SerializeToNode(preferences.Normalize())!.AsObject();
+            try
+            {
+                if (JsonNode.Parse(File.ReadAllBytes(FilePath)) is JsonObject existing)
+                {
+                    // Existing workflow writers own their typed values, never a future neighbour's keys.
+                    foreach ((string name, JsonNode? value) in existing)
+                    { if (!document.ContainsKey(name)) { document[name] = value?.DeepClone(); } }
+                }
+            }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
+            catch (JsonException) { /* Retain explicit typed Save's historical repair contract. Settings uses strict CAS. */ }
+            File.WriteAllText(temporary, document.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
             File.Move(temporary, FilePath, overwrite: true);
         }
         finally { try { File.Delete(temporary); } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { } }

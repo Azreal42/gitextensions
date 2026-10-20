@@ -104,9 +104,18 @@ public sealed class CompactNavigationTreeTests
     {
         using Fixture f = await CreateAsync(); TreeView tree = Tree(f.Window);
         TreeViewItem target = BrowseTestHelpers.NavigationNodes(tree).Single(item => item.Tag is GitReference { Name: "refs/heads/codex/api/bug_fix" });
+        ListBox history = f.Window.GetVisualDescendants().OfType<ListBox>().Single(control => control.Name == "RevisionHistory");
+        object? source = history.ItemsSource; object[] rows = history.Items.Cast<object>().ToArray();
+        ComboBox branchFilter = f.Window.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "BranchHistoryFilter");
+        string? expression = branchFilter.Text; string targetHash = ((GitReference)target.Tag!).Hash;
         Point point = Label(target).TranslatePoint(new Point(35, 8), f.Window)!.Value;
         f.Window.MouseMove(point); f.Window.MouseDown(point, MouseButton.Left); f.Window.MouseUp(point, MouseButton.Left);
-        await Until(() => !f.Window.IsBusy && f.Window.GetVisualDescendants().OfType<ComboBox>().Single(control => control.Name == "BranchHistoryFilter").Text == "refs/heads/codex/api/bug_fix");
+        await Until(() => !f.Window.IsBusy && f.Window.WindowWorkCompletion.IsCompleted);
+        await f.Window.WindowWorkCompletion; Pump(f.Window);
+        Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(targetHash));
+        Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.Items.Count, Is.EqualTo(rows.Length));
+        Assert.That(history.Items.Cast<object>().Zip(rows).All(pair => ReferenceEquals(pair.First, pair.Second)), Is.True);
+        Assert.That(branchFilter.Text, Is.EqualTo(expression), "Windows GoToRef selects the commit without changing the branch query.");
         TextBox filter = f.Window.GetVisualDescendants().OfType<TextBox>().Single(control => control.Name == "RepositoryNavigationSearch");
         filter.Text = "bug_fix"; Pump(f.Window);
         Assert.That(Visible(tree).Where(item => item.Tag is GitReference).Select(item => Label(item).Children.OfType<TextBlock>().Single().Text), Is.EqualTo(new[] { "bug_fix" }));

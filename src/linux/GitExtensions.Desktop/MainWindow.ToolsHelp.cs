@@ -167,6 +167,7 @@ public sealed partial class MainWindow
         GeneralSettingsSession general = new(initial, fileHistory);
         ConfirmationsSettingsSession confirmations = new();
         AdvancedSettingsSession advanced = new();
+        CommitDialogSettingsSession commitSettings = new(initialDesktop: initial);
         AppearanceSettingsSession appearance = new(initial, _historyView);
         ColorsSettingsSession colors = new(_historyView);
         // Reuse the runtime already bound to this mapped Main, including explicitly bound hosts.
@@ -205,6 +206,10 @@ public sealed partial class MainWindow
             configureGitAdvanced: owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
                 ? ShowGitToolsSettingsAsync(owner, advanced: true) : Task.CompletedTask, confirmations: confirmations,
             colors: colors, publishColors: (draft, ct) => PublishColorsSettings(colors, draft, ct),
+            commitDialogSettings: commitSettings, publishCommitDialogSettings: receipt =>
+            {
+                if (receipt.Desktop is { } desktop) { _preferences = _preferences with { ProvideAutocompletion = desktop.ProvideAutocompletion }; }
+            },
             advancedSettings: advanced, publishAdvanced: receipt =>
             {
                 _preferences = AdvancedSettingsValues.ApplyDesktop(_preferences, receipt.Values, receipt.Fields);
@@ -264,11 +269,15 @@ public sealed partial class MainWindow
                 AppearanceSettingsValues appearanceDraft = settings.AppearanceSettingsResult;
                 DesktopPreferences preferences = appearance.MergeDesktop(appearanceDraft, settings.Result with
                 {
-                    RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings
+                    RecentRepositories = latest.RecentRepositories, PluginSettings = latest.PluginSettings,
+                    // Commit's spelling menu owns this flag. An unrelated
+                    // Settings Apply must retain a peer editor's saved choice.
+                    MarkIllFormedLinesInCommitMsg = latest.MarkIllFormedLinesInCommitMsg
                 });
                 preferences = detailed.MergeDesktop(preferences);
                 // The visible Result keeps its draft contract; this writer defers Advanced to its strict CAS receipts.
                 preferences = advanced.MergeDesktop(preferences);
+                preferences = commitSettings.MergeDesktop(preferences);
                 bool histogramChanged = settings.GeneralSettingsResult.UseHistogramDiffAlgorithm != general.Initial.UseHistogramDiffAlgorithm;
                 GeneralSettingsPublication publication = general.Save(settings.GeneralSettingsResult, preferences,
                     desktopSaved: acceptedDesktop =>

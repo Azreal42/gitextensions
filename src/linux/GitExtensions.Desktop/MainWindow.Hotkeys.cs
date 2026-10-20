@@ -103,6 +103,7 @@ public sealed partial class MainWindow
             "CompareToCurrentBranch" => CompareToCurrentBranchAsync,
             "CompareToWorkingDirectory" => CompareToWorkingDirectoryAsync,
             "SelectAsBaseToCompare" => SelectComparisonBaseAsync,
+            "SelectNextForkPointAsDiffBase" => SelectNextForkPointAsDiffBaseAsync,
             "OpenCommitsWithDifftool" => OpenComparisonToolAsync,
             "CreateFixupCommit" => () => OpenTargetedCommitAsync(TargetedCommitKind.Fixup),
             "CreateSquashCommit" => () => OpenTargetedCommitAsync(TargetedCommitKind.Squash),
@@ -160,6 +161,14 @@ public sealed partial class MainWindow
         if (command is null) { return false; }
         if (command.Name == "Search")
         { args.Handled = true; _navigationSearch.Focus(); _navigationSearch.SelectAll(); return true; }
+        if (command.Name is "MultiSelect" or "MultiSelectWithChildren" && _repository is not null
+            && _navigation.SelectedItem is TreeViewItem selected && !_updatingNavigation && !_refreshing)
+        {
+            // Windows dispatches both commands through OnNodeClick, preserving
+            // the actual modifiers even when the configured gesture is remapped.
+            SelectNavigationNodes(selected, args.KeyModifiers.HasFlag(KeyModifiers.Control), args.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            args.Handled = true; return true;
+        }
         if (_repository is not { } repository || _navigation.SelectedItem is not TreeViewItem { Tag: GitReference reference }) { return false; }
         if (command.Name is not ("Rename" or "Delete") || command.Name == "Rename" && !reference.IsBranch) { return false; }
         args.Handled = true;

@@ -232,7 +232,7 @@ public sealed partial class MainWindow
         await RunAsync(label, async repository =>
         {
             Exception? original = null;
-            try { attempted = true; if (IsCommitDiff && changes) { _commitDiffHasRepositoryChanges = true; } await action(Token); }
+            try { attempted = true; MarkStandaloneMayHaveRepositoryChanges(changes); await action(Token); }
             catch (Exception error) { original = error; throw; }
             finally
             {

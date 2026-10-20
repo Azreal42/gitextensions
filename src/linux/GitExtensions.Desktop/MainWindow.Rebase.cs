@@ -120,7 +120,7 @@ public sealed partial class MainWindow
                 };
                 using CancellationTokenRegistration close = token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
                 try { token.ThrowIfCancellationRequested(); await dialog.ShowDialog(owner); token.ThrowIfCancellationRequested(); }
-                finally { changed = dialog.HasRepositoryChanges; dialog.Close(); }
+                finally { changed = dialog.HasRepositoryChanges; if (dialog.MayHaveRepositoryChanges) { AcceptStandaloneRepositoryMutationAttempt(repository); } dialog.Close(); }
             }, refresh: false);
         }
         finally

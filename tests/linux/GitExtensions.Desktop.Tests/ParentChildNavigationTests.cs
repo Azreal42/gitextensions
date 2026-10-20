@@ -8,6 +8,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Input.Raw;
+using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -343,6 +344,7 @@ public sealed class ParentChildNavigationTests
         await f.SelectAsync(f.D); Assert.That(Field<Control>(f.Main, "WorkingRevisions").IsEffectivelyVisible, Is.False);
         await f.NavigateAsync("GotoChildCommit");
         Assert.That(f.Selected, Is.EqualTo(f.D)); Assert.That(f.Artificial, Is.Null);
+        await f.WaitForIndependentMouseClickAsync();
         f.Click(f.D, RawInputModifiers.Control); await f.IdleAsync();
         Assert.That(f.History.SelectedItems, Is.Empty);
         await f.NavigateAsync("GotoParentCommit");
@@ -351,6 +353,34 @@ public sealed class ParentChildNavigationTests
         Assert.That(f.Artificial, Is.Null);
         Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
         f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task RapidControlSecondClickThatClearsTheSelectedHeadOpensTheActualOwnedLog(bool bare)
+    {
+        await using Scope f = await Scope.OpenAsync(showArtificial: bare, bare: bare);
+        List<(int Count, KeyModifiers Modifiers)> pressed = [];
+        f.Main.AddHandler(InputElement.PointerPressedEvent, (_, args) => pressed.Add((args.ClickCount, args.KeyModifiers)),
+            RoutingStrategies.Tunnel, handledEventsToo: true);
+        f.Click(f.D); Assert.That(f.Selected, Is.EqualTo(f.D));
+        Assert.That(pressed, Is.EqualTo(new[] { (1, KeyModifiers.None) }));
+        Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
+        // Deliberately no delay/await between the actual two clicks.
+        f.Click(f.D, RawInputModifiers.Control);
+        Assert.That(pressed, Is.EqualTo(new[] { (1, KeyModifiers.None), (2, KeyModifiers.Control) }));
+        Assert.That(f.History.SelectedItems, Is.Empty);
+        await Until(() => f.Main.OwnedWindows.OfType<MainWindow>().Any(window => window.IsVisible && window.WindowKind == MainWindowKind.RevisionLog));
+        MainWindow log = f.Main.OwnedWindows.OfType<MainWindow>().Single(window => window.IsVisible && window.WindowKind == MainWindowKind.RevisionLog);
+        Assert.That(log.Owner, Is.SameAs(f.Main));
+        await Until(() => !log.IsBusy && log.WindowWorkCompletion.IsCompleted); await Drain(log.WindowWorkCompletion);
+        Press(log, PhysicalKey.Escape);
+        await Until(() => !log.IsVisible && log.WindowWorkCompletion.IsCompleted); await Drain(log.WindowWorkCompletion);
+        await f.IdleAsync();
+        Assert.That(f.Main.IsVisible, Is.True); Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
+        Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
+        Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
     }
 
     [AvaloniaTest]
@@ -443,6 +473,19 @@ public sealed class ParentChildNavigationTests
             Point point = row.TranslatePoint(new Point(Math.Min(180, row.Bounds.Width / 2), row.Bounds.Height / 2), main)!.Value;
             Assert.That((main.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(row), Is.True);
             main.MouseMove(point); main.MouseDown(point, button, modifiers); main.MouseUp(point, button, modifiers); Pump(main);
+        }
+        internal async Task WaitForIndependentMouseClickAsync()
+        {
+            TimeSpan doubleTap = main.PlatformSettings?.GetDoubleTapTime(PointerType.Mouse)
+                ?? throw new InvalidOperationException("The actual platform double-tap interval is unavailable.");
+            if (doubleTap < TimeSpan.Zero) { throw new InvalidOperationException("The platform double-tap interval is invalid."); }
+            // Round the requested delay strictly above the actual platform maximum;
+            // no fixed 500ms assumption. The elapsed-time check also requires a strict gap.
+            long milliseconds = checked((long)Math.Ceiling(doubleTap.TotalMilliseconds) + 1);
+            Stopwatch elapsed = Stopwatch.StartNew();
+            await Task.Delay(TimeSpan.FromMilliseconds(milliseconds));
+            while (elapsed.Elapsed <= doubleTap) { await Task.Yield(); }
+            Pump(main);
         }
         internal async Task SelectAsync(string hash) { Click(hash); await IdleAsync(); Assert.That(History.IsKeyboardFocusWithin, Is.True); }
         internal async Task NavigateAsync(string command, string route = "shortcut")

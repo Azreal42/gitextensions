@@ -75,6 +75,7 @@ public sealed partial class MainWindow
         await RunAsync("Open selected commits with difftool", async repository =>
         {
             GitComparison comparison = await repository.GetComparisonAsync(new(from), new(to), Token);
+            MarkStandaloneMayHaveRepositoryChanges();
             GitResult result = await repository.OpenComparisonDiffToolAsync(comparison, directory: true, cancellationToken: Token);
             AppendOutput(result.StandardOutput + result.StandardError);
         }, refresh: false);

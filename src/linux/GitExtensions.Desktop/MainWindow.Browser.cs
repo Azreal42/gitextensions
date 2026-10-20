@@ -351,7 +351,7 @@ public sealed partial class MainWindow
             bool changed = false;
             await RunAsync("Edit .git/config", async repository =>
             {
-                try { await FileEditorWorkflow.OpenLocalConfigurationAsync(WorkflowOwner, repository, Token, () => changed = true, _translations); }
+                try { await FileEditorWorkflow.OpenLocalConfigurationAsync(WorkflowOwner, repository, Token, () => { changed = true; MarkStandaloneMayHaveRepositoryChanges(); }, _translations); }
                 finally { if (changed && !Token.IsCancellationRequested) { await RefreshDataAsync(repository); } }
             }, refresh: false);
         };
@@ -441,9 +441,17 @@ public sealed partial class MainWindow
             if (_repository.IsBare) { _state.Text = T("Open a worktree to commit changes in a bare repository."); return; }
             GitRepository repository = _repository;
             CommitDialog commit = new(repository, afterSubmoduleUpdateAsync: (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)) { RequestedThemeVariant = ActualThemeVariant };
-            await RunAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
-            await commit.ShowDialog(this);
-            if (commit.HasRepositoryChanges) { await RefreshAsync(); }
+            try
+            {
+                await RunAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
+                MarkStandaloneMayHaveRepositoryChanges();
+                await commit.ShowDialog(this);
+            }
+            finally
+            {
+                commit.Close(); if (commit.HasRepositoryChanges) { AcceptStandaloneRepositoryMutationAttempt(repository); }
+                if (commit.HasRepositoryChanges && _repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
+            }
             return;
         }
         Control content = _workflowViews[name];

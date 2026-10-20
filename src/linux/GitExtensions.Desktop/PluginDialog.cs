@@ -135,8 +135,10 @@ public sealed class PluginDialog : RepositoryDialog
         await RunAsync(_plugin.Descriptor.Name, async token =>
         {
             LastResult = await _plugin.ExecuteAsync(new PluginContext(Repository, confirmed), values, token);
-            if (LastResult.Success && _applySettings is not null) { await _applySettings(values, token); }
+            // Keep acquired/possible Git effects even if persisting plugin preferences later fails.
+            if (LastResult.RepositoryMayHaveChanges) { MarkRepositoryMutationAttempted(); }
             if (LastResult.RepositoryChanged) { MarkRepositoryChanged(); }
+            if (LastResult.Success && _applySettings is not null) { await _applySettings(values, token); }
             _text.Text = LastResult.Text;
             ShowTable(LastResult.Table);
             _links.Children.Clear();

@@ -22,7 +22,7 @@ public sealed partial class MainWindow
             { (_workingRevision, GitCompareRevisionKind.WorkingTree), (_indexRevision, GitCompareRevisionKind.Index) })
         {
             if (button is null) { continue; }
-            bool selected = UsesArtificialDiffHistory && _selectedArtificialHistoryRevision?.Kind == kind;
+            bool selected = (UsesArtificialDiffHistory || UsesArtificialInitialComparison) && _selectedArtificialHistoryRevision?.Kind == kind;
             if (selected)
             {
                 button.Background = RevisionHistoryRow.BackgroundFor(null, true, button.IsKeyboardFocusWithin, null, 0, false, ActualThemeVariant == ThemeVariant.Dark);

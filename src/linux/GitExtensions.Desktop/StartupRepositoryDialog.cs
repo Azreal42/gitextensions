@@ -33,6 +33,7 @@ public abstract class StartupRepositoryDialog : Window
         _statusBorder.IsVisible = false;
         DockPanel.SetDock(_statusBorder, Dock.Bottom);
         Root.Children.Add(_statusBorder);
+        _ = new DeferredOwnerCloseReplay(this);
         Closing += (_, args) =>
         {
             if (IsBusy) { args.Cancel = true; _closeWhenIdle = true; _operation?.Cancel(); }

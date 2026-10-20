@@ -17,7 +17,24 @@ public sealed partial class MainWindow
     internal IReadOnlyCollection<MainWindow> ModelessCommitDiffWindows => _modelessCommitDiffs.ToArray();
     // An explicit lifetime is useful for embedders/headless hosts; production uses the real App lifetime.
     internal IClassicDesktopStyleApplicationLifetime? ModelessApplicationLifetime { get; init; }
-    internal bool CommitDiffHasRepositoryChanges => _commitDiffHasRepositoryChanges;
+    // Compatibility name for the existing modal CommitDiff caller. Attempts are conservative, not proof of an effect.
+    internal bool CommitDiffHasRepositoryChanges => StandaloneMayHaveRepositoryChanges;
+    internal bool StandaloneMayHaveRepositoryChanges => _commitDiffHasRepositoryChanges;
+    private void MarkStandaloneMayHaveRepositoryChanges(bool mayHaveChanges = true)
+    {
+        if (mayHaveChanges && (_repository ?? _commitDiffSource?.Repository) is { } repository)
+        { AcceptStandaloneRepositoryMutationAttempt(repository); }
+    }
+    internal void AcceptStandaloneRepositoryMutationAttempt(GitRepository repository)
+    {
+        // Only the native Owner chain participates. Independent/modeless windows have no Owner.
+        for (Window? current = this; current is not null; current = current.Owner as Window)
+        {
+            if (current is MainWindow host && host.IsStandaloneDiff
+                && ReferenceEquals(host._repository ?? host._commitDiffSource?.Repository, repository))
+            { host._commitDiffHasRepositoryChanges = true; }
+        }
+    }
     internal string? CommitDiffRevision => _commitDiffSource?.Commit.Hash;
     private bool IsCommitDiff => WindowKind == MainWindowKind.CommitDiff;
     private bool IsStandaloneDiff => IsRevisionLog || IsCommitDiff;

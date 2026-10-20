@@ -82,6 +82,7 @@ public sealed partial class MainWindow
         _stashFlyout.Hide(); _pullFlyout.Hide(); _browserToolbar?.OverflowFlyout.Hide();
         await RunAsync(label, async repository =>
         {
+            MarkStandaloneMayHaveRepositoryChanges();
             GitResult result = await action(repository); AppendOutput(result.StandardOutput + result.StandardError);
         }, refresh: false);
         Exception? error = LastException;

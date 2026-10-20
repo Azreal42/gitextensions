@@ -221,7 +221,13 @@ public sealed partial class MainWindow
             // This command reveals a node; it does not apply the tree's usual branch
             // filter or replace the commit grid/selection as a normal tree click does.
             bool updating = _updatingNavigation; _updatingNavigation = true;
-            try { _navigation.SelectedItem = target; _navigationSelectionKey = "ref:" + reference.Name; }
+            try
+            {
+                // RepoObjectsTree.SelectGitRef first selects this single node,
+                // independently of the native cursor and without GoToRef.
+                SelectNavigationNodes(target, multiple: false, includingDescendants: false);
+                _navigation.SelectedItem = target; _navigationSelectionKey = "ref:" + reference.Name;
+            }
             finally { _updatingNavigation = updating; }
             target.BringIntoView(); target.Focus();
             Dispatcher.UIThread.Post(() =>

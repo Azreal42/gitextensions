@@ -700,6 +700,8 @@ public sealed partial class MainWindow : Window
         try
         {
             _state.Text = label + "…";
+            // Default-refresh operations are mutation-capable. Read-only/F5 operations already opt out.
+            if (refresh) { MarkStandaloneMayHaveRepositoryChanges(); }
             await action(_repository!);
             if (refresh && _repository is not null) { await RefreshDataAsync(_repository); }
             success = true;

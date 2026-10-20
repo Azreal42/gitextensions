@@ -361,8 +361,11 @@ public sealed partial class MainWindow
         try
         {
             await RunAsync("Cherry-pick", async _ =>
+            {
+                MarkStandaloneMayHaveRepositoryChanges();
                 await CherryPickSequence.ShowAsync(WorkflowOwner, repository, revisions, Token,
-                    (owner, token) => AfterSubmoduleUpdateAsync(repository, owner, token)), refresh: false);
+                    (owner, token) => AfterSubmoduleUpdateAsync(repository, owner, token));
+            }, refresh: false);
         }
         finally
         {
@@ -378,7 +381,8 @@ public sealed partial class MainWindow
         string[] revisions = SelectedComparisonCommits().Reverse().Select(commit => commit.Hash).ToArray();
         if (revisions.Length == 0) { _state.Text = T("Select a commit in History first."); return; }
         GitRepository repository = _repository;
-        try { await RunAsync("Revert", async _ => await RevertSequence.ShowAsync(WorkflowOwner, repository, revisions, Token, ResolveWorkflowConflictsAsync), refresh: false); }
+        try { await RunAsync("Revert", async _ =>
+            { MarkStandaloneMayHaveRepositoryChanges(); await RevertSequence.ShowAsync(WorkflowOwner, repository, revisions, Token, ResolveWorkflowConflictsAsync); }, refresh: false); }
         finally { if (_repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); } }
     }
 
@@ -626,6 +630,7 @@ public sealed partial class MainWindow
         }
         finally
         {
+            if (dialog.MayHaveChangedConfiguration && repository is not null) { AcceptStandaloneRepositoryMutationAttempt(repository); }
             // Apply then Cancel, or a partially failed save, can still have changed Git configuration.
             if (!dialog.OwnerCloseRequested && owner.IsVisible && dialog.MayHaveChangedConfiguration && IsVisible && !_lifetime.IsCancellationRequested
                 && repository is not null && ReferenceEquals(repository, _repository)) { await RefreshAsync(); }
@@ -736,7 +741,7 @@ public sealed partial class MainWindow
                 if (current != repository || !await UndoLastCommitConfirmationDialog.ShowAsync(owner, new BrowseCommandPreferencesStore(), Token)) { return; }
                 Token.ThrowIfCancellationRequested();
                 if (!owner.IsVisible || _repository != repository) { return; }
-                resetStarted = true;
+                resetStarted = true; MarkStandaloneMayHaveRepositoryChanges();
                 GitResult result = await repository.UndoLastCommitAsync(Token);
                 resetCompleted = true;
                 AppendOutput(result.StandardOutput + result.StandardError);
@@ -764,6 +769,7 @@ public sealed partial class MainWindow
 
     private async Task ShowRepositoryDialogAsync(RepositoryDialog dialog, bool initializeOnOpen = true)
     {
+        GitRepository? capturedRepository = _repository;
         Window owner = WorkflowOwner;
         dialog.RequestedThemeVariant ??= owner.ActualThemeVariant;
         if (initializeOnOpen) { dialog.Opened += async (_, _) => await dialog.InitializeAsync(); }
@@ -781,7 +787,7 @@ public sealed partial class MainWindow
         finally
         {
             dialog.Close();
-            if (IsCommitDiff && dialog.HasRepositoryChanges) { _commitDiffHasRepositoryChanges = true; }
+            if (dialog.MayHaveRepositoryChanges && capturedRepository is not null) { AcceptStandaloneRepositoryMutationAttempt(capturedRepository); }
             if (dialog.HasRepositoryChanges && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
         }
     }

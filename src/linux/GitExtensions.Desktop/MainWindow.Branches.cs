@@ -144,6 +144,6 @@ public sealed partial class MainWindow
             }, refresh: false);
             if (dialog.HasRepositoryChanges && _repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
         }
-        finally { if (!dialog.IsVisible) { dialog.Close(); } }
+        finally { if (dialog.MayHaveRepositoryChanges) { AcceptStandaloneRepositoryMutationAttempt(repository); } if (!dialog.IsVisible) { dialog.Close(); } }
     }
 }

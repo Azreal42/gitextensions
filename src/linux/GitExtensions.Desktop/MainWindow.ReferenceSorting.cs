@@ -1,6 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -15,10 +13,29 @@ public sealed partial class MainWindow
     private void ConfigureReferenceSortingMenu()
     {
         ContextMenu menu = new() { Name = "RepositoryNavigationContextMenu" };
+        MenuItem filter = new()
+        {
+            Name = "filterForSelectedRefsMenuItem",
+            Header = _translations.TranslateAccessKeys("RepoObjectsTree", "filterForSelectedRefsMenuItem", "Text", "&Filter for selected"),
+            Icon = OriginalIconImage("ShowThisBranchOnly.png")
+        };
+        ToolTip.SetTip(filter, _translations.Translate("RepoObjectsTree", "filterForSelectedRefsMenuItem", "ToolTipText",
+            "Filter the revision grid to show selected (underlined) refs (branches and tags) only.\n"
+            + "Hold CTRL while clicking to de/select multiple and include descendant tree nodes by additionally holding SHIFT.\n"
+            + "Reset the filter via View > Show all branches."));
         MenuItem by = new() { Name = "GitRefsSortByContextMenuItem", Header = T("Sort by"), Icon = OriginalIconImage("SortBy.png") };
         MenuItem order = new() { Name = "GitRefsSortOrderContextMenuItem", Header = T("Sort order"), Icon = OriginalIconImage("SortBy.png") };
-        menu.ItemsSource = new[] { by, order };
+        menu.ItemsSource = new object[] { filter, new Separator(), by, order };
         string? originKey = null;
+        GitRepository? originRepository = null;
+        long originVersion = 0;
+        string[] originReferences = [];
+        filter.Click += async (_, _) =>
+        {
+            try { await FilterMarkedNavigationReferencesAsync(originRepository, originVersion, originReferences); }
+            catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+            catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
+        };
         foreach ((GitRefsSortBy value, string label) in DesktopSettingsDialog.ReferenceSortChoices)
         {
             MenuItem item = new() { Name = "NavigationSortBy" + value, Header = label, Tag = value, ToggleType = MenuItemToggleType.CheckBox };
@@ -29,32 +46,29 @@ public sealed partial class MainWindow
             MenuItem item = new() { Name = "NavigationSortOrder" + value, Header = DesktopSettingsDialog.ReferenceOrderLabel(value), Tag = value, ToggleType = MenuItemToggleType.CheckBox };
             item.Click += async (_, _) => await ChangeAsync(_preferences.ReferenceSorting with { Order = value }); order.Items.Add(item);
         }
-        _navigation.AddHandler(PointerPressedEvent, (_, args) =>
-        {
-            if (!args.GetCurrentPoint(_navigation).Properties.IsRightButtonPressed || _busy) { return; }
-            TreeViewItem? node = (args.Source as Avalonia.Visual)?.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
-            if (node is null || !_navigationKeys.ContainsKey(node)) { return; }
-            // Right-click chooses a context without accepting a new history filter.
-            bool updating = _updatingNavigation; _updatingNavigation = true;
-            try { _navigation.SelectedItem = node; node.Focus(); }
-            finally { _updatingNavigation = updating; }
-        }, RoutingStrategies.Tunnel);
         menu.Opening += (_, _) =>
         {
-            bool leaf = _navigation.SelectedItem is TreeViewItem { Tag: GitReference } && !_busy && !_lifetime.IsCancellationRequested;
+            originRepository = _repository; originVersion = _navigationMarkedVersion;
+            originReferences = MarkedNavigationReferences();
+            bool available = originRepository is not null && !_busy && !_lifetime.IsCancellationRequested && !IsBranchFilterOwnerClosing;
+            bool leaf = MarkedNavigationNodeCount == 1 && _navigation.SelectedItem is TreeViewItem { Tag: GitReference } && available;
+            filter.IsEnabled = available && originReferences.Length > 0;
             by.IsEnabled = leaf; order.IsEnabled = leaf && _preferences.ReferenceSorting.By != GitRefsSortBy.GitDefault;
             originKey = _navigation.SelectedItem is TreeViewItem node && _navigationKeys.TryGetValue(node, out string? key) ? key : null;
             foreach (MenuItem item in by.Items.OfType<MenuItem>()) { item.IsChecked = Equals(item.Tag, _preferences.ReferenceSorting.By); }
             foreach (MenuItem item in order.Items.OfType<MenuItem>()) { item.IsChecked = Equals(item.Tag, _preferences.ReferenceSorting.Order); }
             object[] scripts = _navigation.SelectedItem is TreeViewItem { Tag: GitReference { IsBranch: true } }
-                ? ScriptMenuItems.Build(_scripts, script => script.AddToRevisionGridContextMenu, script => () => RunScriptAsync(script),
+                ? ScriptMenuItems.Build(_scripts, script => script.AddToRevisionGridContextMenu,
+                    script => () => _repository == originRepository && _navigationMarkedVersion == originVersion && MarkedNavigationNodeCount == 1
+                        ? RunScriptAsync(script) : Task.CompletedTask,
                     leaf, _translations, "RepoObjectsTree") : [];
-            menu.ItemsSource = new object[] { by, order }.Concat(scripts).ToArray();
+            menu.ItemsSource = new object[] { filter, new Separator(), by, order }.Concat(scripts).ToArray();
         };
         _navigation.ContextMenu = menu;
         async Task ChangeAsync(GitReferenceSorting sorting)
         {
-            if (_busy || _repository is null || _navigation.SelectedItem is not TreeViewItem { Tag: GitReference }) { return; }
+            if (_busy || _repository is null || _repository != originRepository || _navigationMarkedVersion != originVersion
+                || MarkedNavigationNodeCount != 1 || _navigation.SelectedItem is not TreeViewItem { Tag: GitReference }) { return; }
             string? key = originKey;
             DesktopPreferences latest = _preferencesStore.Load();
             _preferencesStore.Save(latest with { ReferenceSorting = sorting });

@@ -215,8 +215,17 @@ public class WindowsBrowseReferenceTests
         TreeView tree = Field<TreeView>(main, "RepositoryNavigation");
         TreeViewItem leaf = BrowseTestHelpers.NavigationNodes(tree).Single(node => node.Tag is GitReference reference && reference.Name == "refs/remotes/origin/preprocessing/api/search");
         Assert.That(leaf.GetVisualAncestors().OfType<TreeViewItem>().Count(), Is.EqualTo(4), "Remotes are nested under the remote name and branch folders.");
-        Click(main, leaf); await Until(() => !main.IsBusy && Field<ComboBox>(main, "BranchHistoryFilter").Text == "refs/remotes/origin/preprocessing/api/search"); await Layout(main);
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        object? source = history.ItemsSource; object[] rows = history.Items.Cast<object>().ToArray();
+        ComboBox branchFilter = Field<ComboBox>(main, "BranchHistoryFilter"); string? expression = branchFilter.Text;
+        string targetHash = ((GitReference)leaf.Tag!).Hash;
         string[] before = Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
+        Click(main, leaf); await Until(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+        await main.WindowWorkCompletion; await Layout(main);
+        Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(targetHash));
+        Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.Items.Count, Is.EqualTo(rows.Length));
+        Assert.That(history.Items.Cast<object>().Zip(rows).All(pair => ReferenceEquals(pair.First, pair.Second)), Is.True);
+        Assert.That(branchFilter.Text, Is.EqualTo(expression), "Windows GoToRef selects the commit without changing the branch query.");
         TextBox search = Field<TextBox>(main, "RepositoryNavigationSearch"); search.Text = "api/search"; await Layout(main);
         Assert.That(BrowseTestHelpers.NavigationNodes(tree).Where(node => node.Tag is GitReference).Select(node => ((GitReference)node.Tag!).ShortName), Is.EquivalentTo(new[] { "preprocessing/api/search", "origin/preprocessing/api/search" }));
         Assert.That(((TreeViewItem?)tree.SelectedItem)?.Tag, Is.TypeOf<GitReference>());

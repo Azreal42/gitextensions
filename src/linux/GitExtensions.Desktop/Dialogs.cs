@@ -107,7 +107,7 @@ internal static class Dialogs
     // The bool facade retains the historical false result in both cases.
     internal static async Task<bool?> ConfirmChoiceAsync(Window owner, string title, string message,
         string? acceptLabel = null, string? cancelLabel = null, bool acceptIsDefault = false, CancellationToken cancellationToken = default,
-        TranslationCatalog? translations = null, ThemeVariant? requestedThemeVariant = null)
+        TranslationCatalog? translations = null, ThemeVariant? requestedThemeVariant = null, bool warning = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         translations ??= TranslationCatalog.LoadDefault();
@@ -128,13 +128,21 @@ internal static class Dialogs
         accept.Click += (_, _) => dialog.Close(true);
         dialog.AddHandler(InputElement.KeyDownEvent, (_, args) =>
         { if (!args.Handled && args.Key == Key.Escape) { args.Handled = true; dialog.Close(null); } }, RoutingStrategies.Tunnel);
+        TextBlock messageText = new() { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+        Control messageBody = messageText;
+        if (warning)
+        {
+            Grid body = new() { ColumnDefinitions = new("Auto,*"), ColumnSpacing = 10 };
+            body.Children.Add(ResetDialogControls.Icon("Warning"));
+            Grid.SetColumn(messageText, 1); body.Children.Add(messageText); messageBody = body;
+        }
         dialog.Content = new StackPanel
         {
             Margin = new Thickness(12),
             Spacing = 10,
             Children =
             {
-                new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                messageBody,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, accept } }
             }
         };

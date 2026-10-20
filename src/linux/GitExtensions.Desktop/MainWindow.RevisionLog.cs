@@ -79,17 +79,60 @@ public sealed partial class MainWindow
         return root;
     }
 
-    internal Task ShowRevisionLogAsync()
+    internal async Task ShowRevisionLogAsync()
     {
-        if (_repository is not { } repository || _busy || _lifetime.IsCancellationRequested) { return Task.CompletedTask; }
-        return RunAsync("Diff", async _ =>
+        if (_repository is not { } repository || _busy || _lifetime.IsCancellationRequested) { return; }
+        // Like explicit F5, a read-only Log can return to a caret which Ctrl+click
+        // just deselected. Keep every normal focus/repository/owner guard below.
+        OperationFocus? historyFocus = _commits.IsKeyboardFocusWithin ? CaptureOperationFocus() : null;
+        if (historyFocus is not null) { historyFocus = historyFocus with { PreserveUnselectedRow = true }; }
+        bool mayHaveChanges = false;
+        await RunAsync("Diff", async _ =>
         {
             MainWindow log = RevisionLogWindow.Create(new(repository.Path));
             Window owner = WorkflowOwner; log.RequestedThemeVariant = owner.ActualThemeVariant;
             CancellationToken command = Token;
-            using CancellationTokenRegistration registration = command.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(log.Close));
+            using CancellationTokenRegistration registration = command.Register(() =>
+            {
+                // Closing already runs on the UI thread: seal a busy descendant's
+                // operation token before its continuation can overtake a queued close.
+                if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess()) { log.Close(); }
+                else { Avalonia.Threading.Dispatcher.UIThread.Post(log.Close); }
+            });
+            // This Main already owns the modal in its WindowWork lease. Let its
+            // real Closing seal Token before a busy descendant can veto the cascade.
+            bool leaseOwnsOwner = ReferenceEquals(owner, this);
+            WindowClosingBehavior previousClosingBehavior = owner.ClosingBehavior;
+            if (leaseOwnsOwner) { owner.ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly; }
+            Exception? original = null;
             try { command.ThrowIfCancellationRequested(); await log.ShowDialog(owner); command.ThrowIfCancellationRequested(); }
-            finally { log.Close(); await log.WindowWorkCompletion; }
-        }, refresh: true);
+            catch (Exception error) { original = error; throw; }
+            finally
+            {
+                try
+                {
+                    log.Close(); await log.WindowWorkCompletion;
+                    mayHaveChanges = log.StandaloneMayHaveRepositoryChanges;
+                    // Retain the signal even if the owner/read is cancelled. UI publication is guarded separately.
+                    if (mayHaveChanges) { AcceptStandaloneRepositoryMutationAttempt(repository); }
+                    if (mayHaveChanges && ReferenceEquals(repository, _repository) && ReferenceEquals(owner, WorkflowOwner)
+                        && owner.IsVisible && IsVisible && !_lifetime.IsCancellationRequested && !command.IsCancellationRequested)
+                    {
+                        try { await RefreshDataAsync(repository); }
+                        catch (Exception error) when (original is not null) { AppendOutput("Refresh after Log: " + error.Message); }
+                    }
+                }
+                finally
+                {
+                    // Do not alter another host's policy or replace a policy changed meanwhile.
+                    if (leaseOwnsOwner && owner.ClosingBehavior == WindowClosingBehavior.OwnerWindowOnly)
+                    { owner.ClosingBehavior = previousClosingBehavior; }
+                }
+            }
+        }, refresh: false);
+        // Mutating operations retain the ordinary selected-origin rule. The
+        // shared restorer also refuses to steal a newer valid focus or outlive
+        // this repository, owner, modal operation or window.
+        if (!mayHaveChanges) { RestoreOperationFocus(historyFocus); }
     }
 }

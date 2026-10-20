@@ -77,6 +77,7 @@ public sealed partial class MainWindow
         CloseWorktreeMenus(); bool attempted = false;
         await RunAsync(label, async _ =>
         {
+            MarkStandaloneMayHaveRepositoryChanges();
             attempted = await action(WorkflowOwner, repository, Token);
             Token.ThrowIfCancellationRequested();
         }, refresh: false);

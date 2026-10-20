@@ -76,7 +76,7 @@ public sealed partial class MainWindow
                     viewer = new(repository, remotes, client, async (request, addRemote, token) =>
                     {
                         if (!ReferenceEquals(_repository, repository) || _lifetime.IsCancellationRequested || !viewer!.IsVisible) { return false; }
-                        gitAttempted = true;
+                        gitAttempted = true; MarkStandaloneMayHaveRepositoryChanges();
                         return await FetchPullRequestAsync(viewer, repository, settings, request, addRemote, token);
                     }, canWrite: credentials.Type != BuildServerCredentialsType.Guest);
                     dialog = viewer;

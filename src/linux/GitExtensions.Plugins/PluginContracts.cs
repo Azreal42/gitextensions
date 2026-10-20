@@ -21,7 +21,10 @@ public sealed record PluginTable(IReadOnlyList<string> Columns, IReadOnlyList<Pl
 public sealed record PluginRow(string Key, IReadOnlyList<string> Cells);
 public sealed record PluginLink(string Label, Uri Uri);
 public sealed record PluginResult(string Text, PluginTable? Table = null, IReadOnlyList<PluginLink>? Links = null,
-    bool RepositoryChanged = false, bool Success = true);
+    bool RepositoryChanged = false, bool Success = true)
+{
+    public bool RepositoryMayHaveChanges { get; init; }
+}
 
 public interface INativePlugin
 {

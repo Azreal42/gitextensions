@@ -60,11 +60,12 @@ public sealed partial class MainWindow
         {
             await RunAsync("Open commit dialog", _ => dialog.InitializeAsync(), refresh: false);
             if (_repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
+            MarkStandaloneMayHaveRepositoryChanges();
             await dialog.ShowDialog(owner);
         }
         finally
         {
-            dialog.Close();
+            dialog.Close(); if (dialog.HasRepositoryChanges) { AcceptStandaloneRepositoryMutationAttempt(repository); }
             if (dialog.HasRepositoryChanges && _repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
         }
     }
@@ -79,6 +80,7 @@ public sealed partial class MainWindow
             await RunAsync(action == GitRebaseAction.Edit ? "Edit commit" : "Reword commit", async _ =>
             {
                 string executable = Environment.ProcessPath ?? throw new InvalidOperationException("Cannot locate the rebase editor application.");
+                MarkStandaloneMayHaveRepositoryChanges();
                 GitResult result = await repository.RebaseCommitAsync(selected.Hash, action, executable, Token);
                 AppendOutput(result.StandardOutput + result.StandardError);
             }, refresh: false);

@@ -165,7 +165,7 @@ public sealed partial class MainWindow
         }
         finally
         {
-            dialog.Close();
+            dialog.Close(); if (dialog.Attempted || dialog.ScriptMayHaveChangedRepository) { AcceptStandaloneRepositoryMutationAttempt(repository); }
             if ((dialog.Attempted || dialog.ScriptMayHaveChangedRepository) && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
             _pullPreferences = _pullPreferencesStore.Load(); RefreshPullMenu();
         }
