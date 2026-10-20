@@ -20,6 +20,8 @@ public sealed partial class MainWindow
     private IBuildServerSource? _gitHubActionsClient;
     private string _buildServerProvider = "Build server";
     private BuildServerSnapshot? _gitHubActionsSnapshot;
+    private readonly BuildServerRevisionProjection _buildServerRevisionProjection = new();
+    private IReadOnlyDictionary<string, BuildServerCommitStatus> _buildServerRevisionStatuses = new Dictionary<string, BuildServerCommitStatus>(StringComparer.OrdinalIgnoreCase);
     private GitRepository? _gitHubActionsPublishedRepository;
     private CancellationTokenSource? _gitHubActionsRequest;
     private Task _gitHubActionsCompletion = Task.CompletedTask;
@@ -37,6 +39,9 @@ public sealed partial class MainWindow
     private readonly List<MenuItem> _gitHubActionsShowMenus = [];
     private TabItem? _gitHubActionsTab;
     private Button? _gitHubActionsOpen;
+    private HyperlinkButton? _buildReportLink;
+    private DockPanel? _buildReportLegacy;
+    private bool _showBuildResultPage;
     internal string? GitHubActionsError { get; private set; }
     internal bool GitHubActionsEnabled => _gitHubActionsEnabled;
     internal Task GitHubActionsCompletion => Task.WhenAll(_gitHubActionsRestarts.Concat(_gitHubActionsManualReads).Append(_gitHubActionsCompletion).ToArray());
@@ -49,7 +54,8 @@ public sealed partial class MainWindow
     internal Func<GitLabSettings, IGitLabClient> GitLabClientFactory { get; set; } = settings => new GitLabApiClient(settings);
     internal BuildServerCredentialsStore? CredentialsStoreOverride { get; set; }
     internal BuildServerCommitStatus? BuildServerStatusFor(string? sha)
-        => _gitHubActionsEnabled && sha is not null && _gitHubActionsSnapshot?.Commits.TryGetValue(sha, out BuildServerCommitStatus? status) == true ? status : null;
+        => _gitHubActionsEnabled && _gitHubActionsSnapshot is not null && sha is not null
+            && _buildServerRevisionStatuses.TryGetValue(sha, out BuildServerCommitStatus? status) ? status : null;
 
     internal void InitializeGitHubActions()
     {
@@ -187,7 +193,8 @@ public sealed partial class MainWindow
             if (_buildServerProvider != provider) { SetGitHubActionsError(null); _gitHubActionsSnapshot = null; }
             _buildServerProvider = provider.Length == 0 ? "Build server" : provider;
             _gitHubActionsEnabled = active;
-            SetGitHubActionsReportVisible(active && GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.ShowPageKey)) == true);
+            _showBuildResultPage = GitHubActionsSettings.Boolean(xml.GetValue(GitHubActionsSettings.ShowPageKey)) == true;
+            RefreshBuildReport();
             if (!active)
             {
                 _gitHubActionsSnapshot = null;
@@ -298,15 +305,30 @@ public sealed partial class MainWindow
 
     internal void OnGitHubActionsSelectionChanged()
     {
-        BuildServerCommitStatus? status = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash);
+        string? sha = (_commits.SelectedItem as GitCommit)?.Hash;
+        BuildServerRun? representative = BuildServerStatusFor(sha)?.Runs.SingleOrDefault();
+        // The true-provider list remains the existing partial report adaptation.
+        // Preserve its sibling data and explicit selection; the grid/menu/external
+        // report use the single watcher representative independently of this list.
+        IReadOnlyList<BuildServerRun> runs = representative?.ShowInBuildReportTab == true && sha is not null
+            && _gitHubActionsSnapshot?.Commits.TryGetValue(sha, out BuildServerCommitStatus? data) == true ? data.Runs : [];
         BuildServerRun? selected = _gitHubActionsRuns.SelectedItem as BuildServerRun;
-        _gitHubActionsRuns.ItemsSource = status?.Runs ?? [];
-        _gitHubActionsRuns.SelectedItem = status?.Runs.FirstOrDefault(r => r.Id == selected?.Id) ?? status?.Runs.FirstOrDefault();
-        UpdateGitHubActionsCommands();
+        _gitHubActionsRuns.ItemsSource = runs;
+        _gitHubActionsRuns.SelectedItem = runs.FirstOrDefault(run => selected is not null && run.Id == selected.Id && run.DefinitionId == selected.DefinitionId)
+            ?? runs.FirstOrDefault(run => representative is not null && run.Id == representative.Id && run.DefinitionId == representative.DefinitionId) ?? runs.FirstOrDefault();
+        RefreshBuildReport(); UpdateGitHubActionsCommands();
     }
 
     private void PublishGitHubActionsStatus()
-    { ApplyGitHubActionsRows(); OnGitHubActionsSelectionChanged(); GitHubActionsStatusChanged?.Invoke(); }
+    {
+        if (_gitHubActionsSnapshot is { } snapshot) { _buildServerRevisionStatuses = _buildServerRevisionProjection.Publish(snapshot); }
+        else
+        {
+            _buildServerRevisionProjection.Clear();
+            _buildServerRevisionStatuses = new Dictionary<string, BuildServerCommitStatus>(StringComparer.OrdinalIgnoreCase);
+        }
+        ApplyGitHubActionsRows(); OnGitHubActionsSelectionChanged(); GitHubActionsStatusChanged?.Invoke();
+    }
     private void ApplyGitHubActionsRows()
     {
         foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(c => c.Name == "RevisionHistoryRow"))
@@ -326,8 +348,17 @@ public sealed partial class MainWindow
         {
             _gitHubActionsOpen = new() { Name = "ShowGitHubActionsBuildPage", Content = T("Show build page"), HorizontalAlignment = HorizontalAlignment.Left };
             _gitHubActionsOpen.Click += async (_, _) => await OpenGitHubActionsRunPageAsync(_gitHubActionsRuns.SelectedItem as BuildServerRun);
-            DockPanel content = new(); StackPanel header = new() { Spacing = 4, Children = { _gitHubActionsError, _gitHubActionsOpen } };
-            DockPanel.SetDock(header, Dock.Top); content.Children.Add(header); content.Children.Add(_gitHubActionsRuns);
+            _buildReportLink = new() { Name = "BuildReportOpenReport", Content = _translations.Translate("TranslatedStrings", "_openReport", "Text", "Open report"),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                FontFamily = DesktopFonts.For(DesktopFontRole.Application).Family, FontSize = 16d * (96d / 72d),
+                FontWeight = FontWeight.Normal, FontStyle = FontStyle.Normal, Padding = default };
+            _buildReportLink.Click += async (_, _) =>
+            {
+                if (_showBuildResultPage && _buildReportLink.IsVisible && _browserDetailTabs.Contains(_gitHubActionsTab!)) { await ShowBuildPageAsync(); }
+            };
+            _buildReportLegacy = new(); StackPanel header = new() { Spacing = 4, Children = { _gitHubActionsError, _gitHubActionsOpen } };
+            DockPanel.SetDock(header, Dock.Top); _buildReportLegacy.Children.Add(header); _buildReportLegacy.Children.Add(_gitHubActionsRuns);
+            Grid content = new() { Margin = new Avalonia.Thickness(3), Children = { _buildReportLegacy, _buildReportLink } };
             _gitHubActionsTab = new() { Name = "GitHubActionsBuildReport", Header = T("Build report"), Content = content };
         }
         if (_browserDetailTabs.Contains(_gitHubActionsTab) == visible) { return; }
@@ -346,6 +377,25 @@ public sealed partial class MainWindow
         }
         finally { _layingOutCommitInfo = wasLayingOut; }
     }
+    private void RefreshBuildReport()
+    {
+        BuildServerRun? run = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.SingleOrDefault();
+        SetGitHubActionsReportVisible(_showBuildResultPage && run?.PageUri is not null && !_gitHubActionsClosing);
+        if (_buildReportLink is null || _buildReportLegacy is null) { return; }
+        bool external = run?.ShowInBuildReportTab == false;
+        _buildReportLink.Tag = run; _buildReportLink.IsVisible = external;
+        _buildReportLink.IsEnabled = run?.PageUri is not null;
+        _buildReportLegacy.IsVisible = !external;
+    }
+
+    private void FocusBuildServerStatus()
+    {
+        if (_gitHubActionsTab is null || !_browserDetailTabs.Contains(_gitHubActionsTab)) { return; }
+        _tabs.SelectedItem = _gitHubActionsTab; _tabs.UpdateLayout();
+        Control? target = _buildReportLink?.IsVisible == true ? _buildReportLink : _gitHubActionsOpen;
+        if (target is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true }) { target.Focus(); }
+    }
+
     internal MenuItem BuildGitHubActionsShowBuildPageMenu()
     {
         MenuItem item = new() { Name = "ShowBuildPage", Header = RevisionHeader("openBuildReportToolStripMenuItem", "View &build report in a browser"), Icon = OriginalIconImage("Integration.png") };
@@ -382,6 +432,8 @@ public sealed partial class MainWindow
         UpdateGitHubActionsSubscription(detached: true);
         await Task.WhenAll(_gitHubActionsRestarts.ToArray());
         if (_gitHubActionsClient is not null) { await _gitHubActionsClient.DisposeAsync(); } _gitHubActionsClient = null; _gitHubActionsSnapshot = null; _gitHubActionsEnabled = false;
-        UpdateGitHubActionsCommands();
+        _buildServerRevisionProjection.Clear();
+        _buildServerRevisionStatuses = new Dictionary<string, BuildServerCommitStatus>(StringComparer.OrdinalIgnoreCase);
+        RefreshBuildReport(); UpdateGitHubActionsCommands();
     }
 }

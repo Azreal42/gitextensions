@@ -105,9 +105,15 @@ public sealed class GitLabIntegrationTests
             history.Focus();
             Assert.That(window.GitHubActionsStatusFor(sha), Is.Null);
             Assert.That(window.BuildServerStatusFor(sha)!.Status, Is.EqualTo(BuildServerBuildStatus.Success));
+            TabControl details = window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");
+            details.SelectedItem = details.Items.OfType<TabItem>().Single(tab => tab.Name == "GitHubActionsBuildReport"); Pump(window);
+            HyperlinkButton reportLink = window.GetVisualDescendants().OfType<HyperlinkButton>().Single(control => control.Name == "BuildReportOpenReport");
+            Assert.That(reportLink.IsEffectivelyVisible, Is.True); Assert.That(reportLink.Content, Is.EqualTo("Open report"));
+            Assert.That(((BuildServerRun)reportLink.Tag!).PageUri!.AbsoluteUri, Is.EqualTo("https://gitlab.example/one/group/repo/-/pipelines/3")); history.Focus();
             Assert.That(opened, Is.Empty);
             client.Failure = true; await window.RefreshGitHubActionsNowAsync(); Pump(window);
             Assert.That(factories, Is.EqualTo(1)); Assert.That(window.BuildServerStatusFor(sha)!.Status, Is.EqualTo(BuildServerBuildStatus.Failure));
+            Assert.That(window.GetVisualDescendants().OfType<HyperlinkButton>().Single(control => control.Name == "BuildReportOpenReport"), Is.SameAs(reportLink));
             Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected));
             Assert.That(history.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "RevisionHistoryRow" && RevisionHistoryRow.CommitHash(c) == sha), Is.SameAs(row));
             Assert.That(history.IsKeyboardFocusWithin, Is.True);

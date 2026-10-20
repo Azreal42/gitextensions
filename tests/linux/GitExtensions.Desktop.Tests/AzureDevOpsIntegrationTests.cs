@@ -26,15 +26,17 @@ public sealed class AzureDevOpsIntegrationTests
             AzureDevOpsSettings settings = configurations.Single(); Assert.That(settings.Provider, Is.EqualTo(AzureDevOpsSettings.ProviderName));
             Assert.That(settings.ProjectUrl, Is.EqualTo(AzureDevOpsSettingsUiFixture.Project)); Assert.That(settings.BuildDefinitionFilter, Is.EqualTo("pipeline.*"));
             Assert.That(settings.ApiToken, Is.EqualTo("fake-private-pat")); Assert.That(settings.RepositoryName, Is.EqualTo("repository"));
-            SelectReport(window); ListBox history = History(window), runs = Field<ListBox>(window, "GitHubActionsRuns"); object? source = history.ItemsSource, selection = history.SelectedItem;
+            SelectReport(window); ListBox history = History(window); HyperlinkButton reportLink = Field<HyperlinkButton>(window, "BuildReportOpenReport"); object? source = history.ItemsSource, selection = history.SelectedItem;
             Control row = Row(window, sha), cell = Field<Control>(row, "RevisionBuildStatusCell");
             Assert.That(ToolTip.GetTip(cell), Is.EqualTo("20261019.1 ✔ - 02:05 [original-pipeline]" + Environment.NewLine + "PR #42"));
-            Assert.That(((BuildServerRun)runs.SelectedItem!).Id, Is.EqualTo("17")); history.Focus(); Assert.That(history.IsKeyboardFocusWithin, Is.True); Assert.That(opened, Is.Empty);
+            Assert.That(reportLink.IsEffectivelyVisible, Is.True); Assert.That(reportLink.Content, Is.EqualTo("Open report"));
+            Assert.That(((BuildServerRun)reportLink.Tag!).Id, Is.EqualTo("17")); history.Focus(); Assert.That(history.IsKeyboardFocusWithin, Is.True); Assert.That(opened, Is.Empty);
             client.Number = "20261019.2"; client.Failure = true; await window.RefreshGitHubActionsNowAsync(); Pump(window);
             Assert.That(configurations.Count, Is.EqualTo(1)); Assert.That(window.BuildServerStatusFor(sha)!.Status, Is.EqualTo(BuildServerBuildStatus.Failure));
             Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selection)); Assert.That(Row(window, sha), Is.SameAs(row));
             Assert.That(Field<Control>(row, "RevisionBuildStatusCell"), Is.SameAs(cell)); Assert.That(history.IsKeyboardFocusWithin, Is.True);
-            Assert.That(((BuildServerRun)runs.SelectedItem!).Id, Is.EqualTo("17")); Assert.That(((BuildServerRun)runs.SelectedItem!).Description, Is.EqualTo("02:05 20261019.2"));
+            Assert.That(Field<HyperlinkButton>(window, "BuildReportOpenReport"), Is.SameAs(reportLink));
+            Assert.That(((BuildServerRun)reportLink.Tag!).Id, Is.EqualTo("17")); Assert.That(((BuildServerRun)reportLink.Tag!).Description, Is.EqualTo("02:05 20261019.2"));
             Assert.That(ToolTip.GetTip(cell), Is.EqualTo("20261019.2 ❌ - 02:05 [original-pipeline]" + Environment.NewLine + "PR #42"));
             Assert.That(Field<Image>(row, "RevisionBuildStatusIcon").Tag, Is.EqualTo("StatusBadgeError.png"));
             MenuItem build = window.BuildGitHubActionsShowBuildPageMenu(), pullRequest = window.BuildServerPullRequestPageMenu();
@@ -104,11 +106,10 @@ public sealed class AzureDevOpsIntegrationTests
             await window.OpenRepositoryAsync(f.Repository.Path); await Until(window, () => window.BuildServerStatusFor(sha) is not null);
             MenuItem build = window.BuildGitHubActionsShowBuildPageMenu(), pull = window.BuildServerPullRequestPageMenu();
             client.NoDefinitions = true; await window.RefreshGitHubActionsNowAsync(); Pump(window);
-            SelectReport(window);
+            Assert.That(Field<TabControl>(window, "DetailsTabs").Items.OfType<TabItem>().Any(tab => tab.Name == "GitHubActionsBuildReport"), Is.False);
             Assert.That(window.GitHubActionsEnabled, Is.True); Assert.That(window.BuildServerStatusFor(sha), Is.Null);
-            Assert.That(Field<ListBox>(window, "GitHubActionsRuns").Items.Count, Is.Zero);
             Assert.That(window.GitHubActionsError, Is.EqualTo("No matching Azure DevOps build definition was found."));
-            TextBlock notice = Field<TextBlock>(window, "GitHubActionsError"); Assert.That(notice.IsEffectivelyVisible, Is.True); Assert.That(notice.Text, Is.EqualTo(window.GitHubActionsError));
+            TextBlock notice = Field<TextBlock>(window, "RepositoryStatus"); Assert.That(notice.IsEffectivelyVisible, Is.True); Assert.That(notice.Text, Does.EndWith("No matching Azure DevOps build definition was found."));
             Assert.That(build.IsEnabled || build.IsVisible || pull.IsEnabled || pull.IsVisible, Is.False);
         }
         finally { client.ReleaseAll(); await Close(window); }

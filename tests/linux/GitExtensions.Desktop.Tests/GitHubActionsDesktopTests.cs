@@ -119,6 +119,11 @@ public sealed class GitHubActionsDesktopTests
             TabControl details = Field<TabControl>(window, "DetailsTabs");
             TabItem report = details.Items.OfType<TabItem>().Single(tab => tab.Name == "GitHubActionsBuildReport");
             Assert.That(details.IsEffectivelyVisible && report.IsVisible, Is.True);
+            details.SelectedItem = report; Pump(window);
+            HyperlinkButton reportLink = Field<HyperlinkButton>(window, "BuildReportOpenReport");
+            Assert.That(reportLink.IsEffectivelyVisible, Is.True); Assert.That(reportLink.Content, Is.EqualTo("Open report"));
+            Assert.That(reportLink.FontSize, Is.EqualTo(16d * 96d / 72d));
+            Assert.That(((BuildServerRun)reportLink.Tag!).Id, Is.EqualTo("17")); history.Focus();
             foreach (CommitInfoPosition position in new[] { CommitInfoPosition.RightwardFromList, CommitInfoPosition.BelowList })
             {
                 MenuFlyout menu = (MenuFlyout)Field<Button>(window, "CommitInfoPositionMenu").Flyout!;
@@ -134,6 +139,7 @@ public sealed class GitHubActionsDesktopTests
             await Until(() => opened.Count == 1); Assert.That(opened.Single().FileName, Is.EqualTo("xdg-open"));
             Assert.That(opened.Single().ArgumentList, Is.EqualTo(new[] { "https://github.com/octo/repo/actions/runs/17" }));
             conclusion = "failure"; await window.RefreshGitHubActionsNowAsync(); Pump(window);
+            Assert.That(Field<HyperlinkButton>((Control)report.Content!, "BuildReportOpenReport"), Is.SameAs(reportLink));
             Assert.That(window.GitHubActionsStatusFor(sha)?.Status, Is.EqualTo(GitHubActionsBuildStatus.Failure));
             Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected)); Assert.That(history.IsKeyboardFocusWithin, Is.True);
             int beforeDisable = requests; session.Set(GitDistributedSettingsScope.Local, GitHubActionsSettings.EnableKey, "false"); await session.SaveFilesAsync(default);

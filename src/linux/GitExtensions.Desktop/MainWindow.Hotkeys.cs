@@ -64,6 +64,7 @@ public sealed partial class MainWindow
         "FocusCommitInfo" => () => InvokeHotkey(FocusCommitInformation), "FocusDiff" => () => InvokeHotkey(() => FocusDetail("DiffTab")),
         "FocusFileTree" => () => InvokeHotkey(() => FocusDetail("FileTreeTab")), "FocusGpgInfo" => () => InvokeHotkey(() => FocusDetail("GpgTab")),
         "FocusGitConsole" => () => InvokeHotkey(() => FocusDetail("ConsoleTab")), "FocusFilter" => () => InvokeHotkey(FocusHistoryFilter),
+        "FocusBuildServerStatus" => () => InvokeHotkey(FocusBuildServerStatus),
         "FocusNextTab" => () => InvokeHotkey(() => CycleDetails(1)), "FocusPrevTab" => () => InvokeHotkey(() => CycleDetails(-1)),
         "GoToParent" => () => MoveHistoryRelativeAsync(RelativeRevisionCommand.Parent),
         "GoToChild" => () => MoveHistoryRelativeAsync(RelativeRevisionCommand.Child), "ToggleBetweenArtificialAndHeadCommits" => ToggleArtificialRevisionAsync,

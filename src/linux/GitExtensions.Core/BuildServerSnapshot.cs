@@ -20,7 +20,8 @@ public sealed record BuildServerCommitStatus(string CommitHash, BuildServerBuild
     internal static BuildServerRun FromGitHubActionsRun(GitHubActionsWorkflowRun run, Uri? page)
         => new(run.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), run.WorkflowId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             run.Description, (BuildServerBuildStatus)run.BuildStatus, Array.AsReadOnly(new[] { run.HeadSha }),
-            run.RunStartedAt ?? run.CreatedAt, run.UpdatedAt, page, ShowInBuildReportTab: false);
+            run.RunStartedAt ?? run.CreatedAt, run.UpdatedAt, page, ShowInBuildReportTab: false,
+            DurationMilliseconds: (long)(run.UpdatedAt - (run.RunStartedAt ?? run.CreatedAt)).TotalMilliseconds);
 }
 
 public sealed class BuildServerSnapshot
@@ -29,11 +30,15 @@ public sealed class BuildServerSnapshot
     public bool Truncated { get; }
     public IReadOnlyList<string> Diagnostics { get; }
     public IReadOnlyList<BuildServerRun> Runs { get; }
+    /// <summary>The source's admitted observation order, before per-workflow presentation reduction.</summary>
+    public IReadOnlyList<BuildServerRun> RevisionObservations { get; }
     public IReadOnlyDictionary<string, BuildServerCommitStatus> Commits { get; }
-    private BuildServerSnapshot(IEnumerable<BuildServerRun> runs, IEnumerable<BuildServerCommitStatus> commits, DateTimeOffset readAt, bool truncated, IEnumerable<string>? diagnostics = null)
+    private BuildServerSnapshot(IEnumerable<BuildServerRun> runs, IEnumerable<BuildServerCommitStatus> commits, DateTimeOffset readAt, bool truncated, IEnumerable<string>? diagnostics = null, IEnumerable<BuildServerRun>? revisionObservations = null)
     {
         ReadAt = readAt; Truncated = truncated; Diagnostics = Array.AsReadOnly((diagnostics ?? []).ToArray());
         Runs = Array.AsReadOnly(runs.Select(run => run with { CommitHashes = Array.AsReadOnly(run.CommitHashes.ToArray()) }).ToArray());
+        RevisionObservations = revisionObservations is null ? Runs
+            : Array.AsReadOnly(revisionObservations.Select(run => run with { CommitHashes = Array.AsReadOnly(run.CommitHashes.ToArray()) }).ToArray());
         Commits = new ReadOnlyDictionary<string, BuildServerCommitStatus>(commits.ToDictionary(value => value.CommitHash,
             value => value with { Runs = Array.AsReadOnly(value.Runs.ToArray()) }, StringComparer.OrdinalIgnoreCase));
     }
@@ -52,8 +57,11 @@ public sealed class BuildServerSnapshot
         BuildServerRun Run(GitLabPipeline pipeline) => new(pipeline.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
             pipeline.ProjectId.ToString(System.Globalization.CultureInfo.InvariantCulture), pipeline.Description,
             (BuildServerBuildStatus)pipeline.BuildStatus, Array.AsReadOnly(new[] { pipeline.Sha }), pipeline.CreatedAt, pipeline.UpdatedAt, page(pipeline), ShowInBuildReportTab: pipeline.ShowInBuildReportTab);
+        // GitlabPipeline.ToBuildInfo leaves StartDate at its Windows default.
+        // Keep CreatedAt in raw Runs; only the dedicated watcher observations use null.
         return new(snapshot.Pipelines.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
-            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Pipelines.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated);
+            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Pipelines.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated,
+            revisionObservations: snapshot.Pipelines.Select(pipeline => Run(pipeline) with { StartedAt = null }));
     }
     public static BuildServerSnapshot FromAppVeyor(AppVeyorSnapshot snapshot, Func<AppVeyorBuild, Uri?> page)
     {
@@ -82,7 +90,10 @@ public sealed class BuildServerSnapshot
             build.UpdatedAt, page(build), build.Tooltip, ShowInBuildReportTab: build.ShowInBuildReportTab,
             DurationMilliseconds: build.DurationMilliseconds);
         return new(snapshot.Builds.Select(Run), snapshot.Commits.Values.Select(status => new BuildServerCommitStatus(status.CommitHash,
-            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated, snapshot.Diagnostics);
+            (BuildServerBuildStatus)status.Status, Array.AsReadOnly(status.Builds.Select(Run).ToArray()))), snapshot.ReadAt, snapshot.Truncated, snapshot.Diagnostics,
+            // Jenkins has already admitted completed/running emissions in its Windows order.
+            // Replaying raw history here would bypass that provider's priority contract.
+            snapshot.Commits.Values.Select(status => Run(status.Build) with { CommitHashes = Array.AsReadOnly(new[] { status.CommitHash }) }));
     }
 
 }
