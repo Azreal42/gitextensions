@@ -86,6 +86,8 @@ public sealed class PreferencesStore
     {
         ArgumentNullException.ThrowIfNull(preferences);
         preferences = preferences with { Dictionary = GitDictionaryName.NormalizeDisabledIdentity(preferences.Dictionary) };
+        // A directory cannot be a profile; preserve the pre-read writer's IO failure contract.
+        if (Directory.Exists(FilePath)) { throw new IOException("The preferences path is a directory: " + FilePath); }
         JsonObject document = JsonSerializer.SerializeToNode(preferences)!.AsObject();
         try
         {
