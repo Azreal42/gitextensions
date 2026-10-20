@@ -16,14 +16,14 @@ public sealed partial class MainWindow
     private readonly BrowserRead _revisionRead = new(), _revisionDiffRead = new();
     private readonly BrowserRead _treeRead = new(), _treeFileRead = new();
     private readonly BrowserRead _workingDiffRead = new(), _signatureRead = new(), _commitInformationRead = new();
-    private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _commitInformationRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead, _referenceSortingRead];
+    private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _commitInformationRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead, _referenceSortingRead, _commitDiffOpenRead];
     private Task? _commitInfoLoadTask;
     private Exception? _commitInformationError;
     private bool _commitInfoClosing, _commitInfoCloseReady;
     private Window? _closingCommitInfoOwner;
     internal Task CommitInformationCompletion => _commitInfo.Completion;
     private string? _loadedDiffSelection;
-    private string RevisionSelectionIdentity => _browseInitialComparison is { } pair
+    private string RevisionSelectionIdentity => IsCommitDiff ? "commit:" + _commitDiffSource!.Commit.Hash : _browseInitialComparison is { } pair
         ? string.Join('\0', pair.First.Kind, pair.First.Revision, pair.Selected.Kind, pair.Selected.Revision)
         : _selectedArtificialHistoryRevision is { } artificial ? artificial.Kind + ":" + artificial.Revision
         : string.Join('\0', SelectedRevisionDiffCommits().Select(commit => commit.Hash));
@@ -108,7 +108,7 @@ public sealed partial class MainWindow
                 _ => Task.CompletedTask
             };
         }
-        if (_commits.SelectedItem is not GitCommit commit) { return Task.CompletedTask; }
+        if (CurrentDisplayedCommit is not GitCommit commit) { return Task.CompletedTask; }
         Task information = LoadVisibleCommitInformationAsync();
         Task panel = (_tabs.SelectedItem as TabItem)?.Name switch
         {
@@ -129,9 +129,11 @@ public sealed partial class MainWindow
             }),
             "GpgTab" => ReadBrowserAsync(_signatureRead, "Commit signature", async (repository, token) =>
             {
-                GitResult result = await repository.RunAsync(["show", "--no-patch", "--format=Signature status: %G?%nSigner: %GS%nKey: %GK%nFingerprint: %GF", commit.Hash], token);
+                _gpgInfo.Text = T("Loading data");
+                GitGpgVerification verification = await repository.ReadGpgVerificationAsync(commit.Hash, token);
                 token.ThrowIfCancellationRequested();
-                _gpgInfo.Text = result.StandardOutput + result.StandardError;
+                if (!ReferenceEquals(_repository, repository) || _commits.SelectedItem is not GitCommit selected || selected.Hash != commit.Hash) { return; }
+                _gpgInfo.Text = GitGpgPresentation.Format(verification, T);
             }),
             _ => Task.CompletedTask
         };
@@ -140,8 +142,8 @@ public sealed partial class MainWindow
 
     private Task LoadVisibleCommitInformationAsync()
     {
-        if (_commitInfoClosing || _repository is null || _commits.SelectedItem is not GitCommit
-            || _commitInfoPosition == GitCommands.CommitInfoPosition.BelowList && (_tabs.SelectedItem as TabItem)?.Name != "CommitInfoTab")
+        if (_commitInfoClosing || _repository is null || CurrentDisplayedCommit is null
+            || !IsCommitDiff && _commitInfoPosition == GitCommands.CommitInfoPosition.BelowList && (_tabs.SelectedItem as TabItem)?.Name != "CommitInfoTab")
         { return Task.CompletedTask; }
         // SetRevision invalidates this task, including a refresh of the same OID.
         // Mere tab/placement changes reuse the active or completed read.
@@ -161,6 +163,7 @@ public sealed partial class MainWindow
         _commitInfo.CommandRequested += async (command, argument) =>
         {
             if (_busy || _commitInfoClosing || _repository is not GitRepository repository) { return; }
+            if (IsCommitDiff && command != CommitInformationCommand.AddNotes) { return; }
             try
             {
                 switch (command)
@@ -169,7 +172,7 @@ public sealed partial class MainWindow
                     case CommitInformationCommand.NavigateReference when argument is not null: await NavigateCommitInformationAsync(repository, argument, resolveReference: true); break;
                     case CommitInformationCommand.AddNotes when argument is not null:
                         await ShowRepositoryDialogAsync(new NoteDialog(repository, argument));
-                        if (_repository == repository && !_commitInfoClosing && _commits.SelectedItem is GitCommit selected)
+                        if (_repository == repository && !_commitInfoClosing && CurrentDisplayedCommit is GitCommit selected)
                         { UpdateCommitInfo(selected); await LoadVisibleCommitInformationAsync(); }
                         break;
                     case CommitInformationCommand.Backward: await NavigateRevisionHistoryAsync(-1); break;

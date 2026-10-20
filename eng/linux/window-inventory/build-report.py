@@ -301,7 +301,7 @@ def md():
     '## Écarts prioritaires révélés par le relevé','',
     '- Paramètres : compléments des raccourcis ADR0089, langue ADR0090 et Fonts/EOL ADR0091 ; page Scripts/événements partielle ADR0057/0078, outils et intégrations CI encore incomplets.',
     '- Sous-modules : '+MAP['entries']['GitUI.CommandsDialogs.FormSubmodules']['remaining'],
-    '- Scripts : catalogue, préparation, runner supervisé et menus/événements raccordés ; audit natif étendu ouvert, aucun Before/After natif déduit du seul S01 ; PR GitHub raccordées aux workflows partagés, autres hébergeurs ouverts (ADR0110). Éditeurs de règles présents sur un périmètre ciblé testé.','- Journal Git partiel : métadonnées disponibles, sorties/cache/stacks/export Windows absents.','- Menus View/Navigate : recherche incrémentale ADR0087 et parcours parent/enfant ADR0088 repris sur leurs périmètres testés ; audit natif étendu et intégrations CI/hébergement encore ouverts. Aucun picker Navigate Windows.','',
+    '- Scripts : catalogue, préparation, runner supervisé et menus/événements raccordés ; audit natif étendu ouvert, aucun Before/After natif déduit du seul S01 ; PR GitHub raccordées aux workflows partagés, autres hébergeurs ouverts (ADR0110). Éditeurs de règles présents sur un périmètre ciblé testé.','- Journal Git : voir FormGitCommandLog et les ADR0138–0142 pour le cache, les piles, l’export et les processus suivis ; audit natif étendu ouvert.','- Menus View/Navigate : recherche incrémentale ADR0087 et parcours parent/enfant ADR0088 repris sur leurs périmètres testés ; audit natif étendu et intégrations CI/hébergement encore ouverts. Aucun picker Navigate Windows.','',
     '## Fenêtres Windows et équivalents Linux','']
     if report['checkout_changes'] or not VALIDATION_CODE_EQUIVALENT or report['counts']['in_progress_screens']:
         point=out.index('## Écarts prioritaires révélés par le relevé')
@@ -330,7 +330,7 @@ def md():
     for r in INSTALLER:out.append('| '+link(r['id'],r['source'],r['line'])+(' (WiX)' if r['kind']!='source-owned' else '')+' | '+esc(r['feature'])+' | '+esc(r['linux'])+' |')
     out+=['','## Boîtes système et confirmations Windows','','| Famille | Équivalent Linux | État |','| --- | --- | --- |',
     '| OpenFileDialog | StorageProvider.OpenFilePickerAsync selon le workflow | Adaptation OS ; tous les sites Windows ne sont pas repris. |',
-    '| SaveFileDialog | StorageProvider.SaveFilePickerAsync selon le workflow | Adaptation OS ; journal/cache et certains exports restent absents. |',
+    '| SaveFileDialog | StorageProvider.SaveFilePickerAsync selon le workflow | Adaptation OS ; export du journal disponible ; autres sites à comparer. |',
     '| FolderBrowserDialog | StorageProvider.OpenFolderPickerAsync | Utilisé pour ouverture/clone/cleanup ; autres sites à comparer. |',
     '| FontDialog | FontPickerDialog pour la page Fonts : quatre rôles indépendants | Adaptation ciblée N2, ADR0091 ; autres appelants Windows, ConEmu et fournisseurs de fontes restent à porter/auditer. |',
     '| ColorDialog | Sélecteur RGB/HTML de Remotes, thèmes/palettes et lecteur | Adaptations ciblées ; éditeur global des couleurs Windows absent. |',

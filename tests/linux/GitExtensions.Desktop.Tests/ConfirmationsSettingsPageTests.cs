@@ -20,18 +20,18 @@ public sealed class ConfirmationsSettingsPageTests
         SettingsNavigationTestDriver.Select(settings, "Confirmations");
         Assert.That(settings.Navigation.SelectedPage.Id, Is.EqualTo("Confirmations"));
         ConfirmationsSettingsPage page = Field<ConfirmationsSettingsPage>(settings, "ConfirmationsSettingsPage");
-        Assert.That(page.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(13));
+        Assert.That(page.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(17));
         Assert.That(page.GetVisualDescendants().OfType<RadioButton>().Select(radio => radio.Name), Is.EqualTo(new[] { "ConfirmationsGlobalRB" }));
         Assert.That(Field<RadioButton>(settings, "ConfirmationsGlobalRB").IsChecked, Is.True);
-        foreach (string excluded in new[] { "chkBranchDeleteUnmerged", "chkBranchCheckoutConfirmation", "chkAutoPopStashAfterCheckout", "chkSecondAbortConfirmation" })
-        { Assert.That(page.GetVisualDescendants().OfType<Control>().Any(control => control.Name == excluded), Is.False); }
+        foreach (string newlyPorted in new[] { "chkBranchDeleteUnmerged", "chkBranchCheckoutConfirmation", "chkAutoPopStashAfterCheckout", "chkSecondAbortConfirmation" })
+        { Assert.That(page.GetVisualDescendants().OfType<Control>().Any(control => control.Name == newlyPorted), Is.True); }
         foreach (ConfirmationSetting choice in ConfirmationSettingsCatalog.Fields)
         {
             CheckBox box = Field<CheckBox>(settings, choice.Control); box.BringIntoView(); PortableHelperSettingsFixture.Pump(settings);
             TextBlock label = (TextBlock)box.Content!;
             Assert.That(label.Text, Is.EqualTo(f.Original("ConfirmationsSettingsPage", choice.Control + ".Text")));
             Assert.That(box.IsThreeState, Is.EqualTo(choice.ThreeState));
-            Assert.That(box.IsChecked, Is.EqualTo(choice.Nullable ? null : (bool?)true));
+            Assert.That(box.IsChecked, Is.EqualTo(choice.Nullable ? null : (bool?)choice.Inverted));
             Point origin = label.TranslatePoint(default, box)!.Value;
             Assert.That(origin.X, Is.GreaterThanOrEqualTo(0));
             Assert.That(origin.X + label.Bounds.Width, Is.LessThanOrEqualTo(box.Bounds.Width + .5));
@@ -54,6 +54,9 @@ public sealed class ConfirmationsSettingsPageTests
     }
 
     [AvaloniaTest]
+    [TestCase("AutoPopStashAfterCheckoutBranch", "chkAutoPopStashAfterCheckout", null)]
+    [TestCase("AutoPopStashAfterCheckoutBranch", "chkAutoPopStashAfterCheckout", false)]
+    [TestCase("AutoPopStashAfterCheckoutBranch", "chkAutoPopStashAfterCheckout", true)]
     [TestCase("AutoPopStashAfterPull", "chkAutoPopStashAfterPull", null)]
     [TestCase("AutoPopStashAfterPull", "chkAutoPopStashAfterPull", false)]
     [TestCase("AutoPopStashAfterPull", "chkAutoPopStashAfterPull", true)]
@@ -78,6 +81,7 @@ public sealed class ConfirmationsSettingsPageTests
     }
 
     [AvaloniaTest]
+    [TestCase("chkSecondAbortConfirmation", "DontConfirmSecondAbortConfirmation")]
     [TestCase("chkUndoLastCommitConfirmation", "DontConfirmUndoLastCommit")]
     [TestCase("chkRebaseOnTopOfSelectedCommit", "DontConfirmRebase")]
     [TestCase("chkResolveConflicts", "DontConfirmResolveConflicts")]

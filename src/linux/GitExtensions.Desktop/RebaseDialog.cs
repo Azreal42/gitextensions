@@ -338,16 +338,17 @@ public sealed class RebaseDialog : RepositoryDialog
     private async Task ShowPatchAsync()
     {
         if (IsBusy || _patches.SelectedItem is not GitRebasePatch patch) { return; }
-        if (patch.Commit is GitCommit commit && commit.Parents.Count != 0)
+        if ((patch.Commit?.Hash ?? patch.CommitHash) is string hash)
         {
-            CompareRevisionsDialog diff = new(Repository, commit.Parents[0], commit.Hash);
-            diff.Opened += async (_, _) => await diff.InitializeAsync(); await ShowOwnedAsync(diff);
+            await RunAsync("Diff", async token =>
+            {
+                if (await CommitDiffWindow.ShowDialogAsync(this, Repository, hash, token)) { MarkRepositoryChanged(); }
+            }, cancellationToken: _token);
         }
-        else if (patch.CommitHash is not null || patch.PatchPath is string)
+        else if (patch.PatchPath is string patchPath)
         {
             FileHistoryContentView viewer = new() { Name = "RebasePatchContent" };
-            string text = patch.CommitHash is string hash ? await Repository.GetCommitDiffAsync(hash, viewer.TextView.ComparisonMenu.Options, cancellationToken: _token)
-                : GitFileEncodingCodec.DecodeFile(await File.ReadAllBytesAsync(patch.PatchPath!, _token), "utf-8").Text;
+            string text = GitFileEncodingCodec.DecodeFile(await File.ReadAllBytesAsync(patchPath, _token), "utf-8").Text;
             viewer.ShowDiff(text);
             Window diff = new() { Name = "RebasePatchDiff", Title = T("Diff"), Width = 900, Height = 600,
                 Content = viewer };

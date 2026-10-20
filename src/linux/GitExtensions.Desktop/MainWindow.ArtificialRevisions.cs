@@ -22,7 +22,7 @@ public sealed partial class MainWindow
             { (_workingRevision, GitCompareRevisionKind.WorkingTree), (_indexRevision, GitCompareRevisionKind.Index) })
         {
             if (button is null) { continue; }
-            bool selected = IsFileHistoryBrowse && _selectedArtificialHistoryRevision?.Kind == kind;
+            bool selected = UsesArtificialDiffHistory && _selectedArtificialHistoryRevision?.Kind == kind;
             if (selected)
             {
                 button.Background = RevisionHistoryRow.BackgroundFor(null, true, button.IsKeyboardFocusWithin, null, 0, false, ActualThemeVariant == ThemeVariant.Dark);
@@ -42,7 +42,7 @@ public sealed partial class MainWindow
 
     private async Task SelectArtificialHistoryRevisionAsync(bool staged)
     {
-        if (!IsFileHistoryBrowse || _busy || _repository is not { IsBare: false } || _lifetime.IsCancellationRequested) { return; }
+        if (!UsesArtificialDiffHistory || _busy || _repository is not { IsBare: false } || _lifetime.IsCancellationRequested) { return; }
         _parentChildNavigation?.RevisionsSelectionChanged();
         GitCompareRevision source = new("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
         CancelRevisionReads();
@@ -100,7 +100,7 @@ public sealed partial class MainWindow
 
     private async Task ArtificialHistoryKeyDownAsync(Button button, bool staged, KeyEventArgs args)
     {
-        if (!IsFileHistoryBrowse || _busy || !button.IsKeyboardFocusWithin || args.Handled || args.KeyModifiers != KeyModifiers.None || args.Key is not (Key.Up or Key.Down)) { return; }
+        if (!UsesArtificialDiffHistory || _busy || !button.IsKeyboardFocusWithin || args.Handled || args.KeyModifiers != KeyModifiers.None || args.Key is not (Key.Up or Key.Down)) { return; }
         args.Handled = true;
         if (args.Key == Key.Up)
         {

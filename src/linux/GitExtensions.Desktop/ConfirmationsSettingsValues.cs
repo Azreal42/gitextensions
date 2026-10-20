@@ -9,6 +9,10 @@ internal sealed record ConfirmationsSettingsValues
     public bool DontConfirmFetchAndPruneAll { get; init; }
     public bool DontConfirmPushNewBranch { get; init; }
     public bool DontConfirmAddTrackingRef { get; init; }
+    public bool DontConfirmDeleteUnmergedBranch { get; init; }
+    public bool ConfirmBranchCheckout { get; init; }
+    public bool? AutoPopStashAfterCheckoutBranch { get; init; }
+    public bool DontConfirmSecondAbortConfirmation { get; init; }
     public bool? AutoPopStashAfterPull { get; init; }
     public bool DontConfirmStashDrop { get; init; }
     public bool DontConfirmResolveConflicts { get; init; }
@@ -21,6 +25,8 @@ internal sealed record ConfirmationsSettingsValues
         nameof(DontConfirmAmend) => DontConfirmAmend, nameof(DontConfirmUndoLastCommit) => DontConfirmUndoLastCommit,
         nameof(DontConfirmCommitIfNoBranch) => DontConfirmCommitIfNoBranch, nameof(DontConfirmRebase) => DontConfirmRebase,
         nameof(DontConfirmFetchAndPruneAll) => DontConfirmFetchAndPruneAll, nameof(DontConfirmPushNewBranch) => DontConfirmPushNewBranch,
+        nameof(DontConfirmDeleteUnmergedBranch) => DontConfirmDeleteUnmergedBranch, nameof(ConfirmBranchCheckout) => ConfirmBranchCheckout,
+        nameof(AutoPopStashAfterCheckoutBranch) => AutoPopStashAfterCheckoutBranch, nameof(DontConfirmSecondAbortConfirmation) => DontConfirmSecondAbortConfirmation,
         nameof(DontConfirmAddTrackingRef) => DontConfirmAddTrackingRef, nameof(AutoPopStashAfterPull) => AutoPopStashAfterPull,
         nameof(DontConfirmStashDrop) => DontConfirmStashDrop, nameof(DontConfirmResolveConflicts) => DontConfirmResolveConflicts,
         nameof(DontConfirmCommitAfterConflictsResolved) => DontConfirmCommitAfterConflictsResolved,
@@ -35,6 +41,10 @@ internal sealed record ConfirmationsSettingsValues
         nameof(DontConfirmRebase) => this with { DontConfirmRebase = value == true },
         nameof(DontConfirmFetchAndPruneAll) => this with { DontConfirmFetchAndPruneAll = value == true },
         nameof(DontConfirmPushNewBranch) => this with { DontConfirmPushNewBranch = value == true },
+        nameof(DontConfirmDeleteUnmergedBranch) => this with { DontConfirmDeleteUnmergedBranch = value == true },
+        nameof(ConfirmBranchCheckout) => this with { ConfirmBranchCheckout = value == true },
+        nameof(AutoPopStashAfterCheckoutBranch) => this with { AutoPopStashAfterCheckoutBranch = value },
+        nameof(DontConfirmSecondAbortConfirmation) => this with { DontConfirmSecondAbortConfirmation = value == true },
         nameof(DontConfirmAddTrackingRef) => this with { DontConfirmAddTrackingRef = value == true },
         nameof(AutoPopStashAfterPull) => this with { AutoPopStashAfterPull = value },
         nameof(DontConfirmStashDrop) => this with { DontConfirmStashDrop = value == true },
@@ -47,7 +57,12 @@ internal sealed record ConfirmationsSettingsValues
 }
 
 internal sealed record ConfirmationSetting(string Name, string Profile, string Key, string Control, string Caption,
-    string Group, bool Nullable = false, bool ThreeState = false);
+    string Group, bool Nullable = false, bool ThreeState = false, bool Inverted = true)
+{
+    internal bool? ToCheckState(bool? value) => value.HasValue ? Inverted ? !value.Value : value : null;
+    internal bool? FromCheckState(bool? check) => Nullable ? check.HasValue ? Inverted ? !check.Value : check : null
+        : Inverted ? check == false : check != false;
+}
 
 internal static class ConfirmationSettingsCatalog
 {
@@ -60,10 +75,14 @@ internal static class ConfirmationSettingsCatalog
         new("DontConfirmFetchAndPruneAll", "pull-preferences.json", "DontConfirmFetchAndPruneAll", "chkFetchAndPruneAllConfirmation", "Fetch and prune branches", "Branches"),
         new("DontConfirmPushNewBranch", "push-preferences.json", "DontConfirmNewBranch", "chkPushNewBranch", "Push a new branch for the remote", "Branches"),
         new("DontConfirmAddTrackingRef", "push-preferences.json", "DontConfirmAddTracking", "chkAddTrackingRef", "Add a tracking reference for newly pushed branch", "Branches"),
+        new("DontConfirmDeleteUnmergedBranch", "reference-preferences.json", "DontConfirmDeleteUnmergedBranch", "chkBranchDeleteUnmerged", "Delete unmerged branches", "Branches"),
+        new("ConfirmBranchCheckout", "reference-preferences.json", "ConfirmBranchCheckout", "chkBranchCheckoutConfirmation", "Checkout branch using left panel", "Branches", Inverted: false),
         new("AutoPopStashAfterPull", "pull-preferences.json", "AutoPopStashAfterPull", "chkAutoPopStashAfterPull", "Apply stashed changes after successful pull (else stash will be popped automatically)", "Stashes", Nullable: true, ThreeState: true),
+        new("AutoPopStashAfterCheckoutBranch", "reference-preferences.json", "AutoPopStashAfterCheckoutBranch", "chkAutoPopStashAfterCheckout", "Apply stashed changes after successful checkout (else stash will be popped automatically)", "Stashes", Nullable: true, ThreeState: true),
         new("DontConfirmStashDrop", "stash-preferences.json", "DontConfirmDrop", "chkConfirmStashDrop", "Drop stash", "Stashes"),
         new("DontConfirmResolveConflicts", "conflict-confirmation-preferences.json", "DontConfirmResolveConflicts", "chkResolveConflicts", "Resolve conflicts", "Conflicts", ThreeState: true),
         new("DontConfirmCommitAfterConflictsResolved", "conflict-confirmation-preferences.json", "DontConfirmCommitAfterConflictsResolved", "chkCommitAfterConflictsResolved", "Commit changes after conflicts have been resolved", "Conflicts", ThreeState: true),
+        new("DontConfirmSecondAbortConfirmation", "conflict-confirmation-preferences.json", "DontConfirmSecondAbortConfirmation", "chkSecondAbortConfirmation", "Confirm for the second time to abort a merge", "Conflicts", ThreeState: true),
         new("DontConfirmUpdateSubmodulesOnCheckout", "submodule-checkout-preferences.json", "DontConfirmUpdateSubmodulesOnCheckout", "chkUpdateModules", "Update submodules on checkout", "Submodules", Nullable: true, ThreeState: true),
         new("DontConfirmSwitchWorktree", "browse-command-preferences.json", "DontConfirmSwitchWorktree", "chkSwitchWorktree", "Switch worktree", "Worktrees")
     ]);

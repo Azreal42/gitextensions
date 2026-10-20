@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
@@ -79,18 +80,26 @@ public sealed partial class MainWindow : Window
 
     public MainWindow() : this(new BrowseRequest()) { }
 
-    internal MainWindow(BrowseRequest request)
+    internal MainWindow(BrowseRequest request) : this(request, MainWindowKind.Browse) { }
+
+    internal MainWindow(BrowseRequest request, MainWindowKind windowKind, ResolvedCommitDiffSource? commitDiff = null)
     {
+        if (!Enum.IsDefined(windowKind)) { throw new ArgumentOutOfRangeException(nameof(windowKind)); }
+        WindowKind = windowKind;
+        if ((windowKind == MainWindowKind.CommitDiff) != (commitDiff is not null)) { throw new ArgumentException("CommitDiff requires its resolved commit source.", nameof(commitDiff)); }
+        _commitDiffSource = commitDiff; _displayedCommit = commitDiff?.Commit;
         _browseRequest = request ?? throw new ArgumentNullException(nameof(request));
         DetailedGraphSettings.Bind(_historyGraph);
         _desktopFonts.Apply(this, DesktopFontRole.Application);
         _desktopFonts.Apply(_output, DesktopFontRole.Monospace);
         ConsoleStylePresentation.Bind(_output, defaultFont: _desktopFonts.For(DesktopFontRole.Monospace));
-        Title = "Git Extensions";
-        Width = 1280;
-        Height = 840;
-        MinWidth = 860;
-        MinHeight = 620;
+        if (IsStandaloneDiff) { Name = IsCommitDiff ? "CommitDiffWindow" : "RevisionLogWindow"; }
+        Title = IsStandaloneDiff ? T("Diff") : "Git Extensions";
+        Width = IsCommitDiff ? 717 : IsRevisionLog ? 750 : 1280;
+        Height = IsStandaloneDiff ? 529 : 840;
+        MinWidth = IsCommitDiff ? 150 : IsRevisionLog ? 250 : 860;
+        MinHeight = IsCommitDiff ? 148 : IsRevisionLog ? 250 : 620;
+        if (IsStandaloneDiff) { WindowStartupLocation = WindowStartupLocation.CenterOwner; }
         try
         {
             _preferences = _preferencesStore.Load();
@@ -162,6 +171,14 @@ public sealed partial class MainWindow : Window
                 else { await LoadSelectedRevisionDetailsAsync(commit); }
             }
         };
+        _commits.DoubleTapped += async (_, args) =>
+        {
+            if (args.Handled || IsCommitDiff || (args.Source as Visual)?.GetSelfAndVisualAncestors().OfType<Control>().Any(control => control.Name == "RevisionReference") == true) { return; }
+            if (SelectedRevisionDiffCommits().FirstOrDefault() is GitCommit commit)
+            { args.Handled = true; await ShowCommitDiffAsync(commit); }
+            else if (!IsRevisionLog && _selectedArtificialHistoryRevision is null && (_commits.SelectedItems?.Count ?? 0) == 0)
+            { args.Handled = true; await ShowRevisionLogAsync(); }
+        };
         _changes.SelectionChanged += async (_, _) =>
         {
             if (!_refreshing && _changesFilesView?.IsUpdating != true && !_busy)
@@ -192,14 +209,11 @@ public sealed partial class MainWindow : Window
         };
         Content = BuildLayout();
         InitializeErrorReportAccess();
-        InitializeFileHistoryBrowse();
-        InitializeGitHubActions();
+        if (!IsCommitDiff) { InitializeFileHistoryBrowse(); InitializeGitHubActions(); }
         _commits.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _workingRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _indexRevision?.AddHandler(KeyDownEvent, HistoryAltKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        InitializeQuickSearch();
-        InitializeParentChildNavigation();
-        ApplyHistoryViewPresentation();
+        if (!IsCommitDiff) { InitializeQuickSearch(); InitializeParentChildNavigation(); ApplyHistoryViewPresentation(); }
         ApplyTheme(_preferences.Theme);
         Opened += async (_, _) =>
         {
@@ -209,6 +223,7 @@ public sealed partial class MainWindow : Window
             }
 
             _opened = true;
+            if (IsCommitDiff) { await InitializeCommitDiffAsync(); return; }
             GitEnvironmentStartup? environmentStartup = Program.TakeEnvironmentStartup();
             string? explicitPath = environmentStartup is { PreparationError: not null, Arguments.BrowseRequest: not null }
                 ? environmentStartup.Arguments.RepositoryArgument ?? environmentStartup.CurrentDirectory ?? Environment.CurrentDirectory
@@ -271,7 +286,7 @@ public sealed partial class MainWindow : Window
     }
 
     private CancellationToken Token => _operation?.Token ?? _lifetime.Token;
-    private string CurrentRevision => (_commits.SelectedItem as GitCommit)?.Hash ?? "HEAD";
+    private string CurrentRevision => CurrentDisplayedCommit?.Hash ?? "HEAD";
 
     private IReadOnlyList<TabItem> BuildTabs()
     {
@@ -422,6 +437,7 @@ public sealed partial class MainWindow : Window
 
     public async Task OpenRepositoryAsync(string path)
     {
+        if (IsCommitDiff) { await InitializeCommitDiffAsync(); return; }
         if (_busy || _lifetime.IsCancellationRequested) { return; }
         GitRepository? previous = _repository;
         await RunAsync("Open repository", async _ =>
@@ -430,10 +446,13 @@ public sealed partial class MainWindow : Window
             GitRepository candidate = await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
             await RefreshDataAsync(candidate, opening: true);
-            try { SaveRepositoryHistory(_repositoryHistory.Visit(candidate.Path)); }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { AppendOutput($"Unable to save preferences: {exception.Message}"); }
+            if (!IsStandaloneDiff)
+            {
+                try { SaveRepositoryHistory(_repositoryHistory.Visit(candidate.Path)); }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { AppendOutput($"Unable to save preferences: {exception.Message}"); }
+            }
             SetDashboardVisible(false);
-            await RegisterBackgroundFetchAsync(candidate);
+            if (!IsStandaloneDiff) { await RegisterBackgroundFetchAsync(candidate); }
             ScheduleGitHubActionsRepositoryChanged(candidate);
         }, refresh: false, requireRepository: false);
         if (_repository == previous && previous is null) { _state.Text = "Could not open repository. See command output."; }
@@ -441,6 +460,7 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshAsync()
     {
+        if (IsCommitDiff) { await InitializeCommitDiffAsync(); return; }
         OperationFocus? historyFocus = _commits.IsKeyboardFocusWithin ? CaptureOperationFocus() : null;
         if (historyFocus is not null) { historyFocus = historyFocus with { PreserveUnselectedRow = true }; }
         BranchHistoryFilterComboBox? editing = _historyRevision.IsKeyboardFocusWithin ? _historyRevision
@@ -456,6 +476,7 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
+        if (IsCommitDiff) { await ReloadCommitDiffDataAsync(repository, Token); return; }
         using IDisposable execution = repository.BeginOperation();
         BeginRepositoryBranchRefresh(repository);
         HideQuickSearch();
@@ -552,7 +573,7 @@ public sealed partial class MainWindow : Window
                 _navigation.SelectedItem = null;
                 _navigationRevisionFilter = null;
                 _repositoryPath.Text = repository.Path;
-                Title = $"Git Extensions — {repository.Path}" + (configuredQuery.Path is null ? "" : " (" + configuredQuery.Path + ")");
+                Title = IsRevisionLog ? T("Diff") : $"Git Extensions — {repository.Path}" + (configuredQuery.Path is null ? "" : " (" + configuredQuery.Path + ")");
                 if (repository.IsBare) { SelectDetailsTab("DiffTab"); }
                 SetDashboardVisible(false);
             }

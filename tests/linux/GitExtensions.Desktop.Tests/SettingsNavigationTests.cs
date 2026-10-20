@@ -42,7 +42,7 @@ public sealed class SettingsNavigationTests
             ["Checklist"] = "git-extensions-logo-16px.png", ["General"] = "GeneralSettings.png", ["Appearance"] = "Appearance.png",
             ["Sorting"] = "SortBy.png", ["Colors"] = "Colors.png", ["Fonts"] = "Font.png", ["ConsoleStyle"] = "Console.png",
             ["RevisionLinks"] = "Link.png", ["BuildServerIntegration"] = "Integration.png", ["Scripts"] = "Console.png", ["Hotkeys"] = "Hotkey.png",
-            ["Detailed"] = "Settings.png", ["Advanced"] = "AdvancedSettings.png", ["Confirmations"] = "BisectGood.png", ["Git"] = "GitLogo16.png", ["GitPaths"] = "FolderOpen.png", ["GitSsh"] = "Key.png", ["Config"] = "GeneralSettings.png", ["Plugins"] = "plugin.png"
+            ["Detailed"] = "Settings.png", ["BlameViewer"] = "Blame.png", ["Advanced"] = "AdvancedSettings.png", ["Confirmations"] = "BisectGood.png", ["Git"] = "GitLogo16.png", ["GitPaths"] = "FolderOpen.png", ["GitSsh"] = "Key.png", ["Config"] = "GeneralSettings.png", ["Plugins"] = "plugin.png"
         };
         foreach (TreeViewItem node in Nodes(tree))
         {

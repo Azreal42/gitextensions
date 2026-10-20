@@ -106,8 +106,9 @@ internal sealed class GeneralSettingsSession
         }
         if (draft.UseHistogramDiffAlgorithm != _baseline.UseHistogramDiffAlgorithm)
         {
-            Readable<BlamePreferences>(_blame.FilePath);
-            _blame.Save(_blame.Load() with { UseHistogramDiffAlgorithm = draft.UseHistogramDiffAlgorithm });
+            BlamePreferences current = _blame.ReadSettings();
+            _blame.SaveChanges(current, current with { UseHistogramDiffAlgorithm = draft.UseHistogramDiffAlgorithm },
+                [nameof(BlamePreferences.UseHistogramDiffAlgorithm)]);
             _baseline = _baseline with { UseHistogramDiffAlgorithm = draft.UseHistogramDiffAlgorithm };
         }
         FileHistoryPreferences history = _history.Load();

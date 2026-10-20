@@ -33,7 +33,7 @@ public sealed class BlameView : UserControl, IDisposable
 {
     private readonly FileHistoryContentView _content = new() { Name = "BlameCode" };
     private readonly AuthorMargin _authors;
-    private readonly Bitmap? _avatar;
+    private Bitmap? _avatar;
     private readonly IGourceAvatarProvider _avatarProvider;
     private readonly bool _usesDefaultAvatarProvider;
     private AvatarWindowLifetime? _avatarWindow;
@@ -53,7 +53,7 @@ public sealed class BlameView : UserControl, IDisposable
     private int _selectedLine;
     private readonly BlamePreferencesStore _preferencesStore = new();
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
-    private readonly List<Bitmap> _menuIcons = [];
+    private readonly List<Image> _menuIcons = [];
     private readonly List<Action> _updateMenus = [];
     private readonly Dictionary<(string Hash, string Path), string> _commitInformation = [];
     private readonly TextBlock _tooltipText = new() { TextWrapping = TextWrapping.Wrap, MaxWidth = 580 };
@@ -270,8 +270,9 @@ public sealed class BlameView : UserControl, IDisposable
                 if (bytes is null || _disposed) { return; }
                 using MemoryStream stream = new(bytes, writable: false);
                 Bitmap bitmap = new(stream);
-                if (_avatars.TryGetValue(author.AuthorEmail.Trim(), out Bitmap? previous)) { previous.Dispose(); }
+                _avatars.TryGetValue(author.AuthorEmail.Trim(), out Bitmap? previous);
                 _avatars[author.AuthorEmail.Trim()] = bitmap;
+                previous?.Dispose();
                 _authors.InvalidateVisual();
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -285,16 +286,26 @@ public sealed class BlameView : UserControl, IDisposable
         _disposed = true; _lifetime.Cancel(); CancelAvatarLoading(); _authors.ClearAvatarPresenters(); ClearHover();
         if (_avatarWindow is not null) { _avatarWindow.Changed -= AvatarBindingChanged; _avatarWindow = null; }
         TextView.Editor.PropertyChanged -= EditorFontChanged;
-        _content.Dispose(); _avatar?.Dispose();
-        foreach (Bitmap avatar in _avatars.Values) { avatar.Dispose(); }
-        foreach (Bitmap icon in _menuIcons) { icon.Dispose(); }
-        _avatars.Clear(); _lifetime.Dispose();
+        _content.Dispose();
+        // A deferred owner close can leave this control mapped while its reads drain.
+        // Unpublish every image before releasing it; popup and toolbar icons can outlive the view.
+        Bitmap? placeholder = _avatar; _avatar = null;
+        Bitmap[] avatars = _avatars.Values.ToArray(); _avatars.Clear();
+        foreach (Image icon in _menuIcons)
+        {
+            Bitmap? bitmap = icon.Source as Bitmap; icon.Source = null;
+            bitmap?.Dispose();
+        }
+        _menuIcons.Clear();
+        placeholder?.Dispose();
+        foreach (Bitmap avatar in avatars) { avatar.Dispose(); }
+        _authors.InvalidateVisual(); _lifetime.Dispose();
     }
 
     public void SetPreferences(BlamePreferences preferences, bool persist = true)
     {
-        preferences = preferences.Normalize();
-        bool changed = Preferences != preferences;
+        BlamePreferences previous = Preferences;
+        bool changed = previous != preferences;
         Preferences = preferences;
         ShowAuthor = preferences.ShowAuthor; ShowDate = preferences.ShowAuthorDate; ShowTime = preferences.ShowAuthorTime;
         ShowOriginalPath = preferences.ShowOriginalFilePath; DisplayAuthorFirst = preferences.DisplayAuthorFirst;
@@ -302,8 +313,8 @@ public sealed class BlameView : UserControl, IDisposable
         PreferenceError = null;
         if (persist)
         {
-            try { _preferencesStore.Save(preferences); }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { PreferenceError = exception.Message; }
+            try { _preferencesStore.SaveChanges(previous, preferences, BlameViewerSettingsCatalog.AllPreferenceNames); }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { PreferenceError = exception.Message; }
         }
         foreach (Action update in _updateMenus) { update(); }
         RefreshDisplay();
@@ -349,7 +360,7 @@ public sealed class BlameView : UserControl, IDisposable
             new Separator(), heading("displaySettingsToolStripMenuItem", "Display result settings:"),
             Option("displayAuthorFirstToolStripMenuItem", "Display author first", p => p.DisplayAuthorFirst, p => p with { DisplayAuthorFirst = !p.DisplayAuthorFirst }),
             Option("showAuthorAvatarToolStripMenuItem", "Show author avatar", p => p.ShowAuthorAvatar, p => p with { ShowAuthorAvatar = !p.ShowAuthorAvatar }),
-            Option("showAuthorToolStripMenuItem", "Show author", p => p.ShowAuthor, p => p with { ShowAuthor = !p.ShowAuthor, ShowAuthorDate = !p.ShowAuthor || p.ShowAuthorDate }),
+            Option("showAuthorToolStripMenuItem", "Show author", p => p.ShowAuthor, p => p with { ShowAuthor = !p.ShowAuthor, ShowAuthorDate = p.ShowAuthor || p.ShowAuthorDate }),
             Option("showAuthorDateToolStripMenuItem", "Show author date", p => p.ShowAuthorDate, p => p with { ShowAuthorDate = !p.ShowAuthorDate, ShowAuthor = p.ShowAuthorDate || p.ShowAuthor }),
             Option("showAuthorTimeToolStripMenuItem", "Show author time", p => p.ShowAuthorTime, p => p with { ShowAuthorTime = !p.ShowAuthorTime }),
             Option("showLineNumbersToolStripMenuItem", "Show line numbers", p => p.ShowLineNumbers, p => p with { ShowLineNumbers = !p.ShowLineNumbers }),
@@ -461,8 +472,9 @@ public sealed class BlameView : UserControl, IDisposable
     {
         Uri uri = new("avares://GitExtensions/Assets/Icons/" + name);
         if (!AssetLoader.Exists(uri)) { return null; }
-        using Stream stream = AssetLoader.Open(uri); Bitmap icon = new(stream); _menuIcons.Add(icon);
-        return new Image { Source = icon, Width = 16, Height = 16 };
+        using Stream stream = AssetLoader.Open(uri);
+        Image icon = new() { Source = new Bitmap(stream), Width = 16, Height = 16 };
+        _menuIcons.Add(icon); return icon;
     }
 
     private void EditorFontChanged(object? sender, AvaloniaPropertyChangedEventArgs change)
@@ -571,6 +583,7 @@ public sealed class BlameView : UserControl, IDisposable
         }
         public override void Render(DrawingContext context)
         {
+            if (owner._disposed) { return; }
             base.Render(context);
             context.DrawRectangle(owner.TextView.Editor.Background, null, new Rect(Bounds.Size));
             if (TextView?.VisualLinesValid != true) { return; }
@@ -631,7 +644,7 @@ public sealed class BlameView : UserControl, IDisposable
         public KnownLayer Layer => KnownLayer.Background;
         public void Draw(TextView view, DrawingContext context)
         {
-            if (!view.VisualLinesValid) { return; }
+            if (owner._disposed || !view.VisualLinesValid) { return; }
             foreach (VisualLine visual in view.VisualLines)
             {
                 int index = visual.FirstDocumentLine.LineNumber - 1;

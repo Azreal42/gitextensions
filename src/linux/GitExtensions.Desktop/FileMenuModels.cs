@@ -22,7 +22,11 @@ internal enum FileMenuCommand
 /// <summary>Captured endpoints and native file facts belong to this leaf, including when paths repeat in different groups.</summary>
 internal sealed record FileMenuLeaf(GitRevisionFile File, GitCompareRevision? First, GitCompareRevision Second,
     GitComparison? Comparison = null, FileMenuStage Stage = FileMenuStage.None, bool IsTracked = true,
-    bool IsSubmodule = false, bool IsSkipWorktree = false, bool IsAssumeUnchanged = false, bool FirstIsParent = false);
+    bool IsSubmodule = false, bool IsSkipWorktree = false, bool IsAssumeUnchanged = false, bool FirstIsParent = false)
+{
+    internal GitSubmoduleBrowseSelection? SubmoduleSelection { get; init; }
+    internal string? SubmoduleSelectionError { get; init; }
+}
 
 internal sealed record FileMenuSelection(GitRepository Repository, IReadOnlyList<FileMenuLeaf> Leaves,
     IReadOnlyList<string> CopyPaths, string? Folder = null, bool IsFileTree = false, bool IsDisplayOnly = false,

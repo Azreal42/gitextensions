@@ -8,8 +8,8 @@ public sealed partial class GitRepository
         CancellationToken cancellationToken, bool noOptionalLocks = false)
     {
         GitReferenceSorting sorting = ReferenceSorting;
-        // This is Windows Commands.GetRefs' expression, not recursive ^{commit} peeling.
-        // Keeping the direct object separately lets callers detect a reannotated tag at the same commit.
+        // Use the Windows Commands.GetRefs expression; Git's starred fields also peel nested annotated tags.
+        // Keep the ref object separately to detect a reannotated tag at the same commit.
         const string format = "--format=%(refname)%00%(objectname)%00"
             + "%(if)%(authordate)%(then)%(objectname)%(else)%(*objectname)%(end)%00"
             + "%(if)%(authordate)%(then)%(objecttype)%(else)%(*objecttype)%(end)%00"

@@ -2,6 +2,8 @@ using System.Net;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.NUnit;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -80,8 +82,13 @@ public class BlameAvatarTests
                 Assert.That(FileHistorySyntax.Ratio(text, background), Is.GreaterThanOrEqualTo(4.5));
             }
             view.SelectLine(2); await Helpers.Idle(dialog);
-            Helpers.Click(dialog, "BlameShowChanges"); await Helpers.Idle(dialog);
-            Assert.That(Helpers.Field<FileHistoryContentView>(dialog, "BlameChanges").TextView.Text, Does.Contain("Value = 2"));
+            Helpers.Click(dialog, "BlameShowChanges");
+            await Helpers.Until(() => dialog.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+            MainWindow changes = dialog.OwnedWindows.OfType<MainWindow>().Single();
+            await Helpers.Until(() => !changes.IsBusy && changes.WindowWorkCompletion.IsCompleted);
+            Assert.That(changes.LastException, Is.Null);
+            Assert.That(Helpers.Field<GitExtensions.Desktop.Controls.DiffView>(changes, "CommitDiff").Text, Does.Contain("Value = 2"));
+            changes.Close(); await Helpers.Until(() => !changes.IsVisible && changes.WindowWorkCompletion.IsCompleted); await Helpers.Idle(dialog);
             Assert.That((await repository.GetStatusAsync()).Changes, Is.Empty);
         }
         finally { release.TrySetResult(); dialog.Close(); }
@@ -192,6 +199,45 @@ public class BlameAvatarTests
             Assert.That(handler.Requests.Count, Is.EqualTo(1), "The native provider cache is shared across the two blame surfaces.");
         }
         finally { blame.Close(); history.Close(); BlameView.DefaultAvatarProvider = previous; }
+    }
+
+    [AvaloniaTest]
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task DisposedBlameUnpublishesItsImagesBeforeTheStillMappedOwnerRenders(bool fetchedAvatar)
+    {
+        using Fixture fixture = await Fixture.CreateAsync(Helpers.Initial, Helpers.Initial);
+        GitRepository repository = await GitRepository.OpenAsync(fixture.Repository);
+        using AvatarHttpHandler handler = new((_, _) => Task.FromResult(Image(SKColors.DarkGreen)));
+        using HttpClient http = new(handler);
+        IGourceAvatarProvider provider = fetchedAvatar ? new GourceAvatarProvider(http, Cache(fixture)) : new NullBlameAvatarProvider();
+        BlameDialog dialog = new(repository, "file.txt", avatarProvider: provider); dialog.Show();
+        try
+        {
+            await dialog.InitializeAsync(); await Helpers.Idle(dialog);
+            BlameView view = Helpers.Field<BlameView>(dialog, "BlameView");
+            await view.AvatarLoading.WaitAsync(TimeSpan.FromSeconds(5));
+            string text = view.TextView.Text;
+            using (WriteableBitmap before = Helpers.Capture(dialog, "blame-before-dispose-" + fetchedAvatar + ".png"))
+            {
+                Assert.That(AvatarPixels(before, dialog, 0, fetchedAvatar ? SKColors.DarkGreen : SKColors.Black), Is.GreaterThan(3));
+            }
+            Control margin = Helpers.Field<Control>(dialog, "BlameAuthorMargin");
+            Point clicked = margin.TranslatePoint(new Point(100, view.TextView.Editor.TextArea.TextView.DefaultLineHeight * .5), dialog)!.Value;
+            dialog.MouseMove(clicked); dialog.MouseDown(clicked, MouseButton.Right); dialog.MouseUp(clicked, MouseButton.Right);
+            ContextMenu menu = margin.ContextMenu!; await Helpers.Until(() => menu.IsOpen);
+            Avalonia.Controls.Image[] icons = menu.Items.OfType<MenuItem>().Select(item => item.Icon).OfType<Avalonia.Controls.Image>()
+                .Append((Avalonia.Controls.Image)Helpers.Field<Button>(dialog, "BlameOptions").Content!).ToArray();
+            Assert.That(icons.Length, Is.GreaterThan(1)); Assert.That(icons.All(icon => icon.Source is not null), Is.True);
+            view.Dispose();
+            Assert.That(dialog.IsVisible, Is.True); Assert.That(TopLevel.GetTopLevel(view), Is.SameAs(dialog));
+            Assert.That(icons.All(icon => icon.Source is null), Is.True, "Popup and toolbar presenters must not retain disposed images.");
+            using WriteableBitmap after = Helpers.Capture(dialog, "blame-disposed-still-mapped-" + fetchedAvatar + ".png");
+            Assert.That(after.PixelSize.Width, Is.GreaterThan(0)); Assert.That(view.TextView.Text, Is.EqualTo(text));
+            menu.Close();
+            Assert.That((await repository.GetStatusAsync()).Changes, Is.Empty);
+        }
+        finally { dialog.Close(); }
     }
 
     private static string Cache(Fixture fixture) => Path.Combine(Path.GetDirectoryName(fixture.Repository)!, "blame-avatars");

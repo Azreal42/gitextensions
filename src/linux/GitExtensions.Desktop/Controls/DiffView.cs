@@ -52,6 +52,7 @@ public sealed class DiffView : UserControl, IDisposable
     private bool _equivalentDisplay = true;
     private bool _difftasticAvailable;
     private bool _disposed;
+    private bool _fixedPatch;
     private string? _loadedIdentity;
     private string? _documentIdentity;
     private string? _configuredRepositoryPath;
@@ -180,6 +181,12 @@ public sealed class DiffView : UserControl, IDisposable
     public string CanonicalText => _source.Text ?? "";
     public GitDiffDocument? Document => _document;
     public string DefaultFileEncodingName { get; private set; } = "utf-8";
+    /// <summary>A supplied patch has no repository reader to regenerate context, whitespace or encoding.</summary>
+    public bool IsFixedPatch
+    {
+        get => _fixedPatch;
+        set { if (_fixedPatch == value) { return; } _fixedPatch = value; UpdateAppearanceContext(); }
+    }
     public string? FileEncodingName
     {
         get => _fileEncodingName;
@@ -587,6 +594,19 @@ public sealed class DiffView : UserControl, IDisposable
 
     private void SetScrollOffset(Vector offset) => ((IScrollable)_editor.TextArea.TextView).Offset = offset;
 
+    // An explicit cross-file landing wins over the old document's queued reading-position restore.
+    internal void LandAtBoundary(bool bottom)
+    {
+        long version = ++_readingVersion; string? identity = DocumentIdentity;
+        void Apply()
+        {
+            if (_disposed || version != _readingVersion || identity != DocumentIdentity || !_documentReady
+                || TopLevel.GetTopLevel(this) is not Window { IsVisible: true } owner) { return; }
+            owner.UpdateLayout(); if (bottom) { _editor.ScrollToEnd(); } else { _editor.ScrollToHome(); }
+        }
+        Apply(); Dispatcher.UIThread.Post(Apply, DispatcherPriority.Loaded);
+    }
+
     private void ZoomWithWheel(object? sender, PointerWheelEventArgs args)
     {
         if (args.Handled || _disposed) { return; }
@@ -815,17 +835,18 @@ public sealed class DiffView : UserControl, IDisposable
 
     private void UpdateAppearanceContext()
     {
-        AppearanceMenu.SetContext(Mode != DiffViewMode.PlainText
+        AppearanceMenu.SetContext(!IsFixedPatch && Mode != DiffViewMode.PlainText
             && EffectiveMode is not (DiffViewMode.Combined or DiffViewMode.RangeDiff)
             && (_isPatch || _document?.EffectiveAppearance == GitDiffAppearance.Difftastic), _difftasticAvailable);
         // Explicit diff modes are partial views, as in Windows. Auto also
         // recognizes raw range-diff headers without requiring a patch document.
         bool comparisons = Mode != DiffViewMode.PlainText
             && (Mode != DiffViewMode.Auto || EffectiveMode == DiffViewMode.RangeDiff || _isPatch || _document is not null);
-        ComparisonMenu.SetContext(comparisons, comparisons && EffectiveMode != DiffViewMode.Difftastic,
-            supportsEolWhitespace: comparisons, isBusy: !_documentReady);
+        ComparisonMenu.SetContext(comparisons && !IsFixedPatch, comparisons && !IsFixedPatch && EffectiveMode != DiffViewMode.Difftastic,
+            supportsEolWhitespace: comparisons && !IsFixedPatch, isBusy: !_documentReady);
         RenderingMenu.SetContext(true, comparisons, isBusy: !_documentReady);
         Toolbar?.Refresh(comparisons);
+        if (Toolbar is not null) { Toolbar.EncodingSelector.IsVisible = !IsFixedPatch; }
         ReadingMenu?.Refresh();
     }
 

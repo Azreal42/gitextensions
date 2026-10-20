@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 using GitCommands;
 using GitCommands.Git;
 
@@ -32,10 +33,18 @@ internal sealed class ReferencePreferencesStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
-            File.WriteAllText(temporary, JsonSerializer.Serialize(value, Json));
+            byte[]? before = File.Exists(_file) ? File.ReadAllBytes(_file) : null;
+            JsonObject current = before is null ? new() : JsonNode.Parse(before) as JsonObject ?? throw new JsonException("Reference preferences must be an object.");
+            JsonObject legacy = JsonSerializer.SerializeToNode(value, Json)!.AsObject();
+            // This legacy writer owns only its six original keys. Confirmations/Advanced and unknown peers survive.
+            foreach ((string key, JsonNode? node) in legacy) { current[key] = node?.DeepClone(); }
+            File.WriteAllText(temporary, current.ToJsonString(Json));
+            byte[]? latest = File.Exists(_file) ? File.ReadAllBytes(_file) : null;
+            if ((before is null) != (latest is null) || before is not null && !before.AsSpan().SequenceEqual(latest))
+            { throw new IOException("Reference preferences changed while saving."); }
             File.Move(temporary, _file, overwrite: true);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
-        finally { try { File.Delete(temporary); } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { } }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException) { }
+        finally { try { File.Delete(temporary); } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException) { } }
     }
 }

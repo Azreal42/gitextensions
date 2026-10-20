@@ -60,7 +60,7 @@ public class RenameCompareMenuTests
             Assert.That(((GitReference)((TreeViewItem)navigation.SelectedItem!).Tag!).Name, Is.EqualTo("refs/heads/new_topic"));
             Assert.That(NavigationNodes(main), Does.Contain(navigation.SelectedItem), "The selection must belong to the visible, refreshed navigation tree.");
             ComboBox expression = main.GetVisualDescendants().OfType<ComboBox>().Single(box => box.Name == "BranchHistoryFilter");
-            Assert.That(expression.Text, Is.EqualTo("refs/heads/new_topic"));
+            Assert.That(expression.Text, Is.Null.Or.Empty, "Windows sidebar selection never introduces a branch filter for rename to rewrite.");
             Assert.That((Field<ListBox>(main, "RevisionHistory").SelectedItem as GitCommit)?.Hash, Is.EqualTo(selectedHash));
             ClickLabel(workflow, "Rename…");
             rename = await OwnedAsync<RenameBranchDialog>(workflow);
@@ -73,7 +73,9 @@ public class RenameCompareMenuTests
         GitLogQuery query = filter.ReadQuery();
         Assert.Multiple(() =>
         {
-            Assert.That(query.BranchFilter, Is.EqualTo("refs/heads/new_topic"));
+            Assert.That(query.BranchFilter, Is.Null.Or.Empty);
+            Assert.That(query.All, Is.True);
+            Assert.That(query.Revision, Is.Null);
             Assert.That(query.Author, Is.EqualTo("Desktop Tester"));
             Assert.That(query.Message, Is.EqualTo("Initial commit"));
             Assert.That(query.FirstParent, Is.True);

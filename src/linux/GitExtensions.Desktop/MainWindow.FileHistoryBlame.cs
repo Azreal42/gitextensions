@@ -38,31 +38,28 @@ public sealed partial class MainWindow
     private async Task NavigateFileHistoryInlineBlameAsync(FileHistoryBlameNavigation target)
     {
         if (_fileHistoryInlineBlame?.IsClosing != false || _repository != target.Repository || _lifetime.IsCancellationRequested || _busy) { return; }
+        if (target.ShowChanges)
+        {
+            bool changed = false;
+            await ReadBrowserAsync(_commitDiffOpenRead, "Show changes", async (repository, token) =>
+            {
+                changed = await CommitDiffWindow.ShowDialogAsync(WorkflowOwner, repository, target.Hash, token);
+            });
+            if (changed && !_lifetime.IsCancellationRequested && ReferenceEquals(target.Repository, _repository)) { await RefreshAsync(); }
+            return;
+        }
         if (!_history.Any(commit => commit.Hash == target.Hash)) { await ShowFilteredRevisionErrorAsync(target.Hash); return; }
         SelectVisibleRevision(target.Hash, focus: false);
         if (_fileHistoryInlineBlame?.IsClosing != false || _repository != target.Repository || CurrentRevision != target.Hash || _lifetime.IsCancellationRequested) { return; }
         _filePath.Text = target.Path;
-        if (target.ShowChanges)
-        {
-            _tabs.SelectedItem = _tabs.Items.OfType<TabItem>().First(item => item.Name == "DiffTab");
-            await ReadCommitFilesAsync(target.Hash);
-            if (_fileHistoryInlineBlame?.IsClosing != false || _repository != target.Repository || CurrentRevision != target.Hash || _lifetime.IsCancellationRequested
-                || (_tabs.SelectedItem as TabItem)?.Name != "DiffTab") { return; }
-            RevisionDiffFileSelection? file = _revisionDiffGroups.SelectMany(group => group.Files.Select(file => new RevisionDiffFileSelection(group, file)))
-                .FirstOrDefault(selected => selected.File.Path == target.Path || selected.File.OriginalPath == target.Path);
-            if (file is not null) { _revisionFilesView?.SelectTags([file]); }
-        }
-        else
-        {
-            _tabs.SelectedItem = _tabs.Items.OfType<TabItem>().First(item => item.Name == "FileTreeTab");
-            await LoadVisibleRevisionPanelAsync();
-            if (_fileHistoryInlineBlame?.IsClosing != false || _repository != target.Repository || CurrentRevision != target.Hash || _lifetime.IsCancellationRequested
-                || (_tabs.SelectedItem as TabItem)?.Name != "FileTreeTab" || _fileTreeRepository != target.Repository
-                || _fileTreeSource is not { Kind: GitCompareRevisionKind.Commit } source || source.Revision != target.Hash) { return; }
-            _fileHistoryInlineBlame?.SetPosition(target.Repository, target.Hash, target.Path, target.Line);
-            _fileTreeView?.SelectTags([target.Path]);
-            if (SelectedTreePath == target.Path) { await ShowFileAsync(target.Path); }
-            else { _state.Text = T("The revision is not visible with the current history filters.") + " " + target.Path; }
-        }
+        _tabs.SelectedItem = _tabs.Items.OfType<TabItem>().First(item => item.Name == "FileTreeTab");
+        await LoadVisibleRevisionPanelAsync();
+        if (_fileHistoryInlineBlame?.IsClosing != false || _repository != target.Repository || CurrentRevision != target.Hash || _lifetime.IsCancellationRequested
+            || (_tabs.SelectedItem as TabItem)?.Name != "FileTreeTab" || _fileTreeRepository != target.Repository
+            || _fileTreeSource is not { Kind: GitCompareRevisionKind.Commit } source || source.Revision != target.Hash) { return; }
+        _fileHistoryInlineBlame?.SetPosition(target.Repository, target.Hash, target.Path, target.Line);
+        _fileTreeView?.SelectTags([target.Path]);
+        if (SelectedTreePath == target.Path) { await ShowFileAsync(target.Path); }
+        else { _state.Text = T("The revision is not visible with the current history filters.") + " " + target.Path; }
     }
 }

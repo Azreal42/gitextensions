@@ -16,6 +16,7 @@ public sealed partial class MainWindow
     /// <summary>Production startup opts in explicitly; helpers, Cleanup, smoke and headless construction do not.</summary>
     internal void EnableAutomaticUpdates(UpdateCheckStateStore? state = null, Func<DateTimeOffset>? clock = null)
     {
+        if (IsStandaloneDiff) { return; }
         if (_automaticUpdatesBound) { return; }
         _automaticUpdatesBound = true;
         _automaticUpdatesState = state ?? new(); _automaticUpdatesClock = clock ?? (() => DateTimeOffset.UtcNow);

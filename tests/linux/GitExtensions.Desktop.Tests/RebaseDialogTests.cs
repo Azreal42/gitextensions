@@ -245,8 +245,11 @@ public class RebaseDialogTests
         Assert.That(patches.Focus(), Is.True, "The native patch grid must accept keyboard focus.");
         Assert.That(patches.IsKeyboardFocusWithin, Is.True, "Enter must originate in the patch grid, rather than the default conflict action.");
         dialog.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None); dialog.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
-        await Until(() => dialog.OwnedWindows.OfType<CompareRevisionsDialog>().Any()); CompareRevisionsDialog diff = dialog.OwnedWindows.OfType<CompareRevisionsDialog>().Single();
-        await Until(() => !diff.IsBusy && diff.Comparison is not null); Assert.That(diff.Comparison!.Compare.Revision, Is.EqualTo(f.Topic)); diff.Close();
+        await Until(() => dialog.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+        MainWindow diff = dialog.OwnedWindows.OfType<MainWindow>().Single();
+        await Until(() => !diff.IsBusy && diff.WindowWorkCompletion.IsCompleted); Assert.That(diff.LastException, Is.Null);
+        Assert.That(diff.CommitDiffRevision, Is.EqualTo(f.Topic)); diff.Close();
+        await Until(() => !diff.IsVisible && diff.WindowWorkCompletion.IsCompleted && !dialog.IsBusy);
         Assert.That((await f.Repository.GetRebaseStateAsync()).IsActive, Is.True);
     }
 

@@ -14,7 +14,7 @@ public sealed partial class MainWindow
     }
 
     internal Task WindowWorkCompletion => Task.WhenAll(_windowWork.ToArray()
-        .Append(_commitInfo.Completion).Append(FileHistoryInlineBlameCompletion));
+        .Append(_commitInfo.Completion).Append(FileHistoryInlineBlameCompletion).Append(_continuousScroll?.Completion ?? Task.CompletedTask));
 
     private sealed class WindowWork(HashSet<Task> pending) : IDisposable
     {

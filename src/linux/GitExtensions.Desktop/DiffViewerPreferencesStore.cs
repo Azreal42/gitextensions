@@ -15,6 +15,8 @@ public sealed record DiffViewerPreferences(bool UseGitColoring = true, bool Reve
     public bool RememberWhitespace { get; init; } = true;
     public int ContextLines { get; init; } = 3;
     public bool RememberContextLines { get; init; }
+    public bool AutomaticContinuousScroll { get; init; }
+    public int AutomaticContinuousScrollDelay { get; init; } = 600;
     public bool ShowEntireFile { get; init; }
     public bool RememberWholeFile { get; init; }
     public bool ShowNonPrintingChars { get; init; }
@@ -138,7 +140,9 @@ public sealed class DiffViewerPreferencesStore
             RememberAppearance = settings.RememberAppearance, RememberWhitespace = settings.RememberWhitespace,
             RememberContextLines = settings.RememberContextLines, RememberWholeFile = settings.RememberWholeFile,
             RememberNonPrintingChars = settings.RememberNonPrintingChars,
-            RememberSyntaxHighlightingInDiff = settings.RememberSyntaxHighlightingInDiff
+            RememberSyntaxHighlightingInDiff = settings.RememberSyntaxHighlightingInDiff,
+            AutomaticContinuousScroll = settings.AutomaticContinuousScroll,
+            AutomaticContinuousScrollDelay = settings.AutomaticContinuousScrollDelay
         });
     }
 
@@ -211,7 +215,8 @@ public sealed class DiffViewerPreferencesStore
             {
                 Appearance = Enum.IsDefined(value.Appearance) ? value.Appearance : DiffViewerAppearance.Patch,
                 IgnoreWhitespace = Enum.IsDefined(value.IgnoreWhitespace) ? value.IgnoreWhitespace : IgnoreWhitespaceKind.None,
-                ContextLines = value.ContextLines is >= 0 and <= 100000 ? value.ContextLines : 3
+                ContextLines = value.ContextLines is >= 0 and <= 100000 ? value.ContextLines : 3,
+                AutomaticContinuousScrollDelay = value.AutomaticContinuousScrollDelay >= 0 ? value.AutomaticContinuousScrollDelay : 600
             };
             return (normalized, normalized == value);
         }
@@ -220,7 +225,7 @@ public sealed class DiffViewerPreferencesStore
 
     private static void Validate(DiffViewerPreferences value)
     {
-        if (!Enum.IsDefined(value.Appearance) || !Enum.IsDefined(value.IgnoreWhitespace) || value.ContextLines is < 0 or > 100000)
+        if (!Enum.IsDefined(value.Appearance) || !Enum.IsDefined(value.IgnoreWhitespace) || value.ContextLines is < 0 or > 100000 || value.AutomaticContinuousScrollDelay < 0)
         { throw new ArgumentOutOfRangeException(nameof(value)); }
     }
 

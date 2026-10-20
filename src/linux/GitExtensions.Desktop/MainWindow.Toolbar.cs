@@ -272,6 +272,6 @@ public sealed partial class MainWindow
         _quickHistoryFilter.Text = QuickFilterValue();
         RefreshWorktreeMenu();
         _browserToolbar?.Place();
-        if (_repository is not null) { Title = Path.GetFileName(_repository.Path.TrimEnd(Path.DirectorySeparatorChar)) + " (" + status.Branch + ") — Git Extensions"; }
+        if (_repository is not null) { Title = IsStandaloneDiff ? T("Diff") : Path.GetFileName(_repository.Path.TrimEnd(Path.DirectorySeparatorChar)) + " (" + status.Branch + ") — Git Extensions"; }
     }
 }

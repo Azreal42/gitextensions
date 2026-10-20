@@ -462,9 +462,7 @@ Cliquez sur cette icône d&apos;information pour plus de détails.</target>
       </trans-unit>
       <trans-unit id="groupBoxDisplayResult.Text">
         <source>Display result settings</source>
-        <target>3
-votes
-Configuration de l&apos;affichage des résultats</target>
+        <target>Configuration de l&apos;affichage des résultats</target>
         
       </trans-unit>
     </body>

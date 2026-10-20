@@ -19,11 +19,12 @@ public sealed partial class MainWindow
     private bool UsesArtificialInitialComparison => _browseInitialComparison is { } pair
         && (pair.First.Kind != GitCompareRevisionKind.Commit || pair.Selected.Kind != GitCompareRevisionKind.Commit);
     private bool IsFileHistoryBrowse => _browseRequest.PathFilter is not null;
+    private bool UsesArtificialDiffHistory => IsFileHistoryBrowse || IsRevisionLog;
 
     private void InitializeFileHistoryBrowse()
     {
         SetFileHistoryInlineBlameAvailable(IsFileHistoryBrowse);
-        if (!IsFileHistoryBrowse) { return; }
+        if (!UsesArtificialDiffHistory) { return; }
         SetNavigationVisible(false);
         SelectDetailsTab("DiffTab");
         _commits.AddHandler(KeyDownEvent, async (_, args) =>

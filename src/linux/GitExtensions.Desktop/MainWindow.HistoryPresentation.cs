@@ -93,7 +93,7 @@ public sealed partial class MainWindow
         if (!_applyingQuickSearchSelection) { CancelQuickSearchClipboard(); }
         _quickSearchArtificialSelection = new("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
         RefreshHistoryMenuStates();
-        if (IsFileHistoryBrowse) { await SelectArtificialHistoryRevisionAsync(staged); return; }
+        if (UsesArtificialDiffHistory) { await SelectArtificialHistoryRevisionAsync(staged); return; }
         if (_tabs.SelectedItem is TabItem tab && tab.Name != "ChangesTab") { _quickSearchReturnTab = tab; }
         SelectDetailsTab("ChangesTab");
         GitChange? change = _changesFilesView?.Entries.Select(entry => entry.Tag).OfType<GitChange>()

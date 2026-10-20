@@ -15,7 +15,7 @@ internal sealed class FileListFindDialog : Window
 {
     private readonly TextBox _search = new() { Name = "txtSearchBox", Height = 23, MinHeight = 23 };
     private readonly ListBox _matches = new() { Name = "listBoxSearchResult", SelectionMode = SelectionMode.Single, Padding = default, BorderThickness = default, IsVisible = false };
-    private readonly IReadOnlyList<FileStatusListEntry> _candidates;
+    private IReadOnlyList<FileStatusListEntry> _candidates;
     private readonly string _workingDirectory;
     internal FileStatusListEntry? SelectedEntry { get; private set; }
 
@@ -45,6 +45,13 @@ internal sealed class FileListFindDialog : Window
             }
         };
     }
+    // Standalone CLI discovery feeds the same selector after its owned HEAD read has drained.
+    internal void SetCandidates(IReadOnlyList<FileStatusListEntry> candidates)
+    {
+        _candidates = candidates.ToArray();
+        if (_search.Text is not null) { Find(); }
+    }
+
     private void Accept() { SelectedEntry = _matches.SelectedItem as FileStatusListEntry; Close(); }
     private void Find()
     {

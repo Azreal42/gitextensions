@@ -21,7 +21,7 @@ namespace GitExtensions.Desktop.Tests;
 [TestFixture, NonParallelizable]
 public sealed class CommandlineHelpDialogTests
 {
-    private const string ExistingUsage = "Usage: gitextensions [repository-directory] | browse [repository-directory] [--pathFilter=path] [-commit=selected[,first-selected]] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]";
+    private const string ExistingUsage = "Usage: gitextensions [repository-directory] | browse [repository-directory] [--pathFilter=path] [-commit=selected[,first-selected]] | viewdiff [repository-directory] | searchfile [repository-directory-or-file] | cleanup [repository-directory-or-file] | --version | --smoke-test [repository-directory]";
 
     [Test]
     public void ExplicitHelpUsesOnlyTheGuiLauncherAndPropagatesItsActualExitWithoutTouchingProfilesOrTheCwd()

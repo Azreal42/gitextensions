@@ -48,7 +48,14 @@ public sealed partial class MainWindow
 
     private static Task InvokeHotkey(Action action) { action(); return Task.CompletedTask; }
 
-    private Func<Task>? BrowseHotkeyAction(string command) => command switch
+    private Func<Task>? BrowseHotkeyAction(string command) => IsStandaloneDiff ? command switch
+    {
+        "CloseRepository" => () => InvokeHotkey(Close),
+        "FocusRevisionGrid" when !IsCommitDiff => () => InvokeHotkey(() => _commits.Focus()),
+        "FocusCommitInfo" when IsCommitDiff => () => InvokeHotkey(_commitInfo.FocusContent),
+        "FocusDiff" => () => InvokeHotkey(() => FocusDetail("DiffTab")),
+        _ => null
+    } : command switch
     {
         "OpenRepo" => ChooseRepositoryAsync, "CloseRepository" => CloseRepositoryAsync, "OpenSettings" => ShowSettingsAsync,
         "GitBash" => OpenTerminalAsync, "GitGui" when _repository?.IsBare == false => () => LaunchGitToolAsync("gui"),
@@ -81,6 +88,7 @@ public sealed partial class MainWindow
 
     private Func<Task>? RevisionGridHotkeyAction(string command)
     {
+        if (IsCommitDiff) { return null; }
         string canonical = command switch
         { "NavigateBackward_AlternativeHotkey" => "NavigateBackward", "NavigateForward_AlternativeHotkey" => "NavigateForward", _ => command };
         HistoryCommand? history = NavigateHistoryCommands().Concat(ViewHistoryCommands())

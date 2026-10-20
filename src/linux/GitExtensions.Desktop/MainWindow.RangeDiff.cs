@@ -4,6 +4,7 @@ public sealed partial class MainWindow
 {
     private GitCommit[] SelectedRevisionDiffCommits()
     {
+        if (IsCommitDiff) { return CurrentDisplayedCommit is { } fixedCommit ? [fixedCommit] : []; }
         GitCommit[] selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? [])
             .DistinctBy(commit => commit.Hash, StringComparer.Ordinal).ToArray();
         if (_commits.SelectedItem is not GitCommit primary) { return selected; }

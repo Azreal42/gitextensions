@@ -211,7 +211,13 @@ internal sealed class FileMenuAdditionalOperations
                 switch (command)
                 {
                     case FileMenuCommand.OpenSubmodule:
-                        if (!LoggedExternalProcess.Start(BrowseApplicationLauncher.CreateStartInfo(child.Path),
+                        BrowseRequest? request = await SubmoduleBrowseRequestAsync(selection, item, child, token);
+                        // Revalidate the existing registration/root guard after endpoint reads, before launching anything.
+                        await selection.Repository.OpenSubmoduleRepositoryAsync(item, token);
+                        token.ThrowIfCancellationRequested(); EnsureCurrent(selection);
+                        ProcessStartInfo start = request is null ? BrowseApplicationLauncher.CreateStartInfo(child.Path)
+                            : BrowseApplicationLauncher.CreateStartInfo(request);
+                        if (!LoggedExternalProcess.Start(start,
                             GitCommandLogProcessKind.Browse, _launch, journalContext, cancellationToken: token).HasProcess)
                         { throw new InvalidOperationException("The Git Extensions browser could not be started."); }
                         break;
@@ -232,5 +238,44 @@ internal sealed class FileMenuAdditionalOperations
                 }
             }
         }, command != FileMenuCommand.OpenSubmodule);
+    }
+
+    private async Task<BrowseRequest?> SubmoduleBrowseRequestAsync(FileMenuSelection selection, GitSubmoduleSnapshot module,
+        GitRepository child, CancellationToken token)
+    {
+        FileMenuLeaf leaf = selection.Leaves.Single();
+        if (leaf.SubmoduleSelectionError is { } error) { throw new InvalidOperationException(error); }
+        GitSubmoduleBrowseSelection? captured = leaf.SubmoduleSelection;
+        if (captured is null)
+        {
+            // Legacy callers with no captured comparison retain ordinary Browse; never guess child HEAD.
+            if (leaf.Comparison is null && !selection.IsFileTree) { return null; }
+            throw new InvalidOperationException("The submodule comparison endpoints were not captured. Refresh this file list.");
+        }
+        if (captured.IndexGitlink is { } expected && module.IndexHead != expected)
+        { throw new InvalidOperationException("The selected submodule index changed. Refresh the comparison before opening it."); }
+        GitCompareRevision? first = captured.First;
+        if (selection.IsFileTree && first is null && leaf.First is { Kind: GitCompareRevisionKind.Commit } parent)
+        {
+            // The selected tree already captured its child OID. Read only its immutable parent at the literal old path.
+            string path = leaf.File.OriginalPath ?? leaf.File.Path;
+            GitTreeEntry? entry = (await selection.Repository.GetTreeAsync(parent.Revision, path, token))
+                .SingleOrDefault(item => item.Path == path && item.IsSubmodule);
+            if (entry is not null) { first = new(entry.Hash); }
+        }
+        foreach (GitCompareRevision endpoint in new[] { captured.Selected, first }.OfType<GitCompareRevision>())
+        {
+            token.ThrowIfCancellationRequested(); EnsureCurrent(selection);
+            if (endpoint.Kind == GitCompareRevisionKind.Commit)
+            {
+                string actual = await child.ResolveRevisionAsync(endpoint.Revision, token);
+                if (actual != endpoint.Revision)
+                { throw new InvalidOperationException("The captured submodule endpoint is not an exact child commit. Refresh the comparison."); }
+            }
+            else if (endpoint.Kind != GitCompareRevisionKind.WorkingTree)
+            { throw new InvalidOperationException("The captured submodule endpoint cannot be represented in Browse."); }
+        }
+        token.ThrowIfCancellationRequested(); EnsureCurrent(selection);
+        return new(child.Path, SelectedRevision: captured.Selected, FirstRevision: first);
     }
 }

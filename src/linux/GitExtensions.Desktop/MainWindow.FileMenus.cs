@@ -39,8 +39,28 @@ public sealed partial class MainWindow
                 GitCompareRevisionKind.Commit when _history.FirstOrDefault(commit => commit.Hash == revision)?.Parents.FirstOrDefault() is string hash => new(hash),
                 _ => null
             };
-            leaves = tags.OfType<string>().Select(path => new FileMenuLeaf(new(path, ' '), parent, source,
-                IsSubmodule: _fileTreeEntries.GetValueOrDefault(path)?.IsSubmodule == true, FirstIsParent: parent is not null)).ToArray();
+            leaves = tags.OfType<string>().Select(path =>
+            {
+                GitComparisonTreeEntry? entry = _fileTreeEntries.GetValueOrDefault(path);
+                bool submodule = entry?.IsSubmodule == true;
+                GitSubmoduleBrowseSelection? childSelection = null;
+                string? childError = null;
+                if (submodule)
+                {
+                    if (entry!.IsConflict) { childError = "The selected submodule index entry is conflicted. Refresh or resolve it before opening the comparison."; }
+                    else if (source.Kind == GitCompareRevisionKind.WorkingTree)
+                    {
+                        string? indexed = entry.IndexStages.SingleOrDefault(stage => stage.Stage == 0 && stage.Mode == "160000")?.Hash;
+                        if (indexed is null) { childError = "The selected submodule has no captured index gitlink. Refresh the file tree."; }
+                        else { childSelection = new(new("", GitCompareRevisionKind.WorkingTree), new(indexed), indexed); }
+                    }
+                    else if (entry.Hash is { Length: > 0 } hash)
+                    { childSelection = new(new(hash), IndexGitlink: source.Kind == GitCompareRevisionKind.Index ? hash : null); }
+                    else { childError = "The selected submodule has no captured commit. Refresh the file tree."; }
+                }
+                return new FileMenuLeaf(new(path, ' '), parent, source, IsSubmodule: submodule, FirstIsParent: parent is not null)
+                    { SubmoduleSelection = childSelection, SubmoduleSelectionError = childError };
+            }).ToArray();
             identity = new(true, source, []);
         }
         else
@@ -58,7 +78,8 @@ public sealed partial class MainWindow
                     IsTracked: metadata?.IsTracked == true, IsSubmodule: metadata?.IsSubmodule == true,
                     IsSkipWorktree: metadata?.IsSkipWorktree == true, IsAssumeUnchanged: metadata?.IsAssumeUnchanged == true,
                     FirstIsParent: comparison is not null ? comparison.Compare.Kind is GitCompareRevisionKind.Index or GitCompareRevisionKind.WorkingTree
-                        : item.Group.BaseRevision is string firstRevision && _history.FirstOrDefault(commit => commit.Hash == item.Group.Revision)?.Parents.Contains(firstRevision) == true);
+                        : item.Group.BaseRevision is string firstRevision && CommitForDiff(item.Group.Revision)?.Parents.Contains(firstRevision) == true)
+                    { SubmoduleSelection = metadata?.SubmoduleSelection, SubmoduleSelectionError = metadata?.SubmoduleSelectionError };
             }).ToArray();
             GitRevisionDiffGroup[] groups = selected.Select(item => item.Group).Concat(nodes.Select(item => item.Tag).OfType<GitRevisionDiffGroup>()).Distinct().ToArray();
             identity = new(false, null, groups);
@@ -179,7 +200,7 @@ public sealed partial class MainWindow
             RunScriptAsync = (script, selection) => RunFileMenuOperationAsync(script.GetDisplayName(),
                 async token => { await DesktopScriptExecutor.ExecuteAsync(WorkflowOwner, selection.Repository, script, token, selection); },
                 changes: !script.RunInBackground),
-            Capabilities = new(ShowInFileTree: true, FilterInGrid: true, Grep: true), GrepVisible = () => _fileGrepSettings.ShowSearchBox,
+            Capabilities = new(ShowInFileTree: !IsStandaloneDiff, FilterInGrid: !IsStandaloneDiff, Grep: !IsStandaloneDiff), GrepVisible = () => _fileGrepSettings.ShowSearchBox,
             GetRemembered = () => _repository is { } current ? additional.GetRemembered(current) : null,
             GetCustomDiffTools = () => _repository is { } current ? additional.GetCustomDiffTools(current) : []
         };
@@ -211,7 +232,7 @@ public sealed partial class MainWindow
         await RunAsync(label, async repository =>
         {
             Exception? original = null;
-            try { attempted = true; await action(Token); }
+            try { attempted = true; if (IsCommitDiff && changes) { _commitDiffHasRepositoryChanges = true; } await action(Token); }
             catch (Exception error) { original = error; throw; }
             finally
             {

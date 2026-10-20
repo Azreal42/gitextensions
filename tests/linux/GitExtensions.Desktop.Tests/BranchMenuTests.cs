@@ -87,7 +87,12 @@ public class BranchMenuTests
         using Fixture f = await Fixture.CreateAsync("base\n", "local change\n");
         await Git(f, "branch", "topic");
         new ReferencePreferencesStore().Save(new(CheckoutChanges: LocalChangesAction.Stash, UseDefaultCheckoutChanges: true));
-        MenuFlyout menu = await Open(f.Window); Click(Local(menu.Items, "topic")); await Idle(f.Window);
+        MenuFlyout menu = await Open(f.Window); Click(Local(menu.Items, "topic"));
+        // The original nullable checkout policy now asks after the successful switch.
+        // Answer No without remembering; all Git/stash/focus oracles below are retained.
+        await Until(() => f.Window.OwnedWindows.Any(window => window.Name == "SuppressibleConfirmation"));
+        Window decision = f.Window.OwnedWindows.Single(window => window.Name == "SuppressibleConfirmation");
+        Click(Field<Button>(decision, "ConfirmationNo")); await Idle(f.Window);
         Assert.That((await Git(f, "symbolic-ref", "--short", "HEAD")).StandardOutput.Trim(), Is.EqualTo("topic"));
         Assert.That(await File.ReadAllTextAsync(Path.Combine(f.Repository, "file.txt")), Is.EqualTo("base\n"));
         Assert.That((await Git(f, "show", "stash@{0}:file.txt")).StandardOutput, Is.EqualTo("local change\n"));

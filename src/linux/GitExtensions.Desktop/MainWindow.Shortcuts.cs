@@ -45,6 +45,14 @@ public sealed partial class MainWindow
 
     private async Task HandleConfiguredShortcutsAsync(object? sender, KeyEventArgs e, bool allowAlt)
     {
+        if (IsStandaloneDiff && !e.Handled && e.Key == Key.Escape && e.KeyModifiers == KeyModifiers.None
+            && sender is not MenuItem and not Avalonia.Controls.ContextMenu
+            && _revisionContext?.IsOpen != true && _revisionFiles.ContextMenu?.IsOpen != true)
+        {
+            e.Handled = true;
+            if (_quickSearch?.Notice.IsVisible == true) { HideQuickSearch(); } else { Close(); }
+            return;
+        }
         if (_busy || e.Handled || _lifetime.IsCancellationRequested) { return; }
         // Alt goes through the owner access-key preview before dispatch, otherwise
         // releasing Alt can unexpectedly select the main menu.

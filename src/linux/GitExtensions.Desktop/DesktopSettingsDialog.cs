@@ -31,6 +31,8 @@ internal sealed class DesktopSettingsDialog : Window
     public ScriptsPreferencesLoadResult ScriptsResult { get; private set; }
     internal GeneralSettingsValues GeneralSettingsResult { get; private set; }
     private readonly GeneralSettingsPage _generalSettingsPage;
+    internal BlameViewerSettingsSession BlameViewerSettingsSession { get; }
+    private readonly BlameViewerSettingsPage _blameViewerSettingsPage;
     internal ConfirmationsSettingsSession ConfirmationsSettingsSession { get; }
     private readonly ConfirmationsSettingsPage _confirmationsSettingsPage;
     internal AdvancedSettingsSession AdvancedSettingsSession { get; }
@@ -92,13 +94,16 @@ internal sealed class DesktopSettingsDialog : Window
         ColorsSettingsSession? colors = null,
         Func<ColorsSettingsValues, CancellationToken, ColorsSettingsPublication>? publishColors = null,
         AdvancedSettingsSession? advancedSettings = null,
-        Action<AdvancedSettingsSaveReceipt>? publishAdvanced = null)
+        Action<AdvancedSettingsSaveReceipt>? publishAdvanced = null,
+        BlameViewerSettingsSession? blameViewerSettings = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
         FileHistoryResult = fileHistoryPreferences ?? new FileHistoryPreferencesStore().Load();
         GeneralSettingsResult = generalSettings ?? new GeneralSettingsSession(initial, FileHistoryResult).Initial;
         _generalSettingsPage = new(GeneralSettingsResult, translations, cloneDestinations);
+        BlameViewerSettingsSession = blameViewerSettings ?? new();
+        _blameViewerSettingsPage = new(BlameViewerSettingsSession, translations);
         ConfirmationsSettingsSession = confirmations ?? new();
         _confirmationsSettingsPage = new(ConfirmationsSettingsSession, translations);
         AdvancedSettingsSession = advancedSettings ?? new(initialDesktop: initial);
@@ -200,7 +205,8 @@ internal sealed class DesktopSettingsDialog : Window
             new("Hotkeys", PageTitle("HotkeysSettingsPage", "Hotkeys"), hotkeysPage, "Hotkey.png"),
             new("Advanced", PageTitle("AdvancedSettingsPage", "Advanced"), _advancedSettingsPage, "AdvancedSettings.png", Children:
             [ new("Confirmations", PageTitle("ConfirmationsSettingsPage", "Confirmations"), _confirmationsSettingsPage, "BisectGood.png") ]),
-            new("Detailed", PageTitle("DetailedSettingsPage", "Detailed"), _detailedSettingsPage, "Settings.png")
+            new("Detailed", PageTitle("DetailedSettingsPage", "Detailed"), _detailedSettingsPage, "Settings.png", Children:
+            [ new("BlameViewer", PageTitle("BlameViewerSettingsPage", "Blame viewer"), _blameViewerSettingsPage, "Blame.png") ])
         ];
         if (gitEnvironment is not null)
         { extensionChildren = [.. extensionChildren, new("GitSsh", PageTitle("SshSettingsPage", "SSH"), gitEnvironment.SshPage, "Key.png")]; }
@@ -405,6 +411,10 @@ internal sealed class DesktopSettingsDialog : Window
                         : publishColors(_colorsSettingsPage.Draft, _detailedCancellation.Token);
                     _colorsSettingsPage.AcceptSaved(colorsSaved);
                     saved |= colorsSaved.Written;
+                    activeSavePage = "BlameViewer";
+                    BlameSettingsSaveReceipt blameSaved = BlameViewerSettingsSession.Save(_blameViewerSettingsPage.Draft, _detailedCancellation.Token);
+                    _blameViewerSettingsPage.AcceptSaved(blameSaved);
+                    saved |= blameSaved.Written;
                     activeSavePage = "Confirmations";
                     ConfirmationsSettingsSession.Save(_confirmationsSettingsPage.Draft, receipt =>
                     { _confirmationsSettingsPage.AcceptSaved(receipt); saved |= receipt.Written; }, _detailedCancellation.Token);

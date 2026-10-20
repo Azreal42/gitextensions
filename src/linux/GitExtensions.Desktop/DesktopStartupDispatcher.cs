@@ -10,12 +10,12 @@ internal static class DesktopStartupDispatcher
         using IDisposable operation = GitEnvironment.BeginOperation();
         ArgumentNullException.ThrowIfNull(arguments);
         cancellationToken.ThrowIfCancellationRequested();
-        if (arguments.Mode == DesktopStartupMode.Browse)
+        if (arguments.Mode is DesktopStartupMode.Browse or DesktopStartupMode.ViewDiff)
         {
             return arguments.BrowseRequest is null ? new(arguments)
                 : await PrepareBrowseAsync(arguments, currentDirectory, cancellationToken).ConfigureAwait(false);
         }
-        if (arguments.Mode != DesktopStartupMode.Cleanup) { throw new ArgumentOutOfRangeException(nameof(arguments)); }
+        if (arguments.Mode is not (DesktopStartupMode.Cleanup or DesktopStartupMode.SearchFile)) { throw new ArgumentOutOfRangeException(nameof(arguments)); }
 
         string workingDirectory = Path.GetFullPath(currentDirectory);
         GitRepository? repository = null;
@@ -30,7 +30,9 @@ internal static class DesktopStartupDispatcher
         cancellationToken.ThrowIfCancellationRequested();
         if (repository is null)
         {
-            throw new InvalidOperationException("Cannot open cleanup: no Git repository was found in the supplied path or current working directory.");
+            throw new InvalidOperationException(arguments.Mode == DesktopStartupMode.SearchFile
+                ? "Cannot open searchfile: no Git repository was found in the supplied path or current working directory."
+                : "Cannot open cleanup: no Git repository was found in the supplied path or current working directory.");
         }
         return new(arguments, repository);
     }
@@ -105,6 +107,10 @@ internal static class DesktopStartupDispatcher
     internal static Window CreateMainWindow(DesktopStartupRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (request.Arguments.Mode == DesktopStartupMode.SearchFile)
+        { return SearchFileApplication.CreateSession(request).Dialog; }
+        if (request.Arguments.Mode == DesktopStartupMode.ViewDiff)
+        { return RevisionLogWindow.Create(request.BrowseRequest ?? throw new InvalidOperationException("Viewdiff repository discovery must complete before creating its window.")); }
         if (request.Arguments.Mode == DesktopStartupMode.Browse)
         { return request.BrowseRequest is null ? new MainWindow() : new MainWindow(request.BrowseRequest); }
         if (request.Arguments.Mode != DesktopStartupMode.Cleanup) { throw new ArgumentOutOfRangeException(nameof(request)); }

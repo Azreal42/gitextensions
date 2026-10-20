@@ -16,6 +16,7 @@ public sealed class DeleteBranchDialog : RepositoryDialog
     private readonly TextBlock _selection = new() { Name = "DeleteBranchSummary", TextWrapping = TextWrapping.Wrap };
     private readonly Button _delete;
     private string? _current;
+    private bool _detached;
 
     public DeleteBranchDialog(GitRepository repository, IEnumerable<string>? branches = null) : base(repository, "Delete Branches")
     {
@@ -56,7 +57,8 @@ public sealed class DeleteBranchDialog : RepositoryDialog
 
     public override Task InitializeAsync() => RunAsync("Delete Branches", async token =>
     {
-        _current = (await Repository.GetStatusAsync(token)).Branch;
+        GitStatus status = await Repository.GetStatusAsync(token);
+        _current = status.Branch; _detached = status.IsDetached;
         IReadOnlyList<GitBranchDeletionPreview> branches = await Repository.GetBranchDeletionPreviewAsync(token);
         _branches.ItemsSource = branches;
         _branches.SelectedItems?.Clear();
@@ -74,12 +76,19 @@ public sealed class DeleteBranchDialog : RepositoryDialog
         GitDeleteBranchesOptions options = ReadOptions();
         if (options.Names.Count == 0) { return; }
         string message = string.Join('\n', Selected().Select(branch => branch.Reference.ShortName + "  " + branch.Reference.Hash));
-        if (options.Force && Selected().Any(branch => !branch.IsMerged)) { message += "\n\n" + T("The selected branch(es) have not been merged into HEAD. Proceed?"); }
+        if (options.Force && (_detached || Selected().Any(branch => !branch.IsMerged))) { message += "\n\n" + T("The selected branch(es) have not been merged into HEAD. Proceed?"); }
         if (options.RemoveLinkedWorktrees) { message += "\n\n" + T("Remove selected linked worktrees:") + "\n" + string.Join('\n', Selected().Where(branch => branch.Worktree is not null).Select(branch => ExportDialogControls.DisplayPath(branch.Worktree!.Path))); }
         if (options.ForceWorktreeRemoval) { message += "\n" + T("Changes in these worktrees will be discarded."); }
-        if (!await Dialogs.ConfirmAsync(this, T("Delete Confirmation"), message)) { return; }
         await RunAsync("Delete Branches", async token =>
         {
+            bool unmerged = options.Force && (_detached || Selected().Any(branch => !branch.IsMerged));
+            if ((!unmerged || options.RemoveLinkedWorktrees)
+                && await Dialogs.ConfirmChoiceAsync(this, T("Delete Confirmation"), message, cancellationToken: token) != true) { return; }
+            token.ThrowIfCancellationRequested();
+            if (unmerged && !await ConfirmationPrompt.ShowAsync(this, T("Delete Confirmation"), message + "\n\n" + T("Did you know you can use reflog to restore deleted branches?"),
+                new ConfirmationsSettingsSession().Initial.DontConfirmDeleteUnmergedBranch,
+                () => ConfirmationPrompt.Remember(nameof(ConfirmationsSettingsValues.DontConfirmDeleteUnmergedBranch)), token, acceptIsDefault: false)) { return; }
+            token.ThrowIfCancellationRequested();
             try { await Repository.DeleteBranchesAsync(options, token); }
             finally { MarkRepositoryChanged(); _branches.ItemsSource = await Repository.GetBranchDeletionPreviewAsync(token); }
             Close();

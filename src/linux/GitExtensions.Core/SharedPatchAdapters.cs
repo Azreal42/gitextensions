@@ -4,7 +4,7 @@ using System.Text;
 // its encoding, settings and mail-footer dependencies; no Windows UI assembly is loaded.
 namespace GitCommands.Patches
 {
-    internal static class GitModule
+    internal static partial class GitModule
     {
         internal static Encoding SystemEncoding => Encoding.UTF8;
         internal const string NoNewLineAtTheEnd = "\\ No newline at end of file";

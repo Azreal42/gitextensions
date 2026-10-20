@@ -247,7 +247,8 @@ public sealed partial class MainWindow
             }
             else
             {
-                teamCity = TeamCitySettings.Read(xml, Path.GetFileName(repository.Path.TrimEnd(Path.DirectorySeparatorChar))); teamCity.Validate();
+                BuildServerRepositoryVariables variables = await repository.GetBuildServerRepositoryVariablesAsync(token);
+                teamCity = TeamCitySettings.Read(xml, Path.GetFileName(repository.Path.TrimEnd(Path.DirectorySeparatorChar)), variables.Expand); teamCity.Validate();
                 BuildServerCredentialsSnapshot saved = (CredentialsStoreOverride ?? new BuildServerCredentialsStore()).Load(provider, teamCity.ServerUri);
                 if (!saved.Exists)
                 { throw new InvalidOperationException("Configure TeamCity credentials in Settings."); }

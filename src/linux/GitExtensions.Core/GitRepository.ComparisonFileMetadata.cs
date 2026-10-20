@@ -37,31 +37,55 @@ public sealed partial class GitRepository
             IReadOnlyList<ComparisonIndexEntry> index = info.IsBare ? [] : await ReadComparisonIndexAsync(token).ConfigureAwait(false);
             Dictionary<string, GitIndexFileFlags> flags = info.IsBare ? [] : (await GetIndexFlagsAsync(token).ConfigureAwait(false))
                 .ToDictionary(item => item.Path, StringComparer.Ordinal);
-            // A menu needs modes only for its selected comparison paths, not a
+            // A menu needs modes and child OIDs only for its selected comparison paths, not a
             // replacement full repository tree on every historical selection.
             string? emptyTree = first.Kind == GitCompareRevisionKind.Commit || second.Kind == GitCompareRevisionKind.Commit
                 ? ReadOutputLine((await ExecuteAsync(["hash-object", "-t", "tree", "--stdin"], token, standardInput: "").ConfigureAwait(false)).StandardOutput) : null;
-            HashSet<string> firstLinks = await ComparisonGitlinksAsync(first, index, comparison.Files.Select(file => file.OriginalPath ?? file.Path), emptyTree, token).ConfigureAwait(false);
-            HashSet<string> secondLinks = await ComparisonGitlinksAsync(second, index, comparison.Files.Select(file => file.Path), emptyTree, token).ConfigureAwait(false);
+            Dictionary<string, GitCompareRevision?> firstLinks = await ComparisonGitlinksAsync(first, index, comparison.Files.Select(file => file.OriginalPath ?? file.Path), emptyTree, token).ConfigureAwait(false);
+            Dictionary<string, GitCompareRevision?> secondLinks = await ComparisonGitlinksAsync(second, index, comparison.Files.Select(file => file.Path), emptyTree, token).ConfigureAwait(false);
             HashSet<string> untracked = comparison.UntrackedPaths.ToHashSet(StringComparer.Ordinal);
             return comparison.Files.Select(file =>
             {
                 token.ThrowIfCancellationRequested();
                 flags.TryGetValue(file.Path, out GitIndexFileFlags? fileFlags);
+                bool hasFirst = firstLinks.TryGetValue(file.OriginalPath ?? file.Path, out GitCompareRevision? firstLink) && file.Status != 'A';
+                bool hasSecond = secondLinks.TryGetValue(file.Path, out GitCompareRevision? secondLink) && file.Status != 'D';
+                bool isSubmodule = firstLinks.ContainsKey(file.OriginalPath ?? file.Path) || secondLinks.ContainsKey(file.Path);
+                GitSubmoduleBrowseSelection? selection = null;
+                string? selectionError = null;
+                if (isSubmodule)
+                {
+                    if (!hasSecond || secondLink is null)
+                    { selectionError = "The selected comparison side has no unambiguous submodule endpoint. Refresh the comparison before opening it."; }
+                    else if (hasFirst && firstLink is null)
+                    { selectionError = "The first comparison side has a conflicted submodule index entry. Resolve or refresh it before opening the comparison."; }
+                    else
+                    {
+                        string? indexGitlink = second.Kind == GitCompareRevisionKind.Index ? secondLink.Revision
+                            : first.Kind == GitCompareRevisionKind.Index && hasFirst ? firstLink!.Revision : null;
+                        selection = new(secondLink, hasFirst ? firstLink : null, indexGitlink);
+                    }
+                }
                 return new GitComparisonFileMetadata(file, staged, file.Status != '?' && !untracked.Contains(file.Path),
-                    firstLinks.Contains(file.OriginalPath ?? file.Path) || secondLinks.Contains(file.Path),
-                    fileFlags?.IsAssumeUnchanged == true, fileFlags?.IsSkipWorktree == true);
+                    isSubmodule, fileFlags?.IsAssumeUnchanged == true, fileFlags?.IsSkipWorktree == true)
+                    { SubmoduleSelection = selection, SubmoduleSelectionError = selectionError };
             }).ToArray();
         }, cancellationToken);
     }
 
-    private async Task<HashSet<string>> ComparisonGitlinksAsync(GitCompareRevision revision,
+    private async Task<Dictionary<string, GitCompareRevision?>> ComparisonGitlinksAsync(GitCompareRevision revision,
         IReadOnlyList<ComparisonIndexEntry> index, IEnumerable<string> paths, string? emptyTree, CancellationToken token)
     {
         if (revision.Kind == GitCompareRevisionKind.EmptyTree) { return new(StringComparer.Ordinal); }
         if (revision.Kind != GitCompareRevisionKind.Commit)
-        { return index.Where(entry => entry.Mode == "160000").Select(entry => entry.Path).ToHashSet(StringComparer.Ordinal); }
-        HashSet<string> gitlinks = new(StringComparer.Ordinal);
+        {
+            return index.Where(entry => entry.Mode == "160000").GroupBy(entry => entry.Path, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => revision.Kind == GitCompareRevisionKind.WorkingTree
+                    ? new GitCompareRevision("", GitCompareRevisionKind.WorkingTree)
+                    : group.Count() == 1 && group.Single().Stage == 0 ? new GitCompareRevision(group.Single().Hash) : null,
+                    StringComparer.Ordinal);
+        }
+        Dictionary<string, GitCompareRevision?> gitlinks = new(StringComparer.Ordinal);
         string[] names = paths.Distinct(StringComparer.Ordinal).ToArray();
         for (int offset = 0; offset < names.Length;)
         {
@@ -83,17 +107,17 @@ public sealed partial class GitRepository
             for (int entry = 0; entry < fields.Length; entry += 2)
             {
                 string[] header = fields[entry].Split(' ');
-                if (header is not [":000000", string mode, _, _, "A"])
+                if (header is not [":000000", string mode, _, string hash, "A"] || !IsObjectId(hash))
                 { throw new FormatException("Invalid comparison mode entry."); }
                 // Git's literal directory pathspec still includes descendants.
                 // They are valid records, but only the exact requested path owns its mode.
-                if (mode == "160000" && batch.Contains(fields[entry + 1], StringComparer.Ordinal)) { gitlinks.Add(fields[entry + 1]); }
+                if (mode == "160000" && batch.Contains(fields[entry + 1], StringComparer.Ordinal)) { gitlinks.Add(fields[entry + 1], new(hash)); }
             }
         }
         return gitlinks;
     }
 
-    private sealed record ComparisonIndexEntry(string Path, string Mode, int Stage);
+    private sealed record ComparisonIndexEntry(string Path, string Mode, int Stage, string Hash);
 
     private async Task<IReadOnlyList<ComparisonIndexEntry>> ReadComparisonIndexAsync(CancellationToken token)
     {
@@ -105,11 +129,11 @@ public sealed partial class GitRepository
             token.ThrowIfCancellationRequested();
             int tab = field.IndexOf('\t');
             string[] metadata = (tab < 0 ? "" : field[..tab]).Split(' ');
-            if (tab < 0 || metadata is not [string mode, _, string stageText]
+            if (tab < 0 || metadata is not [string mode, string hash, string stageText] || !IsObjectId(hash)
                 || !int.TryParse(stageText, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int stage)
                 || stage is < 0 or > 3 || tab == field.Length - 1)
             { throw new FormatException("Invalid Git index entry."); }
-            result.Add(new(field[(tab + 1)..], mode, stage));
+            result.Add(new(field[(tab + 1)..], mode, stage, hash));
         }
         return result;
     }

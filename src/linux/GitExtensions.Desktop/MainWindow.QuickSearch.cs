@@ -29,7 +29,7 @@ public sealed partial class MainWindow
 
     private bool QuickSearchHasFocus => _commits.IsKeyboardFocusWithin || _workingRevision?.IsKeyboardFocusWithin == true || _indexRevision?.IsKeyboardFocusWithin == true;
     private bool CanQuickSearch => !_busy && !_refreshing && !_commitInfoClosing && _repository is not null && !_lifetime.IsCancellationRequested
-        && !OwnedWindows.Any(window => window.IsVisible);
+        && !IsCommitDiff && !OwnedWindows.Any(window => window.IsVisible);
     private int QuickSearchArtificialCount => _virtualRevisions?.IsVisible == true && _repository?.IsBare == false ? 2 : 0;
 
     private Control WithQuickSearchNotice(Control table)
@@ -53,9 +53,9 @@ public sealed partial class MainWindow
         }
         _commits.GotFocus += (_, _) =>
         {
-            if (!IsFileHistoryBrowse && _quickSearchArtificialSelection is not null) { _parentChildNavigation?.RevisionsSelectionChanged(); }
-            _quickSearchArtificialSelection = IsFileHistoryBrowse ? _selectedArtificialHistoryRevision : null;
-            if (!_applyingQuickSearchSelection && !IsFileHistoryBrowse) { _quickSearchReturnTab = null; }
+            if (!UsesArtificialDiffHistory && _quickSearchArtificialSelection is not null) { _parentChildNavigation?.RevisionsSelectionChanged(); }
+            _quickSearchArtificialSelection = UsesArtificialDiffHistory ? _selectedArtificialHistoryRevision : null;
+            if (!_applyingQuickSearchSelection && !UsesArtificialDiffHistory) { _quickSearchReturnTab = null; }
         };
         _tabs.SelectionChanged += (_, args) =>
         {
@@ -93,7 +93,7 @@ public sealed partial class MainWindow
         {
             if (_workingRevision?.IsKeyboardFocusWithin == true) { return 0; }
             if (_indexRevision?.IsKeyboardFocusWithin == true) { return 1; }
-            if ((_quickSearchArtificialSelection ?? (IsFileHistoryBrowse ? _selectedArtificialHistoryRevision : null)) is { } source)
+            if ((_quickSearchArtificialSelection ?? (UsesArtificialDiffHistory ? _selectedArtificialHistoryRevision : null)) is { } source)
             { return source.Kind == GitCompareRevisionKind.WorkingTree ? 0 : 1; }
         }
         GitCommit? current = _commits.SelectedItems?.OfType<GitCommit>().FirstOrDefault(commit => commit.Hash == _quickSearchLastCommit)
@@ -171,7 +171,7 @@ public sealed partial class MainWindow
         }
         if (index - artificial >= _commits.Items.Count || _commits.Items[index - artificial] is not GitCommit commit) { return; }
         bool restoredPanel = false;
-        if (!IsFileHistoryBrowse && _quickSearchArtificialSelection is not null && _quickSearchReturnTab is { } tab
+        if (!UsesArtificialDiffHistory && _quickSearchArtificialSelection is not null && _quickSearchReturnTab is { } tab
             && _tabs.Items.Contains(tab) && (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab")
         {
             // Ordinary Browse hosts artificial diffs in Changes. Return to the

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
@@ -191,6 +192,78 @@ public sealed class FileHistoryBrowseTests
             await File.WriteAllTextAsync(release, ""); main.Close();
             await Until(() => !main.IsVisible && opening.IsCompleted); await opening;
         }
+    }
+
+    [AvaloniaTest]
+    [TestCase(GitCompareRevisionKind.Commit, false)]
+    [TestCase(GitCompareRevisionKind.Index, false)]
+    [TestCase(GitCompareRevisionKind.WorkingTree, false)]
+    [TestCase(GitCompareRevisionKind.Commit, true)]
+    public async Task InlineShowChangesOpensTheRightClickedCommitOutsideTheGridWithoutChangingItsHost(GitCompareRevisionKind kind, bool closeRoot)
+    {
+        using ReferenceFixture f = await ReferenceFixture.CreateAsync();
+        await f.ChangeAsync("caret line\nold target\n", "Two lines");
+        await f.ChangeAsync("caret line\nnew target\n", "Right clicked change");
+        string blamed = await f.Repository.ResolveRevisionAsync("HEAD");
+        await f.ChangeAsync("caret line\nnew target\nnew tip\n", "Descendant snapshot");
+        string head = await f.Repository.ResolveRevisionAsync("HEAD");
+        if (kind != GitCompareRevisionKind.Commit)
+        {
+            await File.WriteAllTextAsync(f.File, "staged caret\nnew target\nnew tip\n"); await f.Repository.StageAllAsync();
+            await File.WriteAllTextAsync(f.File, "live caret\nnew target\nnew tip\n");
+        }
+        new PreferencesStore().Save(new DesktopPreferences { HistoryLimit = 1 });
+        GitCompareRevision source = kind == GitCompareRevisionKind.Commit ? new(head) : new("", kind);
+        await using BrowseScope scope = await BrowseScope.OpenAsync(f, new("file.txt", BrowsePathKind.File), source);
+        MainWindow main = scope.Window; SelectTab(main, "FileTreeTab"); await Idle(main);
+        FileHistoryBlameController control = Find<FileHistoryBlameController>(main, "FileHistoryInlineBlameHost");
+        BlameView view = control.View; ListBox grid = Find<ListBox>(main, "RevisionHistory");
+        TabControl tabs = Find<TabControl>(main, "DetailsTabs"); object? selected = grid.SelectedItem, tab = tabs.SelectedItem;
+        Assert.That(control.IsBlameActive, Is.True); Assert.That(grid.Items.OfType<GitCommit>().Any(commit => commit.Hash == blamed), Is.False);
+        GitFileBlameLine target = view.Lines[1]; Assert.That(target.Line.Hash, Is.EqualTo(blamed)); Assert.That(target.Line.OriginalLine, Is.EqualTo(2));
+        string text = view.TextView.Text; byte[] index = await File.ReadAllBytesAsync(f.PathInRepository(".git/index")), work = await File.ReadAllBytesAsync(f.File);
+        for (int frame = 0; frame < 10; frame++)
+        { Dispatcher.UIThread.RunJobs(); main.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
+        Dispatcher.UIThread.RunJobs();
+        Point caret = view.TextView.Editor.TextArea.TranslatePoint(new Point(120, view.TextView.Editor.TextArea.TextView.DefaultLineHeight * .5), main)!.Value;
+        Assert.That((main.InputHitTest(caret) as Visual)?.GetSelfAndVisualAncestors().Contains(view.TextView.Editor.TextArea), Is.True);
+        main.MouseMove(caret); main.MouseDown(caret, MouseButton.Left); main.MouseUp(caret, MouseButton.Left);
+        Assert.That(view.CurrentFileLine, Is.EqualTo(1));
+        Control margin = view.GetVisualDescendants().OfType<Control>().Single(item => item.Name == "BlameAuthorMargin");
+        Point clicked = margin.TranslatePoint(new Point(80, view.TextView.Editor.TextArea.TextView.DefaultLineHeight * 1.5), main)!.Value;
+        main.MouseMove(clicked); main.MouseDown(clicked, MouseButton.Right); main.MouseUp(clicked, MouseButton.Right);
+        ContextMenu menu = margin.ContextMenu!; await Until(() => menu.IsOpen);
+        PushProcessTestDriver.Pointer(menu.Items.OfType<MenuItem>().Single(item => item.Name == "showChangesToolStripMenuItem"));
+        await Until(() => main.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+        MainWindow changes = main.OwnedWindows.OfType<MainWindow>().Single();
+        try
+        {
+            await Until(() => !changes.IsBusy && changes.WindowWorkCompletion.IsCompleted); changes.UpdateLayout();
+            Assert.That(changes.LastException, Is.Null); Assert.That(changes.Owner, Is.SameAs(main));
+            Assert.That(main.IsBusy, Is.True); Assert.That(main.OwnedWindows.OfType<BlameDialog>(), Is.Empty);
+            Assert.That(changes.CommitDiffRevision, Is.EqualTo(target.Line.Hash));
+            Assert.That(Find<DiffView>(changes, "CommitDiff").Text, Does.Contain("-old target").And.Contain("+new target"));
+            Assert.That(Find<FileStatusListView>(changes, "RevisionFileStatusList").SelectedEntries.Single().Path, Is.EqualTo(target.OriginalPath));
+            Assert.That(grid.SelectedItem, Is.SameAs(selected)); Assert.That(tabs.SelectedItem, Is.SameAs(tab));
+            if (closeRoot)
+            {
+                main.Close(); await Until(() => !main.IsVisible && !changes.IsVisible && main.WindowWorkCompletion.IsCompleted);
+                await main.WindowWorkCompletion; Assert.That(changes.WindowWorkCompletion.IsCompleted, Is.True);
+            }
+            else
+            {
+                changes.Close(); await Until(() => !changes.IsVisible && changes.WindowWorkCompletion.IsCompleted); await Idle(main);
+                Assert.That(main.IsVisible, Is.True); Assert.That(grid.SelectedItem, Is.SameAs(selected)); Assert.That(tabs.SelectedItem, Is.SameAs(tab));
+                Assert.That(view.TextView.Text, Is.EqualTo(text)); Assert.That(view.CurrentFileLine, Is.EqualTo(1));
+                Assert.That(view.TextView.Editor.TextArea.IsKeyboardFocusWithin, Is.True);
+                main.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
+                Assert.That(view.CurrentFileLine, Is.EqualTo(2), "The first arrow returns to the unchanged Blame reader without a focus repair.");
+            }
+            Assert.That(await f.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(head));
+            Assert.That(await File.ReadAllBytesAsync(f.PathInRepository(".git/index")), Is.EqualTo(index));
+            Assert.That(await File.ReadAllBytesAsync(f.File), Is.EqualTo(work));
+        }
+        finally { changes.Close(); await Until(() => !changes.IsVisible && changes.WindowWorkCompletion.IsCompleted); }
     }
 
     private sealed class BrowseScope(MainWindow window) : IAsyncDisposable

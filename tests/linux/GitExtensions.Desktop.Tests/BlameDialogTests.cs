@@ -55,8 +55,13 @@ public class BlameDialogTests
                 using var frame = Helpers.Capture(dialog, "classic-blame-" + theme + ".png");
                 Assert.That(frame.PixelSize.Width, Is.GreaterThan(700));
             }
-            Helpers.Click(dialog, "BlameShowChanges"); await Helpers.Idle(dialog);
-            Assert.That(Helpers.Field<FileHistoryContentView>(dialog, "BlameChanges").TextView.Text, Does.Contain("+    public int Value = 2;").And.Contain("-    public int Value = 1;"));
+            Helpers.Click(dialog, "BlameShowChanges");
+            await Helpers.Until(() => dialog.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+            MainWindow changes = dialog.OwnedWindows.OfType<MainWindow>().Single();
+            await Helpers.Until(() => !changes.IsBusy && changes.WindowWorkCompletion.IsCompleted);
+            Assert.That(changes.LastException, Is.Null);
+            Assert.That(Helpers.Field<GitExtensions.Desktop.Controls.DiffView>(changes, "CommitDiff").Text, Does.Contain("+    public int Value = 2;").And.Contain("-    public int Value = 1;"));
+            changes.Close(); await Helpers.Until(() => !changes.IsVisible && changes.WindowWorkCompletion.IsCompleted); await Helpers.Idle(dialog);
             Helpers.Click(dialog, "BlamePreviousRevision"); await Helpers.Idle(dialog);
             Assert.That(blame.TextView.Text, Is.EqualTo(Helpers.Initial), "Previous-revision navigation must read the actual earlier blob.");
             Assert.That(Helpers.Field<TextBox>(dialog, "BlameFilePath").Text, Is.EqualTo(Helpers.LiteralPath));

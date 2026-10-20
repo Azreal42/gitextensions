@@ -1,5 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using GitExtensions.Extensibility.Git;
+﻿using GitExtensions.Extensibility.Git;
 using GitExtUtils;
 using GitUIPluginInterfaces;
 
@@ -36,31 +35,6 @@ public partial class GitGpgController : IGitGpgController
 {
     private readonly Func<IGitModule> _getModule;
 
-    /* Commit GPG status */
-    private const string GoodSign = "G";
-    private const string BadSign = "B";
-    private const string UnkSignValidity = "U";
-    private const string ExpiredSign = "X";
-    private const string ExpiredSignKey = "Y";
-    private const string RevokedKey = "R";
-    private const string MissingPubKey = "E";
-    private const string NoSign = "N";
-
-    /* Tag GPG status */
-    private const string GoodSignature = "GOODSIG";
-    private const string ValidTagSign = "VALIDSIG";
-    private const string NoTagPubKey = "NO_PUBKEY";
-    private const string NoSignatureFound = "error: no signature found";
-
-    [GeneratedRegex(ValidTagSign, RegexOptions.ExplicitCapture)]
-    private static partial Regex ValidSignatureTagRegex { get; }
-    [GeneratedRegex(GoodSignature, RegexOptions.ExplicitCapture)]
-    private static partial Regex GoodSignatureTagRegex { get; }
-    [GeneratedRegex(NoTagPubKey, RegexOptions.ExplicitCapture)]
-    private static partial Regex NoPubKeyTagRegex { get; }
-    [GeneratedRegex(NoSignatureFound, RegexOptions.ExplicitCapture)]
-    private static partial Regex NoSignatureFoundTagRegex { get; }
-
     /// <summary>
     /// Obtain the tag verification message for all the tag in current git revision
     /// </summary>
@@ -82,7 +56,6 @@ public partial class GitGpgController : IGitGpgController
 
         return await Task.Run(() =>
         {
-            CommitStatus cmtStatus;
             GitArgumentBuilder args = new("log")
             {
                 "--pretty=\"format:%G?\"",
@@ -91,30 +64,7 @@ public partial class GitGpgController : IGitGpgController
             };
             string gpg = module.GitExecutable.GetOutput(args);
 
-#pragma warning disable SA1025 // Code should not contain multiple whitespace in a row
-            switch (gpg)
-            {
-                case GoodSign:         // "G" for a good (valid) signature
-                    cmtStatus = CommitStatus.GoodSignature;
-                    break;
-                case BadSign:          // "B" for a bad signature
-                case UnkSignValidity:  // "U" for a good signature with unknown validity
-                case ExpiredSign:      // "X" for a good signature that has expired
-                case ExpiredSignKey:   // "Y" for a good signature made by an expired key
-                case RevokedKey:       // "R" for a good signature made by a revoked key
-                    cmtStatus = CommitStatus.SignatureError;
-                    break;
-                case MissingPubKey:    // "E" if the signature cannot be checked (e.g.missing key)
-                    cmtStatus = CommitStatus.MissingPublicKey;
-                    break;
-                case NoSign:           // "N" for no signature
-                default:
-                    cmtStatus = CommitStatus.NoSignature;
-                    break;
-            }
-#pragma warning restore SA1025 // Code should not contain multiple whitespace in a row
-
-            return cmtStatus;
+            return GpgSignatureStatusParser.Commit(gpg);
         });
     }
 
@@ -136,36 +86,14 @@ public partial class GitGpgController : IGitGpgController
 
         return await Task.Run(() =>
         {
-            /* More than one tag on the revision */
+            // Many is a classification of the attached tag set, independent of individual signatures.
             if (usefulTagRefs.Count > 1)
             {
-                return TagStatus.Many;
+                return GpgSignatureStatusParser.Tag(usefulTagRefs.Count, null);
             }
 
-            /* Raw message to be checked */
             string? rawGpgMessage = GetTagVerificationMessage(usefulTagRefs[0], true);
-
-            /* Look for icon to be shown */
-            if (GoodSignatureTagRegex.IsMatch(rawGpgMessage!) && ValidSignatureTagRegex.IsMatch(rawGpgMessage!))
-            {
-                /* It's only one good tag */
-                return TagStatus.OneGood;
-            }
-
-            if (NoSignatureFoundTagRegex.IsMatch(rawGpgMessage!))
-            {
-                /* One tag, but not signed */
-                return TagStatus.TagNotSigned;
-            }
-
-            if (NoPubKeyTagRegex.IsMatch(rawGpgMessage!))
-            {
-                /* One tag, signed, but user has not the public key */
-                return TagStatus.NoPubKey;
-            }
-
-            /* One tag, signed, any other error */
-            return TagStatus.OneBad;
+            return GpgSignatureStatusParser.Tag(1, rawGpgMessage);
         });
     }
 

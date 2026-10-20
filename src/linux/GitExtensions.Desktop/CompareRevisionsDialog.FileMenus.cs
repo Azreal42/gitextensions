@@ -46,7 +46,8 @@ public sealed partial class CompareRevisionsDialog
             return new FileMenuLeaf(item.File, comparison.Base, comparison.Compare, comparison,
                 metadata?.Staged switch
                 { GitFileStagedStatus.Index => FileMenuStage.Index, GitFileStagedStatus.WorkTree => FileMenuStage.WorkingTree, GitFileStagedStatus.Unknown => FileMenuStage.Unknown, _ => FileMenuStage.None },
-                metadata?.IsTracked == true, metadata?.IsSubmodule == true, metadata?.IsSkipWorktree == true, metadata?.IsAssumeUnchanged == true);
+                metadata?.IsTracked == true, metadata?.IsSubmodule == true, metadata?.IsSkipWorktree == true, metadata?.IsAssumeUnchanged == true)
+                { SubmoduleSelection = metadata?.SubmoduleSelection, SubmoduleSelectionError = metadata?.SubmoduleSelectionError };
         }).ToArray();
         GitComparisonGroup[] groups = files.Select(file => file.Group).Concat(nodes.Select(node => node.Tag switch
         {

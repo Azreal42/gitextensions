@@ -16,6 +16,7 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
     private readonly TextBlock _stages = new() { Name = "ConflictStages", TextWrapping = TextWrapping.Wrap };
     private readonly Dictionary<GitConflictResolution, Button> _choices = [];
     private readonly Button _tool;
+    private readonly Button _reset;
     private Window? _closingOwner;
     public IReadOnlyList<GitConflictPath> Conflicts { get; private set; } = [];
 
@@ -38,6 +39,7 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
         Add(GitConflictResolution.Manual, "Mark as resolved");
         _tool = Action("ConflictMergeTool", "Open merge tool", MergeToolAsync); _tool.Height = 25; actions.Children.Add(_tool);
         DesktopHotkeys.BindToolTip(_tool, "FormMergeConflicts", "Merge", T("Open merge tool"));
+        _reset = Action("ResetConflicts", "Reset", ResetAsync); _reset.Height = 25; actions.Children.Add(_reset);
         Grid content = new() { ColumnDefinitions = new ColumnDefinitions("*,210"), Margin = new Thickness(10) };
         content.Children.Add(ClassicChrome.Border(_files, new Thickness(1))); Grid.SetColumn(actions, 1); content.Children.Add(actions);
         Button refresh = Action("RefreshConflicts", "Refresh", InitializeAsync);
@@ -101,6 +103,22 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
             await ReloadAsync(token);
         });
     }
+    private Task ResetAsync() => RunAsync("Reset", async token =>
+    {
+        string first = Translations.Translate("FormResolveConflicts", "_abortCurrentOperation", "Text",
+            "You can abort the current conflict resolution by resetting hard.\nAll changes since the last commit will be deleted.\n\nDo you want to reset the changes?");
+        if (await Dialogs.ConfirmChoiceAsync(this, T("Reset"), first, T("Yes"), T("No"), acceptIsDefault: true, cancellationToken: token) != true) { return; }
+        token.ThrowIfCancellationRequested();
+        if (!await ConfirmationPrompt.ShowAsync(this, T("WARNING!"),
+            Translations.Translate("FormResolveConflicts", "_areYouSureYouWantDeleteFiles", "Text", "Are you sure you want to DELETE all changes?\n\nThis action cannot be made undone."),
+            new ConfirmationsSettingsSession().Initial.DontConfirmSecondAbortConfirmation,
+            () => ConfirmationPrompt.Remember(nameof(ConfirmationsSettingsValues.DontConfirmSecondAbortConfirmation)), token)) { return; }
+        token.ThrowIfCancellationRequested();
+        MarkRepositoryChanged();
+        await Repository.ResetAsync("HEAD", GitResetMode.Hard, token);
+        Close();
+    });
+
     private Task MergeToolAsync()
     {
         if (IsBusy || _files.SelectedItem is not GitConflictPath selected) { return Task.CompletedTask; }
@@ -128,6 +146,7 @@ public sealed class ResolveConflictsDialog : RepositoryDialog
             int stage = choice switch { GitConflictResolution.Base => 1, GitConflictResolution.Ours => 2, GitConflictResolution.Theirs => 3, _ => 0 };
             button.IsEnabled = !IsBusy && selected is not null && (stage == 0 || !submodule && selected.Stages.Any(item => item.Stage == stage));
         }
+        _reset.IsEnabled = !IsBusy;
         _choices[GitConflictResolution.Manual].Content = T(submodule ? "Resolve submodule…" : "Mark as resolved");
         if (_tool is not null) { _tool.IsEnabled = !IsBusy && selected is not null; }
         _stages.Text = selected is null ? "" : string.Join("\n", selected.Stages.Select(stage => $"{stage.Stage}: {stage.Mode}  {stage.Hash}"));

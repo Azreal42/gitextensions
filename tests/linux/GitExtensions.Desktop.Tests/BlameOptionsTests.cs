@@ -195,8 +195,13 @@ public class BlameOptionsTests
                 Assert.That(view.SelectedLine!.Line.LineNumber, Is.EqualTo(1));
             }
             ContextMenu changes = await RightClick(dialog, 1);
-            Item(changes, "showChangesToolStripMenuItem").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); changes.Close(); await Helpers.Idle(dialog);
-            Assert.That(Helpers.Field<FileHistoryContentView>(dialog, "BlameChanges").TextView.Text, Does.Contain("+    public int Value = 2;"));
+            Item(changes, "showChangesToolStripMenuItem").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); changes.Close();
+            await Helpers.Until(() => dialog.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+            MainWindow diff = dialog.OwnedWindows.OfType<MainWindow>().Single();
+            await Helpers.Until(() => !diff.IsBusy && diff.WindowWorkCompletion.IsCompleted);
+            Assert.That(diff.LastException, Is.Null); Assert.That(diff.CommitDiffRevision, Is.EqualTo(target.Line.Hash));
+            Assert.That(Helpers.Field<DiffView>(diff, "CommitDiff").Text, Does.Contain("+    public int Value = 2;"));
+            diff.Close(); await Helpers.Until(() => !diff.IsVisible && diff.WindowWorkCompletion.IsCompleted); await Helpers.Idle(dialog);
             Helpers.Field<TabControl>(dialog, "BlameTabs").SelectedIndex = 0; dialog.UpdateLayout();
             ContextMenu previous = await RightClick(dialog, 1);
             Assert.That(Item(previous, "blamePreviousRevisionToolStripMenuItem").IsEnabled, Is.True);
@@ -251,7 +256,25 @@ public class BlameOptionsTests
             foreach (string action in new[] { "blameRevisionToolStripMenuItem", "showChangesToolStripMenuItem", "blamePreviousRevisionToolStripMenuItem" })
             {
                 ContextMenu context = await RightClick(history, 1);
-                Item(context, action).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); context.Close();
+                PushProcessTestDriver.Pointer(Item(context, action)); context.Close();
+                if (action == "showChangesToolStripMenuItem")
+                {
+                    await Helpers.Until(() => history.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+                    MainWindow changes = history.OwnedWindows.OfType<MainWindow>().Single();
+                    try
+                    {
+                        await Helpers.Until(() => !changes.IsBusy && changes.WindowWorkCompletion.IsCompleted);
+                        Assert.That(changes.LastException, Is.Null); Assert.That(changes.Owner, Is.SameAs(history));
+                        Assert.That(history.IsBusy, Is.True); Assert.That(history.OwnedWindows.OfType<BlameDialog>(), Is.Empty);
+                        Assert.That(changes.CommitDiffRevision, Is.EqualTo(target.Line.Hash));
+                        Assert.That(Helpers.Field<FileStatusListView>(changes, "RevisionFileStatusList").SelectedEntries.Single().Path, Is.EqualTo(target.OriginalPath));
+                        Assert.That(Helpers.Field<DiffView>(changes, "CommitDiff").Text, Does.Contain("+    public int Value = 2;"));
+                    }
+                    finally { changes.Close(); await Helpers.Until(() => !changes.IsVisible && changes.WindowWorkCompletion.IsCompleted); }
+                    await Helpers.Idle(history);
+                    Assert.That(history.SelectedEntry!.Commit.Hash, Is.EqualTo(selectedRevision));
+                    continue;
+                }
                 await Helpers.Until(() => history.OwnedWindows.OfType<BlameDialog>().Any());
                 BlameDialog child = history.OwnedWindows.OfType<BlameDialog>().Single();
                 try
@@ -268,9 +291,7 @@ public class BlameOptionsTests
                     {
                         Assert.That(child.LastBlame!.Revision, Is.EqualTo(target.Line.Hash));
                         Assert.That(child.LastBlame.Path, Is.EqualTo(target.OriginalPath));
-                        if (action == "showChangesToolStripMenuItem")
-                        { Assert.That(Helpers.Field<FileHistoryContentView>(child, "BlameChanges").TextView.Text, Does.Contain("+    public int Value = 2;")); }
-                        else { Assert.That(Helpers.Field<BlameView>(child, "BlameView").SelectedLine!.Line.LineNumber, Is.EqualTo(target.Line.OriginalLine)); }
+                        Assert.That(Helpers.Field<BlameView>(child, "BlameView").SelectedLine!.Line.LineNumber, Is.EqualTo(target.Line.OriginalLine));
                     }
                 }
                 finally { child.Close(); }
@@ -293,6 +314,37 @@ public class BlameOptionsTests
             Assert.That((await repository.GetStatusAsync()).Changes, Is.Empty);
         }
         finally { foreach (Window child in history.OwnedWindows.ToArray()) { child.Close(); } history.Close(); }
+    }
+
+    [AvaloniaTest]
+    public async Task ClosingTheEmbeddedHistoryOwnerClosesAndDrainsItsRealCommitDiff()
+    {
+        using Fixture fixture = await Fixture.CreateAsync(Helpers.Initial, Helpers.Initial); await Helpers.MakeHistoryAsync(fixture);
+        GitRepository repository = await GitRepository.OpenAsync(fixture.Repository);
+        byte[] index = await File.ReadAllBytesAsync(Path.Combine(fixture.Repository, ".git/index"));
+        string head = await repository.ResolveRevisionAsync("HEAD");
+        FileHistoryDialog history = new(repository, Helpers.LiteralPath); history.Show(); MainWindow? changes = null;
+        try
+        {
+            await history.InitializeAsync(); Helpers.Field<TabControl>(history, "FileHistoryTabs").SelectedIndex = 3; await Helpers.Idle(history);
+            GitFileBlameLine target = Helpers.Field<BlameView>(history, "FileHistoryBlame").Lines[1];
+            ContextMenu context = await RightClick(history, 1); PushProcessTestDriver.Pointer(Item(context, "showChangesToolStripMenuItem"));
+            await Helpers.Until(() => history.OwnedWindows.OfType<MainWindow>().Any(window => window.WindowKind == MainWindowKind.CommitDiff));
+            changes = history.OwnedWindows.OfType<MainWindow>().Single();
+            await Helpers.Until(() => !changes.IsBusy && changes.WindowWorkCompletion.IsCompleted);
+            Assert.That(changes.LastException, Is.Null); Assert.That(changes.CommitDiffRevision, Is.EqualTo(target.Line.Hash));
+            history.Close();
+            await Helpers.Until(() => !history.IsVisible && !changes.IsVisible && !history.IsBusy && changes.WindowWorkCompletion.IsCompleted);
+            await changes.WindowWorkCompletion;
+            Assert.That(await repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(head));
+            Assert.That(await File.ReadAllBytesAsync(Path.Combine(fixture.Repository, ".git/index")), Is.EqualTo(index));
+            Assert.That((await repository.GetStatusAsync()).Changes, Is.Empty);
+        }
+        finally
+        {
+            changes?.Close(); if (changes is not null) { await changes.WindowWorkCompletion; }
+            history.Close(); await Helpers.Until(() => !history.IsVisible && !history.IsBusy);
+        }
     }
 
     [AvaloniaTest]

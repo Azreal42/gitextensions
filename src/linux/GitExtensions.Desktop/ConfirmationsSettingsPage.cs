@@ -39,7 +39,7 @@ internal sealed class ConfirmationsSettingsPage : UserControl
                     IsThreeState = field.ThreeState, MinHeight = 24, Padding = default,
                     HorizontalAlignment = HorizontalAlignment.Stretch
                 };
-                bool? value = _baseline.Get(field.Name); choice.IsChecked = value.HasValue ? !value.Value : null;
+                bool? value = _baseline.Get(field.Name); choice.IsChecked = field.ToCheckState(value);
                 _choices.Add(field.Name, choice); rows.Children.Add(choice);
             }
         }
@@ -60,7 +60,7 @@ internal sealed class ConfirmationsSettingsPage : UserControl
             {
                 bool? check = _choices[setting.Name].IsChecked;
                 // WinForms.Checked is true for both Checked and Indeterminate on bool fields.
-                values = values.With(setting.Name, setting.Nullable ? check.HasValue ? !check.Value : null : check == false);
+                values = values.With(setting.Name, setting.FromCheckState(check));
             }
             return values;
         }
@@ -71,7 +71,7 @@ internal sealed class ConfirmationsSettingsPage : UserControl
         {
             bool? value = receipt.Values.Get(field.Name);
             _baseline = _baseline.With(field.Name, value);
-            _choices[field.Name].IsChecked = value.HasValue ? !value.Value : null;
+            _choices[field.Name].IsChecked = field.ToCheckState(value);
         }
         ShowErrors();
     }

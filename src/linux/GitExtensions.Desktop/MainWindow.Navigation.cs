@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 
 namespace GitExtensions.Linux.Desktop;
@@ -139,7 +141,23 @@ public sealed partial class MainWindow
             {
                 GitReference[] direct = segment.Where(reference => reference.ShortName[prefix.Length..] == segment.Key).ToArray();
                 foreach (GitReference reference in direct)
-                { yield return Node("ref:" + reference.Name, segment.Key, reference.IsTag ? "TagHorizontal.png" : reference.IsRemote ? "BranchRemote.png" : "BranchLocal.png", reference); }
+                {
+                    TreeViewItem leaf = Node("ref:" + reference.Name, segment.Key, reference.IsTag ? "TagHorizontal.png" : reference.IsRemote ? "BranchRemote.png" : "BranchLocal.png", reference);
+                    if (reference.IsBranch || reference.IsRemote)
+                    {
+                        GitRepository? repository = _repository;
+                        leaf.AddHandler(DoubleTappedEvent, async (_, args) =>
+                        {
+                            // Only a branch leaf header: folders/expanders/tags keep their existing gestures.
+                            if (_busy || repository is null || _repository != repository
+                                || args.Source is not Control source || source.GetVisualAncestors().Prepend(source).Any(control => control is Avalonia.Controls.Primitives.ToggleButton)) { return; }
+                            args.Handled = true;
+                            try { await CheckoutSelectedBranchAsync(repository, reference, fromLeftPanel: true); }
+                            catch (Exception error) { LastException = error; AppendOutput(error.Message); _state.Text = error.Message; }
+                        }, RoutingStrategies.Bubble, handledEventsToo: true);
+                    }
+                    yield return leaf;
+                }
                 GitReference[] nested = segment.Except(direct).ToArray();
                 if (nested.Length > 0)
                 {

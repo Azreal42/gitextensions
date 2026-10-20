@@ -1,6 +1,6 @@
 namespace GitExtensions.Linux.Desktop;
 
-internal enum DesktopStartupMode { Browse, Cleanup }
+internal enum DesktopStartupMode { Browse, Cleanup, ViewDiff, SearchFile }
 
 internal enum BrowsePathKind { File, Directory }
 
@@ -16,6 +16,7 @@ internal sealed record DesktopStartupArguments(DesktopStartupMode Mode, string? 
     BrowseRequest? BrowseRequest = null)
 {
     internal static bool IsCleanupInvocation(IReadOnlyList<string> arguments) => arguments.FirstOrDefault() == "cleanup";
+    internal static bool IsSearchFileInvocation(IReadOnlyList<string> arguments) => arguments.FirstOrDefault() == "searchfile";
     internal static bool IsBrowseInvocation(IReadOnlyList<string> arguments) => arguments.FirstOrDefault() == "browse";
 
     internal static DesktopStartupArguments Parse(IReadOnlyList<string> arguments)
@@ -28,7 +29,19 @@ internal sealed record DesktopStartupArguments(DesktopStartupMode Mode, string? 
             return new(DesktopStartupMode.Cleanup, arguments.Count > 1 ? arguments[1] : null);
         }
 
+        if (IsSearchFileInvocation(arguments))
+        {
+            // Windows GetWorkingDir reads only the second argv, including flag-looking literal paths.
+            return new(DesktopStartupMode.SearchFile, arguments.Count > 1 ? arguments[1] : null);
+        }
+
         if (IsBrowseInvocation(arguments)) { return ParseBrowse(arguments); }
+        if (arguments.FirstOrDefault() == "viewdiff")
+        {
+            if (arguments.Count > 2) { throw new ArgumentException("Viewdiff accepts one repository path."); }
+            string? path = arguments.Count > 1 ? arguments[1] : null;
+            return new(DesktopStartupMode.ViewDiff, path, BrowseRequest: new(path));
+        }
 
         bool smokeTest = arguments.Contains("--smoke-test", StringComparer.Ordinal);
         string? repository = arguments.FirstOrDefault(argument => argument != "--smoke-test");

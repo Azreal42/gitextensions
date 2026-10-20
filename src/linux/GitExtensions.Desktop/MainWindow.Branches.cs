@@ -113,7 +113,7 @@ public sealed partial class MainWindow
         return _repository is { IsBare: false } ? CheckoutAsync() : Task.CompletedTask;
     }
 
-    private async Task CheckoutSelectedBranchAsync(GitRepository repository, GitReference branch)
+    private async Task CheckoutSelectedBranchAsync(GitRepository repository, GitReference branch, bool fromLeftPanel = false)
     {
         _branchFlyout.Hide(); _browserToolbar?.OverflowFlyout.Hide();
         if (_busy || _repository != repository || repository.IsBare) { return; }
@@ -124,6 +124,13 @@ public sealed partial class MainWindow
         {
             await RunAsync("Checkout branch", async _ =>
             {
+                if (fromLeftPanel && new ConfirmationsSettingsSession().Initial.ConfirmBranchCheckout)
+                {
+                    bool? accepted = await Dialogs.ConfirmChoiceAsync(WorkflowOwner, T("Confirm checkout"),
+                        string.Format(T("Are you sure you want to check out branch \"{0}\"?"), branch.ShortName),
+                        T("Yes"), T("No"), acceptIsDefault: true, cancellationToken: Token);
+                    if (accepted != true || Token.IsCancellationRequested || _repository != repository) { return; }
+                }
                 await dialog.InitializeAsync(Token);
                 if (Token.IsCancellationRequested) { return; }
                 if (dialog.CanExecuteDefault)

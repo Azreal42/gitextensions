@@ -781,6 +781,7 @@ public sealed partial class MainWindow
         finally
         {
             dialog.Close();
+            if (IsCommitDiff && dialog.HasRepositoryChanges) { _commitDiffHasRepositoryChanges = true; }
             if (dialog.HasRepositoryChanges && _repository is not null && !_lifetime.IsCancellationRequested) { await RefreshAsync(); }
         }
     }

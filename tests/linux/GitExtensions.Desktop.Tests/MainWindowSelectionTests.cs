@@ -89,7 +89,7 @@ public class MainWindowSelectionTests
         using Fixture fixture = await Fixture.CreateAsync("old repository\n", "old repository\n");
         MainWindow main = fixture.Window;
         await ClickBranchAsync(main, "refs/heads/main");
-        Assert.That(RevisionFilter(main).Text, Is.EqualTo("refs/heads/main"));
+        Assert.That(RevisionFilter(main).Text, Is.Null.Or.Empty, "Windows GoToRef selects a revision without changing the branch filter.");
 
         string targetPath = await CreateRepositoryAsync(fixture, "homonymous repository", "main", "new main\n");
         GitRepository target = await GitRepository.OpenAsync(targetPath);
@@ -103,9 +103,12 @@ public class MainWindowSelectionTests
         Assert.That(RevisionFilter(main).Text, Is.Null.Or.Empty);
         Assert.That(HistoryHashes(main), Is.EquivalentTo(new[] { mainHash, featureHash }));
 
+        object? unfilteredSource = Field<ListBox>(main, "RevisionHistory").ItemsSource;
         await ClickBranchAsync(main, "refs/heads/main");
-        Assert.That(RevisionFilter(main).Text, Is.EqualTo("refs/heads/main"));
-        Assert.That(HistoryHashes(main), Is.EqualTo(new[] { mainHash }), "Clicking the homonymous branch must apply its filter, rather than leaving the all-branches graph displayed.");
+        Assert.That(RevisionFilter(main).Text, Is.Null.Or.Empty);
+        Assert.That(Field<ListBox>(main, "RevisionHistory").ItemsSource, Is.SameAs(unfilteredSource));
+        Assert.That(HistoryHashes(main), Is.EquivalentTo(new[] { mainHash, featureHash }), "Selecting the homonymous branch must retain the existing all-branches graph.");
+        Assert.That(SelectedHashes(main), Is.EqualTo(new[] { mainHash }), "The new repository's ref must select its own commit, not retain an old homonymous row.");
         Assert.That(((Field<TreeView>(main, "RepositoryNavigation").SelectedItem as TreeViewItem)?.Tag as GitReference)?.Name, Is.EqualTo("refs/heads/main"));
         Assert.That((await target.GetStatusAsync()).Changes, Is.Empty);
     }

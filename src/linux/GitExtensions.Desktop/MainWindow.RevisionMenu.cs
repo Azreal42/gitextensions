@@ -146,7 +146,7 @@ public sealed partial class MainWindow
         if (_revisionPushBranches is not null) { _revisionPushBranches.IsVisible = _revisionPushBranches.IsEnabled = selected && !_repository!.IsBare && _revisionPushBranches.Items.OfType<MenuItem>().Any(); }
         if (_revisionMergeBranches is not null) { _revisionMergeBranches.IsVisible = _revisionMergeBranches.IsEnabled = selected && !_repository!.IsBare && _revisionMergeBranches.Items.OfType<MenuItem>().Any(); }
         if (_revisionDeleteTags is not null) { _revisionDeleteTags.IsVisible = _revisionDeleteTags.IsEnabled = selected && _revisionDeleteTags.Items.OfType<MenuItem>().Any(); }
-        if (_revisionSelectInLeftPanel is not null) { _revisionSelectInLeftPanel.IsVisible = _revisionSelectInLeftPanel.IsEnabled = selected && (_selectRevisionInLeftPanel is not null || _revisionSelectInLeftPanel.Items.OfType<MenuItem>().Any()); }
+        if (_revisionSelectInLeftPanel is not null) { _revisionSelectInLeftPanel.IsVisible = _revisionSelectInLeftPanel.IsEnabled = !IsStandaloneDiff && selected && (_selectRevisionInLeftPanel is not null || _revisionSelectInLeftPanel.Items.OfType<MenuItem>().Any()); }
         RefreshRevisionAdvancedMenu();
     }
 

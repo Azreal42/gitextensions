@@ -48,6 +48,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
     private IReadOnlyList<GitReference> _references = [];
     private bool? _dirty;
     private bool _initialized;
+    private bool _reapplyEdited;
     private bool _bare;
     private string? _originalStash;
     public GitCheckoutResult? LastResult { get; private set; }
@@ -88,7 +89,9 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         _newMode.SelectedIndex = (int)preferences.RemoteCheckoutMode;
         _includeUntrackedBaseline = _autoStashPreferences.Load().IncludeUntrackedFilesInAutoStash;
         _includeUntracked.IsChecked = _includeUntrackedBaseline;
-        _reapply.IsChecked = preferences.ReapplyStash;
+        _reapply.IsThreeState = true;
+        _reapply.IsChecked = new ConfirmationsSettingsSession().Initial.AutoPopStashAfterCheckoutBranch;
+        _reapply.IsCheckedChanged += (_, _) => _reapplyEdited = true;
         (_keep.IsChecked, _merge.IsChecked, _stash.IsChecked) = (preferences.CheckoutChanges == LocalChangesAction.DontChange, preferences.CheckoutChanges == LocalChangesAction.Merge, preferences.CheckoutChanges == LocalChangesAction.Stash);
         if (reference?.IsRemote == true) { _remote.IsChecked = true; }
         else if (reference?.IsTag == true) { _detached.IsChecked = true; _revision.Text = reference.Name; }
@@ -235,7 +238,8 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
         LastResult = null;
         _checkout.Focus();
         NormalizeName();
-        GitCheckoutOptions options = ReadOptions();
+        // The host asks only after native checkout succeeds. Core must not pop before that decision.
+        GitCheckoutOptions options = ReadOptions() with { ReapplyStash = false };
         GitReference? selected = _branches.SelectedItem as GitReference;
         if (_constraint is not null && selected is null) { Status.Text = T("Select branch"); return; }
         if (_defaultOwner is not null && _dirty == false) { options = options with { Changes = LocalChangesAction.DontChange }; }
@@ -264,6 +268,8 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
                     { scripts.ThrowIfStopped(); await RunScriptEventAsync(scripts, ScriptEvent.AfterCheckout); }
                     throw new GitCommandException(["switch"], LastResult.Result);
                 }
+                if (LastResult.CreatedStash is string createdStash)
+                { await OfferCheckoutStashAsync(operationOwner, createdStash, token); }
             }
             catch (Exception error) { checkoutError = error; throw; }
             finally
@@ -284,7 +290,7 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
             {
                 CheckoutChanges = _default.IsChecked == true && options.Changes != LocalChangesAction.Reset ? options.Changes : preferences.CheckoutChanges,
                 RemoteCheckoutMode = _remote.IsChecked == true ? options.NewBranchMode : preferences.RemoteCheckoutMode,
-                IncludeUntracked = _includeUntracked.IsChecked == true, ReapplyStash = _reapply.IsChecked == true
+                IncludeUntracked = _includeUntracked.IsChecked == true
             });
             if ((_includeUntracked.IsChecked == true) != _includeUntrackedBaseline)
             {
@@ -316,6 +322,25 @@ public sealed class CheckoutBranchDialog : RepositoryDialog
             Succeeded = true;
             Close();
         }, cancellationToken: cancellationToken);
+    }
+
+    private async Task OfferCheckoutStashAsync(Window owner, string createdStash, CancellationToken token)
+    {
+        bool? apply = _reapplyEdited ? _reapply.IsChecked : new ConfirmationsSettingsSession().Initial.AutoPopStashAfterCheckoutBranch;
+        if (apply is null)
+        {
+            apply = await ConfirmationPrompt.ShowAsync(owner,
+                Translations.Translate("FormCheckoutBranch", "_applyStashedItemsAgainCaption", "Text", "Auto stash"),
+                Translations.Translate("FormCheckoutBranch", "_applyStashedItemsAgain", "Text", "Apply stashed items to working directory again?"),
+                suppressed: false, remember: () => { }, token: token, warning: false,
+                rememberAnswer: answer =>
+                {
+                    ConfirmationsSettingsSession settings = new();
+                    settings.Save(settings.Initial with { AutoPopStashAfterCheckoutBranch = answer });
+                });
+        }
+        token.ThrowIfCancellationRequested();
+        if (apply == true) { await Repository.ReapplyCheckoutStashAsync(createdStash, token); }
     }
 
     protected override void UpdateActions()

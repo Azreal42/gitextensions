@@ -81,7 +81,7 @@ public sealed partial class MainWindow
         _pendingDiffAppearance = false;
         if (_revisionFiles.SelectedItem is TreeViewItem item)
         { await ReadRevisionDiffAsync(item); }
-        else if (_loadedDiffSelection == RevisionSelectionIdentity && _commits.SelectedItem is GitCommit commit)
+        else if (_loadedDiffSelection == RevisionSelectionIdentity && CurrentDisplayedCommit is GitCommit commit)
         {
             _revisionRead.Cancel();
             await ReadBrowserAsync(_revisionDiffRead, "Commit diff", (repository, token) => LoadCommitDiffSummaryAsync(repository, commit.Hash, token));
@@ -134,7 +134,7 @@ public sealed partial class MainWindow
         };
         _revisionFilesView.Toolbar.Children.Insert(1, RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
             _selectedArtificialHistoryRevision is { } artificial ? ReadArtificialHistoryRevisionAsync(artificial)
-                : _commits.SelectedItem is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask));
+                : CurrentDisplayedCommit is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask));
         _revisionFilesView.DisplayChanged += async (_, _) =>
         {
             if (_loadingCommitFiles || _refreshing || _busy || _repository is null) { return; }
@@ -142,8 +142,11 @@ public sealed partial class MainWindow
             { await ReadRevisionDiffAsync(selected); }
             else { ClearRevisionPreview(); }
         };
-        _revisionFilesView.Toolbar.Children.Insert(_revisionFilesView.Toolbar.Children.Count - 1,
-            RevisionDiffIconButton("RevisionFilesFindInCommitFiles", "Find in commit files using git-grep...", "ViewFile.png", OpenFileGrepFromDiffAsync));
+        if (!IsStandaloneDiff)
+        {
+            _revisionFilesView.Toolbar.Children.Insert(_revisionFilesView.Toolbar.Children.Count - 1,
+                RevisionDiffIconButton("RevisionFilesFindInCommitFiles", "Find in commit files using git-grep...", "ViewFile.png", OpenFileGrepFromDiffAsync));
+        }
         Grid split = new() { Name = "RevisionDiffSplit", ColumnDefinitions = new ColumnDefinitions("420,4,*") };
         split.Children.Add(ClassicChrome.Border(_revisionFilesView, new Thickness(0, 0, 1, 0)));
         GridSplitter splitter = new() { Name = "RevisionDiffSplitter", Width = 4, MinWidth = 4, HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -200,7 +203,7 @@ public sealed partial class MainWindow
         _revisionDiffPreferences = preferences;
         _revisionDiffPreferencesStore.Save(preferences);
         if (_selectedArtificialHistoryRevision is { } artificial) { await ReadArtificialHistoryRevisionAsync(artificial); }
-        else if (_commits.SelectedItem is GitCommit commit)
+        else if (CurrentDisplayedCommit is GitCommit commit)
         {
             await ReadCommitFilesAsync(commit.Hash);
         }

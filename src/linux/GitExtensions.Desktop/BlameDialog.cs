@@ -83,7 +83,7 @@ public sealed class BlameDialog : RepositoryDialog
         {
             Action("BlameThisRevision", "Blame this revision", () => NavigateAsync(previous: false)),
             Action("BlamePreviousRevision", "Blame previous revision", () => NavigateAsync(previous: true)),
-            Action("BlameShowChanges", "Show changes", () => ShowChangesAsync()),
+            Action("BlameShowChanges", "Show changes", () => ShowCommitDiffAsync()),
             new Button { Name = "CancelBlame", Content = T("Close"), IsCancel = true }
         } };
         ((Button)actions.Children[^1]).Click += (_, _) => Close();
@@ -98,7 +98,7 @@ public sealed class BlameDialog : RepositoryDialog
         _view.CommandRequested += async (_, args) =>
         {
             if (IsBusy) { return; }
-            if (args.Command == BlameCommand.ShowChanges) { await ShowChangesAsync(args.Line); }
+            if (args.Command == BlameCommand.ShowChanges) { await ShowCommitDiffAsync(args.Line); }
             else { await NavigateAsync(args.Command == BlameCommand.PreviousRevision, args.Line); }
         };
         BlamePreferences previousPreferences = _view.Preferences;
@@ -227,6 +227,14 @@ public sealed class BlameDialog : RepositoryDialog
         _tabs.SelectedIndex = 0;
         await SetCommitInfoAsync(_view.SelectedLine, token);
         Title = T("Blame") + " (" + path + ")";
+    });
+
+    private Task ShowCommitDiffAsync(GitFileBlameLine? contextLine = null) => RunAsync("Show changes", async token =>
+    {
+        GitFileBlameLine selected = contextLine ?? _view.SelectedLine ?? throw new InvalidOperationException(T("Select a line first."));
+        if (selected.Line.Hash.All(character => character == '0')) { throw new InvalidOperationException(T("This line has not been committed yet.")); }
+        if (await CommitDiffWindow.ShowDialogAsync(this, Repository, selected.Line.Hash, token)) { MarkRepositoryChanged(); }
+        if (!_informationClosing) { await UpdateInfoAsync(); }
     });
 
     public Task ShowChangesAsync(GitFileBlameLine? contextLine = null) => RunAsync("Show changes", async token =>

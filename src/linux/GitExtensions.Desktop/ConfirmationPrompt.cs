@@ -12,7 +12,7 @@ namespace GitExtensions.Linux.Desktop;
 internal static class ConfirmationPrompt
 {
     internal static async Task<bool> ShowAsync(Window owner, string title, string message, bool suppressed,
-        Action remember, CancellationToken token, bool warning = true, string? acceptLabel = null, string? cancelLabel = null, bool acceptIsDefault = true)
+        Action remember, CancellationToken token, bool warning = true, string? acceptLabel = null, string? cancelLabel = null, bool acceptIsDefault = true, Action<bool>? rememberAnswer = null)
     {
         token.ThrowIfCancellationRequested(); if (!owner.IsVisible) { return false; }
         if (suppressed) { return true; }
@@ -43,7 +43,7 @@ internal static class ConfirmationPrompt
             // Only an explicit answer may persist suppression.
             if (answered && check.IsChecked == true)
             {
-                try { remember(); }
+                try { if (rememberAnswer is not null) { rememberAnswer(accepted); } else { remember(); } }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
                 {
                     await Dialogs.ShowMessageAsync(owner, translations.Translate("Settings"),

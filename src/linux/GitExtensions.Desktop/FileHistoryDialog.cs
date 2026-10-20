@@ -417,6 +417,15 @@ public sealed class FileHistoryDialog : RepositoryDialog
         if (IsBusy) { return; }
         string hash = args.Line.Line.Hash, path = args.Line.OriginalPath;
         int line = args.Line.Line.OriginalLine;
+        if (args.Command == BlameCommand.ShowChanges)
+        {
+            if (_informationClosing) { return; }
+            await RunAsync("Show changes", async token =>
+            {
+                if (await CommitDiffWindow.ShowDialogAsync(this, Repository, hash, token)) { MarkRepositoryChanged(); }
+            }, cancellationToken: _informationLifetime.Token);
+            return;
+        }
         if (args.Command == BlameCommand.PreviousRevision)
         {
             GitBlamePreviousRevision? previous = null;
@@ -426,11 +435,7 @@ public sealed class FileHistoryDialog : RepositoryDialog
             hash = previous.Revision; path = previous.Path; line = previous.Line;
         }
         BlameDialog dialog = new(Repository, path, hash, line, fileEncodingName: _blame.TextView.FileEncodingName);
-        dialog.Opened += async (_, _) =>
-        {
-            await dialog.InitializeAsync();
-            if (args.Command == BlameCommand.ShowChanges && dialog.LastError is null) { await dialog.ShowChangesAsync(args.Line); }
-        };
+        dialog.Opened += async (_, _) => await dialog.InitializeAsync();
         await dialog.ShowDialog(this);
     }
 

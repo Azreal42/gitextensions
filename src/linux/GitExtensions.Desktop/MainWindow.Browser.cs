@@ -41,7 +41,7 @@ public sealed partial class MainWindow
     private Control BuildLayout()
     {
         _desktopFonts.Apply(_gpgInfo, DesktopFontRole.Application);
-        _commitInfoPosition = _browserLayoutPreferences.Load().CommitInfoPosition;
+        if (!IsStandaloneDiff) { _commitInfoPosition = _browserLayoutPreferences.Load().CommitInfoPosition; }
         // Reuse the same workflow controls in dialogs; keep the Browse layout from FormBrowse.
         IReadOnlyList<TabItem> views = BuildTabs();
         Grid previousHistory = (Grid)views[0].Content!;
@@ -78,16 +78,33 @@ public sealed partial class MainWindow
         _commits.ContextMenu = BuildRevisionContextMenu();
         _navigation.SelectionChanged += async (_, _) =>
         {
-            if (_refreshing || _updatingNavigation || _busy || _navigation.SelectedItem is not TreeViewItem item) { return; }
+            if (_refreshing || _updatingNavigation || _busy || _lifetime.IsCancellationRequested
+                || _navigation.SelectedItem is not TreeViewItem item) { return; }
+            _goToCommitRead.Cancel();
             if (item.Tag is GitReference reference)
             {
                 _references.SelectedItem = reference;
-                SetNavigationBranchFilter(reference.Name);
-                await ReloadHistoryAsync();
+                // Windows Node.GoToRevision selects the ref in the existing grid.
+                // A global refresh here disables this very row after click one,
+                // preventing its separate double-click checkout gesture.
+                await ReadBrowserAsync(_goToCommitRead, "Go to commit", async (repository, token) =>
+                {
+                    object? selected = _commits.SelectedItem;
+                    string selection = RevisionSelectionIdentity;
+                    string hash = await repository.ResolveRevisionAsync(reference.Name, token);
+                    token.ThrowIfCancellationRequested();
+                    if (_repository != repository || _navigation.SelectedItem != item || _busy
+                        || !ReferenceEquals(_commits.SelectedItem, selected) || RevisionSelectionIdentity != selection
+                        || _refreshing || _updatingNavigation || IsBranchFilterOwnerClosing) { return; }
+                    SelectVisibleRevision(hash, focus: false);
+                });
             }
             else if (item.Tag is GitWorktree { Head: { } head }) { SelectVisibleRevision(head, focus: false); }
             else if (item.Tag is string workflow) { await ShowWorkflowAsync(workflow); }
         };
+
+        if (IsCommitDiff) { return BuildCommitDiffLayout(); }
+        if (IsRevisionLog) { return BuildRevisionLogLayout(); }
 
         DockPanel root = new() { LastChildFill = true };
         StackPanel top = new() { Spacing = 0 };
@@ -310,7 +327,7 @@ public sealed partial class MainWindow
         MenuItem bisect = MenuAction("Bisect…", BisectAsync, "Bisect.png"); bisect.Name = "BrowseBisect"; bisect.Tag = true;
         bisect.Header = new Avalonia.Controls.Primitives.AccessText { Text = _translations.TranslateAccessKeys("FormBrowse", "bisectToolStripMenuItem", "Text", "B&isect...") };
         if (bisect.Icon is Image bisectIcon) { bisectIcon.Tag = "Bisect.png"; }
-        MenuItem commands = MenuGroup("Commands", commit, undo, MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Fetch", QuickFetchAsync, "PullFetch.png"), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ManageRemotesAsync(), "Remotes.png"), bisect, BuildReflogMenu(), BuildCleanupMenu(), MenuAction("Apply patch…", ApplyPatchAsync), MenuAction("Create patches…", FormatPatchAsync));
+        MenuItem commands = MenuGroup("Commands", commit, undo, MenuAction("Create branch…", CreateBranchAsync, "BranchCreate.png"), MenuAction("Delete branch…", DeleteBranchesAsync, "BranchDelete.png"), MenuAction("Checkout branch…", CheckoutAsync, "BranchCheckout.png"), MenuAction("Merge…", MergeAsync), MenuAction("Rebase…", RebaseAsync), MenuAction("Interactive rebase…", InteractiveRebaseAsync), MenuAction("Create tag…", CreateTagAsync, "TagCreate.png"), MenuAction("Delete tag…", DeleteTagsAsync, "TagDelete.png"), MenuAction("Branches and tags…", () => ShowWorkflowAsync("Branches & tags")), MenuAction("Fetch", QuickFetchAsync, "PullFetch.png"), MenuAction("Pull…", PullAsync), MenuAction("Push…", PushAsync), MenuAction("Manage remotes…", () => ManageRemotesAsync(), "Remotes.png"), bisect, BuildReflogMenu(), BuildCleanupMenu(), MenuAction("Create patches…", FormatPatchAsync), MenuAction("Apply patch…", ApplyPatchAsync), BuildViewPatchMenu());
         commands.SubmenuOpened += (_, _) =>
         {
             bool available = !_busy && _repository is { IsBare: false };

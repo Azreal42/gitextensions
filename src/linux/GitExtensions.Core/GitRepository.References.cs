@@ -108,11 +108,23 @@ public sealed partial class GitRepository
             : await ExecuteAsync(preparation.Arguments, token).ConfigureAwait(false);
         if (result.Success && preparation.CreatedStash is not null && preparation.Options.ReapplyStash)
         {
-            GitStash? saved = (await GetStashesAsync(token).ConfigureAwait(false)).FirstOrDefault(entry => entry.Hash == preparation.CreatedStash);
-            if (saved is null) { throw new InvalidOperationException("The checkout stash changed outside this operation; it was not reapplied."); }
-            await ExecuteAsync(["stash", "pop", "--index", "--", saved.Reference], token).ConfigureAwait(false);
+            await ReapplyCheckoutStashCoreAsync(preparation.CreatedStash, token).ConfigureAwait(false);
         }
         return new GitCheckoutResult(result, preparation.CreatedStash);
+    }
+
+    /// <summary>Reapply only the stash captured by this checkout, including its index. Never substitutes the current top.</summary>
+    public Task<GitResult> ReapplyCheckoutStashAsync(string createdStash, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(createdStash);
+        return WithMutationAsync(token => ReapplyCheckoutStashCoreAsync(createdStash, token), cancellationToken);
+    }
+
+    private async Task<GitResult> ReapplyCheckoutStashCoreAsync(string createdStash, CancellationToken token)
+    {
+        GitStash? saved = (await GetStashesAsync(token).ConfigureAwait(false)).FirstOrDefault(entry => entry.Hash == createdStash);
+        if (saved is null) { throw new InvalidOperationException("The checkout stash changed outside this operation; it was not reapplied."); }
+        return await ExecuteAsync(["stash", "pop", "--index", "--", saved.Reference], token).ConfigureAwait(false);
     }
 
     /// <summary>Return a completed revision checkout's native false result; launch errors and cancellation still propagate.</summary>
