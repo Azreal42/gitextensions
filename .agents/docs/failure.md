@@ -2,6 +2,14 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="h32-chooser-rendu-filtre"></a>
+## H32 — sélecteur : rendu et filtre
+
+- [Compilation01](../../artifacts/linux/shared-revision-chooser-20261021/build-01/desktop.log) : `SelectedItems` est nullable dans le nouveau test ; conserver la garde/nullabilité du contrôle natif.
+- [Premier ciblé](../../artifacts/linux/shared-revision-chooser-20261021/targeted-01/results/desktop.trx) : 241/242. Le nouveau test comparait le corps brut au texte affiché, qui porte déjà deux espaces de séparation dans `MessageCell`. Corriger les deux attendus exacts, sans changer le produit ni un test historique. Les passages suivants sont dans le TODO.
+- `--parents` ne signifie pas que grep seul supprime les parents non sélectionnés : [observation Git](../../artifacts/linux/shared-revision-chooser-20261021/review/grep-parent-policy-root-check.json). Garder l’ancien test singleton ; le nouveau filtre chemin distingue réellement parent brut et parent de graphe.
+- Revue avant/finalisation : conserver le guard HEAD unborn et une admission `_work` unique pendant le modal. Une gouttière de largeur zéro ne cache pas les enfants d’un Canvas ; masquer les Canvas artificiels aussi, avec deux cas visible/masqué. La borne Rebase est indépendante du filtre Current éditable ; OK/Reset doivent conserver les champs invisibles du query.
+
 ## H31 — Proxy et issues GitHub
 
 - [Compilation02](../../artifacts/linux/plugin-defaults-20261021/build-02/desktop.log) : `GitRemote` expose `FetchUrls`, pas `Url` ; reprendre le consommateur Hosting existant. [Compilation03](../../artifacts/linux/plugin-defaults-20261021/build-03/desktop.log) : modificateurs explicites du clavier headless. [Compilation06](../../artifacts/linux/plugin-defaults-20261021/build-06/desktop.log) : CS9124, conserver le texte initial dans un champ readonly.

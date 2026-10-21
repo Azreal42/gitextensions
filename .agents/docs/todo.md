@@ -1,10 +1,23 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H31 : 305/305 Desktop (27 classes), 35/35 Core Hosting et 42/42 Plugins sur les octets du checkout commité `40d8e1a32`. H30 et les lots antérieurs gardent leurs preuves historiques ; la référence complète L25 reste distincte.
+Mise à jour : 21 octobre 2026. H32 : rendu et filtres communs du chooser, 89/89 Desktop, 16/16 Core et 42/42 Plugins sur les octets commités `9dc6260a6` ; passage plus large de 242 Desktop avant la dernière correction de gouttière, preuves distinctes ci-dessous. La référence complète L25 reste distincte.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+## H32 — rendu et filtres partagés du sélecteur
+
+Source : `9dc6260a68cea63932c0691e51aaf5ddd9c2c73e` ; [équivalence des sources](../../artifacts/linux/shared-revision-chooser-20261021/review/source-import-review.json), [ADR0153](adr/workflows/history/0153-shared-commit-chooser.md).
+
+- [x] Chooser/Export réutilisent les lignes, badges inline, colonnes et présentation pure de Browse ; vue capturée une fois, objets/focus conservés, choix simple et plage multiple distincts. Gouttières réelle/artificielle cohérentes avec le graphe masqué.
+- [x] Filtre avancé commun, bouton original/Ctrl+I, critères multichamps et parents natifs de graphe ; état privé, Current initial éditable et borne Rebase conservée après OK/Reset. Annulation et fermeture du propriétaire drainées.
+
+[Validation](../../artifacts/linux/shared-revision-chooser-20261021/review/root-targeted-review.json) : **89/89 Desktop (sept classes), 16/16 Core graphe et 42/42 Plugins** sur les octets finaux ; 87 identités du passage précédent conservées, deux cas graphe ajoutés, 23 nouveaux cas Desktop au total. Le passage plus large **242/242 Desktop (20 classes), 16/16 Core et 42/42 Plugins** précède la correction finale de gouttière ; il n’est pas présenté comme rejoué intégralement sur la source finale. Sources/binaires stables, processus retirés ; [deux rendus EN clair/FR sombre inspectés](../../artifacts/linux/shared-revision-chooser-20261021/review/root-visual-review.json), [échec conservé et causes](failure.md#h32-chooser-rendu-filtre).
+
+[Compilation finale](../../artifacts/linux/shared-revision-chooser-20261021/review/root-final-compilation-review.json) : trois projets sans diagnostic, mêmes octets source que le ciblé final. [Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/9dc6260a6/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 248 364 octets, SHA256 `a8a7641f82245bc055524f4e81c22d0bb4687f01ea35d0100fc74fd64e861cd1` ; [revue](../../artifacts/linux/shared-revision-chooser-20261021/review/root-package-review.json), sept phases à 0, 356 fichiers publiés comparés et 402 MD5. Installation/démarrage DPKG isolés réussis ; aucune installation hôte ni qualification native interactive. Les cinq modifications applicatives Modal préexistantes restent exclues du worktree/paquet propre.
+
+Restent : lecteur complet/pagination/plafond Windows, sélection hors portion, insertion des artificiels avant HEAD, menus/navigation/recherche complets, métadonnées et variantes du filtre décrits dans ADR0153. Niveaux et treize familles ouvertes inchangés ; aucun N4. Les suites complètes L25 et les preuves CI/serveurs gardent leurs sources historiques.
 
 ## H31 — Proxy commun et assistant issues GitHub
 

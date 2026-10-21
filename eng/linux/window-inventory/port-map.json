@@ -320,14 +320,15 @@
         "HistoryFilterDialog",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert.",
+      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert. Réemploi privé dans le chooser ; OK/Reset conservent tri, flags de références et borne du lanceur, Skip remis à zéro. Annulation/focus et fermeture avec filtre ouvert vérifiés sur le ciblé H32.",
       "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée ; audit Wayland/DPI/accessibilité ouvert.",
       "visual": "adapte",
       "tests": [
         "BranchHistoryFilterTests",
         "DialogAccessKeyTests",
         "MainWindowBusyFocusTests",
-        "FileHistoryTraversalSettingsTests"
+        "FileHistoryTraversalSettingsTests",
+        "ChooseCommitFilterTests"
       ],
       "adr": [
         "0042",
@@ -1822,8 +1823,8 @@
         "RebaseRevisionPicker",
         "ExportRevisionPicker"
       ],
-      "implemented": "Choix commun sur la grille existante, préselection résolue, GoTo partagé et deux liens parents ; Rebase garde la branche actuelle et la borne native exclusive du merge-base. Les adaptateurs historiques conservent leurs retours GitCommit ; Compare reçoit Commit/Index/WorkingTree typés, avec préférence capturée et garde bare. Une sélection unique assure les flèches entre surfaces ; lectures, enfant GoTo et fermeture partagent le drainage.",
-      "remaining": "Historique limité à 500 commits et au filtre message existant ; grille/filtration Windows complètes encore ouvertes. Les deux lignes artificielles sont épinglées en tête sous l’en-tête, sans reproduire leur insertion avant HEAD dans le flux Windows. Variantes natives, plateformes et interaction installée restent à qualifier dans le TODO.",
+      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents de graphe natifs, Current initial éditable et borne Rebase exclusive conservée après OK/Reset ; préselection résolue et GoTo dans la portion chargée. Commits réels et endpoints Index/WorkingTree typés, garde bare, navigation/focus et fermeture drainée ; gouttières cohérentes quand le graphe est masqué.",
+      "remaining": "Portion de 500 commits par défaut et limite éditable, sans lecteur incrémental/plafond Windows complet ; préselection/GoTo hors portion, héritage runtime, regex/options avancées, recherche rapide, menus et commandes encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
       "visual": "adapte",
       "tests": [
         "CherryPickDialogTests",
@@ -1831,7 +1832,9 @@
         "RebaseDialogTests",
         "ExportDialogTests",
         "ChooseCommitDialogTests",
-        "ComparisonCommitPickerTests"
+        "ComparisonCommitPickerTests",
+        "ChooseCommitFilterTests",
+        "ExportRevisionPresentationTests"
       ],
       "adr": [
         "0153"

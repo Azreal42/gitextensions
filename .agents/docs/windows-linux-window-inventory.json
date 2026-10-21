@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "40d8e1a32a809768401c3c15e2bda89c30e48fec",
-  "source_digest_sha256": "fe583789c4fa019c3579f2a78323a4ee71f39d88aab8ac631d72d4be040100d1",
-  "scanned_csharp_files": 2600,
+  "code_reference_commit": "9dc6260a68cea63932c0691e51aaf5ddd9c2c73e",
+  "source_digest_sha256": "e6b81dad2b6d07a0a9246f4a2c47a1cfc22398d986737504d0da03e0eace5831",
+  "scanned_csharp_files": 2603,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -3316,7 +3316,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 154,
+          "line": 201,
           "kind": "window"
         }
       ],
@@ -6277,7 +6277,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 154,
+          "line": 201,
           "kind": "window"
         },
         {
@@ -6853,7 +6853,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 154,
+          "line": 201,
           "kind": "window"
         }
       ],
@@ -10961,7 +10961,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyHistoryViewPresentation",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs",
-          "line": 69,
+          "line": 67,
           "kind": "window"
         },
         {
@@ -19494,8 +19494,8 @@
       "feature": "Sélection d’une révision pour les dialogues",
       "group": "helpers",
       "level": "N2",
-      "implemented": "Choix commun sur la grille existante, préselection résolue, GoTo partagé et deux liens parents ; Rebase garde la branche actuelle et la borne native exclusive du merge-base. Les adaptateurs historiques conservent leurs retours GitCommit ; Compare reçoit Commit/Index/WorkingTree typés, avec préférence capturée et garde bare. Une sélection unique assure les flèches entre surfaces ; lectures, enfant GoTo et fermeture partagent le drainage.",
-      "remaining": "Historique limité à 500 commits et au filtre message existant ; grille/filtration Windows complètes encore ouvertes. Les deux lignes artificielles sont épinglées en tête sous l’en-tête, sans reproduire leur insertion avant HEAD dans le flux Windows. Variantes natives, plateformes et interaction installée restent à qualifier dans le TODO.",
+      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents de graphe natifs, Current initial éditable et borne Rebase exclusive conservée après OK/Reset ; préselection résolue et GoTo dans la portion chargée. Commits réels et endpoints Index/WorkingTree typés, garde bare, navigation/focus et fermeture drainée ; gouttières cohérentes quand le graphe est masqué.",
+      "remaining": "Portion de 500 commits par défaut et limite éditable, sans lecteur incrémental/plafond Windows complet ; préselection/GoTo hors portion, héritage runtime, regex/options avancées, recherche rapide, menus et commandes encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
       "visual": "adapte",
       "linux": [
         {
@@ -19543,7 +19543,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 154,
+          "line": 201,
           "kind": "window"
         }
       ],
@@ -19567,6 +19567,12 @@
           "results_present": false
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ChooseCommitFilterTests.cs",
+          "test_class": "ChooseCommitFilterTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonCommitPickerTests.cs",
           "test_class": "ComparisonCommitPickerTests",
           "passed_in_reference_run": 0,
@@ -19577,6 +19583,12 @@
           "test_class": "ExportDialogTests",
           "passed_in_reference_run": 13,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ExportRevisionPresentationTests.cs",
+          "test_class": "ExportRevisionPresentationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RebaseDialogTests.cs",
@@ -20583,7 +20595,7 @@
       "feature": "Filtre avancé de l’historique",
       "group": "navigation",
       "level": "N3",
-      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert.",
+      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert. Réemploi privé dans le chooser ; OK/Reset conservent tri, flags de références et borne du lanceur, Skip remis à zéro. Annulation/focus et fermeture avec filtre ouvert vérifiés sur le ciblé H32.",
       "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée ; audit Wayland/DPI/accessibilité ouvert.",
       "visual": "adapte",
       "linux": [
@@ -20608,6 +20620,12 @@
           "test_class": "BranchHistoryFilterTests",
           "passed_in_reference_run": 11,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ChooseCommitFilterTests.cs",
+          "test_class": "ChooseCommitFilterTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/DialogAccessKeyTests.cs",
@@ -22747,11 +22765,11 @@
       "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
       "name": "ExportRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-      "line": 154,
+      "line": 201,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 154
+          "line": 201
         }
       ],
       "bases": [
