@@ -16,8 +16,10 @@ Une feuille conserve ses propres côtés A/B, même quand le même chemin appara
 
 ## Adaptations et limites
 
-Linux propose les chemins POSIX/natifs ; les conversions WSL/Cygwin sont spécifiques Windows. L’historique artificiel utilise la fenêtre Linux existante avec repli explicite vers le premier commit réel (branche dédiée Windows), tandis que le défaut Windows utilise Browse. L’ouverture d’un sous-module ouvre son navigateur ; la présélection Windows de la paire gitlink reste ouverte. Découverte de tous les outils installés, scripts/Visual Studio, préférences correspondantes et audit complet des variantes restent ouverts. Browse/FormDiff restent N2.
+Linux propose les chemins POSIX/natifs ; les conversions WSL/Cygwin sont spécifiques Windows. L’historique artificiel utilise la fenêtre Linux existante avec repli explicite vers le premier commit réel (branche dédiée Windows), tandis que le défaut Windows utilise Browse. Le candidat L25 transmet la paire gitlink capturée vers le Browse enfant, sans retargeter HEAD (ADR0147) ; qualification finale à relier. Découverte de tous les outils installés, scripts/Visual Studio, préférences correspondantes et audit complet des variantes restent ouverts. Browse/FormDiff restent N2.
 
 ## Validation
 
 Sources, suites et périmètre natif : [TODO](../../todo.md). Les tests ciblés privés ne certifient pas le paquet ni une parité globale.
+
+Complément CLI L25 : `searchfile [path]` réutilise FileListFindDialog sur le vrai HEAD. Accepter écrit seulement le chemin absolu littéral et sa newline sur stdout ; annuler/échouer garde stdout vide et renvoie -1. Aucun Browse ni ouverture de fichier ; lecteurs drainés. [SearchFileCommandLineTests](../../../../tests/linux/GitExtensions.Desktop.Tests/SearchFileCommandLineTests.cs) est une source de scénarios, pas un résultat exécuté.

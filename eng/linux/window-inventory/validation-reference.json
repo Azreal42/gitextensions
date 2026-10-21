@@ -1,11 +1,11 @@
 {
-  "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
-  "trx": "artifacts/linux/command-log-external-process-20261020/desktop-full-01/results/desktop.trx",
-  "trx_sha256": "acabb391f63e60331880430245dab829761f2e3b37eb738b4583c435636f92f6",
+  "source_sha": "1c6068f4017eae8344eee25ad3f7bd280cbaa847",
+  "trx": "artifacts/linux/portable-dialog-completions-20261020/desktop-full-03/results/desktop.trx",
+  "trx_sha256": "00149a921d4bc52ee590bb3601fbdd88b0cdce4cd1602774dbd8471be2448681",
   "counters": {
-    "total": "3763",
-    "executed": "3763",
-    "passed": "3763",
+    "total": "4051",
+    "executed": "4051",
+    "passed": "4051",
     "failed": "0",
     "error": "0",
     "timeout": "0",
@@ -121,7 +121,7 @@
       "Passed": 21
     },
     "BlameAvatarTests": {
-      "Passed": 4
+      "Passed": 6
     },
     "BlameDialogTests": {
       "Passed": 3
@@ -133,7 +133,13 @@
       "Passed": 4
     },
     "BlameOptionsTests": {
+      "Passed": 8
+    },
+    "BlameViewerSettingsPageTests": {
       "Passed": 7
+    },
+    "BlameViewerSettingsSessionTests": {
+      "Passed": 20
     },
     "BranchHistoryFilterTests": {
       "Passed": 11
@@ -258,8 +264,20 @@
     "CommitCompletionSpellingRaceTests": {
       "Passed": 1
     },
+    "CommitDialogSettingsConsumerTests": {
+      "Passed": 7
+    },
+    "CommitDialogSettingsPageTests": {
+      "Passed": 6
+    },
+    "CommitDialogSettingsSessionTests": {
+      "Passed": 17
+    },
     "CommitDialogTests": {
       "Passed": 12
+    },
+    "CommitDiffWindowTests": {
+      "Passed": 11
     },
     "CommitDisplayFilterTests": {
       "Passed": 9
@@ -318,11 +336,14 @@
     "ComparisonSelectionTests": {
       "Passed": 12
     },
+    "ConfirmationsFourPoliciesTests": {
+      "Passed": 27
+    },
     "ConfirmationsSettingsPageTests": {
-      "Passed": 14
+      "Passed": 18
     },
     "ConfirmationsSettingsSessionTests": {
-      "Passed": 19
+      "Passed": 23
     },
     "ConfirmationsWorkflowTests": {
       "Passed": 14
@@ -341,6 +362,12 @@
     },
     "DashboardTests": {
       "Passed": 6
+    },
+    "DeferredOwnerCloseReplayTests": {
+      "Passed": 3
+    },
+    "DeleteUnusedBranchesDialogTests": {
+      "Passed": 34
     },
     "DesktopFontsTests": {
       "Passed": 7
@@ -451,7 +478,7 @@
       "Passed": 6
     },
     "FileHistoryBrowseTests": {
-      "Passed": 9
+      "Passed": 13
     },
     "FileHistoryDialogTests": {
       "Passed": 5
@@ -520,6 +547,9 @@
       "Passed": 1
     },
     "ForkCloneDialogTests": {
+      "Passed": 18
+    },
+    "ForkPointSelectionTests": {
       "Passed": 18
     },
     "FormEditDialogTests": {
@@ -606,6 +636,12 @@
     "GourceAvatarProviderTests": {
       "Passed": 6
     },
+    "GpgStatusClassificationTests": {
+      "Passed": 17
+    },
+    "GpgVerificationTests": {
+      "Passed": 10
+    },
     "GrepDialogTests": {
       "Passed": 7
     },
@@ -650,6 +686,12 @@
     },
     "LanguagePreferencesTests": {
       "Passed": 26
+    },
+    "LeftPanelReferenceNavigationTests": {
+      "Passed": 8
+    },
+    "LeftPanelSelectedRefsTests": {
+      "Passed": 10
     },
     "LinuxUpdateClientTests": {
       "Passed": 34
@@ -700,7 +742,7 @@
       "Passed": 19
     },
     "ParentChildNavigationTests": {
-      "Passed": 20
+      "Passed": 22
     },
     "PluginLifecycleTests": {
       "Passed": 4
@@ -777,6 +819,9 @@
     "ReflogDialogTests": {
       "Passed": 15
     },
+    "ReleaseNotesArgumentsDialogTests": {
+      "Passed": 2
+    },
     "RemoteBranchDeletionDialogTests": {
       "Passed": 14
     },
@@ -834,6 +879,12 @@
     "RevisionLinksSettingsSessionTests": {
       "Passed": 13
     },
+    "RevisionLogCloseRefreshTests": {
+      "Passed": 8
+    },
+    "RevisionLogWindowTests": {
+      "Passed": 11
+    },
     "RevisionQuickSearchTests": {
       "Passed": 42
     },
@@ -876,6 +927,9 @@
     "ScriptsSettingsPageTests": {
       "Passed": 15
     },
+    "SearchFileCommandLineTests": {
+      "Passed": 11
+    },
     "SettingsNavigationTests": {
       "Passed": 20
     },
@@ -894,6 +948,9 @@
     "StatisticsDialogTests": {
       "Passed": 4
     },
+    "SubmoduleBrowseComparisonTests": {
+      "Passed": 16
+    },
     "SubmoduleConflictDialogTests": {
       "Passed": 14
     },
@@ -908,6 +965,9 @@
     },
     "TeamCityIntegrationTests": {
       "Passed": 7
+    },
+    "TeamCityRepositoryVariablesTests": {
+      "Passed": 5
     },
     "TranslationCatalogTests": {
       "Passed": 11
@@ -929,6 +989,9 @@
     },
     "UpdatesMenuIntegrationTests": {
       "Passed": 4
+    },
+    "ViewPatchDialogTests": {
+      "Passed": 23
     },
     "ViewerEscapeHostTests": {
       "Passed": 3
@@ -960,64 +1023,64 @@
   },
   "additional_suites": {
     "core": {
-      "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
-      "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+      "source_sha": "1c6068f4017eae8344eee25ad3f7bd280cbaa847",
+      "execution_source_sha": "1c6068f4017eae8344eee25ad3f7bd280cbaa847",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
       "passed": 1144,
       "total": 1144,
-      "execution_result": "artifacts/linux/command-log-external-process-20261020/core-full-01/result.json",
-      "execution_result_sha256": "17827f6a80dffaa0624181f83ef36af51d7aeb9083a81c558cf5f7a8b6759282",
+      "execution_result": "artifacts/linux/portable-dialog-completions-20261020/core-full-01/result.json",
+      "execution_result_sha256": "5921d21a09e182afd42c6eaec6e5d3ce466beeb0bdd8e364df1840c2571ddf1d",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
-        "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
+        "path": "artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json",
+        "sha256": "d2cbe919afacdd2184a12d5744a43cdfd197937bb04f59d6bf22149cbb39ae1f"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
-        "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
+        "path": "artifacts/linux/portable-dialog-completions-20261020/review/source-import-review-03.json",
+        "sha256": "5d7421a9f4e83d88295b7c0fc9e39b26a87830737fec66db6198b9b74178eb6e"
       },
-      "comparison_scope": "Fresh complete suite on exact C4 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
+      "comparison_scope": "Fresh complete suite on the exact committed source in the clean isolated worktree; primary Modal edits remain separate."
     },
     "plugins": {
-      "source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
-      "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+      "source_sha": "1c6068f4017eae8344eee25ad3f7bd280cbaa847",
+      "execution_source_sha": "1c6068f4017eae8344eee25ad3f7bd280cbaa847",
       "execution_kind": "worktree",
       "execution_worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
       "primary_execution": false,
       "reexecuted_on_candidate": true,
-      "passed": 37,
-      "total": 37,
-      "execution_result": "artifacts/linux/command-log-external-process-20261020/plugins-full-01/result.json",
-      "execution_result_sha256": "dc9e14247ac2e80df59a1a9a2bda0ea414c18079b975749a2893d09b920923c6",
+      "passed": 42,
+      "total": 42,
+      "execution_result": "artifacts/linux/portable-dialog-completions-20261020/plugins-full-01/result.json",
+      "execution_result_sha256": "6e67b377cc2a39e4c0ee217064b0c4c083f2ac2c7b53c85f69e4c3f3b0556a8f",
       "execution_exit_code": 0,
       "parent_verification": {
-        "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
-        "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
+        "path": "artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json",
+        "sha256": "d2cbe919afacdd2184a12d5744a43cdfd197937bb04f59d6bf22149cbb39ae1f"
       },
       "source_equivalence": {
-        "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
-        "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
+        "path": "artifacts/linux/portable-dialog-completions-20261020/review/source-import-review-03.json",
+        "sha256": "5d7421a9f4e83d88295b7c0fc9e39b26a87830737fec66db6198b9b74178eb6e"
       },
-      "comparison_scope": "Fresh complete suite on exact C4 committed sources in the clean isolated worktree; thirteen unrelated primary files remain separate."
+      "comparison_scope": "Fresh complete suite on the exact committed source in the clean isolated worktree; primary Modal edits remain separate."
     }
   },
   "execution_provenance": {
     "kind": "worktree",
     "worktree": "/home/az42/.codex/worktrees/help-images-preference/gitextensions",
-    "execution_source_sha": "61c883092983a58cfba053cdda28cd25adc0e6bd",
+    "execution_source_sha": "1c6068f4017eae8344eee25ad3f7bd280cbaa847",
     "primary_execution": false,
     "reexecuted_on_candidate": true,
     "source_equivalence": {
-      "path": "artifacts/linux/command-log-external-process-20261020/review/source-import-review-02.json",
-      "sha256": "086b604d410428a02f9ebd397d477e2a17051a639f497bd939790bb8f1de4a16"
+      "path": "artifacts/linux/portable-dialog-completions-20261020/review/source-import-review-03.json",
+      "sha256": "5d7421a9f4e83d88295b7c0fc9e39b26a87830737fec66db6198b9b74178eb6e"
     },
     "root_review": {
-      "path": "artifacts/linux/command-log-external-process-20261020/review/root-full-review.json",
-      "sha256": "a658e6d4ffd20d82b0054ef2ab67daf77838192ac93b7d152edb868d83362b33"
+      "path": "artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json",
+      "sha256": "d2cbe919afacdd2184a12d5744a43cdfd197937bb04f59d6bf22149cbb39ae1f"
     },
-    "meaning": "Fresh complete suites on the exact C4 committed sources. Primary Modal edits and documentation remain separate; native external-process journal and isolated Debian scopes have independent reviews. No global parity inferred."
+    "meaning": "Fresh complete suites on the exact committed source of this lot. Five primary Modal edits stay separate; isolated Debian and headless visual scopes keep their own reviews. No global parity inferred."
   }
 }

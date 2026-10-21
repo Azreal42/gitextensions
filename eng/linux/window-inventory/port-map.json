@@ -127,10 +127,17 @@
         "file:src/linux/GitExtensions.Desktop/MainWindow.GitHubActions.cs",
         "GitProcessDialog",
         "file:src/linux/GitExtensions.Core/GitRepository.Bisect.cs",
-        "file:src/linux/GitExtensions.Desktop/MainWindow.RevisionBisect.cs"
+        "file:src/linux/GitExtensions.Desktop/MainWindow.RevisionBisect.cs",
+        "ViewPatchDialog",
+        "RevisionLogWindow",
+        "CommitDiffWindow",
+        "GitGpgPresentation",
+        "file:src/linux/GitExtensions.Core/GitRepository.GpgVerification.cs",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.ForkPointSelection.cs",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.NavigationSelection.cs"
       ],
-      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitHub Actions, GitLab et Azure conservent le mode Windows d’ouverture externe ; false ne signifie pas un onglet supprimé. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours. ADR0135 : menu de badge ciblé par défaut, Maj/global complet et Ctrl prioritaire, avec ref complète/RevisionHash filtrée dans les deux formes. Branche/tag homonymes et tag annoté restent distincts ; hors badge/clavier et fermeture effacent l’ancien contexte. Push/Merge/Delete tag/Select in left panel réutilisent les consommateurs partagés ; ciblage Rebase gardé pendant refresh, retour grille ou intention arbre sans filtre/reconstruction. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO. ADR0136 : représentant Windows commun à statut/texte/tooltip/cellule/menu/PR/rapport : StartDate maximal, dernière observation nouvelle/modifiée à égalité, poll inchangé sans réordre. Données brutes et admissions fournisseurs conservées, projection une fois par publication et lookup SHA. Préférence + URL conditionnent la page ; false montre Open report centré, Ctrl+7 configurable vise son contrôle ; diagnostics hors onglet et invalidation dépôt/configuration. Ciblé/Core frais, natif GHA local EN/FR et paquet 545f qualifiés sur ce périmètre ; preuves dans TODO. ADR0137 ajoute le groupe contextuel Bad/Good/Skip/Stop, au premier niveau dans l’ordre Windows pendant une session réelle. Snapshot dépôt/SHA de la dernière ligne ciblée, distincte checkout/ancre multisélection ; classements explicites et Stop sans SHA, Process false/true selon Windows, refresh après effets partiels et première flèche grille. Garde Linux non bare explicite ; ciblé 103/103, natif local EN/FR et paquet bab820090 qualifiés sur ce périmètre ; preuves dans TODO.",
-      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Ouverture sous-module sans présélection de la paire gitlink. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert. ADR0135 ne clôt pas les groupes NestledVirtualRef Windows, commandes artificielles/stash ni Advanced/Bisect complets ; preuves du lot dans TODO ; autres variantes natives ouvertes. Rapport HTML true encore adapté en liste/bouton, à rapprocher séparément ; serveurs réels/authentifiés et interface installée restent distincts de la qualification ciblée ADR0136, sans parité globale.",
+      "implemented": "Grille/graphe, références ciblées, disposition classique et lectures de panneaux indépendantes. Menus Diff/File tree communs à Compare : ordre/icônes/gestes, provenance par feuille et opérations ciblées ; callbacks réservés à Browse conservés. Sources, suites et périmètres de focus dans le TODO et les ADR. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Show in File tree transmet la première flèche à la ligne ciblée. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. Premier clic, premières flèches, six options et Show all branches vérifiés en natif Browse anglais/clair sous X11 privé ; autres variantes ouvertes. Les lanceurs Git et console interactive utilisent un répertoire privé de socket borné en UTF-8, avec repli court pour TMPDIR long (ADR 0084 ; suites complètes, paquet exact et ouverture X11 ciblée vérifiés). History ouvre par défaut un Browse indépendant avec présélection sans borne, Diff initial/navigation temporaire, noms suivis depuis HEAD et Blame File tree à publication atomique. Index/WT/EmptyTree restent typés au refresh et au grep ; EmptyTree est refusé comme source de Reset. ADR 0085. Quatre réglages d’historique partagés ; F5 conserve les côtés typés et recharge CommitInfo depuis la sélection retenue. ADR0086, Git/headless et paquet vérifiés ; audit GUI natif ouvert. Recherche incrémentale des lignes affichées : messages complets, auteurs et références, préfixes SHA, Alt+Haut/Bas, aide/notice originales, publication du collage annulable et destinations artificielles typées ; ADR0087, périmètre de validation dans le TODO. Navigate Parent/Child reprend les deux piles Windows, dernier clic distinct de la récence QuickSearch, voisins du graphe chargé et point d’insertion Index/HEAD, erreur traduite hors grille et focus à publication. ADR0088 : ciblé07 121/121 et deux variantes ordinaires WT/Index F5 Git/headless ; suites complètes et natif ciblé distincts, aucune extension native à F5 ; variantes ouvertes. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Toolbar Scripts, menus révision/branches locales/fichiers et gestes par ID ; contexte capturé une fois et refresh après foreground potentiellement mutateur, même échoué. Avatars partagés : grille et CommitInfo consomment la politique sauvegardée, les caches et générations du service ; affichage sans changer la sélection, lectures visibles annulables et fermeture drainée. Le natif source c831 anglais/clair/X11 confirme le fournisseur local dans grille/CommitInfo, Apply/Cancel/Clear, visibilité indépendante, premier clic/Haut/Bas sans réparation et persistance au redémarrage ; template long borné et trois aides visibles sans action externe, limites dans ADR0099. Troncature globale des chemins dans les listes de changements, Diff et File tree, y compris le Browse ouvert pour un historique fichier ; présentation seule mise à jour en place, chemins Git littéraux et tooltips complets conservés ; un filtre Filename only peut changer les fichiers visibles (ADR0100). Related links utilise les définitions XML partagées et leurs diagnostics sans remplacer le message ; activation explicite, générations/attachements drainés (ADR0108). GitHub Actions, TeamCity, GitLab, AppVeyor et Azure DevOps partagent les réglages par portée, les états par SHA dans la grille et Show build page externe ; GitHub Actions, GitLab et Azure conservent le mode Windows d’ouverture externe ; false ne signifie pas un onglet supprimé. Autres fournisseurs et parité étendue du rapport Windows ouverts (ADR0109/0111/0112). AppVeyor ajoute résumés durée/tests/PR et liens explicites par statut sans remplacer les lignes ; ADR0113, suites complètes et natif source ciblé vérifiés. Le rapport embarqué Windows reste ouvert. Azure raccorde statuts/durées/tooltips et liens au pipeline commun sans remplacer les lignes (ADR0114). Help ouvre la fenêtre Donate originale possédée avant toute activation externe ; erreurs du launcher possédées et retour à Browse (ADR0115). Jenkins rejoint le suivi partagé (ADR0116). Checkout this commit ouvre le formulaire compact Force/picker partagé (ADR0118) ; Recovery Quick view utilise TextEditDialog readonly et rend le focus après fermeture (ADR0120). Compléments Portable workflows : Edit/config brut (ADR0123), Fork/Clone Hosting (ADR0124), préférences Confirmations/Colors (ADR0125/0128), prompts avec ancre capturée et Rename/Move (ADR0126), rapport récupérable par statut (ADR0127). Les preuves et limites restent propres à chaque parcours. ADR0135 : menu de badge ciblé par défaut, Maj/global complet et Ctrl prioritaire, avec ref complète/RevisionHash filtrée dans les deux formes. Branche/tag homonymes et tag annoté restent distincts ; hors badge/clavier et fermeture effacent l’ancien contexte. Push/Merge/Delete tag/Select in left panel réutilisent les consommateurs partagés ; ciblage Rebase gardé pendant refresh, retour grille ou intention arbre sans filtre/reconstruction. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO. ADR0136 : représentant Windows commun à statut/texte/tooltip/cellule/menu/PR/rapport : StartDate maximal, dernière observation nouvelle/modifiée à égalité, poll inchangé sans réordre. Données brutes et admissions fournisseurs conservées, projection une fois par publication et lookup SHA. Préférence + URL conditionnent la page ; false montre Open report centré, Ctrl+7 configurable vise son contrôle ; diagnostics hors onglet et invalidation dépôt/configuration. Ciblé/Core frais, natif GHA local EN/FR et paquet 545f qualifiés sur ce périmètre ; preuves dans TODO. ADR0137 ajoute le groupe contextuel Bad/Good/Skip/Stop, au premier niveau dans l’ordre Windows pendant une session réelle. Snapshot dépôt/SHA de la dernière ligne ciblée, distincte checkout/ancre multisélection ; classements explicites et Stop sans SHA, Process false/true selon Windows, refresh après effets partiels et première flèche grille. Garde Linux non bare explicite ; ciblé 103/103, natif local EN/FR et paquet bab820090 qualifiés sur ce périmètre ; preuves dans TODO. Compléments L25 : View patch file ouvre ViewPatchDialog ; Log et CommitDiff ont leurs modes dédiés (ADR0143/0144). Le panneau GPG existant ajoute les signatures des tags annotés visant le commit, tags imbriqués inclus par le peeling Git Windows ; tags légers exclus. Vérification raw/message sur les OID de tags capturés, statuts/erreurs publiés pour la sélection encore courante (ADR0145). Open submodule transporte la paire gitlink capturée vers le Browse enfant (ADR0147). Le panneau gauche sélectionne la référence dans le graphe existant sans appliquer un filtre global ; résolution annulable, focus naturel de l’arbre et sélection plus récente prioritaires. Compléments vérifiés en Git/headless : base de diff au prochain point de branchement chargé et références soulignées distinctes du curseur ; filtrage seulement explicite, révélation depuis la grille raccordée.",
+      "remaining": "Browse reste N2 : menus secondaires, compléments superproject hors périmètre Commit ADR0104 ; audit étendu des scripts ; navigation parent/enfant ADR0088 à étendre en audit natif. Navigate Windows n’ouvre pas de picker ; les liens Parents/Children de CommitInfo sont déjà disponibles. Visual Studio, découverte/réglages complets des outils et variantes de plateforme restent ouverts. Reprise des flags masqués via Commit → Unstaged → Settings, distincte du File tree historique sans bits live. Audit natif étendu des autres variantes encore ouvert. Related links est porté sur le périmètre ADR0108 ; Markdown et flux mailto étendus encore ouverts ; natif Avatar borné au fournisseur local anglais/clair/X11, variantes étendues ouvertes. Path A courant et Path B ancien n’ont pas le même oracle de renommage futur ; audit natif étendu ouvert. ADR0135 ne clôt pas les groupes NestledVirtualRef Windows, commandes artificielles/stash ni Advanced/Bisect complets ; preuves du lot dans TODO ; autres variantes natives ouvertes. Rapport HTML true encore adapté en liste/bouton, à rapprocher séparément ; serveurs réels/authentifiés et interface installée restent distincts de la qualification ciblée ADR0136, sans parité globale. Les compléments de ce lot sont vérifiés en Git/headless, avec les limites du TODO ; l’existence du panneau GPG n’équivaut pas à une validation de tous les signers, agents ou configurations de confiance. Ctrl+K au-delà de deux côtés et Ctrl GoToRef vers la multisélection de la grille restent ouverts.",
       "visual": "rapproche",
       "tests": [
         "WindowsBrowseReferenceTests",
@@ -191,7 +198,17 @@
         "FocusedRevisionMenuTests",
         "RevisionContextMenuTests",
         "BuildReportParityTests",
-        "BisectRevisionContextTests"
+        "BisectRevisionContextTests",
+        "ViewPatchDialogTests",
+        "RevisionLogWindowTests",
+        "CommitDiffWindowTests",
+        "GpgVerificationTests",
+        "SubmoduleBrowseComparisonTests",
+        "LeftPanelReferenceNavigationTests",
+        "MainWindowSelectionTests",
+        "RenameCompareMenuTests",
+        "ForkPointSelectionTests",
+        "LeftPanelSelectedRefsTests"
       ],
       "adr": [
         "0031",
@@ -233,7 +250,13 @@
         "0128",
         "0135",
         "0136",
-        "0137"
+        "0137",
+        "0143",
+        "0144",
+        "0145",
+        "0147",
+        "0148",
+        "0149"
       ],
       "extra_evidence": [
         {
@@ -258,15 +281,22 @@
       "group": "navigation",
       "level": "N2",
       "linux": [
-        "MainWindow"
+        "MainWindow",
+        "RevisionLogWindow",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.RevisionLog.cs"
       ],
-      "implemented": "Historique et diffs disponibles dans Browse.",
-      "remaining": "Pas de fenêtre Log autonome ; comparer les variantes, menus et transitions propres à FormLog.",
+      "implemented": "Fenêtre Log dédiée 750×529, historique partagé en haut (205), fichiers (188) et diff en bas. Mode MainWindow distinct, commandes applicables et recherche incrémentale conservées ; Index/WorkingTree restent de vrais côtés typés. Ouverture depuis le double clic sur grille vide et route CLI viewdiff [repository-directory], aide publique incluse ; fermeture possédée, focus et lecteurs partagés. Le template sans en-tête conserve la publication native du contenu sélectionné. Scroll de frontière partagé avec CommitDiff, Alt/option et délai.",
+      "remaining": "Validation Git/headless de ce lot liée au TODO ; audit natif : toutes les variantes de menus, activation, défilement et fermeture restent à auditer dans cette fenêtre. Les preuves de Browse ne qualifient pas Log ; aucun niveau supérieur déduit de sa présence.",
       "visual": "integre",
       "tests": [
-        "MainWindowClassicTests"
+        "MainWindowClassicTests",
+        "RevisionLogWindowTests",
+        "CommitDiffWindowTests",
+        "CommandlineHelpDialogTests"
       ],
-      "adr": []
+      "adr": [
+        "0144"
+      ]
     },
     "GitUI.UserControls.RevisionGrid.FormRevisionFilter": {
       "feature": "Filtre avancé de l’historique",
@@ -373,14 +403,17 @@
       "group": "navigation",
       "level": "N2",
       "linux": [
-        "FileListFindDialog"
+        "FileListFindDialog",
+        "SearchFileApplication",
+        "SearchFileSession"
       ],
-      "implemented": "Sélecteur de fichiers partagé par les listes Browse/Compare : candidats capturés, recherche littérale à chaque frappe dans les noms actuels et antérieurs, préfixe absolu du dépôt et vingt résultats maximum. Flèches, Entrée et doubleclic choisissent une entrée ; Échap ferme sans appliquer de filtre regex. Le choix sélectionne le fichier existant dans la liste hôte.",
-      "remaining": "Portage limité au consommateur des listes de fichiers : la commande Windows searchfile et son résultat stdout pour Visual Studio ne sont pas raccordés. Placement, géométrie multi-écrans, vingt résultats, traductions longues, fermeture et focus de toutes les variantes demandent encore une validation native ciblée. Niveau N2 ; aucune certification du SearchWindow générique ni promotion N3.",
+      "implemented": "Sélecteur de fichiers partagé par les listes Browse/Compare : candidats capturés, recherche littérale à chaque frappe dans les noms actuels et antérieurs, préfixe absolu du dépôt et vingt résultats maximum. Flèches, Entrée et doubleclic choisissent une entrée ; Échap ferme sans appliquer de filtre regex. Le choix sélectionne le fichier existant dans la liste hôte. La commande searchfile [path] réutilise ce sélecteur sur les fichiers du vrai HEAD, après découverte du dépôt depuis le chemin/cwd. À acceptation, stdout contient uniquement le chemin absolu littéral puis sa newline ; annulation/erreur ne produisent aucun chemin et renvoient -1. Aucun Browse, ouverture de fichier, MRU ou sélection Index/WT fabriquée ; le lecteur est drainé avant fermeture.",
+      "remaining": "Protocole CLI/fenêtre vérifiés en Git/headless ; intégration réelle Visual Studio/externe, placement multi-écrans, traductions longues, Wayland/DPI/accessibilité et paquet interactif restent ouverts. Les autres consommateurs génériques de SearchWindow ne sont pas déclarés couverts.",
       "visual": "rapproche",
       "tests": [
         "FileMenuControllerTests",
-        "FilePaneParityTests"
+        "FilePaneParityTests",
+        "SearchFileCommandLineTests"
       ],
       "adr": [
         "0080"
@@ -569,7 +602,7 @@
         "CheckoutSubmodulePrompt",
         "SubmoduleUpdateDialog"
       ],
-      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules. Mode contraint de résolution gitlink : branches contenant les deux côtés, revalidation et succès complet distinct du résultat natif. Stash préparé avant BeforeCheckout, veto conservant le stash ; AfterCheckout aux frontières du workflow. Gitlink via paire Prepare/Complete revalidée sans UI sous mutex.",
+      "implemented": "Choix de branche, suivi, changements locaux et proposition de mise à jour des sous-modules. Mode contraint de résolution gitlink : branches contenant les deux côtés, revalidation et succès complet distinct du résultat natif. Stash préparé avant BeforeCheckout, veto conservant le stash ; AfterCheckout aux frontières du workflow. Gitlink via paire Prepare/Complete revalidée sans UI sous mutex. Politique globale triétat de réapplication après checkout réussi : question/choix relus, stash exact capturé et ordre Before/checkout/reapply/sous-modules/After conservé, sans choisir un nouveau sommet de stash.",
       "remaining": "Parité complète de toutes les combinaisons et de leur rendu non certifiée.",
       "visual": "rapproche",
       "tests": [
@@ -577,7 +610,8 @@
         "BranchMenuTests",
         "CheckoutSubmoduleTests",
         "SubmoduleConflictDialogTests",
-        "ScriptEventWorkflowTests"
+        "ScriptEventWorkflowTests",
+        "ConfirmationsFourPoliciesTests"
       ],
       "adr": [
         "0012",
@@ -585,7 +619,8 @@
         "0034",
         "0071",
         "0057",
-        "0078"
+        "0078",
+        "0125"
       ]
     },
     "GitUI.CommandsDialogs.FormCheckoutRevision": {
@@ -621,15 +656,17 @@
       "linux": [
         "DeleteBranchDialog"
       ],
-      "implemented": "Sélections, branches non fusionnées, worktrees et gardes avant suppression.",
-      "remaining": "Audit exhaustif des options/confirmations Windows non clos.",
+      "implemented": "Sélections, branches non fusionnées, worktrees et gardes avant suppression. Avertissement suppressible pour suppression forcée non fusionnée, défaut No et consentement explicite mémorisé ; gardes branche courante/worktree conservées.",
+      "remaining": "Audit exhaustif des options/confirmations Windows non clos. Linux conserve la case Force ; Windows force sa commande de suppression. Audit natif étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "ReferenceDialogTests",
-        "ReferenceMenuTests"
+        "ReferenceMenuTests",
+        "ConfirmationsFourPoliciesTests"
       ],
       "adr": [
-        "0012"
+        "0012",
+        "0125"
       ]
     },
     "GitUI.CommandsDialogs.FormDeleteRemoteBranch": {
@@ -952,18 +989,20 @@
       "linux": [
         "ResolveConflictsDialog"
       ],
-      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations. Assistant gitlink partagé depuis bouton, doubleclic ou Entrée, avec relecture après retour. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089.",
+      "implemented": "Stages réels de l’index, choix ours/theirs, fichier édité et reprise des opérations. Assistant gitlink partagé depuis bouton, doubleclic ou Entrée, avec relecture après retour. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Reset vers HEAD réel : première question obligatoire puis seconde confirmation suppressible, dismissal sans mémorisation ni reset.",
       "remaining": "Toutes les variantes d’outils, encodages, conflits et fermetures restent à auditer en GUI natif.",
       "visual": "rapproche",
       "tests": [
         "MergeBranchDialogTests",
         "ConflictRoutingTests",
-        "HotkeyHostDialogTests"
+        "HotkeyHostDialogTests",
+        "ConfirmationsFourPoliciesTests"
       ],
       "adr": [
         "0043",
         "0071",
-        "0089"
+        "0089",
+        "0125"
       ]
     },
     "GitUI.CommandsDialogs.FormRebase": {
@@ -975,21 +1014,24 @@
         "RebaseRevisionPicker",
         "NativeRebaseEditorWindow",
         "OriginalCommandHelp",
-        "OriginalCommandHelpVisibility"
+        "OriginalCommandHelpVisibility",
+        "CommitDiffWindow"
       ],
-      "implemented": "Rebase normal/interactif, plan, Continue/Abort/Skip et état durable. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source.",
-      "remaining": "Parité de toutes les commandes, variantes et workflows intégrés Windows encore ouverte ; audit natif étendu non clos. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts.",
+      "implemented": "Rebase normal/interactif, plan, Continue/Abort/Skip et état durable. ADR0134 : choix global DontShowHelpImages capturé à l’ouverture, aide/toggle/colonne retirés sans changer le Show/Hide local ; aide visible par défaut si le profil est illisible, sans réparation. Ciblé eb419 (248 cas/21 classes) et natif source X11 EN/FR borné vérifiés ; périmètres et limites dans TODO. Paquet exact eb419 vérifié par installation/lancement DPKG isolés, distinct des interactions natives source. Complément L25 : l’aperçu du commit réel ouvre le modal CommitDiff dédié, à OID fixe et parents effectifs ; fermeture/drain partagés, sans retargeter le lecteur appelant (ADR0144).",
+      "remaining": "Parité de toutes les commandes, variantes et workflows intégrés Windows encore ouverte ; audit natif étendu non clos. Le lot ADR0134 ne qualifie ni opération Git ni réactivation globale en natif ; restauration locale couverte headless. Interaction installée, OS vierge et Wayland/IME/DPI/accessibilité ouverts. Complément modal vérifié en Git/headless dans ce lot ; les preuves historiques de cet hôte ne sont pas transférées.",
       "visual": "rapproche",
       "tests": [
         "RebaseDialogTests",
         "RebaseLayoutTests",
         "RebaseJournalRecoveryTests",
         "NativeRebaseEditorTests",
-        "HelpImagesPreferencesTests"
+        "HelpImagesPreferencesTests",
+        "CommitDiffWindowTests"
       ],
       "adr": [
         "0047",
-        "0134"
+        "0134",
+        "0144"
       ]
     },
     "GitUI.CommandsDialogs.FormCherryPick": {
@@ -1232,8 +1274,8 @@
         "FileEditorWorkflow",
         "FileMenuOperations"
       ],
-      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque. La liste partagée suit les quatre modes de troncature globale ; texte affiché et ancien nom restent distincts des chemins et endpoints Git, avec limites communes Compact/submodule (ADR0100). Edit working file utilise FileEditorWorkflow/Dialog avec ligne/codec du lecteur admissible et refresh après effets acquis (ADR0123) ; Rename/Move utilise le SimplePrompt commun avec brouillon/retry (ADR0126). Les preuves natives des autres hôtes ne sont pas transférées.",
-      "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Sous-module ouvert sans présélection des deux révisions du gitlink. Audit étendu des scripts ouvert ; Visual Studio indisponible. Découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert.",
+      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque. La liste partagée suit les quatre modes de troncature globale ; texte affiché et ancien nom restent distincts des chemins et endpoints Git, avec limites communes Compact/submodule (ADR0100). Edit working file utilise FileEditorWorkflow/Dialog avec ligne/codec du lecteur admissible et refresh après effets acquis (ADR0123) ; Rename/Move utilise le SimplePrompt commun avec brouillon/retry (ADR0126). Les preuves natives des autres hôtes ne sont pas transférées. Complément L25 : Open submodule transmet au Browse enfant les deux OID gitlink réellement capturés, dans leur sens, via le transport typé partagé ; Index est résolu en gitlink enfant et WorkingTree reste une source live (ADR0147).",
+      "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Audit étendu des scripts ouvert ; Visual Studio indisponible. Découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert. Transport vérifié en Git/headless dans ce lot ; variantes natives encore ouvertes.",
       "visual": "integre",
       "tests": [
         "RenameCompareDialogTests",
@@ -1252,7 +1294,8 @@
         "BrowserScriptCommandsTests",
         "ScriptLaunchIntegrationTests",
         "FileEditorConsumerTests",
-        "GenericPromptHostTests"
+        "GenericPromptHostTests",
+        "SubmoduleBrowseComparisonTests"
       ],
       "adr": [
         "0016",
@@ -1262,7 +1305,8 @@
         "0057",
         "0078",
         "0123",
-        "0126"
+        "0126",
+        "0147"
       ],
       "extra_evidence": [
         {
@@ -1283,18 +1327,26 @@
       "level": "N2",
       "linux": [
         "MainWindow",
-        "CompareRevisionsDialog"
+        "CommitDiffWindow",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.CommitDiff.cs"
       ],
-      "implemented": "Diff d’un commit dans Browse et comparaison de révisions.",
-      "remaining": "Pas de fenêtre dédiée FormCommitDiff identique ; vérifier tous ses points d’entrée.",
+      "implemented": "Fenêtre dédiée 717×529, CommitInfo200 et fichiers260/diff. Révision résolue en OID fixe, parents effectifs lus dans Git, groupes root/parents/combined et lecteurs partagés sans historique masqué. Double clic d’un commit réel ouvre un modeless indépendant suivi par la vraie racine ; fermer un Browse secondaire le laisse vivre, fermer la racine ferme et draine la session. Aperçus modaux depuis Blame autonome, FileHistory et le lecteur inline Browse Show changes, ainsi que les patchs Rebase avec OID ; FormDiff A/B reste distinct. Liens de révision désactivés comme Windows ; notes, Show all et liens externes gardent leurs consommateurs. Scroll Alt/option/délai sans wrap et landing après publication.",
+      "remaining": "Lecture Git, variantes root/parents/combined, sessions racine/lanceur et fermeture vérifiées en headless sur la source de ce lot. Activation/focus, rendu images, filtres, défilement et fermetures dans une boucle native étendue restent à auditer ; aucune interaction du paquet installé déduite du headless.",
       "visual": "integre",
       "tests": [
         "RevisionContextMenuTests",
-        "RevisionDiffGroupTests"
+        "RevisionDiffGroupTests",
+        "CommitDiffWindowTests",
+        "BlameDialogTests",
+        "BlameAvatarTests",
+        "RebaseDialogTests",
+        "BlameOptionsTests",
+        "FileHistoryBrowseTests"
       ],
       "adr": [
         "0023",
-        "0058"
+        "0058",
+        "0144"
       ]
     },
     "GitUI.CommandsDialogs.FormFileHistory": {
@@ -1362,10 +1414,11 @@
         "FileHistoryBlameController",
         "BlameView",
         "AvatarImageControl",
-        "AvatarService"
+        "AvatarService",
+        "CommitDiffWindow"
       ],
-      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. File tree du Browse historique réutilise BlameView/options/codec/navigation : Index fournit stage0, WT ses octets, sans faux HEAD ; publication document/identité atomique, erreur native honnête et fermeture drainée. ADR 0085. Les images visibles et le panneau CommitInfo utilisent le service Avatar partagé et ses caches ; remplacement protégé contre les générations retirées et fermeture attendue, même si un provider ignore temporairement l’annulation. Providers injectés historiques conservés comme emprunts distincts.",
-      "remaining": "Audit natif intégral du lecteur et des multiples modes encore ouvert. Compléments CommitInfo (liens associés, Markdown, mailto) encore ouverts ; nouveau socle Avatar couvert par full Git/headless et paquet exact ; aucun parcours Blame natif déduit du natif Browse/Appearance. CommitInfo de cet hôte non vérifié en natif.",
+      "implemented": "Attribution, codecs, positions, navigation, avatars et préférences. CommitInfo utilise le panneau partagé CommitInformationView : détails/notes, branches et tags contenant, annotation directe, six préférences, Show all et lectures différées annulables ; ADR 0083, périmètre ciblé. File tree du Browse historique réutilise BlameView/options/codec/navigation : Index fournit stage0, WT ses octets, sans faux HEAD ; publication document/identité atomique, erreur native honnête et fermeture drainée. ADR 0085. Les images visibles et le panneau CommitInfo utilisent le service Avatar partagé et ses caches ; remplacement protégé contre les générations retirées et fermeture attendue, même si un provider ignore temporairement l’annulation. Providers injectés historiques conservés comme emprunts distincts. Complément L25 : l’aperçu du commit réel ouvre le modal CommitDiff dédié, à OID fixe et parents effectifs ; fermeture/drain partagés, sans retargeter le lecteur appelant (ADR0144). Show changes réutilise le modal CommitDiff depuis les trois hôtes ; la révision de la ligne cliquée est résolue même hors grille, sans déplacer le lecteur inline ni ses côtés Commit/Index/WorkingTree.",
+      "remaining": "Audit natif intégral du lecteur et des multiples modes encore ouvert. Compléments CommitInfo (liens associés, Markdown, mailto) encore ouverts ; nouveau socle Avatar couvert par full Git/headless et paquet exact ; aucun parcours Blame natif déduit du natif Browse/Appearance. CommitInfo de cet hôte non vérifié en natif. Complément modal vérifié en Git/headless dans ce lot ; les preuves historiques de cet hôte ne sont pas transférées. L’ancien onglet Changes interne au Blame autonome conserve son lecteur et ses options ; aucune parité supplémentaire de cet onglet n’est déduite du nouveau menu.",
       "visual": "rapproche",
       "tests": [
         "BlameDialogTests",
@@ -1378,14 +1431,16 @@
         "FileHistoryInlineBlameTests",
         "BlameAvatarTests",
         "AvatarWindowLifetimeTests",
-        "AvatarCommitInfoTests"
+        "AvatarCommitInfoTests",
+        "CommitDiffWindowTests"
       ],
       "adr": [
         "0011",
         "0017",
         "0030",
         "0083",
-        "0085"
+        "0085",
+        "0144"
       ]
     },
     "GitUI.CommandsDialogs.FormEditor": {
@@ -1497,17 +1552,20 @@
       "group": "files",
       "level": "N2",
       "linux": [
-        "ApplyPatchDialog",
-        "RebaseDialog@ShowPatchAsync"
+        "ViewPatchDialog",
+        "GitPatchPreview",
+        "MainWindow@ShowViewPatchAsync"
       ],
-      "implemented": "Aperçu du patch avant application dans Apply ; depuis la grille Rebase, lecture par Compare pour un commit avec parent ou par le viewer spécialisé RebasePatchDiff pour le fallback commit/fichier patch.",
-      "remaining": "Pas de fenêtre générale équivalente à FormViewPatch pour choisir librement un patch sur disque et parcourir sa grille de fichiers/types. Les aperçus Apply et Rebase existent ; les autres points d’entrée Windows et leurs variantes restent à comparer.",
+      "implemented": "Fenêtre dédiée de lecture d’un patch sur disque, ouverte depuis Browse → View patch file : chemin/Browse, grille Filename/Change/Type triable et sélection du diff. Réemploi du parseur Windows lié et du DiffView en patch fixe readonly ; options de lecture conservées sans génération d’un autre diff Git. Publication atomique du fichier accepté ; annulation/erreur gardent l’ancien aperçu et fermeture attend les lectures/picker possédés.",
+      "remaining": "Validation Git/headless de ce lot liée au TODO ; picker natif, traductions/rendus et gestes étendus, Wayland/DPI/accessibilité et interaction installée restent ouverts. Les aperçus Apply et Rebase ont leurs propres consommateurs ; une fenêtre de lecture ne certifie aucune application de patch.",
       "visual": "integre",
       "tests": [
-        "ExportDialogTests"
+        "ExportDialogTests",
+        "ViewPatchDialogTests"
       ],
       "adr": [
-        "0009"
+        "0009",
+        "0143"
       ]
     },
     "GitUI.CommandsDialogs.FormArchive": {
@@ -2029,9 +2087,11 @@
         "ColorsSettingsSession",
         "AdvancedSettingsPage",
         "AdvancedSettingsSession",
-        "SshSettingsPage"
+        "SshSettingsPage",
+        "BlameViewerSettingsPage",
+        "BlameViewerSettingsSession"
       ],
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (13/17), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130).",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (périmètre historique ADR0125), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130). Ce lot complète les dix-sept confirmations et la page globale Blame viewer, raccordées à Apply/Cancel partagé et vérifiées dans les suites complètes de sa source.",
       "remaining": "N2 : options/pages Windows restantes et variantes des pages Plugins ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "tests": [
@@ -2060,7 +2120,10 @@
         "AdvancedSettingsSessionTests",
         "AdvancedSettingsConsumerTests",
         "SshSettingsPageTests",
-        "SshSettingsSessionTests"
+        "SshSettingsSessionTests",
+        "ConfirmationsFourPoliciesTests",
+        "BlameViewerSettingsPageTests",
+        "BlameViewerSettingsSessionTests"
       ],
       "adr": [
         "0060",
@@ -2077,7 +2140,8 @@
         "0125",
         "0128",
         "0129",
-        "0130"
+        "0130",
+        "0017"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2092,21 +2156,26 @@
         "file:src/linux/GitExtensions.Core/GitHubHostingSettings.cs",
         "BuildServerCredentialsStore",
         "BuildServerCredentialsSnapshot",
-        "TeamCitySettingsPage"
+        "TeamCitySettingsPage",
+        "JenkinsSettingsPage",
+        "file:src/linux/GitExtensions.Desktop/BuildServerIntegrationSettingsPage.Jenkins.cs"
       ],
-      "implemented": "Dialogue compact original Guest/UsernameAndPassword/BearerToken, champs inactifs conservés et secrets masqués ; brouillons clonés et Save parent. Consommateurs Hosting GitHub et TeamCity effectifs. Store CI utilisateur séparé du XML, provider+origine+basepath, no-op, fusion de champs et fichier 0600 ; les changements d’instance ne reprennent aucun ancien statut/lien. Suites complètes et tests d’intégration vérifiés ; limites natives historiques ADR0110 et actuelles ADR0111 distinctes.",
-      "remaining": "N2 : Jenkins/autres consommateurs CI historiques et authentification intégrée Windows absents ; token CI Actions séparé. Identifiants locaux en clair sans coffre ; audit interactif TeamCity et autres plateformes ouvert. Le store coopératif/optimiste et les fichiers XML ne forment pas une transaction globale.",
+      "implemented": "Dialogue compact original Guest/UsernameAndPassword/BearerToken, champs inactifs conservés et secrets masqués ; brouillons clonés et Save parent. Consommateurs Hosting GitHub et TeamCity effectifs. Store CI utilisateur séparé du XML, provider+origine+basepath, no-op, fusion de champs et fichier 0600 ; les changements d’instance ne reprennent aucun ancien statut/lien. Suites complètes et tests d’intégration vérifiés ; limites natives historiques ADR0110 et actuelles ADR0111 distinctes. Jenkins consomme aussi ce dialogue via BuildServerIntegrationSettingsPage.Jenkins, en Guest/Basic sans Bearer ; ADR0116 décrit ce raccord existant.",
+      "remaining": "N2 : Autres consommateurs CI historiques et authentification intégrée Windows encore ouverts ; token CI Actions séparé. Identifiants locaux en clair sans coffre ; audit interactif TeamCity et autres plateformes ouvert. Le store coopératif/optimiste et les fichiers XML ne forment pas une transaction globale.",
       "visual": "rapproche",
       "tests": [
         "BuildServerCredentialsDialogTests",
         "GitHubHostingSettingsDialogTests",
         "GitHubHostingPreferencesStoreTests",
         "BuildServerCredentialsStoreTests",
-        "TeamCityIntegrationTests"
+        "TeamCityIntegrationTests",
+        "JenkinsIntegrationTests",
+        "JenkinsSettingsPageTests"
       ],
       "adr": [
         "0110",
-        "0111"
+        "0111",
+        "0116"
       ]
     },
     "GitUI.CommandsDialogs.RepoHosting.CreatePullRequestForm": {
@@ -2481,17 +2550,21 @@
       "group": "plugins",
       "level": "N2",
       "linux": [
-        "PluginDialog",
-        "DeleteUnusedBranchesPlugin"
+        "DeleteUnusedBranchesDialog",
+        "DeleteUnusedBranchesPlugin",
+        "DeleteUnusedBranchesPreview",
+        "DeleteUnusedBranchesDeletionResult"
       ],
-      "implemented": "Critères, liste/sélection et opérations Git natives.",
-      "remaining": "UI spécifique et matrice de confirmations/options Windows non entièrement reproduites.",
+      "implemented": "Fenêtre dédiée à cinq colonnes, cases et présélection par âge, sélection récente permise, confirmations Windows distinctes, moteur typé et adaptateur commun, revalidation de tout le lot et leases distantes. Résultats et effets possibles restent explicites. Validation Git/headless de ce lot liée au TODO ; audit natif étendu ouvert.",
+      "remaining": "Page générale Settings du plugin non portée ; audit natif étendu et interactions installées ouverts. Pas de transaction de lot ou garantie contre un changement externe après prévalidation.",
       "visual": "generique",
       "tests": [
-        "RepositoryDialogTests"
+        "RepositoryDialogTests",
+        "DeleteUnusedBranchesDialogTests"
       ],
       "adr": [
-        "0005"
+        "0005",
+        "0151"
       ],
       "extra_evidence": [
         {
@@ -2510,19 +2583,22 @@
         "PluginDialog",
         "ReleaseNotesGeneratorPlugin"
       ],
-      "implemented": "Bornes/options et génération réelle du texte.",
-      "remaining": "Formulaire dédié, édition/export et tous les choix de format Windows à comparer.",
+      "implemented": "PluginDialog expose les bornes et le champ Windows git log arguments, avec défaut --pretty=\"format:%h@%s%b\" --abbrev-commit {0}..{1}. Les bornes sont résolues en OID avant format .NET ; tokenizer partagé, argv littéraux sans shell et parseur Windows réemployé. Résultat readonly et exports texte/TSV/HTML existants ; une erreur format/quoting/Git conserve le dernier vrai résultat.",
+      "remaining": "Contrat portable explicite : --output/--output= refusés pour garder le résultat dans le lecteur et les exports ; --no-show-signature/--no-decorate ajoutés. Disposition PluginDialog adaptée et formats personnalisés/parité étendue à comparer ; variantes natives et interactions installées encore ouvertes.",
       "visual": "generique",
-      "tests": [],
+      "tests": [
+        "ReleaseNotesArgumentsDialogTests"
+      ],
       "adr": [
-        "0005"
+        "0005",
+        "0146"
       ],
       "extra_evidence": [
         {
-          "label": "Scénario ReleaseNotes (Plugins)",
-          "source": "tests/linux/GitExtensions.Plugins.Tests/Program.cs",
-          "line": 214,
-          "kind": "plugins_scenarios"
+          "label": "Scénarios source ReleaseNotes arguments — aucun résultat déduit",
+          "source": "tests/linux/GitExtensions.Plugins.Tests/ReleaseNotesArgumentsScenarios.cs",
+          "line": 1,
+          "kind": "source"
         }
       ]
     },
@@ -2824,13 +2900,21 @@
       "group": "settings-pages",
       "level": "N2",
       "linux": [
-        "BlameDialog"
+        "BlameDialog",
+        "BlameViewerSettingsPage",
+        "BlameViewerSettingsSession",
+        "BlamePreferencesStore"
       ],
-      "implemented": "Options et préférences de lecture dans Blame.",
-      "remaining": "Page dédiée et totalité des choix Windows non portées.",
+      "implemented": "Options et préférences de lecture existantes dans Blame. Page globale ajoutée : page globale Blame viewer avec les dix choix Windows Query/Display, avertissements et clés traduites, brouillon Apply/Cancel dans le profil partagé. Auteur/date/heure indépendants ; histogram reste dans General/menu. Les nouveaux lecteurs consomment les valeurs acceptées sans promettre de reconfigurer les lecteurs déjà ouverts.",
+      "remaining": "Portées locales/distribuées non inventées pour ces champs globaux. Rendu et gestes natifs étendus, traductions longues et interaction du paquet installé restent ouverts ; les lecteurs déjà ouverts ne sont pas reconfigurés de force.",
       "visual": "integre",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "BlameViewerSettingsPageTests",
+        "BlameViewerSettingsSessionTests"
+      ],
+      "adr": [
+        "0017"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.BuildServerIntegrationSettingsPage": {
       "feature": "Configuration CI",
@@ -2973,7 +3057,7 @@
         "file:src/linux/GitExtensions.Desktop/ColorsSettingsValues.cs"
       ],
       "implemented": "Cinq des six options Graph Windows publiées aux consommateurs : fonds alternés, gris des non-apparentés et de leur texte, auteur et fond des labels. Intents View temporaires séparés des défauts édités ; fusion des seuls champs voulus, inconnus préservés et conflits observés refusés, publication sans reconstruire les lignes.",
-      "remaining": "MulticolorBranches et éditeur CSS/thèmes/variations Windows absents ; thème Linux conservé dans Appearance. Audit natif étendu des hôtes/palettes, DPI/accessibilité et interactions installées ouvert.",
+      "remaining": "La sixième case Windows Multicolor branches sauvegarde un réglage sans consommateur dans le renderer Windows audité : aucune sémantique nouvelle ni case inerte ajoutée. Éditeur CSS/thèmes/variations Windows non porté ; thème Linux dans Appearance. Audit natif étendu des hôtes/palettes, DPI/accessibilité et interactions installées ouvert.",
       "visual": "integre",
       "tests": [
         "ColorsSettingsPageTests",
@@ -2991,13 +3075,22 @@
       "group": "settings-pages",
       "level": "N2",
       "linux": [
+        "CommitDialogSettingsPage",
+        "CommitDialogSettingsSession",
+        "file:src/linux/GitExtensions.Desktop/CommitDialogSettingsValues.cs",
         "CommitDialog"
       ],
-      "implemented": "Préférences persistantes/session du workflow Commit.",
-      "remaining": "Page globale et ensemble des options de la version Windows non exposés.",
+      "implemented": "Page globale sous Detailed, sept options Windows et vrais consommateurs partagés, intentions et reçus par profil, publication des boutons/completion sans réécriture des champs voisins. Validation Git/headless de ce lot liée au TODO ; audit natif étendu ouvert.",
+      "remaining": "ShowErrorsWhenStagingFiles et UseFormCommitMessage=false restent distincts ; audit natif étendu et interactions installées ouverts. Pas de transaction entre fichiers.",
       "visual": "integre",
-      "tests": [],
-      "adr": []
+      "tests": [
+        "CommitDialogSettingsSessionTests",
+        "CommitDialogSettingsPageTests",
+        "CommitDialogSettingsConsumerTests"
+      ],
+      "adr": [
+        "0150"
+      ]
     },
     "GitUI.CommandsDialogs.SettingsDialog.Pages.ConfirmationsSettingsPage": {
       "feature": "Gestion des confirmations",
@@ -3008,14 +3101,15 @@
         "ConfirmationsSettingsSession",
         "file:src/linux/GitExtensions.Desktop/ConfirmationsSettingsValues.cs"
       ],
-      "implemented": "Treize des dix-sept confirmations Windows regroupées, inversion et triétats conservés ; profils XDG déjà consommés par les workflows. Apply/Cancel commun, seuls champs édités fusionnés, inconnus conservés, conflits observés refusés et reçus par fichier.",
-      "remaining": "Suppression de branche non fusionnée, confirmation de checkout, autopop après checkout et second abort absents. Pas de transaction entre profils ; Cancel ne révoque pas Apply. Variantes natives étendues et interactions installées ouvertes.",
+      "implemented": "Dix-sept choix Windows et leurs consommateurs : inversion/triétats, Apply/Cancel, fusion des seuls champs édités et reçus par profil. Les quatre derniers règlent suppression forcée non fusionnée, checkout du panneau gauche, réapplication du stash exact après checkout réussi et seconde question Reset dans les conflits.",
+      "remaining": "Pas de transaction entre profils ; Cancel ne révoque pas Apply. Linux conserve la case Force de suppression ; Windows force sa commande. Audit natif étendu et interactions installées ouverts.",
       "visual": "integre",
       "tests": [
         "ConfirmationsSettingsPageTests",
         "ConfirmationsSettingsSessionTests",
         "ConfirmationsWorkflowTests",
-        "SettingsNavigationTests"
+        "SettingsNavigationTests",
+        "ConfirmationsFourPoliciesTests"
       ],
       "adr": [
         "0125"
@@ -3717,13 +3811,14 @@
         "BuildServerCredentialsDialog",
         "GitHubActionsSettingsSession"
       ],
-      "implemented": "Page TeamCity dans Build server integration avec clés et portées XML Windows ; chooser et extraction explicite du lien du presse-papiers. Brouillons Apply/Cancel et identifiants Guest/Basic/Bearer du dialogue partagé, enregistrés uniquement dans le profil XDG par instance. Statuts par SHA et rapport commun avec GitHub Actions, polling annulable et mises à jour sans recréer la grille ; suites complètes vérifiées (ADR0111).",
-      "remaining": "N2 : pas de NTLM/SSO ni coffre Linux ; serveur TeamCity réel et audit interactif étendu ouverts. Rapport local puis navigateur explicite, sans HTML embarqué. Variables {cRepoProject}/{cRepoShortName} admises par le modèle Core via callback mais non raccordées au remote courant de l’hôte ; détails sérialisés et historique borné, aucune mutation de build.",
+      "implemented": "Page TeamCity dans Build server integration avec clés et portées XML Windows ; chooser et extraction explicite du lien du presse-papiers. Brouillons Apply/Cancel et identifiants Guest/Basic/Bearer du dialogue partagé, enregistrés uniquement dans le profil XDG par instance. Statuts par SHA et rapport commun avec GitHub Actions, polling annulable et mises à jour sans recréer la grille ; suites complètes vérifiées (ADR0111). Complément L25 : {cRepoProject}/{cRepoShortName} sont développés au vrai chargement de la source TeamCity avec le contexte remote du dépôt courant, via le résolveur commun ; le XML garde ses expressions littérales et les anciens statuts sont invalidés au changement de configuration.",
+      "remaining": "N2 : pas de NTLM/SSO ni coffre Linux ; serveur TeamCity réel et audit interactif étendu ouverts. Rapport local puis navigateur explicite, sans HTML embarqué. Variables du dépôt raccordées et vérifiées en Git/headless dans ce lot, séparément des preuves historiques ADR0111. Détails sérialisés et historique borné, aucune mutation de build.",
       "visual": "rapproche",
       "tests": [
         "TeamCityBuildChooserDialogTests",
         "BuildServerCredentialsStoreTests",
-        "TeamCityIntegrationTests"
+        "TeamCityIntegrationTests",
+        "TeamCityRepositoryVariablesTests"
       ],
       "adr": [
         "0111",
