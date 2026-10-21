@@ -79,6 +79,7 @@ internal class PluginScopedSettingsPage : UserControl
                         ? translations.Translate("SettingsPageBase", "_numberSettingPlaceholder", "Text", "no value set")
                         : string.Format(translations.Translate("SettingsPageBase", "_stringSettingPlaceholder", "Text",
                             "no value set; for empty string, enter \"{0}\" without the double quotes"), EmptyStringValue) };
+                if (setting.Kind == PluginScopedSettingKind.Password) { text.PasswordChar = '●'; }
                 text.PropertyChanged += (_, change) =>
                 {
                     if (change.Property != TextBox.TextProperty) { return; }
@@ -155,6 +156,16 @@ internal class PluginScopedSettingsPage : UserControl
     {
         if (_invalidControl is null || !_editors.TryGetValue(_invalidControl, out Control? editor)) { return; }
         (editor.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() as Control ?? editor).Focus();
+    }
+    internal void ClearSecrets()
+    {
+        bool wasLoading = _loading; _loading = true;
+        try
+        {
+            foreach (PluginScopedSetting setting in _definition.Fields.Where(field => field.Kind == PluginScopedSettingKind.Password))
+            { ((TextBox)_editors[setting.Control]).Text = null; _dirty.Remove(setting.Control); }
+        }
+        finally { _loading = wasLoading; }
     }
     internal void AcceptSaved() => LoadView();
     internal void ShowLoadState() => LoadView();

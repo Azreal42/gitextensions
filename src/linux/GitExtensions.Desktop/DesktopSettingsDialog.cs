@@ -49,6 +49,8 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly DeleteUnusedBranchesSettingsPage _deleteUnusedBranchesSettingsPage;
     internal BackgroundFetchSettingsSession BackgroundFetchSettingsSession { get; }
     private readonly BackgroundFetchSettingsPage _backgroundFetchSettingsPage;
+    internal ProxySwitcherSettingsSession ProxySwitcherSettingsSession { get; }
+    private readonly PluginScopedSettingsPage _proxySwitcherSettingsPage;
     internal IReadOnlyList<SimplePluginSettingsSession> SimplePluginSettingsSessions { get; }
     private readonly IReadOnlyList<PluginScopedSettingsPage> _simplePluginSettingsPages;
     internal RevisionLinksSettingsSession RevisionLinksSettingsSession { get; }
@@ -109,7 +111,8 @@ internal sealed class DesktopSettingsDialog : Window
         DeleteUnusedBranchesSettingsSession? deleteUnusedBranchesSettings = null,
         BackgroundFetchSettingsSession? backgroundFetchSettings = null,
         Func<PluginScopedSettingsSaveReceipt, Task>? publishBackgroundFetchSettings = null,
-        IReadOnlyList<SimplePluginSettingsSession>? simplePluginSettings = null)
+        IReadOnlyList<SimplePluginSettingsSession>? simplePluginSettings = null,
+        ProxySwitcherSettingsSession? proxySwitcherSettings = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -138,6 +141,10 @@ internal sealed class DesktopSettingsDialog : Window
         SimplePluginSettingsSessions = Array.AsReadOnly((simplePluginSettings ?? SimplePluginSettingsCatalog.All.Select(entry =>
             new SimplePluginSettingsSession(entry, scopedRepository, initial.PluginSettings.GetValueOrDefault(entry.Definition.Id.ToString()), workspace)).ToArray()).ToArray());
         _simplePluginSettingsPages = Array.AsReadOnly(SimplePluginSettingsSessions.Select(session => new PluginScopedSettingsPage(session, translations)).ToArray());
+        ProxySwitcherSettingsSession = proxySwitcherSettings ?? new(scopedRepository,
+            initial.PluginSettings.GetValueOrDefault(ProxySwitcherSettingsCatalog.Definition.Id.ToString()), workspace);
+        _proxySwitcherSettingsPage = new(ProxySwitcherSettingsSession, translations);
+        Closed += (_, _) => _proxySwitcherSettingsPage.ClearSecrets();
         RevisionLinksSettingsSession = revisionLinksSettings ?? new(scopedRepository, workspace);
         _revisionLinksSettingsPage = new(RevisionLinksSettingsSession, translations) { Margin = new Thickness(12) };
         GitHubActionsSettingsSession = gitHubActionsSettings ?? new(scopedRepository, workspace);
@@ -274,7 +281,10 @@ internal sealed class DesktopSettingsDialog : Window
                 .. SimplePluginSettingsSessions.Select((session, index) => new SettingsNavigationPage(session.Entry.PageId,
                     "Plugin: " + translations.Translate(session.Definition.Category, "Description", "Text", session.Definition.Description),
                     _simplePluginSettingsPages[index], "../PluginIcons/" + session.Entry.Icon + ".png",
-                    NavigationTitle: translations.Translate(session.Definition.Category, "Description", "Text", session.Definition.Description)))],
+                    NavigationTitle: translations.Translate(session.Definition.Category, "Description", "Text", session.Definition.Description))),
+                new(ProxySwitcherSettingsCatalog.PageId, "Plugin: " + translations.Translate("ProxySwitcherPlugin", "Description", "Text", "Proxy Switcher"),
+                    _proxySwitcherSettingsPage, "../PluginIcons/IconProxySwitcher.png",
+                    NavigationTitle: translations.Translate("ProxySwitcherPlugin", "Description", "Text", "Proxy Switcher"))],
             NavigationTitle: translations.Translate("PluginsSettingsGroup", "$this", "Title", "Plugins")));
         Navigation = new(roots, translations);
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
@@ -314,12 +324,14 @@ internal sealed class DesktopSettingsDialog : Window
                     await DeleteUnusedBranchesSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await BackgroundFetchSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     foreach (SimplePluginSettingsSession session in SimplePluginSettingsSessions) { await session.InitializeAsync(_detailedCancellation.Token); }
+                    await ProxySwitcherSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await RevisionLinksSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await GitHubActionsSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     _detailedSettingsPage.ShowLoadState();
                     _deleteUnusedBranchesSettingsPage.ShowLoadState();
                     _backgroundFetchSettingsPage.ShowLoadState();
                     foreach (PluginScopedSettingsPage page in _simplePluginSettingsPages) { page.ShowLoadState(); }
+                    _proxySwitcherSettingsPage.ShowLoadState();
                     _revisionLinksSettingsPage.ShowLoadState();
                     _buildServerSettingsPage.ShowLoadState();
                 }
@@ -361,6 +373,10 @@ internal sealed class DesktopSettingsDialog : Window
                     if (!page.Validate(out string? simpleValidation))
                     { Navigation.SelectPage(activeSavePage); page.FocusInvalidControl(); notice.Text = simpleValidation; return false; }
                 }
+                activeSavePage = ProxySwitcherSettingsCatalog.PageId;
+                _proxySwitcherSettingsPage.PrepareSave();
+                if (!_proxySwitcherSettingsPage.Validate(out string? proxyValidation))
+                { Navigation.SelectPage(ProxySwitcherSettingsCatalog.PageId); _proxySwitcherSettingsPage.FocusInvalidControl(); notice.Text = proxyValidation; return false; }
                 if (!_commitDialogSettingsPage.Validate(out string? commitValidation))
                 { Navigation.SelectPage("Commit", true); notice.Text = commitValidation; return false; }
                 if (!_consoleStylePage.Validate(out string? consoleValidation))
@@ -507,6 +523,9 @@ internal sealed class DesktopSettingsDialog : Window
                         await session.SaveFilesAsync(_detailedCancellation.Token, _ => { saved = true; return Task.CompletedTask; });
                         _simplePluginSettingsPages[index].AcceptSaved();
                     }
+                    activeSavePage = ProxySwitcherSettingsCatalog.PageId;
+                    await ProxySwitcherSettingsSession.SaveFilesAsync(_detailedCancellation.Token, _ => { saved = true; return Task.CompletedTask; });
+                    _proxySwitcherSettingsPage.AcceptSaved();
                     activeSavePage = "RevisionLinks";
                     await RevisionLinksSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     _revisionLinksSettingsPage.AcceptSaved();

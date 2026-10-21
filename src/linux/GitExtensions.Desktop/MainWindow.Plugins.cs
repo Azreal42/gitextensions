@@ -37,6 +37,7 @@ public sealed partial class MainWindow
         Window pluginOwner = owner ?? this;
         if (repository is null || _busy && !fromScript || !pluginOwner.IsVisible) { return; }
         _pluginDialogOpen = true;
+        bool refreshAfterPlugin = true;
         try
         {
             IReadOnlyDictionary<string, string?> values = PluginSettings(plugin.Descriptor);
@@ -110,10 +111,22 @@ public sealed partial class MainWindow
             }
             else if (plugin is ProxySwitcherPlugin)
             {
-                ProxySwitcherDialog dialog = new(repository, values);
+                using WindowWork work = TrackWindowWork();
+                using CancellationTokenSource read = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+                ProxySwitcherSettingsSession settings = new(repository, values);
+                await settings.InitializeAsync(read.Token);
+                read.Token.ThrowIfCancellationRequested();
+                if (!settings.Loaded) { throw new InvalidDataException("Unable to read plugin settings.", settings.LoadError); }
+                if (_repository != repository || !pluginOwner.IsVisible) { return; }
+                bool requestedSettings = false;
+                ProxySwitcherDialog dialog = new(repository, settings.RuntimeValues(), requestSettings: () => requestedSettings = true);
                 dialog.Opened += async (_, _) => await dialog.InitializeAsync();
                 await ShowOwnedAsync(dialog);
-                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
+                refreshAfterPlugin = dialog.MayHaveRepositoryChanges;
+                if ((requestedSettings || dialog.SettingsRequested) && _repository == repository
+                    && pluginOwner.IsVisible && !_lifetime.IsCancellationRequested)
+                { await ShowSettingsPageAsync(showChecklist: false, initialPage: ProxySwitcherSettingsCatalog.PageId,
+                    settingsOwnerOverride: pluginOwner, fromScript: fromScript, cancellationToken: cancellationToken); }
             }
             else if (plugin is GourcePlugin)
             {
@@ -144,7 +157,7 @@ public sealed partial class MainWindow
         finally { _pluginDialogOpen = false; }
         cancellationToken.ThrowIfCancellationRequested();
         // Cancellation or a hook can leave completed mutations even when the plugin reports an error.
-        if (_repository == repository) { await RefreshAsync(); }
+        if (refreshAfterPlugin && _repository == repository) { await RefreshAsync(); }
 
         async Task ShowOwnedAsync(Window dialog)
         {

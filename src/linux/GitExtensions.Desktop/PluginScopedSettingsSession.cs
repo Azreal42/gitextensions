@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace GitExtensions.Linux.Desktop;
 
-internal enum PluginScopedSettingKind { Text, Integer, Boolean, Single }
+internal enum PluginScopedSettingKind { Text, Integer, Boolean, Single, Password }
 
 internal sealed record PluginScopedSetting(string Control, string Name, string Caption, string RuntimeKey,
     PluginScopedSettingKind Kind, string DefaultValue);

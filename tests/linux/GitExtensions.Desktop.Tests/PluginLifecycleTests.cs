@@ -133,17 +133,19 @@ public class PluginLifecycleTests
         {
             ProxySwitcherDialog dialog = await OpenProxyAsync();
             Field<Button>(dialog, "ProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await UntilAsync(() => Task.FromResult(dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Any()));
-            ProxySwitcherSettingsDialog settings = dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Single();
+            DesktopSettingsDialog settings = await ProxySettingsTestDriver.Settings(fixture.Window);
+            Assert.That(dialog.SettingsRequested, Is.True); Assert.That(dialog.IsVisible, Is.False);
             const string secret = "proxy-secret-été";
-            TextBox password = Field<TextBox>(settings, "ProxyPassword");
+            ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<RadioButton>(settings, "ProxyLocalRB"));
+            TextBox password = ProxySettingsTestDriver.Field<TextBox>(settings, "Password");
             Assert.That(password.PasswordChar, Is.Not.EqualTo('\0'), "The actual Proxy input must mask typed credentials.");
-            Field<TextBox>(settings, "ProxyHost").Text = "local.example.invalid";
-            Field<TextBox>(settings, "ProxyPort").Text = "8080";
-            Field<TextBox>(settings, "ProxyUsername").Text = "alice";
-            password.Text = secret;
-            Field<Button>(settings, "SaveProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await UntilAsync(() => Task.FromResult(dialog.CurrentOptions.Host == "local.example.invalid"));
+            ProxySettingsTestDriver.Edit(settings, "HttpProxy", "local.example.invalid"); ProxySettingsTestDriver.Edit(settings, "HttpProxyPort", "8080");
+            ProxySettingsTestDriver.Edit(settings, "Username", "alice"); ProxySettingsTestDriver.Edit(settings, "Password", secret);
+            ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<Button>(settings, "ApplyDesktopSettings")); await ProxySettingsTestDriver.Saved(settings);
+            ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<Button>(settings, "CancelDesktopSettings"));
+            await ProxySettingsTestDriver.Until(fixture.Window, () => !settings.IsVisible && !fixture.Window.IsBusy);
+            Assert.That(password.Text, Is.Null.Or.Empty);
+            dialog = await OpenProxyAsync();
             Field<CheckBox>(dialog, "ApplyGlobally_CheckBox").IsChecked = false;
             Field<Button>(dialog, "SetProxy_Button").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await UntilAsync(() => Task.FromResult(!dialog.IsBusy));
@@ -155,21 +157,22 @@ public class PluginLifecycleTests
             Assert.That(Field<TextBox>(dialog, "GlobalHttpProxy_TextBox").Text, Is.EqualTo("global.example.invalid:3128"));
             Assert.That(dialog.CurrentValues.Values.Any(value => value?.Contains(secret, StringComparison.Ordinal) == true), Is.False);
             dialog.Close();
-            await UntilAsync(() => Task.FromResult(!fixture.Window.OwnedWindows.Contains(dialog) && !fixture.Window.IsBusy
-                && new PreferencesStore().Load().PluginSettings.GetValueOrDefault(new ProxySwitcherPlugin().Descriptor.Id.ToString())?.GetValueOrDefault("host") == "local.example.invalid"));
-            string preferences = await File.ReadAllTextAsync(new PreferencesStore().FilePath);
+            await UntilAsync(() => Task.FromResult(!fixture.Window.OwnedWindows.Contains(dialog) && !fixture.Window.IsBusy));
+            ProxySwitcherSettingsSession accepted = new(ProxySettingsTestDriver.Repository(fixture.Window)); await accepted.InitializeAsync(default);
+            Assert.That(accepted.RuntimeValues()["host"], Is.EqualTo("local.example.invalid"));
+            Assert.That(accepted.RuntimeValues()["password"], Is.EqualTo(secret), "An explicitly accepted Windows XML password is a real saved default.");
+            string preferences = File.Exists(new PreferencesStore().FilePath) ? await File.ReadAllTextAsync(new PreferencesStore().FilePath) : "";
             Assert.That(preferences, Does.Not.Contain(secret).And.Not.Contain("\"password\""));
             ProxySwitcherDialog reloaded = await OpenProxyAsync();
-            Assert.That(reloaded.CurrentOptions.Password, Is.Empty);
+            Assert.That(reloaded.CurrentOptions.Password, Is.EqualTo(secret));
             Assert.That(reloaded.CurrentOptions.Host, Is.EqualTo("local.example.invalid"));
             Field<Button>(reloaded, "ProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await UntilAsync(() => Task.FromResult(reloaded.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Any()));
-            ProxySwitcherSettingsDialog reloadedSettings = reloaded.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Single();
-            Assert.That(Field<TextBox>(reloadedSettings, "ProxyPassword").Text, Is.Null.Or.Empty);
-            Field<Button>(reloadedSettings, "CancelProxySettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await UntilAsync(() => Task.FromResult(!reloadedSettings.IsVisible));
-            reloaded.Close();
-            await UntilAsync(() => Task.FromResult(!fixture.Window.OwnedWindows.Contains(reloaded) && !fixture.Window.IsBusy));
+            DesktopSettingsDialog reloadedSettings = await ProxySettingsTestDriver.Settings(fixture.Window);
+            ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<RadioButton>(reloadedSettings, "ProxyLocalRB"));
+            Assert.That(ProxySettingsTestDriver.Field<TextBox>(reloadedSettings, "Password").Text, Is.EqualTo(secret));
+            Assert.That(ProxySettingsTestDriver.Field<TextBox>(reloadedSettings, "Password").PasswordChar, Is.Not.EqualTo('\0'));
+            ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<Button>(reloadedSettings, "CancelDesktopSettings"));
+            await UntilAsync(() => Task.FromResult(!reloadedSettings.IsVisible && !fixture.Window.IsBusy));
             Assert.That(fixture.Window.LastException, Is.Null, fixture.Window.LastException?.ToString());
 
             async Task<ProxySwitcherDialog> OpenProxyAsync()

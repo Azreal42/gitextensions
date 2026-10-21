@@ -17,6 +17,7 @@ public sealed class ProxySwitcherDialog : RepositoryDialog
     private readonly CheckBox _applyGlobally = new() { Name = "ApplyGlobally_CheckBox" };
     private readonly Button _set;
     private ProxySwitcherOptions _options;
+    public bool SettingsRequested { get; private set; }
     public ProxySwitcherState? CurrentState { get; private set; }
     public ProxySwitcherOptions CurrentOptions => _options;
     public IReadOnlyDictionary<string, string?> CurrentValues => new Dictionary<string, string?>
@@ -25,7 +26,7 @@ public sealed class ProxySwitcherDialog : RepositoryDialog
         ["global"] = (_applyGlobally.IsChecked == true).ToString(CultureInfo.InvariantCulture), ["operation"] = "inspect"
     };
 
-    public ProxySwitcherDialog(GitRepository repository, IReadOnlyDictionary<string, string?>? savedValues = null)
+    public ProxySwitcherDialog(GitRepository repository, IReadOnlyDictionary<string, string?>? savedValues = null, Action? requestSettings = null)
         : base(repository, "Proxy Switcher")
     {
         string Value(string key, string fallback = "") => savedValues?.GetValueOrDefault(key) ?? fallback;
@@ -37,7 +38,12 @@ public sealed class ProxySwitcherDialog : RepositoryDialog
         AddField(fields, 1, "Global http.proxy:", _global);
         _applyGlobally.Margin = new Thickness(3, 2); Grid.SetRow(_applyGlobally, 2); Grid.SetColumn(_applyGlobally, 1); fields.Children.Add(_applyGlobally);
         Grid actions = new() { ColumnDefinitions = new("*,123,123") };
-        Button settings = Action("ProxySettings", "Settings…", SettingsAsync);
+        Button settings = Action("ProxySettings", "Settings…", () =>
+        {
+            if (!IsBusy && requestSettings is not null) { SettingsRequested = true; Close(); requestSettings(); }
+            return Task.CompletedTask;
+        });
+        settings.IsVisible = requestSettings is not null;
         settings.Margin = new Thickness(3); settings.Height = 23; actions.Children.Add(settings);
         _set = Action("SetProxy_Button", "Set proxy", () => ChangeAsync("set"));
         _set.Margin = new Thickness(3); _set.Height = 23; Grid.SetColumn(_set, 1); actions.Children.Add(_set);
@@ -69,13 +75,6 @@ public sealed class ProxySwitcherDialog : RepositoryDialog
         await RefreshAsync(token);
     }, changes: true);
 
-    private async Task SettingsAsync()
-    {
-        ProxySwitcherSettingsDialog dialog = new(_options);
-        ProxySwitcherOptions? edited = await dialog.ShowDialog<ProxySwitcherOptions?>(this);
-        if (edited is not null) { _options = edited; Status.Text = ""; UpdateActions(); }
-    }
-
     protected override void UpdateActions() => _set.IsEnabled = !string.IsNullOrWhiteSpace(_options.Host);
 
     private void AddField(Grid grid, int row, string label, Control input)
@@ -92,45 +91,4 @@ public sealed class ProxySwitcherDialog : RepositoryDialog
         int scheme = host.IndexOf("://", StringComparison.Ordinal);
         return (scheme >= 0 ? host[..(scheme + 3)] : "") + host[(at + 1)..];
     }
-}
-
-/// <summary>The four original plugin settings; password lives only in this modal session.</summary>
-public sealed class ProxySwitcherSettingsDialog : Window
-{
-    private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
-    private readonly TextBox _host = new() { Name = "ProxyHost", Height = 24 };
-    private readonly TextBox _port = new() { Name = "ProxyPort", Height = 24 };
-    private readonly TextBox _username = new() { Name = "ProxyUsername", Height = 24 };
-    private readonly TextBox _password = new() { Name = "ProxyPassword", Height = 24, PasswordChar = '●' };
-    private readonly TextBlock _error = new() { Name = "ProxySettingsError", TextWrapping = TextWrapping.Wrap };
-
-    public ProxySwitcherSettingsDialog(ProxySwitcherOptions options)
-    {
-        Title = T("Proxy Switcher"); Width = 420; SizeToContent = SizeToContent.Height;
-        CanResize = false; WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        _host.Text = options.Host; _port.Text = options.Port; _username.Text = options.Username; _password.Text = options.Password;
-        Grid fields = new() { ColumnDefinitions = new("125,*"), RowDefinitions = new("30,30,30,30") };
-        int row = 0;
-        foreach ((string label, TextBox input) in new[] { ("HTTP proxy", _host), ("HTTP proxy port", _port), ("Username", _username), ("Password", _password) })
-        {
-            TextBlock text = new() { Text = T(label), VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetRow(text, row); fields.Children.Add(text);
-            Grid.SetRow(input, row); Grid.SetColumn(input, 1); fields.Children.Add(input); row++;
-        }
-        StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
-        Button cancel = new() { Name = "CancelProxySettings", Content = T("Cancel"), IsCancel = true, MinWidth = 80 };
-        cancel.Click += (_, _) => Close();
-        Button save = new() { Name = "SaveProxySettings", Content = T("OK"), IsDefault = true, MinWidth = 80 };
-        save.Click += (_, _) =>
-        {
-            ProxySwitcherOptions value = new(_host.Text ?? "", _port.Text ?? "", _username.Text ?? "", _password.Text ?? "");
-            try { _ = value.BuildProxy(); Close(value); }
-            catch (ArgumentException exception) { _error.Text = exception.Message; }
-        };
-        actions.Children.Add(save); actions.Children.Add(cancel);
-        Content = new StackPanel { Margin = new Thickness(12), Spacing = 8, Children = { fields, _error, actions } };
-        Closed += (_, _) => _password.Text = null;
-    }
-
-    private string T(string text) => _translations.Translate(text);
 }

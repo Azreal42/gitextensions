@@ -23,8 +23,9 @@ public class ProxyGourceDialogTests
     {
         using ProxyGourceFixture fixture = await ProxyGourceFixture.CreateAsync();
         const string secret = "secret:$(touch SHOULD_NOT_EXIST)@été";
+        bool requested = false;
         ProxySwitcherDialog dialog = new(fixture.Repository, new Dictionary<string, string?>
-        { ["host"] = "proxy.example.invalid", ["username"] = "alice", ["password"] = secret });
+        { ["host"] = "proxy.example.invalid", ["username"] = "alice", ["password"] = secret }, requestSettings: () => requested = true);
         dialog.Show();
         try
         {
@@ -45,14 +46,19 @@ public class ProxyGourceDialogTests
                 Assert.That(Field<Button>(dialog, "SetProxy_Button").Bounds.Width, Is.EqualTo(117));
             }
             Click(dialog, "ProxySettings");
-            await Until(() => dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Any());
-            ProxySwitcherSettingsDialog settings = dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Single();
-            Assert.That(Field<TextBox>(settings, "ProxyPassword").PasswordChar, Is.EqualTo('●'));
-            Field<TextBox>(settings, "ProxyHost").Text = "local.example.invalid";
-            Field<TextBox>(settings, "ProxyPort").Text = "";
-            Field<TextBox>(settings, "ProxyUsername").Text = "";
-            Field<TextBox>(settings, "ProxyPassword").Text = "";
-            Click(settings, "SaveProxySettings"); await Until(() => !settings.IsVisible);
+            Assert.That(requested && dialog.SettingsRequested, Is.True); Assert.That(dialog.IsVisible, Is.False);
+            await ProxySettingsTestDriver.WithSettings(fixture.Repository, async settings =>
+            {
+                Assert.That(ProxySettingsTestDriver.Field<TextBox>(settings, "Password").PasswordChar, Is.EqualTo('●'));
+                ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<RadioButton>(settings, "ProxyLocalRB"));
+                ProxySettingsTestDriver.Edit(settings, "HttpProxy", "local.example.invalid");
+                ProxySettingsTestDriver.Edit(settings, "HttpProxyPort", "<empty string>");
+                ProxySettingsTestDriver.Edit(settings, "Username", "<empty string>");
+                ProxySettingsTestDriver.Edit(settings, "Password", "<empty string>");
+                ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<Button>(settings, "ApplyDesktopSettings")); await ProxySettingsTestDriver.Saved(settings);
+            });
+            ProxySwitcherSettingsSession defaults = new(fixture.Repository); await defaults.InitializeAsync(default);
+            dialog = new(fixture.Repository, defaults.RuntimeValues()); dialog.Show(); await dialog.InitializeAsync();
             Field<CheckBox>(dialog, "ApplyGlobally_CheckBox").IsChecked = false;
             Click(dialog, "SetProxy_Button"); await Idle(dialog);
             Assert.That(Field<TextBox>(dialog, "LocalHttpProxy_TextBox").Text, Is.EqualTo("local.example.invalid"));
@@ -75,28 +81,38 @@ public class ProxyGourceDialogTests
     public async Task ProxySettingsValidationAndCancelLeaveGitAndPreviousSettingsUntouched()
     {
         using ProxyGourceFixture fixture = await ProxyGourceFixture.CreateAsync();
-        ProxySwitcherDialog dialog = new(fixture.Repository);
+        bool requested = false; ProxySwitcherDialog dialog = new(fixture.Repository, requestSettings: () => requested = true);
         dialog.Show();
         try
         {
             await dialog.InitializeAsync();
             Assert.That(Field<Button>(dialog, "SetProxy_Button").IsEnabled, Is.False);
-            Click(dialog, "ProxySettings");
-            await Until(() => dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Any());
-            ProxySwitcherSettingsDialog settings = dialog.OwnedWindows.OfType<ProxySwitcherSettingsDialog>().Single();
-            Field<TextBox>(settings, "ProxyHost").Text = "configured.invalid";
-            Field<TextBox>(settings, "ProxyPort").Text = "65536";
-            Field<TextBox>(settings, "ProxyPassword").Text = "discarded password";
-            Click(settings, "SaveProxySettings");
-            Assert.That(settings.IsVisible, Is.True);
-            Assert.That(Field<TextBlock>(settings, "ProxySettingsError").Text, Does.Contain("65535"));
-            Click(settings, "CancelProxySettings"); await Until(() => !settings.IsVisible);
-            Assert.That(Field<TextBox>(settings, "ProxyPassword").Text, Is.Null.Or.Empty);
-            Assert.That(dialog.CurrentOptions.Host, Is.Empty);
+            ProxySettingsTestDriver.ProfileBytes[] before = await ProxySettingsTestDriver.Profiles(fixture.Repository);
+            Click(dialog, "ProxySettings"); Assert.That(requested && dialog.SettingsRequested, Is.True);
+            await ProxySettingsTestDriver.WithSettings(fixture.Repository, async settings =>
+            {
+                ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<RadioButton>(settings, "ProxyGlobalRB"));
+                ProxySettingsTestDriver.Edit(settings, "HttpProxy", "configured.invalid");
+                ProxySettingsTestDriver.Edit(settings, "HttpProxyPort", "65536");
+                ProxySettingsTestDriver.Edit(settings, "Password", "discarded password");
+                TextBox password = ProxySettingsTestDriver.Field<TextBox>(settings, "Password");
+                ProxySettingsTestDriver.Pointer(ProxySettingsTestDriver.Field<Button>(settings, "CancelDesktopSettings"));
+                await ProxySettingsTestDriver.Until(settings, () => !settings.IsVisible); Assert.That(password.Text, Is.Null.Or.Empty);
+            });
+            foreach (ProxySettingsTestDriver.ProfileBytes file in before) { file.AssertUnchanged(); }
+            Assert.That(dialog.CurrentOptions.Host, Is.Empty); Assert.That(dialog.HasRepositoryChanges, Is.False);
+            // Windows' four StringSettings do not validate ports on Apply. The existing Linux runtime still validates Set.
+            ProxySwitcherDialog invalid = new(fixture.Repository, new Dictionary<string, string?> { ["host"] = "configured.invalid", ["port"] = "65536", ["password"] = "discarded password" });
+            try
+            {
+                invalid.Show(); await invalid.InitializeAsync(); Click(invalid, "SetProxy_Button"); await Idle(invalid);
+                Assert.That(invalid.IsVisible, Is.True); Assert.That(invalid.LastError, Does.Contain("65535"));
+                Assert.That(await fixture.Repository.GetConfigAsync("^http\\.proxy$"), Is.Empty);
+            }
+            finally { invalid.Close(); }
             Assert.That(await fixture.Repository.GetConfigAsync("^http\\.proxy$"), Is.Empty);
-            Assert.That(dialog.HasRepositoryChanges, Is.False);
         }
-        finally { dialog.Close(); }
+        finally { if (dialog.IsVisible) { dialog.Close(); } }
     }
 
     [AvaloniaTest]
