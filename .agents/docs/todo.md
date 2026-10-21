@@ -1,10 +1,23 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H35 : snapshot Browse commun, source `3dd4eb926` ; **4 560 Desktop / 1 197 Core / 42 Plugins réussis**, paquet Debian isolé vérifié. Parité complète et installation hôte de ce paquet restent ouvertes.
+Mise à jour : 21 octobre 2026. H36 en cours : lecteur Core fichier progressif testé, source `70ce18a43` ; raccord Browse encore ouvert. Dernier paquet vérifié : H35 `3dd4eb926`, avec suites complètes et installation isolée. Parité complète et installation hôte de ce paquet restent ouvertes.
 
-Les [suites complètes H35](../../artifacts/linux/browse-inline-history-20261021/review/root-full-review.json) valident les octets source du commit courant dans le worktree propre. Les [suites historiques](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` et les lots précédents gardent leurs preuves distinctes.
+Les [suites complètes H35](../../artifacts/linux/browse-inline-history-20261021/review/root-full-review.json) valident les octets source de `3dd4eb926` dans le worktree propre. Les [suites historiques](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` et les lots précédents gardent leurs preuves distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+<a id="h36-progressive-history"></a>
+## H36 — historique progressif (en cours)
+
+Source `70ce18a43a091e9fefb11596c4deca5c48c20be4` ; [ADR0156](adr/workflows/history/0156-file-history-stream.md).
+
+- [x] Flux Core fichier/dossier avec préparation des anciens noms et contexte readonly avant le premier lot ; parents, chemins littéraux, plafond et overrides natifs conservés. Les lecteurs snapshot restent compatibles.
+- [ ] Raccorder Browse principal, fichier/dossier et RevisionLog : premier lot utilisable, append sans Reset, intention récente conservée, génération annulée et réellement drainée ; métadonnées et panneaux indépendants. Parcours continu jusqu’au plafond, sans relire des fenêtres grandissantes ; toggle artificiel sans faux EOF.
+- [ ] Qualifier ce raccord, les gestes natifs et le rendu minimum 860 EN clair/FR sombre. Les audits de contrats et de frontières sont préparés ; ils ne valent pas une implémentation.
+
+[Ciblé exécuté](../../artifacts/linux/progressive-browse-history-20261021/review/root-targeted-review.json) : **22/22 Desktop, 45/45 Core** (16 snapshot, 8 nouveaux flux fichier, 21 streaming commun), **42/42 Plugins**. Trois projets sans avertissement/erreur ; mêmes octets source que le [commit](../../artifacts/linux/progressive-browse-history-20261021/review/source-import-review.json), sources/binaires stables et acteurs retirés. Aucune suite complète H36, intégration Browse ni nouveau paquet déduits de ce ciblé.
+
+[Inventaire contrôlé](../../artifacts/linux/progressive-browse-history-20261021/review/root-inventory-review.json) : 99 fenêtres métier, 32 pages, niveaux inchangés, treize familles ouvertes, aucun N4. Le paquet et les suites complètes H35 ci-dessous gardent leur source distincte.
 
 <a id="h35-browse-shared-snapshot"></a>
 ## H35 — snapshot Browse commun

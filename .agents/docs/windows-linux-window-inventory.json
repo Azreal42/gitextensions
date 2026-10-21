@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "3dd4eb92652259d0cfa954fba55404bf3daad597",
-  "source_digest_sha256": "e9b9cd94f5c9a45ee1cb93dafffa655dfb430e4b6e0e1d772e96adbde416c961",
-  "scanned_csharp_files": 2626,
+  "code_reference_commit": "70ce18a43a091e9fefb11596c4deca5c48c20be4",
+  "source_digest_sha256": "2d0eadfed33625c1599255144ab468b56e1c9fc7020bb4036f8cbf3102800388",
+  "scanned_csharp_files": 2627,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",

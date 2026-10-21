@@ -1,6 +1,6 @@
 # Inventaire Windows → Linux et niveau de portage
 
-Référence du code : `3dd4eb92652259d0cfa954fba55404bf3daad597`. Recensement syntaxique : 2626 fichiers C# du checkout analysés avec Roslyn (suivis et non ignorés), configurations Release et Debug des sources Windows et Linux. Aucune syntaxe en erreur.
+Référence du code : `70ce18a43a091e9fefb11596c4deca5c48c20be4`. Recensement syntaxique : 2627 fichiers C# du checkout analysés avec Roslyn (suivis et non ignorés), configurations Release et Debug des sources Windows et Linux. Aucune syntaxe en erreur.
 
 Le périmètre couvre les classes de fenêtres WinForms de `src/app` et `src/plugins`, leurs bases héritées et parties Designer, la ressource C++ askpass, les pages de paramètres et les constructions de fenêtres sans classe dédiée. Les boîtes système sont recensées par site dans le CSV annexe. L’installateur Windows et ses références WiX sont listés séparément, avec leur adaptation au paquet Debian. Les exécutables externes, les tests/démos et les popups internes de bibliothèques tierces ne sont pas comptés comme des fenêtres applicatives portées.
 
@@ -500,4 +500,4 @@ Le [CSV des 366 sites système/confirmations](windows-linux-system-dialog-sites.
 - [Générateur et commande de contrôle](../../eng/linux/window-inventory/README.md).
 - [Suivi de migration](todo.md).
 
-Réconciliation : 189 fichiers Designer classés (fenêtre, page, contrôle/ressource), héritage transitif, classes partielles fusionnées, ressource askpass C++ ajoutée. Le générateur échoue si un nouveau type Windows/page n’a pas d’évaluation ou si un équivalent Linux/membre référencé disparaît. Le digest des 2626 fichiers et la référence Git sont dans le JSON.
+Réconciliation : 189 fichiers Designer classés (fenêtre, page, contrôle/ressource), héritage transitif, classes partielles fusionnées, ressource askpass C++ ajoutée. Le générateur échoue si un nouveau type Windows/page n’a pas d’évaluation ou si un équivalent Linux/membre référencé disparaît. Le digest des 2627 fichiers et la référence Git sont dans le JSON.
