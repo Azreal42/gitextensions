@@ -38,9 +38,10 @@ public sealed partial class MainWindow
         if (_busy || _repository is null) { return; }
         GitRepository repository = _repository;
         bool gitAttempted = false;
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync(create ? "Create pull request" : "View pull requests", async current =>
+            await RunHistoryMutationAsync(create ? "Create pull request" : "View pull requests", async current =>
             {
                 GitHubHostingPreferencesStore store = new();
                 IReadOnlyDictionary<string, string?> values = store.Load();

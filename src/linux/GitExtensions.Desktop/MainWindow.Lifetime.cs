@@ -16,6 +16,10 @@ public sealed partial class MainWindow
     internal Task WindowWorkCompletion => Task.WhenAll(_windowWork.ToArray()
         .Append(_commitInfo.Completion).Append(FileHistoryInlineBlameCompletion).Append(_continuousScroll?.Completion ?? Task.CompletedTask));
 
+    // Native effects and their owned operation/panel tails, excluding only independently tracked history readers.
+    internal Task RepositoryMutationCompletion => Task.WhenAll(_windowWork.Where(task => !_historyLoadingLeases.Contains(task)).ToArray()
+        .Append(_commitInfo.Completion).Append(FileHistoryInlineBlameCompletion).Append(_continuousScroll?.Completion ?? Task.CompletedTask));
+
     private sealed class WindowWork(HashSet<Task> pending) : IDisposable
     {
         private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);

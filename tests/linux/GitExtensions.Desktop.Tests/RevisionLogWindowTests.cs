@@ -213,9 +213,9 @@ public sealed class RevisionLogWindowTests
         MainWindow log = RevisionLogWindow.Create(new(f.Repository.Path)); log.Show();
         try
         {
-            await Idle(log); ListBox history = Field<ListBox>(log, "RevisionHistory"); Assert.That(history.Items.OfType<GitCommit>().Count(), Is.EqualTo(2));
-            PushProcessTestDriver.Pointer(Field<Button>(log, "RevisionLogLoadMore")); await Idle(log);
-            Assert.That(history.Items.OfType<GitCommit>().Count(), Is.EqualTo(4));
+            await Idle(log); ListBox history = Field<ListBox>(log, "RevisionHistory");
+            Assert.That(history.Items.OfType<GitCommit>().Count(), Is.EqualTo(4), "The continuous native traversal reaches EOF with the same batch size of two.");
+            Assert.That(new PreferencesStore().Load().HistoryLimit, Is.EqualTo(2));
             GitCommit third = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Third"), fourth = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Fourth");
             object source = history.ItemsSource!;
             System.Reflection.FieldInfo queryField = typeof(MainWindow).GetField("_historyQuery", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;

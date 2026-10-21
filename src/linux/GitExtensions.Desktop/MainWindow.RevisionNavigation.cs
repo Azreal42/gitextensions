@@ -33,6 +33,8 @@ public sealed partial class MainWindow
     private async Task GoToRevisionAsync()
     {
         if (_busy || _goToCommitRead.Current is not null || _repository is not GitRepository repository || _lifetime.IsCancellationRequested) { return; }
+        long intent = RecordHistorySelectionIntent();
+        BrowseHistoryLoad? historyRequest = _historyLoad;
         LastException = null;
         GoToCommitDialog dialog = new(repository) { RequestedThemeVariant = ActualThemeVariant };
         using CancellationTokenSource read = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
@@ -52,8 +54,9 @@ public sealed partial class MainWindow
             LastException = dialog.ResolutionError;
             await ShowGoToCommitErrorAsync("_noRevisionFoundError", "No revision found.");
         }
-        else if (!_history.Any(commit => commit.Hash == hash)) { await ShowFilteredRevisionErrorAsync(hash); }
-        else { SelectVisibleRevision(hash); }
+        else if (await WaitForHistoryRevisionAsync(new(hash), intent, read.Token))
+        { SelectVisibleRevision(hash); }
+        else if (IsHistoryAbsenceProven(historyRequest, repository, intent)) { await ShowFilteredRevisionErrorAsync(hash); }
     }
 
     private Task ShowFilteredRevisionErrorAsync(string hash)
@@ -90,15 +93,18 @@ public sealed partial class MainWindow
     private async Task NavigateToRevisionAsync(string revision)
     {
         GitRepository? repository = _repository; string? hash = null;
+        long intent = RecordHistorySelectionIntent(); BrowseHistoryLoad? request = _historyLoad;
         await RunAsync("Go to commit", async r => hash = await r.ResolveRevisionAsync(revision, Token), refresh: false);
-        if (_repository != repository || hash is null) { return; }
-        SelectVisibleRevision(hash);
+        if (_repository != repository || repository is null || hash is null) { return; }
+        if (await WaitForHistoryRevisionAsync(new(hash), intent)) { SelectVisibleRevision(hash); }
+        else if (IsHistoryAbsenceProven(request, repository, intent)) { await ShowFilteredRevisionErrorAsync(hash); }
     }
 
     private void SelectVisibleRevision(string hash, bool focus = true)
     {
         GitCommit? row = _history.FirstOrDefault(commit => commit.Hash == hash);
         if (row is null) { _state.Text = T("The revision is not visible with the current history filters.") + " " + hash; return; }
+        RecordHistorySelectionIntent();
         _commits.SelectedItems?.Clear(); _commits.SelectedItem = row; _commits.ScrollIntoView(row);
         if (focus) { _commits.Focus(); }
     }
@@ -108,6 +114,7 @@ public sealed partial class MainWindow
         GitCommit[] selected = SelectedComparisonCommits();
         if (selected.Length == 0) { return; }
         string? hash = null; GitRepository? repository = _repository;
+        long intent = RecordHistorySelectionIntent(); BrowseHistoryLoad? request = _historyLoad;
         await RunAsync("Merge base", async r =>
         {
             string[] revisions = selected.Length == 1 ? [selected[0].Hash, "HEAD"] : selected.Select(commit => commit.Hash).ToArray();
@@ -115,7 +122,11 @@ public sealed partial class MainWindow
             if (!result.Success) { throw new GitCommandException(["merge-base"], result); }
             hash = result.StandardOutput.Trim();
         }, refresh: false);
-        if (_repository == repository && !string.IsNullOrEmpty(hash)) { SelectVisibleRevision(hash); }
+        if (_repository == repository && repository is not null && !string.IsNullOrEmpty(hash))
+        {
+            if (await WaitForHistoryRevisionAsync(new(hash), intent)) { SelectVisibleRevision(hash); }
+            else if (IsHistoryAbsenceProven(request, repository, intent)) { await ShowFilteredRevisionErrorAsync(hash); }
+        }
     }
 
     private async Task NavigateRevisionHistoryAsync(int direction)
@@ -127,8 +138,13 @@ public sealed partial class MainWindow
         {
             _revisionNavigationIndex = next;
             string hash = _revisionNavigation[next];
+            long intent = RecordHistorySelectionIntent(); BrowseHistoryLoad? request = _historyLoad;
             if (HistoryItem(hash) is { } item) { await SelectHistoryItemAsync(item); }
-            else if (!hash.StartsWith(':')) { await ShowFilteredRevisionErrorAsync(hash); }
+            else if (!hash.StartsWith(':') && _repository is GitRepository repository)
+            {
+                if (await WaitForHistoryRevisionAsync(new(hash), intent) && HistoryItem(hash) is { } loaded) { await SelectHistoryItemAsync(loaded); }
+                else if (IsHistoryAbsenceProven(request, repository, intent)) { await ShowFilteredRevisionErrorAsync(hash); }
+            }
         }
         finally { _movingRevisionNavigation = false; RefreshRevisionContextMenu(); }
     }

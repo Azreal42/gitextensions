@@ -45,6 +45,9 @@ public sealed class CommitInformationView : UserControl, IDisposable
     private GitRepository? _repository;
     private GitCommit? _revision;
     private IReadOnlyList<GitCommit> _graph = [];
+    private string[] _graphChildren = [];
+    private string _headerBeforeChildren = "", _headerAfterChildren = "";
+    private readonly Dictionary<string, IReadOnlyList<(string Hash, Control Control)>> _revisionLinkControls = [];
     private string? _context;
     private CancellationTokenSource? _current;
     private Task _pending = Task.CompletedTask;
@@ -164,6 +167,20 @@ public sealed class CommitInformationView : UserControl, IDisposable
         _authorAvatar.SetActive(true);
     }
 
+    // A graph append changes local Children links, not the selected revision's metadata generation.
+    internal void UpdateGraph(GitRepository repository, IReadOnlyList<GitCommit> graph)
+    {
+        if (_disposed || _closing || !ReferenceEquals(repository, _repository) || _revision is null) { return; }
+        _graph = graph;
+        string[] children = graph.Where(commit => commit.Parents.Contains(_revision.Hash, StringComparer.Ordinal))
+            .Select(commit => commit.Hash).ToArray();
+        if (_graphChildren.SequenceEqual(children)) { return; }
+        _graphChildren = children;
+        SetRevisionLinks("Children", children);
+        string line = children.Length == 0 ? "" : T("Children") + ": " + string.Join(' ', children) + "\n";
+        _headerText = (_headerBeforeChildren + line + _headerAfterChildren).TrimEnd('\n');
+    }
+
     public void SetMessage(string text)
     {
         Cancel(); _revisionLinks.SetRevision(null, null); _repository = null; _revision = null; ClearContent(); MessageControl.Text = text;
@@ -245,9 +262,13 @@ public sealed class CommitInformationView : UserControl, IDisposable
         Set("Committer", T("Committer"), identitiesEqual ? null : Identity(details.Committer));
         Set("Commit date", T("Commit date"), datesEqual ? null : Date(details.Committer.Date));
         Set("Commit hash", T("Commit hash"), details.Hash);
-        SetLinks("Children", _graph.Where(commit => commit.Parents.Contains(details.Hash, StringComparer.Ordinal)).Select(commit => commit.Hash).ToArray());
+        _graphChildren = _graph.Where(commit => commit.Parents.Contains(details.Hash, StringComparer.Ordinal)).Select(commit => commit.Hash).ToArray();
+        _headerBeforeChildren = plain.ToString();
+        SetLinks("Children", _graphChildren);
+        int afterChildren = plain.Length;
         SetLinks("Parents", details.Parents);
         Set("File", T("File"), _context);
+        _headerAfterChildren = plain.ToString(afterChildren, plain.Length - afterChildren);
         _headerText = plain.ToString().TrimEnd('\n');
         _copyHeaderText = copy.ToString().TrimEnd('\n');
         string message = details.Message.TrimEnd('\r', '\n');
@@ -272,19 +293,37 @@ public sealed class CommitInformationView : UserControl, IDisposable
         }
         void SetLinks(string key, IReadOnlyList<string> hashes)
         {
-            var field = _fields[key]; field.Label.IsVisible = field.Value.IsVisible = hashes.Count != 0;
-            WrapPanel links = (WrapPanel)field.Value;
-            if (!links.Children.Select(child => child.Tag).OfType<ValueTuple<CommitInformationCommand, string>>().Select(link => link.Item2).SequenceEqual(hashes))
-            {
-                links.Children.Clear();
-                foreach (string hash in hashes)
-                {
-                    links.Children.Add(ShowRevisionLinks ? Link(hash[..Math.Min(10, hash.Length)], CommitInformationCommand.NavigateRevision, hash)
-                        : Selectable(hash[..Math.Min(10, hash.Length)]));
-                }
-            }
+            SetRevisionLinks(key, hashes);
             if (hashes.Count != 0) { plain.Append(T(key)).Append(": ").AppendJoin(" ", hashes).Append('\n'); }
         }
+    }
+
+    private void SetRevisionLinks(string key, IReadOnlyList<string> hashes)
+    {
+        var linkField = _fields[key]; linkField.Label.IsVisible = linkField.Value.IsVisible = hashes.Count != 0;
+        WrapPanel links = (WrapPanel)linkField.Value;
+        IReadOnlyList<(string Hash, Control Control)> previous = _revisionLinkControls.GetValueOrDefault(key) ?? [];
+        List<(string Hash, Control Control)> desired = [];
+        foreach (string hash in hashes)
+        {
+            Control? retained = previous.FirstOrDefault(item => item.Hash == hash && (item.Control is Button) == ShowRevisionLinks
+                && !desired.Any(other => ReferenceEquals(other.Control, item.Control))).Control;
+            Control control = retained ?? (ShowRevisionLinks
+                ? Link(hash[..Math.Min(10, hash.Length)], CommitInformationCommand.NavigateRevision, hash)
+                : Selectable(hash[..Math.Min(10, hash.Length)]));
+            desired.Add((hash, control));
+        }
+        for (int index = links.Children.Count - 1; index >= 0; index--)
+        {
+            if (!desired.Any(item => ReferenceEquals(item.Control, links.Children[index]))) { links.Children.RemoveAt(index); }
+        }
+        for (int index = 0; index < desired.Count; index++)
+        {
+            int current = links.Children.IndexOf(desired[index].Control);
+            if (current < 0) { links.Children.Insert(index, desired[index].Control); }
+            else if (current != index) { links.Children.Move(current, index); }
+        }
+        _revisionLinkControls[key] = desired;
     }
 
     private void RenderReferences()
@@ -494,6 +533,7 @@ public sealed class CommitInformationView : UserControl, IDisposable
     {
         _authorAvatar.SetActive(false); _authorAvatar.SetIdentity(null, null);
         _header.IsVisible = _headerLayout.IsVisible = false; _headerText = _copyHeaderText = _referenceText = ""; MessageControl.Text = ""; _supplementary.Children.Clear();
+        _graphChildren = []; _headerBeforeChildren = _headerAfterChildren = ""; _revisionLinkControls.Clear();
         _contextLink = null; _pointerMenuPending = false; ClearRelatedLinks();
     }
 

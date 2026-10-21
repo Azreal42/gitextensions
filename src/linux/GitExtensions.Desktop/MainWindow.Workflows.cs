@@ -358,9 +358,10 @@ public sealed partial class MainWindow
         string[] revisions = SelectedComparisonCommits().Reverse().Select(commit => commit.Hash).ToArray();
         if (revisions.Length == 0) { _state.Text = T("Select a commit in History first."); return; }
         GitRepository repository = _repository;
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync("Cherry-pick", async _ =>
+            await RunHistoryMutationAsync("Cherry-pick", async _ =>
             {
                 MarkStandaloneMayHaveRepositoryChanges();
                 await CherryPickSequence.ShowAsync(WorkflowOwner, repository, revisions, Token,
@@ -381,7 +382,8 @@ public sealed partial class MainWindow
         string[] revisions = SelectedComparisonCommits().Reverse().Select(commit => commit.Hash).ToArray();
         if (revisions.Length == 0) { _state.Text = T("Select a commit in History first."); return; }
         GitRepository repository = _repository;
-        try { await RunAsync("Revert", async _ =>
+        await using var historyMutation = BeginHistoryMutationScope();
+        try { await RunHistoryMutationAsync("Revert", async _ =>
             { MarkStandaloneMayHaveRepositoryChanges(); await RevertSequence.ShowAsync(WorkflowOwner, repository, revisions, Token, ResolveWorkflowConflictsAsync); }, refresh: false); }
         finally { if (_repository == repository && !_lifetime.IsCancellationRequested) { await RefreshAsync(); } }
     }
@@ -433,9 +435,10 @@ public sealed partial class MainWindow
         GitRepository repository = _repository;
         PushDialog dialog = new(repository, (owner, token) => AfterSubmoduleUpdateAsync(repository, owner, token))
             { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync("Push", async _ =>
+            await RunHistoryMutationAsync("Push", async _ =>
             {
                 CancellationToken commandToken = Token;
                 using CancellationTokenRegistration registration = commandToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));
@@ -618,9 +621,10 @@ public sealed partial class MainWindow
         GitToolsSettingsDialog dialog = new(context.Repository, _translations, focus, _lifetime.Token,
             initialView: view ?? (context.GlobalOnly ? GitToolConfigurationView.Global : null), focusField: field, advanced: advanced)
             { RequestedThemeVariant = owner.ActualThemeVariant };
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync(T("Git configuration"), async current =>
+            await RunHistoryMutationAsync(T("Git configuration"), async current =>
             {
                 if (!ReferenceEquals(current, repository)) { return; }
                 using CancellationTokenRegistration cancellation = Token.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.RequestClose));
@@ -734,9 +738,10 @@ public sealed partial class MainWindow
         if (_repository is null || _busy || _repository.IsBare) { return; }
         GitRepository repository = _repository; Window owner = WorkflowOwner;
         bool resetStarted = false, resetCompleted = false;
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync(T("Undo last commit"), async current =>
+            await RunHistoryMutationAsync(T("Undo last commit"), async current =>
             {
                 if (current != repository || !await UndoLastCommitConfirmationDialog.ShowAsync(owner, new BrowseCommandPreferencesStore(), Token)) { return; }
                 Token.ThrowIfCancellationRequested();
@@ -773,9 +778,10 @@ public sealed partial class MainWindow
         Window owner = WorkflowOwner;
         dialog.RequestedThemeVariant ??= owner.ActualThemeVariant;
         if (initializeOnOpen) { dialog.Opened += async (_, _) => await dialog.InitializeAsync(); }
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync(dialog.Title ?? "Open dialog", async _ =>
+            await RunHistoryMutationAsync(dialog.Title ?? "Open dialog", async _ =>
             {
                 CancellationToken commandToken = Token;
                 using CancellationTokenRegistration registration = commandToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(dialog.Close));

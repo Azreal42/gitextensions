@@ -80,7 +80,8 @@ public sealed partial class MainWindow
     {
         if (_repository is null || _busy || _repository.IsBare) { return; }
         _stashFlyout.Hide(); _pullFlyout.Hide(); _browserToolbar?.OverflowFlyout.Hide();
-        await RunAsync(label, async repository =>
+        await using var historyMutation = BeginHistoryMutationScope();
+        await RunHistoryMutationAsync(label, async repository =>
         {
             MarkStandaloneMayHaveRepositoryChanges();
             GitResult result = await action(repository); AppendOutput(result.StandardOutput + result.StandardError);

@@ -74,9 +74,10 @@ public sealed partial class MainWindow
         string description = verdict is null ? "git bisect reset" : "git bisect " + verdict.Value.ToString().ToLowerInvariant() + " " + target.Hash;
         OperationFocus historyFocus = CurrentHistoryOperationFocus(new(target.Repository, null, target.Hash, PreserveHistorySelection: true));
         _revisionActionFocus = historyFocus;
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync("Bisect", async repository =>
+            await RunHistoryMutationAsync("Bisect", async repository =>
             {
                 if (repository != target.Repository || !HasRevisionBisectSession(repository)) { return; }
                 GitProcessDialogResult? outcome = null;

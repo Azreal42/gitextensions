@@ -117,6 +117,7 @@ public sealed partial class MainWindow
     private Task HandleHistorySelectionChanged(SelectionChangedEventArgs args)
     {
         if (_refreshing) { return Task.CompletedTask; }
+        RecordHistorySelectionIntent();
         ObserveQuickSearchSelection(args);
         return PublishHistorySelectionChange();
     }
@@ -135,6 +136,7 @@ public sealed partial class MainWindow
 
     private async Task SelectHistoryItemAsync(object item)
     {
+        RecordHistorySelectionIntent();
         bool same = _commits.SelectedItems is { Count: 1 } && ReferenceEquals(_commits.SelectedItem, item);
         if (!same)
         {
@@ -211,10 +213,16 @@ public sealed partial class MainWindow
     {
         _commits.AutoScrollToSelectedItem = false;
         _commits.AddHandler(PointerPressedEvent, (_, args) =>
-        { PreviewHistoryRange(args); PreviewArtificialAmend(args); }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        {
+            if (!_refreshing && !_busy && args.GetCurrentPoint(_commits).Properties.PointerUpdateKind is
+                PointerUpdateKind.LeftButtonPressed or PointerUpdateKind.RightButtonPressed) { RecordHistorySelectionIntent(); }
+            PreviewHistoryRange(args); PreviewArtificialAmend(args);
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _commits.AddHandler(KeyDownEvent, (_, args) =>
         {
             if (args.Handled || !_commits.IsKeyboardFocusWithin || _busy || _commits.ItemCount == 0) { return; }
+            if (args.Key is Key.Up or Key.Down or Key.Home or Key.End or Key.PageUp or Key.PageDown or Key.Space)
+            { RecordHistorySelectionIntent(); }
             if (args.Key == Key.A && args.KeyModifiers == KeyModifiers.Control) { args.Handled = true; return; }
             bool control = args.KeyModifiers.HasFlag(KeyModifiers.Control), shift = args.KeyModifiers.HasFlag(KeyModifiers.Shift);
             if (args.KeyModifiers.HasFlag(KeyModifiers.Alt)) { return; }

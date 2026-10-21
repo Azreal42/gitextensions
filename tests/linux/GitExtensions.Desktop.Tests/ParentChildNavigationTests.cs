@@ -178,7 +178,7 @@ public sealed class ParentChildNavigationTests
     [TestCase("fr-FR", true)]
     public async Task AnOutOfPageParentShowsTheTranslatedModalWithoutReloadingOrChangingSelection(string culture, bool dark)
     {
-        await using Scope f = await Scope.OpenAsync(culture: culture, dark: dark, limit: 1);
+        await using Scope f = await Scope.OpenAsync(culture: culture, dark: dark, limit: 1, maximum: 1);
         GitCommit visible = f.History.Items.OfType<GitCommit>().Single();
         string parent = visible.Parents.First();
         Assert.That(f.History.Items.OfType<GitCommit>().Any(commit => commit.Hash == parent), Is.False);
@@ -407,7 +407,7 @@ public sealed class ParentChildNavigationTests
     [AvaloniaTest]
     public async Task ClosingTheOwnerWhileItsInvisibleParentMessageIsOpenDrainsTheActionWithoutPublishingOrRestoringFocus()
     {
-        await using Scope f = await Scope.OpenAsync(limit: 1);
+        await using Scope f = await Scope.OpenAsync(limit: 1, maximum: 1);
         string selected = f.Selected;
         await f.SelectAsync(selected); Press(f.Main, PhysicalKey.P, RawInputModifiers.Control);
         await Until(() => f.Main.OwnedWindows.Any(window => window.Name == "GoToCommitError"));
@@ -438,7 +438,7 @@ public sealed class ParentChildNavigationTests
         internal GitCompareRevision? Artificial => (History.SelectedItem as ArtificialHistoryRevision)?.Revision;
 
         internal static async Task<Scope> OpenAsync(string culture = "en", bool dark = false, int limit = 300, bool showArtificial = false,
-            bool fileHistory = false, bool unborn = false, bool bare = false, bool headAtMerge = false, bool dirtyWorkingTree = false)
+            bool fileHistory = false, bool unborn = false, bool bare = false, bool headAtMerge = false, bool dirtyWorkingTree = false, int? maximum = null)
         {
             GitFixture git = await GitFixture.CreateAsync(unborn: true); MainWindow? main = null;
             try
@@ -470,7 +470,9 @@ public sealed class ParentChildNavigationTests
                 }
                 string repository = git.Repository.Path;
                 if (bare) { repository = git.Output("bare.git"); await git.GitAsync("clone", "--bare", git.Repository.Path, repository); }
-                new PreferencesStore().Save(new DesktopPreferences { HistoryLimit = limit });
+                DesktopPreferences preferences = new() { HistoryLimit = limit };
+                if (maximum is int ceiling) { preferences = preferences with { MaxRevisionGraphCommits = ceiling }; }
+                new PreferencesStore().Save(preferences);
                 new HistoryViewPreferencesStore().Save(new() { ShowArtificialCommits = showArtificial });
                 new BrowserLayoutPreferencesStore().Save(new(CommitInfoPosition.RightwardFromList));
                 main = new(new BrowseRequest(PathFilter: fileHistory ? new("file.txt", BrowsePathKind.File) : null))

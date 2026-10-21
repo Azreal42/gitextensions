@@ -69,6 +69,8 @@ public sealed partial class MainWindow
     private async Task RepublishArtificialHistoryVisibilityAsync()
     {
         if (_repository is null || _historyStatus is not GitStatus status || _lifetime.IsCancellationRequested) { return; }
+        if (_historyLoad is { Published: true } load && CanPublishHistory(load))
+        { await RepublishLiveArtificialVisibilityAsync(load); return; }
         using WindowWork work = TrackWindowWork();
         OperationFocus? focus = CaptureOperationFocus();
         HistoryBookmark bookmark = CaptureHistoryBookmark();

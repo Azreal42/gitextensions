@@ -120,9 +120,10 @@ public sealed partial class MainWindow
         CheckoutBranchDialog? dialog = null;
         dialog = new(repository, branch, _preferences.AutoNormaliseBranchName, _preferences.AutoNormaliseSymbol,
             token => AfterSubmoduleUpdateAsync(repository, dialog!.IsVisible ? dialog : WorkflowOwner, token));
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync("Checkout branch", async _ =>
+            await RunHistoryMutationAsync("Checkout branch", async _ =>
             {
                 if (fromLeftPanel && new ConfirmationsSettingsSession().Initial.ConfirmBranchCheckout)
                 {

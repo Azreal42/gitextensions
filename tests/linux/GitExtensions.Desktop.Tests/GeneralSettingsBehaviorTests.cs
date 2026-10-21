@@ -47,20 +47,12 @@ public sealed class GeneralSettingsBehaviorTests
         string[] expected = (await git.Repository.GetLogAsync(new GitLogQuery(Count: 1000))).Select(commit => commit.Hash).ToArray();
         Assert.That(expected, Has.Length.EqualTo(650)); string material = await RepositoryMaterial(git);
         await using Browser browser = await Browser.Open(git.Repository.Path);
-        Assert.That(browser.Hashes, Is.EqualTo(expected.Take(300))); Assert.That(browser.More.IsVisible, Is.True);
-
-        await browser.LoadMore();
-
-        int next = maximum == 0 ? 600 : 500;
-        Assert.That(browser.Hashes, Is.EqualTo(expected.Take(next)));
-        Assert.That(browser.More.IsVisible, Is.EqualTo(maximum == 0));
-        if (maximum == 0)
-        {
-            await browser.LoadMore(); Assert.That(browser.Hashes, Is.EqualTo(expected));
-            Assert.That(browser.More.IsVisible, Is.False, "Unlimited history still detects the real end of the repository.");
-        }
+        // HistoryLimit is a delivery batch size. One continuous traversal reaches
+        // its real EOF or the saved ceiling without a second LoadMore traversal.
+        Assert.That(browser.Hashes, Is.EqualTo(maximum == 0 ? expected : expected.Take(maximum)));
         Assert.That(await RepositoryMaterial(git), Is.EqualTo(material));
         Assert.That(new PreferencesStore().Load().HistoryLimit, Is.EqualTo(300));
+        Assert.That(new PreferencesStore().Load().MaxRevisionGraphCommits, Is.EqualTo(maximum));
     }
 
     [AvaloniaTest]
@@ -82,8 +74,9 @@ public sealed class GeneralSettingsBehaviorTests
             Assert.That(browser.Hashes, Is.EqualTo(expected.Take(500))); Assert.That(browser.Hashes, Does.Not.Contain(target));
             Assert.That(browser.SelectedHash, Is.Not.EqualTo(target));
         }
-        Assert.That(browser.More.IsVisible, Is.False);
         Assert.That(browser.Hashes.First(), Is.EqualTo(expected[0]), "A requested selection must not become an ancestor/revision filter.");
+        Assert.That(new PreferencesStore().Load().HistoryLimit, Is.EqualTo(300));
+        Assert.That(new PreferencesStore().Load().MaxRevisionGraphCommits, Is.EqualTo(maximum));
     }
 
     [AvaloniaTest]

@@ -72,7 +72,8 @@ public class BranchHistoryFilterTests
     public async Task TypingEscapeRefreshAndLoadMorePreserveDraftCaretWithoutApplyingIt()
     {
         using Fixture f = await Fixture.CreateAsync("initial\n", "initial\n", createMerge: true);
-        MainWindow main = f.Window; await Accept(main, "feature");
+        MainWindow main = f.Window; await Accept(main, "feature"); await CompleteHistory();
+        int savedMaximum = new PreferencesStore().Load().MaxRevisionGraphCommits;
         string[] accepted = Hashes(main); string before = await State(f);
         ComboBox combo = Branch(main); TextBox editor = Editor(combo);
         editor.Focus(); editor.SelectAll(); main.KeyTextInput("main"); await Layout(main);
@@ -82,7 +83,7 @@ public class BranchHistoryFilterTests
         Press(main, PhysicalKey.Escape); await Layout(main);
         Assert.That(combo.IsDropDownOpen, Is.False); Assert.That(combo.Text, Is.EqualTo("main"));
         Assert.That(editor.SelectionStart, Is.EqualTo(2));
-        Press(main, PhysicalKey.F5); await Idle(main); await Layout(main);
+        Press(main, PhysicalKey.F5); await Idle(main); await CompleteHistory(); await Layout(main);
         Assert.That(Hashes(main), Is.EqualTo(accepted), "Refresh must read the accepted expression, not the draft.");
         Assert.That(combo.Text, Is.EqualTo("main")); Assert.That(editor.SelectionStart, Is.EqualTo(2));
         editor.Focus(); Click(editor); await Layout(main); Assert.That(combo.Items.OfType<string>(), Is.EqualTo(new[] { "main" }));
@@ -92,23 +93,30 @@ public class BranchHistoryFilterTests
         Click(Field<Button>(main, "BrowseAdvancedFilter")); await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any());
         HistoryFilterDialog advanced = main.OwnedWindows.OfType<HistoryFilterDialog>().Single();
         Assert.That(Field<TextBox>(advanced, "BranchFilter").Text, Is.EqualTo("feature"));
-        advanced.Close(); await Idle(main); Assert.That(combo.Text, Is.EqualTo("main"));
+        advanced.Close(); await Idle(main); await CompleteHistory(); Assert.That(combo.Text, Is.EqualTo("main"));
         Click(Field<Button>(main, "BrowseAdvancedFilter")); await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any());
         advanced = main.OwnedWindows.OfType<HistoryFilterDialog>().Single();
-        Field<TextBox>(advanced, "BranchFilter").Text = "main"; Field<NumericUpDown>(advanced, "CommitsLimit").Value = 1;
-        Click(advanced.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "OK")); await Idle(main); await Layout(main);
+        Field<TextBox>(advanced, "BranchFilter").Text = "main";
+        CheckBox privateMaximum = Field<CheckBox>(advanced, "CommitsLimitCheck");
+        Assert.That(privateMaximum.IsChecked, Is.False); Click(privateMaximum); await Layout(advanced);
+        Assert.That(privateMaximum.IsChecked, Is.True); Assert.That(Field<NumericUpDown>(advanced, "CommitsLimit").IsEnabled, Is.True);
+        Field<NumericUpDown>(advanced, "CommitsLimit").Value = 1;
+        Click(advanced.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "OK")); await Idle(main); await CompleteHistory(); await Layout(main);
         Assert.That(Hashes(main).Length, Is.EqualTo(1));
         combo.Text = "feature"; editor.SelectionStart = editor.SelectionEnd = 3;
-        Button more = Field<Button>(main, "BrowseLoadMore");
-        if (more.IsEffectivelyVisible) { Click(more); }
-        else
-        {
-            CompactBrowserToolbar toolbar = Field<CompactBrowserToolbar>(main, "RepositoryToolbar"); Click(toolbar.Overflow); await Layout(main);
-            Click(toolbar.OverflowFlyout.Items.OfType<MenuItem>().Single(item => item.Header as string == "Load more"));
-        }
-        await Idle(main); await Layout(main);
-        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery(Count: 2) { BranchFilter = "main" })).Select(commit => commit.Hash)));
+        // F5 continues to use accepted main and its private ceiling, never the
+        // feature draft. A delivery batch size no longer creates a second page.
+        Press(main, PhysicalKey.F5); await Idle(main); await CompleteHistory(); await Layout(main);
+        Assert.That(ReaderHashes(main), Is.EqualTo((await new GitRepository(f.Repository).GetLogAsync(new GitLogQuery(Count: 1) { BranchFilter = "main" })).Select(commit => commit.Hash)));
         Assert.That(combo.Text, Is.EqualTo("feature")); Assert.That(editor.SelectionStart, Is.EqualTo(3));
+        Assert.That(new PreferencesStore().Load().MaxRevisionGraphCommits, Is.EqualTo(savedMaximum), "A private filter ceiling never changes the saved global maximum.");
+
+        async Task CompleteHistory()
+        {
+            await Until(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+            await main.WindowWorkCompletion;
+            Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
+        }
     }
 
     [AvaloniaTest]

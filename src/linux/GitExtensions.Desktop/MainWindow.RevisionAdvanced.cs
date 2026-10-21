@@ -52,13 +52,14 @@ public sealed partial class MainWindow
     {
         if (_busy || _repository is not { IsBare: false } repository || PrimaryHistoryItem is not GitCommit selected) { return; }
         Window owner = WorkflowOwner;
+        await using var historyMutation = BeginHistoryMutationScope();
         CommitDialog dialog = new(repository,
             afterSubmoduleUpdateAsync: (window, token) => AfterSubmoduleUpdateAsync(repository, window, token),
             initialKind: kind, targetCommit: selected) { RequestedThemeVariant = owner.ActualThemeVariant };
         using CancellationTokenRegistration cancel = _lifetime.Token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
         try
         {
-            await RunAsync("Open commit dialog", _ => dialog.InitializeAsync(), refresh: false);
+            await RunHistoryMutationAsync("Open commit dialog", _ => dialog.InitializeAsync(), refresh: false);
             if (_repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
             MarkStandaloneMayHaveRepositoryChanges();
             await dialog.ShowDialog(owner);
@@ -75,9 +76,10 @@ public sealed partial class MainWindow
         if (_busy || _repository is not { IsBare: false } repository || PrimaryHistoryItem is not GitCommit selected) { return; }
         if (!await ConfirmHistoryRebaseAsync(interactive: true)) { return; }
         if (_repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync(action == GitRebaseAction.Edit ? "Edit commit" : "Reword commit", async _ =>
+            await RunHistoryMutationAsync(action == GitRebaseAction.Edit ? "Edit commit" : "Reword commit", async _ =>
             {
                 string executable = Environment.ProcessPath ?? throw new InvalidOperationException("Cannot locate the rebase editor application.");
                 MarkStandaloneMayHaveRepositoryChanges();

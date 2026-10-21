@@ -114,7 +114,7 @@ public sealed partial class MainWindow
     private async Task CloseRepositoryAsync()
     {
         if (_busy) { return; }
-        await RunAsync("Close repository", async _ =>
+        await RunHistoryMutationAsync("Close repository", async _ =>
         {
             HideQuickSearch(); _quickSearchArtificialSelection = null; _quickSearchLastCommit = null;
             _parentChildNavigation?.Clear();

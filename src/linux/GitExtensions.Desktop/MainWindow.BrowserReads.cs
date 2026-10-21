@@ -19,6 +19,8 @@ public sealed partial class MainWindow
     private BrowserRead[] BrowserReads => [_revisionRead, _revisionDiffRead, _treeRead, _treeFileRead, _workingDiffRead, _signatureRead, _commitInformationRead, _worktreeMenuRead, _goToCommitRead, _quickReferenceRead, _referenceSortingRead, _commitDiffOpenRead];
     private Task? _commitInfoLoadTask;
     private Exception? _commitInformationError;
+    private GitRepository? _commitInformationErrorRepository;
+    private string? _commitInformationErrorHash;
     private bool _commitInfoClosing, _commitInfoCloseReady;
     private Window? _closingCommitInfoOwner;
     internal Task CommitInformationCompletion => _commitInfo.Completion;
@@ -52,15 +54,24 @@ public sealed partial class MainWindow
         sequence.Current = read; sequence.Pending++;
         CancellationToken token = read.Token;
         bool informationRead = sequence == _commitInformationRead;
-        if (!informationRead || ReferenceEquals(LastException, _commitInformationError)) { LastException = null; }
-        if (informationRead) { _commitInformationError = null; }
+        string? informationHash = informationRead ? CurrentDisplayedCommit?.Hash : null;
+        bool informationError = _commitInformationError is not null && ReferenceEquals(LastException, _commitInformationError);
+        bool displayedInformationError = informationError && ReferenceEquals(repository, _commitInformationErrorRepository)
+            && _commitInformationErrorHash is not null && CurrentDisplayedCommit?.Hash == _commitInformationErrorHash;
+        bool historyError = LastException is not null && ReferenceEquals(LastException, _historyLoad?.Error);
+        // Sibling panel reads do not recover another current source's failure.
+        // A new information read can recover its own error, but retains independent inherited errors.
+        if (informationRead ? informationError : !displayedInformationError && !historyError) { LastException = null; }
+        if (informationRead)
+        { _commitInformationError = null; _commitInformationErrorRepository = null; _commitInformationErrorHash = null; }
         try { await action(repository, token); }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception exception)
         {
             if (!token.IsCancellationRequested && _repository == repository)
             {
-                if (informationRead) { _commitInformationError = exception; }
+                if (informationRead)
+                { _commitInformationError = exception; _commitInformationErrorRepository = repository; _commitInformationErrorHash = informationHash; }
                 LastException = exception;
                 _state.Text = label + " failed — see command output";
                 AppendOutput($"{label}: {exception.Message}");
@@ -184,7 +195,7 @@ public sealed partial class MainWindow
             if (_commitInfoClosing) { args.Cancel = true; return; }
             _commitInfoClosing = true;
             HideQuickSearch();
-            _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
+            _lifetime.Cancel(); _operation?.Cancel(); CancelHistoryLoading(); CancelBrowserReads();
             CancelFileGrep(); _fileGrepNavigation?.Cancel();
             _commitInfo.BeginClose();
             // Shared branch workers outlive a cancelled consumer wait. Stop their owner before

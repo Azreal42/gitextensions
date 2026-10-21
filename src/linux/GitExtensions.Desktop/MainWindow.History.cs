@@ -34,27 +34,17 @@ public sealed partial class MainWindow
     {
         if (_repository is null || _busy) { return; }
         HistoryFilterDialog dialog = new(_historyQuery, _acceptedBranchFilter, _historyBranchScope == HistoryBranchScope.Filtered,
-            _fileHistoryPreferencesStore.Load())
+            _fileHistoryPreferencesStore.Load(), new HistoryFilterCommitLimit(_preferences.MaxRevisionGraphCommits, _historyMaximumOverride))
         { RequestedThemeVariant = ActualThemeVariant };
         GitLogQuery? query = await dialog.ShowDialog<GitLogQuery?>(this);
         if (query is null) { return; }
+        _historyMaximumOverride = dialog.CommitLimitOverride;
         _fileHistoryPreferencesStore.Save(_fileHistoryPreferencesStore.Load() with
         { FullHistory = dialog.FullHistorySetting, SimplifyMerges = dialog.SimplifyMergesSetting });
         _historyView = _historyView with { ShowReflog = query.Reflog };
         await ApplyBranchFilterAsync(query, dialog.RememberedBranchFilter, dialog.IsBranchFilterEnabled);
     }
 
-    private Task LoadMoreHistoryAsync()
-    {
-        if (_busy || !_historyHasMore) { return Task.CompletedTask; }
-        int next = HistoryPolicy.NextWindow(_historyWindow, _historyQuery.Count);
-        if (next == _historyWindow)
-        {
-            _historyHasMore = false;
-            if (_historyMore is not null) { _historyMore.IsVisible = false; }
-            return Task.CompletedTask;
-        }
-        _historyWindow = next;
-        return RefreshAsync();
-    }
+    // Compatibility command: a generation already traverses continuously to its native ceiling.
+    private Task LoadMoreHistoryAsync() => Task.CompletedTask;
 }

@@ -103,10 +103,13 @@ public sealed partial class MainWindow
         if (_revisionFiles.SelectedItem is TreeViewItem row) { row.Focus(); }
     }
 
-    private Task SelectParentChildDestinationAsync(GitCompareRevision target)
+    private async Task SelectParentChildDestinationAsync(GitCompareRevision target)
     {
-        object? row = HistoryItem(target);
-        return row is not null ? ApplyQuickSearchAsync(_commits.Items.IndexOf(row))
-            : target.Kind == GitCompareRevisionKind.Commit ? ShowFilteredRevisionErrorAsync(target.Revision) : Task.CompletedTask;
+        long intent = RecordHistorySelectionIntent();
+        BrowseHistoryLoad? request = _historyLoad; GitRepository? repository = _repository;
+        if (await WaitForHistoryRevisionAsync(target, intent) && HistoryItem(target) is { } row)
+        { await ApplyQuickSearchAsync(_commits.Items.IndexOf(row)); }
+        else if (target.Kind == GitCompareRevisionKind.Commit && repository is not null && IsHistoryAbsenceProven(request, repository, intent))
+        { await ShowFilteredRevisionErrorAsync(target.Revision); }
     }
 }

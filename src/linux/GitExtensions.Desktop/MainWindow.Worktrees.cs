@@ -75,7 +75,8 @@ public sealed partial class MainWindow
     {
         if (_repository is not GitRepository repository || _busy) { return; }
         CloseWorktreeMenus(); bool attempted = false;
-        await RunAsync(label, async _ =>
+        await using var historyMutation = BeginHistoryMutationScope();
+        await RunHistoryMutationAsync(label, async _ =>
         {
             MarkStandaloneMayHaveRepositoryChanges();
             attempted = await action(WorkflowOwner, repository, Token);

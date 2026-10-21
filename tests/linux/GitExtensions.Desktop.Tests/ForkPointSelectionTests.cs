@@ -71,7 +71,7 @@ public sealed class ForkPointSelectionTests
     [AvaloniaTest]
     public async Task TheLoadedBoundaryStopsWithoutFetchingAParentOrOpeningAFilteredRevisionMessage()
     {
-        await using Fixture f = await Fixture.CreateAsync(limit: 1);
+        await using Fixture f = await Fixture.CreateAsync(limit: 1, maximum: 1);
         Assert.That(f.Reader.Select(commit => commit.Hash), Is.EqualTo(new[] { f.T }));
         await f.SelectAsync(f.T); int commands = GitCommandLog.Snapshot().Count; await f.NextAsync();
         Assert.That(f.Selected, Is.EqualTo(new[] { f.T })); Assert.That(GitCommandLog.Snapshot().Count, Is.EqualTo(commands));
@@ -304,7 +304,7 @@ public sealed class ForkPointSelectionTests
         internal string[] Navigation() => ((List<string>)Private(main, "_revisionNavigation")!).ToArray();
         internal int NavigationIndex => (int)Private(main, "_revisionNavigationIndex")!;
         internal static async Task<Fixture> CreateAsync(bool fork = true, string? reference = null, int limit = 300, bool dark = false,
-            bool artificial = false, bool dirty = false, bool unborn = false, bool sideFromQ = false)
+            bool artificial = false, bool dirty = false, bool unborn = false, bool sideFromQ = false, int? maximum = null)
         {
             GitFixture git = await GitFixture.CreateAsync(unborn: true); MainWindow? main = null;
             try
@@ -328,7 +328,9 @@ public sealed class ForkPointSelectionTests
                     else if (reference == "tag") { await git.GitAsync("tag", "tag-only", q); }
                     if (dirty) { await File.WriteAllTextAsync(git.File, "INDEX FILE\n"); await git.GitAsync("add", "--", "file.txt"); await File.WriteAllTextAsync(git.File, "WORKTREE FILE\n"); }
                 }
-                new PreferencesStore().Save(new() { HistoryLimit = limit });
+                DesktopPreferences preferences = new() { HistoryLimit = limit };
+                if (maximum is int ceiling) { preferences = preferences with { MaxRevisionGraphCommits = ceiling }; }
+                new PreferencesStore().Save(preferences);
                 new HistoryViewPreferencesStore().Save(new() { ShowArtificialCommits = artificial, ShowRemoteBranches = reference != "remote-hidden" });
                 new BrowserLayoutPreferencesStore().Save(new(CommitInfoPosition.RightwardFromList));
                 main = new() { Width = 1440, Height = 960, RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light }; main.Show(); await main.OpenRepositoryAsync(git.Repository.Path);

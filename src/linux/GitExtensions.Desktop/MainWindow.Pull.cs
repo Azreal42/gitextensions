@@ -145,9 +145,10 @@ public sealed partial class MainWindow
             afterSubmoduleUpdateAsync: token => AfterSubmoduleUpdateAsync(repository, dialog!.IsVisible ? dialog : WorkflowOwner, token),
             resolveConflictsAsync: ResolveWorkflowConflictsAsync)
             { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync("Pull/Fetch", async _ =>
+            await RunHistoryMutationAsync("Pull/Fetch", async _ =>
             {
                 CancellationToken commandToken = Token;
                 await dialog.InitializeAsync(commandToken);
@@ -182,7 +183,7 @@ public sealed partial class MainWindow
         await scripts.RunAsync(ScriptEvent.AfterFetch);
     });
 
-    private Task QuickFetchAsync() => RunAsync("Fetch", async repository =>
+    private Task QuickFetchAsync() => RunHistoryMutationAsync("Fetch", async repository =>
     {
         bool attempted = false;
         Exception? operationError = null;

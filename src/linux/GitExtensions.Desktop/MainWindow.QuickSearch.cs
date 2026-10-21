@@ -102,7 +102,7 @@ public sealed partial class MainWindow
     private async void QuickSearchTextInput(object? sender, TextInputEventArgs args)
     {
         if (args.Handled || !CanQuickSearch || !QuickSearchHasFocus || string.IsNullOrEmpty(args.Text) || args.Text.All(char.IsControl)) { return; }
-        args.Handled = true; CancelQuickSearchClipboard();
+        args.Handled = true; CancelQuickSearchClipboard(); RecordHistorySelectionIntent();
         await ApplyQuickSearchAsync(_quickSearch!.Type(args.Text));
     }
 

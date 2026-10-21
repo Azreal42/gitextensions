@@ -105,7 +105,7 @@ public sealed partial class MainWindow
     {
         GitRepository? repository = _repository;
         if (repository is null || _busy || files is not null && !IsCurrentFileMenuSelection(files)) { return; }
-        await RunAsync(script.GetDisplayName(), async current =>
+        await RunHistoryMutationAsync(script.GetDisplayName(), async current =>
         {
             using IDisposable operation = current.BeginOperation();
             MarkStandaloneMayHaveRepositoryChanges(!script.RunInBackground);
@@ -126,18 +126,24 @@ public sealed partial class MainWindow
     internal async Task<bool> NavigateScriptOutputAsync(GitRepository repository, string revision, CancellationToken token)
     {
         if (_repository != repository || _lifetime.IsCancellationRequested) { return false; }
+        long intent = RecordHistorySelectionIntent();
+        var historyRequest = _historyLoad;
         string hash;
         try { hash = await repository.ResolveRevisionAsync(revision, token); }
         catch (GitCommandException)
         {
             token.ThrowIfCancellationRequested();
-            if (_repository != repository || _lifetime.IsCancellationRequested) { return false; }
+            if (!IsHistoryRequestCurrent(historyRequest, repository, intent)) { return false; }
             await ShowGoToCommitErrorAsync("_noRevisionFoundError", "No revision found.");
             return false;
         }
         token.ThrowIfCancellationRequested();
         if (_repository != repository) { return false; }
-        if (!_history.Any(commit => commit.Hash == hash)) { await ShowFilteredRevisionErrorAsync(hash); return false; }
+        if (!await WaitForHistoryRevisionAsync(new(hash), intent, token))
+        {
+            if (IsHistoryAbsenceProven(historyRequest, repository, intent)) { await ShowFilteredRevisionErrorAsync(hash); }
+            return false;
+        }
         SelectVisibleRevision(hash); return true;
     }
     internal async Task<bool> ExecuteScriptPluginAsync(GitRepository repository, string name, Window owner, CancellationToken token)

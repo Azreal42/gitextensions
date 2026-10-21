@@ -438,7 +438,7 @@ public sealed partial class MainWindow : Window
         if (IsCommitDiff) { await InitializeCommitDiffAsync(); return; }
         if (_busy || _lifetime.IsCancellationRequested) { return; }
         GitRepository? previous = _repository;
-        await RunAsync("Open repository", async _ =>
+        await RunHistoryMutationAsync("Open repository", async _ =>
         {
             _operationReportDirectory = path;
             GitRepository candidate = discovered ?? await GitRepository.OpenAsync(path, Token);
@@ -453,7 +453,7 @@ public sealed partial class MainWindow : Window
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { AppendOutput($"Unable to save preferences: {exception.Message}"); }
             }
             SetDashboardVisible(false);
-            if (!IsStandaloneDiff) { await RegisterBackgroundFetchAsync(candidate); }
+            if (!IsStandaloneDiff) { await _backgroundFetch.UnregisterAsync(); await RegisterBackgroundFetchAsync(candidate); }
             ScheduleGitHubActionsRepositoryChanged(candidate);
         }, refresh: false, requireRepository: false);
         if (_repository == previous && previous is null) { _state.Text = "Could not open repository. See command output."; }
@@ -480,204 +480,13 @@ public sealed partial class MainWindow : Window
     private async Task RefreshDataAsync(GitRepository repository, bool opening = false)
     {
         if (IsCommitDiff) { await ReloadCommitDiffDataAsync(repository, Token); return; }
-        using IDisposable execution = repository.BeginOperation();
-        BeginRepositoryBranchRefresh(repository);
-        HideQuickSearch();
-        _parentChildNavigation?.Clear();
-        _parentChildFileFocus = null;
-        _refreshing = true;
-        try
-        {
-            ApplyReferenceSorting(repository);
-            bool changedRepository = opening && _repository?.Path != repository.Path;
-            if (changedRepository) { _quickSearchArtificialSelection = null; _quickSearchLastCommit = null; }
-            HistoryBookmark historyBookmark = CaptureHistoryBookmark();
-            GitCompareRevision? artificialSelection = changedRepository ? null : _selectedArtificialHistoryRevision;
-            string? selectedPath = changedRepository ? null : SelectedWorkingChange?.Path;
-            string? selectedHash = changedRepository ? null : (PrimaryHistoryItem as GitCommit)?.Hash;
-            GitCompareRevision? startupSelection = opening && !_browseSelectionApplied ? _browseRequest.SelectedRevision : null;
-            GitCompareRevision? startupFirst = opening && !_browseSelectionApplied ? _browseRequest.FirstRevision : null;
-            if (startupSelection?.Kind == GitCompareRevisionKind.Commit)
-            { startupSelection = startupSelection with { Revision = await repository.ResolveRevisionAsync(startupSelection.Revision, Token) }; selectedHash = startupSelection.Revision; }
-            else if (startupSelection is not null) { artificialSelection = startupSelection; }
-            if (startupFirst?.Kind == GitCompareRevisionKind.Commit)
-            { startupFirst = startupFirst with { Revision = await repository.ResolveRevisionAsync(startupFirst.Revision, Token) }; }
-            BrowseInitialComparison? retainedComparison = changedRepository ? null : _browseInitialComparison;
-            string[] requiredSelectionHashes = new[] { startupSelection, startupFirst, retainedComparison?.First, retainedComparison?.Selected }.OfType<GitCompareRevision>()
-                .Where(source => source.Kind == GitCompareRevisionKind.Commit).Select(source => source.Revision).Distinct(StringComparer.Ordinal).ToArray();
-            string[] selectedHashOrder = changedRepository ? [] : (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).Distinct(StringComparer.Ordinal).ToArray();
-            HashSet<string> selectedHashes = selectedHashOrder.ToHashSet(StringComparer.Ordinal);
-            object? selectedRevisionDiff = changedRepository ? null : CaptureRevisionFileSelection();
-            string? selectedReferenceName = opening ? null : _referenceSelectionOverride ?? (_references.SelectedItem as GitReference)?.Name;
-            GitLogQuery configuredQuery = opening ? new GitLogQuery
-            { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog,
-                Path = _browseRequest.PathFilter?.Path } : _historyQuery;
-            HistoryLoadingPolicy policy = HistoryPolicy;
-            int historyWindow = policy.ClampWindow(opening ? configuredQuery.Count : _historyWindow);
-            // The toolbar editor is a draft. Refresh/background fetch/load more
-            // may only query the expression explicitly accepted by the user.
-            string? revision = configuredQuery.BranchFilter ?? configuredQuery.Revision;
-            GitStatus status = await repository.GetStatusAsync(Token);
-            IReadOnlyList<GitReference> references = await repository.GetReferencesAsync(Token);
-            bool missingNavigationReference = !opening && _navigationRevisionFilter is string navigationFilter && revision == navigationFilter && !references.Any(reference => reference.Name == navigationFilter);
-            if (missingNavigationReference)
-            {
-                revision = null;
-                configuredQuery = configuredQuery with { All = true, Revision = null, BranchFilter = null };
-                historyWindow = policy.InitialWindow(configuredQuery.Count);
-            }
-            configuredQuery = ConfigureHistoryViewQuery(configuredQuery);
-            GitLogQuery query = configuredQuery with
-            {
-                Count = policy.ReadCount(historyWindow),
-                Skip = 0,
-                Revision = configuredQuery.Revision,
-                BranchFilter = configuredQuery.BranchFilter
-            };
-            var historyRead = await ReadBrowseHistoryAsync(repository, query, status.IsUnborn, Token);
-            IReadOnlyList<GitCommit> history = historyRead.Commits;
-            // -commit selects a row. Expand from the newest page; it must never become a revision/ancestor filter.
-            while (requiredSelectionHashes.Any(hash => !history.Take(historyWindow).Any(commit => commit.Hash == hash))
-                && policy.HasMore(history.Count, historyWindow))
-            {
-                historyWindow = policy.NextWindow(historyWindow, configuredQuery.Count);
-                query = query with { Count = policy.ReadCount(historyWindow) };
-                historyRead = await ReadBrowseHistoryAsync(repository, query, status.IsUnborn, Token);
-                history = historyRead.Commits;
-            }
-            IReadOnlyList<GitRemote> remotes = await repository.GetRemotesAsync(Token);
-            IReadOnlyList<GitStash> stashes = await repository.GetStashesAsync(Token);
-            _supportsStashStaged ??= await repository.SupportsStashStagedAsync(Token);
-            IReadOnlyList<GitWorktree> worktrees = await repository.GetWorktreesAsync(Token);
-            IReadOnlyList<GitSubmodule> submodules = await repository.GetSubmodulesAsync(Token);
-            await ReadGeneralStatusDetailsAsync(repository, status, submodules, Token);
-            var configuration = await repository.GetConfigAsync(cancellationToken: Token);
-            if (_fileMenuAdditionalOperations is not null) { await _fileMenuAdditionalOperations.RefreshAsync(repository, Token); }
-            GitCommit[] visibleHistory = history.Take(historyWindow).ToArray();
-            IReadOnlyList<string>? artificialAncestors = !repository.IsBare && status.Head is not null
-                && !visibleHistory.Any(commit => commit.Hash == status.Head)
-                ? await ReadHistoryAncestorsAsync(repository, status.Head) : null;
-            string? fallbackRevision = startupSelection is { Kind: GitCompareRevisionKind.Commit } requestedFallback ? requestedFallback.Revision
-                : !changedRepository && historyBookmark.Head == status.Head ? historyBookmark.Selection.FirstOrDefault(key => !key.StartsWith(':')) : status.Head;
-            IReadOnlyList<string>? selectionAncestors = fallbackRevision is not null && !visibleHistory.Any(commit => commit.Hash == fallbackRevision)
-                ? fallbackRevision == status.Head && artificialAncestors is not null ? artificialAncestors : await ReadHistoryAncestorsAsync(repository, fallbackRevision)
-                : null;
-            await LoadHistoryViewMetadataAsync(repository, visibleHistory, Token);
-            string treeRevision = visibleHistory.FirstOrDefault(commit => commit.Hash == selectedHash)?.Hash
-                ?? visibleHistory.FirstOrDefault(commit => selectedHashes.Contains(commit.Hash))?.Hash
-                ?? visibleHistory.FirstOrDefault(commit => commit.Hash == status.Head)?.Hash
-                ?? visibleHistory.FirstOrDefault()?.Hash ?? "HEAD";
-            IReadOnlyList<GitComparisonTreeEntry>? artificialTree = artificialSelection is not null
-                ? await repository.GetComparisonTreeAsync(artificialSelection, Token) : null;
-            IReadOnlyList<GitTreeEntry> tree = artificialTree is not null || status.IsUnborn && visibleHistory.Length == 0
-                ? [] : await repository.GetTreeAsync(treeRevision, cancellationToken: Token);
-            Token.ThrowIfCancellationRequested();
-            if (_fileHistoryTrackedFilter != configuredQuery.Path)
-            { _explicitFileHistoryDiffPath = null; _explicitFileHistoryTreePath = null; _fileHistoryTrackedFilter = configuredQuery.Path; }
-            _browseFileHistory = historyRead.Graph;
-            if (opening)
-            {
-                await _backgroundFetch.UnregisterAsync();
-                Token.ThrowIfCancellationRequested();
-                _repository = repository;
-                if (changedRepository) { _comparisonBase = null; _navigationSelectionKey = null; _authoredEmail = null; }
-                _navigation.SelectedItem = null;
-                _navigationRevisionFilter = null;
-                _repositoryPath.Text = repository.Path;
-                Title = IsRevisionLog ? T("Diff") : $"Git Extensions — {repository.Path}" + (configuredQuery.Path is null ? "" : " (" + configuredQuery.Path + ")");
-                if (repository.IsBare) { SelectDetailsTab("DiffTab"); }
-                SetDashboardVisible(false);
-            }
-            if (missingNavigationReference)
-            {
-                if (_historyRevision.Text == _navigationRevisionFilter) { SetBranchFilterDraft(null); }
-                _navigationRevisionFilter = null; _acceptedBranchFilter = null; _historyBranchScope = HistoryBranchScope.All;
-            }
-            _historyQuery = configuredQuery;
-            _historyWindow = historyWindow;
-            UpdateBranchFilterReferences(references, opening);
-            RefreshGeneralStatusPresentation(status, stashes);
-            UpdateBrowserToolbar(status);
-            UpdateVirtualRevisionRows(status);
-            SetWorkingFiles(status.Changes, selectedPath, preserveSelection: !changedRepository);
-            _references.ItemsSource = references;
-            _references.SelectedItem = references.FirstOrDefault(reference => reference.Name == selectedReferenceName);
-            _referenceSelectionOverride = null;
-            _remotes.ItemsSource = remotes;
-            _stashes.ItemsSource = stashes;
-            _worktrees.ItemsSource = worktrees;
-            _submodules.ItemsSource = submodules;
-            _configuredUserEmail = configuration.LastOrDefault(entry => entry.Key == "user.email").Value;
-            _configuredUserName = configuration.LastOrDefault(entry => entry.Key == "user.name").Value;
-            _configuration.ItemsSource = configuration.Select(entry => $"{entry.Key} = {entry.Value}").ToList();
-            if (artificialSelection is not null && artificialTree is not null)
-            { SetComparisonFileTreePaths(repository, artificialSelection, artificialTree); }
-            else { SetFileTreePaths(repository, treeRevision, tree); }
-            UpdateBrowserNavigation(references, stashes, submodules, worktrees);
-            _historyHasMore = policy.HasMore(history.Count, _historyWindow);
-            if (changedRepository) { _browseInitialComparison = null; }
-            if (startupFirst is not null && startupSelection is not null)
-            { _browseInitialComparison = new(startupFirst, startupSelection); }
-            if (_historyMore is not null) { _historyMore.IsVisible = _historyHasMore; }
-            PublishHistorySnapshot(visibleHistory, status, references, configuredQuery, artificialAncestors,
-                selectionAncestors, historyBookmark, changedRepository, startupSelection, startupFirst, retainedComparison);
-            ClearRevisionDiff();
-            _commitContent?.ClearImage(); _diff.Text = null; ClearCommitInformation(); _gpgInfo.Text = null;
-            _changesContent?.ClearImage(); _changesDiff.Text = null; _selectedPatch = null; _hunks.ItemsSource = null;
-            if (changedRepository) { _fileContent?.ClearImage(); _fileView.Text = null; _filePath.Text = null; }
-            _browseSelectionApplied = true;
-            UpdateArtificialHistorySelectionAppearance();
-            if ((_tabs.SelectedItem as TabItem)?.Name == "FileTreeTab")
-            {
-                // The completed snapshot can follow a changed HEAD or choose a
-                // filtered fallback. Its actual typed endpoint, rather than the
-                // pre-read selection, owns the active tree returned by F5.
-                GitCompareRevision? effectiveTreeSource = PrimaryHistoryItem is { } treeItem ? HistoryRevisionItems.Revision(treeItem) : null;
-                if (effectiveTreeSource is not null && _fileTreeSource != effectiveTreeSource)
-                { await LoadComparisonFileTreeAsync(repository, effectiveTreeSource, Token); }
-                else if (SelectedTreePath is string treePath
-                    && (!_fileGrepSettings.ShowSearchBox || _fileGrepSettings.Expression.Length == 0))
-                { await LoadTreeFileAsync(repository, treePath); }
-                else if (SelectedTreePath is null) { ShowSelectedTreeFolder(); }
-            }
-            if (UsesArtificialInitialComparison && _browseInitialComparison is { } initialPair)
-            {
-                await LoadArtificialHistoryComparisonAsync(repository, initialPair.First, initialPair.Selected, Token);
-                if (initialPair.Selected.Kind == GitCompareRevisionKind.Commit && PrimaryHistoryItem is GitCommit selected) { UpdateCommitInfo(selected); }
-            }
-            else if (_selectedArtificialHistoryRevision is { } artificial)
-            { await LoadArtificialHistoryRevisionAsync(repository, artificial, Token); }
-            else if (PrimaryHistoryItem is GitCommit selectedCommit)
-            {
-                await LoadCommitFilesAsync(repository, selectedCommit.Hash, selectedRevisionDiff);
-                UpdateCommitInfo(selectedCommit);
-            }
-            else
-            {
-                ClearRevisionDiff();
-                _commitContent?.ClearImage(); ClearCommitInformation(); _gpgInfo.Text = null;
-                _diff.Text = status.IsUnborn ? "This repository has no commits yet."
-                    : selectedHash is not null ? T("The revision is not visible with the current history filters.") + " " + selectedHash
-                    : T("No commits match the current history filters.");
-            }
-            if (SelectedWorkingChange is GitChange change)
-            {
-                bool staged = change.IsStaged && (!change.IsModified || _stagedDiff.IsChecked == true);
-                _stagedDiff.IsChecked = staged;
-                await LoadChangedFileContentAsync(repository, change, staged);
-                _selectedPatch = _changesDiffView?.CanStagePatch == true ? GitPatch.Parse(_changesDiff.Text ?? "").FirstOrDefault() : null;
-                _hunks.ItemsSource = _selectedPatch?.Hunks;
-            }
-            else { _changesContent?.ClearImage(); _changesDiff.Text = "Select a changed file to inspect its diff."; _selectedPatch = null; _hunks.ItemsSource = null; }
-        }
-        finally { _refreshing = false; RememberRevisionNavigation(); UpdateHistoryPresentation(); }
-        RequestAutomaticUpdateCheck();
+        await StartHistoryLoadingAsync(repository, opening, Token);
     }
 
     private Task RunAsync(string label, Func<GitRepository, Task> action, bool refresh = true, bool requireRepository = true)
         => RunWithOperationFocusAsync(label, action, refresh, requireRepository);
 
-    private async Task RunWithOperationFocusAsync(string label, Func<GitRepository, Task> action, bool refresh = true, bool requireRepository = true, OperationFocus? focusOrigin = null)
+    private async Task RunWithOperationFocusAsync(string label, Func<GitRepository, Task> action, bool refresh = true, bool requireRepository = true, OperationFocus? focusOrigin = null, bool historyMutation = false)
     {
         if (_busy || _lifetime.IsCancellationRequested) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
@@ -696,6 +505,7 @@ public sealed partial class MainWindow : Window
         bool resumeSelection = BrowserReads.Any(read => read.Current is not null) || _commitInfo.IsLoading;
         CancelBrowserReads();
         _busy = true;
+        if (_historyLoad is { } currentHistory) { currentHistory.RetainedFailure = null; }
         LastException = null;
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         SetActionsEnabled(false);
@@ -704,12 +514,18 @@ public sealed partial class MainWindow : Window
         {
             _state.Text = label + "…";
             // Default-refresh operations are mutation-capable. Read-only/F5 operations already opt out.
+            if (refresh || historyMutation)
+            {
+                if (_historyLoad is { Completed: false } interrupted) { _interruptedHistory = interrupted; }
+                await CancelAndDrainHistoryLoadingAsync();
+                Token.ThrowIfCancellationRequested();
+            }
             if (refresh) { MarkStandaloneMayHaveRepositoryChanges(); }
             await action(_repository!);
             if (refresh && _repository is not null) { await RefreshDataAsync(_repository); }
             success = true;
         }
-        catch (OperationCanceledException) { _state.Text = "Operation cancelled"; AppendOutput(label + ": cancelled"); }
+        catch (OperationCanceledException) { _state.Text = "Operation cancelled"; AppendOutput(label + ": cancelled"); CaptureInterruptedHistoryFailure(); }
         catch (Exception exception)
         {
             LastException = exception;
@@ -724,9 +540,11 @@ public sealed partial class MainWindow : Window
                 _errorContext = ExceptionReportContext.Capture(label, _operationReportDirectory, DesktopVersion, exception);
                 _errorDetails.IsVisible = true; _errorDetails.IsEnabled = _errorReportCompletion.IsCompleted;
             }
+            CaptureInterruptedHistoryFailure();
         }
         finally
         {
+            await ResumeInterruptedHistoryAsync(allowBusy: true);
             _operation.Dispose();
             _operation = null;
             _operationReportDirectory = null;
@@ -737,14 +555,17 @@ public sealed partial class MainWindow : Window
             }
             _busy = false;
             SetActionsEnabled(true);
-            if (success) { _state.Text = _repositorySummary; }
+            if (success && _historyLoad?.Error is null) { _state.Text = _repositorySummary; }
             if (_pendingDiffAppearance && !_lifetime.IsCancellationRequested) { await ReloadDiffAppearancesAsync(); }
-            if (resumeSelection && !_lifetime.IsCancellationRequested)
+            if (_historyLoad is { PendingPanels: true } history && CanPublishHistory(history))
+            { await ResumeProgressivePanelsAsync(history); }
+            else if (resumeSelection && !_lifetime.IsCancellationRequested)
             {
                 await LoadVisibleRevisionPanelAsync();
                 if ((_tabs.SelectedItem as TabItem)?.Name == "ChangesTab") { await LoadSelectedDiffAsync(); }
             }
             else if (!_lifetime.IsCancellationRequested) { await LoadVisibleCommitInformationAsync(); }
+            if (_historyLoad is { } retainedHistory) { RestoreRetainedHistoryFailure(retainedHistory); }
             if (!_lifetime.IsCancellationRequested) { RestoreOperationFocus(previousFocus); }
         }
     }

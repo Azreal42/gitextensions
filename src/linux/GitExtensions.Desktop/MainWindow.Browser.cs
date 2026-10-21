@@ -327,7 +327,7 @@ public sealed partial class MainWindow
         {
             if (_repository is null || _busy) { return; }
             bool changed = false;
-            await RunAsync("Edit .git/config", async repository =>
+            await RunHistoryMutationAsync("Edit .git/config", async repository =>
             {
                 try { await FileEditorWorkflow.OpenLocalConfigurationAsync(WorkflowOwner, repository, Token, () => { changed = true; MarkStandaloneMayHaveRepositoryChanges(); }, _translations); }
                 finally { if (changed && !Token.IsCancellationRequested) { await RefreshDataAsync(repository); } }
@@ -418,10 +418,11 @@ public sealed partial class MainWindow
             if (_repository is null || _busy) { return; }
             if (_repository.IsBare) { _state.Text = T("Open a worktree to commit changes in a bare repository."); return; }
             GitRepository repository = _repository;
+            await using var historyMutation = BeginHistoryMutationScope();
             CommitDialog commit = new(repository, afterSubmoduleUpdateAsync: (owner, ct) => AfterSubmoduleUpdateAsync(repository, owner, ct)) { RequestedThemeVariant = ActualThemeVariant };
             try
             {
-                await RunAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
+                await RunHistoryMutationAsync("Open commit dialog", _ => commit.InitializeAsync(), refresh: false);
                 MarkStandaloneMayHaveRepositoryChanges();
                 await commit.ShowDialog(this);
             }

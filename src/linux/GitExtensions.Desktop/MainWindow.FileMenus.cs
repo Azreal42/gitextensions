@@ -238,7 +238,8 @@ public sealed partial class MainWindow
     private async Task RunFileMenuOperationAsync(string label, Func<CancellationToken, Task> action, bool changes)
     {
         GitRepository? captured = _repository; bool attempted = false, refreshed = false;
-        await RunAsync(label, async repository =>
+        await using var historyMutation = BeginHistoryMutationScope();
+        await RunWithOperationFocusAsync(label, async repository =>
         {
             Exception? original = null;
             try { attempted = true; MarkStandaloneMayHaveRepositoryChanges(changes); await action(Token); }
@@ -251,7 +252,7 @@ public sealed partial class MainWindow
                     catch (Exception error) when (original is not null) { AppendOutput("Refresh after " + label + ": " + error.Message); }
                 }
             }
-        }, refresh: false);
+        }, refresh: false, historyMutation: changes);
         if (!changes || !attempted || refreshed || _lifetime.IsCancellationRequested || !IsVisible || !ReferenceEquals(captured, _repository)) { return; }
         _fileMenuRefreshPending = captured;
         if (_fileMenuRefreshCompletion.IsCompleted) { _fileMenuRefreshCompletion = RefreshAfterFileMenuAsync(); }

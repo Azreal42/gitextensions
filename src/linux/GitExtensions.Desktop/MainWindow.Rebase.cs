@@ -103,9 +103,10 @@ public sealed partial class MainWindow
         if (_repository is null || _busy || _repository.IsBare) { return; }
         GitRepository repository = _repository;
         bool changed = false;
+        await using var historyMutation = BeginHistoryMutationScope();
         try
         {
-            await RunAsync("Rebase", async _ =>
+            await RunHistoryMutationAsync("Rebase", async _ =>
             {
                 CancellationToken token = Token;
                 Window owner = WorkflowOwner;

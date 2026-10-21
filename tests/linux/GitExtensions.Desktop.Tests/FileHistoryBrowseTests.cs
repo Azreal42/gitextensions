@@ -241,7 +241,7 @@ public sealed class FileHistoryBrowseTests
             await File.WriteAllTextAsync(f.File, "staged caret\nnew target\nnew tip\n"); await f.Repository.StageAllAsync();
             await File.WriteAllTextAsync(f.File, "live caret\nnew target\nnew tip\n");
         }
-        new PreferencesStore().Save(new DesktopPreferences { HistoryLimit = 1 });
+        new PreferencesStore().Save(new DesktopPreferences { HistoryLimit = 1, MaxRevisionGraphCommits = 1 });
         GitCompareRevision source = kind == GitCompareRevisionKind.Commit ? new(head) : new("", kind);
         await using BrowseScope scope = await BrowseScope.OpenAsync(f, new("file.txt", BrowsePathKind.File), source);
         MainWindow main = scope.Window; SelectTab(main, "FileTreeTab"); await Idle(main);

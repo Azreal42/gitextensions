@@ -80,7 +80,9 @@ public sealed partial class MainWindow
             {
                 // Never track this observer on source: that would await itself.
                 // An admitted effect may finish after its source window closes.
-                while (!source.WindowWorkCompletion.IsCompleted) { await source.WindowWorkCompletion; }
+                // A refresh may already have admitted another background history reader.
+                // Keep mutation/panel/child drainage, independently of that reader's EOF.
+                while (!source.RepositoryMutationCompletion.IsCompleted) { await source.RepositoryMutationCompletion; }
             }
             catch (Exception error)
             {
