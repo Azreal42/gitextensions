@@ -23,7 +23,15 @@ Show changes résout la ligne cliquée même hors grille ; le lecteur inline et 
 
 Complément de fermeture vérifié en Git/headless : Log readonly/F5 ne demande plus un rechargement global du parent ; le caret peut être désélectionné sans perdre son retour clavier. Un signal May conservateur suit seulement les propriétaires réels de même instance GitRepository et les reçus explicites des dialogues cachés ; il subsiste après échec/annulation. Toute publication vérifie encore dépôt, propriétaire et tokens. Le raccord modeless conserve une publication distincte de la chaîne Owner.
 
-Complément modeless vérifié par treize tests Git/headless : après Closed et drainage de l’enfant, son reçu May, qui n’affirme pas un succès, demande un seul refresh au Browse lanceur encore vivant, de même instance GitRepository et même Owner. Lecture/F5 sans reçu ne rechargent pas Browse. Si Browse travaille, la publication attend seulement le frontier de ses leases RunAsync, jamais son WindowWorkCompletion global ni son propre refresh. Fermeture de la racine ou du lanceur, remplacement du dépôt du lanceur : aucune publication tardive ni report vers une autre fenêtre du même chemin. Les lanceurs Log/CommitDiff et les mutations sans reçu existant restent hors périmètre.
+Historique L27 : treize cas Git/headless qualifiaient le retour May après Closed + drain vers Browse. Ce timing ne décrit pas le raccord H28 ci-dessous.
+
+Décision H28 : lier les sources Windows `LockableNotifier`/`ILockableNotifier`, dans un contexte partagé par le Browse exact, son Log et les CommitDiff indépendants ouverts depuis ces grilles. La fermeture de Log ne détruit pas ce contexte. Il n’existe pas de menu ouvrant un CommitDiff modeless depuis un autre CommitDiff.
+
+May reste une admission d’effets possibles, même après erreur/annulation. La source réserve synchroniquement Notify sous verrou, libéré après son drainage réel ; Log garde le verrou de sa durée modale. Les demandes regroupées publient une relecture au seul Browse encore valide : même instance GitRepository, Owner capturé et vies actives. Aucun refresh Log, aucune notification créée par lecture/F5 ou fermeture readonly ; rouvrir le même chemin ne réabonne pas l’ancien contexte.
+
+L’observateur possède une lease du Browse, jamais de sa source, et ne dépend pas de la publication. Celle-ci attend seulement le frontier RunAsync antérieur du receveur, pas son WindowWorkCompletion global. La racine continue de posséder les sessions modeless ; le retour de focus Browse attend sa publication sans imposer cette attente au lanceur Log.
+
+Qualification H28 : 54/54 Desktop (cinq classes) et 42/42 Plugins vérifiés en Git/headless sur les octets commités `27c190a78` ; preuves et limites dans le TODO. Repère : `MainWindow.CommitDiffMutationPublication`, `ModelessCommitDiffMutationTests`, `RevisionLogMutationPublicationTests`. Aucun verdict natif/paquet ou de parité globale n’en découle.
 
 Le replay de fermeture est partagé par instance entre RepositoryDialog et StartupRepositoryDialog : un descendant ayant différé OwnerWindowClosing conserve le vrai propriétaire, puis lui restitue sa demande après Closed et drainage. Un Cancel ordinaire du descendant ne ferme pas le parent. Les veto hors IsBusy, tels que le flush tracking de Remotes, gardent le même reçu ; aucun listener global ou fermeture forcée.
 

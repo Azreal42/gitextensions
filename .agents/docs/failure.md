@@ -2,6 +2,22 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+## H29 — ouverture locale
+
+Le diagnostic du réessai avec espaces a confirmé un focus conservé : un popup filesystem en erreur, sans suggestion, absorbait Entrée. Réserver la touche seulement au MRU ou à une vraie suggestion ; sinon fermer ce popup et valider avec la même Entrée. [Échec et preuve](../../artifacts/linux/open-repository-dialog-20261021/review/retry-cause-review.json), régression conservée. Le pilote de test transmet un seul clic réel à travers l’overlay connu et utilise Escape avant de viser un éditeur recouvert.
+
+[Build01](../../artifacts/linux/open-repository-dialog-20261021/build-01/desktop.log) : `AccessText` requiert `Avalonia.Controls.Primitives`. [Build02](../../artifacts/linux/open-repository-dialog-20261021/build-02/desktop.log) : le test Unix/procfs demande une garde `OperatingSystem.IsLinux` avant `SetUnixFileMode` ; les vingt cas sont désormais exécutés sur Ubuntu dans le ciblé04.
+
+La revue a aussi évité `//` lors de Parent vers la racine et l’accumulation de complétions à chaque ouverture du MRU : conserver le séparateur racine et partager `Dismiss` sans recréer le composant. La découverte Git reste l’unique validation, y compris pour le fichier `.git` d’un worktree ; aucun filtre préalable « dossier seulement ».
+
+## H28 — notifications partagées
+
+Le [ciblé01](../../artifacts/linux/shared-repository-notifier-20261021/targeted-01/desktop.log) conserve **51/54 Desktop, trois échecs**. Deux timeouts étaient dans la fixture : le gate `GitRepository.RunAsync` tenait le même verrou de mutation que le StageAll de l’enfant. Acquérir l’effet Git réel avant ce gate, en gardant son opération ouverte par le tail, puis seulement la drainer ; garder l’attente réelle du receveur et ses deux variantes.
+
+Le troisième échec produisait deux lectures d’historique après deux effets sous Log. Un Notify créé seulement après await pouvait échapper au verrou modal déjà libéré. Réserver pending + Notify sous verrou dès l’admission, puis UnLock après le drainage source. L’observateur reste hors des leases de la source ; aucune attente du travail global du receveur ni relecture de Log.
+
+Qualification de la correction : 54/54 Desktop (cinq classes) et 42/42 Plugins vérifiés en Git/headless sur les octets commités `27c190a78` ; [54/54 Desktop, 42/42 Plugins](../../artifacts/linux/shared-repository-notifier-20261021/review/root-targeted-review.json), identités conservées, sources/binaires stables et processus retirés. Les essais refusés et leurs assertions restent distincts du résultat final ; aucune suite complète, preuve native ou installation hôte déduite.
+
 ## Limites ouvertes
 
 | Observation | Cause / suite |

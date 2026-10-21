@@ -1,25 +1,41 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. Compléments L26/L27 sur `27fde6883` ; [inventaire contrôlé](../../artifacts/linux/portable-settings-completion-20261021/review/root-inventory-review.json) sur le primaire, cinq changements Modal préexistants distincts du build/paquet. La référence Desktop complète L25 reste historique.
+Mise à jour : 21 octobre 2026. H29 : 101/101 Desktop (neuf classes) et 42/42 Plugins sur les octets commités `f9fd07a57`. H28 et les lots antérieurs conservent leurs preuves historiques ; la référence Desktop complète L25 reste distincte.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
-## Compléments L26/L27 — navigation et réglages portables
+## H29 — ouverture locale de dépôt
+
+Source : `f9fd07a57e799a2c2c6e921aa073b2e7db963fd8`. [ADR0015](adr/workflows/repositories/0015-repository-history.md) : fenêtre Windows compacte, MRU/complétion, Parent/Browse/Open, erreur possédée et réessai ; Discovery unique puis même candidat publié par Browse, aucun MRU écrit par le dialogue.
+
+- [x] Vingt nouveaux cas Git/headless qualifiés : racine/descendant/worktree/`.git`/bare, MRU et index conservés, trois lanceurs, premier clavier, fermeture et drainage du Git réel et du picker retenu. Le picker partagé n’expose pas d’annulation native ; le retour tardif reste rejeté après l’attente de sa vraie Task.
+
+Compilation et ciblé : [build08](../../artifacts/linux/open-repository-dialog-20261021/build-08/root-retirement-review.json), trois projets sans diagnostic ; [ciblé04](../../artifacts/linux/open-repository-dialog-20261021/review/root-targeted-review.json), 101/101 Desktop et 42/42 Plugins, identités conservées, sources/binaires stables et processus retirés. Exécution avant commit sur les mêmes octets source. [Paquet](../../artifacts/linux/snapshots/f9fd07a57/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 216 356 octets, SHA256 `e9119d51c61e60618417231d59f4c56bddc54b843cea57cad3b198d586254989` ; [revue](../../artifacts/linux/open-repository-dialog-20261021/review/root-package-review.json), sept phases à 0, 356 fichiers publiés comparés et 402 MD5, installation/démarrage DPKG isolés. Captures headless EN clair/FR sombre à 450 px inspectées ; parcours natif interactif et installation hôte non exécutés pour H29. Les résultats H28/L26/L27 et la suite Desktop complète L25 gardent leurs sources historiques ; aucun N4 ni interaction du paquet installé déduit. La fiche FormOpenDirectory reste N2 ; les familles ouvertes et GitHub Actions ne sont pas requalifiées. [Inventaire contrôlé](../../artifacts/linux/open-repository-dialog-20261021/review/root-inventory-review.json) : 99 fenêtres métier et 32 pages, niveaux inchangés ; descriptions Verify/Settings corrigées.
+
+## H28 — notifier partagé de Log et CommitDiff
+
+Source : `27c190a78da5f71a2686f5f170402441be3eca68` ; [équivalence des sources exécutées et importées](../../artifacts/linux/shared-repository-notifier-20261021/review/source-import-review.json). [ADR0144](adr/ui/history/0144-dedicated-log-and-commit-diff.md) : rafraîchir le Browse exact après effets drainés, y compris ceux admis après fermeture de Log, en conservant les lignes et le focus de Log.
+
+- [x] Qualifier le notifier Windows lié, ses verrous source/modal et la coalescence ; lecture/F5 sans refresh, effets partiels/tardifs, dépôt remplacé/receveur fermé et annulation/drainage sans cycle. Les mutations sans reçu existant restent ouvertes ; aucun lanceur modeless imbriqué CommitDiff n’est ajouté.
+
+Compilation : [trois projets sans avertissement/erreur](../../artifacts/linux/shared-repository-notifier-20261021/build-04/root-retirement-review.json), build au commit exact ; les tests ciblés ont tourné avant commit sur les mêmes octets applicatifs. Git/headless ciblé : [54/54 Desktop, 42/42 Plugins](../../artifacts/linux/shared-repository-notifier-20261021/review/root-targeted-review.json), identités conservées, sources/binaires stables et processus retirés. Paquet : pas encore assemblé ; le paquet L26/L27 reste historique. Natif : aucun essai natif H28 ; les observations X11 L26 restent historiques. La suite Desktop complète **4051/4051 sur `1c6068f40`** demeure historique ; ni le ciblé ni une installation isolée ne qualifient l’interaction du bureau installé ou la parité globale.
+
+## Compléments L26/L27 — navigation et réglages portables (historique)
 
 Source `27fde68835809f7a73ea30eb4b4107ef2207e0c9` : [navigation](../../artifacts/linux/reference-selection-completion-20261021/review/source-import-review.json) et [réglages/notification](../../artifacts/linux/portable-settings-completion-20261021/review/source-import-review.json) commités ; composants et stores existants réemployés, niveaux/aspects inchangés.
 
 - [x] Ctrl+K sur trois côtés réels ou plus, ordre/collisions Windows et caret distinct ; Ctrl GoToRef réel vers la multisélection, sans filtre/reconstruction ([ADR0148](adr/ui/history/0148-fork-point-diff-base.md), [ADR0149](adr/ui/history/0149-underlined-reference-selection.md)).
 - [x] Révélation des entêtes mesurées des arbres partagés, sans saut horizontal lors de demandes répétées avant layout ; quatorze régressions, mêmes gestes natifs ([ADR0061](adr/ui/0061-compact-navigation-tree.md)).
 - [x] Neuf options Commit : erreurs de staging et vrai Git/éditeur raccordés, effets d’erreur/annulation conservés sans faux commit/push ([ADR0150](adr/preferences/commit/0150-global-commit-options.md)). Neuf réglages Delete obsolete branches dans Settings > Plugins, mêmes portées et routes menu/script ([ADR0151](adr/extensions/plugins/0151-delete-obsolete-branches-dialog.md)).
-- [x] Après fermeture/drain d’un CommitDiff indépendant, son reçu May rafraîchit seulement le Browse lanceur encore valide ; attente du travail en cours, aucun refresh pour lecture/F5 ([ADR0144](adr/ui/history/0144-dedicated-log-and-commit-diff.md)).
+- [x] Historique L27 : retour du reçu May après fermeture/drain d’un CommitDiff indépendant vers le Browse valide, sans refresh lecture/F5 ; timing remplacé par H28, preuves historiques conservées ([ADR0144](adr/ui/history/0144-dedicated-log-and-commit-diff.md)).
 
 [Build final](../../artifacts/linux/portable-settings-completion-20261021/review/root-final-compilation-review-02.json) : trois projets, zéro diagnostic. [Ciblé réglages](../../artifacts/linux/portable-settings-completion-20261021/review/root-targeted-review.json) : **472/472 Desktop, 42/42 Plugins** ; [navigation et composants partagés finaux](../../artifacts/linux/reference-selection-completion-20261021/targeted-07/root-retirement-review.json) : **394/394 Desktop, 42/42 Plugins**, périmètres partiellement communs. [Core complet frais](../../artifacts/linux/portable-settings-completion-20261021/review/root-core-full-review.json) : **1144/1144**, mêmes octets Core que le commit final. La référence Desktop complète 4051 reste L25, sans requalification automatique.
 
 [Natif source X11 privé](../../artifacts/linux/reference-selection-completion-20261021/review/root-native-review.json) : dix-huit checkpoints EN/clair et FR/sombre, multisélection, collisions et premières flèches grille/arbre ; deux fermetures normales. [Paquet exact](../../artifacts/linux/snapshots/27fde6883/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40206836 octets, SHA256 `2c36aae4d74270723516a434cdea46859668a945f3a06dc171b43186476c8f40` ; [contrôle](../../artifacts/linux/portable-settings-completion-20261021/review/root-package-review.json), publish/build puis cinq vérifications à 0 (premier essai arrêté faute de xvfb-run, même paquet repris), 402 fichiers/MD5, publish/payload identiques, DPKG et démarrage isolés. Aucun transfert de cet essai vers les interactions du bureau installé.
 
-- [ ] Ctrl GoToRef des endpoints artificiels ; lanceurs modeless Log/CommitDiff et mutations sans reçu existant ; types/cibles non-HEAD du mode éditeur Git ; page générique de tous les plugins et variantes FormStatus ; rapport HTML CI true. Services CI réels/authentifiés/Enterprise, macOS et audits Wayland/IME/DPI/accessibilité restent ouverts. GitHub Actions conserve sa page, ses statuts SHA et son rapport externe partagés ; jobs/logs/mutations de workflow ne sont pas des fenêtres Windows absentes.
+- [ ] Ctrl GoToRef des endpoints artificiels ; mutations sans reçu existant ; types/cibles non-HEAD du mode éditeur Git ; page générique de tous les plugins et variantes FormStatus ; rapport HTML CI true. Services CI réels/authentifiés/Enterprise, macOS et audits Wayland/IME/DPI/accessibilité restent ouverts. GitHub Actions conserve sa page, ses statuts SHA et son rapport externe partagés ; jobs/logs/mutations de workflow ne sont pas des fenêtres Windows absentes.
 
 ## État détaillé par fenêtre
 
@@ -649,7 +665,7 @@ Source `95f628aea7d29db61f21fc81458ac1779b9204fa` : **3001/3001 Desktop (256 cla
 [Natif W7](../../artifacts/linux/jenkins-20261020/native-01/root-native-review.json) : Jenkins anglais/clair et français/sombre, premier clic/Haut/Bas, portées/credentials/Cancel/Apply/redémarrage, puis `help` autonome ; Git Advanced, Plugins, aide Scripts, Checkout/Échap et Recovery Quick view inspectés sans mutation Git. [Azure/Donate natif W6](../../artifacts/linux/azuredevops-20261019/native-01/root-native-review.json) reste lié à `2e96c8dea`, sans transfert implicite à W7. [Paquet exact isolé](../../artifacts/linux/jenkins-20261020/review/root-package-review.json) : cinq phases à 0, **39977848 octets**, SHA256 `8a283b832a92feec91f3d72cede0f91934a50c116d187df2c36f6d0467dbe5e3`, 402 fichiers contrôlés ; aucune installation hôte ni push.
 
 - [ ] Rapport HTML CI embarqué, services/authentifications réels, GCM/SSO et audit étendu Wayland/IME/DPI/accessibilité ; interactions du paquet installé distinctes des tests et de DPKG isolé.
-- [ ] Resserrer la table Recovery : les SHA complets se replient en lignes trop hautes dans le parcours natif W7. Conserver la copie littérale des hashes.
+- [x] Oracle Recovery vérifié : Windows autorise le repli Hash/Parent (`WrapMode=True`, lignes `AllCells`). La hauteur observée en W7 ne suffit pas à établir un écart ; aucun resserrement automatique. Copie littérale des hashes conservée.
 - [x] Tranche qualifiée sur b745 (ADR0123–0129, périmètres partiels ci-dessus) : FormEditor, Fork/Clone GitHub et Confirmations. Suites, natif source et paquet gardent leurs preuves et limites dédiées.
 
 Les niveaux N2 de ces neuf entrées restent partiels ; les treize familles globales restent ouvertes, aucun N4.
