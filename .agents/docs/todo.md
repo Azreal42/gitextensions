@@ -1,10 +1,25 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H32 : rendu et filtres communs du chooser, 89/89 Desktop, 16/16 Core et 42/42 Plugins sur les octets commités `9dc6260a6` ; passage plus large de 242 Desktop avant la dernière correction de gouttière, preuves distinctes ci-dessous. La référence complète L25 reste distincte.
+Mise à jour : 21 octobre 2026. H33 : historique incrémental du chooser, 110/110 Desktop, 21/21 Core streaming, 16/16 Core historique fichier et 42/42 Plugins sur les octets commités `9d95be81d`. Les validations complètes historiques et les passages combinés Core restent distingués ci-dessous.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+## H33 — lecteur incrémental du sélecteur
+
+Source : `9d95be81d7aaaa060e7ee0012c0f51c9e5838d79` ; [équivalence des sources](../../artifacts/linux/streamed-revision-history-20261021/review/source-import-review.json), [ADR0153](adr/workflows/history/0153-shared-commit-chooser.md).
+
+- [x] Un parcours Git, lots attendus et première portion utilisable pendant la lecture ; source/objets/sélection/ancre/focus/viewport conservés, graphe natif incrémental avec cache du viewport. Pas de copie stdout complète ; stderr borné avec troncature signalée et projection UTF-8 existante conservée.
+- [x] Préselection/GoTo/parents hors premier lot, priorité au dernier clic ou geste clavier, maximum global distinct du lot, override privé (0 sans maximum) et Reset hérité. Requêtes remplacées, fermeture du propriétaire, annulation et validation drainent les lectures admises.
+
+[Validation ciblée](../../artifacts/linux/streamed-revision-history-20261021/review/root-targeted-review.json) : **110/110 Desktop (dix classes), 21/21 Core streaming, 16/16 Core historique fichier, 42/42 Plugins** ; les 101 identités du premier passage sont conservées, 19 nouveaux cas Desktop et 21 Core. Vrais historiques de 620/650 commits, producteur suspendu après 100 lignes, flèches hors viewport, clic déjà sélectionné, plafonds privés et PID/démarrage retirés. [Deux rendus EN clair/FR sombre inspectés](../../artifacts/linux/streamed-revision-history-20261021/review/root-visual-review.json).
+
+[Core combiné](../../artifacts/linux/streamed-revision-history-20261021/review/root-core-review.json) : le passage complet fait **1178/1179**, son seul échec étant le nouvel oracle `%H %P` avec espace final. Ses **1158 cas préexistants** passent ; les **21 nouveaux cas** passent après correction d’une ligne du nouvel oracle, avec produit Core et tests historiques byte-identiques. Cela prouve 1179 identités par deux passages, sans déclarer une nouvelle suite complète unique réussie. [Échecs et causes](failure.md#h33-streamed-chooser).
+
+[Compilation finale](../../artifacts/linux/streamed-revision-history-20261021/review/root-final-compilation-review.json) : trois projets, zéro diagnostic, mêmes 3428 empreintes source/config que le ciblé final ; reconstruction de métadonnées après commit distinguée des binaires exécutés. [Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/9d95be81d/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : **40 270 160 octets**, SHA256 `b2d621e0ead06f2470b54d9855c2e7422139d1ace6497909cbed772e23d82132` ; [revue](../../artifacts/linux/streamed-revision-history-20261021/review/root-package-review.json), sept phases à zéro, 356 fichiers publiés comparés et 402 MD5. Installation/démarrage DPKG isolés réussis ; aucune installation hôte ni qualification native interactive. Les cinq modifications applicatives Modal préexistantes restent exclues du worktree/paquet propre.
+
+[Inventaire actualisé](../../artifacts/linux/streamed-revision-history-20261021/review/root-inventory-review.json) : 2612 fichiers C# sans diagnostic ; niveaux et comptes inchangés, 98 équivalents métier et 31 pages applicables. Restent insertion des artificiels avant HEAD, menus/navigation/recherche complets, héritage runtime du filtre et métadonnées détaillées. Treize familles ouvertes ; aucun N4. Références des suites complètes L25 et preuves CI/serveurs conservées.
 
 ## H32 — rendu et filtres partagés du sélecteur
 
@@ -17,7 +32,7 @@ Source : `9dc6260a68cea63932c0691e51aaf5ddd9c2c73e` ; [équivalence des sources]
 
 [Compilation finale](../../artifacts/linux/shared-revision-chooser-20261021/review/root-final-compilation-review.json) : trois projets sans diagnostic, mêmes octets source que le ciblé final. [Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/9dc6260a6/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 248 364 octets, SHA256 `a8a7641f82245bc055524f4e81c22d0bb4687f01ea35d0100fc74fd64e861cd1` ; [revue](../../artifacts/linux/shared-revision-chooser-20261021/review/root-package-review.json), sept phases à 0, 356 fichiers publiés comparés et 402 MD5. Installation/démarrage DPKG isolés réussis ; aucune installation hôte ni qualification native interactive. Les cinq modifications applicatives Modal préexistantes restent exclues du worktree/paquet propre.
 
-Restent : lecteur complet/pagination/plafond Windows, sélection hors portion, insertion des artificiels avant HEAD, menus/navigation/recherche complets, métadonnées et variantes du filtre décrits dans ADR0153. Niveaux et treize familles ouvertes inchangés ; aucun N4. Les suites complètes L25 et les preuves CI/serveurs gardent leurs sources historiques.
+État en fin de H32 (lecteur/plafond et sélection hors portion traités par H33 ci-dessus) : insertion des artificiels avant HEAD, menus/navigation/recherche complets, métadonnées et variantes du filtre décrits dans ADR0153. Niveaux et treize familles ouvertes inchangés ; aucun N4. Les suites complètes L25 et les preuves CI/serveurs gardent leurs sources historiques.
 
 ## H31 — Proxy commun et assistant issues GitHub
 
@@ -49,7 +64,7 @@ Source : `b84ae9caf9cb17497fe48f6b67445533bb7096dd` ; [équivalence source et co
 
 [Inventaire régénéré et contrôlé](../../artifacts/linux/portable-window-options-20261021/review/root-inventory-review.json) : 99 fenêtres métier (98 avec équivalent Linux, diagnostic PuTTY hors périmètre) et 32 pages (31 portées, extension Explorer hors périmètre), 116 types de fenêtres Linux. Niveaux inchangés et cinq sources/tests Modal du primaire conservés séparément du build/paquet propre.
 
-Restent notamment : grille/filtres Windows complets du chooser (500 commits et lignes artificielles épinglées), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
+Restent notamment : grille/filtres Windows complets du chooser (lecteur 500 traité par H33 ; lignes artificielles encore épinglées), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
 
 ## H29 — ouverture locale de dépôt
 

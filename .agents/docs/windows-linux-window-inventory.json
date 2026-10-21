@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "9dc6260a68cea63932c0691e51aaf5ddd9c2c73e",
-  "source_digest_sha256": "e6b81dad2b6d07a0a9246f4a2c47a1cfc22398d986737504d0da03e0eace5831",
-  "scanned_csharp_files": 2603,
+  "code_reference_commit": "9d95be81d7aaaa060e7ee0012c0f51c9e5838d79",
+  "source_digest_sha256": "7d6ededc65b93bf7a55f3b593b110ee947685ab0aca73b245016251a3fae37ed",
+  "scanned_csharp_files": 2612,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -2362,6 +2362,12 @@
           "results_present": false
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ChooseCommitStreamingTests.cs",
+          "test_class": "ChooseCommitStreamingTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonCommitPickerTests.cs",
           "test_class": "ComparisonCommitPickerTests",
           "passed_in_reference_run": 0,
@@ -3316,7 +3322,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 201,
+          "line": 279,
           "kind": "window"
         }
       ],
@@ -6277,7 +6283,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 201,
+          "line": 279,
           "kind": "window"
         },
         {
@@ -6853,7 +6859,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 201,
+          "line": 279,
           "kind": "window"
         }
       ],
@@ -19494,8 +19500,8 @@
       "feature": "Sélection d’une révision pour les dialogues",
       "group": "helpers",
       "level": "N2",
-      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents de graphe natifs, Current initial éditable et borne Rebase exclusive conservée après OK/Reset ; préselection résolue et GoTo dans la portion chargée. Commits réels et endpoints Index/WorkingTree typés, garde bare, navigation/focus et fermeture drainée ; gouttières cohérentes quand le graphe est masqué.",
-      "remaining": "Portion de 500 commits par défaut et limite éditable, sans lecteur incrémental/plafond Windows complet ; préselection/GoTo hors portion, héritage runtime, regex/options avancées, recherche rapide, menus et commandes encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
+      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents natifs, Current initial éditable et borne Rebase conservée. H33 : parcours Git unique en lots attendus, liste et graphe incrémentaux, source/objets/ancre/focus/viewport conservés ; première portion utilisable pendant la lecture. Présélection/GoTo/parents hors premier lot, dernière intention utilisateur prioritaire, plafond global et override privé (0 sans plafond), Reset hérité. Fermeture/validation drainent les générations admises. Commits réels et Index/WorkingTree typés, garde bare et gouttières cohérentes avec le graphe masqué.",
+      "remaining": "Héritage runtime complet, regex/options avancées, recherche rapide, menus et commandes Windows encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
       "visual": "adapte",
       "linux": [
         {
@@ -19543,8 +19549,26 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 201,
+          "line": 279,
           "kind": "window"
+        },
+        {
+          "label": "ChooseCommitDialog.History.cs",
+          "source": "src/linux/GitExtensions.Desktop/ChooseCommitDialog.History.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "GitLogQuery.cs",
+          "source": "src/linux/GitExtensions.Core/GitLogQuery.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "IncrementalCommitGraphLayout.cs",
+          "source": "src/linux/GitExtensions.Desktop/Controls/Graph/IncrementalCommitGraphLayout.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
@@ -19573,6 +19597,12 @@
           "results_present": false
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ChooseCommitStreamingTests.cs",
+          "test_class": "ChooseCommitStreamingTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonCommitPickerTests.cs",
           "test_class": "ComparisonCommitPickerTests",
           "passed_in_reference_run": 0,
@@ -19587,6 +19617,12 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ExportRevisionPresentationTests.cs",
           "test_class": "ExportRevisionPresentationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/IncrementalRevisionGraphTests.cs",
+          "test_class": "IncrementalRevisionGraphTests",
           "passed_in_reference_run": 0,
           "results_present": false
         },
@@ -20595,7 +20631,7 @@
       "feature": "Filtre avancé de l’historique",
       "group": "navigation",
       "level": "N3",
-      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert. Réemploi privé dans le chooser ; OK/Reset conservent tri, flags de références et borne du lanceur, Skip remis à zéro. Annulation/focus et fermeture avec filtre ouvert vérifiés sur le ciblé H32.",
+      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert. Réemploi privé dans le chooser ; OK/Reset conservent tri, flags de références et borne du lanceur, Skip remis à zéro. Annulation/focus et fermeture avec filtre ouvert vérifiés sur le ciblé H32. H33 : le chooser distingue le plafond hérité du lot de lecture ; override privé optionnel, zéro sans plafond et Reset vers le défaut global, sans écriture du profil.",
       "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée ; audit Wayland/DPI/accessibilité ouvert.",
       "visual": "adapte",
       "linux": [
@@ -20603,7 +20639,7 @@
           "id": "GitExtensions.Linux.Desktop.HistoryFilterDialog",
           "label": "HistoryFilterDialog",
           "source": "src/linux/GitExtensions.Desktop/HistoryFilterDialog.cs",
-          "line": 9,
+          "line": 12,
           "kind": "window"
         },
         {
@@ -20624,6 +20660,12 @@
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ChooseCommitFilterTests.cs",
           "test_class": "ChooseCommitFilterTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ChooseCommitStreamingTests.cs",
+          "test_class": "ChooseCommitStreamingTests",
           "passed_in_reference_run": 0,
           "results_present": false
         },
@@ -21938,6 +21980,10 @@
       "line": 21,
       "sources": [
         {
+          "path": "src/linux/GitExtensions.Desktop/ChooseCommitDialog.History.cs",
+          "line": 6
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/ChooseCommitDialog.cs",
           "line": 21
         }
@@ -22765,11 +22811,11 @@
       "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
       "name": "ExportRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-      "line": 201,
+      "line": 279,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 201
+          "line": 279
         }
       ],
       "bases": [
@@ -23317,11 +23363,11 @@
       "id": "GitExtensions.Linux.Desktop.HistoryFilterDialog",
       "name": "HistoryFilterDialog",
       "source": "src/linux/GitExtensions.Desktop/HistoryFilterDialog.cs",
-      "line": 9,
+      "line": 12,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/HistoryFilterDialog.cs",
-          "line": 9
+          "line": 12
         }
       ],
       "bases": [

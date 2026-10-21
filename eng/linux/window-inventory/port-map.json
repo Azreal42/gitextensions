@@ -320,7 +320,7 @@
         "HistoryFilterDialog",
         "FileHistoryPreferencesStore"
       ],
-      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert. Réemploi privé dans le chooser ; OK/Reset conservent tri, flags de références et borne du lanceur, Skip remis à zéro. Annulation/focus et fermeture avec filtre ouvert vérifiés sur le ciblé H32.",
+      "implemented": "Critères auteur/message/dates/chemins/branches et options de log appliqués au vrai Git. Contrôle initial et activation native partagée ; View→Ctrl+I→première Échap→Haut/Bas vérifié sur2e3bba726 sans réparation. Full/Simplify partagés, Simplify désactivé sans Full mais valeur conservée ; OK/Cancel/Reset et flags du graphe sous HasRevisionFilter. ADR0086, couverture Git/headless ; audit GUI natif ouvert. Réemploi privé dans le chooser ; OK/Reset conservent tri, flags de références et borne du lanceur, Skip remis à zéro. Annulation/focus et fermeture avec filtre ouvert vérifiés sur le ciblé H32. H33 : le chooser distingue le plafond hérité du lot de lecture ; override privé optionnel, zéro sans plafond et Reset vers le défaut global, sans écriture du profil.",
       "remaining": "Parité exhaustive des variantes et du rendu Windows non certifiée ; audit Wayland/DPI/accessibilité ouvert.",
       "visual": "adapte",
       "tests": [
@@ -1821,10 +1821,13 @@
         "CherryPickRevisionPicker",
         "RevertRevisionPicker",
         "RebaseRevisionPicker",
-        "ExportRevisionPicker"
+        "ExportRevisionPicker",
+        "file:src/linux/GitExtensions.Desktop/ChooseCommitDialog.History.cs",
+        "file:src/linux/GitExtensions.Core/GitLogQuery.cs",
+        "file:src/linux/GitExtensions.Desktop/Controls/Graph/IncrementalCommitGraphLayout.cs"
       ],
-      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents de graphe natifs, Current initial éditable et borne Rebase exclusive conservée après OK/Reset ; préselection résolue et GoTo dans la portion chargée. Commits réels et endpoints Index/WorkingTree typés, garde bare, navigation/focus et fermeture drainée ; gouttières cohérentes quand le graphe est masqué.",
-      "remaining": "Portion de 500 commits par défaut et limite éditable, sans lecteur incrémental/plafond Windows complet ; préselection/GoTo hors portion, héritage runtime, regex/options avancées, recherche rapide, menus et commandes encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
+      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents natifs, Current initial éditable et borne Rebase conservée. H33 : parcours Git unique en lots attendus, liste et graphe incrémentaux, source/objets/ancre/focus/viewport conservés ; première portion utilisable pendant la lecture. Présélection/GoTo/parents hors premier lot, dernière intention utilisateur prioritaire, plafond global et override privé (0 sans plafond), Reset hérité. Fermeture/validation drainent les générations admises. Commits réels et Index/WorkingTree typés, garde bare et gouttières cohérentes avec le graphe masqué.",
+      "remaining": "Héritage runtime complet, regex/options avancées, recherche rapide, menus et commandes Windows encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
       "visual": "adapte",
       "tests": [
         "CherryPickDialogTests",
@@ -1834,7 +1837,9 @@
         "ChooseCommitDialogTests",
         "ComparisonCommitPickerTests",
         "ChooseCommitFilterTests",
-        "ExportRevisionPresentationTests"
+        "ExportRevisionPresentationTests",
+        "ChooseCommitStreamingTests",
+        "IncrementalRevisionGraphTests"
       ],
       "adr": [
         "0153"

@@ -2,6 +2,14 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="h33-streamed-chooser"></a>
+## H33 — historique incrémental du sélecteur
+
+- [Build01](../../artifacts/linux/streamed-revision-history-20261021/build-01/core.log) et [Build03](../../artifacts/linux/streamed-revision-history-20261021/build-03/desktop.log) : nullabilité de tuples/lignes déjà vérifiés dans les nouveaux tests et garde Linux requise par CA1416. Corriger ces nouveaux scénarios sans modifier les historiques.
+- [Ciblé01 99/101](../../artifacts/linux/streamed-revision-history-20261021/targeted-01/results/desktop.trx) : étendre le cache natif peut traverser un score invalidé par Add ; Windows recontrôle CacheTo/GetCachedCount. Une seconde passe bornée consomme cette invalidation, sans boucle ni faux EOF. Un Render masqué/sans dimensions préparait quatre lignes : quitter avant le cache, uniquement en mode incrémental. Moteur natif, assertions et anciens tests conservés.
+- [Core complet 1178/1179](../../artifacts/linux/streamed-revision-history-20261021/core-full-01/core.log) : `%H %P` ajoute un espace structurel sur parent vide. Le nouvel oracle retire seulement cet espace ; ordre, identités et preuve du parent réécrit restent requis. [21/21 après correction, produit identique](../../artifacts/linux/streamed-revision-history-20261021/review/root-core-review.json) ; ne pas appeler cet assemblage une nouvelle suite complète unique réussie.
+- Un Ready initial ne termine pas la lecture : garder son lease jusqu’au drain réel, y compris remplacement et fermeture. Ne pas abandonner un callback retenu via WaitAsync. Un filtre accepté doit franchir le contrôle d’annulation avant publication ; le résultat local seul ne prouve pas ce succès. La projection UTF-8 existante échappe les octets : ne pas la remplacer par un décodeur strict.
+
 <a id="h32-chooser-rendu-filtre"></a>
 ## H32 — sélecteur : rendu et filtre
 
