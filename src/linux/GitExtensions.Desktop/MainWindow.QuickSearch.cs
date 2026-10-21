@@ -14,7 +14,6 @@ public sealed partial class MainWindow
 {
     private RevisionQuickSearch? _quickSearch;
     private GitCompareRevision? _quickSearchArtificialSelection;
-    private TabItem? _quickSearchReturnTab;
     private string? _quickSearchLastCommit, _configuredUserName;
     private readonly List<string> _historySelectionOrder = [];
     private IReadOnlyList<GitReference>? _quickSearchReferenceSnapshot;
@@ -27,15 +26,15 @@ public sealed partial class MainWindow
     internal Func<CancellationToken, Task<string?>>? QuickSearchClipboardReader { get; set; }
     internal Task QuickSearchCompletion => Task.WhenAll(_quickSearchClipboardWork.ToArray());
 
-    private bool QuickSearchHasFocus => _commits.IsKeyboardFocusWithin || _workingRevision?.IsKeyboardFocusWithin == true || _indexRevision?.IsKeyboardFocusWithin == true;
+    private bool QuickSearchHasFocus => _commits.IsKeyboardFocusWithin;
     private bool CanQuickSearch => !_busy && !_refreshing && !_commitInfoClosing && _repository is not null && !_lifetime.IsCancellationRequested
         && !IsCommitDiff && !OwnedWindows.Any(window => window.IsVisible);
-    private int QuickSearchArtificialCount => _virtualRevisions?.IsVisible == true && _repository?.IsBare == false ? 2 : 0;
+    private int QuickSearchArtificialCount => _historyRows.OfType<ArtificialHistoryRevision>().Count();
 
     private Control WithQuickSearchNotice(Control table)
     {
         string prefix = _translations.Translate("TranslatedStrings", "_searchingFor", "Text", "Searching for: ");
-        _quickSearch = new(() => _commits.Items.Count + QuickSearchArtificialCount, QuickSearchCurrentIndex, QuickSearchMatches, prefix,
+        _quickSearch = new(() => _commits.Items.Count, QuickSearchCurrentIndex, QuickSearchMatches, prefix,
             () => _preferencesStore.Load().RevisionGridQuickSearchTimeout);
         Grid overlay = new() { Name = "RevisionQuickSearchSurface", ClipToBounds = true };
         overlay.Children.Add(table); overlay.Children.Add(_quickSearch.Notice);
@@ -44,23 +43,13 @@ public sealed partial class MainWindow
 
     private void InitializeQuickSearch()
     {
-        foreach (Control surface in new Control?[] { _commits, _workingRevision, _indexRevision }.OfType<Control>())
+        foreach (Control surface in new Control[] { _commits })
         {
             surface.AddHandler(TextInputEvent, QuickSearchTextInput, RoutingStrategies.Tunnel);
             surface.AddHandler(KeyDownEvent, QuickSearchKeyDown, RoutingStrategies.Tunnel);
             surface.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => { if (!QuickSearchHasFocus) { HideQuickSearch(); } });
             surface.GotFocus += (_, _) => { if (!_applyingQuickSearchSelection && _quickSearchClipboard is not null) { CancelQuickSearchClipboard(); } };
         }
-        _commits.GotFocus += (_, _) =>
-        {
-            if (!UsesArtificialDiffHistory && _quickSearchArtificialSelection is not null) { _parentChildNavigation?.RevisionsSelectionChanged(); }
-            _quickSearchArtificialSelection = UsesArtificialDiffHistory ? _selectedArtificialHistoryRevision : null;
-            if (!_applyingQuickSearchSelection && !UsesArtificialDiffHistory) { _quickSearchReturnTab = null; }
-        };
-        _tabs.SelectionChanged += (_, args) =>
-        {
-            if (args.Source == _tabs && (_tabs.SelectedItem as TabItem)?.Name != "ChangesTab") { _quickSearchReturnTab = null; }
-        };
         _commits.PropertyChanged += (_, args) => { if (args.Property == ItemsControl.ItemsSourceProperty) { HideQuickSearch(); } };
         Deactivated += (_, _) => HideQuickSearch();
         Closed += (_, _) => { HideQuickSearch(); _quickSearch?.Dispose(); };
@@ -69,47 +58,29 @@ public sealed partial class MainWindow
     private void ObserveQuickSearchSelection(SelectionChangedEventArgs args)
     {
         if (!_applyingQuickSearchSelection) { CancelQuickSearchClipboard(); }
-        foreach (GitCommit removed in args.RemovedItems.OfType<GitCommit>()) { _historySelectionOrder.Remove(removed.Hash); }
-        if (args.AddedItems.OfType<GitCommit>().Any())
-        {
-            foreach (GitCommit added in args.AddedItems.OfType<GitCommit>())
-            { _historySelectionOrder.Remove(added.Hash); _historySelectionOrder.Add(added.Hash); }
-            // Refresh rebinds the retained real row behind an ordinary artificial
-            // revision. That publication must not leave the working/index view.
-            if (!_refreshing || _quickSearchArtificialSelection is null || QuickSearchArtificialCount == 0)
-            {
-                _quickSearchArtificialSelection = null;
-                if (!_applyingQuickSearchSelection) { _quickSearchReturnTab = null; }
-            }
-        }
+        foreach (object removed in args.RemovedItems.Cast<object>()) { _historySelectionOrder.Remove(HistoryRevisionItems.Key(removed)); }
+        foreach (object added in args.AddedItems.Cast<object>())
+        { string key = HistoryRevisionItems.Key(added); _historySelectionOrder.Remove(key); _historySelectionOrder.Add(key); }
         _quickSearchLastCommit = _historySelectionOrder.LastOrDefault();
         if (_quickSearchLastCommit is not null) { _parentChildLatestCommit = _quickSearchLastCommit; }
     }
 
     private int QuickSearchCurrentIndex()
     {
-        int artificial = QuickSearchArtificialCount;
-        if (artificial > 0)
-        {
-            if (_workingRevision?.IsKeyboardFocusWithin == true) { return 0; }
-            if (_indexRevision?.IsKeyboardFocusWithin == true) { return 1; }
-            if ((_quickSearchArtificialSelection ?? (UsesArtificialDiffHistory ? _selectedArtificialHistoryRevision : null)) is { } source)
-            { return source.Kind == GitCompareRevisionKind.WorkingTree ? 0 : 1; }
-        }
-        GitCommit? current = _commits.SelectedItems?.OfType<GitCommit>().FirstOrDefault(commit => commit.Hash == _quickSearchLastCommit)
-            ?? _commits.SelectedItem as GitCommit;
-        return current is null ? -1 : artificial + _commits.Items.IndexOf(current);
+        object? current = _quickSearchLastCommit is { } key && _historySelectionOrder.Contains(key) ? HistoryItem(key) : PrimaryHistoryItem;
+        return current is null ? -1 : _commits.Items.IndexOf(current);
     }
 
     private bool QuickSearchMatches(int index, string criteria)
     {
-        int artificial = QuickSearchArtificialCount;
-        if (index < artificial)
+        if (index < 0 || index >= _commits.ItemCount) { return false; }
+        if (_commits.Items[index] is ArtificialHistoryRevision artificial)
         {
-            string subject = T(index == 0 ? "Working directory" : "Commit index");
-            return RevisionQuickSearch.Matches(new string(index == 0 ? '1' : '2', 40), _configuredUserName, subject, [], criteria);
+            // The original search provider recognizes these reserved search identities; they never enter a Git command.
+            return RevisionQuickSearch.Matches(new string(artificial.Kind == GitCompareRevisionKind.WorkingTree ? '1' : '2', 40),
+                _configuredUserName, T(artificial.Subject), [], criteria);
         }
-        if (_commits.Items[index - artificial] is not GitCommit commit) { return false; }
+        if (_commits.Items[index] is not GitCommit commit) { return false; }
         if (!ReferenceEquals(_quickSearchReferenceSnapshot, _navigationReferences) || _quickSearchIncludesStashes != _historyView.ShowStashes)
         {
             _quickSearchReferenceSnapshot = _navigationReferences; _quickSearchIncludesStashes = _historyView.ShowStashes;
@@ -152,76 +123,9 @@ public sealed partial class MainWindow
         if ((args.KeyModifiers & KeyModifiers.Control) != 0 && args.Key is >= Key.A and <= Key.Z) { HideQuickSearch(); }
     }
 
-    private async Task ApplyQuickSearchAsync(int? found)
-    {
-        if (found is null || !CanQuickSearch) { return; }
-        int index = found.Value, artificial = QuickSearchArtificialCount;
-        if (index < artificial)
-        {
-            bool staged = index == 1;
-            GitCompareRevision source = new("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
-            Button? button = staged ? _indexRevision : _workingRevision;
-            bool selected = _quickSearchArtificialSelection == source;
-            Task activation;
-            _applyingQuickSearchSelection = true;
-            try { button?.Focus(); activation = selected ? Task.CompletedTask : ActivateArtificialRevisionAsync(staged); }
-            finally { _applyingQuickSearchSelection = false; }
-            await activation;
-            return;
-        }
-        if (index - artificial >= _commits.Items.Count || _commits.Items[index - artificial] is not GitCommit commit) { return; }
-        bool restoredPanel = false;
-        if (!UsesArtificialDiffHistory && _quickSearchArtificialSelection is not null && _quickSearchReturnTab is { } tab
-            && _tabs.Items.Contains(tab) && (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab")
-        {
-            // Ordinary Browse hosts artificial diffs in Changes. Return to the
-            // previous revision panel before publishing the final real selection.
-            bool layingOut = _layingOutCommitInfo;
-            _layingOutCommitInfo = true;
-            try { _tabs.SelectedItem = tab; restoredPanel = true; }
-            finally { _layingOutCommitInfo = layingOut; }
-        }
-        _quickSearchReturnTab = null;
-        _quickSearchArtificialSelection = null;
-        bool alreadySelected = _commits.SelectedItems is { Count: 1 } && _commits.SelectedItem is GitCommit current && current.Hash == commit.Hash;
-        bool reduceInitialComparison = alreadySelected && _browseInitialComparison is not null;
-        if (reduceInitialComparison)
-        {
-            // First=Index/WT is a second logical selection, outside ListBox.
-            _browseInitialComparison = null; CancelRevisionReads();
-            RememberRevisionNavigation(); RefreshRebaseMenu(); RefreshRevisionContextMenu(); UpdateHistoryPresentation();
-        }
-        if (!alreadySelected)
-        {
-            // Publish the final single selection once, without an empty-panel frame.
-            _applyingQuickSearchSelection = true;
-            try
-            {
-                _commits.Selection.BeginBatchUpdate();
-                try
-                {
-                    // SelectedItem can already equal the target in a multiple
-                    // selection; assigning that property again would be ignored.
-                    _commits.Selection.Clear();
-                    _commits.Selection.Select(_commits.Items.IndexOf(commit));
-                }
-                finally { _commits.Selection.EndBatchUpdate(); }
-            }
-            finally { _applyingQuickSearchSelection = false; }
-        }
-        _quickSearchLastCommit = commit.Hash;
-        _parentChildLatestCommit = commit.Hash;
-        _commits.ScrollIntoView(commit); _commits.UpdateLayout();
-        _applyingQuickSearchSelection = true;
-        try
-        {
-            if (_commits.ContainerFromItem(commit) is Control row) { row.Focus(); }
-            else { _commits.Focus(); }
-        }
-        finally { _applyingQuickSearchSelection = false; }
-        if (reduceInitialComparison) { await LoadSelectedRevisionDetailsAsync(commit); }
-        else if (alreadySelected && restoredPanel) { await LoadVisibleRevisionPanelAsync(); }
-    }
+    private Task ApplyQuickSearchAsync(int? found)
+        => found is int index && CanQuickSearch && index >= 0 && index < _commits.ItemCount
+            ? SelectHistoryItemAsync(_commits.Items[index]!) : Task.CompletedTask;
 
     private void BeginQuickSearchClipboard()
     {

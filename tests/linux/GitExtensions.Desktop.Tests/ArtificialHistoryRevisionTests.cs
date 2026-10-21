@@ -38,8 +38,10 @@ public sealed class ArtificialHistoryRevisionTests
         Assert.That(viewer.Text, Does.Contain(kind == GitCompareRevisionKind.Index ? "+INDEX FILE" : "+WORKTREE FILE"));
         Assert.That(viewer.Text, Does.Contain(kind == GitCompareRevisionKind.Index ? "-base" : "-INDEX FILE"));
         Assert.That(viewer.Text, Does.Not.Contain(kind == GitCompareRevisionKind.Index ? "WORKTREE FILE" : "+INDEX FILE"));
-        Assert.That(Field<ListBox>(main, "RevisionHistory").Items.Cast<object>().All(item => item is GitCommit), Is.True);
-        Assert.That(Field<ListBox>(main, "RevisionHistory").SelectedItem, Is.Null);
+        Assert.That(Field<ListBox>(main, "RevisionHistory").Items.Cast<object>().All(item => item is GitCommit or ArtificialHistoryRevision), Is.True);
+        Assert.That(Field<ListBox>(main, "RevisionHistory").Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind), Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+        Assert.That(Field<ListBox>(main, "RevisionHistory").SelectedItem, Is.TypeOf<ArtificialHistoryRevision>());
+        Assert.That(((ArtificialHistoryRevision)Field<ListBox>(main, "RevisionHistory").SelectedItem!).Kind, Is.EqualTo(kind));
         Assert.That(((TabItem)Field<TabControl>(main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         OpenMenu(main, files, "file.txt");
         ContextMenu menu = files.ContextMenu!;
@@ -70,7 +72,8 @@ public sealed class ArtificialHistoryRevisionTests
         Assert.That(System.Text.Encoding.UTF8.GetString(await fixture.Git.Repository.GetIndexFileBytesAsync("file.txt")), Is.EqualTo("WORKTREE FILE\n"));
         Assert.That(System.Text.Encoding.UTF8.GetString(await fixture.Git.Repository.GetIndexFileBytesAsync("other.txt")), Is.EqualTo("INDEX OTHER\n"));
         Assert.That((await fixture.Git.GitAsync("ls-files", "--", "untracked.txt")).StandardOutput, Is.Empty);
-        Assert.That(Field<ListBox>(main, "RevisionHistory").SelectedItem, Is.Null);
+        Assert.That(Field<ListBox>(main, "RevisionHistory").SelectedItem, Is.TypeOf<ArtificialHistoryRevision>());
+        Assert.That(((ArtificialHistoryRevision)Field<ListBox>(main, "RevisionHistory").SelectedItem!).Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
         Assert.That(FileStatusTestHelpers.Rows(files).Select(row => row.Tag).OfType<RevisionDiffFileSelection>().Select(entry => entry.File.Path),
             Is.EquivalentTo(new[] { "other.txt", "untracked.txt" }));
         Assert.That(await fixture.Git.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(fixture.Head));
@@ -82,10 +85,10 @@ public sealed class ArtificialHistoryRevisionTests
         await using Fixture fixture = await Fixture.CreateAsync(GitCompareRevisionKind.WorkingTree);
         MainWindow main = fixture.Window;
         Button working = Field<Button>(main, "WorkingDirectoryRevision"), index = Field<Button>(main, "IndexRevision");
-        PushProcessTestDriver.Pointer(working); await Idle(main);
-        Assert.That(working.IsKeyboardFocusWithin, Is.True);
+        PushProcessTestDriver.Pointer(working.FindAncestorOfType<ListBoxItem>()!); await Idle(main);
+        Assert.That(working.FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
         Press(main, PhysicalKey.ArrowDown); await Idle(main);
-        Assert.That(index.IsKeyboardFocusWithin, Is.True);
+        Assert.That(index.FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
         Assert.That(Field<DiffView>(main, "CommitDiff").Text, Does.Contain("+INDEX FILE"));
         Press(main, PhysicalKey.ArrowDown); await Idle(main);
         ListBox history = Field<ListBox>(main, "RevisionHistory");
@@ -116,10 +119,10 @@ public sealed class ArtificialHistoryRevisionTests
         using IndexDiffGate gate = new(fixture.Git);
         MainWindow main = fixture.Window;
         GitCommandLog.Clear();
-        PushProcessTestDriver.Pointer(Field<Button>(main, "IndexRevision"));
+        PushProcessTestDriver.Pointer(Field<Button>(main, "IndexRevision").FindAncestorOfType<ListBoxItem>()!);
         await Until(() => gate.Started);
         int pid = gate.Pid;
-        PushProcessTestDriver.Pointer(Field<Button>(main, "WorkingDirectoryRevision"));
+        PushProcessTestDriver.Pointer(Field<Button>(main, "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!);
         await Until(() => !main.IsBusy);
         Assert.That(Field<DiffView>(main, "CommitDiff").Text, Does.Contain("+WORKTREE FILE").And.Not.Contain("+INDEX FILE"));
         Assert.That(Field<DiffView>(main, "CommitDiff").DocumentIdentity, Does.Contain(GitCompareRevisionKind.WorkingTree.ToString()));

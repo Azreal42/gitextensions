@@ -276,8 +276,8 @@ public sealed class ViewPatchDialogTests
         using var f = await MainWindowClassicTests.RepositoryFixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; await Until(() => !main.IsBusy);
         ListBox history = Field<ListBox>(main, "RevisionHistory");
-        Pump(main); PushProcessTestDriver.Pointer(history.ContainerFromIndex(0)!);
         GitCommit[] commits = history.ItemsSource!.OfType<GitCommit>().ToArray(); Assert.That(commits.Length, Is.GreaterThan(1));
+        Pump(main); PushProcessTestDriver.Pointer(history.ContainerFromItem(commits[0])!);
         MenuItem commands = main.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(menu => menu.Header as string == "Commands");
         PushProcessTestDriver.Pointer(commands); MenuItem view = commands.Items.OfType<MenuItem>().Single(item => item.Name == "patchToolStripMenuItem");
         Assert.That(((Image)view.Icon!).Tag, Is.EqualTo("PatchView.png")); Assert.That(view.InputGesture, Is.Null);

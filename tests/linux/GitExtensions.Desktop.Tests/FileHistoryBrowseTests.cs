@@ -34,7 +34,7 @@ public sealed class FileHistoryBrowseTests
         Assert.That(((TabItem)Find<TabControl>(main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         Assert.That(Find<TreeView>(main, "RepositoryNavigation").IsEffectivelyVisible, Is.False);
         object? source = history.ItemsSource;
-        PushProcessTestDriver.Pointer(history.ContainerFromIndex(0)!); await Idle(main);
+        PushProcessTestDriver.Pointer(history.ContainerFromItem(history.Items.OfType<GitCommit>().First())!); await Idle(main);
         RevisionDiffFileSelection[] files = FileStatusTestHelpers.Rows(Find<TreeView>(main, "RevisionFiles"))
             .Select(row => row.Tag).OfType<RevisionDiffFileSelection>().ToArray();
         Assert.That(files.Select(file => file.File.Path), Is.EquivalentTo(new[] { "a-other.txt", "file.txt" }));
@@ -42,7 +42,7 @@ public sealed class FileHistoryBrowseTests
         Assert.That(history.ItemsSource, Is.SameAs(source));
         Assert.That(history.IsKeyboardFocusWithin, Is.True);
         main.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
-        await Idle(main); Assert.That(history.SelectedIndex, Is.EqualTo(1));
+        await Idle(main); Assert.That(history.SelectedItem, Is.SameAs(history.Items.OfType<GitCommit>().ElementAt(1)));
         Assert.That(history.IsKeyboardFocusWithin, Is.True);
     }
 
@@ -65,7 +65,7 @@ public sealed class FileHistoryBrowseTests
         Find<CheckBox>(main, "FileHistoryInlineBlameToggle").IsChecked = false;
         await Idle(main);
         Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.Text, Is.EqualTo("old followed blob\n"));
-        Find<ListBox>(main, "RevisionHistory").SelectedIndex = 0; await Idle(main);
+        Find<ListBox>(main, "RevisionHistory").SelectedItem = Find<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().ElementAt(0); await Idle(main);
         Assert.That(((TabItem)Find<TabControl>(main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("FileTreeTab"), "Diff is an initial choice only.");
     }
 
@@ -93,11 +93,12 @@ public sealed class FileHistoryBrowseTests
         await f.ChangeAsync("descendant\n", "Visible descendant");
         await using BrowseScope scope = await BrowseScope.OpenAsync(f, new("file.txt", BrowsePathKind.File), new(selected), new(first));
         ListBox history = Find<ListBox>(scope.Window, "RevisionHistory");
-        Assert.That(history.Items.Count, Is.EqualTo(3));
+        Assert.That(history.Items.OfType<GitCommit>().Count(), Is.EqualTo(3));
+        Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind), Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
         Assert.That(((GitCommit)history.SelectedItem!).Hash, Is.EqualTo(selected));
         Assert.That(history.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EquivalentTo(new[] { first, selected }));
         Assert.That(Find<DiffView>(scope.Window, "CommitDiff").Text, Does.Contain("+selected newer").And.Contain("-base"));
-        history.SelectedIndex = 0; await Idle(scope.Window);
+        history.SelectedItem = history.Items.OfType<GitCommit>().ElementAt(0); await Idle(scope.Window);
         Assert.That(Find<DiffView>(scope.Window, "CommitDiff").Text, Does.Contain("+descendant"));
     }
 
@@ -112,11 +113,32 @@ public sealed class FileHistoryBrowseTests
         SelectTab(scope.Window, "FileTreeTab"); await Idle(scope.Window);
         Assert.That(((TreeViewItem)Find<TreeView>(scope.Window, "CommitFileTree").SelectedItem!).Tag, Is.EqualTo("file.txt"));
         await SetHistoryScopeAsync(scope.Window, "Current");
-        Assert.That(Find<ListBox>(scope.Window, "RevisionHistory").Items, Is.Empty);
+        ListBox currentHistory = Find<ListBox>(scope.Window, "RevisionHistory");
+        Assert.That(currentHistory.Items.OfType<GitCommit>(), Is.Empty);
+        ArtificialHistoryRevision[] currentArtificial = currentHistory.Items.OfType<ArtificialHistoryRevision>().ToArray();
+        Assert.That(currentArtificial.Select(item => item.Kind), Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+        Assert.That(currentArtificial.Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds, Is.Empty);
+        Assert.That(currentArtificial.Single(item => item.Kind == GitCompareRevisionKind.WorkingTree).ParentIds,
+            Is.EqualTo(new[] { ArtificialHistoryRevision.IndexKey }));
         Assert.That(scope.Window.OwnedWindows, Is.Empty, "The unborn current branch must not open a HEAD warning.");
         await SetHistoryScopeAsync(scope.Window, "All");
-        Assert.That(Find<ListBox>(scope.Window, "RevisionHistory").Items.OfType<GitCommit>().Select(commit => commit.Hash), Does.Contain(selected));
+        ListBox allHistory = Find<ListBox>(scope.Window, "RevisionHistory");
+        Assert.That(allHistory.Items.OfType<GitCommit>().Select(commit => commit.Hash), Does.Contain(selected));
+        ArtificialHistoryRevision working = allHistory.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.WorkingTree);
+        Assert.That(allHistory.SelectedItems, Has.Count.EqualTo(1)); Assert.That(allHistory.SelectedItem, Is.SameAs(working));
+        Assert.That(working.ParentIds, Is.EqualTo(new[] { ArtificialHistoryRevision.IndexKey }));
+        Assert.That(allHistory.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds, Is.Empty);
+        TreeView allTree = Find<TreeView>(scope.Window, "CommitFileTree"); Assert.That(allTree.Items, Is.Empty); Assert.That(allTree.SelectedItem, Is.Null);
+        GitCompareRevision? source = (GitCompareRevision?)typeof(MainWindow).GetField("_fileTreeSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(scope.Window);
+        Assert.That(source, Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.WorkingTree)));
+        GitCommit returned = allHistory.Items.OfType<GitCommit>().Single(commit => commit.Hash == selected);
+        allHistory.ScrollIntoView(returned); scope.Window.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+        PushProcessTestDriver.Pointer((Control)allHistory.ContainerFromItem(returned)!); await Idle(scope.Window);
+        Assert.That(allHistory.SelectedItem, Is.SameAs(returned)); Assert.That(allHistory.IsKeyboardFocusWithin, Is.True);
+        Assert.That(typeof(MainWindow).GetField("_fileTreeSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(scope.Window),
+            Is.EqualTo(new GitCompareRevision(selected)));
         Assert.That(((TreeViewItem)Find<TreeView>(scope.Window, "CommitFileTree").SelectedItem!).Tag, Is.EqualTo("file.txt"));
+        Assert.That(scope.Window.OwnedWindows, Is.Empty, "Returning to a real branch row must not show an unborn HEAD warning.");
     }
 
     [AvaloniaTest]
@@ -140,6 +162,11 @@ public sealed class FileHistoryBrowseTests
         await File.WriteAllTextAsync(f.File, "needle WORKTREE\n");
         await using BrowseScope scope = await BrowseScope.OpenAsync(f, new("file.txt", BrowsePathKind.File), new(Kind: kind));
         MainWindow main = scope.Window; SelectTab(main, "FileTreeTab"); await Idle(main);
+        ListBox history = Find<ListBox>(main, "RevisionHistory");
+        Assert.That(history.SelectedItem, Is.TypeOf<ArtificialHistoryRevision>());
+        ArtificialHistoryRevision selectedArtificial = (ArtificialHistoryRevision)history.SelectedItem!;
+        Assert.That(selectedArtificial.Kind, Is.EqualTo(kind));
+        Assert.That(history.SelectedItems, Is.EqualTo(new object[] { selectedArtificial }));
         TreeView tree = Find<TreeView>(main, "CommitFileTree");
         tree.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Control.ContextRequestedEvent, Source = tree }); Dispatcher.UIThread.RunJobs();
         tree.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "tsmiShowFindInCommitFilesGitGrep")
@@ -159,7 +186,9 @@ public sealed class FileHistoryBrowseTests
         await Idle(main);
         Assert.That(Find<FileContentView>(main, "CommitFileContent").TextView.Text,
             Is.EqualTo(kind == GitCompareRevisionKind.Index ? "needle UPDATED INDEX\n" : "needle UPDATED WORKTREE\n"));
-        Assert.That(Find<ListBox>(main, "RevisionHistory").SelectedItem, Is.Null);
+        Assert.That(history.SelectedItem, Is.SameAs(selectedArtificial));
+        Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == kind), Is.SameAs(selectedArtificial));
+        Assert.That(history.SelectedItems, Is.EqualTo(new object[] { selectedArtificial }));
     }
 
     [AvaloniaTest]

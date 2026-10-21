@@ -72,10 +72,14 @@ public sealed class FileHistoryPreferencesTests
             settings = await OpenSettings(main);
             PushProcessTestDriver.Pointer(Field<CheckBox>(settings, "chkFollowRenamesInFileHistory"));
             PushProcessTestDriver.Pointer(Field<CheckBox>(settings, "chkFollowRenamesInFileHistoryExact"));
-            PushProcessTestDriver.Pointer(Field<Button>(settings, "SaveDesktopSettings")); await Idle(main);
+            long lastCommandIdBeforeSave = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
+            PushProcessTestDriver.Pointer(Field<Button>(settings, "SaveDesktopSettings"));
+            await Until(() => GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeSave && entry.Command == "git log")
+                && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+            await Idle(main);
             Assert.That(store.Load().FollowRenames, Is.False); Assert.That(store.Load().ExactRenames, Is.True);
             Assert.That(list.Items.OfType<GitCommit>().Select(c => c.Subject), Is.EquivalentTo(new[] { "After rename", "Edited rename" }));
-            Assert.That(list.ItemsSource, Is.Not.SameAs(originalRows));
+            Assert.That(list.ItemsSource, Is.SameAs(originalRows));
 
             settings = await OpenSettings(main);
             Assert.That(Field<CheckBox>(settings, "chkFollowRenamesInFileHistoryExact").IsChecked, Is.True);

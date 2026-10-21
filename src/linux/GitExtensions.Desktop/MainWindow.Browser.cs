@@ -61,13 +61,18 @@ public sealed partial class MainWindow
         _commits.Name = "RevisionHistory";
         _commits.Focusable = true;
         InitializeCommitInformation();
-        _commits.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) =>
+        _commits.ItemTemplate = new FuncDataTemplate<object>((item, _) =>
         {
-            Control row = RevisionHistoryRow.Create(commit, _historyGraph.References);
-            row.Tag = commit;
-            UpdateHistoryRow(row);
+            Control row = item is ArtificialHistoryRevision artificial
+                ? ArtificialRevisionRows.CreateItem(artificial, T, _historyView, _preferences.ShowGitStatusForArtificialCommits, "")
+                : RevisionHistoryRow.Create((GitCommit)item!, _historyGraph.References);
+            row.Tag = item; UpdateHistoryRow(row);
+            row.AttachedToVisualTree += (_, _) => UpdateHistoryRow(row);
+            row.Loaded += (_, _) => UpdateHistoryRow(row);
             return row;
         });
+        Avalonia.Input.KeyboardNavigation.SetTabNavigation(_commits, Avalonia.Input.KeyboardNavigationMode.Once);
+        InitializeHistoryKeyboard();
         _historyGraph.LineHeight = BrowseRowHeight;
         _historyGraph.LaneWidth = 12;
         _historyGraph.ShowReferenceLabels = false;
@@ -263,9 +268,7 @@ public sealed partial class MainWindow
     private Control BuildRevisionTable()
     {
         DockPanel panel = new() { Name = "RevisionTable" };
-        _virtualRevisions = BuildVirtualRevisionRows();
-        DockPanel.SetDock(_virtualRevisions, Dock.Top);
-        panel.Children.Add(_virtualRevisions);
+        _commits.ItemsSource = _historyRows;
         Grid body = new() { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
         body.Children.Add(_historyGraph);
         Grid.SetColumn(_commits, 1);

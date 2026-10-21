@@ -12,9 +12,6 @@ namespace GitExtensions.Linux.Desktop;
 public sealed partial class MainWindow
 {
     private string? _configuredUserEmail, _authoredEmail;
-    private Control? _virtualRevisions;
-    private Button? _workingRevision, _indexRevision;
-    private TextBlock? _workingRevisionState, _indexRevisionState;
 
     private void UpdateHistoryPresentation()
     {
@@ -30,22 +27,31 @@ public sealed partial class MainWindow
             _relationshipSource = _history; _relationshipRevision = revision;
             _relatedHistory = RelatedHistory(revision, true);
         }
-        _historyGraph.RelatedHashes = _highlightedHistoryBranch ?? (_historyView.DrawNonRelativesGray ? _relatedHistory : null);
+        _historyGraph.RelatedHashes = _highlightedHistoryBranch;
+        _historyGraph.DrawNonRelativesGray = _historyView.DrawNonRelativesGray;
         _historyGraph.IsVisible = _historyView.ShowGraph;
-        _historyGraph.SelectedHashes = selected.Select(commit => commit.Hash).ToArray();
+        _historyGraph.SelectedHashes = (_commits.SelectedItems?.Cast<object>() ?? []).Select(HistoryRevisionItems.Key).ToArray();
         _historyGraph.SelectionFocused = _commits.IsKeyboardFocusWithin;
         _historyGraph.AuthoredEmail = _historyView.HighlightAuthoredRevisions ? _authoredEmail : null;
         _historyGraph.DrawAlternateBackground = _historyView.DrawAlternateBackground;
-        foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(control => control.Name == "RevisionHistoryRow")) { UpdateHistoryRow(row); }
-        UpdateArtificialHistorySelectionAppearance();
+        foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(control => control.Name is "RevisionHistoryRow" or "ArtificialRevisionHistoryRow")) { UpdateHistoryRow(row); }
+        if (_tabs.Items.OfType<TabItem>().FirstOrDefault(tab => tab.Name == "GpgTab") is { } gpg)
+        { gpg.IsVisible = PrimaryHistoryItem is GitCommit; }
     }
 
     private void UpdateHistoryRow(Control row)
     {
+        if (row.Tag is ArtificialHistoryRevision artificial)
+        {
+            if (row is Grid grid) { RevisionHistoryColumns.From(_historyView).Apply(grid.ColumnDefinitions); }
+            bool artificialSelected = _commits.SelectedItems?.Contains(artificial) == true;
+            row.SetValue(Avalonia.Controls.Panel.BackgroundProperty, RevisionHistoryRow.BackgroundFor(null, artificialSelected, _commits.IsKeyboardFocusWithin,
+                null, _historyRows.IndexOfKey(artificial.GraphId), _historyView.DrawAlternateBackground, ActualThemeVariant == ThemeVariant.Dark));
+            ArtificialRevisionRows.ApplyStatus(row, artificial.Kind, _historyStatus, _preferences.ShowGitStatusForArtificialCommits, T);
+            return;
+        }
         if (row.Tag is not GitCommit commit) { return; }
-        int index = 0;
-        foreach (GitCommit entry in _historyGraph.OrderedCommits)
-        { if (entry.Hash == commit.Hash) { break; } index++; }
+        int index = _historyRows.IndexOfHash(commit.Hash);
         bool selected = _commits.SelectedItems?.OfType<GitCommit>().Any(entry => entry.Hash == commit.Hash) == true;
         RevisionHistoryRow.UpdateState(row, selected, _commits.IsKeyboardFocusWithin,
             _historyView.HighlightAuthoredRevisions ? _authoredEmail : null, index,
@@ -53,62 +59,17 @@ public sealed partial class MainWindow
         ApplyHistoryRowOptions(row, commit);
     }
 
-    private Control BuildVirtualRevisionRows()
+    private Task ActivateArtificialRevisionAsync(bool staged)
     {
-        ArtificialRevisionRows rows = ArtificialRevisionRows.Create(BrowseRowHeight, T);
-        // Keep Browse's existing callbacks, status and navigation policy; share only the visual construction.
-        for (int i = 0; i < 2; i++)
-        {
-            Button action = i == 0 ? rows.Working : rows.Index;
-            TextBlock state = i == 0 ? rows.WorkingState : rows.IndexState;
-            bool staged = i == 1;
-            action.Click += async (_, _) => await ActivateArtificialRevisionAsync(staged);
-            action.GotFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
-            action.LostFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
-            action.ActualThemeVariantChanged += (_, _) => UpdateArtificialHistorySelectionAppearance();
-            action.KeyDown += async (_, args) => await ArtificialHistoryKeyDownAsync(action, staged, args);
-            _actionButtons.Add(action);
-            if (i == 0) { _workingRevision = action; _workingRevisionState = state; }
-            else { _indexRevision = action; _indexRevisionState = state; }
-        }
-        return rows.View;
-    }
-
-    private async Task ActivateArtificialRevisionAsync(bool staged)
-    {
-        if (_busy || _repository is null || _repository.IsBare || _commitInfoClosing) { return; }
-        _parentChildNavigation?.RevisionsSelectionChanged();
-        if (!_applyingQuickSearchSelection) { CancelQuickSearchClipboard(); }
-        _quickSearchArtificialSelection = new("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree);
-        RefreshHistoryMenuStates();
-        if (UsesArtificialDiffHistory) { await SelectArtificialHistoryRevisionAsync(staged); return; }
-        if (_tabs.SelectedItem is TabItem tab && tab.Name != "ChangesTab") { _quickSearchReturnTab = tab; }
-        SelectDetailsTab("ChangesTab");
-        GitChange? change = _changesFilesView?.Entries.Select(entry => entry.Tag).OfType<GitChange>()
-            .FirstOrDefault(entry => staged ? entry.IsStaged : entry.IsModified || entry.IsUntracked);
-        _refreshing = true;
-        try
-        {
-            _stagedDiff.IsChecked = staged;
-            _changesFilesView?.SelectTags(change is null ? [] : [change]);
-        }
-        finally { _refreshing = false; }
-        if (change is not null) { await LoadSelectedDiffAsync(); }
-        else { ClearWorkingDiff(); }
+        if (_busy || _repository?.IsBare != false || _commitInfoClosing) { return Task.CompletedTask; }
+        object? item = HistoryItem(new GitCompareRevision("", staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree));
+        return item is null ? Task.CompletedTask : SelectHistoryItemAsync(item);
     }
 
     private void UpdateVirtualRevisionRows(GitStatus status)
     {
-        if (_virtualRevisions is not null) { _virtualRevisions.IsVisible = _historyView.ShowArtificialCommits && _repository?.IsBare != true; }
-        int working = status.Changes.Count(change => change.IsModified || change.IsUntracked);
-        int indexed = status.Changes.Count(change => change.IsStaged);
-        foreach ((Button? button, TextBlock? state, int count) in new[] { (_workingRevision, _workingRevisionState, working), (_indexRevision, _indexRevisionState, indexed) })
-        {
-            if (button is null || state is null) { continue; }
-            state.IsVisible = _preferences.ShowGitStatusForArtificialCommits;
-            ToolTip.SetTip(button, _preferences.ShowGitStatusForArtificialCommits ? count + " " + T("changes") : null);
-            state.Text = count == 0 ? "✓" : count.ToString(System.Globalization.CultureInfo.CurrentCulture);
-            state.Foreground = count == 0 ? Brush.Parse("#24c221") : Brushes.DarkOrange;
-        }
+        _historyStatus = status;
+        foreach (Control row in _commits.GetVisualDescendants().OfType<Control>().Where(control => control.Name == "ArtificialRevisionHistoryRow"))
+        { UpdateHistoryRow(row); }
     }
 }

@@ -26,6 +26,7 @@ public class ReferenceMenuTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "file.txt"), "later\n");
         await repository.StageAllAsync();
         await repository.CommitAsync("Later revision for menu selection");
+        string mainHead = await repository.ResolveRevisionAsync("HEAD");
         MainWindow main = fixture.Window;
         await main.OpenRepositoryAsync(fixture.Repository);
         ListBox history = Field<ListBox>(main, "RevisionHistory");
@@ -64,6 +65,9 @@ public class ReferenceMenuTests
             Assert.That((await repository.GetStatusAsync()).Branch, Is.EqualTo("menu-topic"));
             Assert.That(references.Items.OfType<GitReference>().Single(reference => reference.ShortName == "menu-topic").IsCurrent, Is.True);
             Assert.That(Field<TextBlock>(main, "RepositoryStatus").Text, Does.StartWith("menu-topic"), "The browser status must be refreshed after checkout.");
+            Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(original), "The checked-out branch now makes the original revision HEAD.");
+            Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds,
+                Is.EqualTo(new[] { original }), "The index parent must follow the checked-out branch.");
 
             CreateTagDialog tag = await OpenAsync<CreateTagDialog>(workflow, "Create tag…");
             Assert.That(tag.ReadOptions().Revision, Is.EqualTo(original), "Creating a tag must use the selected history row.");
@@ -91,6 +95,11 @@ public class ReferenceMenuTests
             checkout = await OpenAsync<CheckoutBranchDialog>(workflow, "Checkout");
             ClickNamed(checkout, "CheckoutBranch");
             await ClosedAsync(main, workflow, checkout);
+            await Until(() => !main.IsBusy && (history.SelectedItem as GitCommit)?.Hash == mainHead);
+            Assert.That((await repository.GetStatusAsync()).Branch, Is.EqualTo("main"));
+            Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(mainHead), "A generic refresh follows HEAD after checking out the newer main branch.");
+            Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds,
+                Is.EqualTo(new[] { mainHead }), "The index parent must follow the current main checkout.");
             references.SelectedItem = references.Items.OfType<GitReference>().Single(reference => reference.Name == "refs/heads/menu-topic");
             DeleteBranchDialog deleteBranch = await OpenAsync<DeleteBranchDialog>(workflow, "Delete…");
             Assert.That(deleteBranch.ReadOptions().Names, Is.EqualTo(new[] { "menu-topic" }), "Deleting must retain the selected branch.");
@@ -102,7 +111,9 @@ public class ReferenceMenuTests
             Assert.Multiple(() =>
             {
                 Assert.That(references.Items.OfType<GitReference>().Select(reference => reference.Name), Is.EqualTo(new[] { "refs/heads/main" }));
-                Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(original));
+                Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(mainHead), "Deleting another branch leaves the unchanged main HEAD selection intact.");
+                Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds,
+                    Is.EqualTo(new[] { mainHead }));
                 Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
             });
             Assert.That((await repository.GetReferencesAsync()).Select(reference => reference.Name), Is.EqualTo(new[] { "refs/heads/main" }));

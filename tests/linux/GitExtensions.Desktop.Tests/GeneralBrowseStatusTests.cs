@@ -163,8 +163,11 @@ public sealed class GeneralBrowseStatusTests
         Assert.That(f.Commands().Any(command => command.Arguments.Contains("rev-list") && command.Arguments.Contains("--left-right")), Is.EqualTo(detailReads));
         Button working = Field<Button>(main, "WorkingDirectoryRevision"), index = Field<Button>(main, "IndexRevision");
         Assert.That(working.IsEffectivelyVisible && index.IsEffectivelyVisible, Is.True);
-        Assert.That(Private<TextBlock>(main, "_workingRevisionState").IsVisible, Is.EqualTo(artificialCount));
-        Assert.That(Private<TextBlock>(main, "_indexRevisionState").IsVisible, Is.EqualTo(artificialCount));
+        foreach (Button label in new[] { working, index })
+        {
+            ListBoxItem row = label.FindAncestorOfType<ListBoxItem>()!;
+            Assert.That(row.GetVisualDescendants().OfType<Control>().Any(control => control.Name == "ArtificialRevisionStatus" && control.IsEffectivelyVisible), Is.EqualTo(artificialCount));
+        }
         string commit = Text(Field<Button>(main, "BrowseCommit").Content);
         Assert.That(commit, Is.EqualTo(toolbarCount ? "Commit (" + changed + ")" : "Commit"));
         TreeViewItem module = ModuleNode(main);

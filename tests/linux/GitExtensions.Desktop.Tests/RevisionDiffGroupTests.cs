@@ -182,7 +182,24 @@ public class RevisionDiffGroupTests
         await fixture.Window.OpenRepositoryAsync(empty);
         Assert.That(Files(fixture.Window).Items, Is.Empty);
         Assert.That(Visible(fixture.Window).EffectiveMode, Is.EqualTo(DiffViewMode.Unified));
-        Assert.That(Visible(fixture.Window).Text, Does.Contain("no commits yet"));
+        // The unborn repository still has two actual typed history endpoints.
+        // Their empty diff must clear the previous repository's combined content.
+        ListBox history = History(fixture.Window);
+        Assert.That(history.Items.OfType<GitCommit>(), Is.Empty);
+        ArtificialHistoryRevision[] artificial = history.Items.OfType<ArtificialHistoryRevision>().ToArray();
+        Assert.That(artificial.Select(row => row.Kind), Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+        Assert.That(history.ItemCount, Is.EqualTo(2)); Assert.That(history.SelectedItems, Has.Count.EqualTo(1));
+        Assert.That(history.SelectedItem, Is.SameAs(artificial[0]));
+        Assert.That(artificial[0].Revision, Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.WorkingTree)));
+        Assert.That(artificial[0].ParentIds, Is.EqualTo(new[] { ArtificialHistoryRevision.IndexKey }));
+        Assert.That(artificial[1].ParentIds, Is.Empty, "An unborn index must not acquire a fabricated HEAD parent.");
+        GitStatus status = await (await GitRepository.OpenAsync(empty)).GetStatusAsync();
+        Assert.That(status.IsUnborn, Is.True); Assert.That(status.Head, Is.Null); Assert.That(status.Changes, Is.Empty);
+        Assert.That(Visible(fixture.Window).Text, Is.Empty);
+        FileContentView[] contents = fixture.Window.GetVisualDescendants().OfType<FileContentView>().ToArray();
+        Assert.That(contents, Is.Not.Empty); Assert.That(contents.All(content => !content.IsImage && content.Bitmap is null), Is.True);
+        Assert.That(fixture.Window.GetVisualDescendants().OfType<Image>().Where(image => image.Name == "FileImage").All(image => image.Source is null), Is.True);
+        Assert.That(store.Load(), Is.EqualTo(new RevisionDiffPreferences(false, true)));
         Assert.That(fixture.Window.LastException, Is.Null);
     }
 

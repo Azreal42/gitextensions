@@ -104,7 +104,7 @@ public sealed class HistoryMenuParityTests
         Click(Item(view, "ViewshowRevisionGraphColumnToolStripMenuItem")); Click(Item(view, "ViewShowArtificialCommits")); Pump(f.Window);
         Assert.That(((Grid)row).ColumnDefinitions.Skip(1).Select(c => c.ActualWidth), Is.All.Zero);
         Assert.That(f.Window.GetVisualDescendants().OfType<CommitGraph>().Single().IsVisible, Is.False);
-        Assert.That(f.Window.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "WorkingRevisions").IsVisible, Is.False);
+        Assert.That(list.Items.OfType<ArtificialHistoryRevision>(), Is.Empty);
         Assert.That(list.IsKeyboardFocusWithin, Is.True);
         Assert.That(new HistoryViewPreferencesStore().Load().ShowTags, Is.True, "Toggling a view does not overwrite defaults.");
         ContextMenu context = list.ContextMenu!; MenuItem other = context.Items.OfType<MenuItem>().Single(i => i.Name == "RevisionView");

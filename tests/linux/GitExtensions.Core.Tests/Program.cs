@@ -63,6 +63,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. GitRunnerSinkScenarios.All,
     .. GitLogStreamingScenarios.All,
     .. RevisionAncestryScenarios.All,
+    .. ComparisonMultiEndpointScenarios.All,
     .. QuickSearchMessageScenarios.All,
     .. ComparisonEndpointScenarios.All,
     .. ComparisonGroupScenarios.All,
@@ -196,6 +197,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. CherryPickScenarios.All,
     .. MergeConflictScenarios.All,
     .. ResetRevertScenarios.All,
+    .. ArtificialResetScenarios.All,
     .. ResetSelectedPatchScenarios.All,
     .. CherryPickRecoveryScenarios.All,
     .. RebaseAdvancedScenarios.All,
@@ -234,10 +236,16 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 ];
 
 if (args.Contains("--unix-socket-directory-only", StringComparer.Ordinal)) { tests = UnixSocketDirectoryScenarios.All.ToArray(); }
+if (args.Contains("--comparison-multiple-only", StringComparer.Ordinal))
+{
+    tests = ComparisonMultiEndpointScenarios.All.ToArray();
+}
+
 if (args.Contains("--revision-ancestry-only", StringComparer.Ordinal)) { tests = RevisionAncestryScenarios.All.ToArray(); }
 if (args.Contains("--history-streaming-only", StringComparer.Ordinal)) { tests = [.. GitRunnerSinkScenarios.All, .. GitLogStreamingScenarios.All]; }
 if (args.Contains("--file-history-graph-only", StringComparer.Ordinal)) { tests = FileHistoryGraphScenarios.All.ToArray(); }
 if (args.Contains("--quick-search-message-only", StringComparer.Ordinal)) { tests = QuickSearchMessageScenarios.All.ToArray(); }
+if (args.Contains("--artificial-reset-only", StringComparer.Ordinal)) { tests = ArtificialResetScenarios.All.ToArray(); }
 if (args.Contains("--reset-selected-patch-only", StringComparer.Ordinal)) { tests = ResetSelectedPatchScenarios.All.ToArray(); }
 if (args.Contains("--comparison-endpoints-only", StringComparer.Ordinal)) { tests = ComparisonEndpointScenarios.All.ToArray(); }
 if (args.Contains("--remote-branch-deletion-only", StringComparer.Ordinal)) { tests = RemoteBranchDeletionScenarios.All.ToArray(); }

@@ -99,7 +99,7 @@ public sealed class GitLabIntegrationTests
         try
         {
             await window.OpenRepositoryAsync(f.Repository.Path); await Until(() => window.BuildServerStatusFor(sha) is not null); Pump(window);
-            ListBox history = window.GetVisualDescendants().OfType<ListBox>().Single(c => c.ItemsSource is IEnumerable<GitCommit>);
+            ListBox history = window.GetVisualDescendants().OfType<ListBox>().Single(c => c.Name == "RevisionHistory");
             object? source = history.ItemsSource, selected = history.SelectedItem;
             Control row = history.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "RevisionHistoryRow" && RevisionHistoryRow.CommitHash(c) == sha);
             history.Focus();

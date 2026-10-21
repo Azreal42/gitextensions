@@ -306,7 +306,7 @@ public sealed partial class MainWindow
 
     internal void OnGitHubActionsSelectionChanged()
     {
-        string? sha = (_commits.SelectedItem as GitCommit)?.Hash;
+        string? sha = (PrimaryHistoryItem as GitCommit)?.Hash;
         BuildServerRun? representative = BuildServerStatusFor(sha)?.Runs.SingleOrDefault();
         // The true-provider list remains the existing partial report adaptation.
         // Preserve its sibling data and explicit selection; the grid/menu/external
@@ -380,7 +380,7 @@ public sealed partial class MainWindow
     }
     private void RefreshBuildReport()
     {
-        BuildServerRun? run = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.SingleOrDefault();
+        BuildServerRun? run = BuildServerStatusFor((PrimaryHistoryItem as GitCommit)?.Hash)?.Runs.SingleOrDefault();
         SetGitHubActionsReportVisible(_showBuildResultPage && run?.PageUri is not null && !_gitHubActionsClosing);
         if (_buildReportLink is null || _buildReportLegacy is null) { return; }
         bool external = run?.ShowInBuildReportTab == false;
@@ -402,7 +402,7 @@ public sealed partial class MainWindow
         MenuItem item = new() { Name = "ShowBuildPage", Header = RevisionHeader("openBuildReportToolStripMenuItem", "View &build report in a browser"), Icon = OriginalIconImage("Integration.png") };
         item.Click += async (_, _) => await WithRevisionActionFocusAsync(ShowBuildPageAsync); _gitHubActionsShowMenus.Add(item); UpdateGitHubActionsCommands(); return item;
     }
-    internal Task ShowBuildPageAsync() => OpenGitHubActionsRunPageAsync(BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault());
+    internal Task ShowBuildPageAsync() => OpenGitHubActionsRunPageAsync(BuildServerStatusFor((PrimaryHistoryItem as GitCommit)?.Hash)?.Runs.FirstOrDefault());
     private Task OpenGitHubActionsRunPageAsync(BuildServerRun? run)
     {
         Uri? uri = run?.PageUri;
@@ -414,7 +414,7 @@ public sealed partial class MainWindow
     }
     private void UpdateGitHubActionsCommands()
     {
-        BuildServerRun? selected = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault();
+        BuildServerRun? selected = BuildServerStatusFor((PrimaryHistoryItem as GitCommit)?.Hash)?.Runs.FirstOrDefault();
         bool available = _gitHubActionsEnabled && !_gitHubActionsClosing && selected is not null && selected.PageUri is not null;
         foreach (MenuItem item in _gitHubActionsShowMenus) { item.IsEnabled = item.IsVisible = available; }
         UpdateBuildServerPullRequestCommands();

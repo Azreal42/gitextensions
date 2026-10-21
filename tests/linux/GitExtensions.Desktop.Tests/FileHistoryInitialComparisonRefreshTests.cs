@@ -143,9 +143,10 @@ public sealed class FileHistoryInitialComparisonRefreshTests
         ListBox history = Field<ListBox>(main, "RevisionHistory");
         Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(scenario.Selected));
         Assert.That(history.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(new[] { scenario.Selected }));
+        Assert.That(history.SelectedItems!.OfType<ArtificialHistoryRevision>().Single().Kind, Is.EqualTo(scenario.First));
         Assert.That(history.Items.OfType<GitCommit>().Select(commit => commit.Hash), Does.Contain(scenario.Head),
             "The selected older commit and its First side must never become a graph traversal bound.");
-        Assert.That(history.Items.Cast<object>(), Is.All.TypeOf<GitCommit>(), "Artificial endpoints must not be fabricated GitCommit rows.");
+        Assert.That(history.Items.Cast<object>().All(item => item is GitCommit or ArtificialHistoryRevision), Is.True, "Artificial endpoints are typed rows, never fabricated GitCommit rows.");
         DiffView diff = Field<DiffView>(main, "CommitDiff");
         Assert.That(diff.Text, Does.Contain("-" + firstContent).And.Contain("+SELECTED FILE").And.Not.Contain("+DESCENDANT FILE"));
         Assert.That(diff.DocumentIdentity, Does.Contain(scenario.First.ToString()).And.Contain(scenario.Selected));

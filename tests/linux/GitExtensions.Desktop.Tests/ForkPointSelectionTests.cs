@@ -148,12 +148,14 @@ public sealed class ForkPointSelectionTests
     public async Task ASelectedArtificialEndpointRemainsTypedWhileItsBaseMovesInTheSharedDiffReader(bool staged)
     {
         await using Fixture f = await Fixture.CreateAsync(artificial: true, dirty: true);
-        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision")); await f.IdleAsync();
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); await f.IdleAsync();
         GitCommandLog.Clear(); await f.NextAsync();
         GitComparison comparison = f.ActiveComparisons().Values.Single();
         Assert.That(comparison.Base, Is.EqualTo(new GitCompareRevision(f.M)));
         Assert.That(comparison.Compare.Kind, Is.EqualTo(staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree));
         Assert.That(f.Selected, Is.EqualTo(new[] { f.M }), "The other endpoint is the existing typed artificial selection, never a fake GitCommit.");
+        Assert.That(f.History.SelectedItems!.OfType<ArtificialHistoryRevision>().Single().Kind,
+            Is.EqualTo(staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree));
         Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         Assert.That(((FileContentView)Private(f.Main, "_commitContent")!).TextView.Text, Does.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
         Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.M));
@@ -167,9 +169,12 @@ public sealed class ForkPointSelectionTests
     public async Task AnUnbornArtificialSelectionHasNoInventedHeadAndNoRepositoryReadOnCtrlK(bool staged)
     {
         await using Fixture f = await Fixture.CreateAsync(artificial: true, unborn: true);
-        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision")); await f.IdleAsync();
-        Control button = Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision"); GitCommandLog.Clear();
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); await f.IdleAsync();
+        Control button = Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!; GitCommandLog.Clear();
+        object selected = f.History.SelectedItem!;
         await f.NextAsync(); Assert.That(f.Selected, Is.Empty); Assert.That(button.IsKeyboardFocusWithin, Is.True);
+        Assert.That(f.History.SelectedItem, Is.SameAs(selected));
+        Assert.That(((ArtificialHistoryRevision)selected).Kind, Is.EqualTo(staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree));
         Assert.That(GitCommandLog.Snapshot(), Is.Empty); Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
         f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
     }
@@ -339,8 +344,12 @@ public sealed class ForkPointSelectionTests
             await Until(() => main.OwnedWindows.OfType<HistoryFilterDialog>().Any()); HistoryFilterDialog filter = main.OwnedWindows.OfType<HistoryFilterDialog>().Single();
             foreach ((string name, bool value) in new[] { ("HideMergeCommits", hideMerge), ("OnlyFirstParent", firstParent), ("CurrentBranchOnly", currentOnly) })
             { CheckBox box = Field<CheckBox>(filter, name); if (box.IsChecked != value) { box.BringIntoView(); Pump(filter); PushProcessTestDriver.Pointer(box); } }
+            long lastCommandIdBeforeFilter = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
             PushProcessTestDriver.Pointer(filter.GetVisualDescendants().OfType<Button>().Single(button => button.IsDefault));
-            await Until(() => !filter.IsVisible && !ReferenceEquals(History.ItemsSource, previous) && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+            await Until(() => !filter.IsVisible && GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeFilter && entry.Command == "git log")
+                && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+            await main.WindowWorkCompletion;
+            Assert.That(History.ItemsSource, Is.SameAs(previous));
             await IdleAsync(); CaptureLoadedRows(); GitCommandLog.Clear();
         }
         internal async Task SelectAsync(string hash) { Click(hash); await IdleAsync(); }

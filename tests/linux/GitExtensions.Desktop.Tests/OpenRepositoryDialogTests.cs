@@ -340,7 +340,7 @@ public sealed class OpenRepositoryDialogTests
     {
         using Fixture f = await Fixture.CreateAsync("clean\n", "clean\n", createMerge: true);
         ListBox commits = f.Window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Items.OfType<GitCommit>().Any());
-        commits.SelectedIndex = 1; commits.Focus(); Pump(f.Window); object selected = commits.SelectedItem!;
+        commits.SelectedItem = commits.Items.OfType<GitCommit>().ElementAt(1); commits.Focus(); Pump(f.Window); object selected = commits.SelectedItem!;
         byte[] history = File.ReadAllBytes(new RepositoryHistoryStore().FilePath); GitRepository previous = Repository(f.Window);
         Press(f.Window, PhysicalKey.O, RawInputModifiers.Control);
         await Until(f.Window, () => f.Window.OwnedWindows.OfType<OpenRepositoryDialog>().Any(window => window.IsVisible));
@@ -351,7 +351,7 @@ public sealed class OpenRepositoryDialogTests
             await Until(f.Window, () => !dialog.IsVisible && commits.IsKeyboardFocusWithin);
             Assert.That(Repository(f.Window), Is.SameAs(previous)); Assert.That(commits.SelectedItem, Is.SameAs(selected));
             Assert.That(File.ReadAllBytes(new RepositoryHistoryStore().FilePath), Is.EqualTo(history));
-            Press(f.Window, PhysicalKey.ArrowDown); Assert.That(commits.SelectedIndex, Is.EqualTo(2));
+            Press(f.Window, PhysicalKey.ArrowDown); Assert.That(commits.SelectedIndex, Is.EqualTo(commits.Items.IndexOf(commits.Items.OfType<GitCommit>().ElementAt(2))));
         }
         finally { await Close(dialog, Task.CompletedTask); }
     }

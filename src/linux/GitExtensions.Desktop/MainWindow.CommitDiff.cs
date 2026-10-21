@@ -38,7 +38,7 @@ public sealed partial class MainWindow
     internal string? CommitDiffRevision => _commitDiffSource?.Commit.Hash;
     private bool IsCommitDiff => WindowKind == MainWindowKind.CommitDiff;
     private bool IsStandaloneDiff => IsRevisionLog || IsCommitDiff;
-    private GitCommit? CurrentDisplayedCommit => IsCommitDiff ? _displayedCommit : _commits.SelectedItem as GitCommit;
+    private GitCommit? CurrentDisplayedCommit => IsCommitDiff ? _displayedCommit : PrimaryHistoryItem as GitCommit;
     private GitCommit? CommitForDiff(string hash) => IsCommitDiff && _displayedCommit?.Hash == hash ? _displayedCommit : _history.FirstOrDefault(commit => commit.Hash == hash);
 
     private Control BuildCommitDiffLayout()
@@ -110,7 +110,7 @@ public sealed partial class MainWindow
         child._repositoryChanges = launcher.RepositoryChangesFor(mutationRepository);
         child._repositoryChangeSource = mutationRepository;
         OperationFocus? captured = launcher.CaptureOperationFocus();
-        GitRepository? focusRepository = captured?.Repository; string? focusCommit = captured?.CommitHash;
+        GitRepository? focusRepository = captured?.Repository; string? focusCommit = captured?.HistoryKey;
         WeakReference<Control>? focusInput = captured?.Input is Control capturedInput ? new(capturedInput) : null;
         bool hasFocusOrigin = captured is not null, restoreFocus = false;
         child.Closing += (_, _) => { restoreFocus = child.IsActive; };

@@ -132,10 +132,11 @@ public sealed class CommitDiffWindowTests
             root.KeyTextInput("Fourth"); await InputIdle(root); Assert.That(((GitCommit)history.SelectedItem!).Subject, Is.EqualTo("Fourth"));
             Assert.That(child.IsVisible, Is.True); child.Close(); await Until(() => root.ModelessCommitDiffWindows.Count == 0); await root.WindowWorkCompletion;
             // Labels retain priority over opening CommitDiff. Do not turn their current action into a commit popup.
-            Control reference = root.GetVisualDescendants().OfType<Control>().First(control => control.Name == "RevisionReferenceLabel");
+            Control reference = root.GetVisualDescendants().OfType<Control>().First(control => control.Name == "RevisionReference"
+                && control.Tag is GitReference && control.IsEffectivelyVisible);
             DoubleClick(root, reference); await InputIdle(root); Assert.That(root.ModelessCommitDiffWindows, Is.Empty);
-            PushProcessTestDriver.Pointer(Field<Button>(root, "IndexRevision")); await InputIdle(root);
-            DoubleClick(root, Field<Button>(root, "IndexRevision")); await InputIdle(root); Assert.That(root.ModelessCommitDiffWindows, Is.Empty);
+            PushProcessTestDriver.Pointer(Field<Button>(root, "IndexRevision").FindAncestorOfType<ListBoxItem>()!); await InputIdle(root);
+            DoubleClick(root, Field<Button>(root, "IndexRevision").FindAncestorOfType<ListBoxItem>()!); await InputIdle(root); Assert.That(root.ModelessCommitDiffWindows, Is.Empty);
         }
         finally { root.Close(); await root.WindowWorkCompletion; }
     }

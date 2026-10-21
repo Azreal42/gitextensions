@@ -145,7 +145,7 @@ public sealed partial class MainWindow
             string? target = artificial ? _historyGraph.CurrentHead : selected[0].Hash;
             GitCommit? row = _commits.Items.OfType<GitCommit>().FirstOrDefault(commit => commit.Hash == target);
             if (row is null) { if (target is not null) { await ShowFilteredRevisionErrorAsync(target); } return; }
-            await ApplyQuickSearchAsync(QuickSearchArtificialCount + _commits.Items.IndexOf(row));
+            await ApplyQuickSearchAsync(_commits.Items.IndexOf(row));
         }
         FocusDetail("FileTreeTab");
         await LoadVisibleRevisionPanelAsync();

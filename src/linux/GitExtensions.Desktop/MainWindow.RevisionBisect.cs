@@ -72,7 +72,8 @@ public sealed partial class MainWindow
             || !HasRevisionBisectSession(target.Repository)) { return; }
         bool commandStarted = false, refreshed = false;
         string description = verdict is null ? "git bisect reset" : "git bisect " + verdict.Value.ToString().ToLowerInvariant() + " " + target.Hash;
-        _revisionActionFocus = new(target.Repository, null, target.Hash);
+        OperationFocus historyFocus = CurrentHistoryOperationFocus(new(target.Repository, null, target.Hash, PreserveHistorySelection: true));
+        _revisionActionFocus = historyFocus;
         try
         {
             await RunAsync("Bisect", async repository =>
@@ -107,7 +108,7 @@ public sealed partial class MainWindow
         finally
         {
             if (commandStarted && !refreshed && _repository == target.Repository && !_lifetime.IsCancellationRequested)
-            { await RefreshAsync(); }
+            { await RefreshWithOperationFocusAsync(CurrentHistoryOperationFocus(historyFocus)); }
         }
     }
 }

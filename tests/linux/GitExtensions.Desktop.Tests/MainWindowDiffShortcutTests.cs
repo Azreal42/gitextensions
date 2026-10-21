@@ -60,7 +60,7 @@ public class MainWindowDiffShortcutTests
 
             main.UpdateLayout();
             ListBox history = Find<ListBox>(main, "RevisionHistory");
-            Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single().Focus(), Is.True);
+            Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single(row => row.DataContext is GitCommit).Focus(), Is.True);
             Press(main, PhysicalKey.T);
             await Until(() => main.OwnedWindows.OfType<CreateTagDialog>().Any());
             CreateTagDialog tag = main.OwnedWindows.OfType<CreateTagDialog>().Single();

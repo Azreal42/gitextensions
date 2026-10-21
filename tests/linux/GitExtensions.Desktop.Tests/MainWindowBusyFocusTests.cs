@@ -30,10 +30,10 @@ public sealed class MainWindowBusyFocusTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; ListBox history = Field<ListBox>(main, "RevisionHistory"); await Ready(main);
         GitCommit[] commits = history.Items.OfType<GitCommit>().ToArray(); int originIndex = 2;
-        ListBoxItem origin = (ListBoxItem)history.ContainerFromIndex(originIndex)!;
+        ListBoxItem origin = (ListBoxItem)history.ContainerFromItem(commits[originIndex])!;
         if (multiple)
         {
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(1))!);
             Pointer(main, origin, MouseButton.Left, RawInputModifiers.Control);
         }
         Pointer(main, origin, MouseButton.Right); await Until(() => history.ContextMenu!.IsOpen);
@@ -67,7 +67,7 @@ public sealed class MainWindowBusyFocusTests
         MainWindow main = f.Window; ListBox history = Field<ListBox>(main, "RevisionHistory"); await Ready(main);
         GitCommit[] commits = history.Items.OfType<GitCommit>().ToArray();
         int index = Array.FindIndex(commits, commit => commit.Subject == "Feature branch change");
-        Assert.That(index, Is.GreaterThan(0)); ListBoxItem origin = (ListBoxItem)history.ContainerFromIndex(index)!;
+        Assert.That(index, Is.GreaterThan(0)); ListBoxItem origin = (ListBoxItem)history.ContainerFromItem(commits[index])!;
         GitResult before = await f.Git.RunAsync(f.Repository, ["show-ref"]);
         Pointer(main, origin, MouseButton.Right); await Until(() => history.ContextMenu!.IsOpen);
         MenuItem rename = history.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionRenameBranch");
@@ -92,7 +92,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(2)!);
+        PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!);
         TaskCompletionSource firstRelease = new(), secondRelease = new();
         Task first = Scope(main, async () => { Capture(main); await firstRelease.Task; });
         Task? work = null, second = null;
@@ -103,12 +103,12 @@ public sealed class MainWindowBusyFocusTests
             await Until(() => gate.HasStarted); gate.Release(); await work; await Ready(main);
             Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(search), "A consumed context bookmark must not leak into the next operation while its original callback is still pending.");
             main.KeyTextInput("m"); Pump(main); Assert.That(search.Text, Is.EqualTo("m"));
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(1))!);
             string hash = ((GitCommit)history.SelectedItem!).Hash;
             second = Scope(main, () => secondRelease.Task);
             firstRelease.SetResult(); await first;
             object origin = Capture(main)!;
-            Assert.That(origin.GetType().GetProperty("CommitHash")!.GetValue(origin), Is.EqualTo(hash));
+            Assert.That(origin.GetType().GetProperty("HistoryKey")!.GetValue(origin), Is.EqualTo(hash));
             Assert.That(origin.GetType().GetProperty("Input")!.GetValue(origin), Is.Null, "Completing the previous scope must leave the newer context origin intact.");
             secondRelease.SetResult(); await second; PushProcessTestDriver.Pointer(search);
             object input = Capture(main)!;
@@ -126,7 +126,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem origin = (ListBoxItem)history.ContainerFromIndex(2)!; GitCommit selected = (GitCommit)origin.DataContext!;
+        ListBoxItem origin = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; GitCommit selected = (GitCommit)origin.DataContext!;
         GitResult before = await f.Git.RunAsync(f.Repository, ["show-ref"]);
         Pointer(main, origin, MouseButton.Right); await Until(() => history.ContextMenu!.IsOpen);
         MenuItem compare = history.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionCompare");
@@ -137,7 +137,7 @@ public sealed class MainWindowBusyFocusTests
         await Until(() => !child.IsBusy && child.Comparison is not null); Pump(child);
         PushProcessTestDriver.Pointer(Field<Button>(child, "CloseComparison")); await Ready(main);
         Assert.That(history.SelectedItem, Is.SameAs(selected)); Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(origin));
-        Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(1));
+        Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(1))));
         Press(main, PhysicalKey.ArrowDown); Assert.That(history.SelectedItem, Is.SameAs(selected));
         Assert.That((await f.Git.RunAsync(f.Repository, ["show-ref"])).StandardOutput, Is.EqualTo(before.StandardOutput));
     }
@@ -149,8 +149,9 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem origin = (ListBoxItem)history.ContainerFromIndex(2)!; string hash = ((GitCommit)origin.DataContext!).Hash;
+        ListBoxItem origin = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; string hash = ((GitCommit)origin.DataContext!).Hash;
         object source = history.ItemsSource!; Pointer(main, origin, MouseButton.Right); await Until(() => history.ContextMenu!.IsOpen);
+        long lastCommandIdBeforeShortcut = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
         Press(TopLevel.GetTopLevel(history.ContextMenu!)!, compare ? PhysicalKey.D : PhysicalKey.F5,
             compare ? RawInputModifiers.Control : RawInputModifiers.None);
         await Until(() => !history.ContextMenu!.IsOpen);
@@ -160,11 +161,19 @@ public sealed class MainWindowBusyFocusTests
             CompareRevisionsDialog child = main.OwnedWindows.OfType<CompareRevisionsDialog>().Single();
             await Until(() => !child.IsBusy && child.Comparison is not null); Press(child, PhysicalKey.Escape);
         }
-        else { await Until(() => !ReferenceEquals(history.ItemsSource, source)); }
+        else
+        {
+            await Until(() => GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeShortcut && entry.Command == "git log")
+                && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+            await main.WindowWorkCompletion;
+            Assert.That(history.ItemsSource, Is.SameAs(source));
+            Assert.That(GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeShortcut && entry.Command == "git log"), Is.True,
+                "The physical F5 must really refresh history, while retaining its keyed source.");
+        }
         await Ready(main); Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(hash));
         ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(history.SelectedIndex)!;
         Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(row));
-        Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(1));
+        Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(1))));
         Press(main, PhysicalKey.ArrowDown); Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(hash));
     }
 
@@ -173,7 +182,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem origin = (ListBoxItem)history.ContainerFromIndex(2)!; GitCommit selected = (GitCommit)origin.DataContext!;
+        ListBoxItem origin = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; GitCommit selected = (GitCommit)origin.DataContext!;
         object source = history.ItemsSource!;
         object? query = typeof(MainWindow).GetField("_historyQuery", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(main);
         Pointer(main, origin, MouseButton.Right); await Until(() => history.ContextMenu!.IsOpen);
@@ -188,7 +197,7 @@ public sealed class MainWindowBusyFocusTests
         await Ready(main); await Until(() => !history.ContextMenu!.IsOpen);
         Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected));
         Assert.That(typeof(MainWindow).GetField("_historyQuery", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(main), Is.SameAs(query));
-        Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(1), "The first Up after the context View/Ctrl+I modal must navigate commits.");
+        Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(1))), "The first Up after the context View/Ctrl+I modal must navigate commits.");
         Assert.That(history.IsKeyboardFocusWithin, Is.True);
         Press(main, PhysicalKey.ArrowDown); Assert.That(history.SelectedItem, Is.SameAs(selected));
     }
@@ -199,8 +208,14 @@ public sealed class MainWindowBusyFocusTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); MainWindow main = f.Window;
         ListBox history = Field<ListBox>(main, "RevisionHistory"); await Ready(main);
         GitCommit selected = history.Items.OfType<GitCommit>().ElementAt(2); object source = history.ItemsSource!;
-        PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(2)!); Press(main, PhysicalKey.F5);
-        await Until(() => !ReferenceEquals(history.ItemsSource, source)); await Ready(main); Log(main, "after real F5");
+        PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!);
+        long lastCommandIdBeforeRefresh = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0; Press(main, PhysicalKey.F5);
+        await Until(() => GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeRefresh && entry.Command == "git log")
+            && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+        await main.WindowWorkCompletion; await Ready(main); Log(main, "after real F5");
+        Assert.That(history.ItemsSource, Is.SameAs(source));
+        Assert.That(GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeRefresh && entry.Command == "git log"), Is.True);
+        Assert.That(history.SelectedItem, Is.SameAs(selected), "An unchanged payload keeps the published commit object after the real F5.");
         Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(selected.Hash));
         ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(history.SelectedIndex)!;
         Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(row));
@@ -229,7 +244,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(2)!);
+        PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!);
         Task work = Run(main, _ => gate.Repository.GetStatusAsync(Token(main)));
         try
         {
@@ -247,7 +262,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(2)!);
+        PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!);
         Task work = Run(main, _ => gate.Repository.GetStatusAsync(Token(main))); GoToCommitDialog? child = null; Task? shown = null;
         try
         {
@@ -266,7 +281,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(2)!; PushProcessTestDriver.Pointer(row);
+        ListBoxItem row = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; PushProcessTestDriver.Pointer(row);
         Task work = Run(main, async _ =>
         {
             await gate.Repository.GetStatusAsync(Token(main));
@@ -285,14 +300,14 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(2)!; PushProcessTestDriver.Pointer(row);
+        ListBoxItem row = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; PushProcessTestDriver.Pointer(row);
         Task work = Run(main, _ => gate.Repository.GetStatusAsync(Token(main)));
         try
         {
             await Until(() => gate.HasStarted); int pid = gate.Pid;
             PushProcessTestDriver.Pointer(Field<Button>(main, "BrowseCancelOperation")); await work; await Ready(main);
             Assert.That(Alive(pid), Is.False); Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(row));
-            Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(1));
+            Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(1))));
         }
         finally { gate.Release(); await work; }
     }
@@ -302,7 +317,7 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(2)!; PushProcessTestDriver.Pointer(row);
+        ListBoxItem row = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; PushProcessTestDriver.Pointer(row);
         Task work = Run(main, _ => gate.Repository.GetStatusAsync(Token(main)));
         try
         {
@@ -319,14 +334,14 @@ public sealed class MainWindowBusyFocusTests
     {
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true); using Gate gate = new(f);
         MainWindow main = f.Window; await Ready(main); ListBox history = Field<ListBox>(main, "RevisionHistory");
-        ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(2)!; PushProcessTestDriver.Pointer(row);
+        ListBoxItem row = (ListBoxItem)history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(2))!; PushProcessTestDriver.Pointer(row);
         Task work = Run(main, async _ => { await gate.Repository.GetStatusAsync(Token(main)); throw new InvalidOperationException("Fixture failed operation"); });
         try
         {
             await Until(() => gate.HasStarted); gate.Release(); await work; await Ready(main);
             Assert.That(((TextBox)typeof(MainWindow).GetField("_output", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(main)!).Text,
                 Does.Contain("Fixture failed operation"), "Panel-read resumption may clear LastException, but the actual caught failure remains in command output.");
-            Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(row)); Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(1));
+            Assert.That(main.FocusManager!.GetFocusedElement(), Is.SameAs(row)); Press(main, PhysicalKey.ArrowUp); Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(1))));
         }
         finally { gate.Release(); await work; }
     }

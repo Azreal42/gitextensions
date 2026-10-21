@@ -132,9 +132,7 @@ public sealed partial class MainWindow
             allParents.IsChecked = _revisionDiffPreferences.ShowDiffForAllParents;
             omit.IsChecked = _revisionDiffPreferences.OmitUninterestingDiff;
         };
-        _revisionFilesView.Toolbar.Children.Insert(1, RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", () =>
-            _selectedArtificialHistoryRevision is { } artificial ? ReadArtificialHistoryRevisionAsync(artificial)
-                : CurrentDisplayedCommit is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask));
+        _revisionFilesView.Toolbar.Children.Insert(1, RevisionDiffIconButton("RevisionDiffRefresh", "Refresh", "ReloadRevisions.png", ReadCurrentRevisionDiffAsync));
         _revisionFilesView.DisplayChanged += async (_, _) =>
         {
             if (_loadingCommitFiles || _refreshing || _busy || _repository is null) { return; }
@@ -202,11 +200,18 @@ public sealed partial class MainWindow
         if (_busy) { return; }
         _revisionDiffPreferences = preferences;
         _revisionDiffPreferencesStore.Save(preferences);
-        if (_selectedArtificialHistoryRevision is { } artificial) { await ReadArtificialHistoryRevisionAsync(artificial); }
-        else if (CurrentDisplayedCommit is GitCommit commit)
+        await ReadCurrentRevisionDiffAsync();
+    }
+
+    private Task ReadCurrentRevisionDiffAsync()
+    {
+        if (UsesArtificialInitialComparison && _browseInitialComparison is { } pair)
         {
-            await ReadCommitFilesAsync(commit.Hash);
+            return ReadBrowserAsync(_revisionRead, "File diff", (repository, token) =>
+                LoadArtificialHistoryComparisonAsync(repository, pair.First, pair.Selected, token));
         }
+        return _selectedArtificialHistoryRevision is { } artificial ? ReadArtificialHistoryRevisionAsync(artificial)
+            : CurrentDisplayedCommit is GitCommit commit ? ReadCommitFilesAsync(commit.Hash) : Task.CompletedTask;
     }
 
     private void ClearRevisionDiff()

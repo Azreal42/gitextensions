@@ -86,6 +86,8 @@ public class RangeDiffWorkflowTests
         Invoke(RangeAction(main)); await RangeIdleAsync(main);
         GitRangeDiffComparison comparison = SelectedRange(main).RangeDiff!;
         Assert.That(comparison.SelectionCount, Is.EqualTo(3));
+        Assert.That(comparison.First.TipRevision, Is.EqualTo(fixture.FirstTip));
+        Assert.That(comparison.Second.TipRevision, Is.EqualTo(fixture.SecondTip));
         Assert.That(comparison.First.BaseRevision, Is.EqualTo(fixture.EarlierBase));
         Assert.That(comparison.Second.BaseRevision, Is.EqualTo(fixture.EarlierBase));
         Assert.That(comparison.CommonAncestor, Is.EqualTo(fixture.EarlierBase));
@@ -94,7 +96,8 @@ public class RangeDiffWorkflowTests
         Assert.That(Viewer(main).Text, Is.EqualTo(await RawRangeAsync(fixture, comparison)));
         Assert.That(Viewer(main).Text, Does.Contain("Shared change before the two series"),
             "Using only tip...tip would silently omit the explicitly selected earlier base.");
-        Assert.That((History(main).SelectedItem as GitCommit)?.Hash, Is.EqualTo(fixture.SecondTip));
+        Assert.That(FocusedRevisionHash(main), Is.EqualTo(fixture.SecondTip));
+        Assert.That(GroupNodes(main).Select(node => node.Tag).OfType<GitRevisionDiffGroup>().Single(group => group.Kind == GitRevisionDiffGroupKind.Comparison).Revision, Is.EqualTo(fixture.SecondTip));
         await AssertRangeRefreshAsync(main, fixture);
     }
 
@@ -116,8 +119,9 @@ public class RangeDiffWorkflowTests
         Assert.That(comparison.Second.CommitCount, Is.EqualTo(1));
         Assert.That(Viewer(main).Text, Is.EqualTo(await RawRangeAsync(fixture, comparison)));
         Assert.That(Viewer(main).Text, Does.Contain("Refine the literal file").And.Not.Contain("Implement the option"));
-        Assert.That((History(main).SelectedItem as GitCommit)?.Hash, Is.EqualTo(fixture.FirstTip));
-        Assert.That(History(main).SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash),
+        Assert.That(FocusedRevisionHash(main), Is.EqualTo(fixture.FirstTip));
+        Assert.That(GroupNodes(main).Select(node => node.Tag).OfType<GitRevisionDiffGroup>().Single(group => group.Kind == GitRevisionDiffGroupKind.Comparison).Revision, Is.EqualTo(fixture.FirstTip));
+        Assert.That(CanonicalSelection(main),
             Is.EqualTo(new[] { fixture.FirstTip, fixture.FirstBase, fixture.SecondTip, fixture.SecondBase }));
         await AssertRangeRefreshAsync(main, fixture);
     }
@@ -199,8 +203,11 @@ public class RangeDiffWorkflowTests
         Invoke(RangeAction(main)); await RangeIdleAsync(main);
         string[] selected = History(main).SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
         GitRangeDiffComparison before = SelectedRange(main).RangeDiff!;
+        long beforeRefresh = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
         main.KeyPressQwerty(PhysicalKey.F5, RawInputModifiers.None);
         main.KeyReleaseQwerty(PhysicalKey.F5, RawInputModifiers.None);
+        await UntilAsync(() => GitCommandLog.Snapshot().Any(entry => entry.Id > beforeRefresh
+            && entry.Command == "git log"));
         await RangeIdleAsync(main);
         Assert.That(SelectedRange(main).RangeDiff, Is.EqualTo(before));
         Assert.That(History(main).SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(selected));
@@ -236,25 +243,55 @@ public class RangeDiffWorkflowTests
     private static void Invoke(MenuItem menu) => menu.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
     private static async Task SelectAsync(MainWindow main, params string[] revisions)
     {
-        ListBox history = History(main);
-        history.SelectedItems!.Clear(); await MainIdleAsync(main);
-        history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == revisions[0]);
-        await MainIdleAsync(main);
-        foreach (string revision in revisions.Skip(1))
+        ListBox history = History(main); object source = history.ItemsSource!;
+        GitCommit[] objects = history.Items.OfType<GitCommit>().ToArray();
+        TextBox filter = Field<TextBox>(main, "RevisionQuickFilter"); string? draft = filter.Text;
+        // Callers supply the native recent-first business order B,A / B,BASE,A /
+        // B,baseB,A,baseA. Real chronological clicks must therefore run backward;
+        // B is naturally the final click and the current cell, without a repair.
+        foreach ((string revision, int index) in revisions.Reverse().Select((hash, index) => (hash, index)))
         {
-            history.SelectedItems.Add(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == revision));
+            GitCommit commit = history.Items.OfType<GitCommit>().Single(item => item.Hash == revision);
+            history.ScrollIntoView(commit); main.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+            Control row = (Control)history.ContainerFromItem(commit)!;
+            Assert.That(row, Is.Not.Null); Assert.That(row.IsEffectivelyVisible && row.IsEffectivelyEnabled, Is.True);
+            Point point = row.TranslatePoint(new Point(Math.Min(180, row.Bounds.Width / 2), row.Bounds.Height / 2), main)!.Value;
+            Assert.That(new Rect(default, main.ClientSize).Contains(point), Is.True);
+            Assert.That((main.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(row), Is.True);
+            var modifiers = index == 0 ? RawInputModifiers.None : RawInputModifiers.Control;
+            main.MouseMove(point); main.MouseDown(point, MouseButton.Left, modifiers); main.MouseUp(point, MouseButton.Left, modifiers);
             await MainIdleAsync(main);
+            Assert.That(FocusedRevisionHash(main), Is.EqualTo(revision), "The actual last clicked cell owns focus before reading its comparison.");
         }
         // BelowList initially presents Commit; inspect diff controls only after the
         // same explicit tab selection a user would perform.
         Details(main).SelectedItem = Details(main).Items.OfType<TabItem>().Single(tab => tab.Name == "DiffTab");
-        main.UpdateLayout();
-        Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(revisions[0]));
+        await MainIdleAsync(main); main.UpdateLayout();
+        Assert.That(FocusedRevisionHash(main), Is.EqualTo(revisions[0]));
+        Assert.That(CanonicalSelection(main), Is.EqualTo(revisions));
+        Assert.That(history.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EquivalentTo(revisions));
+        Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(filter.Text, Is.EqualTo(draft));
+        foreach (GitCommit commit in objects) { Assert.That(history.Items.OfType<GitCommit>().Single(item => item.Hash == commit.Hash), Is.SameAs(commit)); }
+    }
+    private static string? FocusedRevisionHash(MainWindow main)
+    {
+        ListBox history = History(main);
+        ListBoxItem? row = (main.FocusManager?.GetFocusedElement() as Visual)?.GetSelfAndVisualAncestors().OfType<ListBoxItem>()
+            .FirstOrDefault(item => ReferenceEquals(item.FindAncestorOfType<ListBox>(), history));
+        return (row?.Content as GitCommit)?.Hash;
+    }
+    private static string[] CanonicalSelection(MainWindow main)
+    {
+        // Pure observation of the shared typed projection: no mutation or input synthesis.
+        System.Reflection.MethodInfo method = typeof(MainWindow).GetMethod("SelectedHistoryItems",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        return ((object[])method.Invoke(main, null)!).OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
     }
     private static async Task MainIdleAsync(MainWindow main)
     {
         await Task.Delay(25);
-        await UntilAsync(() => !main.IsBusy);
+        await UntilAsync(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+        await main.WindowWorkCompletion;
         Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
     }
     private static async Task RangeIdleAsync(MainWindow main)
@@ -266,13 +303,21 @@ public class RangeDiffWorkflowTests
     private static async Task AssertRangeRefreshAsync(MainWindow main, SeriesFixture fixture)
     {
         GitRangeDiffComparison comparison = SelectedRange(main).RangeDiff!;
-        string primary = ((GitCommit)History(main).SelectedItem!).Hash;
+        string? primary = FocusedRevisionHash(main);
+        Assert.That(primary, Is.Not.Null, "The current history cell remains the real comparison target before F5.");
+        string[] canonical = CanonicalSelection(main);
+        object source = History(main).ItemsSource!;
         string[] order = History(main).SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
+        long beforeRefresh = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
         main.KeyPressQwerty(PhysicalKey.F5, RawInputModifiers.None);
         main.KeyReleaseQwerty(PhysicalKey.F5, RawInputModifiers.None);
+        await UntilAsync(() => GitCommandLog.Snapshot().Any(entry => entry.Id > beforeRefresh
+            && entry.Command == "git log"));
         await RangeIdleAsync(main);
         Assert.That(SelectedRange(main).RangeDiff, Is.EqualTo(comparison));
-        Assert.That((History(main).SelectedItem as GitCommit)?.Hash, Is.EqualTo(primary));
+        Assert.That(FocusedRevisionHash(main), Is.EqualTo(primary));
+        Assert.That(CanonicalSelection(main), Is.EqualTo(canonical));
+        Assert.That(History(main).ItemsSource, Is.SameAs(source));
         Assert.That(History(main).SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(order));
         Assert.That(GroupNodes(main), Does.Contain(Files(main).SelectedItem), "The selected range must belong to the refreshed tree.");
         Assert.That(Viewer(main).Text, Is.EqualTo(await RawRangeAsync(fixture, comparison)));

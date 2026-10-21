@@ -132,8 +132,6 @@ internal sealed class ExportRevisionList : UserControl
             if (item is ArtificialHistoryRevision artificial)
             {
                 row = ArtificialRevisionRows.CreateItem(artificial, _translations.Translate, _view, _showArtificialStatus);
-                Button label = row.GetVisualDescendants().OfType<Button>().Single();
-                label.Click += (_, _) => { Rows.SelectedItem = artificial; Rows.ScrollIntoView(artificial); Rows.Focus(); };
             }
             else { row = RevisionHistoryRow.Create((GitCommit)item!, _references, _view.RelativeDate); }
             row.Tag = item;

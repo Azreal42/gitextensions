@@ -77,7 +77,9 @@ public sealed partial class MainWindow
                     metadata?.Staged switch { GitFileStagedStatus.Index => FileMenuStage.Index, GitFileStagedStatus.WorkTree => FileMenuStage.WorkingTree, GitFileStagedStatus.Unknown => FileMenuStage.Unknown, _ => FileMenuStage.None },
                     IsTracked: metadata?.IsTracked == true, IsSubmodule: metadata?.IsSubmodule == true,
                     IsSkipWorktree: metadata?.IsSkipWorktree == true, IsAssumeUnchanged: metadata?.IsAssumeUnchanged == true,
-                    FirstIsParent: comparison is not null ? comparison.Compare.Kind is GitCompareRevisionKind.Index or GitCompareRevisionKind.WorkingTree
+                    FirstIsParent: comparison is not null ? comparison.Compare.Kind == GitCompareRevisionKind.Commit
+                        ? comparison.Base.Kind == GitCompareRevisionKind.Commit && CommitForDiff(comparison.Compare.Revision)?.Parents.Contains(comparison.Base.Revision) == true
+                        : comparison.Base == ArtificialFileMenuParent(comparison.Compare)
                         : item.Group.BaseRevision is string firstRevision && CommitForDiff(item.Group.Revision)?.Parents.Contains(firstRevision) == true)
                     { SubmoduleSelection = metadata?.SubmoduleSelection, SubmoduleSelectionError = metadata?.SubmoduleSelectionError };
             }).ToArray();
@@ -105,6 +107,13 @@ public sealed partial class MainWindow
         return new(repository, leaves, copy, folder, isFileTree, displayOnly, identity, focused);
     }
 
+    private GitCompareRevision? ArtificialFileMenuParent(GitCompareRevision second) => second.Kind switch
+    {
+        GitCompareRevisionKind.WorkingTree => new("", GitCompareRevisionKind.Index),
+        GitCompareRevisionKind.Index when _historyGraph.CurrentHead is { } head => new(head),
+        _ => null // Unknown/unborn is not permission to substitute the comparison's arbitrary base.
+    };
+
     private async Task<IReadOnlyDictionary<GitRevisionDiffGroup, IReadOnlyList<GitComparisonFileMetadata>>> ReadFileMenuMetadataAsync(
         GitRepository repository, IReadOnlyList<GitRevisionDiffGroup> groups, CancellationToken token,
         IReadOnlyDictionary<GitRevisionDiffGroup, GitComparison>? comparisons = null)
@@ -115,7 +124,7 @@ public sealed partial class MainWindow
         {
             if (group.Kind is GitRevisionDiffGroupKind.RangeDiff or GitRevisionDiffGroupKind.Combined || group.Files.Count == 0) { continue; }
             GitComparison comparison = comparisons?.GetValueOrDefault(group) ?? new(new(group.BaseRevision ?? group.Revision), new(group.Revision), group.Files, []);
-            GitCompareRevision? parent = comparisons is not null && comparison.Compare.Kind == GitCompareRevisionKind.Index ? comparison.Base : null;
+            GitCompareRevision? parent = comparisons is not null ? ArtificialFileMenuParent(comparison.Compare) : null;
             metadata.Add(group, await repository.GetComparisonFileMetadataAsync(comparison, parent, token));
         }
         token.ThrowIfCancellationRequested(); return metadata;

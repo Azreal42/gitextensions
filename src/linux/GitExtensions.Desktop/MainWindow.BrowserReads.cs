@@ -23,10 +23,8 @@ public sealed partial class MainWindow
     private Window? _closingCommitInfoOwner;
     internal Task CommitInformationCompletion => _commitInfo.Completion;
     private string? _loadedDiffSelection;
-    private string RevisionSelectionIdentity => IsCommitDiff ? "commit:" + _commitDiffSource!.Commit.Hash : _browseInitialComparison is { } pair
-        ? string.Join('\0', pair.First.Kind, pair.First.Revision, pair.Selected.Kind, pair.Selected.Revision)
-        : _selectedArtificialHistoryRevision is { } artificial ? artificial.Kind + ":" + artificial.Revision
-        : string.Join('\0', SelectedRevisionDiffCommits().Select(commit => commit.Hash));
+    private string RevisionSelectionIdentity => IsCommitDiff ? "commit:" + _commitDiffSource!.Commit.Hash
+        : string.Join('\0', SelectedHistoryRevisions().Select(source => source.Kind + ":" + source.Revision));
 
     private void CancelRevisionReads()
     {
@@ -89,8 +87,7 @@ public sealed partial class MainWindow
             Task initialInformation = LoadVisibleCommitInformationAsync();
             Task initialPanel = (_tabs.SelectedItem as TabItem)?.Name switch
             {
-                "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadBrowserAsync(_revisionRead, "File diff",
-                    (repository, token) => LoadArtificialHistoryComparisonAsync(repository, pair.First, pair.Selected, token)),
+                "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadCurrentRevisionDiffAsync(),
                 "FileTreeTab" => ReadBrowserAsync(_treeRead, "File tree",
                     (repository, token) => LoadComparisonFileTreeAsync(repository, pair.Selected, token)),
                 _ => Task.CompletedTask
@@ -101,8 +98,7 @@ public sealed partial class MainWindow
         {
             return (_tabs.SelectedItem as TabItem)?.Name switch
             {
-                "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadBrowserAsync(_revisionRead, "File diff",
-                    (repository, token) => LoadArtificialHistoryRevisionAsync(repository, source, token)),
+                "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadCurrentRevisionDiffAsync(),
                 "FileTreeTab" => ReadBrowserAsync(_treeRead, "File tree",
                     (repository, token) => LoadComparisonFileTreeAsync(repository, source, token)),
                 _ => Task.CompletedTask
@@ -112,7 +108,7 @@ public sealed partial class MainWindow
         Task information = LoadVisibleCommitInformationAsync();
         Task panel = (_tabs.SelectedItem as TabItem)?.Name switch
         {
-            "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadCommitFilesAsync(commit.Hash),
+            "DiffTab" when _loadedDiffSelection != RevisionSelectionIdentity => ReadCurrentRevisionDiffAsync(),
             "FileTreeTab" => ReadBrowserAsync(_treeRead, "File tree", async (repository, token) =>
             {
                 if (_fileTreeRepository != repository || _fileTreeRevision != commit.Hash)
@@ -132,7 +128,7 @@ public sealed partial class MainWindow
                 _gpgInfo.Text = T("Loading data");
                 GitGpgVerification verification = await repository.ReadGpgVerificationAsync(commit.Hash, token);
                 token.ThrowIfCancellationRequested();
-                if (!ReferenceEquals(_repository, repository) || _commits.SelectedItem is not GitCommit selected || selected.Hash != commit.Hash) { return; }
+                if (!ReferenceEquals(_repository, repository) || PrimaryHistoryItem is not GitCommit selected || selected.Hash != commit.Hash) { return; }
                 _gpgInfo.Text = GitGpgPresentation.Format(verification, T);
             }),
             _ => Task.CompletedTask

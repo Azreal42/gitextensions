@@ -37,7 +37,7 @@ public sealed class ModelessCommitDiffMutationTests
         Assert.That(history.Items.Cast<object>().Zip(rows).All(pair => ReferenceEquals(pair.First, pair.Second)), Is.True);
         Assert.That(History(host.Root).ItemsSource, Is.SameAs(foreignSource)); AssertNoGlobalReads();
         Assert.That(history.IsKeyboardFocusWithin, Is.True);
-        GitCommit next = history.Items.OfType<GitCommit>().ElementAt(history.Items.IndexOf(selected) + 1);
+        GitCommit next = (GitCommit)history.Items[history.Items.IndexOf(selected) + 1]!;
         Press(host.Launcher, PhysicalKey.ArrowDown); await InputIdle(host.Launcher);
         Assert.That(history.SelectedItem, Is.SameAs(next)); AssertNoGlobalReads();
     }
@@ -54,7 +54,7 @@ public sealed class ModelessCommitDiffMutationTests
         Assert.That(File.ReadAllText(git.File), Is.EqualTo("third\n")); Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
         await ReceiverRefresh(host.Launcher, source);
         Assert.That(child.IsVisible, Is.True, "Publication follows the real mutating operation's drainage; the independent reader need not close.");
-        Assert.That(History(host.Launcher).ItemsSource, Is.Not.SameAs(source));
+        Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source));
         Assert.That(History(host.Root).ItemsSource, Is.SameAs(otherSource), "The lifetime root is not a second mutation recipient.");
         AssertOneHistoryRefresh(); Assert.That(Private<FileStatusListView>(host.Launcher, "_changesFilesView").Entries, Is.Empty);
         await CloseWithoutAnotherRefresh(host, child);
@@ -88,9 +88,12 @@ public sealed class ModelessCommitDiffMutationTests
             }
             Assert.That(dialog.HasRepositoryChanges, Is.False); Assert.That(dialog.MayHaveRepositoryChanges, Is.True);
             await ReceiverRefresh(host.Launcher, source);
+            Assert.That(host.Root.ModelessCommitDiffWindows, Has.Count.EqualTo(1));
+            Assert.That(host.Root.WindowWorkCompletion.IsCompleted, Is.False,
+                "The live independent child retains the root session lease; this does not mean the receiver's refresh is still running.");
             Assert.That(child.IsVisible, Is.True, "Failure/cancellation still publishes the admitted effect after the owned operation has drained.");
             Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
-            Assert.That(History(host.Launcher).ItemsSource, Is.Not.SameAs(source)); AssertOneHistoryRefresh();
+            Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source)); AssertOneHistoryRefresh();
             await CloseWithoutAnotherRefresh(host, child);
             Assert.That((await git.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo(EffectDialog.EffectText));
         }
@@ -146,7 +149,7 @@ public sealed class ModelessCommitDiffMutationTests
             {
                 gate.Release(); await busy; await host.Drained(child);
                 Assert.That(operation.IsCompleted, Is.True); Assert.That(gate.Retired, Is.True);
-                Assert.That(History(host.Launcher).ItemsSource, Is.Not.SameAs(source)); AssertOneHistoryRefresh();
+                Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source)); AssertOneHistoryRefresh();
             }
             Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True, "Cancellation of UI publication never erases the child's admitted receipt.");
         }
@@ -179,7 +182,7 @@ public sealed class ModelessCommitDiffMutationTests
             {
                 Assert.That(host.Root.IsVisible, Is.False); Assert.That(History(host.Root).ItemsSource, Is.SameAs(source)); AssertNoGlobalReads();
             }
-            else { Assert.That(host.Root.IsVisible, Is.True); Assert.That(History(host.Root).ItemsSource, Is.Not.SameAs(source)); AssertOneHistoryRefresh(); }
+            else { Assert.That(host.Root.IsVisible, Is.True); Assert.That(History(host.Root).ItemsSource, Is.SameAs(source)); AssertOneHistoryRefresh(); }
             Assert.That((await git.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo(EffectDialog.EffectText));
         }
         finally { tail.TrySetResult(); }
@@ -224,8 +227,13 @@ public sealed class ModelessCommitDiffMutationTests
 
     private static async Task ReceiverRefresh(MainWindow receiver, object? previousSource)
     {
-        await Until(receiver, () => !receiver.IsBusy && !ReferenceEquals(History(receiver).ItemsSource, previousSource));
+        // A root Browse also owns every independent CommitDiff session lease.
+        // Wait for this actual repository operation, then drain the full root
+        // lifetime only after the child closes in Host.Drained.
+        await Until(receiver, () => GitCommandLog.Snapshot().Any(entry => entry.Command == "git log")
+            && !receiver.IsBusy && Private<Task>(receiver, "_repositoryOperationCompletion").IsCompleted);
         await Private<Task>(receiver, "_repositoryOperationCompletion");
+        Assert.That(History(receiver).ItemsSource, Is.SameAs(previousSource));
     }
     private static async Task CloseWithoutAnotherRefresh(Host host, MainWindow child)
     {
@@ -361,6 +369,8 @@ public sealed class ModelessCommitDiffMutationTests
                     return stat[(stat.LastIndexOf(')') + 2)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[19] != _identity.Value.Start;
                 }
                 catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return true; }
+                // A procfs task may vanish after open; .NET Unix exposes ESRCH as raw errno 3.
+                catch (IOException error) when (OperatingSystem.IsLinux() && error.HResult == 3) { return true; }
             }
         }
         internal void Release() => File.WriteAllText(_release, "release");

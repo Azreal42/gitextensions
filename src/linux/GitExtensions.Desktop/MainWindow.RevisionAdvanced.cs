@@ -43,14 +43,14 @@ public sealed partial class MainWindow
 
     private void RefreshRevisionAdvancedMenu()
     {
-        bool available = !_busy && _repository is { IsBare: false } && _commits.SelectedItem is GitCommit;
+        bool available = !_busy && _repository is { IsBare: false } && PrimaryHistoryItem is GitCommit;
         if (_revisionAdvancedMenu is not null) { _revisionAdvancedMenu.IsEnabled = available; }
         foreach (MenuItem item in _revisionAdvancedActions) { item.IsEnabled = available; }
     }
 
     private async Task OpenTargetedCommitAsync(TargetedCommitKind kind)
     {
-        if (_busy || _repository is not { IsBare: false } repository || _commits.SelectedItem is not GitCommit selected) { return; }
+        if (_busy || _repository is not { IsBare: false } repository || PrimaryHistoryItem is not GitCommit selected) { return; }
         Window owner = WorkflowOwner;
         CommitDialog dialog = new(repository,
             afterSubmoduleUpdateAsync: (window, token) => AfterSubmoduleUpdateAsync(repository, window, token),
@@ -72,7 +72,7 @@ public sealed partial class MainWindow
 
     private async Task EditRevisionCommitAsync(GitRebaseAction action)
     {
-        if (_busy || _repository is not { IsBare: false } repository || _commits.SelectedItem is not GitCommit selected) { return; }
+        if (_busy || _repository is not { IsBare: false } repository || PrimaryHistoryItem is not GitCommit selected) { return; }
         if (!await ConfirmHistoryRebaseAsync(interactive: true)) { return; }
         if (_repository != repository || _busy || _lifetime.IsCancellationRequested) { return; }
         try

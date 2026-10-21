@@ -58,16 +58,63 @@ public sealed partial class MainWindow
         HistoryViewPreferences desired = change(_historyView);
         TrackColorsViewChange(_historyView, desired);
         _historyView = desired;
-        if (showArtificial != _historyView.ShowArtificialCommits) { _parentChildNavigation?.Clear(); }
+        bool artificialChanged = showArtificial != _historyView.ShowArtificialCommits;
+        if (artificialChanged) { _parentChildNavigation?.Clear(); }
         _historyQuery = _historyQuery with { Reflog = _historyView.ShowReflog };
         if (reload && _repository is not null) { await RefreshAsync(); }
+        else if (artificialChanged) { await RepublishArtificialHistoryVisibilityAsync(); }
         ApplyHistoryViewPresentation(); RefreshHistoryMenuStates();
+    }
+
+    private async Task RepublishArtificialHistoryVisibilityAsync()
+    {
+        if (_repository is null || _historyStatus is not GitStatus status || _lifetime.IsCancellationRequested) { return; }
+        using WindowWork work = TrackWindowWork();
+        OperationFocus? focus = CaptureOperationFocus();
+        HistoryBookmark bookmark = CaptureHistoryBookmark();
+        string selection = RevisionSelectionIdentity;
+        bool refreshing = _refreshing;
+        try
+        {
+            _refreshing = true;
+            try
+            {
+                PublishHistorySnapshot(_history, status, _navigationReferences, _historyQuery, _historySnapshotAncestors,
+                    _historySnapshotAncestors, bookmark, changedRepository: false, requested: null, first: null, retainedComparison: _browseInitialComparison);
+                if (bookmark.Anchor is not null && HistoryItem(bookmark.Anchor) is null)
+                { _commits.Selection.AnchorIndex = PrimaryHistoryItem is { } current ? _commits.Items.IndexOf(current) : -1; }
+                if (focus?.HistoryKey is string key && HistoryItem(key) is null)
+                { focus = focus with { Input = _commits, HistoryKey = PrimaryHistoryItem is { } current ? HistoryRevisionItems.Key(current) : null }; }
+                if (PrimaryHistoryItem is null && selection != RevisionSelectionIdentity)
+                {
+                    // The View menu can own focus while its last history row is
+                    // removed. Return to the empty grid, not that dismissed menu.
+                    if (focus is null || focus.Input is MenuItem)
+                    { focus = new OperationFocus(_repository, _commits, HistoryKey: null); }
+                    // Unborn history can consist of only the two artificial rows. Once hidden,
+                    // no old diff, tree or grep source may continue representing one of them.
+                    ClearRevisionDiff(); ClearRevisionPreview();
+                    _diff.Text = status.IsUnborn ? "This repository has no commits yet." : T("No commits match the current history filters.");
+                    CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;
+                    _fileTreeSource = null; _fileTreeRevision = null; _fileTreeRepository = null;
+                    _allFileTreePaths = []; _fileTreeEntries = new Dictionary<string, GitComparisonTreeEntry>();
+                    UpdateFileTreeEntries([]); ShowSelectedTreeFolder();
+                }
+            }
+            finally { _refreshing = refreshing; }
+            if (selection != RevisionSelectionIdentity)
+            { _historySelectionWork = PublishHistorySelectionChange(); await _historySelectionWork; }
+        }
+        finally
+        {
+            // Use the existing guarded restoration after a real popup has dismissed.
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => RestoreOperationFocus(focus), Avalonia.Threading.DispatcherPriority.Loaded);
+        }
     }
 
     private void ApplyHistoryViewPresentation()
     {
         _historyGraph.IsVisible = _historyView.ShowGraph;
-        if (_virtualRevisions is not null) { _virtualRevisions.IsVisible = _historyView.ShowArtificialCommits && _repository?.IsBare != true; }
         _historyGraph.References = HistoryViewReferences(_navigationReferences);
         ApplyHistoryToolbarVisibility();
         UpdateHistoryPresentation();

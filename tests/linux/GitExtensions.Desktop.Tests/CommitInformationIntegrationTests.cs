@@ -31,11 +31,11 @@ public sealed class CommitInformationIntegrationTests
         CommitInformationView information = Field<CommitInformationView>(main, "CommitInformation");
         PushProcessTestDriver.Pointer(Field<TabItem>(main, "DiffTab")); await MainIdle(main);
         ListBox history = Field<ListBox>(main, "RevisionHistory"); object source = history.ItemsSource!;
-        GitCommit selected = (GitCommit)history.Items[1]!;
+        GitCommit selected = history.Items.OfType<GitCommit>().ElementAt(1);
         using MetadataGate gate = new(f); gate.Arm(selected.Hash); SetRepository(main, gate.Repository);
         try
         {
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(selected)!);
             await MainIdle(main);
             Assert.That(gate.Started, Is.False, "A hidden lower CommitInfo tab must not start its supplementary metadata read.");
             Assert.That(information.MessageControl.Text, Does.Contain(selected.Subject), "Cached metadata is immediate even while the panel is hidden.");
@@ -58,13 +58,13 @@ public sealed class CommitInformationIntegrationTests
         MainWindow main = f.Window; await MainIdle(main);
         ListBox history = Field<ListBox>(main, "RevisionHistory");
         CommitInformationView information = Field<CommitInformationView>(main, "CommitInformation");
-        GitCommit first = (GitCommit)history.Items[1]!, last = (GitCommit)history.Items[2]!;
+        GitCommit first = history.Items.OfType<GitCommit>().ElementAt(1), last = history.Items.OfType<GitCommit>().ElementAt(2);
         object source = history.ItemsSource!;
         using MetadataGate gate = new(f); gate.Arm(first.Hash); SetRepository(main, gate.Repository);
         GitCommandLog.Clear();
         try
         {
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!); await Until(() => gate.Started);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(first)!); await Until(() => gate.Started);
             int pid = gate.Pid;
             Assert.That(history.IsKeyboardFocusWithin, Is.True);
             Assert.That(history.IsEffectivelyEnabled, Is.True);
@@ -124,12 +124,12 @@ public sealed class CommitInformationIntegrationTests
         PushProcessTestDriver.Pointer(Field<TabItem>(main, "CommitInfoTab")); await MainIdle(main);
         ListBox history = Field<ListBox>(main, "RevisionHistory");
         CommitInformationView information = Field<CommitInformationView>(main, "CommitInformation");
-        GitCommit first = (GitCommit)history.Items[1]!, last = (GitCommit)history.Items[2]!;
+        GitCommit first = history.Items.OfType<GitCommit>().ElementAt(1), last = history.Items.OfType<GitCommit>().ElementAt(2);
         object source = history.ItemsSource!;
         using MetadataGate gate = new(f, failMetadata: true); gate.Arm(first.Hash); SetRepository(main, gate.Repository);
         try
         {
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!); await MainIdle(main);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(first)!); await MainIdle(main);
             Assert.That(gate.Started, Is.True, "The failure must come from the targeted metadata command.");
             Assert.That(main.LastException, Is.TypeOf<GitCommandException>());
             GitCommandException error = (GitCommandException)main.LastException!;
@@ -137,7 +137,7 @@ public sealed class CommitInformationIntegrationTests
             Assert.That(error.Arguments, Does.Contain("show").And.Contain("--no-notes").And.Contain(first.Hash));
             Assert.That(information.MessageControl.Text, Does.Contain(first.Subject));
 
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(2)!); await MainIdle(main);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(last)!); await MainIdle(main);
 
             Assert.That(information.MessageControl.Text, Does.Contain(last.Subject).And.Not.Contain(first.Subject));
             Assert.That(information.Text, Does.Contain(last.Hash));
@@ -190,9 +190,10 @@ public sealed class CommitInformationIntegrationTests
         {
             MainWindow main = f.Window; await MainIdle(main);
             ListBox history = Field<ListBox>(main, "RevisionHistory");
-            gate.Arm(((GitCommit)history.Items[1]!).Hash); SetRepository(main, gate.Repository);
+            GitCommit selected = history.Items.OfType<GitCommit>().ElementAt(1);
+            gate.Arm(selected.Hash); SetRepository(main, gate.Repository);
             window = main; information = Field<CommitInformationView>(main, "CommitInformation");
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(selected)!);
         }
         else if (host == "FileHistory")
         {
@@ -240,12 +241,13 @@ public sealed class CommitInformationIntegrationTests
         await Drain(information.Completion);
         CommitGraph graph = main.GetVisualDescendants().OfType<CommitGraph>().Single();
         object itemsSource = history.ItemsSource!;
-        using MetadataGate gate = new(f); gate.Arm(((GitCommit)history.Items[1]!).Hash); SetRepository(main, gate.Repository);
+        GitCommit selected = history.Items.OfType<GitCommit>().ElementAt(1);
+        using MetadataGate gate = new(f); gate.Arm(selected.Hash); SetRepository(main, gate.Repository);
         try
         {
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(selected)!);
             await Until(() => gate.Started); int pid = gate.Pid;
-            Grid row = ((Control)history.ContainerFromIndex(1)!).GetVisualDescendants().OfType<Grid>()
+            Grid row = ((Control)history.ContainerFromItem(selected)!).GetVisualDescendants().OfType<Grid>()
                 .Single(control => control.Name == "RevisionHistoryRow");
             Assert.That(history.IsKeyboardFocusWithin, Is.True);
             Assert.That(graph.SelectionFocused, Is.True);
@@ -305,8 +307,9 @@ public sealed class CommitInformationIntegrationTests
         MainWindow main = f.Window; await MainIdle(main);
         CommitInformationView information = Field<CommitInformationView>(main, "CommitInformation");
         ListBox history = Field<ListBox>(main, "RevisionHistory");
-        using MetadataGate gate = new(f); gate.Arm(((GitCommit)history.Items[1]!).Hash); SetRepository(main, gate.Repository);
-        PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(1)!);
+        GitCommit selected = history.Items.OfType<GitCommit>().ElementAt(1);
+        using MetadataGate gate = new(f); gate.Arm(selected.Hash); SetRepository(main, gate.Repository);
+        PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(selected)!);
         await Until(() => gate.Started); int pid = gate.Pid;
         Assert.That(information.IsLoading, Is.True);
 

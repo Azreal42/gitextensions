@@ -53,37 +53,17 @@ public sealed partial class MainWindow
         return ApplyLoadedHistorySelectionAsync(selection, focused);
     }
 
-    private GitCompareRevision[] ForkPointSelectedRevisions()
-    {
-        if (_browseInitialComparison is { } pair)
-        { return pair.Selected == pair.First ? [pair.Selected] : [pair.Selected, pair.First]; }
-        if (QuickSearchArtificialCount > 0)
-        {
-            int index = QuickSearchCurrentIndex();
-            if (index is 0 or 1)
-            { return [new("", index == 0 ? GitCompareRevisionKind.WorkingTree : GitCompareRevisionKind.Index)]; }
-        }
-        HashSet<string> selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? [])
-            .Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
-        // ObserveQuickSearchSelection records additions in insertion order.
-        // WinForms builds SelectedRows from its head-inserting band list instead.
-        GitCompareRevision[] revisions = _historySelectionOrder.AsEnumerable().Reverse()
-            .Where(selected.Contains).Select(hash => new GitCompareRevision(hash)).ToArray();
-        // Do not publish a partial selection if a source rebind is incomplete.
-        return revisions.Length == selected.Count ? revisions : [];
-    }
+    private GitCompareRevision[] ForkPointSelectedRevisions() => SelectedHistoryRevisions();
 
     // The loaded graph owns rows; the existing comparison readers own endpoint IO.
     // Only the final selection is published, so no transient empty diff or global refresh is introduced.
     private Task ApplyLoadedHistorySelectionAsync(IReadOnlyList<GitCompareRevision> selection, GitCommit currentCell)
     {
-        GitCommit[] rows = selection.Where(revision => revision.Kind == GitCompareRevisionKind.Commit)
-            .Select(revision => _commits.Items.OfType<GitCommit>().FirstOrDefault(commit => commit.Hash == revision.Revision))
-            .OfType<GitCommit>().ToArray();
-        if (rows.Length != selection.Count(revision => revision.Kind == GitCompareRevisionKind.Commit)
+        object[] rows = selection.Select(HistoryItem).OfType<object>().ToArray();
+        if (rows.Length != selection.Count
             || !_commits.Items.OfType<GitCommit>().Any(commit => commit.Hash == currentCell.Hash)) { return Task.CompletedTask; }
         bool changed = !ForkPointSelectedRevisions().SequenceEqual(selection)
-            || !(_commits.SelectedItems?.OfType<GitCommit>() ?? []).SequenceEqual(rows)
+            || !(_commits.SelectedItems?.Cast<object>() ?? []).SequenceEqual(rows)
             || rows.Length > 0 && !ReferenceEquals(_commits.SelectedItem, rows[0]);
         GitCompareRevision primary = selection[0];
         if (changed)
@@ -105,16 +85,13 @@ public sealed partial class MainWindow
                     _selectedArtificialHistoryRevision = primary.Kind != GitCompareRevisionKind.Commit ? primary : null;
                 }
                 _historySelectionOrder.Clear();
-                _historySelectionOrder.AddRange(rows.Reverse().Select(commit => commit.Hash));
+                _historySelectionOrder.AddRange(rows.Reverse().Select(HistoryRevisionItems.Key));
                 _quickSearchLastCommit = primary.Kind == GitCompareRevisionKind.Commit ? primary.Revision : null;
                 _parentChildLatestCommit = _quickSearchLastCommit;
             }
             finally { _refreshing = refreshing; _movingRevisionNavigation = moving; }
             if (primary.Kind != GitCompareRevisionKind.Commit) { ClearCommitInformation(); _gpgInfo.Text = ""; }
-            // Ordinary Browse hosts one artificial endpoint in Changes. A typed
-            // two-endpoint comparison uses the existing shared revision Diff panel.
-            if (UsesArtificialInitialComparison && (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab")
-            { SelectDetailsTab("DiffTab"); }
+
         }
         _commits.ScrollIntoView(currentCell); _commits.UpdateLayout();
         _applyingQuickSearchSelection = true;
@@ -128,10 +105,10 @@ public sealed partial class MainWindow
         finally { _applyingQuickSearchSelection = false; }
         _commits.Selection.AnchorIndex = _commits.Items.IndexOf(currentCell);
         _quickSearchArtificialSelection = primary.Kind != GitCompareRevisionKind.Commit ? primary : null;
-        _quickSearchReturnTab = null;
+
         RefreshRebaseMenu(); RefreshRevisionContextMenu(); RefreshHistoryMenuStates();
         OnGitHubActionsSelectionChanged(); UpdateHistoryPresentation();
         return !changed ? Task.CompletedTask : primary.Kind == GitCompareRevisionKind.Commit
-            ? LoadSelectedRevisionDetailsAsync(rows[0]) : LoadVisibleRevisionPanelAsync();
+            ? LoadSelectedRevisionDetailsAsync((GitCommit)rows[0]) : LoadVisibleRevisionPanelAsync();
     }
 }

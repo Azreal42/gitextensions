@@ -167,7 +167,7 @@ public sealed class GoToCommitDialogTests
     private static async Task AssertMainWindowCancellationAsync(bool closeWindow)
     {
         using Fixture f = await Fixture.CreateAsync(); MainWindow window = await f.Browse(); ListBox history = History(window);
-        Pointer((Control)history.ContainerFromIndex(0)!);
+        Pointer((Control)history.ContainerFromItem(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Last))!);
         await Until(() => history.IsKeyboardFocusWithin && ((GitCommit)history.SelectedItem!).Hash == f.Last);
         object? source = history.ItemsSource; object query = Read<object>(window, "_historyQuery");
         for (int cycle = 0; cycle < 2; cycle++)

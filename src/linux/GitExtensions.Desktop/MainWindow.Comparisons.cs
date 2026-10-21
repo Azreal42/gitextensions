@@ -53,28 +53,32 @@ public sealed partial class MainWindow
 
     private GitCommit[] SelectedComparisonCommits()
     {
+        if (SelectedHistoryItems().Any(item => item is ArtificialHistoryRevision)) { return []; }
         HashSet<string> selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? []).Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
         return _commits.Items.OfType<GitCommit>().Where(commit => selected.Contains(commit.Hash)).ToArray();
     }
 
     private Task CompareSelectedCommitsAsync()
     {
-        GitCommit[] selected = SelectedComparisonCommits();
-        if (selected.Length == 1) { return CompareAsync(); }
+        object[] selected = SelectedHistoryItems();
+        if (selected.Length == 1 && selected[0] is GitCommit) { return CompareAsync(); }
         if (selected.Length == 0) { _state.Text = T("You must have two commits selected to compare"); return Task.CompletedTask; }
-        return ShowComparisonAsync(new(selected[^1].Hash), new(selected[0].Hash));
+        GitCompareRevision to = HistoryRevisionItems.Revision(selected[0]);
+        GitCompareRevision? from = selected.Length > 1 ? HistoryRevisionItems.Revision(selected[^1]) : RelativeRevisionParents(to).FirstOrDefault();
+        return from is null ? Task.CompletedTask : ShowComparisonAsync(from, to);
     }
 
     private async Task OpenComparisonToolAsync()
     {
         if (_repository is null || _busy) { return; }
         GitRepository originalRepository = _repository;
-        GitCommit[] selected = SelectedComparisonCommits();
-        string to = selected.FirstOrDefault()?.Hash ?? CurrentRevision;
-        string from = selected.Length > 1 ? selected[^1].Hash : selected.FirstOrDefault()?.Parents.FirstOrDefault() ?? to;
+        GitCompareRevision[] selected = SelectedHistoryRevisions();
+        if (selected.Length == 0) { return; }
+        GitCompareRevision to = selected[0];
+        GitCompareRevision from = selected.Length > 1 ? selected[^1] : RelativeRevisionParents(to).FirstOrDefault() ?? new("", GitCompareRevisionKind.EmptyTree);
         await RunAsync("Open selected commits with difftool", async repository =>
         {
-            GitComparison comparison = await repository.GetComparisonAsync(new(from), new(to), Token);
+            GitComparison comparison = await repository.GetComparisonAsync(from, to, Token);
             MarkStandaloneMayHaveRepositoryChanges();
             GitResult result = await repository.OpenComparisonDiffToolAsync(comparison, directory: true, cancellationToken: Token);
             AppendOutput(result.StandardOutput + result.StandardError);

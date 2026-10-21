@@ -152,7 +152,7 @@ public sealed class AzureDevOpsIntegrationTests
         new HistoryViewPreferencesStore().Save(new() { ShowArtificialCommits = false, ShowBuildStatusIcon = true, ShowBuildStatusText = true, ShowAvatar = false });
         MainWindow window = new() { Width = 1200, Height = 780 }; if (infinite) { window.GitHubActionsPollInterval = Timeout.InfiniteTimeSpan; } return window;
     }
-    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(control => control.ItemsSource is IEnumerable<GitCommit>);
+    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(control => control.Name == "RevisionHistory");
     private static Control Row(MainWindow window, string sha) => History(window).GetVisualDescendants().OfType<Control>().Single(control => control.Name == "RevisionHistoryRow" && RevisionHistoryRow.CommitHash(control) == sha);
     private static void SelectReport(MainWindow window)
     { PushProcessTestDriver.Pointer(window.GetVisualDescendants().OfType<TabItem>().Single(tab => tab.Name == "GitHubActionsBuildReport")); Pump(window); }

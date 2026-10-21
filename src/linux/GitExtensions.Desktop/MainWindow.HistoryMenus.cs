@@ -158,20 +158,20 @@ public sealed partial class MainWindow
         { await HandleConfiguredShortcutsAsync(sender, args, allowAlt: true); }
     }
 
-    private Task ToggleArtificialRevisionAsync()
+    private async Task ToggleArtificialRevisionAsync()
     {
+        if (_repository?.IsBare != false || !_historyView.ShowArtificialCommits) { return; }
         for (int attempt = 0; attempt < 3; attempt++)
         {
             _artificialNavigation = (_artificialNavigation + 1) % 3;
-            Button? button = _artificialNavigation == 0 ? _workingRevision : _indexRevision;
             if (_artificialNavigation == 2)
-            {
-                if (_historyGraph.CurrentHead is string head) { SelectVisibleRevision(head); _commits.Focus(); }
-                return Task.CompletedTask;
-            }
-            if (button is not null && (_artificialNavigation == 0 ? _workingRevisionState?.Text : _indexRevisionState?.Text) != "✓")
-            { button.Focus(); button.RaiseEvent(new RoutedEventArgs(Avalonia.Controls.Button.ClickEvent)); return Task.CompletedTask; }
+            { if (_historyGraph.CurrentHead is string head) { SelectVisibleRevision(head); } break; }
+            GitCompareRevisionKind kind = _artificialNavigation == 0 ? GitCompareRevisionKind.WorkingTree : GitCompareRevisionKind.Index;
+            bool changed = _historyStatus?.Changes.Any(change => kind == GitCompareRevisionKind.Index ? change.IsStaged : change.IsModified || change.IsUntracked) == true;
+            if (!_preferences.ShowGitStatusForArtificialCommits || changed)
+            { await ActivateArtificialRevisionAsync(kind == GitCompareRevisionKind.Index); break; }
         }
-        return Task.CompletedTask;
+        SelectDetailsTab("DiffTab"); await LoadVisibleRevisionPanelAsync();
+        if (!_busy && !_lifetime.IsCancellationRequested && !OwnedWindows.Any(window => window.IsVisible)) { _revisionFiles.Focus(); }
     }
 }

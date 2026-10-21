@@ -33,7 +33,7 @@ public sealed class RevisionContextFocusTests
         MainWindow main = f.Window; ListBox history = PushProcessTestDriver.Field<ListBox>(main, "RevisionHistory");
         GitCommit[] commits = history.Items.OfType<GitCommit>().ToArray(); Assert.That(commits.Length, Is.GreaterThanOrEqualTo(4));
         int index = 2; GitCommit selected = commits[index];
-        ListBoxItem row = (ListBoxItem)history.ContainerFromIndex(index)!;
+        ListBoxItem row = (ListBoxItem)history.ContainerFromItem(selected)!;
         if (focusMode > 0) { PushProcessTestDriver.Pointer(row); Assert.That(history.IsKeyboardFocusWithin, Is.True); }
         if (focusMode == 2)
         {
@@ -42,9 +42,14 @@ public sealed class RevisionContextFocusTests
             result = await f.Git.RunAsync(f.Repository, ["tag", "-f", "-a", "focus-tag", "-m", "Moved externally", commits[1].Hash]);
             Assert.That(result.Success, Is.True, result.StandardError);
             object? source = history.ItemsSource; string selectedHash = selected.Hash;
-            Press(main, PhysicalKey.F5); await Until(() => !main.IsBusy && !ReferenceEquals(history.ItemsSource, source)); Pump(main);
+            long lastCommandIdBeforeRefresh = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
+            Press(main, PhysicalKey.F5);
+            await Until(() => GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeRefresh && entry.Command == "git log")
+                && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+            await main.WindowWorkCompletion; Pump(main);
+            Assert.That(history.ItemsSource, Is.SameAs(source));
             commits = history.Items.OfType<GitCommit>().ToArray(); selected = commits.Single(commit => commit.Hash == selectedHash);
-            index = Array.IndexOf(commits, selected); row = (ListBoxItem)history.ContainerFromIndex(index)!;
+            index = Array.IndexOf(commits, selected); row = (ListBoxItem)history.ContainerFromItem(selected)!;
             Assert.That(history.SelectedItem, Is.SameAs(selected), "F5 preserves the selected commit; this test does not refocus it.");
             Log(main, "after real F5 and external retag");
         }
@@ -88,7 +93,7 @@ public sealed class RevisionContextFocusTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; ListBox history = PushProcessTestDriver.Field<ListBox>(main, "RevisionHistory");
         GitCommit[] commits = history.Items.OfType<GitCommit>().ToArray();
-        ListBoxItem first = (ListBoxItem)history.ContainerFromIndex(1)!, clicked = (ListBoxItem)history.ContainerFromIndex(2)!;
+        ListBoxItem first = (ListBoxItem)history.ContainerFromItem(commits[1])!, clicked = (ListBoxItem)history.ContainerFromItem(commits[2])!;
         PushProcessTestDriver.Pointer(first); LeftClick(main, clicked, RawInputModifiers.Control);
         Assert.That(history.SelectedItems!.Cast<GitCommit>(), Is.EquivalentTo(new[] { commits[1], commits[2] }));
         RightClick(main, clicked); await Until(() => history.ContextMenu!.IsOpen);
@@ -105,7 +110,7 @@ public sealed class RevisionContextFocusTests
         using Fixture f = await Fixture.CreateAsync("base\n", "base\n", createMerge: true);
         MainWindow main = f.Window; ListBox history = PushProcessTestDriver.Field<ListBox>(main, "RevisionHistory");
         GitCommit selected = history.Items.OfType<GitCommit>().ElementAt(2);
-        RightClick(main, (ListBoxItem)history.ContainerFromIndex(2)!); await Until(() => history.ContextMenu!.IsOpen);
+        RightClick(main, (ListBoxItem)history.ContainerFromItem(selected)!); await Until(() => history.ContextMenu!.IsOpen);
         MenuItem create = history.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionCreateBranch");
         PushProcessTestDriver.Pointer(create);
         await Until(() => main.OwnedWindows.OfType<CreateBranchDialog>().Any());

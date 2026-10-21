@@ -237,18 +237,19 @@ public sealed class ParentChildNavigationTests
     public async Task WorkingTreeIndexAndHeadAreTypedReversibleDestinationsInTheirActualHost(bool fileHistory)
     {
         await using Scope f = await Scope.OpenAsync(showArtificial: true, fileHistory: fileHistory);
-        PushProcessTestDriver.Pointer(Field<Button>(f.Main, "WorkingDirectoryRevision")); await f.IdleAsync();
+        PushProcessTestDriver.Pointer(Field<TabItem>(f.Main, "DiffTab")); await f.IdleAsync();
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); await f.IdleAsync();
         Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
         await f.NavigateAsync("GotoParentCommit");
         Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
-        Assert.That(Field<Button>(f.Main, "IndexRevision").IsKeyboardFocusWithin, Is.True);
-        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo(fileHistory ? "DiffTab" : "ChangesTab"));
+        Assert.That(Field<Button>(f.Main, "IndexRevision").FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         await f.NavigateAsync("GotoParentCommit");
         Assert.That(f.Artificial, Is.Null); Assert.That(f.Selected, Is.EqualTo(f.D));
         Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
         await f.NavigateAsync("GotoChildCommit"); Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
         await f.NavigateAsync("GotoChildCommit"); Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
-        Assert.That(f.History.Items.Cast<object>(), Is.All.TypeOf<GitCommit>());
+        Assert.That(f.History.Items.Cast<object>().All(item => item is GitCommit or ArtificialHistoryRevision), Is.True, "Artificial endpoints are typed rows, never fabricated GitCommit rows.");
         f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
     }
 
@@ -260,23 +261,31 @@ public sealed class ParentChildNavigationTests
         await using Scope f = await Scope.OpenAsync(showArtificial: true, dirtyWorkingTree: true);
         await f.SelectAsync(f.C);
         Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
+        Assert.That(f.Selected, Is.EqualTo(f.C), "Start from the same real fixture commit before selecting a typed endpoint.");
+        // Changes is an independent working-files workflow. Choose its actual view and staging option explicitly.
+        PushProcessTestDriver.Pointer(Field<TabItem>(f.Main, "ChangesTab")); await f.IdleAsync();
+        CheckBox stagedToggle = (CheckBox)typeof(MainWindow).GetField("_stagedDiff", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(f.Main)!;
+        if (stagedToggle.IsChecked != staged) { PushProcessTestDriver.Pointer(stagedToggle); await f.IdleAsync(); }
+        FileStatusListView workingFiles = Field<FileStatusListView>(f.Main, "WorkingFileStatusList");
+        object workingFile = workingFiles.Entries.Single(item => item.Path == "file.txt").Tag;
+        PushProcessTestDriver.Pointer(Header(workingFiles.FindItemByTag(workingFile)!)); await f.IdleAsync();
         GitCompareRevisionKind kind = staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree;
-        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision"));
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!);
         await f.IdleAsync();
         Assert.That(f.Artificial?.Kind, Is.EqualTo(kind));
-        Assert.That(f.Selected, Is.EqualTo(f.C), "Ordinary Browse retains its physical real selection behind the typed artificial destination.");
+        Assert.That(f.History.SelectedItems!.OfType<GitCommit>(), Is.Empty, "A native artificial selection has no hidden committed endpoint.");
         Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
         DiffView working = Field<DiffView>(f.Main, "WorktreeDiff");
         Assert.That(working.Text, Does.Contain(staged ? "-D FILE" : "-INDEX FILE").And.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
         Assert.That(working.DocumentIdentity, Does.Contain(staged ? "index" : "worktree"));
 
-        // The ordinary typed selection must survive when its button is no longer
-        // focused. Ctrl+1 would deliberately select the real-grid surface instead.
+        // The typed selection and the same working-files editor must survive F5 while the editor owns focus.
+        // The first Parent command below must return focus without a repair click.
         PushProcessTestDriver.Pointer(working.Editor.TextArea); await f.IdleAsync();
         Assert.That(working.Editor.TextArea.IsKeyboardFocusWithin, Is.True);
         Assert.That(f.History.IsKeyboardFocusWithin, Is.False);
-        Assert.That(Field<Button>(f.Main, "WorkingDirectoryRevision").IsKeyboardFocusWithin, Is.False);
-        Assert.That(Field<Button>(f.Main, "IndexRevision").IsKeyboardFocusWithin, Is.False);
+        Assert.That(Field<Button>(f.Main, "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.False);
+        Assert.That(Field<Button>(f.Main, "IndexRevision").FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.False);
         Assert.That(f.Artificial?.Kind, Is.EqualTo(kind));
         FocusCheckpoint("ordinary-artificial-before-F5-" + kind, f.Main);
         Press(f.Main, PhysicalKey.F5); await f.IdleAsync();
@@ -286,32 +295,37 @@ public sealed class ParentChildNavigationTests
         Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
         Assert.That(working.Text, Does.Contain(staged ? "-D FILE" : "-INDEX FILE").And.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
         Assert.That(working.DocumentIdentity, Does.Contain(staged ? "index" : "worktree"));
-        Assert.That(f.Selected, Is.EqualTo(f.C));
+        Assert.That(f.History.SelectedItems!.OfType<GitCommit>(), Is.Empty);
         object? refreshedSource = f.History.ItemsSource; GitCommandLog.Clear();
 
         // First command after refresh, without a focus repair or another click.
         Press(f.Main, PhysicalKey.P, RawInputModifiers.Control); await f.IdleAsync();
+        Assert.That(f.History.IsKeyboardFocusWithin, Is.True, "The first Parent from the working-files editor needs no focus repair.");
+        if (!staged) { Assert.That(Field<Button>(f.Main, "IndexRevision").FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True); }
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"),
+            "Parent changes the native history selection, not the current panel.");
+        // Explicitly inspect the new history endpoint in Diff, after proving the first command and its native focus.
+        PushProcessTestDriver.Pointer(Field<TabItem>(f.Main, "DiffTab")); await f.IdleAsync();
+        working = Field<DiffView>(f.Main, "CommitDiff");
         if (staged)
         {
             Assert.That(f.Artificial, Is.Null);
             Assert.That(f.Selected, Is.EqualTo(f.D), "Index's parent is real HEAD D, never the parent of the retained physical C row.");
-            Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
             Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"),
-                "F5 must also preserve the prior revision panel for the automatic Changes-to-real transition.");
+                "The explicitly selected DiffTab now inspects real HEAD.");
         }
         else
         {
             Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
-            Assert.That(Field<Button>(f.Main, "IndexRevision").IsKeyboardFocusWithin, Is.True);
             Assert.That(working.Text, Does.Contain("-D FILE").And.Contain("+INDEX FILE"));
-            Assert.That(working.DocumentIdentity, Does.Contain("index"));
+            Assert.That(working.DocumentIdentity, Does.Contain(GitCompareRevisionKind.Index.ToString()));
         }
         Press(f.Main, PhysicalKey.N, RawInputModifiers.Control); await f.IdleAsync();
         Assert.That(f.Artificial?.Kind, Is.EqualTo(kind), "Child must reverse the exact typed parent step after F5.");
-        Assert.That(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").IsKeyboardFocusWithin, Is.True);
-        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
+        Assert.That(Field<Button>(f.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
+        Assert.That(((TabItem)Field<TabControl>(f.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         Assert.That(working.Text, Does.Contain(staged ? "-D FILE" : "-INDEX FILE").And.Contain(staged ? "+INDEX FILE" : "+WORKTREE FILE"));
-        Assert.That(working.DocumentIdentity, Does.Contain(staged ? "index" : "worktree"));
+        Assert.That(working.DocumentIdentity, Does.Contain(kind.ToString()));
         Assert.That(f.History.ItemsSource, Is.SameAs(refreshedSource));
         Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Not.Contain("git log").And.Not.Contain("git status"),
             "After the explicit F5, Parent/Child uses the loaded graph and only the normal targeted detail readers.");
@@ -322,14 +336,21 @@ public sealed class ParentChildNavigationTests
     public async Task TheUnbornIndexHasNoFakeHeadParentButCanReturnToItsWorkingTreeChild()
     {
         await using Scope f = await Scope.OpenAsync(showArtificial: true, fileHistory: true, unborn: true);
-        Assert.That(f.History.Items, Is.Empty); Assert.That(f.Artificial, Is.Null);
-        Press(f.Main, PhysicalKey.P, RawInputModifiers.Control); Press(f.Main, PhysicalKey.N, RawInputModifiers.Control); await f.IdleAsync();
-        Assert.That(f.Artificial, Is.Null, "No initial selection in the unborn grid must not invent a current revision.");
+        Assert.That(f.History.Items.OfType<GitCommit>(), Is.Empty);
+        Assert.That(f.History.Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind),
+            Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree), "Windows falls back to its first existing row when there is no real commit.");
+        Assert.That(f.History.SelectedItem, Is.SameAs(f.History.Items[0]));
+        Press(f.Main, PhysicalKey.P, RawInputModifiers.Control); await f.IdleAsync();
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
+        Press(f.Main, PhysicalKey.N, RawInputModifiers.Control); await f.IdleAsync();
+        Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
         Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
-        PushProcessTestDriver.Pointer(Field<Button>(f.Main, "WorkingDirectoryRevision")); await f.IdleAsync();
+        PushProcessTestDriver.Pointer(Field<Button>(f.Main, "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); await f.IdleAsync();
         await f.NavigateAsync("GotoParentCommit"); Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
         await f.NavigateAsync("GotoParentCommit"); Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
-        Assert.That(f.History.Items, Is.Empty); Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
+        Assert.That(f.History.Items.OfType<GitCommit>(), Is.Empty); Assert.That(f.History.Items, Has.Count.EqualTo(2));
+        Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
         await f.NavigateAsync("GotoChildCommit"); Assert.That(f.Artificial?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
         Assert.That(f.Main.LastException, Is.Null); f.AssertNoReload();
         Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
@@ -341,7 +362,7 @@ public sealed class ParentChildNavigationTests
     public async Task HiddenOrBareArtificialRowsCannotBecomeAHeadChild(bool bare)
     {
         await using Scope f = await Scope.OpenAsync(showArtificial: bare, bare: bare);
-        await f.SelectAsync(f.D); Assert.That(Field<Control>(f.Main, "WorkingRevisions").IsEffectivelyVisible, Is.False);
+        await f.SelectAsync(f.D); Assert.That(f.History.Items.OfType<ArtificialHistoryRevision>(), Is.Empty);
         await f.NavigateAsync("GotoChildCommit");
         Assert.That(f.Selected, Is.EqualTo(f.D)); Assert.That(f.Artificial, Is.Null);
         await f.WaitForIndependentMouseClickAsync();
@@ -414,8 +435,7 @@ public sealed class ParentChildNavigationTests
         internal string E => e;
         internal object? Source { get; private set; }
         internal Material Ready { get; private set; } = null!;
-        internal GitCompareRevision? Artificial => (GitCompareRevision?)typeof(MainWindow)
-            .GetField("_quickSearchArtificialSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(main);
+        internal GitCompareRevision? Artificial => (History.SelectedItem as ArtificialHistoryRevision)?.Revision;
 
         internal static async Task<Scope> OpenAsync(string culture = "en", bool dark = false, int limit = 300, bool showArtificial = false,
             bool fileHistory = false, bool unborn = false, bool bare = false, bool headAtMerge = false, bool dirtyWorkingTree = false)

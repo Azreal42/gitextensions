@@ -302,6 +302,8 @@ internal static class GitRunnerSinkScenarios
             return stat[(stat.LastIndexOf(')') + 2)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[19] != identity.Started;
         }
         catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return true; }
+        // A procfs task may vanish after open; .NET Unix exposes ESRCH as raw errno 3.
+        catch (IOException error) when (OperatingSystem.IsLinux() && error.HResult == 3) { return true; }
     }
 
     private static string Actor(RepositoryFixture fixture, string name, string body)

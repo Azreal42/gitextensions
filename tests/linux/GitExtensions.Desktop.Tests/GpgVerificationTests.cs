@@ -174,7 +174,7 @@ public sealed class GpgVerificationTests
             tabs.SelectedItem = tab; DetailedSettingsUiHost.Pump(main); TextBox panel = (TextBox)tab.Content!;
             await DetailedSettingsUiHost.Until(() => panel.Text?.Contains("Signature status: N", StringComparison.Ordinal) == true);
             ListBox history = Find<ListBox>(main, "RevisionHistory"); object? source = history.ItemsSource;
-            main.UpdateLayout(); Control row = history.ContainerFromIndex(1)!;
+            main.UpdateLayout(); Control row = history.ContainerFromItem(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == older))!;
             Point point = row.TranslatePoint(new Point(80, row.Bounds.Height / 2), main)!.Value;
             main.MouseDown(point, MouseButton.Left); main.MouseUp(point, MouseButton.Left);
             await transport.WaitBlockedAsync(); ControlledVerifier.ActorReceipt receipt = transport.Receipt;

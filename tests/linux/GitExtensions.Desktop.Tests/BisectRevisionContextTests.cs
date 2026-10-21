@@ -60,7 +60,7 @@ public sealed class BisectRevisionContextTests
         if (verdict == GitBisectOption.Good) { Assert.That(state.GoodRevisions, Does.Contain(target).And.Not.Contain(checkout)); }
         else if (verdict == GitBisectOption.Bad) { Assert.That(state.BadRevision, Is.EqualTo(target)); }
         else { Assert.That(state.SkippedRevisions, Does.Contain(target).And.Not.Contain(checkout)); }
-        Assert.That(f.History.ItemsSource, Is.Not.SameAs(source), "An actual mutation refreshes Browse after process acknowledgment.");
+        Assert.That(f.History.ItemsSource, Is.SameAs(source), "An actual mutation refreshes Browse after process acknowledgment.");
         FirstArrow(f, target, up);
     }
 
@@ -169,6 +169,28 @@ public sealed class BisectRevisionContextTests
     }
 
     [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task AQueuedVerdictKeepsItsCapturedCommandTargetButReturnsToTheLatestSingleOrControlSelectionAfterHeadChanges(bool control)
+    {
+        await using Fixture f = await Fixture.Create(); await f.Start();
+        GitCommit target = f.Commit(1), later = f.Commit(5); string checkout = await f.Head();
+        ContextMenu menu = OpenSubject(f, target); MenuItem invocation = Item(menu, "RevisionBisectGood"); menu.Close();
+        Pointer(f.Main, Subject(f, later), MouseButton.Left, control ? RawInputModifiers.Control : RawInputModifiers.None);
+        string[] selected = f.History.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash).ToArray();
+        Assert.That(selected, Is.EquivalentTo(control ? new[] { target.Hash, later.Hash } : new[] { later.Hash }));
+        object source = f.History.ItemsSource!;
+        // A delayed menu invocation may retain the original command target;
+        // its return-selection intention must never reinstall that older row.
+        invocation.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); GitProcessDialog process = await Process(f.Main);
+        Assert.That(process.CommandDescription, Is.EqualTo("git bisect good " + target.Hash)); await Acknowledge(f, process);
+        Assert.That(await f.Head(), Is.Not.EqualTo(checkout), "This regression requires a real checkout change, not merely a verdict ref.");
+        Assert.That((await f.Repository.GetBisectStateAsync()).GoodRevisions, Does.Contain(target.Hash).And.Not.Contain(later.Hash));
+        Assert.That(f.History.ItemsSource, Is.SameAs(source));
+        Assert.That(f.History.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EquivalentTo(selected));
+        FirstArrow(f, later.Hash, up: true);
+    }
+
+    [AvaloniaTest]
     public async Task AnOldMenuCannotMutateTheNextRepository()
     {
         await using Fixture f = await Fixture.Create(); await f.Start(); ContextMenu menu = OpenSubject(f, f.Commit(1));
@@ -207,7 +229,7 @@ public sealed class BisectRevisionContextTests
         Assert.That(Field<TextBox>(process, "ProcessOutput").Text, Does.Contain("native failure after real good"));
         Exception error = process.Error!; await Acknowledge(f, process);
         Assert.That((await f.Repository.GetBisectStateAsync()).GoodRevisions, Does.Contain(target));
-        Assert.That(f.History.ItemsSource, Is.Not.SameAs(source)); Assert.That(f.Main.LastException, Is.SameAs(error));
+        Assert.That(f.History.ItemsSource, Is.SameAs(source)); Assert.That(f.Main.LastException, Is.SameAs(error));
         FirstArrow(f, target, up: true);
     }
 
@@ -224,7 +246,7 @@ public sealed class BisectRevisionContextTests
         Pointer(Field<Button>(process, "Abort")); await Until(() => !process.IsVisible && !f.Main.IsBusy && pids.All(pid => !Running(pid)));
         Assert.That(process.Outcome?.WasCancelled, Is.True); Assert.That(process.Result, Is.Null, "Interrupted process must not invent exit zero.");
         Assert.That((await f.Repository.GetBisectStateAsync()).GoodRevisions, Does.Contain(target));
-        Assert.That(f.History.ItemsSource, Is.Not.SameAs(source)); FirstArrow(f, target, up: true);
+        Assert.That(f.History.ItemsSource, Is.SameAs(source)); FirstArrow(f, target, up: true);
     }
 
     private static ContextMenu OpenSubject(Fixture f, GitCommit target)
@@ -255,11 +277,11 @@ public sealed class BisectRevisionContextTests
     }
     private static void FirstArrow(Fixture f, string hash, bool up)
     {
-        GitCommit[] rows = f.History.Items.OfType<GitCommit>().ToArray(); int index = Array.FindIndex(rows, commit => commit.Hash == hash);
+        object[] rows = f.History.Items.Cast<object>().ToArray(); int index = Array.FindIndex(rows, item => item is GitCommit commit && commit.Hash == hash);
         Assert.That(index, Is.GreaterThanOrEqualTo(0)); int next = index + (up ? -1 : 1); Assert.That(next, Is.InRange(0, rows.Length - 1));
         // No Focus(), SelectedItem assignment, or synthetic routed event after acknowledgment.
         Press(f.Main, up ? PhysicalKey.ArrowUp : PhysicalKey.ArrowDown);
-        Assert.That((f.History.SelectedItem as GitCommit)?.Hash, Is.EqualTo(rows[next].Hash)); Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
+        Assert.That(f.History.SelectedItem, Is.SameAs(rows[next])); Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
     }
     private static T Field<T>(TopLevel root, string name) where T : Control => PushProcessTestDriver.Field<T>(root, name);
     private static void Pointer(Control control) => PushProcessTestDriver.Pointer(control);

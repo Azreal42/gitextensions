@@ -142,7 +142,7 @@ public sealed class BrowserHotkeysTests
         Assert.That(f.Window.GetVisualDescendants().OfType<FileStatusListView>().Single(view => view.Name == "CommitFileStatusList").Tree.IsKeyboardFocusWithin, Is.True);
         HotkeyBindings bindings = DesktopHotkeys.Current.Clone();
         Set(bindings, "RevisionGrid", "SelectAsBaseToCompare", new(Key.F9)); Save(bindings);
-        PushProcessTestDriver.Pointer(Field<Button>(f.Window, "IndexRevision")); await Idle(f.Window);
+        PushProcessTestDriver.Pointer(Field<Button>(f.Window, "IndexRevision").FindAncestorOfType<ListBoxItem>()!); await Idle(f.Window);
         Press(f.Window, PhysicalKey.F9);
         Press(f.Window, PhysicalKey.D, RawInputModifiers.Control);
         await Until(() => f.Window.OwnedWindows.OfType<CompareRevisionsDialog>().Any(dialog => dialog.Comparison is not null), f.Window);
@@ -151,7 +151,7 @@ public sealed class BrowserHotkeysTests
         Assert.That(comparison.Comparison.Compare.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
         Assert.That(comparison.Comparison.Files.Select(file => file.Path), Is.EqualTo(new[] { "file.txt" }));
         Press(comparison, PhysicalKey.Escape); await Idle(f.Window);
-        PushProcessTestDriver.Pointer(Field<Button>(f.Window, "WorkingDirectoryRevision")); await Idle(f.Window);
+        PushProcessTestDriver.Pointer(Field<Button>(f.Window, "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); await Idle(f.Window);
         Press(f.Window, PhysicalKey.R, RawInputModifiers.Control);
         await Until(() => f.Window.OwnedWindows.OfType<CompareRevisionsDialog>().Any(dialog => dialog.Comparison is not null), f.Window);
         comparison = f.Window.OwnedWindows.OfType<CompareRevisionsDialog>().Single();

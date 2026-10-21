@@ -22,7 +22,7 @@ public class ExportDialogTests
         using MainWindowClassicTests.RepositoryFixture fixture = await MainWindowClassicTests.RepositoryFixture.CreateAsync("base\n", "base\n");
         MainWindow main = fixture.Window;
         ListBox history = main.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "RevisionHistory");
-        GitCommit selected = history.ItemsSource!.Cast<GitCommit>().Single();
+        GitCommit selected = history.Items.OfType<GitCommit>().Single();
         history.SelectedItem = selected;
         await Until(() => !main.IsBusy);
         Menu menu = main.GetVisualDescendants().OfType<Menu>().Single();

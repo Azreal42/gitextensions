@@ -17,8 +17,8 @@ public sealed partial class MainWindow
 
     private void RememberRevisionNavigation()
     {
-        if (_refreshing || _movingRevisionNavigation || _commits.SelectedItem is not GitCommit commit) { return; }
-        PushRevisionNavigation(commit.Hash);
+        if (_refreshing || _movingRevisionNavigation || _commits.SelectedItems?.Count != 1 || PrimaryHistoryItem is not { } item) { return; }
+        PushRevisionNavigation(HistoryRevisionItems.Key(item));
     }
 
     private void PushRevisionNavigation(string hash)
@@ -127,8 +127,8 @@ public sealed partial class MainWindow
         {
             _revisionNavigationIndex = next;
             string hash = _revisionNavigation[next];
-            if (_history.Any(commit => commit.Hash == hash)) { SelectVisibleRevision(hash); }
-            else { await ShowFilteredRevisionErrorAsync(hash); }
+            if (HistoryItem(hash) is { } item) { await SelectHistoryItemAsync(item); }
+            else if (!hash.StartsWith(':')) { await ShowFilteredRevisionErrorAsync(hash); }
         }
         finally { _movingRevisionNavigation = false; RefreshRevisionContextMenu(); }
     }

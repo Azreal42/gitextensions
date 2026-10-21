@@ -248,14 +248,45 @@ public class WindowsBrowseReferenceTests
         await File.WriteAllTextAsync(Path.Combine(fixture.Repository, "indexed.txt"), "index only\n"); await Git(fixture, "add", "--", "indexed.txt");
         MainWindow main = fixture.Window; await main.OpenRepositoryAsync(fixture.Repository); await Layout(main);
         GitRepository repository = new(fixture.Repository); GitStatus before = await repository.GetStatusAsync();
-        foreach ((string action, string content) in new[] { ("WorkingDirectoryRevision", "+working change"), ("IndexRevision", "+index only") })
+        byte[] indexBefore = await File.ReadAllBytesAsync(Path.Combine(fixture.Repository, ".git", "index"));
+        TabControl tabs = Field<TabControl>(main, "DetailsTabs"); TabItem diffTab = Field<TabItem>(main, "DiffTab");
+        // Windows refreshes only the active panel on an ordinary row selection.
+        // Explicit Toggle is the separate command which forces Diff and its focus.
+        PushProcessTestDriver.Pointer(diffTab);
+        await Until(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted); await main.WindowWorkCompletion;
+        Assert.That(tabs.SelectedItem, Is.SameAs(diffTab));
+        ListBox history = Field<ListBox>(main, "RevisionHistory"); object? source = history.ItemsSource;
+        object[] rows = history.Items.Cast<object>().ToArray(); DiffView diff = Field<DiffView>(main, "CommitDiff");
+        GitCommandLog.Clear();
+        foreach ((string action, GitCompareRevisionKind kind, string content) in new[]
         {
-            Click(main, Field<Button>(main, action));
-            await Until(() => !main.IsBusy && main.GetVisualDescendants().OfType<DiffView>().Any(view => view.IsEffectivelyVisible && view.Text.Contains(content, StringComparison.Ordinal)));
-            Assert.That((Field<TabControl>(main, "DetailsTabs").SelectedItem as TabItem)?.Name, Is.EqualTo("ChangesTab"));
+            ("WorkingDirectoryRevision", GitCompareRevisionKind.WorkingTree, "+working change"),
+            ("IndexRevision", GitCompareRevisionKind.Index, "+index only")
+        })
+        {
+            ArtificialHistoryRevision endpoint = history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == kind);
+            Button label = Field<Button>(main, action); ListBoxItem row = (ListBoxItem)history.ContainerFromItem(endpoint)!;
+            Assert.That(label.FindAncestorOfType<ListBoxItem>(), Is.SameAs(row));
+            Assert.That(label.Focusable, Is.False); Assert.That(label.IsHitTestVisible, Is.False);
+            PushProcessTestDriver.Pointer(row);
+            await Until(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted && diff.IsEffectivelyVisible && diff.Text.Contains(content, StringComparison.Ordinal));
+            await main.WindowWorkCompletion;
+            Assert.That(tabs.SelectedItem, Is.SameAs(diffTab), "Ordinary artificial-row selection preserves the explicitly active Diff tab.");
+            Assert.That(history.SelectedItem, Is.SameAs(endpoint)); Assert.That(history.SelectedItems, Has.Count.EqualTo(1));
+            Assert.That(endpoint.Revision, Is.EqualTo(new GitCompareRevision("", kind)));
+            Assert.That(history.IsKeyboardFocusWithin, Is.True);
+            Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.Items.Count, Is.EqualTo(rows.Length));
+            Assert.That(history.Items.Cast<object>().Zip(rows).All(pair => ReferenceEquals(pair.First, pair.Second)), Is.True);
+            GitRevisionDiffGroup group = Field<TreeView>(main, "RevisionFiles").Items.OfType<TreeViewItem>().Select(item => item.Tag).OfType<GitRevisionDiffGroup>().Single();
+            Assert.That(group.Kind, Is.EqualTo(GitRevisionDiffGroupKind.Parent)); Assert.That(group.Revision, Is.EqualTo(kind.ToString()));
+            Assert.That(group.BaseRevision, Is.EqualTo(kind == GitCompareRevisionKind.WorkingTree ? "Index" : before.Head));
+            Assert.That(diff.Text, Does.Contain(content));
         }
+        Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Not.Contain("git log").And.Not.Contain("git status"));
+        Assert.That(await File.ReadAllBytesAsync(Path.Combine(fixture.Repository, ".git", "index")), Is.EqualTo(indexBefore));
         GitStatus after = await repository.GetStatusAsync(); Assert.That(after.Head, Is.EqualTo(before.Head)); Assert.That(after.Changes, Is.EqualTo(before.Changes));
         Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository, "file.txt")), Is.EqualTo("working change\n"));
+        Assert.That(await File.ReadAllTextAsync(Path.Combine(fixture.Repository, "indexed.txt")), Is.EqualTo("index only\n"));
         Assert.That(main.LastException, Is.Null);
     }
 

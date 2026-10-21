@@ -56,10 +56,14 @@ public sealed class LeftPanelSelectedRefsTests
         Assert.That(action.IsEnabled, Is.True);
         Assert.That(Item(menu, "GitRefsSortByContextMenuItem").IsEnabled, Is.False, "Windows single-node actions stay disabled for an underlined multiset.");
         AssertUnchangedHistory(f, source, rows, expression);
-        PushProcessTestDriver.Pointer(action); await f.IdleAsync();
+        long lastCommandIdBeforeFilter = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
+        PushProcessTestDriver.Pointer(action);
+        await PushProcessTestDriver.UntilAsync(main, () => GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeFilter && entry.Command == "git log")
+            && !main.IsBusy && main.WindowWorkCompletion.IsCompleted);
+        await f.IdleAsync();
         Assert.That((Field<ComboBox>(main, "BranchHistoryFilter").Text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries), Is.EquivalentTo(new[] { Local, Remote, Tag }));
         Assert.That(f.History.Items.OfType<GitCommit>().Select(commit => commit.Hash), Is.EquivalentTo(new[] { f.First, f.Middle }));
-        Assert.That(f.History.ItemsSource, Is.Not.SameAs(source)); AssertMarks(main, Local, Remote, Tag);
+        Assert.That(f.History.ItemsSource, Is.SameAs(source)); AssertMarks(main, Local, Remote, Tag);
         PushProcessTestDriver.Pointer(Menu(main, "ViewMenu")); Pump(main);
         PushProcessTestDriver.Pointer(Menu(main, "ViewMenu").Items.OfType<MenuItem>().Single(item => item.Name == "ViewShowAllBranches"));
         await f.IdleAsync();

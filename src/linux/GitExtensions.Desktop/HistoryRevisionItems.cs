@@ -22,6 +22,22 @@ internal sealed record ArtificialHistoryRevision
 /// <summary>Stable view keys for actual GitCommit objects and explicit artificial endpoints in one native list.</summary>
 internal static class HistoryRevisionItems
 {
+    /// <summary>Complete row payload equality across query generations, not record/list reference equality.</summary>
+    internal static bool HasSameSnapshotData(object left, object right) => (left, right) switch
+    {
+        (GitCommit first, GitCommit second) => string.Equals(first.Hash, second.Hash, StringComparison.Ordinal)
+            && first.Parents.SequenceEqual(second.Parents, StringComparer.Ordinal)
+            && string.Equals(first.AuthorName, second.AuthorName, StringComparison.Ordinal)
+            && string.Equals(first.AuthorEmail, second.AuthorEmail, StringComparison.Ordinal)
+            && first.AuthoredAt.EqualsExact(second.AuthoredAt)
+            && string.Equals(first.Subject, second.Subject, StringComparison.Ordinal)
+            && string.Equals(first.Body, second.Body, StringComparison.Ordinal)
+            && string.Equals(first.FullMessage, second.FullMessage, StringComparison.Ordinal),
+        (ArtificialHistoryRevision first, ArtificialHistoryRevision second) => first.Kind == second.Kind
+            && first.ParentIds.SequenceEqual(second.ParentIds, StringComparer.Ordinal),
+        _ => false
+    };
+
     internal static string Key(object item) => item switch
     {
         GitCommit commit => commit.Hash,

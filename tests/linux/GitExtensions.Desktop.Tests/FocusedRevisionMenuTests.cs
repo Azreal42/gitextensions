@@ -153,8 +153,12 @@ public sealed class FocusedRevisionMenuTests
         ContextMenu menu = OpenBadge(f.Window, "refs/tags/shared"); MenuItem advanced = Item(menu, "HistoryRebaseAdvanced");
         menu.Close();
         object? beforeRefresh = History(f.Window).ItemsSource;
+        long lastCommandIdBeforeRefresh = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
         Press(f.Window, PhysicalKey.F5);
-        await Until(() => !f.Window.IsBusy && !ReferenceEquals(History(f.Window).ItemsSource, beforeRefresh)); await Idle(f.Window);
+        await Until(() => GitCommandLog.Snapshot().Any(entry => entry.Id > lastCommandIdBeforeRefresh && entry.Command == "git log")
+            && !f.Window.IsBusy && f.Window.WindowWorkCompletion.IsCompleted);
+        await f.Window.WindowWorkCompletion; await Idle(f.Window);
+        Assert.That(History(f.Window).ItemsSource, Is.SameAs(beforeRefresh));
         Assert.That(menu.IsOpen, Is.False);
         advanced.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await Until(() => f.Window.OwnedWindows.OfType<RebaseDialog>().Any(dialog => !dialog.IsBusy && dialog.State is not null));

@@ -116,7 +116,7 @@ public sealed partial class MainWindow
         if (_busy) { return; }
         await RunAsync("Close repository", async _ =>
         {
-            HideQuickSearch(); _quickSearchArtificialSelection = null; _quickSearchLastCommit = null; _quickSearchReturnTab = null;
+            HideQuickSearch(); _quickSearchArtificialSelection = null; _quickSearchLastCommit = null;
             _parentChildNavigation?.Clear();
             _parentChildFileFocus = null;
             _historySelectionOrder.Clear(); _parentChildLatestCommit = null;
@@ -133,9 +133,9 @@ public sealed partial class MainWindow
             try
             {
                 _repositoryPath.Text = "";
-                _history = [];
+                _history = []; _historyRows.PublishSnapshot([]); _historyStatus = null;
                 _historyGraph.Commits = []; _historyGraph.References = []; _historyGraph.CurrentHead = null;
-                foreach (ListBox list in new[] { _commits, _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _hunks }) { list.ItemsSource = null; }
+                foreach (ListBox list in new[] { _references, _remotes, _stashes, _worktrees, _submodules, _configuration, _hunks }) { list.ItemsSource = null; }
                 _changesFilesView?.SetGroups([], preserveSelection: false);
                 _fileTreeView?.SetGroups([], preserveSelection: false);
                 CancelFileGrep(); _fileGrepNavigation?.Cancel(); _fileGrepResult = null;

@@ -77,7 +77,9 @@ public sealed class CheckoutRevisionDialogTests
         try
         {
             await dialog.InitializeAsync(); Click(dialog, "ChooseCheckoutRevisionCommit");
-            await Until(() => dialog.OwnedWindows.OfType<RevertRevisionPicker>().Any(), dialog);
+            await Until(() => dialog.OwnedWindows.OfType<RevertRevisionPicker>().Any(window => window.IsVisible && !window.IsBusy
+                && Field<ListBox>(window, "RevertChooseRevision").Items.OfType<GitCommit>().Any(commit => commit.Hash == older)
+                && Field<Button>(window, "ChooseRevertCommit").IsEffectivelyEnabled), dialog);
             RevertRevisionPicker picker = dialog.OwnedWindows.OfType<RevertRevisionPicker>().Single();
             ListBox choices = Field<ListBox>(picker, "RevertChooseRevision");
             choices.SelectedItem = choices.Items.OfType<GitCommit>().Single(commit => commit.Hash == older); Click(picker, "ChooseRevertCommit");

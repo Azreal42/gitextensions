@@ -23,7 +23,10 @@ public sealed class PluginRootIntroductionPageTests
         (DesktopSettingsDialog settings, Task<bool> completion) = f.Open("General");
         TreeView tree = PortableHelperSettingsFixture.Field<TreeView>(settings, "SettingsNavigationTree");
         TreeViewItem plugins = tree.Items.OfType<TreeViewItem>().Last();
-        Assert.That(plugins.Name, Is.EqualTo("SettingsPluginsNode")); Assert.That(plugins.Items, Is.Empty);
+        Assert.That(plugins.Name, Is.EqualTo("SettingsPluginsNode"));
+        Assert.That(plugins.Items.Cast<TreeViewItem>().Select(node => ((SettingsNavigationPage)node.Tag!).Id),
+            Is.EqualTo(new[] { "PluginDeleteUnusedBranches", "PluginBackgroundFetch", "PluginAutoCompileSubmodules",
+                "PluginFindLargeFiles", "PluginStatistics", "PluginGource", "PluginsProxy" }));
         Image icon = ((Control)plugins.Header!).GetVisualDescendants().OfType<Image>().Single();
         Assert.That(icon.Tag, Is.EqualTo("plugin.png")); Assert.That(icon.Source, Is.Not.Null);
         Assert.That(((Control)plugins.Header!).GetVisualDescendants().OfType<TextBlock>().Single().Text,

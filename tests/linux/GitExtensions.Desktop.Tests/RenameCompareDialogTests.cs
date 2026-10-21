@@ -225,7 +225,9 @@ public class RenameCompareDialogTests
             Assert.That(dialog.Comparison!.Files, Is.Empty);
             Assert.That(dialog.Comparison.Base.Revision, Is.EqualTo(latest));
             Click(dialog, "ComparisonCompareCommit");
-            await Until(() => dialog.OwnedWindows.OfType<ExportRevisionPicker>().Any());
+            await Until(() => dialog.OwnedWindows.OfType<ExportRevisionPicker>().Any(window => window.IsVisible && !window.IsBusy
+                && Field<ListBox>(window, "ChooseRevision").Items.OfType<GitCommit>().Any(commit => commit.Hash == initial)
+                && Field<Button>(window, "Choose").IsEffectivelyEnabled));
             ExportRevisionPicker commits = dialog.OwnedWindows.OfType<ExportRevisionPicker>().Single();
             await Idle(commits);
             ListBox rows = Field<ListBox>(commits, "ChooseRevision");

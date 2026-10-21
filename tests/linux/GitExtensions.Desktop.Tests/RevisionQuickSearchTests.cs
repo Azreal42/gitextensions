@@ -211,15 +211,12 @@ public sealed class RevisionQuickSearchTests
         await using Scope scope = await Scope.OpenAsync(culture, dark);
         await scope.ClickCommitAsync(scope.Head); scope.Type("bodyonlyneedle"); await scope.IdleAsync();
         Assert.That(scope.NoticeText.Text, Does.StartWith(culture == "en" ? "Searching for: " : "Rechercher :"));
-        Rect notice = Bounds(scope.Main, scope.Notice), history = Bounds(scope.Main, scope.History);
-        Rect artificialRows = Bounds(scope.Main, Field<Control>(scope.Main, "WorkingRevisions"));
-        Assert.That(notice.Width, Is.GreaterThan(80)); Assert.That(notice.Height, Is.GreaterThan(10));
-        Assert.That(notice.X, Is.InRange(Math.Min(history.Left, artificialRows.Left), history.Right));
-        Assert.That(notice.Y, Is.InRange(Math.Min(history.Top, artificialRows.Top), history.Bottom));
+        AssertNoticeWithinOriginalGridSurface(scope);
         Color foreground = ((ISolidColorBrush)scope.NoticeText.Foreground!).Color;
         Capture(scope.Main, $"quick-search-found-{culture}-{dark}.png");
         scope.Type("unmatched"); await scope.IdleAsync();
         Assert.That(((ISolidColorBrush)scope.NoticeText.Foreground!).Color, Is.Not.EqualTo(foreground));
+        AssertNoticeWithinOriginalGridSurface(scope);
         Capture(scope.Main, $"quick-search-no-match-{culture}-{dark}.png");
         Press(scope.Main, PhysicalKey.Escape);
         object? source = scope.History.ItemsSource; string selected = scope.SelectedHash;
@@ -352,7 +349,7 @@ public sealed class RevisionQuickSearchTests
     {
         await using Scope scope = await Scope.OpenAsync(unborn: unborn, fileHistory: true);
         Button first = Field<Button>(scope.Main, staged ? "WorkingDirectoryRevision" : "IndexRevision");
-        PushProcessTestDriver.Pointer(first); await scope.IdleAsync();
+        PushProcessTestDriver.Pointer(first.FindAncestorOfType<ListBoxItem>()!); await scope.IdleAsync();
         string term = staged ? "222" : "111";
         GitCompareRevisionKind target = staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree;
         object? selected = scope.History.SelectedItem;
@@ -361,10 +358,11 @@ public sealed class RevisionQuickSearchTests
         Assert.That(scope.History.SelectedItem, Is.SameAs(selected));
         scope.Type(term[2..]); await scope.IdleAsync();
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(target));
-        Assert.That(Field<Button>(scope.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").IsKeyboardFocusWithin, Is.True);
-        Assert.That(scope.History.SelectedItem, Is.Null);
+        Assert.That(Field<Button>(scope.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
+        Assert.That(scope.History.SelectedItem, Is.TypeOf<ArtificialHistoryRevision>());
+        Assert.That(((ArtificialHistoryRevision)scope.History.SelectedItem!).Kind, Is.EqualTo(target));
         Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
-        Assert.That(scope.History.Items.Cast<object>(), Is.All.TypeOf<GitCommit>());
+        Assert.That(scope.History.Items.Cast<object>().All(item => item is GitCommit or ArtificialHistoryRevision), Is.True, "Artificial endpoints are typed rows, never fabricated GitCommit rows.");
         Assert.That(scope.History.Items.OfType<GitCommit>().Any(commit => commit.Hash is "1111111111111111111111111111111111111111" or "2222222222222222222222222222222222222222"), Is.False);
         Assert.That(scope.Notice.IsEffectivelyVisible, Is.True); Assert.That(scope.NoticeText.Text, Does.EndWith(term));
         Press(scope.Main, PhysicalKey.Escape);
@@ -382,14 +380,15 @@ public sealed class RevisionQuickSearchTests
         await using Scope scope = await Scope.OpenAsync(culture);
         await scope.Git.GitAsync("config", "user.name", "ArtificialOnlyUser");
         await scope.Main.OpenRepositoryAsync(scope.Git.Repository.Path); await scope.IdleAsync();
+        PushProcessTestDriver.Pointer(Field<TabItem>(scope.Main, "ChangesTab")); await scope.IdleAsync();
         object? source = scope.History.ItemsSource;
         Button working = Field<Button>(scope.Main, "WorkingDirectoryRevision"), index = Field<Button>(scope.Main, "IndexRevision");
-        Assert.That(((TextBlock)working.Content!).Text, Is.EqualTo(culture == "en" ? "Working directory" : "Répertoire de travail"));
-        Assert.That(((TextBlock)index.Content!).Text, Is.EqualTo(culture == "en" ? "Commit index" : "Index du commit"));
-        PushProcessTestDriver.Pointer(index); await scope.IdleAsync();
+        Assert.That(working.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "RevisionReferenceLabel").Text, Is.EqualTo(culture == "en" ? "Working directory" : "Répertoire de travail"));
+        Assert.That(index.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "RevisionReferenceLabel").Text, Is.EqualTo(culture == "en" ? "Commit index" : "Index du commit"));
+        PushProcessTestDriver.Pointer(index.FindAncestorOfType<ListBoxItem>()!); await scope.IdleAsync();
         scope.Type(culture == "en" ? "working directory" : "répertoire de travail"); await scope.IdleAsync();
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
-        Assert.That(working.IsKeyboardFocusWithin, Is.True);
+        Assert.That(working.FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
         Press(scope.Main, PhysicalKey.Escape);
         scope.Type(culture == "en" ? "commit index" : "index du commit"); await scope.IdleAsync();
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
@@ -409,7 +408,7 @@ public sealed class RevisionQuickSearchTests
     {
         await using Scope scope = await Scope.OpenAsync(showArtificial: bare, bare: bare);
         await scope.ClickCommitAsync(scope.Head);
-        Assert.That(Field<Control>(scope.Main, "WorkingRevisions").IsEffectivelyVisible, Is.False);
+        Assert.That(scope.History.Items.OfType<ArtificialHistoryRevision>(), Is.Empty);
         foreach (string term in new[] { "111", "222", "working directory", "commit index" })
         {
             await scope.WaitForIndependentMouseClickAsync();
@@ -436,11 +435,15 @@ public sealed class RevisionQuickSearchTests
         Press(scope.Main, PhysicalKey.Digit1, RawInputModifiers.Control);
         Assert.That(scope.History.IsKeyboardFocusWithin, Is.True);
         string before = scope.SelectedHash; object? source = scope.History.ItemsSource;
+        Assert.That(before, Is.EqualTo(sameCommit ? scope.AuthorCommit : scope.Head));
         scope.Type("111"); await scope.IdleAsync();
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
-        Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
-        Assert.That(scope.History.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(new[] { before }),
-            "Ordinary Browse keeps its actual unique real selection while the virtual action shows working files.");
+        Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
+        Assert.That(scope.History.SelectedItems, Has.Count.EqualTo(1));
+        Assert.That(scope.History.SelectedItem, Is.TypeOf<ArtificialHistoryRevision>());
+        Assert.That(((ArtificialHistoryRevision)scope.History.SelectedItem!).Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
+        Assert.That(scope.History.SelectedItems!.OfType<GitCommit>(), Is.Empty,
+            "The native artificial selection replaces the prior commit; it does not retain a hidden real endpoint.");
 
         Press(scope.Main, PhysicalKey.Escape); scope.Type("authorneedle"); await scope.IdleAsync();
 
@@ -464,7 +467,7 @@ public sealed class RevisionQuickSearchTests
         Press(scope.Main, PhysicalKey.Digit1, RawInputModifiers.Control);
         Assert.That(scope.History.IsKeyboardFocusWithin, Is.True);
         scope.Type("111"); await scope.IdleAsync();
-        Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("ChangesTab"));
+        Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         PushProcessTestDriver.Pointer(Field<TabItem>(scope.Main, "FileTreeTab")); await scope.IdleAsync();
         Press(scope.Main, PhysicalKey.Digit1, RawInputModifiers.Control);
         Assert.That(scope.History.IsKeyboardFocusWithin, Is.True);
@@ -472,7 +475,7 @@ public sealed class RevisionQuickSearchTests
 
         Assert.That(scope.SelectedHash, Is.EqualTo(scope.AuthorCommit));
         Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("FileTreeTab"),
-            "Restore the saved panel only while the automatically selected ChangesTab is still active.");
+            "The explicitly chosen FileTreeTab remains active when the next real match is selected.");
         Assert.That(Field<FileContentView>(scope.Main, "CommitFileContent").TextView.Text, Is.EqualTo("author content\n"));
         Assert.That(scope.History.IsKeyboardFocusWithin, Is.True);
         scope.AssertNoHistoryReload(); Assert.That(await scope.MaterialAsync(), Is.EqualTo(scope.Ready));
@@ -531,13 +534,14 @@ public sealed class RevisionQuickSearchTests
     public async Task ARealSpaceKeyExtendsTheSearchOnAnArtificialButtonWithoutClickingOrReloadingItsWorkflow(bool staged)
     {
         await using Scope scope = await Scope.OpenAsync();
+        PushProcessTestDriver.Pointer(Field<TabItem>(scope.Main, "ChangesTab")); await scope.IdleAsync();
         Button button = Field<Button>(scope.Main, staged ? "IndexRevision" : "WorkingDirectoryRevision");
-        PushProcessTestDriver.Pointer(button); await scope.IdleAsync();
+        PushProcessTestDriver.Pointer(button.FindAncestorOfType<ListBoxItem>()!); await scope.IdleAsync();
         GitCompareRevisionKind target = staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree;
         string firstWord = staged ? "commit" : "working";
         scope.Type(firstWord); await scope.IdleAsync();
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(target));
-        Assert.That(button.IsKeyboardFocusWithin, Is.True);
+        Assert.That(button.FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
         int clicks = 0; button.Click += (_, _) => clicks++;
         object? source = scope.History.ItemsSource;
         GitCommandLog.Clear();
@@ -550,7 +554,7 @@ public sealed class RevisionQuickSearchTests
         Assert.That(clicks, Is.Zero, "TextInput must remain available without Button's Space release invoking its workflow.");
         Assert.That(scope.NoticeText.Text, Does.EndWith(firstWord + " "));
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(target));
-        Assert.That(button.IsKeyboardFocusWithin, Is.True);
+        Assert.That(button.FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
         Assert.That(GitCommandLog.Snapshot(), Is.Empty, "Extending the current artificial match must not reload its diff/status workflow.");
         scope.Type(staged ? "index" : "directory"); await scope.IdleAsync();
         Assert.That(scope.NoticeText.Text, Does.EndWith(staged ? "commit index" : "working directory"));
@@ -564,9 +568,10 @@ public sealed class RevisionQuickSearchTests
     {
         await using Scope scope = await Scope.OpenAsync(unborn: true, fileHistory: true);
         Button index = Field<Button>(scope.Main, "IndexRevision");
-        PushProcessTestDriver.Pointer(index); await scope.IdleAsync();
+        PushProcessTestDriver.Pointer(index.FindAncestorOfType<ListBoxItem>()!); await scope.IdleAsync();
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(GitCompareRevisionKind.Index));
-        Assert.That(scope.History.Items, Is.Empty);
+        Assert.That(scope.History.Items.OfType<GitCommit>(), Is.Empty);
+        Assert.That(scope.History.Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind), Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
         Press(scope.Main, PhysicalKey.Digit1, RawInputModifiers.Control);
         Assert.That(scope.History.IsKeyboardFocusWithin, Is.True, "Use the actual Ctrl+1 shortcut, without a focus repair.");
         object? source = scope.History.ItemsSource; GitCommandLog.Clear();
@@ -574,8 +579,9 @@ public sealed class RevisionQuickSearchTests
         scope.Type("reference tester"); await scope.IdleAsync();
 
         Assert.That(ArtificialSelection(scope.Main)?.Kind, Is.EqualTo(GitCompareRevisionKind.Index), "Both artificial rows have this configured author; test the current Index before wrapping to WT.");
-        Assert.That(index.IsKeyboardFocusWithin, Is.True);
-        Assert.That(scope.History.Items, Is.Empty);
+        Assert.That(index.FindAncestorOfType<ListBoxItem>()!.IsKeyboardFocusWithin, Is.True);
+        Assert.That(scope.History.Items.OfType<GitCommit>(), Is.Empty);
+        Assert.That(scope.History.Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind), Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
         Assert.That(scope.History.ItemsSource, Is.SameAs(source));
         Assert.That(((TabItem)Field<TabControl>(scope.Main, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
         Assert.That(GitCommandLog.Snapshot(), Is.Empty, "A current match must not switch endpoints and reload an empty comparison.");
@@ -734,7 +740,7 @@ public sealed class RevisionQuickSearchTests
         catch (IOException) { return false; }
     }
     private static GitCompareRevision? ArtificialSelection(MainWindow window)
-        => (GitCompareRevision?)typeof(MainWindow).GetField("_quickSearchArtificialSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window);
+        => (Field<ListBox>(window, "RevisionHistory").SelectedItem as ArtificialHistoryRevision)?.Revision;
     private static async Task Drain(Task work) { try { await work; } catch (OperationCanceledException) { } }
     private static async Task PasteAsync(Scope scope, string text)
     {
@@ -742,6 +748,35 @@ public sealed class RevisionQuickSearchTests
         Press(scope.Main, PhysicalKey.V, RawInputModifiers.Control);
         await scope.Main.QuickSearchCompletion; await scope.IdleAsync();
         Assert.That(scope.NoticeText.Text, Does.EndWith(text), "The complete clipboard term must reach the real search surface in one operation.");
+    }
+    private static void AssertNoticeWithinOriginalGridSurface(Scope scope)
+    {
+        Grid surface = Field<Grid>(scope.Main, "RevisionQuickSearchSurface");
+        CommitGraph graph = surface.GetVisualDescendants().OfType<CommitGraph>().Single();
+        Rect notice = Bounds(scope.Main, scope.Notice), grid = Bounds(scope.Main, surface);
+        Rect graphBounds = Bounds(scope.Main, graph), rows = Bounds(scope.Main, scope.History);
+        string geometry = $"notice={notice}; surface={grid}; graph={graphBounds}; rows={rows}";
+        Assert.Multiple(() =>
+        {
+            Assert.That(notice.Width, Is.GreaterThan(80)); Assert.That(notice.Height, Is.GreaterThan(10));
+            // Windows QuickSearchProvider adds the label at grid (0,0), before
+            // its graph column, rather than at the first message cell's origin.
+            Assert.That(notice.Left, Is.EqualTo(grid.Left).Within(.01), geometry);
+            Assert.That(notice.Top, Is.EqualTo(grid.Top).Within(.01), geometry);
+            Assert.That(graphBounds.Width, Is.GreaterThan(0), geometry);
+            Assert.That(graphBounds.Left, Is.EqualTo(grid.Left).Within(.01), geometry);
+            Assert.That(graphBounds.Right, Is.EqualTo(rows.Left).Within(.01), geometry);
+            Assert.That(grid.Contains(notice), Is.True, geometry);
+            Assert.That(new Rect(default, scope.Main.ClientSize).Contains(grid), Is.True, geometry);
+            Assert.That(surface.ClipToBounds, Is.True);
+            Assert.That(scope.Notice.IsHitTestVisible, Is.False);
+            Assert.That(scope.Notice.Focusable, Is.False);
+            foreach (string name in new[] { "RepositoryNavigationPanel", "CommitInformation", "DetailsTabs" })
+            {
+                Rect neighbor = Bounds(scope.Main, Field<Control>(scope.Main, name));
+                Assert.That(notice.Intersects(neighbor), Is.False, name + "=" + neighbor + "; " + geometry);
+            }
+        });
     }
     private static T Field<T>(TopLevel window, string name) where T : Control => PushProcessTestDriver.Field<T>(window, name);
     private static Rect Bounds(Window window, Control control) => new(control.TranslatePoint(default, window)!.Value, control.Bounds.Size);

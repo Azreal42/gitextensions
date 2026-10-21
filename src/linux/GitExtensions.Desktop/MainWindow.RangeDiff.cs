@@ -5,12 +5,8 @@ public sealed partial class MainWindow
     private GitCommit[] SelectedRevisionDiffCommits()
     {
         if (IsCommitDiff) { return CurrentDisplayedCommit is { } fixedCommit ? [fixedCommit] : []; }
-        GitCommit[] selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? [])
-            .DistinctBy(commit => commit.Hash, StringComparer.Ordinal).ToArray();
-        if (_commits.SelectedItem is not GitCommit primary) { return selected; }
-        // RevisionGrid.GetSelectedRevisions preserves selection order unless a sort is
-        // explicitly requested. BASE can precede A here even when the graph places it last.
-        return [primary, .. selected.Where(commit => commit.Hash != primary.Hash)];
+        object[] selected = SelectedHistoryItems();
+        return selected.Any(item => item is ArtificialHistoryRevision) ? [] : selected.OfType<GitCommit>().ToArray();
     }
 
     private async Task ShowSelectedRangeDiffAsync()

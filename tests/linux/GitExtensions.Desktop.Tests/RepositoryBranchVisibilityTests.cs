@@ -442,6 +442,8 @@ public sealed class RepositoryBranchVisibilityTests
         string path = "/proc/" + actor.Pid + "/stat", stat;
         try { stat = File.ReadAllText(path); }
         catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return true; }
+        // A procfs task may vanish after open; .NET Unix exposes ESRCH as raw errno 3.
+        catch (IOException error) when (OperatingSystem.IsLinux() && error.HResult == 3) { return true; }
         string[] fields = stat[(stat.LastIndexOf(')') + 2)..].Split(' ');
         return fields[19] != actor.StartTicks;
     }

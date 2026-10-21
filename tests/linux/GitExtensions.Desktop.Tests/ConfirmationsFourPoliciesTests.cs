@@ -301,6 +301,8 @@ public sealed class ConfirmationsFourPoliciesTests
         bool sameProcess = false;
         try { string now = File.ReadAllText($"/proc/{pid}/stat"); sameProcess = now[(now.LastIndexOf(')') + 2)..].Split(' ')[19] == start; }
         catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { }
+        // A procfs task may vanish after open; .NET Unix exposes ESRCH as raw errno 3.
+        catch (IOException error) when (OperatingSystem.IsLinux() && error.HResult == 3) { }
         Assert.That(sameProcess, Is.False, "The owned native shell identity must be gone before the checkout closes.");
         Assert.That((await scope.Git.Repository.GetStatusAsync()).Branch, Is.EqualTo("main"));
         Assert.That((await scope.Git.Repository.GetStashesAsync()).Count, Is.EqualTo(1));

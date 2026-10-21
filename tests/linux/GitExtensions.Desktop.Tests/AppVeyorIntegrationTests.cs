@@ -25,7 +25,7 @@ public sealed class AppVeyorIntegrationTests
         try
         {
             await window.OpenRepositoryAsync(f.Repository.Path); await Until(window, () => window.BuildServerStatusFor(sha) is not null);
-            ListBox history = History(window); GitCommit[] visible = ((IEnumerable<GitCommit>)history.ItemsSource!).ToArray();
+            ListBox history = History(window); GitCommit[] visible = history.Items.OfType<GitCommit>().ToArray();
             HashSet<string> expected = visible.Select(commit => commit.Hash).Where(AppVeyorBuild.IsCommitHash).ToHashSet(StringComparer.OrdinalIgnoreCase);
             Assert.That(expected.Count, Is.GreaterThanOrEqualTo(3)); Assert.That(admitted.Single(), Is.EquivalentTo(expected));
             Assert.That(configurations.Single().AccountName, Is.EqualTo("sample-account")); Assert.That(configurations.Single().AccountToken, Is.EqualTo("private-fake-token"));
@@ -153,7 +153,7 @@ public sealed class AppVeyorIntegrationTests
     }
     private static string ExpectedTooltip(string status, string version) => string.Join(Environment.NewLine,
         status, "02:05", "10 tests ( 1 failed, 2 skipped )", "PR#42: Keep original pull request title", version);
-    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(control => control.ItemsSource is IEnumerable<GitCommit>);
+    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(control => control.Name == "RevisionHistory");
     private static Control Row(MainWindow window, string sha) => History(window).GetVisualDescendants().OfType<Control>().Single(control => control.Name == "RevisionHistoryRow" && RevisionHistoryRow.CommitHash(control) == sha);
     private static T Field<T>(Control control, string name) where T : Control => control.GetVisualDescendants().OfType<T>().Single(child => child.Name == name);
     private static void Pump(TopLevel window) => DetailedSettingsUiHost.Pump(window);

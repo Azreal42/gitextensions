@@ -123,10 +123,10 @@ public sealed class CommitGraph : Control
     internal IReadOnlyList<string> GetChildren(string hash)
         => _incrementalLayout?.GetChildren(hash) ?? _layout.Children.GetValueOrDefault(hash) ?? [];
 
-    internal void BeginIncrementalData(string? head, bool onlyFirstParent = false, bool includeArtificial = false)
+    internal void BeginIncrementalData(string? head, bool onlyFirstParent = false, bool includeArtificial = false, IReadOnlyList<object>? retainedItems = null)
     {
         _onlyFirstParent = onlyFirstParent;
-        _incrementalLayout = new(onlyFirstParent, _options, head, includeArtificial);
+        _incrementalLayout = new(onlyFirstParent, _options, head, includeArtificial, retainedItems);
         _commits = _incrementalLayout.Commits;
         CurrentHead = head;
         InvalidateMeasure(); InvalidateVisual();

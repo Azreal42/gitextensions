@@ -5,15 +5,34 @@ namespace GitExtensions.Linux.Desktop;
 
 public sealed partial class MainWindow
 {
-    private sealed record OperationFocus(GitRepository? Repository, Control? Input, string? CommitHash, bool PreserveUnselectedRow = false);
+    private sealed record OperationFocus(GitRepository? Repository, Control? Input, string? HistoryKey, bool PreserveUnselectedRow = false, bool PreserveHistorySelection = false);
     private OperationFocus? _revisionActionFocus;
+    // Only the admitted busy operation owns this intention; asynchronous tails
+    // cannot lend it to a later F5 or a different repository operation.
+    private OperationFocus? _operationHistoryFocus;
+
+    private OperationFocus CurrentHistoryOperationFocus(OperationFocus origin)
+    {
+        if (!origin.PreserveHistorySelection || !ReferenceEquals(origin.Repository, _repository)) { return origin; }
+        // The command's captured target is immutable, but the user's latest
+        // surviving selection/caret owns the eventual return from that command.
+        object? current = RevisionContextItem;
+        return origin with { Input = null, HistoryKey = current is null ? null : HistoryRevisionItems.Key(current) };
+    }
+    private object? _revisionActionItem;
 
     private async Task WithRevisionActionFocusAsync(Func<Task> action)
     {
-        OperationFocus origin = new(_repository, null, (_commits.SelectedItem as GitCommit)?.Hash);
+        object? previous = _revisionActionItem, target = RevisionContextItem;
+        OperationFocus origin = new(_repository, null, target is null ? null : HistoryRevisionItems.Key(target), PreserveHistorySelection: true);
+        _revisionActionItem = target;
         _revisionActionFocus = origin;
         try { await action(); }
-        finally { if (ReferenceEquals(_revisionActionFocus, origin)) { _revisionActionFocus = null; } }
+        finally
+        {
+            if (ReferenceEquals(_revisionActionFocus, origin)) { _revisionActionFocus = null; }
+            if (ReferenceEquals(_revisionActionItem, target)) { _revisionActionItem = previous; }
+        }
     }
 
     private Task WithMenuActionFocusAsync(MenuItem item, Func<Task> action)
@@ -36,10 +55,10 @@ public sealed partial class MainWindow
             if (origin.Repository == _repository) { return origin; }
         }
         if (FocusManager?.GetFocusedElement() is not Control input || input is Window || TopLevel.GetTopLevel(input) != this) { return null; }
-        GitCommit? commit = input.GetSelfAndVisualAncestors().OfType<ListBoxItem>()
-            .FirstOrDefault(row => row.FindAncestorOfType<ListBox>() == _commits)?.DataContext as GitCommit;
-        if (commit is null && _commits.IsKeyboardFocusWithin) { commit = _commits.SelectedItem as GitCommit; }
-        return new(_repository, input, commit?.Hash);
+        object? item = input.GetSelfAndVisualAncestors().OfType<ListBoxItem>()
+            .FirstOrDefault(row => row.FindAncestorOfType<ListBox>() == _commits)?.DataContext;
+        item = item is GitCommit or ArtificialHistoryRevision ? item : _commits.IsKeyboardFocusWithin ? PrimaryHistoryItem : null;
+        return new(_repository, input, item is null ? null : HistoryRevisionItems.Key(item));
     }
 
     private void RestoreOperationFocus(OperationFocus? previous)
@@ -50,13 +69,13 @@ public sealed partial class MainWindow
             && current.Focusable && current.IsEffectivelyEnabled && current.IsEffectivelyVisible
             && TopLevel.GetTopLevel(current) is { IsVisible: true }) { return; }
         Control? target = previous.Input;
-        if (previous.CommitHash is string hash)
+        if (previous.HistoryKey is string hash)
         {
             // Refresh replaces commit objects and row containers. Preserve the
             // current selection. Explicit F5 also preserves an unselected caret
             // row; other operations resolve only an origin still selected.
-            if (!previous.PreserveUnselectedRow && _commits.SelectedItems?.OfType<GitCommit>().Any(commit => commit.Hash == hash) != true) { return; }
-            GitCommit? commit = _commits.Items.OfType<GitCommit>().FirstOrDefault(item => item.Hash == hash);
+            if (!previous.PreserveUnselectedRow && _commits.SelectedItems?.Cast<object>().Any(item => HistoryRevisionItems.Key(item) == hash) != true) { return; }
+            object? commit = HistoryItem(hash);
             if (commit is null || TopLevel.GetTopLevel(_commits) != this) { return; }
             _commits.ScrollIntoView(commit); _commits.UpdateLayout();
             target = _commits.ContainerFromIndex(_commits.Items.IndexOf(commit));

@@ -32,7 +32,7 @@ public sealed class RevisionLogCloseRefreshTests
         Assert.That(f.History.ItemsSource, Is.SameAs(source)); Assert.That(f.History.SelectedItem, Is.SameAs(selected));
         Assert.That(f.History.ContainerFromItem(selected), Is.SameAs(row)); Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
         AssertNoGlobalReads();
-        int index = f.History.Items.IndexOf(selected); GitCommit next = f.History.Items.OfType<GitCommit>().ElementAt(index + 1);
+        int index = f.History.Items.IndexOf(selected); object next = f.History.Items[index + 1]!;
         Press(f.Owner, PhysicalKey.ArrowDown); await Idle(f.Owner);
         Assert.That(f.History.SelectedItem, Is.SameAs(next)); Assert.That(f.History.IsKeyboardFocusWithin, Is.True); AssertNoGlobalReads();
     }
@@ -59,7 +59,7 @@ public sealed class RevisionLogCloseRefreshTests
         PushProcessTestDriver.Pointer(Field<Button>(question, "ConfirmResetChanges")); await Idle(log);
         Assert.That(File.ReadAllText(git.File), Is.EqualTo("third\n")); Assert.That(log.StandaloneMayHaveRepositoryChanges, Is.True);
         GitCommandLog.Clear(); await f.CloseLog(log);
-        Assert.That(f.History.ItemsSource, Is.Not.SameAs(source)); Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Contain("git log"));
+        Assert.That(f.History.ItemsSource, Is.SameAs(source)); Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Contain("git log"));
         Assert.That((await git.Repository.GetStatusAsync()).Changes, Is.Empty);
         Assert.That(PrivateField<FileStatusListView>(f.Owner, "_changesFilesView").Entries, Is.Empty);
     }
@@ -96,7 +96,7 @@ public sealed class RevisionLogCloseRefreshTests
         finally { release?.TrySetResult(); }
         Assert.That(log.StandaloneMayHaveRepositoryChanges, Is.True);
         GitCommandLog.Clear(); await f.CloseLog(log);
-        Assert.That(f.History.ItemsSource, Is.Not.SameAs(source)); Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Contain("git log"));
+        Assert.That(f.History.ItemsSource, Is.SameAs(source)); Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Contain("git log"));
         Assert.That((await git.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo("partial effect before failure\n"));
         Assert.That((await git.Repository.GetStatusAsync()).Changes.Any(change => change.Path == "file.txt"), Is.True);
     }
@@ -166,7 +166,7 @@ public sealed class RevisionLogCloseRefreshTests
             Assert.That(f.Owner.IsVisible, Is.True); Assert.That(f.Owner.OwnedWindows.Where(window => window.IsVisible), Is.Empty);
             Assert.That(f.Owner.ClosingBehavior, Is.EqualTo(originalPolicy));
             Assert.That(log.StandaloneMayHaveRepositoryChanges, Is.True);
-            Assert.That(f.History.ItemsSource, Is.Not.SameAs(source), "A live owner still refreshes after the Log's acquired partial effect.");
+            Assert.That(f.History.ItemsSource, Is.SameAs(source), "A live owner publishes the refreshed snapshot in the same history source after the Log's acquired partial effect.");
             Assert.That((await git.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo("partial effect before failure\n"));
         }
         finally { release.TrySetResult(); }

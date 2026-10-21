@@ -13,6 +13,10 @@ public sealed partial class MainWindow
     private MenuItem? _revisionCheckoutBranches, _revisionRenameBranches, _revisionDeleteBranches, _revisionCopy;
     private readonly List<(MenuItem Item, bool Worktree, Func<bool>? Available)> _revisionActions = [];
     private bool _selectingRevisionForContextMenu, _contextRevisionDiffPending;
+    private MenuItem? _revisionResetChanges, _revisionCommit;
+
+    private object? RevisionContextItem => _parentChildLatestCommit is { } key && HistoryItem(key) is { } item
+        && _commits.SelectedItems?.Contains(item) == true ? item : PrimaryHistoryItem;
 
     private AccessText RevisionHeader(string key, string fallback) => new()
     { Text = _translations.TranslateAccessKeys("RevisionGridControl", key, "Text", fallback) };
@@ -33,6 +37,9 @@ public sealed partial class MainWindow
 
     private ContextMenu BuildRevisionContextMenu()
     {
+        _revisionResetChanges = ArtificialRevisionAction("RevisionResetChanges", "resetChangesToolStripMenuItem", "&Reset changes", ResetArtificialRevisionAsync, "ResetWorkingDirChanges.png");
+        _revisionCommit = ArtificialRevisionAction("RevisionCommit", "commitToolStripMenuItem", "&Commit", () => ShowWorkflowAsync("Changes"), "RepoStateDirty.png");
+        DesktopHotkeys.Bind(_revisionCommit, "Browse", "Commit");
         _revisionCopy = new() { Name = "RevisionCopy", Header = RevisionHeader("copyToClipboardToolStripMenuItem", "&Copy to clipboard"), Icon = OriginalIconImage("CopyToClipboard.png") };
         _revisionCopy.SubmenuOpened += async (_, args) => { if (args.Source == _revisionCopy) { await RefreshRevisionCopyDatesAsync(); } };
         _revisionCheckoutBranches = new() { Name = "RevisionCheckoutBranch", Header = RevisionHeader("checkoutBranchToolStripMenuItem", "Chec&kout branch..."), Icon = OriginalIconImage("BranchCheckout.png") };
@@ -55,7 +62,7 @@ public sealed partial class MainWindow
         };
         object[] commands =
             [
-                .. BuildRevisionBisectMenuItems(), _revisionCopy, new Separator(), _revisionCheckoutBranches, _revisionPushBranches, _revisionMergeBranches, BuildRebaseMenu(),
+                _revisionResetChanges, _revisionCommit, new Separator(), .. BuildRevisionBisectMenuItems(), _revisionCopy, new Separator(), _revisionCheckoutBranches, _revisionPushBranches, _revisionMergeBranches, BuildRebaseMenu(),
                 RevisionAction("RevisionResetCurrent", "resetCurrentBranchToHereToolStripMenuItem", "Reset c&urrent branch to here...", ResetAsync, "ResetCurrentBranchToHere.png", true),
                 new Separator(), _revisionSelectInLeftPanel, createBranch,
                 RevisionAction("RevisionResetAnother", "resetAnotherBranchToHereToolStripMenuItem", "Reset an&other branch to here...", ResetAnotherBranchAsync, "ResetAnotherBranchToHere.png", true),
@@ -71,7 +78,7 @@ public sealed partial class MainWindow
         _revisionContext = new ContextMenu { Name = "RevisionContextMenu", ItemsSource = commands };
         InitializeFocusedRevisionMenu(commands);
         _revisionContext.Opening += (_, _) => { BeginRevisionContextMenu(); CaptureRevisionBisectTarget(); PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); ComposeRevisionContextMenu(_focusedRevisionMenu); RefreshRevisionScriptMenu(); };
-        _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu(); };
+        _revisionContext.Opened += (_, _) => { PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); ComposeRevisionContextMenu(_focusedRevisionMenu); RefreshRevisionScriptMenu(); };
         _revisionContext.Closed += (_, _) => EndRevisionContextMenu();
         _revisionContext.AddHandler(KeyDownEvent, async (_, args) =>
             await WithRevisionActionFocusAsync(() => HandleShortcutsAsync(_revisionContext, args)), RoutingStrategies.Tunnel);
@@ -79,20 +86,33 @@ public sealed partial class MainWindow
         {
             if (!args.GetCurrentPoint(_commits).Properties.IsRightButtonPressed || args.Source is not Control source) { return; }
             ListBoxItem? row = source.GetSelfAndVisualAncestors().OfType<ListBoxItem>().FirstOrDefault();
-            GitCommit? commit = row?.DataContext as GitCommit;
-            if (commit is not null && !ReferenceEquals(_commits.SelectedItem, commit))
+            object? item = row?.DataContext;
+            GitCommit? commit = item as GitCommit;
+            if (item is GitCommit or ArtificialHistoryRevision)
             {
-                GitCommit[] preserved = _commits.SelectedItems?.Contains(commit) == true
-                    ? _commits.SelectedItems.OfType<GitCommit>().ToArray() : [];
+                string key = HistoryRevisionItems.Key(item);
+                bool preserve = _parentChildLatestCommit == key && _commits.SelectedItems?.Contains(item) == true;
                 _selectingRevisionForContextMenu = true;
                 try
                 {
-                    _commits.SelectedItems?.Clear(); _commits.SelectedItem = commit;
-                    foreach (GitCommit other in preserved.Where(selected => selected.Hash != commit.Hash)) { _commits.SelectedItems?.Add(other); }
+                    if (!preserve) { _commits.SelectedItems = new Avalonia.Collections.AvaloniaList<object?>([item]); }
+                    else
+                    {
+                        // Native context target/caret is distinct from SelectedRows order.
+                        // Keep comparison order and pending reads when the latest row remains selected.
+                        bool refreshing = _refreshing; _refreshing = true;
+                        try
+                        {
+                            object[] others = _commits.SelectedItems!.Cast<object>().Where(other => !ReferenceEquals(other, item)).ToArray();
+                            _commits.SelectedItems = new Avalonia.Collections.AvaloniaList<object?>(new[] { item }.Concat(others));
+                        }
+                        finally { _refreshing = refreshing; }
+                    }
                 }
                 finally { _selectingRevisionForContextMenu = false; }
+                _parentChildLatestCommit = key;
+                row!.Focus();
             }
-            if (commit is not null) { row!.Focus(); }
             CaptureRevisionPointerContext(args, commit, source);
         }, RoutingStrategies.Tunnel);
         PopulateRevisionReferenceMenus(); PopulateRevisionCopyMenu(); RefreshRevisionContextMenu(); RefreshRevisionScriptMenu();
@@ -113,11 +133,11 @@ public sealed partial class MainWindow
         Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
         {
             if (!_contextRevisionDiffPending || _busy || _revisionContext?.IsOpen == true || _lifetime.IsCancellationRequested
-                || _repository is null || _commits.SelectedItem is not GitCommit commit) { return; }
+                || _repository is null || PrimaryHistoryItem is null) { return; }
             // Keep the request while a menu action owns a dialog. Returning to
             // idle retries it, including when that dialog was simply cancelled.
             _contextRevisionDiffPending = false;
-            await LoadSelectedRevisionDetailsAsync(commit);
+            await LoadVisibleRevisionPanelAsync();
         }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
@@ -128,15 +148,18 @@ public sealed partial class MainWindow
         RefreshRebaseMenu();
         if (_revisionContext is null) { return; }
         bool selected = !_busy && _repository is not null && SelectedComparisonCommits().Length > 0;
-        _revisionContext.IsEnabled = selected;
+        bool artificial = !_busy && _repository is { IsBare: false } && RevisionContextItem is ArtificialHistoryRevision;
+        foreach (MenuItem? item in new[] { _revisionResetChanges, _revisionCommit })
+        { if (item is not null) { item.IsVisible = item.IsEnabled = artificial; } }
+        _revisionContext.IsEnabled = !_busy && _repository is not null && RevisionContextItem is not null;
         foreach ((MenuItem item, bool worktree, Func<bool>? available) in _revisionActions)
-        { item.IsEnabled = selected && (!worktree || !_repository!.IsBare) && (available?.Invoke() ?? true); }
+        { item.IsVisible = item.IsEnabled = selected && (!worktree || !_repository!.IsBare) && (available?.Invoke() ?? true); }
         RefreshRevisionBisectMenu();
-        if (_revisionCopy is not null) { _revisionCopy.IsEnabled = selected; }
+        if (_revisionCopy is not null) { _revisionCopy.IsVisible = _revisionCopy.IsEnabled = selected; }
         GitReference? clicked = CurrentRevisionContextReference();
         bool includesCurrentBranch = clicked is not null ? clicked.IsBranch && clicked.IsCurrent
             : _navigationReferences.Any(reference => reference.IsBranch && reference.IsCurrent
-                && reference.RevisionHash == (_commits.SelectedItem as GitCommit)?.Hash);
+                && reference.RevisionHash == (RevisionContextItem as GitCommit)?.Hash);
         foreach (MenuItem? group in new[] { _revisionCheckoutBranches, _revisionRenameBranches, _revisionDeleteBranches })
         {
             if (group is null) { continue; }
@@ -154,7 +177,7 @@ public sealed partial class MainWindow
     {
         if (_revisionCheckoutBranches is null || _revisionRenameBranches is null || _revisionDeleteBranches is null) { return; }
         GitRepository? repository = _repository;
-        string? hash = (_commits.SelectedItem as GitCommit)?.Hash;
+        string? hash = (RevisionContextItem as GitCommit)?.Hash;
         GitReference? clicked = CurrentRevisionContextReference();
         GitReference[] refs = _navigationReferences.Where(reference => reference.RevisionHash == hash && reference.SymbolicTarget is null
             && (clicked is null || reference.Name == clicked.Name))
@@ -166,7 +189,7 @@ public sealed partial class MainWindow
             item.Click += async (_, args) =>
             {
                 if (args.Source != item || _busy || repository is null || repository != _repository
-                    || (_commits.SelectedItem as GitCommit)?.Hash != hash) { return; }
+                    || (RevisionContextItem as GitCommit)?.Hash != hash) { return; }
                 try { if (restoreGridFocus) { await WithRevisionActionFocusAsync(action); } else { await action(); } }
                 catch (Exception exception) { AppendOutput(exception.Message); _state.Text = exception.Message; }
             };
@@ -201,7 +224,7 @@ public sealed partial class MainWindow
                 commit.Click += async (_, args) =>
                 {
                     if (args.Source == commit && !_busy && repository is not null && repository == _repository
-                        && (_commits.SelectedItem as GitCommit)?.Hash == hash)
+                        && (RevisionContextItem as GitCommit)?.Hash == hash)
                     { await WithRevisionActionFocusAsync(() => MergeRevisionReferenceAsync(repository, hash)); }
                 };
                 _revisionMergeBranches.ItemsSource = new[] { commit };
@@ -213,7 +236,7 @@ public sealed partial class MainWindow
             GitReference[] targets = refs.Where(reference => reference.IsBranch || reference.IsRemote || reference.IsTag).ToArray();
             GitReference? single = targets.Length == 1 ? targets[0] : null;
             _selectRevisionInLeftPanel = single is null ? null : () => repository == _repository
-                && (_commits.SelectedItem as GitCommit)?.Hash == hash
+                && (RevisionContextItem as GitCommit)?.Hash == hash
                 ? SelectRevisionReferenceInLeftPanelAsync(single) : Task.CompletedTask;
             _revisionSelectInLeftPanel.Tag = single;
             _revisionSelectInLeftPanel.ItemsSource = single is null ? Entries(targets, SelectRevisionReferenceInLeftPanelAsync, restoreGridFocus: false) : Array.Empty<object>();
@@ -241,7 +264,7 @@ public sealed partial class MainWindow
 
     private async Task CheckoutRevisionWithConfirmationAsync()
     {
-        if (_repository is null || _repository.IsBare || _commits.SelectedItem is not GitCommit selected) { return; }
+        if (_repository is null || _repository.IsBare || RevisionContextItem is not GitCommit selected) { return; }
         GitRepository repository = _repository;
         if (_busy) { return; }
         await ShowRepositoryDialogAsync(new CheckoutRevisionDialog(repository,

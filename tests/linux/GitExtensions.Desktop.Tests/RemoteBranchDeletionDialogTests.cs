@@ -573,7 +573,7 @@ public sealed class RemoteBranchDeletionDialogTests
             await main.OpenRepositoryAsync(f.Repository.Path);
             await Until(() => !main.IsBusy);
             ListBox history = Field<ListBox>(main, "RevisionHistory");
-            history.SelectedIndex = 0;
+            history.SelectedItem = history.Items.OfType<GitCommit>().First();
             await Until(() => !main.IsBusy);
             ContextMenu context = history.ContextMenu!; context.Open(history); Pump(main);
             MenuItem delete = context.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionDeleteBranch");

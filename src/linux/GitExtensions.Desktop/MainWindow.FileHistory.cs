@@ -17,7 +17,8 @@ public sealed partial class MainWindow
     private sealed record BrowseInitialComparison(GitCompareRevision First, GitCompareRevision Selected);
     private BrowseInitialComparison? _browseInitialComparison;
     private bool UsesArtificialInitialComparison => _browseInitialComparison is { } pair
-        && (pair.First.Kind != GitCompareRevisionKind.Commit || pair.Selected.Kind != GitCompareRevisionKind.Commit);
+        && (pair.First.Kind != GitCompareRevisionKind.Commit || pair.Selected.Kind != GitCompareRevisionKind.Commit
+            || SelectedHistoryItems().Any(item => item is ArtificialHistoryRevision));
     private bool IsFileHistoryBrowse => _browseRequest.PathFilter is not null;
     private bool UsesArtificialDiffHistory => IsFileHistoryBrowse || IsRevisionLog;
 
@@ -27,16 +28,7 @@ public sealed partial class MainWindow
         if (!UsesArtificialDiffHistory) { return; }
         SetNavigationVisible(false);
         SelectDetailsTab("DiffTab");
-        _commits.AddHandler(KeyDownEvent, async (_, args) =>
-        {
-            if (!args.Handled && args.Key == Avalonia.Input.Key.Up && args.KeyModifiers == Avalonia.Input.KeyModifiers.None
-                && _commits.IsKeyboardFocusWithin && _commits.SelectedIndex == 0 && !_busy)
-            {
-                args.Handled = true;
-                Task selection = SelectArtificialHistoryRevisionAsync(staged: true);
-                _indexRevision?.Focus(); await selection;
-            }
-        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+
     }
 
     private void SetNavigationVisible(bool visible)
@@ -89,7 +81,7 @@ public sealed partial class MainWindow
         if (_historyQuery.Path is null || firstGroup is null) { return null; }
         string firstKey = $"0:{firstGroup.Kind}:{firstGroup.BaseRevision}:{firstGroup.Revision}";
         foreach (string path in new[] { _explicitFileHistoryDiffPath }.OfType<string>()
-            .Concat(FileHistoryFollowedPaths((_commits.SelectedItem as GitCommit)?.Hash)).Distinct(StringComparer.Ordinal))
+            .Concat(FileHistoryFollowedPaths((PrimaryHistoryItem as GitCommit)?.Hash)).Distinct(StringComparer.Ordinal))
         {
             TreeViewItem? item = nodes.FirstOrDefault(item => item.Tag switch
             {

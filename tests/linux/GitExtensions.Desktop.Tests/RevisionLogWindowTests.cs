@@ -145,7 +145,7 @@ public sealed class RevisionLogWindowTests
         MainWindow log = RevisionLogWindow.Create(new(f.Repository.Path)); log.Show();
         try
         {
-            await Idle(log); PushProcessTestDriver.Pointer(Field<Button>(log, "IndexRevision")); await Idle(log);
+            await Idle(log); PushProcessTestDriver.Pointer(Field<Button>(log, "IndexRevision").FindAncestorOfType<ListBoxItem>()!); await Idle(log);
             Assert.That(Field<DiffView>(log, "CommitDiff").Text, Does.Contain("+actual index").And.Not.Contain("+actual working"));
             Assert.That(((TabItem)Field<TabControl>(log, "DetailsTabs").SelectedItem!).Name, Is.EqualTo("DiffTab"));
             Press(log, PhysicalKey.ArrowUp); await Idle(log);
@@ -160,7 +160,9 @@ public sealed class RevisionLogWindowTests
     [AvaloniaTest]
     public async Task EmptyGridDoubleClickOpensTheOwnedLogAndClosingItReturnsTheFirstArrowToTheOwner()
     {
-        using Fixture f = await Fixture.CreateAsync(unborn: true); MainWindow owner = new(new BrowseRequest(f.Repository.Path)) { Width = 1200, Height = 800 }; owner.Show();
+        using Fixture f = await Fixture.CreateAsync(unborn: true);
+        HistoryViewPreferencesStore viewStore = new(); viewStore.Save(viewStore.Load() with { ShowArtificialCommits = false });
+        MainWindow owner = new(new BrowseRequest(f.Repository.Path)) { Width = 1200, Height = 800 }; owner.Show();
         try
         {
             await Idle(owner); ListBox history = Field<ListBox>(owner, "RevisionHistory"); Assert.That(history.Items, Is.Empty);
@@ -215,11 +217,27 @@ public sealed class RevisionLogWindowTests
             PushProcessTestDriver.Pointer(Field<Button>(log, "RevisionLogLoadMore")); await Idle(log);
             Assert.That(history.Items.OfType<GitCommit>().Count(), Is.EqualTo(4));
             GitCommit third = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Third"), fourth = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Fourth");
-            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(history.Items.IndexOf(fourth))!); await Idle(log);
-            Control row = (Control)history.ContainerFromIndex(history.Items.IndexOf(third))!; Point point = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), log)!.Value;
+            object source = history.ItemsSource!;
+            System.Reflection.FieldInfo queryField = typeof(MainWindow).GetField("_historyQuery", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            GitLogQuery filter = (GitLogQuery)queryField.GetValue(log)!; GitLogQuery expectedFilter = filter with { };
+            // The last real click is the native current cell B: Third -> Fourth.
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromIndex(history.Items.IndexOf(third))!); await Idle(log);
+            Control row = (Control)history.ContainerFromIndex(history.Items.IndexOf(fourth))!; Point point = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), log)!.Value;
+            Assert.That(row.IsEffectivelyVisible && row.IsEffectivelyEnabled, Is.True);
+            Assert.That(new Rect(default, log.ClientSize).Contains(point), Is.True);
+            Assert.That((log.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(row), Is.True);
             log.MouseMove(point); log.MouseDown(point, MouseButton.Left, RawInputModifiers.Control); log.MouseUp(point, MouseButton.Left, RawInputModifiers.Control); await Idle(log);
             Assert.That(history.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Subject), Is.EquivalentTo(new[] { "Third", "Fourth" }));
-            Assert.That(((GitCommit)history.SelectedItem!).Subject, Is.EqualTo("Fourth"), "The grid's original primary selection remains the second comparison endpoint.");
+            ListBoxItem? current = (log.FocusManager?.GetFocusedElement() as Visual)?.GetSelfAndVisualAncestors().OfType<ListBoxItem>()
+                .FirstOrDefault(item => ReferenceEquals(item.FindAncestorOfType<ListBox>(), history));
+            Assert.That(current?.Content, Is.SameAs(fourth), "The last clicked Fourth cell owns actual focus, independently of Avalonia SelectedItem.");
+            GitRevisionDiffGroup comparison = Field<TreeView>(log, "RevisionFiles").Items.OfType<TreeViewItem>().Select(item => item.Tag)
+                .OfType<GitRevisionDiffGroup>().Single(group => group.Kind == GitRevisionDiffGroupKind.Comparison);
+            Assert.That(comparison.Revision, Is.EqualTo(fourth.Hash)); Assert.That(comparison.BaseRevision, Is.EqualTo(third.Hash));
+            Assert.That(history.ItemsSource, Is.SameAs(source));
+            Assert.That(queryField.GetValue(log), Is.SameAs(filter)); Assert.That(queryField.GetValue(log), Is.EqualTo(expectedFilter));
+            Assert.That(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == third.Hash), Is.SameAs(third));
+            Assert.That(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == fourth.Hash), Is.SameAs(fourth));
             string diff = Field<DiffView>(log, "CommitDiff").Text; Assert.That(diff, Does.Contain("-third").And.Contain("+fourth"));
             Assert.That(log.LastException, Is.Null);
         }

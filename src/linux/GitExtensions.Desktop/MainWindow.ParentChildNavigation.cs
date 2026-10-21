@@ -23,17 +23,14 @@ public sealed partial class MainWindow
         {
             if (args.InitialPressMouseButton is not (MouseButton.Left or MouseButton.Right)) { return; }
             _parentChildLatestCommit = (args.Source as Avalonia.Visual)?.GetSelfAndVisualAncestors().OfType<ListBoxItem>()
-                .FirstOrDefault(row => row.FindAncestorOfType<ListBox>() == _commits)?.DataContext is GitCommit commit ? commit.Hash : null;
+                .FirstOrDefault(row => row.FindAncestorOfType<ListBox>() == _commits)?.DataContext is { } item ? HistoryRevisionItems.Key(item) : null;
             RefreshHistoryMenuStates();
         }, RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
     private GitCompareRevision? CurrentRelativeRevision()
-    {
-        int index = QuickSearchCurrentIndex(), artificial = QuickSearchArtificialCount;
-        if (index >= 0 && index < artificial) { return new("", index == 0 ? GitCompareRevisionKind.WorkingTree : GitCompareRevisionKind.Index); }
-        return _parentChildLatestCommit is { } latest && _history.Any(commit => commit.Hash == latest) ? new(latest) : null;
-    }
+        => _parentChildLatestCommit is { } key && HistoryItem(key) is { } item ? HistoryRevisionItems.Revision(item)
+            : PrimaryHistoryItem is { } selected ? HistoryRevisionItems.Revision(selected) : null;
 
     private IReadOnlyList<GitCompareRevision> RelativeRevisionParents(GitCompareRevision current) => current.Kind switch
     {
@@ -44,21 +41,10 @@ public sealed partial class MainWindow
 
     private IReadOnlyList<GitCompareRevision> RelativeRevisionChildren(GitCompareRevision current)
     {
-        if (current.Kind == GitCompareRevisionKind.WorkingTree) { return []; }
-        if (current.Kind == GitCompareRevisionKind.Index) { return [new("", GitCompareRevisionKind.WorkingTree)]; }
-        List<GitCompareRevision> children = [];
-        IReadOnlyList<string> realChildren = _historyGraph.GetChildren(current.Revision);
-        if (QuickSearchArtificialCount > 0 && _historyGraph.CurrentHead == current.Revision)
-        {
-            // Windows inserts artificial rows just before HEAD in the reader,
-            // after edges already read and before any later child edges.
-            HashSet<string> beforeHead = _history.TakeWhile(commit => commit.Hash != current.Revision).Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
-            children.AddRange(realChildren.Where(beforeHead.Contains).Select(hash => new GitCompareRevision(hash)));
-            children.Add(new("", GitCompareRevisionKind.Index));
-            children.AddRange(realChildren.Where(hash => !beforeHead.Contains(hash)).Select(hash => new GitCompareRevision(hash)));
-        }
-        else { children.AddRange(realChildren.Select(hash => new GitCompareRevision(hash))); }
-        return children;
+        object? row = HistoryItem(current);
+        if (row is null) { return []; }
+        return _historyGraph.GetChildren(HistoryRevisionItems.Key(row)).Select(HistoryItem).OfType<object>()
+            .Select(HistoryRevisionItems.Revision).ToArray();
     }
 
     private bool HasRevisionParent() => CurrentRelativeRevision() is { } current
@@ -119,13 +105,8 @@ public sealed partial class MainWindow
 
     private Task SelectParentChildDestinationAsync(GitCompareRevision target)
     {
-        if (target.Kind != GitCompareRevisionKind.Commit)
-        {
-            if (QuickSearchArtificialCount == 0) { return Task.CompletedTask; }
-            return ApplyQuickSearchAsync(target.Kind == GitCompareRevisionKind.WorkingTree ? 0 : 1);
-        }
-        GitCommit? commit = _commits.Items.OfType<GitCommit>().FirstOrDefault(row => row.Hash == target.Revision);
-        return commit is null ? ShowFilteredRevisionErrorAsync(target.Revision)
-            : ApplyQuickSearchAsync(QuickSearchArtificialCount + _commits.Items.IndexOf(commit));
+        object? row = HistoryItem(target);
+        return row is not null ? ApplyQuickSearchAsync(_commits.Items.IndexOf(row))
+            : target.Kind == GitCompareRevisionKind.Commit ? ShowFilteredRevisionErrorAsync(target.Revision) : Task.CompletedTask;
     }
 }

@@ -199,7 +199,9 @@ public sealed class ChooseCommitDialogTests
         string acceptId = adapter switch { "Export" => "Choose", "CherryPick" => "ChooseCherryPickCommit", "Revert" => "ChooseRevertCommit", _ => "ChooseRebaseCommit" };
         try
         {
-            await Until(owner, () => owner.OwnedWindows.OfType<ChooseCommitDialog>().Any(child => child.IsVisible && !child.IsBusy));
+            await Until(owner, () => owner.OwnedWindows.OfType<ChooseCommitDialog>().Any(child => child.IsVisible && !child.IsBusy
+                && (Field<ListBox>(child, rowsId).SelectedItem as GitCommit)?.Hash == f.Main
+                && Field<Button>(child, acceptId).IsEffectivelyEnabled));
             ChooseCommitDialog dialog = owner.OwnedWindows.OfType<ChooseCommitDialog>().Single();
             Assert.That(dialog.GetType().Name, Is.EqualTo(adapter + "RevisionPicker"));
             Assert.That(((GitCommit)Field<ListBox>(dialog, rowsId).SelectedItem!).Hash, Is.EqualTo(f.Main));

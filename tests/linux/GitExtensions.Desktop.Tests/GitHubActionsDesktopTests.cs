@@ -199,7 +199,7 @@ public sealed class GitHubActionsDesktopTests
         (GitHubActionsSettings.RepositoryKey, "repo"), (GitHubActionsSettings.TokenKey, "masked-test-token"));
     private static MainWindow Browser(DetailedSettingsTestScope f)
     { f.Desktop.Save(new() { Language = "English", StartWithRecentWorkingDir = false }); return new() { Width = 1200, Height = 780, GitHubActionsPollInterval = Timeout.InfiniteTimeSpan }; }
-    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(c => c.ItemsSource is IEnumerable<GitCommit>);
+    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(c => c.Name == "RevisionHistory");
     private static IEnumerable<Control> Rows(MainWindow window) => History(window).GetVisualDescendants().OfType<Control>().Where(c => c.Name == "RevisionHistoryRow");
     private static T Field<T>(Control root, string name) where T : Control => root.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
     private static void Pump(TopLevel window) => DetailedSettingsUiHost.Pump(window);

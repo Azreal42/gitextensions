@@ -175,7 +175,7 @@ public sealed class JenkinsIntegrationTests
         new HistoryViewPreferencesStore().Save(new() { ShowArtificialCommits = false, ShowBuildStatusIcon = true, ShowBuildStatusText = true, ShowAvatar = false });
         MainWindow window = new() { Width = 1200, Height = 780 }; if (infinite) { window.GitHubActionsPollInterval = Timeout.InfiniteTimeSpan; } return window;
     }
-    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(control => control.ItemsSource is IEnumerable<GitCommit>);
+    private static ListBox History(MainWindow window) => window.GetVisualDescendants().OfType<ListBox>().Single(control => control.Name == "RevisionHistory");
     private static Control Row(MainWindow window, string sha) => History(window).GetVisualDescendants().OfType<Control>().Single(control => control.Name == "RevisionHistoryRow" && RevisionHistoryRow.CommitHash(control) == sha);
     private static T Field<T>(Control root, string name) where T : Control => root.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static void Pump(TopLevel window) => DetailedSettingsUiHost.Pump(window);

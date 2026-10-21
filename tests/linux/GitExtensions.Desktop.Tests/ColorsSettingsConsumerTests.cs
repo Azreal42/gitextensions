@@ -339,6 +339,46 @@ public sealed class ColorsSettingsConsumerTests
         => owner.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
     private static Control Row(ListBox history, GitCommit commit)
         => ((Control)history.ContainerFromItem(commit)!).GetVisualDescendants().OfType<Control>().Single(control => control.Name == "RevisionHistoryRow");
+    [AvaloniaTest]
+    public async Task RealColorsApplyPreservesTemporarilyHiddenArtificialRowsWithoutRebuildingOrSavingThatChoice()
+    {
+        using GitFixture git = await GitFixture.CreateAsync();
+        HistoryViewPreferencesStore store = new(); store.Save(new() { ShowAvatar = false });
+        MainWindow main = new() { Width = 1440, Height = 900 }; main.Show();
+        try
+        {
+            await main.OpenRepositoryAsync(git.Repository.Path); await Idle(main);
+            ListBox history = Field<ListBox>(main, "RevisionHistory"); object source = history.ItemsSource!;
+            GitCommit selected = history.Items.OfType<GitCommit>().Single();
+            PushProcessTestDriver.Pointer((Control)history.ContainerFromItem(selected)!); await Idle(main);
+            Control row = Row(history, selected); GitCommit[] commits = history.Items.OfType<GitCommit>().ToArray();
+            MenuItem view = Field<MenuItem>(main, "ViewMenu"); PushProcessTestDriver.Pointer(view); PortableHelperSettingsFixture.Pump(main);
+            PushProcessTestDriver.Pointer(view.Items.OfType<MenuItem>().Single(item => item.Name == "ViewShowArtificialCommits")); await Idle(main);
+            Assert.That(history.Items.OfType<ArtificialHistoryRevision>(), Is.Empty);
+            Assert.That(store.Load().ShowArtificialCommits, Is.True);
+            List<System.Collections.Specialized.NotifyCollectionChangedAction> changes = [];
+            ((System.Collections.Specialized.INotifyCollectionChanged)source).CollectionChanged += (_, args) => changes.Add(args.Action);
+            DesktopSettingsDialog settings = await Settings(main);
+            PushProcessTestDriver.Pointer(Field<CheckBox>(settings, "chkFillRefLabels"));
+            GitCommandLog.Clear(); await Apply(settings, () => store.Load().FillRefLabels);
+            Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected));
+            Assert.That(Row(history, selected), Is.SameAs(row)); Assert.That(history.Items.OfType<ArtificialHistoryRevision>(), Is.Empty);
+            foreach (GitCommit commit in commits) { Assert.That(history.Items.OfType<GitCommit>().Single(item => item.Hash == commit.Hash), Is.SameAs(commit)); }
+            Assert.That(changes, Is.Empty, "A Colors Apply must not republish the history topology even with artificial rows hidden.");
+            Assert.That(GitCommandLog.Snapshot().Select(entry => entry.Command), Does.Not.Contain("git log").And.Not.Contain("git status").And.Not.Contain("git rev-list"));
+            Assert.That(store.Load().ShowArtificialCommits, Is.True, "Only the explicit Colors intention becomes a saved default.");
+            PushProcessTestDriver.Pointer(Field<Button>(settings, "CancelDesktopSettings")); await Idle(main);
+            Assert.That(history.Items.OfType<ArtificialHistoryRevision>(), Is.Empty); Assert.That(history.SelectedItem, Is.SameAs(selected));
+            GitCommandLog.Clear(); PushProcessTestDriver.Pointer(view); PortableHelperSettingsFixture.Pump(main);
+            PushProcessTestDriver.Pointer(view.Items.OfType<MenuItem>().Single(item => item.Name == "ViewShowArtificialCommits")); await Idle(main);
+            Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind),
+                Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+            Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItem, Is.SameAs(selected));
+            Assert.That(GitCommandLog.Snapshot(), Is.Empty); Assert.That(store.Load().ShowArtificialCommits, Is.True);
+        }
+        finally { await Close(main); }
+    }
+
     private static async Task<DesktopSettingsDialog> Settings(MainWindow main)
     {
         PortableHelperSettingsFixture.Press(main, PhysicalKey.Comma, RawInputModifiers.Control);

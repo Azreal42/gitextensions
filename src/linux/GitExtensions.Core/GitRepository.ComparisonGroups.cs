@@ -21,8 +21,7 @@ public sealed partial class GitRepository
         {
             IReadOnlyList<GitRevisionDiffGroup> groups = await GetRevisionDiffGroupsAsync(
                 [second.Revision, first.Revision], showDiffForAllParents, cancellationToken).ConfigureAwait(false);
-            return groups.Select(group => new GitComparisonGroup(group.Kind,
-                new(new(group.BaseRevision!), new(group.Revision), group.Files, []), group.RangeDiff)).ToArray();
+            return ProjectRevisionComparisonGroups(groups);
         }
 
         GitComparison comparison = await GetComparisonAsync(first, second, cancellationToken).ConfigureAwait(false);
@@ -37,12 +36,22 @@ public sealed partial class GitRepository
         GitRangeDiffComparison? range = await GetRangeDiffComparisonAsync([secondTip, firstTip], cancellationToken).ConfigureAwait(false);
         if (range is null) { return [ordinary]; }
 
+        return await BuildAdvancedComparisonGroupsAsync(comparison, range, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static IReadOnlyList<GitComparisonGroup> ProjectRevisionComparisonGroups(IReadOnlyList<GitRevisionDiffGroup> groups)
+        => groups.Select(group => new GitComparisonGroup(group.Kind,
+            new(new(group.BaseRevision!), new(group.Revision), group.Files, []), group.RangeDiff)).ToArray();
+
+    private async Task<IReadOnlyList<GitComparisonGroup>> BuildAdvancedComparisonGroupsAsync(GitComparison comparison,
+        GitRangeDiffComparison range, CancellationToken cancellationToken)
+    {
         GitCompareRevision common = new(range.CommonAncestor);
-        GitComparison baseToSecond = await GetComparisonAsync(common, second, cancellationToken).ConfigureAwait(false);
-        GitComparison baseToFirst = await GetComparisonAsync(common, first, cancellationToken).ConfigureAwait(false);
+        GitComparison baseToSecond = await GetComparisonAsync(common, comparison.Compare, cancellationToken).ConfigureAwait(false);
+        GitComparison baseToFirst = await GetComparisonAsync(common, comparison.Base, cancellationToken).ConfigureAwait(false);
         GitRevisionFileClassification classification = GitRevisionFileClassifier.Classify(
             comparison.Files, baseToFirst.Files, baseToSecond.Files, cancellationToken);
-        List<GitComparisonGroup> result = [ordinary with { Comparison = comparison with { Files = classification.AToB } }];
+        List<GitComparisonGroup> result = [new(GitRevisionDiffGroupKind.Comparison, comparison with { Files = classification.AToB })];
         if (await GetRangeDiffGitVersionAsync(cancellationToken).ConfigureAwait(false) >= new Version(2, 19))
         {
             // The range row itself has no file leaves. Its context remains the actual

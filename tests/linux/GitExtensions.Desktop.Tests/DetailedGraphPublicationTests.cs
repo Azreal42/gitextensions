@@ -118,10 +118,15 @@ public sealed class DetailedGraphPublicationTests
             Pump(main); Pump(history); Pump(export);
             CommitGraph[] graphs = [main.GetVisualDescendants().OfType<CommitGraph>().Single(), history.GetVisualDescendants().OfType<CommitGraph>().Single(), exports.GetVisualDescendants().OfType<CommitGraph>().Single()];
             Assert.That(graphs.Select(graph => TopLevel.GetTopLevel(graph)), Is.EqualTo(new TopLevel[] { main, history, export }), "The real three host controls must be attached to their own host before publication.");
-            State[] states = graphs.Select(State.Capture).ToArray();
+            ListBox[] dataRows = [main.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "RevisionHistory"),
+                history.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "FileHistoryRevisions"), exports.Rows];
+            State[] states = graphs.Select((graph, index) => State.Capture(graph, dataRows[index])).ToArray();
+            long lastCommandIdBeforePublication = GitCommandLog.Snapshot().LastOrDefault()?.Id ?? 0;
             DesktopPreferences saved = f.Desktop.Load() with { MergeGraphLanesHavingCommonParent = false, RenderGraphWithDiagonals = false, StraightenGraphDiagonals = false };
             f.Desktop.Save(saved); DetailedGraphSettings.PublishSaved(f.Desktop.FilePath, saved); Pump(main); Pump(history); Pump(export);
             for (int i = 0; i < graphs.Length; i++) { Assert.That(graphs[i].Options, Is.EqualTo(new RevisionGraphOptions(false, false, false))); states[i].AssertUnchanged(graphs[i]); }
+            Assert.That(GitCommandLog.Snapshot().Where(entry => entry.Id > lastCommandIdBeforePublication).Select(entry => entry.Command), Does.Not.Contain("git log"),
+                "Publishing graph presentation options must not reread history in any of the three hosts.");
             ListBox rows = exports.Rows; Assert.That(rows.ItemsSource!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(commits.Select(commit => commit.Hash)));
         }
         finally
@@ -154,15 +159,59 @@ public sealed class DetailedGraphPublicationTests
         worker.Start(); Assert.That(worker.Join(TimeSpan.FromSeconds(5)), Is.True); Assert.That(failure, Is.Null);
     }
     private sealed record State(IReadOnlyList<GitCommit> Commits, IReadOnlyList<GitReference> References, IReadOnlyCollection<string> Selection,
-        string? Head, double Offset, CommitGraphLayout Layout)
+        string? Head, double Offset, CommitGraphLayout Layout, IncrementalCommitGraphLayout? Incremental,
+        GitCommit[] Input, GitCommit[] RealOrder, object[] OrderedItems, string[] SelectedHashes, bool? Completed,
+        ListBox? Rows, object? RowSource, object[] RowItems, object? SelectedItem, object[] SelectedItems, int? Anchor)
     {
-        internal static State Capture(CommitGraph graph) => new(graph.Commits, graph.References, graph.SelectedHashes, graph.CurrentHead, graph.VerticalOffset,
-            (CommitGraphLayout)typeof(CommitGraph).GetField("_layout", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(graph)!);
+        internal static State Capture(CommitGraph graph) => Capture(graph, null);
+        internal static State Capture(CommitGraph graph, ListBox? rows)
+        {
+            CommitGraphLayout layout = (CommitGraphLayout)typeof(CommitGraph).GetField("_layout", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(graph)!;
+            IncrementalCommitGraphLayout? incremental = IncrementalLayout(graph);
+            // Snapshot the active engine's order; its incremental lists are mutable across Reconfigure.
+            GitCommit[] realOrder = incremental is null ? layout.Nodes.Select(node => node.Commit).ToArray() : incremental.OrderedCommits.ToArray();
+            object[] orderedItems = incremental is null ? layout.Nodes.Select(node => (object)node.Commit).ToArray() : incremental.OrderedItems.ToArray();
+            return new(graph.Commits, graph.References, graph.SelectedHashes, graph.CurrentHead, graph.VerticalOffset, layout, incremental,
+                graph.Commits.ToArray(), realOrder, orderedItems, graph.SelectedHashes.ToArray(), incremental?.IsComplete,
+                rows, rows?.ItemsSource, rows?.Items.Cast<object>().ToArray() ?? [], rows?.SelectedItem,
+                rows?.SelectedItems?.Cast<object>().ToArray() ?? [], rows?.Selection.AnchorIndex);
+        }
         internal void AssertUnchanged(CommitGraph graph)
         {
             Assert.That(graph.Commits, Is.SameAs(Commits)); Assert.That(graph.References, Is.SameAs(References)); Assert.That(graph.SelectedHashes, Is.SameAs(Selection));
             Assert.That(graph.CurrentHead, Is.EqualTo(Head)); Assert.That(graph.VerticalOffset, Is.EqualTo(Offset));
-            Assert.That(graph.OrderedCommits.Select(commit => commit.Hash), Is.EqualTo(Layout.Nodes.Select(node => node.Commit.Hash)));
+            Assert.That(graph.SelectedHashes, Is.EqualTo(SelectedHashes));
+            AssertSameItems(graph.Commits.Cast<object>(), Input.Cast<object>().ToArray());
+            Assert.That(IncrementalLayout(graph), Is.SameAs(Incremental), "Publication must retain the active engine kind and incremental data generation.");
+            Assert.That(graph.OrderedCommits.Select(commit => commit.Hash), Is.EqualTo(RealOrder.Select(commit => commit.Hash)));
+            AssertSameItems(graph.OrderedCommits.Cast<object>(), RealOrder.Cast<object>().ToArray());
+            AssertSameItems(graph.OrderedItems, OrderedItems);
+            if (Incremental is not null)
+            {
+                Assert.That(Incremental.Options, Is.EqualTo(graph.Options), "The active native incremental graph must receive the saved options.");
+                Assert.That(Incremental.IsComplete, Is.EqualTo(Completed));
+                Assert.That(Incremental.Count, Is.EqualTo(Input.Length)); Assert.That(Incremental.RowCount, Is.EqualTo(OrderedItems.Length));
+                AssertSameItems(Incremental.OrderedItems, OrderedItems);
+            }
+            else
+            {
+                // Standalone and legacy hosts still derive the baseline from their monolithic layout nodes.
+                Assert.That(graph.OrderedCommits.Select(commit => commit.Hash), Is.EqualTo(Layout.Nodes.Select(node => node.Commit.Hash)));
+            }
+            if (Rows is not null)
+            {
+                Assert.That(Rows.ItemsSource, Is.SameAs(RowSource)); AssertSameItems(Rows.Items.Cast<object>(), RowItems);
+                Assert.That(Rows.SelectedItem, Is.SameAs(SelectedItem));
+                AssertSameItems(Rows.SelectedItems?.Cast<object>() ?? [], SelectedItems);
+                Assert.That(Rows.Selection.AnchorIndex, Is.EqualTo(Anchor));
+            }
+        }
+        private static IncrementalCommitGraphLayout? IncrementalLayout(CommitGraph graph)
+            => (IncrementalCommitGraphLayout?)typeof(CommitGraph).GetField("_incrementalLayout", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(graph);
+        private static void AssertSameItems(IEnumerable<object> actual, object[] expected)
+        {
+            object[] items = actual.ToArray(); Assert.That(items.Length, Is.EqualTo(expected.Length));
+            for (int index = 0; index < items.Length; index++) { Assert.That(items[index], Is.SameAs(expected[index]), "Published item " + index); }
         }
     }
 }

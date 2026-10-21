@@ -45,12 +45,14 @@ public class MainFileStatusListTests
         await IdleAsync(fixture.Window);
         ListBox history = Find<ListBox>(fixture.Window, "RevisionHistory");
         history.SelectedItems!.Clear(); await IdleAsync(fixture.Window);
-        history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == b); await IdleAsync(fixture.Window);
-        history.SelectedItems.Add(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == a)); await IdleAsync(fixture.Window);
+        // Windows SelectedRows puts the last newly selected row first: B is the comparison target.
+        history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == a); await IdleAsync(fixture.Window);
+        history.SelectedItems.Add(history.Items.OfType<GitCommit>().Single(commit => commit.Hash == b)); await IdleAsync(fixture.Window);
         SelectTab(fixture.Window, "DiffTab");
         FileStatusListView view = Find<FileStatusListView>(fixture.Window, "RevisionFileStatusList");
         RevisionDiffFileSelection onlyA = view.Entries.Select(entry => entry.Tag).OfType<RevisionDiffFileSelection>()
             .Single(item => item.Group.Kind == GitRevisionDiffGroupKind.Comparison && item.File.Path == "nested/only A λ[1].txt");
+        Assert.That(onlyA.Group.BaseRevision, Is.EqualTo(a)); Assert.That(onlyA.Group.Revision, Is.EqualTo(b));
         Assert.That(onlyA.File.Status, Is.EqualTo('D'));
         Assert.That(onlyA.File.DiffStatus, Is.EqualTo(DiffBranchStatus.OnlyAChange));
         Assert.That(FileStatusListView.IconName(view.Entries.Single(entry => Equals(entry.Tag, onlyA))), Is.EqualTo("FileStatusRemovedOnlyA.png"));

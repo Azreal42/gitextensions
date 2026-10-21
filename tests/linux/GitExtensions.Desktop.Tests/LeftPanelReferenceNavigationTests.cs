@@ -158,7 +158,7 @@ public sealed class LeftPanelReferenceNavigationTests
                 await main.OpenRepositoryAsync(other.Repository.Path); await Idle(main);
                 await PushProcessTestDriver.UntilAsync(main, () => gate.Retired);
                 Assert.That(((GitCommit)history.SelectedItem!).Hash, Is.EqualTo(replacement));
-                Assert.That(tree.SelectedItem, Is.Null); Assert.That(history.ItemsSource, Is.Not.SameAs(source));
+                Assert.That(tree.SelectedItem, Is.Null); Assert.That(history.ItemsSource, Is.SameAs(source));
             }
             else
             {
@@ -289,31 +289,63 @@ public sealed class LeftPanelReferenceNavigationTests
     public async Task CtrlReferencePreservesAnOrdinaryArtificialEndpointUntilItsTypedExtensionIsSupported(bool staged)
     {
         await using Fixture f = await Fixture.CreateAsync(); MainWindow main = f.Main;
-        PushProcessTestDriver.Pointer(Field<Button>(main, staged ? "IndexRevision" : "WorkingDirectoryRevision")); await Idle(main);
+        PushProcessTestDriver.Pointer(Field<TabItem>(main, "DiffTab")); await Idle(main);
+        GitCompareRevisionKind kind = staged ? GitCompareRevisionKind.Index : GitCompareRevisionKind.WorkingTree;
+        PushProcessTestDriver.Pointer(Field<Button>(main, staged ? "IndexRevision" : "WorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); await Idle(main);
         ListBox history = Field<ListBox>(main, "RevisionHistory"); object? source = history.ItemsSource;
-        object[] selected = history.SelectedItems!.Cast<object>().ToArray();
-        object? endpoint = Private(main, "_selectedArtificialHistoryRevision");
-        object? search = Private(main, "_quickSearchArtificialSelection");
+        ArtificialHistoryRevision endpoint = (ArtificialHistoryRevision)history.SelectedItem!;
+        Assert.That(endpoint.Kind, Is.EqualTo(kind));
+        GitCommit target = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.First);
+        int anchor = history.Selection.AnchorIndex; Assert.That(anchor, Is.EqualTo(history.Items.IndexOf(endpoint)));
         object? tab = Field<TabControl>(main, "DetailsTabs").SelectedItem;
+        string refs = (await f.Git.GitAsync("show-ref")).StandardOutput;
+        byte[] index = File.ReadAllBytes(f.Git.PathInRepository(".git/index"));
         ReferencePointer(main, Reference(main, "refs/heads/topic"), RawInputModifiers.Control); await Idle(main);
-        Assert.That(search, Is.Not.Null); Assert.That(Private(main, "_selectedArtificialHistoryRevision"), Is.EqualTo(endpoint));
-        Assert.That(Private(main, "_quickSearchArtificialSelection"), Is.EqualTo(search));
-        Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(selected));
+        Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(new object[] { target, endpoint }));
+        Assert.That(history.SelectedItem, Is.SameAs(target));
+        Assert.That(history.Selection.AnchorIndex, Is.EqualTo(anchor), "Ctrl-add keeps the former artificial CurrentCell while both rows are selected.");
+        Assert.That((IEnumerable<string>)Private(main, "_historySelectionOrder")!, Is.EqualTo(new[] { endpoint.GraphId, target.Hash }));
+        GitComparison comparison = ((IReadOnlyDictionary<GitRevisionDiffGroup, GitComparison>)Private(main, "_revisionComparisons")!)
+            .First(entry => entry.Key.Kind == GitRevisionDiffGroupKind.Comparison).Value;
+        Assert.That(comparison.Base, Is.EqualTo(endpoint.Revision)); Assert.That(comparison.Compare, Is.EqualTo(new GitCompareRevision(target.Hash)));
+        Assert.That(history.ItemsSource, Is.SameAs(source));
         Assert.That(Field<TabControl>(main, "DetailsTabs").SelectedItem, Is.SameAs(tab));
         Assert.That(Reference(main, "refs/heads/topic").IsKeyboardFocusWithin, Is.True);
+        Assert.That((await f.Git.GitAsync("show-ref")).StandardOutput, Is.EqualTo(refs));
+        Assert.That(File.ReadAllBytes(f.Git.PathInRepository(".git/index")), Is.EqualTo(index));
+        Assert.That(await f.Git.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(f.Last));
     }
 
     [AvaloniaTest]
     public async Task CtrlReferencePreservesAnInitialTypedComparisonWithoutDiscardingEitherEndpoint()
     {
         await using Fixture f = await Fixture.CreateAsync(initialComparison: true); MainWindow main = f.Main;
-        ListBox history = Field<ListBox>(main, "RevisionHistory"); object? pair = Private(main, "_browseInitialComparison");
-        object? artificial = Private(main, "_selectedArtificialHistoryRevision"); object[] selected = history.SelectedItems!.Cast<object>().ToArray();
-        object? source = history.ItemsSource;
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        GitCommit first = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.First);
+        GitCommit middle = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Middle navigation commit");
+        ArtificialHistoryRevision endpoint = history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.WorkingTree);
+        Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(new object[] { first, endpoint }));
+        Assert.That(history.SelectedItem, Is.SameAs(first));
+        Assert.That(history.Selection.AnchorIndex, Is.EqualTo(history.Items.IndexOf(endpoint)), "Windows CurrentCell remains on FirstId, distinct from the selected primary.");
+        int anchor = history.Selection.AnchorIndex; object? source = history.ItemsSource;
+        PushProcessTestDriver.Pointer(Field<TabItem>(main, "DiffTab")); await Idle(main);
+        object? tab = Field<TabControl>(main, "DetailsTabs").SelectedItem;
+        string refs = (await f.Git.GitAsync("show-ref")).StandardOutput;
+        byte[] index = File.ReadAllBytes(f.Git.PathInRepository(".git/index"));
         ReferencePointer(main, Reference(main, "refs/heads/middle"), RawInputModifiers.Control); await Idle(main);
-        Assert.That(pair, Is.Not.Null); Assert.That(Private(main, "_browseInitialComparison"), Is.EqualTo(pair));
-        Assert.That(Private(main, "_selectedArtificialHistoryRevision"), Is.EqualTo(artificial));
-        Assert.That(history.ItemsSource, Is.SameAs(source)); Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(selected));
+        Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(new object[] { middle, first, endpoint }));
+        Assert.That(history.SelectedItem, Is.SameAs(middle));
+        Assert.That(history.Selection.AnchorIndex, Is.EqualTo(anchor));
+        Assert.That((IEnumerable<string>)Private(main, "_historySelectionOrder")!, Is.EqualTo(new[] { endpoint.GraphId, first.Hash, middle.Hash }));
+        GitComparison comparison = ((IReadOnlyDictionary<GitRevisionDiffGroup, GitComparison>)Private(main, "_revisionComparisons")!)
+            .First(entry => entry.Key.Kind == GitRevisionDiffGroupKind.Comparison).Value;
+        Assert.That(comparison.Base, Is.EqualTo(endpoint.Revision)); Assert.That(comparison.Compare, Is.EqualTo(new GitCompareRevision(middle.Hash)));
+        Assert.That(history.ItemsSource, Is.SameAs(source));
+        Assert.That(Field<TabControl>(main, "DetailsTabs").SelectedItem, Is.SameAs(tab));
+        Assert.That(Reference(main, "refs/heads/middle").IsKeyboardFocusWithin, Is.True);
+        Assert.That((await f.Git.GitAsync("show-ref")).StandardOutput, Is.EqualTo(refs));
+        Assert.That(File.ReadAllBytes(f.Git.PathInRepository(".git/index")), Is.EqualTo(index));
+        Assert.That(await f.Git.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(f.Last));
     }
 
     [AvaloniaTest]
@@ -337,10 +369,85 @@ public sealed class LeftPanelReferenceNavigationTests
         IReadOnlyList<GitRevisionDiffGroup> groups = (IReadOnlyList<GitRevisionDiffGroup>)Private(main, "_revisionDiffGroups")!;
         GitRevisionDiffGroup comparison = groups.First(group => group.Kind == GitRevisionDiffGroupKind.Comparison);
         Assert.That(comparison.BaseRevision, Is.EqualTo(last.Hash)); Assert.That(comparison.Revision, Is.EqualTo(middle.Hash));
-        Assert.That(Private(main, "_loadedDiffSelection"), Is.EqualTo(string.Join('\0', middle.Hash, first.Hash, last.Hash)));
+        Assert.That(Private(main, "_loadedDiffSelection"), Is.EqualTo(string.Join('\0', new[] { middle.Hash, first.Hash, last.Hash }.Select(hash => GitCompareRevisionKind.Commit + ":" + hash))));
         Assert.That(Private(main, "_browseInitialComparison"), Is.Null);
         Assert.That(history.ItemsSource, Is.SameAs(source));
         Assert.That(Reference(main, "refs/heads/middle").IsKeyboardFocusWithin, Is.True);
+    }
+
+    [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task CtrlReferenceRemovalLeavesParentNavigationOnTheRecentSurvivorEvenWhenItsOldCaretIsDeselected(bool multipleSurvivors)
+    {
+        await using Fixture f = await Fixture.CreateAsync(); MainWindow main = f.Main;
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        GitCommit first = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.First);
+        GitCommit middle = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Middle navigation commit");
+        GitCommit last = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Last);
+        object source = history.ItemsSource!; object[] rows = history.Items.Cast<object>().ToArray();
+        string refs = (await f.Git.GitAsync("show-ref")).StandardOutput; byte[] index = File.ReadAllBytes(f.Git.PathInRepository(".git/index"));
+        ReferencePointer(main, Reference(main, "refs/heads/topic")); await Idle(main);
+        ReferencePointer(main, Reference(main, "refs/heads/middle"), RawInputModifiers.Control); await Idle(main);
+        if (multipleSurvivors) { ReferencePointer(main, Reference(main, "refs/heads/main"), RawInputModifiers.Control); await Idle(main); }
+        GitCommandLog.Clear();
+        TreeViewItem removed = Reference(main, "refs/heads/topic-alias"); ReferencePointer(main, removed, RawInputModifiers.Control); await Idle(main);
+        Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(multipleSurvivors ? new object[] { last, middle } : new object[] { middle }));
+        Assert.That(history.Selection.AnchorIndex, Is.EqualTo(history.Items.IndexOf(multipleSurvivors ? first : middle)));
+        Assert.That(removed.IsKeyboardFocusWithin, Is.True);
+        if (multipleSurvivors)
+        {
+            Assert.That(history.SelectedItems!.Contains(first), Is.False);
+            Assert.That(history.Selection.AnchorIndex, Is.EqualTo(history.Items.IndexOf(first)), "CurrentCell can remain deselected while LatestSelectedRevision is a selected survivor.");
+        }
+        MenuItem navigate = Field<MenuItem>(main, "NavigateMenu"); PushProcessTestDriver.Pointer(navigate);
+        await PushProcessTestDriver.UntilAsync(main, () => navigate.IsSubMenuOpen);
+        MenuItem parent = navigate.Items.OfType<MenuItem>().Single(item => item.Name == "NavigateGotoParentCommit");
+        Assert.That(parent.IsEnabled, Is.True, "The surviving middle/last row has a real parent; the removed root does not.");
+        PushProcessTestDriver.Pointer(parent); await Idle(main);
+        Assert.That(history.SelectedItem, Is.SameAs(multipleSurvivors ? middle : first));
+        Assert.That(history.SelectedItems, Has.Count.EqualTo(1)); Assert.That(history.IsKeyboardFocusWithin, Is.True);
+        Assert.That(history.ItemsSource, Is.SameAs(source));
+        Assert.That(history.Items.Cast<object>().Zip(rows).All(pair => ReferenceEquals(pair.First, pair.Second)), Is.True);
+        Assert.That(GitCommandLog.Snapshot().Any(entry => entry.Command is "git log" or "git status"), Is.False);
+        Assert.That((await f.Git.GitAsync("show-ref")).StandardOutput, Is.EqualTo(refs));
+        Assert.That(File.ReadAllBytes(f.Git.PathInRepository(".git/index")), Is.EqualTo(index));
+        Assert.That(await f.Git.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(f.Last));
+    }
+
+    [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task AChangedCtrlReferenceClearsThePreviousParentOrChildReturnPathWhileAnUnchangedAliasKeepsIt(bool previousParent)
+    {
+        await using Fixture f = await Fixture.CreateAsync(); MainWindow main = f.Main;
+        ListBox history = Field<ListBox>(main, "RevisionHistory");
+        GitCommit first = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.First);
+        GitCommit middle = history.Items.OfType<GitCommit>().Single(commit => commit.Subject == "Middle navigation commit");
+        GitCommit last = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Last);
+        ReferencePointer(main, Reference(main, previousParent ? "refs/heads/topic" : "refs/heads/main")); await Idle(main);
+        await Navigate(previousParent ? "GotoChildCommit" : "GotoParentCommit"); Assert.That(history.SelectedItem, Is.SameAs(middle));
+        var returns = (GitExtensions.Linux.Desktop.Controls.ParentChildNavigationHistory)Private(main, "_parentChildNavigation")!;
+        Assert.That(previousParent ? returns.HasPreviousParent : returns.HasPreviousChild, Is.True);
+        // A distinct ref node points at the already sole selected middle commit:
+        // native SetSelectedIndex returns before SelectionChanged in this case.
+        ReferencePointer(main, Reference(main, "refs/heads/middle"), RawInputModifiers.Control); await Idle(main);
+        Assert.That(history.SelectedItem, Is.SameAs(middle));
+        Assert.That(previousParent ? returns.HasPreviousParent : returns.HasPreviousChild, Is.True, "An unchanged Ctrl selection cannot clear its native return path.");
+        ReferencePointer(main, Reference(main, previousParent ? "refs/heads/main" : "refs/heads/topic"), RawInputModifiers.Control); await Idle(main);
+        Assert.That(history.SelectedItems!.Cast<object>(), Is.EqualTo(new object[] { previousParent ? last : first, middle }));
+        Assert.That(history.Selection.AnchorIndex, Is.EqualTo(history.Items.IndexOf(middle)));
+        Assert.That(returns.HasPreviousParent || returns.HasPreviousChild, Is.False, "A genuine tree selection change follows Windows OnGridViewSelectionChanged.");
+        // Without invalidation this command pops the stale first/last endpoint;
+        // the actual parent/child of the new latest row is middle in both cases.
+        await Navigate(previousParent ? "GotoParentCommit" : "GotoChildCommit");
+        Assert.That(history.SelectedItem, Is.SameAs(middle)); Assert.That(history.SelectedItems, Has.Count.EqualTo(1)); Assert.That(history.IsKeyboardFocusWithin, Is.True);
+
+        async Task Navigate(string command)
+        {
+            MenuItem menu = Field<MenuItem>(main, "NavigateMenu"); PushProcessTestDriver.Pointer(menu);
+            await PushProcessTestDriver.UntilAsync(main, () => menu.IsSubMenuOpen);
+            MenuItem action = menu.Items.OfType<MenuItem>().Single(item => item.Name == "Navigate" + command);
+            Assert.That(action.IsEnabled, Is.True); PushProcessTestDriver.Pointer(action); await Idle(main);
+        }
     }
 
     private static object? Private(MainWindow main, string name) => typeof(MainWindow)
@@ -482,6 +589,8 @@ public sealed class LeftPanelReferenceNavigationTests
                     return stat[(stat.LastIndexOf(')') + 2)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[19] != startTicks;
                 }
                 catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return true; }
+                // A procfs task may vanish after open; .NET Unix exposes ESRCH as raw errno 3.
+                catch (IOException error) when (OperatingSystem.IsLinux() && error.HResult == 3) { return true; }
             }
         }
         internal void Release() => File.WriteAllText(_release, "release");

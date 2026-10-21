@@ -33,7 +33,7 @@ public sealed class RevisionLogMutationPublicationTests
         AssertUnchangedRows(history, source, rows); Assert.That(history.SelectedItem, Is.SameAs(selected));
         Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(browseSource)); AssertNoGlobalReads();
         Assert.That(history.IsKeyboardFocusWithin, Is.True);
-        GitCommit next = history.Items.OfType<GitCommit>().ElementAt(history.Items.IndexOf(selected!) + 1);
+        object next = history.Items[history.Items.IndexOf(selected!) + 1]!;
         Press(host.Log, PhysicalKey.ArrowDown); await SourceIdle(host.Log);
         Assert.That(history.SelectedItem, Is.SameAs(next)); Assert.That(history.IsKeyboardFocusWithin, Is.True);
         AssertUnchangedRows(history, source, rows); AssertNoGlobalReads();
@@ -58,6 +58,7 @@ public sealed class RevisionLogMutationPublicationTests
         AssertUnchangedRows(History(host.Log), logSource, rows); Assert.That(History(host.Log).SelectedItem, Is.SameAs(selected));
         Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(browseSource)); AssertNoHistoryReads();
         GitCommandLog.Clear(); await host.CloseLog(); await ReceiverRefresh(host.Launcher, browseSource);
+        AssertIndependentSessionIsStillAdmitted(host, child);
         Assert.That(child.IsVisible, Is.True, "The notification is released by the modal Log return, without closing the independent child.");
         AssertUnchangedRows(History(host.Log), logSource, rows); AssertOneHistoryRead();
         Assert.That(Private<FileStatusListView>(host.Launcher, "_changesFilesView").Entries.Any(entry => entry.Path == "file.txt"), Is.EqualTo(secondEffect));
@@ -74,6 +75,7 @@ public sealed class RevisionLogMutationPublicationTests
         await host.CloseLog(); Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(browseSource));
         Assert.That(child.IsVisible, Is.True); Assert.That(oldLog.IsVisible, Is.False);
         GitCommandLog.Clear(); await StageAndFail(child); await ReceiverRefresh(host.Launcher, browseSource);
+        AssertIndependentSessionIsStillAdmitted(host, child);
         Assert.That(child.IsVisible, Is.True); Assert.That(child.Owner, Is.Null);
         Assert.That(oldLog.IsVisible, Is.False); Assert.That(host.Launcher.OwnedWindows, Is.Empty, "No replacement Log is invented to deliver a late notification.");
         Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True); AssertOneHistoryRead();
@@ -106,6 +108,7 @@ public sealed class RevisionLogMutationPublicationTests
             Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(browseSource), "The owned dialog/session still belongs to the source's real work frontier.");
             PushProcessTestDriver.Pointer(Field<Button>(dialog, "CloseLogChildEffect")); await modal; await SourceIdle(child);
             await ReceiverRefresh(host.Launcher, browseSource);
+            AssertIndependentSessionIsStillAdmitted(host, child);
             Assert.That(child.IsVisible, Is.True); AssertOneHistoryRead();
             Assert.That((await git.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo(EffectDialog.FinalText));
             Assert.That(Private<FileStatusListView>(host.Launcher, "_changesFilesView").Entries.Any(entry => entry.Path == "file.txt"), Is.True);
@@ -303,10 +306,20 @@ public sealed class RevisionLogMutationPublicationTests
         await host.CloseDiff(child); await host.Root.WindowWorkCompletion;
         Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source)); AssertNoGlobalReads();
     }
+    private static void AssertIndependentSessionIsStillAdmitted(Host host, MainWindow child)
+    {
+        Assert.That(host.Root.ModelessCommitDiffWindows.Single(), Is.SameAs(child));
+        Assert.That(host.Root.WindowWorkCompletion.IsCompleted, Is.False,
+            "The living independent child still owns its root session lease after the receiver refresh drains.");
+    }
     private static async Task ReceiverRefresh(MainWindow receiver, object? previousSource)
     {
-        await Until(receiver, () => !receiver.IsBusy && !ReferenceEquals(History(receiver).ItemsSource, previousSource));
+        // Root also owns the still-open independent session. Its global work
+        // completion belongs after CloseDiff; this is the refresh's frontier.
+        await Until(receiver, () => GitCommandLog.Snapshot().Any(entry => entry.Command == "git log")
+            && !receiver.IsBusy && Private<Task>(receiver, "_repositoryOperationCompletion").IsCompleted);
         await ReceiverOperationIdle(receiver);
+        Assert.That(History(receiver).ItemsSource, Is.SameAs(previousSource));
     }
     private static async Task ReceiverOperationIdle(MainWindow receiver)
     { await Until(receiver, () => !receiver.IsBusy); await Private<Task>(receiver, "_repositoryOperationCompletion"); Pump(receiver); }

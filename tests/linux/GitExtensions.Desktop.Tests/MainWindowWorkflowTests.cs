@@ -42,8 +42,8 @@ public class MainWindowWorkflowTests
             Assert.That(window.Title, Is.EqualTo(Path.GetFileName(repository) + " (main) — Git Extensions"));
             ListBox history = window.GetVisualDescendants().OfType<ListBox>().Single(list => list.ItemsSource?.OfType<GitCommit>().Any() is true);
             Assert.That(history.ItemsSource!.OfType<GitCommit>().Single().Subject, Is.EqualTo("Initial commit"));
-            Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single().Bounds.Height, Is.EqualTo(20), "Browse history follows the Windows photo density; other list hosts retain their own heights.");
-            history.SelectedIndex = 0;
+            Assert.That(history.GetVisualDescendants().OfType<ListBoxItem>().Single(row => row.DataContext is GitCommit).Bounds.Height, Is.EqualTo(20), "Browse history follows the Windows photo density; other list hosts retain their own heights.");
+            history.SelectedItem = history.Items.OfType<GitCommit>().Single();
             // A fresh profile now uses the original Commit tab below the graph.
             TabControl tabs = window.GetVisualDescendants().OfType<TabControl>().Single(control => control.Name == "DetailsTabs");
             tabs.SelectedItem = tabs.ItemsSource!.OfType<TabItem>().Single(tab => tab.Name == "DiffTab");

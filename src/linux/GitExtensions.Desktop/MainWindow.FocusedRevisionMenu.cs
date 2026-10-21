@@ -48,7 +48,7 @@ public sealed partial class MainWindow
     private GitReference? CurrentRevisionContextReference()
     {
         if (_revisionPointerContext is not { } context || context.Repository != _repository
-            || (_commits.SelectedItem as GitCommit)?.Hash != context.CommitHash) { return null; }
+            || (RevisionContextItem as GitCommit)?.Hash != context.CommitHash) { return null; }
         return _navigationReferences.FirstOrDefault(reference => reference.Name == context.Reference.Name
             && reference.RevisionHash == context.CommitHash && reference.SymbolicTarget is null);
     }
@@ -63,7 +63,7 @@ public sealed partial class MainWindow
         KeyModifiers modifiers = _revisionPointerContext?.Modifiers ?? KeyModifiers.None;
         bool focused = reference is not null && (modifiers.HasFlag(KeyModifiers.Control)
             || !(modifiers.HasFlag(KeyModifiers.Shift) || AdvancedOptionsVisibility.Capture()));
-        _revisionMenuFocus = new(_repository, null, (_commits.SelectedItem as GitCommit)?.Hash);
+        _revisionMenuFocus = new(_repository, null, RevisionContextItem is { } item ? HistoryRevisionItems.Key(item) : null);
         _focusedRevisionMenu = focused;
     }
 
@@ -86,7 +86,7 @@ public sealed partial class MainWindow
     private void EnsureRevisionContextRepository()
     {
         if (_revisionPointerContext is { } context && (context.Repository != _repository
-            || (_commits.SelectedItem as GitCommit)?.Hash != context.CommitHash))
+            || (RevisionContextItem as GitCommit)?.Hash != context.CommitHash))
         { ClearRevisionPointerContext(); _revisionContext?.Close(); }
         if (_pendingRevisionPointer is { } pending && pending.Repository != _repository) { _pendingRevisionPointer = null; }
     }
@@ -152,6 +152,7 @@ public sealed partial class MainWindow
         bool visible = false;
         foreach (object item in source)
         {
+            if (item is Separator { IsVisible: false }) { continue; }
             if (item is Separator separator) { pending ??= separator; continue; }
             if (item is Control { IsVisible: false }) { result.Add(item); continue; }
             if (visible && pending is not null) { result.Add(pending); }
@@ -164,12 +165,12 @@ public sealed partial class MainWindow
     {
         GitRepository? repository = _repository;
         GitReference? reference = CurrentRevisionContextReference();
-        string? hash = (_commits.SelectedItem as GitCommit)?.Hash;
+        string? hash = (RevisionContextItem as GitCommit)?.Hash;
         // Menu dismissal may precede Click. The command owns its immutable target;
         // clearing the next opening's hit-test context must not change this action.
         _contextRebaseCommand = (interactive, immediate) =>
         {
-            if (repository != _repository || hash != (_commits.SelectedItem as GitCommit)?.Hash || reference?.IsCurrent == true) { return Task.CompletedTask; }
+            if (repository != _repository || hash != (RevisionContextItem as GitCommit)?.Hash || reference?.IsCurrent == true) { return Task.CompletedTask; }
             return OpenHistoryRebaseAsync(interactive, immediate, reference?.Name);
         };
     }

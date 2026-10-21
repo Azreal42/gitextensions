@@ -358,7 +358,7 @@ public sealed class GeneralSettingsBehaviorTests
         }
         internal void ClickFirstCommit()
         {
-            object first = History.Items[0]!; History.ScrollIntoView(first); Pump(Main);
+            GitCommit first = History.Items.OfType<GitCommit>().First(); History.ScrollIntoView(first); Pump(Main);
             PushProcessTestDriver.Pointer((Control)History.ContainerFromItem(first)!); Pump(Main);
         }
         internal async Task Idle() { await Until(() => !Main.IsBusy && Main.WindowWorkCompletion.IsCompleted); await Main.WindowWorkCompletion; Pump(Main); }

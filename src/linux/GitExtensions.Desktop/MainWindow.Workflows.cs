@@ -19,7 +19,7 @@ public sealed partial class MainWindow
     }
 
     private GitReference SelectedReference() => _references.SelectedItem as GitReference ?? throw new InvalidOperationException("Select a branch or tag first.");
-    private GitCommit SelectedCommit() => _commits.SelectedItem as GitCommit ?? throw new InvalidOperationException("Select a commit in History first.");
+    private GitCommit SelectedCommit() => (_revisionActionItem ?? PrimaryHistoryItem) as GitCommit ?? throw new InvalidOperationException("Select a commit in History first.");
     private GitRemote SelectedRemote() => _remotes.SelectedItem as GitRemote ?? throw new InvalidOperationException("Select a remote first.");
     private GitStash SelectedStash() => _stashes.SelectedItem as GitStash ?? throw new InvalidOperationException("Select a stash first.");
     private string[] SelectedPaths(bool includeOriginalPath = true)

@@ -34,12 +34,17 @@ internal sealed class IncrementalCommitGraphLayout
     internal int VisibleLaneCount { get; private set; } = 1;
     internal IReadOnlyList<GraphStroke> VisibleStrokes => _visibleStrokes;
 
-    internal IncrementalCommitGraphLayout(bool onlyFirstParent, RevisionGraphOptions options, string? head, bool includeArtificial = false)
+    internal IncrementalCommitGraphLayout(bool onlyFirstParent, RevisionGraphOptions options, string? head, bool includeArtificial = false, IReadOnlyList<object>? retainedItems = null)
     {
         _head = head ?? ""; _graph = new(options) { OnlyFirstParent = onlyFirstParent, HeadId = _head };
         if (includeArtificial)
         {
-            _working = new(GitCompareRevisionKind.WorkingTree, _head.Length == 0 ? null : _head); _index = new(GitCompareRevisionKind.Index, _head.Length == 0 ? null : _head);
+            ArtificialHistoryRevision Retain(GitCompareRevisionKind kind)
+            {
+                ArtificialHistoryRevision desired = new(kind, _head.Length == 0 ? null : _head);
+                return retainedItems?.OfType<ArtificialHistoryRevision>().FirstOrDefault(item => item.Kind == kind && item.ParentIds.SequenceEqual(desired.ParentIds)) ?? desired;
+            }
+            _working = Retain(GitCompareRevisionKind.WorkingTree); _index = Retain(GitCompareRevisionKind.Index);
             _byKey.Add(_working.GraphId, _working); _byKey.Add(_index.GraphId, _index);
         }
     }

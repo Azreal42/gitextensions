@@ -35,7 +35,7 @@ public sealed class ComparisonCommitPickerTests
         Assert.That(s.Dialog.ClosingBehavior, Is.EqualTo(WindowClosingBehavior.OwnerWindowOnly));
         Assert.That(presenter.Selection!.Revision, Is.EqualTo(new GitCompareRevision(baseSide ? f.First : f.Head)));
         Assert.That(presenter.Selection.Commit!.Hash, Is.EqualTo(baseSide ? f.First : f.Head));
-        Pointer(Field<Button>(picker, kind == GitCompareRevisionKind.Index ? "ChooseIndexRevision" : "ChooseWorkingDirectoryRevision"));
+        Pointer(Field<Button>(picker, kind == GitCompareRevisionKind.Index ? "ChooseIndexRevision" : "ChooseWorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!);
         AssertArtificial(picker, kind); Assert.That(s.Dialog.Comparison, Is.SameAs(original), "Selecting inside a child cannot publish before OK.");
         Pointer(Field<Button>(picker, "Choose"));
         await Until(s.Owner, () => !picker.IsVisible && !s.Dialog.IsBusy && !s.Dialog.IsSelectionLoading
@@ -109,7 +109,7 @@ public sealed class ComparisonCommitPickerTests
         Assert.That(Presenter(s.Dialog).Selection!.Revision, Is.EqualTo(new GitCompareRevision(f.First)));
         Assert.That(rows.SelectedItem, Is.SameAs(Presenter(s.Dialog).Selection!.Commit)); Assert.That(rows.IsKeyboardFocusWithin, Is.True);
         Assert.That(rows.ItemsSource, Is.SameAs(source)); Assert.That(Field<TextBlock>(s.Dialog, "OperationStatus").IsEffectivelyVisible, Is.False);
-        Pointer(Field<Button>(s.Dialog, "ChooseWorkingDirectoryRevision"));
+        Pointer(Field<Button>(s.Dialog, "ChooseWorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!);
         Pointer(Field<Button>(s.Dialog, "buttonGotoCommit")); go = await Child<GoToCommitDialog>(s.Dialog); await go.InitializeAsync();
         Press(go, PhysicalKey.Escape); await s.Dialog.Completion; AssertArtificial(s.Dialog, GitCompareRevisionKind.WorkingTree);
         Assert.That(await Materials(f.Root), Is.EqualTo(before));
@@ -127,7 +127,7 @@ public sealed class ComparisonCommitPickerTests
         Assert.That(Field<ListBox>(s.Dialog, "ChooseRevision").Items.OfType<GitCommit>(), Is.Empty);
         Assert.That(Field<ListBox>(s.Dialog, "ChooseRevision").Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind),
             Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
-        Pointer(Field<Button>(s.Dialog, "ChooseWorkingDirectoryRevision")); Assert.That(Presenter(s.Dialog).Parents.Single(), Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.Index)));
+        Pointer(Field<Button>(s.Dialog, "ChooseWorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); Assert.That(Presenter(s.Dialog).Parents.Single(), Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.Index)));
         Pointer(Field<Button>(s.Dialog, "linkLabelParent")); await s.Dialog.Completion; AssertArtificial(s.Dialog, GitCompareRevisionKind.Index);
         Press(s.Dialog, PhysicalKey.Enter); Assert.That(await s.Selection, Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.Index)));
         Assert.That(await Materials(root), Is.EqualTo(before));
@@ -187,7 +187,7 @@ public sealed class ComparisonCommitPickerTests
         Assert.That(previousClosingBehavior, Is.EqualTo(WindowClosingBehavior.OwnerAndChildWindows));
         Pointer(Field<Button>(s.Dialog, "ComparisonCompareCommit")); ExportRevisionPicker picker = await Picker(s.Dialog);
         Assert.That(s.Dialog.ClosingBehavior, Is.EqualTo(WindowClosingBehavior.OwnerWindowOnly));
-        Pointer(Field<Button>(picker, "ChooseWorkingDirectoryRevision")); AssertArtificial(picker, GitCompareRevisionKind.WorkingTree);
+        Pointer(Field<Button>(picker, "ChooseWorkingDirectoryRevision").FindAncestorOfType<ListBoxItem>()!); AssertArtificial(picker, GitCompareRevisionKind.WorkingTree);
         Pointer(Field<Button>(picker, "CancelChoose")); await Until(s.Owner, () => !picker.IsVisible && s.Dialog.SelectionCompletion.IsCompleted);
         Assert.That(s.Dialog.ClosingBehavior, Is.EqualTo(previousClosingBehavior));
         Assert.That(s.Dialog.Comparison, Is.SameAs(original)); Assert.That(Field<TextBox>(s.Dialog, "ComparisonCompareRevision").Text, Is.EqualTo(initialText));

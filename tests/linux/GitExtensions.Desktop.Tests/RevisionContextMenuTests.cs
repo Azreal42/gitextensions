@@ -200,6 +200,64 @@ public sealed class RevisionContextMenuTests
         menu.Close(); await Idle(fixture.Window);
     }
 
+    [AvaloniaTest]
+    [TestCase(false)] [TestCase(true)]
+    public async Task ArtificialThenRealContextReopenNormalizesTheFinalVisibleRowsForProgrammaticAndPointerPathsWithoutReplacingCommands(bool dark)
+    {
+        using var git = await ReferenceDialogTests.ReferenceFixture.CreateAsync();
+        git.SetEnvironment("GIT_OPTIONAL_LOCKS", "0"); await git.ChangeAsync("second\n", "Second context revision");
+        new PreferencesStore().Save(new DesktopPreferences { Theme = dark ? "Dark" : "Light" });
+        new HistoryViewPreferencesStore().Save(new() { ShowArtificialCommits = true, ShowAvatar = false });
+        MainWindow main = new() { Width = 1440, Height = 900, RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light };
+        ContextMenu? menu = null;
+        try
+        {
+            main.Show(); await main.OpenRepositoryAsync(git.Repository.Path); await Complete();
+            ListBox history = History(main); menu = history.ContextMenu!;
+            GitCommit real = history.Items.OfType<GitCommit>().First();
+            ArtificialHistoryRevision artificial = history.Items.OfType<ArtificialHistoryRevision>().Single(row => row.Kind == GitCompareRevisionKind.WorkingTree);
+            MenuItem copy = Item(menu, "RevisionCopy"), reset = Item(menu, "RevisionResetChanges"), commit = Item(menu, "RevisionCommit");
+            object? copyIcon = copy.Icon, resetIcon = reset.Icon, commitIcon = commit.Icon;
+            MenuItem contributor = new() { Name = "SeparatorRegressionContributor", Header = "Retained contributor",
+                Icon = new Image { Source = ((Image)copy.Icon!).Source, Width = 16, Height = 16 } };
+            menu.ItemsSource = menu.Items.Cast<object>().Append(contributor).ToArray();
+            int openings = 0, opened = 0; menu.Opening += (_, _) => openings++; menu.Opened += (_, _) => opened++;
+            foreach (bool pointer in new[] { false, true })
+            foreach (object target in new object[] { artificial, real })
+            {
+                history.ScrollIntoView(target); Pump(main);
+                Control row = (Control)history.ContainerFromItem(target)!; PushProcessTestDriver.Pointer(row); await Complete();
+                int beforeOpening = openings, beforeOpened = opened;
+                if (!pointer) { menu.Open(history); }
+                else
+                {
+                    Pump(main); Point point = row.TranslatePoint(new Point(Math.Min(180, row.Bounds.Width / 2), row.Bounds.Height / 2), main)!.Value;
+                    Assert.That(row.IsEffectivelyVisible && row.IsEffectivelyEnabled && new Rect(default, main.ClientSize).Contains(point), Is.True);
+                    Assert.That((main.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(row), Is.True);
+                    main.MouseMove(point); main.MouseDown(point, MouseButton.Right); main.MouseUp(point, MouseButton.Right);
+                }
+                Pump(main); await Until(() => menu.IsOpen && opened == beforeOpened + 1); Pump(main);
+                TestContext.Progress.WriteLine($"Context final-visible transition: pointer={pointer}; target={target.GetType().Name}; OpeningDelta={openings - beforeOpening}; OpenedDelta={opened - beforeOpened}");
+                Control[] visible = menu.Items.OfType<Control>().Where(item => item.IsVisible).ToArray();
+                Assert.That(visible, Is.Not.Empty); Assert.That(visible[0], Is.SameAs(target is ArtificialHistoryRevision ? reset : copy));
+                Assert.That(visible[^1], Is.Not.TypeOf<Separator>());
+                for (int i = 1; i < visible.Length; i++) { Assert.That(visible[i - 1] is Separator && visible[i] is Separator, Is.False); }
+                Assert.That(Item(menu, "RevisionCopy"), Is.SameAs(copy)); Assert.That(Item(menu, "RevisionResetChanges"), Is.SameAs(reset)); Assert.That(Item(menu, "RevisionCommit"), Is.SameAs(commit));
+                Assert.That(copy.Icon, Is.SameAs(copyIcon)); Assert.That(reset.Icon, Is.SameAs(resetIcon)); Assert.That(commit.Icon, Is.SameAs(commitIcon));
+                Assert.That(menu.Items.Cast<object>().Single(item => item is MenuItem { Name: "SeparatorRegressionContributor" }), Is.SameAs(contributor));
+                Assert.That(copy.IsVisible, Is.EqualTo(target is GitCommit)); Assert.That(reset.IsVisible && commit.IsVisible, Is.EqualTo(target is ArtificialHistoryRevision));
+                Assert.That(copy.InputGesture, Is.Null); Assert.That(((Image)copy.Icon!).Width, Is.EqualTo(16)); Assert.That(((Image)reset.Icon!).Height, Is.EqualTo(16));
+                menu.Close(); await Complete();
+            }
+        }
+        finally
+        {
+            menu?.Close(); main.Close(); await Until(() => !main.IsVisible && main.WindowWorkCompletion.IsCompleted); await main.WindowWorkCompletion;
+        }
+        async Task Complete()
+        { await Until(() => !main.IsBusy && main.WindowWorkCompletion.IsCompleted); await main.WindowWorkCompletion; Pump(main); Assert.That(main.LastException, Is.Null, main.LastException?.ToString()); }
+    }
+
     private static string Caption(MenuItem item) => (item.Header is AccessText text ? text.Text!.Replace("_", "") : item.Header?.ToString() ?? "").Replace("(&x)", "(x)").Replace("…", "...");
     private static ListBox History(MainWindow main) => main.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "RevisionHistory");
     private static IEnumerable<MenuItem> Flatten(IEnumerable<MenuItem> items) => items.SelectMany(item => new[] { item }.Concat(Flatten(item.Items.OfType<MenuItem>())));

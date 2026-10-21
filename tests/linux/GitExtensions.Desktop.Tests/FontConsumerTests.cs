@@ -212,7 +212,7 @@ public sealed class FontConsumerTests
         {
             await main.OpenRepositoryAsync(repository.Repository.Path); await Idle(main);
             ListBox history = Field<ListBox>(main, "RevisionHistory"); object? source = history.ItemsSource, selected = history.SelectedItem;
-            ListBoxItem row = history.GetVisualDescendants().OfType<ListBoxItem>().First();
+            ListBoxItem row = history.GetVisualDescendants().OfType<ListBoxItem>().First(item => item.DataContext is GitCommit);
             TextBlock hash = row.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "RevisionHash");
             TextBlock author = row.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "RevisionAuthorName");
             AssertFont(hash, fonts.For(DesktopFontRole.Monospace)); AssertFont(author, fonts.For(DesktopFontRole.Application));
@@ -233,24 +233,21 @@ public sealed class FontConsumerTests
             }
             TextBox search = Field<TextBox>(main, "RepositoryNavigationSearch");
             AssertVerticallyContained((Control)search.GetVisualParent()!, search);
-            Grid virtualRows = Field<Grid>(main, "WorkingRevisions");
             Button working = Field<Button>(main, "WorkingDirectoryRevision"), index = Field<Button>(main, "IndexRevision");
-            Assert.That(virtualRows.IsEffectivelyVisible, Is.True);
-            Rect workingBounds = AssertVerticallyContained(virtualRows, working), indexBounds = AssertVerticallyContained(virtualRows, index);
+            ListBoxItem workingRow = working.FindAncestorOfType<ListBoxItem>()!, indexRow = index.FindAncestorOfType<ListBoxItem>()!;
+            Assert.That(workingRow.IsEffectivelyVisible && indexRow.IsEffectivelyVisible, Is.True);
+            Rect workingBounds = AssertVerticallyContained(history, workingRow), indexBounds = AssertVerticallyContained(history, indexRow);
             Assert.That(workingBounds.Bottom, Is.LessThanOrEqualTo(indexBounds.Top + .01), "The two artificial rows must not overlap when their text rows grow.");
-            Assert.That(working.Bounds.Height, Is.EqualTo(row.Bounds.Height).Within(.01));
-            Assert.That(index.Bounds.Height, Is.EqualTo(row.Bounds.Height).Within(.01));
-            foreach (Canvas canvas in virtualRows.Children.OfType<Canvas>())
+            foreach (ListBoxItem artificialRow in new[] { workingRow, indexRow })
             {
-                Rect bounds = AssertVerticallyContained(virtualRows, canvas);
-                Rect actionBounds = Grid.GetRow(canvas) == 0 ? workingBounds : indexBounds;
-                Assert.That(bounds.Top, Is.EqualTo(actionBounds.Top).Within(.01));
-                Assert.That(bounds.Height, Is.EqualTo(actionBounds.Height).Within(.01));
-                Avalonia.Controls.Shapes.Line stroke = canvas.Children.OfType<Avalonia.Controls.Shapes.Line>().Single();
-                Avalonia.Controls.Shapes.Ellipse dot = canvas.Children.OfType<Avalonia.Controls.Shapes.Ellipse>().Single();
-                Assert.That(stroke.EndPoint.Y, Is.EqualTo(canvas.Bounds.Height).Within(.01));
-                Assert.That(Canvas.GetTop(dot) + dot.Bounds.Height / 2, Is.EqualTo(canvas.Bounds.Height / 2).Within(.01));
+                Assert.That(artificialRow.Bounds.Height, Is.EqualTo(row.Bounds.Height).Within(.01));
+                TextBlock label = artificialRow.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "RevisionReferenceLabel");
+                AssertFont(label, fonts.For(DesktopFontRole.Application)); AssertTextFits(artificialRow, label);
+                // The common graph renderer places this row's node and segments at this native row center.
+                double center = artificialRow.TranslatePoint(new Point(0, artificialRow.Bounds.Height / 2), graph)!.Value.Y;
+                Assert.That(center, Is.EqualTo((history.Items.IndexOf(artificialRow.DataContext!) + .5) * graph.LineHeight - graph.VerticalOffset).Within(.01));
             }
+            Assert.That(working.Focusable || index.Focusable, Is.False);
             WorktreeTable table = new(text => text); table.SetItems(await repository.Repository.GetWorktreeSnapshotsAsync());
             Window manager = Host(table, fonts, dark); manager.Show(); Pump(manager);
             try

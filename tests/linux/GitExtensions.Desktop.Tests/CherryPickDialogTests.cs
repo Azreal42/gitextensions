@@ -59,7 +59,9 @@ public partial class CherryPickDialogTests
         Assert.That(parents.IsKeyboardFocusWithin, Is.True); Pointer((Control)parents.ContainerFromIndex(1)!);
         Assert.That(dialog.ReadOptions().MainlineParent, Is.EqualTo(2)); parents.SelectedIndex = -1;
         Assert.Throws<InvalidOperationException>(() => dialog.ReadOptions());
-        Pointer(Field<Button>(dialog, "ChooseCherryPickRevision")); await Until(() => dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Any(window => !window.IsBusy));
+        Pointer(Field<Button>(dialog, "ChooseCherryPickRevision")); await Until(() => dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Any(window => window.IsVisible && !window.IsBusy
+            && (Field<ListBox>(window, "CherryPickChooseRevision").SelectedItem as GitCommit)?.Hash == merge
+            && Field<Button>(window, "ChooseCherryPickCommit").IsEffectivelyEnabled));
         CherryPickRevisionPicker picker = dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Single(); ListBox revisions = Field<ListBox>(picker, "CherryPickChooseRevision");
         Assert.That((revisions.SelectedItem as GitCommit)?.Hash, Is.EqualTo(merge), "Original current revision must be preselected.");
         Pointer(Field<Button>(picker, "ChooseCherryPickCommit")); await Until(() => !picker.IsVisible && !dialog.IsBusy);
@@ -73,7 +75,9 @@ public partial class CherryPickDialogTests
     {
         await using Fixture f = await Fixture.CreateAsync(); string first = await f.TopicAsync("first.txt", "first\n"); await f.Git("checkout", "topic"); await f.Commit("second.txt", "second\n", "Second selection"); string second = await f.Head(); await f.Git("checkout", "main");
         CherryPickDialog dialog = await f.ShowAsync(null); Assert.That(Field<Button>(dialog, "ExecuteCherryPick").IsEnabled, Is.False); Assert.That(Field<CheckBox>(dialog, "CherryPickAutoCommit").IsKeyboardFocusWithin, Is.True);
-        Pointer(Field<Button>(dialog, "ChooseCherryPickRevision")); await Until(() => dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Any(window => !window.IsBusy));
+        Pointer(Field<Button>(dialog, "ChooseCherryPickRevision")); await Until(() => dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Any(window => window.IsVisible && !window.IsBusy
+            && Field<ListBox>(window, "CherryPickChooseRevision").Items.OfType<GitCommit>().Any(commit => commit.Hash == first)
+            && Field<Button>(window, "ChooseCherryPickCommit").IsEffectivelyEnabled));
         CherryPickRevisionPicker picker = dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Single(); ListBox list = Field<ListBox>(picker, "CherryPickChooseRevision");
         int row = list.Items.OfType<GitCommit>().Select((commit, index) => (commit, index)).Single(value => value.commit.Hash == first).index;
         Pointer((Control)list.ContainerFromIndex(row)!); Pointer(Field<Button>(picker, "ChooseCherryPickCommit")); await Until(() => !picker.IsVisible && !dialog.IsBusy);
@@ -87,9 +91,9 @@ public partial class CherryPickDialogTests
         MainWindow main = new() { Width = 1280, Height = 752, RequestedThemeVariant = ThemeVariant.Dark }; f.Windows.Add(main); main.Show(); await main.OpenRepositoryAsync(f.Repository.Path); await Until(() => !main.IsBusy); Pump(main);
         ListBox history = Field<ListBox>(main, "RevisionHistory"); GitCommit[] rows = history.Items.OfType<GitCommit>().ToArray(); int firstIndex = Array.FindIndex(rows, commit => commit.Hash == first), secondIndex = Array.FindIndex(rows, commit => commit.Hash == second);
         Assert.That(firstIndex, Is.GreaterThan(secondIndex), "Fixture must have the original newest-first grid display.");
-        Pointer((Control)history.ContainerFromIndex(secondIndex)!); Pointer((Control)history.ContainerFromIndex(firstIndex)!, RawInputModifiers.Control); await Until(() => !main.IsBusy);
+        Pointer((Control)history.ContainerFromItem(rows[secondIndex])!); Pointer((Control)history.ContainerFromItem(rows[firstIndex])!, RawInputModifiers.Control); await Until(() => !main.IsBusy);
         Assert.That(history.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EquivalentTo(new[] { first, second }));
-        Pointer((Control)history.ContainerFromIndex(firstIndex)!, button: MouseButton.Right); Pump(main);
+        Pointer((Control)history.ContainerFromItem(rows[firstIndex])!, button: MouseButton.Right); Pump(main);
         ContextMenu menu = history.ContextMenu!; Assert.That(menu.IsOpen, Is.True, "The actual Browse context menu must open through a right pointer click.");
         MenuItem action = menu.Items.OfType<MenuItem>().Single(item => item.Name == "RevisionCherryPick"); Pointer(action);
         await Until(() => main.OwnedWindows.OfType<CherryPickDialog>().Any(window => window.Revision == first && !window.IsBusy)); CherryPickDialog one = main.OwnedWindows.OfType<CherryPickDialog>().Single();
@@ -132,8 +136,8 @@ public partial class CherryPickDialogTests
         await using Fixture f = await Fixture.CreateAsync(); string pick = await f.ConflictAsync(); f.Write("prior.txt", "prior\n"); await f.Git("add", "prior.txt"); string head = await f.Head(); byte[] index = File.ReadAllBytes(f.Metadata("index"));
         CherryPickDialog dialog = await f.ShowAsync(pick);
         int pickClicks = 0, cancelClicks = 0;
-        Field<Button>(dialog, "ExecuteCherryPick").AddHandler(Button.ClickEvent, (_, _) => pickClicks++, RoutingStrategies.Tunnel, handledEventsToo: true);
-        Field<Button>(dialog, "CancelCherryPick").AddHandler(Button.ClickEvent, (_, _) => cancelClicks++, RoutingStrategies.Tunnel, handledEventsToo: true);
+        Field<Button>(dialog, "ExecuteCherryPick").AddHandler(Button.ClickEvent, (_, _) => pickClicks++, RoutingStrategies.Bubble, handledEventsToo: true);
+        Field<Button>(dialog, "CancelCherryPick").AddHandler(Button.ClickEvent, (_, _) => cancelClicks++, RoutingStrategies.Bubble, handledEventsToo: true);
         string State() => $"visible={dialog.IsVisible}, busy={dialog.IsBusy}, recovery={Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible}, pickClicks={pickClicks}, cancelClicks={cancelClicks}, error={dialog.LastError}, exception={dialog.LastException}";
         Pointer(Field<Button>(dialog, "ExecuteCherryPick"));
         await Until(() => !dialog.IsBusy && Field<StackPanel>(dialog, "CherryPickRecovery").IsVisible, () => "First pick recovery: " + State());
@@ -251,8 +255,35 @@ public partial class CherryPickDialogTests
                 Assert.That(dialog.ActualThemeVariant, Is.EqualTo(theme)); Assert.That(dialog.Title, Is.EqualTo("Cherry picker le commit"));
                 Assert.That(((AccessText)Field<CheckBox>(dialog, "CherryPickAutoCommit").Content!).Text, Is.EqualTo("Créer _automatiquement un commit")); Assert.That(((AccessText)Field<CheckBox>(dialog, "CherryPickAddReference").Content!).Text, Is.EqualTo("A_jouter une référence de commit au message de commit")); Assert.That(((AccessText)Field<Button>(dialog, "CancelCherryPick").Content!).Text, Is.EqualTo("A_bandon"));
                 Assert.That(Field<Button>(dialog, "ChooseCherryPickRevision").Content, Is.TypeOf<Image>()); Assert.That(((Image)Field<Button>(dialog, "ChooseCherryPickRevision").Content!).Tag, Is.EqualTo("SelectRevision.png")); Capture(dialog, "cherry-pick-fr-" + theme.Key + ".png");
-                Pointer(Field<Button>(dialog, "ChooseCherryPickRevision")); await Until(() => dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Any()); CherryPickRevisionPicker picker = dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Single(); Assert.That(picker.ActualThemeVariant, Is.EqualTo(theme));
-                Pointer(Field<Button>(picker, "CancelCherryPickChoice")); await Until(() => !picker.IsVisible); Pointer(Field<Button>(dialog, "CancelCherryPick")); await Until(() => sequence.IsCompleted); Assert.That(await sequence, Is.False); owner.Close();
+                Pointer(Field<Button>(dialog, "ChooseCherryPickRevision"));
+                await Until(() => dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Any(window =>
+                {
+                    if (!window.IsVisible || window.IsBusy) { return false; }
+                    Pump(window);
+                    return (Field<ListBox>(window, "CherryPickChooseRevision").SelectedItem as GitCommit)?.Hash == merge
+                        && Field<Button>(window, "ChooseCherryPickCommit").IsEffectivelyEnabled
+                        && PointerTarget(Field<Button>(window, "CancelCherryPickChoice")).Ready;
+                }), () => string.Join("; ", dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Select(window =>
+                    $"picker visible={window.IsVisible}, busy={window.IsBusy}, completion={window.Completion.IsCompleted}, error={window.LastError}, "
+                    + PointerTarget(Field<Button>(window, "CancelCherryPickChoice")).Description)));
+                CherryPickRevisionPicker picker = dialog.OwnedWindows.OfType<CherryPickRevisionPicker>().Single();
+                Assert.That(picker.ActualThemeVariant, Is.EqualTo(theme));
+                Button cancelChoice = Field<Button>(picker, "CancelCherryPickChoice"), cancelDialog = Field<Button>(dialog, "CancelCherryPick");
+                int choiceClicks = 0, dialogClicks = 0;
+                cancelChoice.AddHandler(Button.ClickEvent, (_, _) => choiceClicks++, RoutingStrategies.Bubble, handledEventsToo: true);
+                cancelDialog.AddHandler(Button.ClickEvent, (_, _) => dialogClicks++, RoutingStrategies.Bubble, handledEventsToo: true);
+                string State() => $"picker visible={picker.IsVisible}, busy={picker.IsBusy}, completion={picker.Completion.IsCompleted}, error={picker.LastError}, "
+                    + $"dialog visible={dialog.IsVisible}, enabled={dialog.IsEffectivelyEnabled}, busy={dialog.IsBusy}, error={dialog.LastError}, "
+                    + $"sequence={sequence.IsCompleted}, choiceClicks={choiceClicks}, dialogClicks={dialogClicks}";
+                Pointer(cancelChoice); Assert.That(choiceClicks, Is.EqualTo(1), "The one physical picker Cancel must reach its real button. " + State());
+                await Until(() =>
+                {
+                    if (picker.IsVisible || !picker.Completion.IsCompleted || !dialog.IsVisible || !dialog.IsEffectivelyEnabled) { return false; }
+                    Pump(dialog); return PointerTarget(cancelDialog).Ready;
+                }, () => "Picker Cancel and return to its owner: " + State() + "; " + PointerTarget(cancelDialog).Description);
+                Pointer(cancelDialog); Assert.That(dialogClicks, Is.EqualTo(1), "The one physical owner Cancel must reach its real button. " + State());
+                await Until(() => sequence.IsCompleted, () => "Owner Cancel and sequence return: " + State());
+                Assert.That(await sequence, Is.False); owner.Close();
             }
         }
         finally { CultureInfo.CurrentUICulture = previous; Application.Current!.RequestedThemeVariant = appTheme; }

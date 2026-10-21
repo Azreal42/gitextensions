@@ -28,12 +28,13 @@ public partial class PushDialogTests
         {
             await main.OpenRepositoryAsync(f.Client);
             ListBox history = Field<ListBox>(main, "RevisionHistory");
-            history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Initial);
-            await Until(() => !main.IsBusy);
             foreach (bool pointer in new[] { false, true })
             {
+                history.SelectedItem = history.Items.OfType<GitCommit>().Single(commit => commit.Hash == f.Initial);
+                await Until(() => !main.IsBusy);
                 await f.CommitAsync(pointer ? "pointer.txt" : "shortcut.txt", "latest\n", "Quick push checkout");
                 string head = await f.Head();
+                Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.Initial), "Each push must start with a historical commit selected instead of the actual checkout.");
                 if (pointer)
                 {
                     Control button = Field<Button>(main, "BrowsePush"); Pump(main);
@@ -42,11 +43,14 @@ public partial class PushDialogTests
                     main.MouseUp(center, MouseButton.Left, RawInputModifiers.Shift);
                 }
                 else { main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.Control | RawInputModifiers.Shift); }
-                await PushProcessTestDriver.UntilAsync(main, () => !main.IsBusy);
+                await PushProcessTestDriver.UntilAsync(main, () => !main.IsBusy && main.WindowWorkCompletion.IsCompleted
+                    && (history.SelectedItem as GitCommit)?.Hash == head);
                 Assert.That(main.OwnedWindows.OfType<PushDialog>(), Is.Empty);
                 Assert.That(await f.RemoteRef("zeta", "main"), Is.EqualTo(head));
                 Assert.That(await f.Head(), Is.EqualTo(head));
-                Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.Initial));
+                Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(head), "A generic refresh follows the changed native HEAD, as the Windows revision grid does.");
+                Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds,
+                    Is.EqualTo(new[] { head }), "The refreshed index must refer to the actual checkout.");
                 Assert.That(await f.GitText("status", "--porcelain"), Is.Empty);
                 Assert.That(main.LastException, Is.Null);
             }
@@ -135,13 +139,17 @@ public partial class PushDialogTests
             Assert.That(Field<AutoCompleteBox>(dialog, "PushRemoteBranch").Text, Is.EqualTo("published"));
             string actual = await f.Head();
             await f.CommitAsync("last.txt", "last\n", "Last change before push"); actual = await f.Head();
+            Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.Initial), "Push must use the current checkout even when the graph still selects an older commit.");
             Click(Field<Button>(dialog, "ExecutePush"));
-            await PushProcessTestDriver.UntilAsync(main, () => !dialog.IsVisible && !main.IsBusy);
+            await PushProcessTestDriver.UntilAsync(main, () => !dialog.IsVisible && !main.IsBusy && main.WindowWorkCompletion.IsCompleted
+                && (history.SelectedItem as GitCommit)?.Hash == actual);
             Assert.That(dialog.Succeeded, Is.True, dialog.LastError);
             Assert.That(await f.RemoteRef("zeta", "published"), Is.EqualTo(actual));
             Assert.That(await f.Head(), Is.EqualTo(actual));
             Assert.That(await f.GitText("status", "--porcelain"), Is.Empty);
-            Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.Initial));
+            Assert.That((history.SelectedItem as GitCommit)?.Hash, Is.EqualTo(actual), "The completed refresh must select the actual changed HEAD.");
+            Assert.That(history.Items.OfType<ArtificialHistoryRevision>().Single(item => item.Kind == GitCompareRevisionKind.Index).ParentIds,
+                Is.EqualTo(new[] { actual }), "The refreshed index must refer to the actual checkout.");
         }
         finally { main.Close(); Pump(main); }
     }

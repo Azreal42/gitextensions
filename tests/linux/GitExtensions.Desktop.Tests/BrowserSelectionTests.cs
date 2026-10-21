@@ -34,14 +34,14 @@ public sealed class BrowserSelectionTests
         { control.PropertyChanged += (_, args) => { if (args.Property == InputElement.IsEnabledProperty && !control.IsEnabled) { disabled.Add(control); } }; }
         using SlowGit gate = new(f.Repository, "diff", "diff-tree");
         GitCommandLog.Clear();
-        ClickRow(main, history.ContainerFromIndex(1)!);
+        ClickRow(main, history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(1))!);
         await Until(() => gate.Started);
         Assert.That(history.IsKeyboardFocusWithin, Is.True, "A commit read must not release the grid's keyboard focus.");
         Assert.That(viewer.Text, Is.EqualTo(oldText), "Keep the previous document until the selected replacement is ready.");
         main.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None);
-        Assert.That(history.SelectedIndex, Is.EqualTo(2), "Down must work while the preceding read is still pending.");
+        Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(2))), "Down must work while the preceding read is still pending.");
         main.KeyPressQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None); main.KeyReleaseQwerty(PhysicalKey.ArrowUp, RawInputModifiers.None);
-        Assert.That(history.SelectedIndex, Is.EqualTo(1));
+        Assert.That(history.SelectedIndex, Is.EqualTo(history.Items.IndexOf(history.Items.OfType<GitCommit>().ElementAt(1))));
         string selected = ((GitCommit)history.SelectedItem!).Hash;
         gate.Release(); await Idle(main);
         Assert.Multiple(() =>
@@ -95,13 +95,13 @@ public sealed class BrowserSelectionTests
         ListBox history = Find<ListBox>(main, "RevisionHistory");
         FileStatusListView tree = Find<FileStatusListView>(main, "CommitFileStatusList");
         tree.SelectTags(["file.txt"]); await Idle(main);
-        history.SelectedIndex = 1; await Idle(main);
+        history.SelectedItem = history.Items.OfType<GitCommit>().ElementAt(1); await Idle(main);
         object[] diffRoots = Find<TreeView>(main, "RevisionFiles").Items.Cast<object>().ToArray();
         SelectTab(main, "FileTreeTab"); await Idle(main);
         FileContentView content = Find<FileContentView>(main, "CommitFileContent");
         Assert.That(content.TextView.Text, Is.EqualTo("second file\n"));
         using SlowGit gate = new(f.Repository, "ls-tree");
-        ClickRow(main, history.ContainerFromIndex(0)!); await Until(() => gate.Started);
+        ClickRow(main, history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(0))!); await Until(() => gate.Started);
         Assert.That(history.IsKeyboardFocusWithin, Is.True);
         gate.Release(); await Idle(main);
         Assert.That(content.TextView.Text, Is.EqualTo("third file\n"));
@@ -117,7 +117,7 @@ public sealed class BrowserSelectionTests
         using Fixture f = await CreateAsync(); MainWindow main = f.Window;
         using SlowGit gate = new(f.Repository, "diff", "diff-tree");
         ListBox history = Find<ListBox>(main, "RevisionHistory");
-        ClickRow(main, history.ContainerFromIndex(1)!); await Until(() => gate.Started);
+        ClickRow(main, history.ContainerFromItem(history.Items.OfType<GitCommit>().ElementAt(1))!); await Until(() => gate.Started);
         main.KeyPressQwerty(PhysicalKey.W, RawInputModifiers.Control); main.KeyReleaseQwerty(PhysicalKey.W, RawInputModifiers.Control);
         gate.Release(); await Idle(main);
         Assert.That(history.Items, Is.Empty);
@@ -214,7 +214,7 @@ public sealed class BrowserSelectionTests
                 { GitResult result = await f.Git.RunAsync(f.Repository, arguments); Assert.That(result.Success, Is.True, result.StandardError); }
             }
             await f.Window.OpenRepositoryAsync(f.Repository); await Idle(f.Window);
-            Find<ListBox>(f.Window, "RevisionHistory").SelectedIndex = 0; await Idle(f.Window);
+            Find<ListBox>(f.Window, "RevisionHistory").SelectedItem = Find<ListBox>(f.Window, "RevisionHistory").Items.OfType<GitCommit>().ElementAt(0); await Idle(f.Window);
             SelectTab(f.Window, "DiffTab"); await Idle(f.Window); return f;
         }
         catch { f.Dispose(); throw; }

@@ -522,6 +522,8 @@ public sealed class SparseCheckoutDialogTests
                     return stat[(stat.LastIndexOf(')') + 2)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[19] != _identity.Value.Start;
                 }
                 catch (Exception error) when (error is FileNotFoundException or DirectoryNotFoundException) { return true; }
+                // A procfs task may vanish after open; .NET Unix exposes ESRCH as raw errno 3.
+                catch (IOException error) when (OperatingSystem.IsLinux() && error.HResult == 3) { return true; }
             }
         }
         internal void Release() => File.WriteAllText(_release, "release sparse writer\n");

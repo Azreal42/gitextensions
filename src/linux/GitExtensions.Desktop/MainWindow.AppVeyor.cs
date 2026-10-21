@@ -18,7 +18,7 @@ public sealed partial class MainWindow
     }
     internal Task ShowBuildPullRequestAsync()
     {
-        Uri? uri = BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault()?.PullRequestUri;
+        Uri? uri = BuildServerStatusFor((PrimaryHistoryItem as GitCommit)?.Hash)?.Runs.FirstOrDefault()?.PullRequestUri;
         if (!_gitHubActionsEnabled || _gitHubActionsClosing || uri is null) { return Task.CompletedTask; }
         try { LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token); }
         catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
@@ -28,7 +28,7 @@ public sealed partial class MainWindow
     private void UpdateBuildServerPullRequestCommands()
     {
         bool available = _gitHubActionsEnabled && !_gitHubActionsClosing
-            && BuildServerStatusFor((_commits.SelectedItem as GitCommit)?.Hash)?.Runs.FirstOrDefault()?.PullRequestUri is not null;
+            && BuildServerStatusFor((PrimaryHistoryItem as GitCommit)?.Hash)?.Runs.FirstOrDefault()?.PullRequestUri is not null;
         foreach (MenuItem item in _buildServerPullRequestMenus) { item.IsEnabled = item.IsVisible = available; }
     }
 }
