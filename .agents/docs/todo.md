@@ -1,23 +1,22 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H36 en cours : lecteur Core fichier progressif testé, source `70ce18a43` ; raccord Browse encore ouvert. Dernier paquet vérifié : H35 `3dd4eb926`, avec suites complètes et installation isolée. Parité complète et installation hôte de ce paquet restent ouvertes.
-
-Les [suites complètes H35](../../artifacts/linux/browse-inline-history-20261021/review/root-full-review.json) valident les octets source de `3dd4eb926` dans le worktree propre. Les [suites historiques](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` et les lots précédents gardent leurs preuves distinctes.
+Mise à jour : 22 octobre 2026. H36 : Browse progressif et frontières d’opération implémentés ; source `62352f455`, suites automatisées complètes et paquet isolé vérifiés. Le rendu minimum 860, l’interaction du paquet installé et la parité globale restent ouverts.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
 
 <a id="h36-progressive-history"></a>
-## H36 — historique progressif (en cours)
+## H36 — historique progressif
 
-Source `70ce18a43a091e9fefb11596c4deca5c48c20be4` ; [ADR0156](adr/workflows/history/0156-file-history-stream.md).
+[ADR0157](adr/workflows/history/0157-progressive-browse-host.md), contexte fichier [ADR0156](adr/workflows/history/0156-file-history-stream.md). Source `62352f45506d3d45120640f386169de96e672c79` ; [commit et périmètre](../../artifacts/linux/progressive-browse-host-20261021/review/source-correction-commit-review.json). Les 14 fichiers hors lot sont préservés et exclus du worktree compilé et du paquet.
 
-- [x] Flux Core fichier/dossier avec préparation des anciens noms et contexte readonly avant le premier lot ; parents, chemins littéraux, plafond et overrides natifs conservés. Les lecteurs snapshot restent compatibles.
-- [ ] Raccorder Browse principal, fichier/dossier et RevisionLog : premier lot utilisable, append sans Reset, intention récente conservée, génération annulée et réellement drainée ; métadonnées et panneaux indépendants. Parcours continu jusqu’au plafond, sans relire des fenêtres grandissantes ; toggle artificiel sans faux EOF.
-- [ ] Qualifier ce raccord, les gestes natifs et le rendu minimum 860 EN clair/FR sombre. Les audits de contrats et de frontières sont préparés ; ils ne valent pas une implémentation.
+- [x] Browse, fichier/dossier et Log : premier lot utilisable pendant un parcours continu, même liste/graphe WT–Index–commits, objets/sélection/ancre/focus/viewport conservés. Lot distinct du plafond ; renommages prêts avant le premier lot fichier.
+- [x] Panneaux et inventaire indépendants ; nouvelle intention prioritaire, lecteur remplacé annulé et drainé, mutations protégées et diagnostics conservés. EOF ne relit pas le panneau inchangé ; activation working, changement de dépôt, ordre natif et paires initiales gardent leurs contrats.
+- [x] [Suites complètes](../../artifacts/linux/progressive-browse-host-20261021/review/root-full-review.json) : **4 570/4 570 Desktop, 1 205/1 205 Core, 42/42 Plugins**, sur les binaires du commit exact, sources stables et processus retirés. Les 4 560 cas Desktop et 1 197 Core antérieurs sont conservés. Les passages rouges et leurs causes restent dans [Failure](failure.md#h36-progressive-host) et les résultats bruts.
+- [ ] Minimum 860 en français sombre, audits natifs/visuels étendus, grilles/menus/filtres complets du chooser et héritage runtime ; services CI réels/authentifiés/Enterprise, macOS et parité globale.
 
-[Ciblé exécuté](../../artifacts/linux/progressive-browse-history-20261021/review/root-targeted-review.json) : **22/22 Desktop, 45/45 Core** (16 snapshot, 8 nouveaux flux fichier, 21 streaming commun), **42/42 Plugins**. Trois projets sans avertissement/erreur ; mêmes octets source que le [commit](../../artifacts/linux/progressive-browse-history-20261021/review/source-import-review.json), sources/binaires stables et acteurs retirés. Aucune suite complète H36, intégration Browse ni nouveau paquet déduits de ce ciblé.
+[Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/62352f455/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : **40315348 octets**, SHA-256 `82c787ef30a31745dc9048a9ea81ac9065c2e9fc4f02f24dbcef7d274b4bce14`. [Contrôle](../../artifacts/linux/progressive-browse-host-20261021/review/root-package-review.json) : sept phases réussies, 356 fichiers publiés comparés, 402 empreintes MD5, français et Skia local ; installation/démarrage isolés, base dpkg hôte inchangée.
 
-[Inventaire contrôlé](../../artifacts/linux/progressive-browse-history-20261021/review/root-inventory-review.json) : 99 fenêtres métier, 32 pages, niveaux inchangés, treize familles ouvertes, aucun N4. Le paquet et les suites complètes H35 ci-dessous gardent leur source distincte.
+[Inventaire régénéré](../../artifacts/linux/progressive-browse-host-20261021/review/root-inventory-review.json) : **99 fenêtres métier et 32 pages**, niveaux inchangés, treize familles ouvertes, aucun N4. Les C# Modal du primaire ne sont que des entrées de syntaxe de ce relevé. [Trois rendus actuels revus](../../artifacts/linux/progressive-browse-host-20261021/review/root-corrected-visual-review.json) ; les neuf captures ui04 restent historiques. Ces rendus et l’installation isolée ne qualifient pas les interactions du bureau installé. Les preuves H35 ci-dessous gardent leur source distincte.
 
 <a id="h35-browse-shared-snapshot"></a>
 ## H35 — snapshot Browse commun

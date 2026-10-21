@@ -2,6 +2,24 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="h36-progressive-host"></a>
+## H36 — historique progressif (garde-fous)
+
+- Le parseur peut livrer avant le nombre cible lorsque le texte retenu atteint 1 MiB. Dans le fixture, les messages de 4 096 caractères présents dans plusieurs champs ont déclenché un lot d’environ 63 commits avant la gate à 100. Dimensionner le fixture selon ce budget ; ne pas imposer une limite par message ni confondre un lot court et EOF.
+- Poser la culture dans l’appelant avant construction UI : une affectation dans une factory async ne remonte pas dans son contexte. Ne pas corriger l’oracle français en le remplaçant par un attendu anglais.
+- `HistoryLimit = 1` ne garantit plus qu’un parent ou un commit de Blame soit hors grille. Les cas qui exigent cette absence doivent fixer `MaxRevisionGraphCommits = 1` ; conserver leurs SHA, endpoints, focus et drains. Les cas qui attendent tous les descendants à EOF gardent leur lot de 1 sans plafond artificiel.
+- EOF ne constitue pas une nouvelle sélection : ne pas réannuler le panneau inchangé. Les fins d’inventaire, de reprise ou de panneaux ne doivent pas effacer un rapport de mutation ou une erreur tardive du flux par un statut de succès.
+- Une lecture de diff ne récupère pas l’erreur des métadonnées du même commit. Conserver la propriété dépôt/hash de l’erreur ; seul le réessai du lecteur concerné la récupère. Une mutation peut aussi admettre un nouveau graphe pour ses effets partiels avant de relancer son erreur : rattacher cette erreur à la génération admise par cette mutation.
+- Une liste de fichiers visible ne prouve pas que son document sélectionné est chargé. Les tests de commandes locales doivent établir la fin du lecteur foreground déjà admis avant de remettre le journal à zéro ; attendre seulement les entrées rend le résultat dépendant de la vitesse de Git.
+
+- La présélection d’un fichier sous `_refreshing` ne lance aucun aperçu : l’activation de Working directory doit admettre son lecteur, et une sélection vide doit révoquer l’image antérieure.
+- `Ready` ne prouve pas la fin de l’inventaire ; les observations finales de tracking/sous-modules attendent la frontière histoire possédée. Les publications de succès ne remplacent pas une erreur CI encore courante.
+
+- Une clé Kind/Revision ne distingue pas deux dépôts pour WT/Index. Invalider groupes, aperçu et clé au premier succès du nouveau dépôt ; ne pas vider le dernier dépôt valide avant ce succès.
+- SelectedItems conserve son ordre natif, distinct de la récence des comparaisons. Une publication interne garde la paire initiale réelle seulement tant que son intention, ses deux endpoints et son autorisation survivent ; une révocation utilisateur ne doit jamais la recréer.
+
+Intention et frontières : [ADR0157](adr/workflows/history/0157-progressive-browse-host.md). Preuves et limites courantes : [TODO](todo.md#h36-progressive-history).
+
 <a id="h35-browse-shared-snapshot"></a>
 ## H35 — snapshot et endpoints Browse (garde-fous)
 

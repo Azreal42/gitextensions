@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "70ce18a43a091e9fefb11596c4deca5c48c20be4",
-  "source_digest_sha256": "2d0eadfed33625c1599255144ab468b56e1c9fc7020bb4036f8cbf3102800388",
-  "scanned_csharp_files": 2627,
+  "code_reference_commit": "62352f45506d3d45120640f386169de96e672c79",
+  "source_digest_sha256": "819d9fb1ddaf302c20415503221c952ed2d9c375a147e5bd279e6eb803821e8e",
+  "scanned_csharp_files": 2634,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -2344,7 +2344,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.NavigateRevisionHistoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
-          "line": 121,
+          "line": 132,
           "kind": "window"
         }
       ],
@@ -4612,7 +4612,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutCommitAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 442,
+          "line": 447,
           "kind": "window"
         },
         {
@@ -8527,7 +8527,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 411,
+          "line": 415,
           "kind": "window"
         },
         {
@@ -10991,7 +10991,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyHistoryViewPresentation",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs",
-          "line": 115,
+          "line": 117,
           "kind": "window"
         },
         {
@@ -11026,7 +11026,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyTheme",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 661,
+          "line": 665,
           "kind": "window"
         },
         {
@@ -14600,7 +14600,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowGitToolsSettingsAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 612,
+          "line": 615,
           "kind": "window"
         },
         {
@@ -14691,14 +14691,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 411,
+          "line": 415,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.DiffToolAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 610,
+          "line": 613,
           "kind": "window"
         },
         {
@@ -17970,7 +17970,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.AddSubmoduleAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Workflows.cs",
-          "line": 497,
+          "line": 500,
           "kind": "window"
         }
       ],
@@ -20770,6 +20770,12 @@
           "test_class": "ParentChildNavigationTests",
           "passed_in_reference_run": 22,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProgressiveBrowseHistoryTests.cs",
+          "test_class": "ProgressiveBrowseHistoryTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceMenuTests.cs",
@@ -23588,6 +23594,18 @@
           "line": 3
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.HistoryLoading.Metadata.cs",
+          "line": 5
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.HistoryLoading.Publication.cs",
+          "line": 8
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.HistoryLoading.cs",
+          "line": 6
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.HistoryMenus.cs",
           "line": 10
         },
@@ -25354,7 +25372,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 437,
+      "line": 442,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -25394,7 +25412,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.RevisionNavigation.cs",
-      "line": 72,
+      "line": 75,
       "method": "ShowGoToCommitErrorAsync",
       "text": "new() { Name = \"GoToCommitError\", Title = _translations.Translate(\"MessageBoxes\", \"_cannotFindRevisionCaption\", \"Text\", \"Cannot find revision\"),",
       "platform": "linux",
