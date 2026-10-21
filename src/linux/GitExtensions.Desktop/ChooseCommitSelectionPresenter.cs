@@ -28,6 +28,7 @@ internal sealed class ChooseCommitSelectionPresenter : UserControl
     private bool _selecting;
     private string? _head;
     internal ListBox Rows => _commits.Rows;
+    internal bool IsPublishing => _commits.IsPublishing;
     internal ChooseCommitSelection? Selection { get; private set; }
     internal event EventHandler? SelectionChanged;
     internal event EventHandler? AcceptRequested;
@@ -43,7 +44,7 @@ internal sealed class ChooseCommitSelectionPresenter : UserControl
             Configure(_artificial.Working, GitCompareRevisionKind.WorkingTree); Configure(_artificial.Index, GitCompareRevisionKind.Index);
         }
         _commits = new(rowsName, false, _artificial?.View, view); Content = _commits;
-        Rows.SelectionChanged += (_, _) => { if (!_selecting) { Publish(Rows.SelectedItem is GitCommit commit ? ChooseCommitSelection.FromCommit(commit) : null); } };
+        Rows.SelectionChanged += (_, _) => { if (!_selecting && !_commits.IsPublishing) { Publish(Rows.SelectedItem is GitCommit commit ? ChooseCommitSelection.FromCommit(commit) : null); } };
         Rows.DoubleTapped += (_, args) =>
         {
             if (args.Source is Visual source && source.GetSelfAndVisualAncestors().OfType<ListBoxItem>().Any())
@@ -83,6 +84,19 @@ internal sealed class ChooseCommitSelectionPresenter : UserControl
         finally { _selecting = false; }
         Publish(null);
     }
+
+    internal void BeginIncrementalData(IReadOnlyList<GitReference> references, string? head, bool artificialAllowed, bool onlyFirstParent = false)
+    {
+        _head = head;
+        if (_artificial is not null) { _artificial.View.IsVisible = artificialAllowed; }
+        _selecting = true;
+        try { _commits.BeginIncrementalData(references, head, onlyFirstParent); }
+        finally { _selecting = false; }
+        Publish(null);
+    }
+
+    internal IReadOnlyList<GitCommit> AppendCommits(IReadOnlyList<GitCommit> batch) => _commits.AppendCommits(batch);
+    internal void CompleteCommits() => _commits.CompleteCommits();
 
     internal bool Select(GitCompareRevision? revision)
     {

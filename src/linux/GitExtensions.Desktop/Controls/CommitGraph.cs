@@ -44,6 +44,8 @@ public sealed class CommitGraph : Control
     private RevisionGraphOptions _options = RevisionGraphOptions.Default;
     private IReadOnlyList<GitReference> _references = [];
     private CommitGraphLayout _layout = CommitGraphLayout.Build([]);
+    private IncrementalCommitGraphLayout? _incrementalLayout;
+    internal event Action? IncrementalOrderChanged;
     private Dictionary<string, GitReference[]> _refsByHash = new(StringComparer.Ordinal);
     private double _verticalOffset;
     private readonly ResolvedDesktopFont _application = DesktopFonts.For(DesktopFontRole.Application);
@@ -71,6 +73,7 @@ public sealed class CommitGraph : Control
         get => _commits;
         set
         {
+            _incrementalLayout = null;
             _commits = value ?? [];
             _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent, _options);
             InvalidateMeasure();
@@ -86,7 +89,9 @@ public sealed class CommitGraph : Control
             ArgumentNullException.ThrowIfNull(value);
             if (_options == value) { return; }
             _options = value;
-            _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent, value);
+            if (_incrementalLayout is not null)
+            { _incrementalLayout.Reconfigure(_onlyFirstParent, value); IncrementalOrderChanged?.Invoke(); }
+            else { _layout = CommitGraphLayout.Build(_commits, _onlyFirstParent, value); }
             InvalidateMeasure(); InvalidateVisual();
         }
     }
@@ -98,12 +103,46 @@ public sealed class CommitGraph : Control
         {
             if (_onlyFirstParent == value) { return; }
             _onlyFirstParent = value;
-            _layout = CommitGraphLayout.Build(_commits, value, _options);
+            if (_incrementalLayout is not null)
+            { _incrementalLayout.Reconfigure(value, _options); IncrementalOrderChanged?.Invoke(); }
+            else { _layout = CommitGraphLayout.Build(_commits, value, _options); }
             InvalidateMeasure(); InvalidateVisual();
         }
     }
 
-    internal IReadOnlyList<string> GetChildren(string hash) => _layout.Children.GetValueOrDefault(hash) ?? [];
+    internal IReadOnlyList<string> GetChildren(string hash)
+        => _incrementalLayout?.GetChildren(hash) ?? _layout.Children.GetValueOrDefault(hash) ?? [];
+
+    internal void BeginIncrementalData(string? head, bool onlyFirstParent = false)
+    {
+        _onlyFirstParent = onlyFirstParent;
+        _incrementalLayout = new(onlyFirstParent, _options, head);
+        _commits = _incrementalLayout.Commits;
+        CurrentHead = head;
+        InvalidateMeasure(); InvalidateVisual();
+    }
+
+    internal void AppendCommits(IReadOnlyList<GitCommit> batch)
+    {
+        if (_incrementalLayout is null) { throw new InvalidOperationException("No revision stream is active."); }
+        _incrementalLayout.Append(batch); InvalidateMeasure(); InvalidateVisual();
+    }
+
+    internal void CompleteCommits()
+    {
+        if (_incrementalLayout is null) { throw new InvalidOperationException("No revision stream is active."); }
+        _incrementalLayout.Complete(); InvalidateVisual();
+    }
+
+    private int RenderCount => _incrementalLayout?.Count ?? _layout.Nodes.Count;
+    private int RenderLaneCount => _incrementalLayout?.VisibleLaneCount ?? _layout.LaneCount;
+    private GitCommit CommitForRow(int row) => _incrementalLayout is { } incremental ? incremental.OrderedCommits[row] : _layout.Nodes[row].Commit;
+    private GraphNode? NodeForRow(int row) => _incrementalLayout is { } incremental ? incremental.GetPreparedNode(row) : _layout.Nodes[row];
+    private IReadOnlyList<GraphStroke> RenderStrokes => _incrementalLayout?.VisibleStrokes ?? _layout.Strokes;
+    private IReadOnlyList<GraphRenderSegment> RenderSegmentsForRow(int row)
+        => _incrementalLayout is { } incremental
+            ? incremental.RenderSegmentsForRow(row, LaneWidth, LineHeight, _relatedHashes is null, _relatedHashes)
+            : _layout.RenderSegmentsForRow(row, LaneWidth, LineHeight, _relatedHashes is null, _relatedHashes);
 
     public IReadOnlyList<GitReference> References
     {
@@ -142,7 +181,7 @@ public sealed class CommitGraph : Control
     }
 
     // A non-topological input may be reordered by the upstream layout algorithm.
-    public IReadOnlyList<GitCommit> OrderedCommits => _layout.Nodes.Select(node => node.Commit).ToArray();
+    public IReadOnlyList<GitCommit> OrderedCommits => _incrementalLayout?.OrderedCommits ?? _layout.Nodes.Select(node => node.Commit).ToArray();
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -155,14 +194,15 @@ public sealed class CommitGraph : Control
 
     protected override Size MeasureOverride(Size availableSize)
         => new(ShowReferenceLabels
-            ? Math.Max(72, LeftInset * 2 + _layout.LaneCount * LaneWidth) + (_references.Count > 0 ? 110 : 0)
+            ? Math.Max(72, LeftInset * 2 + RenderLaneCount * LaneWidth) + (_references.Count > 0 ? 110 : 0)
             : LeftInset * 2 + VisibleLaneCount(availableSize.Height) * LaneWidth,
-            _layout.Nodes.Count * LineHeight);
+            RenderCount * LineHeight);
 
     private int VisibleLaneCount(double height)
     {
-        int first = Math.Min(_layout.Nodes.Count, (int)(_verticalOffset / LineHeight));
-        int last = double.IsFinite(height) ? Math.Min(_layout.Nodes.Count - 1, first + (int)Math.Ceiling(height / LineHeight)) : _layout.Nodes.Count - 1;
+        if (_incrementalLayout is not null) { return _incrementalLayout.VisibleLaneCount; }
+        int first = Math.Min(RenderCount, (int)(_verticalOffset / LineHeight));
+        int last = double.IsFinite(height) ? Math.Min(RenderCount - 1, first + (int)Math.Ceiling(height / LineHeight)) : RenderCount - 1;
         int maximum = 0;
         for (int row = first; row <= last; row++) { maximum = Math.Max(maximum, _layout.Nodes[row].Lane); }
         foreach (GraphStroke stroke in _layout.Strokes)
@@ -174,18 +214,21 @@ public sealed class CommitGraph : Control
 
     public override void Render(DrawingContext context)
     {
+        // A scene update can visit a hidden/zero-sized control. It must not request streamed lanes.
+        if (_incrementalLayout is not null && (!IsEffectivelyVisible || Bounds.Width <= 0 || Bounds.Height <= 0)) { return; }
         base.Render(context);
         bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
         IBrush[] palette = dark ? DarkPalette : LightPalette;
         int firstRow = Math.Max(0, (int)(_verticalOffset / LineHeight));
-        int lastRow = Math.Min(_layout.Nodes.Count - 1, (int)((_verticalOffset + Bounds.Height) / LineHeight));
+        int lastRow = Math.Min(RenderCount - 1, (int)((_verticalOffset + Bounds.Height) / LineHeight));
+        _incrementalLayout?.PrepareViewport(firstRow, lastRow);
 
         // Legacy graph hosts remain transparent unless they opt into revision-grid row state.
         if (DrawAlternateBackground || AuthoredEmail is not null || _selectedHashSet.Count > 0)
         {
             for (int row = firstRow; row <= lastRow; row++)
             {
-                GitCommit commit = _layout.Nodes[row].Commit;
+                GitCommit commit = CommitForRow(row);
                 IBrush background = RevisionHistoryRow.BackgroundFor(commit, _selectedHashSet.Contains(commit.Hash), SelectionFocused,
                     AuthoredEmail, row, DrawAlternateBackground, dark);
                 context.FillRectangle(background, new Rect(0, row * LineHeight - _verticalOffset, Bounds.Width, LineHeight));
@@ -199,7 +242,7 @@ public sealed class CommitGraph : Control
             // centers and tangent decisions are shared, so the curves meet exactly.
             using (context.PushClip(new Rect(0, top, Bounds.Width, LineHeight)))
             {
-                foreach (GraphRenderSegment segment in _layout.RenderSegmentsForRow(row, LaneWidth, LineHeight, _relatedHashes is null, _relatedHashes))
+                foreach (GraphRenderSegment segment in RenderSegmentsForRow(row))
                 {
                     StreamGeometry geometry = new();
                     using (StreamGeometryContext path = geometry.Open())
@@ -222,7 +265,7 @@ public sealed class CommitGraph : Control
 
         // The limited log can end before an edge's ancestor is loaded. Preserve
         // its explicit continuation to the history boundary without inventing a node.
-        foreach (GraphStroke stroke in _layout.Strokes.Where(stroke => stroke.ContinuesOutsideHistory && stroke.Row >= firstRow && stroke.Row <= lastRow))
+        foreach (GraphStroke stroke in RenderStrokes.Where(stroke => stroke.ContinuesOutsideHistory && stroke.Row >= firstRow && stroke.Row <= lastRow))
         {
             double centerY = (stroke.Row + .5) * LineHeight - _verticalOffset;
             double boundaryY = centerY + LineHeight / 2;
@@ -235,7 +278,8 @@ public sealed class CommitGraph : Control
 
         for (int row = firstRow; row <= lastRow; row++)
         {
-            GraphNode node = _layout.Nodes[row];
+            GraphNode? node = NodeForRow(row);
+            if (node is null) { continue; }
             Point center = new(X(node.Lane), (row + 0.5) * LineHeight - _verticalOffset);
             IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(node.Commit.Hash) ? Brushes.Gray : palette[node.Color];
             _refsByHash.TryGetValue(node.Commit.Hash, out GitReference[]? refs);
@@ -246,7 +290,7 @@ public sealed class CommitGraph : Control
             {
                 context.DrawRectangle(brush, outline, new Rect(center.X - 5, center.Y - 5, 10, 10), 1, 1);
                 if (!ShowReferenceLabels) { continue; }
-                double x = LeftInset * 2 + _layout.LaneCount * LaneWidth;
+                double x = LeftInset * 2 + RenderLaneCount * LaneWidth;
                 foreach (GitReference reference in refs.OrderByDescending(reference => reference.IsCurrent).ThenBy(reference => reference.Name, StringComparer.Ordinal))
                 {
                     Color color = ReferenceColor(reference, dark);
@@ -289,13 +333,13 @@ public sealed class CommitGraph : Control
     private void ShowCommitTooltip(object? sender, PointerEventArgs args)
     {
         int row = (int)((args.GetPosition(this).Y + _verticalOffset) / LineHeight);
-        if (row < 0 || row >= _layout.Nodes.Count)
+        if (row < 0 || row >= RenderCount)
         {
             ToolTip.SetTip(this, null);
             return;
         }
 
-        GitCommit commit = _layout.Nodes[row].Commit;
+        GitCommit commit = CommitForRow(row);
         string references = _refsByHash.TryGetValue(commit.Hash, out GitReference[]? refs)
             ? string.Join(", ", refs.Select(reference => reference.ShortName)) + "\n" : "";
         ToolTip.SetTip(this, $"{references}{commit.Hash}\n{commit.Subject}\n{string.Join("\n", commit.Parents)}");

@@ -84,6 +84,25 @@ public sealed class GitRunner
         => await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment, applyAskpass: true, outputReceived,
             executionEnvironment: ExecutionEnvironment).ConfigureAwait(false);
 
+    /// <summary>
+    /// Streams stdout without retaining it. The sequential callback receives a borrowed chunk valid only until its returned ValueTask completes.
+    /// Cancellation stops the owned native operation and waits for every admitted callback and pipe; callbacks must cooperate or return.
+    /// </summary>
+    public async Task<GitStreamResult> RunStreamingAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask> standardOutput,
+        CancellationToken cancellationToken = default,
+        byte[]? standardInput = null,
+        IReadOnlyDictionary<string, string?>? environment = null)
+    {
+        ArgumentNullException.ThrowIfNull(standardOutput);
+        GitStreamCapture capture = new(standardOutput);
+        GitBinaryResult result = await RunBinaryCoreAsync(workingDirectory, arguments, cancellationToken, standardInput, environment,
+            applyAskpass: true, executionEnvironment: ExecutionEnvironment, streamCapture: capture).ConfigureAwait(false);
+        return capture.Complete(result.ExitCode);
+    }
+
     // The same native ownership/drain engine without Git-specific environment or authentication policy.
     internal Task<GitBinaryResult> RunExternalBinaryAsync(string workingDirectory, IReadOnlyList<string> arguments,
         CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? environment,
@@ -101,7 +120,7 @@ public sealed class GitRunner
         bool applyAskpass,
         Action<GitProcessOutput>? outputReceived = null,
         bool applyGitEnvironment = true, Action<int>? processStarted = null, GitExecutionEnvironment? executionEnvironment = null,
-        GitCommandLogProcessKind? journalKind = null, GitCommandLogProcessContext? journalContext = null)
+        GitCommandLogProcessKind? journalKind = null, GitCommandLogProcessContext? journalContext = null, GitStreamCapture? streamCapture = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (journalKind is { } origin && !Enum.IsDefined(origin)) { throw new ArgumentOutOfRangeException(nameof(journalKind)); }
@@ -184,7 +203,7 @@ public sealed class GitRunner
                     : GitProcessLaunch.Configure(startInfo, executionEnvironment.GetVariable("PATH") ?? "");
             }
             cancellationToken.ThrowIfCancellationRequested();
-            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, startedObserver).ConfigureAwait(false);
+            GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, startedObserver, streamCapture).ConfigureAwait(false);
             exitCode = result.ExitCode;
             return result;
         }
@@ -202,15 +221,19 @@ public sealed class GitRunner
     }
 
     private static async Task<GitBinaryResult> RunProcessAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken,
-        byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch, Action<int>? processStarted)
+        byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch, Action<int>? processStarted, GitStreamCapture? streamCapture)
     {
         using Process process = new() { StartInfo = startInfo };
         using GitProcessGroup? processes = OperatingSystem.IsLinux() ? new GitProcessGroup() : null;
         process.Start();
-        using MemoryStream buffer = new();
-        using MemoryStream errorBuffer = new();
-        Task output = CopyOutputAsync(process.StandardOutput.BaseStream, buffer, GitProcessOutputStream.StandardOutput, outputReceived);
-        Task error = CopyOutputAsync(process.StandardError.BaseStream, errorBuffer, GitProcessOutputStream.StandardError, outputReceived);
+        using MemoryStream? buffer = streamCapture is null ? new() : null;
+        using MemoryStream? errorBuffer = streamCapture is null ? new() : null;
+        Task output = streamCapture is null
+            ? CopyOutputAsync(process.StandardOutput.BaseStream, buffer!, GitProcessOutputStream.StandardOutput, outputReceived)
+            : streamCapture.CopyStandardOutputAsync(process.StandardOutput.BaseStream, cancellationToken);
+        Task error = streamCapture is null
+            ? CopyOutputAsync(process.StandardError.BaseStream, errorBuffer!, GitProcessOutputStream.StandardError, outputReceived)
+            : streamCapture.CopyStandardErrorAsync(process.StandardError.BaseStream);
         Task control = Task.CompletedTask;
         Task<IOException?> input = Task.FromResult<IOException?>(null);
         TaskCompletionSource cancellation = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -244,9 +267,11 @@ public sealed class GitRunner
                 throw inputError;
             }
 
+            // The streaming capture owns only its bounded stderr prefix and counters, never a stdout snapshot.
+            if (streamCapture is not null) { return new GitBinaryResult(process.ExitCode, [], ""); }
             List<string> warnings = [];
-            byte[] errorBytes = errorBuffer.ToArray();
-            return new GitBinaryResult(process.ExitCode, buffer.ToArray(), GitOutputText.Utf8(errorBytes, "stderr", warnings))
+            byte[] errorBytes = errorBuffer!.ToArray();
+            return new GitBinaryResult(process.ExitCode, buffer!.ToArray(), GitOutputText.Utf8(errorBytes, "stderr", warnings))
             { StandardErrorBytes = errorBytes, Warnings = warnings };
         }
         catch (Exception failure)

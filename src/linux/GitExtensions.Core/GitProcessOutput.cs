@@ -13,6 +13,8 @@ public sealed record GitProcessOutput(GitProcessOutputStream Stream, ReadOnlyMem
 public sealed class GitProcessTextDecoder
 {
     private byte[] _pending = [];
+    /// <summary>Whether any byte has required the existing lossless \xNN text projection.</summary>
+    public bool HadEscapedBytes { get; private set; }
 
     public string Append(ReadOnlySpan<byte> bytes, bool flush = false)
     {
@@ -24,7 +26,7 @@ public sealed class GitProcessTextDecoder
             OperationStatus status = Rune.DecodeFromUtf8(remaining, out Rune rune, out int consumed);
             if (status == OperationStatus.Done) { text.Append(rune.ToString()); remaining = remaining[consumed..]; }
             else if (status == OperationStatus.NeedMoreData && !flush) { _pending = remaining.ToArray(); break; }
-            else { text.Append("\\x").Append(remaining[0].ToString("X2", CultureInfo.InvariantCulture)); remaining = remaining[1..]; }
+            else { HadEscapedBytes = true; text.Append("\\x").Append(remaining[0].ToString("X2", CultureInfo.InvariantCulture)); remaining = remaining[1..]; }
         }
         return text.ToString();
     }

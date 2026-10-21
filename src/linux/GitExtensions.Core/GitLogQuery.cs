@@ -44,6 +44,9 @@ public sealed record GitLogQuery(
     };
 }
 
+/// <summary>A completed native traversal; ProcessResult is null only when no log was needed for unborn/current scope.</summary>
+public sealed record GitRevisionGraphStreamResult(long CommitCount, GitStreamResult? ProcessResult);
+
 public sealed partial class GitRepository
 {
     public Task<IReadOnlyList<GitCommit>> GetLogAsync(GitLogQuery query, CancellationToken cancellationToken = default)
@@ -61,6 +64,62 @@ public sealed partial class GitRepository
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Count);
+        using IDisposable operation = BeginOperation();
+        GitLogReadCommand? command = await BuildLogReadCommandAsync(query, paths, rewriteParents, query.Count, cancellationToken).ConfigureAwait(false);
+        if (command is null) { return []; }
+        string output = (await ExecuteAsync(command.Arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
+        if (command.ValidateBranchOutput) { ValidateBranchFilteredLogOutput(output); }
+        return GitOutputParser.ParseLog(output);
+    }
+
+    /// <summary>
+    /// One native traversal with awaited batches. Count is a legacy page size and is ignored here;
+    /// maximumCommits is the requested --max-count (zero omits it). An admitted branch option may
+    /// override it exactly as in the captured readers. Delivered batches are provisional until this
+    /// method returns successfully: a later Git/format/sink failure is never a successful EOF.
+    /// </summary>
+    public async Task<GitRevisionGraphStreamResult> StreamRevisionGraphAsync(GitLogQuery query, int maximumCommits, int batchSize,
+        Func<IReadOnlyList<GitCommit>, CancellationToken, ValueTask> onBatch, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(onBatch);
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumCommits);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+        cancellationToken.ThrowIfCancellationRequested();
+        using IDisposable operation = BeginOperation();
+        GitLogReadCommand? command = await BuildLogReadCommandAsync(query.ForRevisionGraph(), paths: null,
+            rewriteParents: query.HasRevisionFilter, maximumCommits, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (command is null) { return new(0, null); }
+        GitLogStreamParser parser = new(batchSize, onBatch);
+        // ExecuteAsync adds the same global and literal-path policy for an ordinary log command.
+        // Keep the byte stream out of the captured-output execution path.
+        GitStreamResult result = await _runner.RunStreamingAsync(Path, [.. GlobalOptions, "--literal-pathspecs", .. command.Arguments],
+            parser.ReadAsync, cancellationToken).ConfigureAwait(false);
+        result = WithHistoryTextWarnings(result, parser);
+        if (!result.Success)
+        {
+            throw new GitCommandException(command.Arguments, new(result.ExitCode, "", result.StandardError)
+            { StandardErrorBytes = result.StandardErrorBytes, Warnings = result.Warnings });
+        }
+        await parser.CompleteAsync(cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new(parser.CommitCount, WithHistoryTextWarnings(result, parser));
+    }
+
+    private static GitStreamResult WithHistoryTextWarnings(GitStreamResult result, GitLogStreamParser parser)
+        => parser.HadEscapedBytes ? result with { Warnings = result.Warnings.Concat([
+            "Git history contains bytes outside UTF-8 text fields; they are displayed as \\xNN."]).Distinct(StringComparer.Ordinal).ToArray() } : result;
+
+    private sealed record GitLogReadCommand(IReadOnlyList<string> Arguments, bool ValidateBranchOutput);
+
+    // The captured log, captured graph/file graph and streaming graph must share option ordering,
+    // validation, native branch overrides and literal pathname transport.
+    private async Task<GitLogReadCommand?> BuildLogReadCommandAsync(GitLogQuery query, IReadOnlyList<string>? paths,
+        bool rewriteParents, int maximumCommits, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumCommits);
         ArgumentOutOfRangeException.ThrowIfNegative(query.Skip);
         if (query.Since > query.Until)
         {
@@ -81,11 +140,12 @@ public sealed partial class GitRepository
             && !(paths is null ? await HasHeadAsync(cancellationToken).ConfigureAwait(false)
                 : await ReadFileHistoryHeadAsync(cancellationToken).ConfigureAwait(false) is not null))
         {
-            return [];
+            return null;
         }
 
         List<string> arguments = ["log", "--encoding=UTF-8", "-z", "--date=iso-strict", "--no-ext-diff", "--no-textconv",
-            "--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%s%x00%b%x00%B", $"--max-count={query.Count.ToString(CultureInfo.InvariantCulture)}"];
+            "--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%s%x00%b%x00%B"];
+        if (maximumCommits > 0) { arguments.Add($"--max-count={maximumCommits.ToString(CultureInfo.InvariantCulture)}"); }
         string? sort = query.Sort switch
         {
             GitLogSort.GitDefault => null,
@@ -155,9 +215,7 @@ public sealed partial class GitRepository
         }
 
         if (paths is not null) { arguments.InsertRange(0, ["--no-optional-locks", "--literal-pathspecs"]); }
-        string output = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
-        if (hasBranchFilter) { ValidateBranchFilteredLogOutput(output); }
-        return GitOutputParser.ParseLog(output);
+        return new(arguments.AsReadOnly(), hasBranchFilter);
 
         void AddValue(string option, string? value)
         {

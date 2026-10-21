@@ -18,7 +18,7 @@ internal sealed record ChooseCommitRequest(string? Preselect = null, bool Curren
 internal sealed record ChooseCommitControlNames(string Rows, string Accept, string Cancel, string Search, string SearchAction);
 
 /// <summary>The shared commit chooser, with typed artificial endpoints only for comparison callers.</summary>
-internal class ChooseCommitDialog : RepositoryDialog
+internal partial class ChooseCommitDialog : RepositoryDialog
 {
     private readonly ChooseCommitRequest _request;
     private readonly CancellationToken _token;
@@ -33,14 +33,20 @@ internal class ChooseCommitDialog : RepositoryDialog
     private bool _branchFilterEnabled;
     private bool _closing, _loaded;
     private Task _work = Task.CompletedTask;
-    internal Task Completion => _work;
+    internal Task Completion => ObserveCompletion();
 
     protected ChooseCommitDialog(GitRepository repository, ChooseCommitRequest request,
         ChooseCommitControlNames controls, CancellationToken token) : base(repository, "Choose Commit")
     {
         _request = request; _token = token;
+        _historyLifetime = CancellationTokenSource.CreateLinkedTokenSource(token);
+        DesktopPreferences general;
+        try { general = new PreferencesStore().Load(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { general = new(); }
+        _defaultMaximum = general.MaxRevisionGraphCommits;
+        _batchSize = Math.Clamp(general.HistoryLimit, 1, 5000);
         HistoryViewPreferences view = new HistoryViewPreferencesStore().Load();
-        _query = new FileHistoryPreferencesStore().Load().ConfigureQuery(new(Count: 500,
+        _query = new FileHistoryPreferencesStore().Load().ConfigureQuery(new(Count: _batchSize,
             All: !request.CurrentBranchOnly, Revision: request.CurrentBranchOnly ? "HEAD" : null, IgnoreCase: true,
             Reflog: view.ShowReflog)
         {
@@ -60,7 +66,7 @@ internal class ChooseCommitDialog : RepositoryDialog
         _accept = new() { Name = controls.Accept, Content = Original("btnOK", "OK"), MinWidth = 110, IsDefault = true };
         _accept.Click += (_, _) => Accept();
         Button cancel = new() { Name = controls.Cancel, Content = T("Cancel"), IsCancel = true, MinWidth = 75 };
-        cancel.Click += (_, _) => Close(null);
+        cancel.Click += (_, _) => RequestClose(null);
         Button go = new() { Name = "buttonGotoCommit", Content = Original("buttonGotoCommit", "Go to commit..."), MinWidth = 130 };
         go.Click += (_, _) => { if (!IsBusy && !_closing) { _work = GoToAsync(); } };
         _parentLinks = [ParentLink("linkLabelParent"), ParentLink("linkLabelParent2")];
@@ -88,7 +94,19 @@ internal class ChooseCommitDialog : RepositoryDialog
         DockPanel filters = new() { Children = { filter, search } };
         search.Margin = new Thickness(6, 3); DockPanel.SetDock(filters, Dock.Top); Root.Children.Add(filters); Root.Children.Add(_revisions);
         Track(_search, _revisions, _accept, go, _parents);
-        _revisions.SelectionChanged += (_, _) => UpdateSelection();
+        _revisions.SelectionChanged += (_, _) =>
+        {
+            if (!_applyingHistory) { RecordSelectionIntent(); }
+            UpdateSelection();
+        };
+        _revisions.AddHandler(PointerPressedEvent, (_, _) => RecordSelectionIntent(), RoutingStrategies.Tunnel);
+        _revisions.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Key is Key.Up or Key.Down or Key.Home or Key.End or Key.PageUp or Key.PageDown or Key.Space)
+            { RecordSelectionIntent(); }
+        }, RoutingStrategies.Tunnel);
+        _search.AddHandler(PointerPressedEvent, (_, _) => RecordSelectionIntent(), RoutingStrategies.Tunnel);
+        _search.AddHandler(KeyDownEvent, (_, _) => RecordSelectionIntent(), RoutingStrategies.Tunnel);
         _revisions.AcceptRequested += (_, _) => Accept();
         _revisions.AddHandler(KeyDownEvent, (_, args) =>
         {
@@ -97,10 +115,12 @@ internal class ChooseCommitDialog : RepositoryDialog
         }, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, (sender, args) =>
         {
+            if (args.Key == Key.Escape)
+            { args.Handled = true; RequestClose(null); return; }
             if (args.Key == Key.I && args.KeyModifiers == KeyModifiers.Control && !IsBusy && !_closing)
             { args.Handled = true; _ = OpenFilterAsync(); }
         }, RoutingStrategies.Tunnel);
-        Closing += (_, _) => _closing = true;
+        Closing += OnHistoryClosing;
         ActualThemeVariantChanged += (_, _) => UpdateSelection();
         Opened += (_, _) => { if (!IsBusy && !_closing) { _revisions.FocusSelected(); } };
         UpdateSelection();
@@ -118,28 +138,12 @@ internal class ChooseCommitDialog : RepositoryDialog
     {
         await RunAsync("Load revisions", async token =>
         {
-            using IDisposable environment = Repository.BeginOperation();
-            GitCompareRevision? preserve = _revisions.Selection?.Revision;
-            string? preselect = null;
-            if (!_loaded && !string.IsNullOrWhiteSpace(_request.Preselect))
-            {
-                try { preselect = await Repository.ResolveRevisionAsync(_request.Preselect, token); }
-                catch (Exception error) when (error is GitCommandException or ArgumentException) { /* Windows ignores an unresolved preselection. */ }
-            }
-            GitStatus status = await Repository.GetStatusAsync(token);
             _query = _query with { Message = string.IsNullOrWhiteSpace(_search.Text) ? null : _search.Text };
-            IReadOnlyList<GitCommit> revisions = status.IsUnborn && _query.Revision == "HEAD" ? []
-                : await Repository.GetRevisionGraphAsync(_query, token);
-            IReadOnlyList<GitReference> references = await Repository.GetReferencesAsync(token);
-            token.ThrowIfCancellationRequested();
-            if (_closing) { return; }
-            _revisions.SetData(revisions, references, status.Head, _showArtificial && !Repository.IsBare);
-            GitCompareRevision? target = !_loaded && _request.PreselectSelection?.Kind is (GitCompareRevisionKind.Index or GitCompareRevisionKind.WorkingTree)
-                ? _request.PreselectSelection : preselect is not null ? new(preselect) : preserve;
-            if (!_revisions.Select(target)) { _revisions.SelectFirst(); }
-            _loaded = true; Status.Text = ""; UpdateSelection();
+            HistoryRead read = BeginHistoryRead();
+            await read.Ready.Task.WaitAsync(token);
+            if (read.Error is not null) { throw read.Error; }
         }, cancellationToken: _token);
-        if (!_closing && IsVisible && LastError is null) { _revisions.FocusSelected(); }
+        if (!_closing && IsVisible && LastError is null) { Status.Text = ""; _revisions.FocusSelected(); }
     }
 
     private Task OpenFilterAsync()
@@ -151,10 +155,13 @@ internal class ChooseCommitDialog : RepositoryDialog
     private async Task FilterAsync()
     {
         GitLogQuery? accepted = null;
+        int? acceptedMaximum = null;
+        bool acceptedSuccessfully = false;
         await RunAsync("Advanced filter...", async token =>
         {
             GitLogQuery draft = _query with { Message = string.IsNullOrWhiteSpace(_search.Text) ? null : _search.Text };
-            HistoryFilterDialog dialog = new(draft, _rememberedBranchFilter, _branchFilterEnabled)
+            HistoryFilterDialog dialog = new(draft, _rememberedBranchFilter, _branchFilterEnabled,
+                commitLimit: new(_defaultMaximum, _maximumOverride))
             { RequestedThemeVariant = ActualThemeVariant };
             using CancellationTokenRegistration close = token.Register(() => Dispatcher.UIThread.Post(() => { if (dialog.IsVisible) { dialog.Close(null); } }));
             try { accepted = await dialog.ShowDialog<GitLogQuery?>(this); }
@@ -162,21 +169,24 @@ internal class ChooseCommitDialog : RepositoryDialog
             token.ThrowIfCancellationRequested();
             if (_closing || accepted is null) { return; }
             _rememberedBranchFilter = dialog.RememberedBranchFilter; _branchFilterEnabled = dialog.IsBranchFilterEnabled;
+            acceptedMaximum = dialog.CommitLimitOverride;
+            acceptedSuccessfully = true;
         }, cancellationToken: _token);
-        if (_closing || !IsVisible || LastError is not null) { return; }
-        if (accepted is not null)
+        if (_closing || !IsVisible) { return; }
+        if (acceptedSuccessfully && accepted is not null)
         {
+            _maximumOverride = acceptedMaximum;
             _query = accepted with { LastRevisionToDisplayHash = _request.LastRevisionToDisplayHash };
             _search.Text = _query.Message;
             await LoadAsync();
         }
-        else { Status.Text = ""; _revisions.FocusSelected(); }
+        else { if (LastError is null) { Status.Text = ""; } _revisions.FocusSelected(); }
     }
 
     private void Accept()
     {
         if (_closing || IsBusy || _revisions.Selection is not ChooseCommitSelection selected) { return; }
-        Close(selected);
+        RequestClose(selected);
     }
 
     private Button ParentLink(string name)
@@ -205,16 +215,23 @@ internal class ChooseCommitDialog : RepositoryDialog
         }
     }
 
-    protected override void UpdateActions() => UpdateSelection();
+    protected override void UpdateActions()
+    {
+        UpdateSelection();
+        if (!IsBusy && !_closing && _history?.Error is Exception error) { ReportError(error); }
+    }
 
     private async Task NavigateParentAsync(GitCompareRevision revision)
     {
-        await RunAsync("Choose revision", token => SelectLoadedAsync(revision, token), cancellationToken: _token);
-        if (!_closing && IsVisible) { if (LastError is null) { Status.Text = ""; } _revisions.FocusSelected(); }
+        bool focus = true;
+        await RunAsync("Choose revision", async token => { focus = await SelectLoadedAsync(revision, token); }, cancellationToken: _token, disableInputs: false);
+        if (!_closing && IsVisible && focus && !_search.IsKeyboardFocusWithin)
+        { if (LastError is null) { Status.Text = ""; } _revisions.FocusSelected(); }
     }
 
     private async Task GoToAsync()
     {
+        bool focus = true;
         await RunAsync("Go to commit", async token =>
         {
             GoToCommitDialog dialog = new(Repository) { RequestedThemeVariant = ActualThemeVariant };
@@ -223,24 +240,37 @@ internal class ChooseCommitDialog : RepositoryDialog
             try { await dialog.ShowDialog(this); }
             finally { dialog.Close(); await dialog.Completion; }
             token.ThrowIfCancellationRequested(); if (_closing || !dialog.WasAccepted) { return; }
-            if (dialog.SelectedCommitHash is string hash) { await SelectLoadedAsync(new(hash), token); }
+            if (dialog.SelectedCommitHash is string hash) { focus = await SelectLoadedAsync(new(hash), token); }
             else
             {
                 string message = Translations.Translate("MessageBoxes", "_noRevisionFoundError", "Text", "No revision found.");
                 await SelectionErrorAsync(message, token);
             }
-        }, cancellationToken: _token);
-        if (!_closing && IsVisible) { if (LastError is null) { Status.Text = ""; } _revisions.FocusSelected(); }
+        }, cancellationToken: _token, disableInputs: false);
+        if (!_closing && IsVisible && focus && !_search.IsKeyboardFocusWithin)
+        { if (LastError is null) { Status.Text = ""; } _revisions.FocusSelected(); }
     }
 
-    private async Task SelectLoadedAsync(GitCompareRevision revision, CancellationToken token)
+    private async Task<bool> SelectLoadedAsync(GitCompareRevision revision, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        if (_revisions.Select(revision)) { return; }
+        HistoryRead? read = _history;
+        long intent = RecordSelectionIntent();
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            if (_closing || intent != _selectionVersion || read != _history) { return false; }
+            if (ApplySelection(revision)) { return true; }
+            if (read is null || read.Completed) { break; }
+            Task progress = read.Progress.Task;
+            await progress.WaitAsync(token);
+        }
+        if (read?.Error is Exception failure) { throw failure; }
         string hash = revision.Kind == GitCompareRevisionKind.Commit ? revision.Revision : T("Commit index");
         string format = Translations.Translate("MessageBoxes", "_cannotFindRevisionFilter", "Text",
             "Revision \"{0}\" is not visible in the revision grid. Remove the revision filter.");
         await SelectionErrorAsync(string.Format(CultureInfo.CurrentCulture, format, hash[..Math.Min(8, hash.Length)]), token);
+        return true;
     }
 
     private Task SelectionErrorAsync(string message, CancellationToken token)

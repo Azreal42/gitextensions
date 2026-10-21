@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
+using Avalonia.Collections;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
@@ -100,6 +101,9 @@ internal sealed class ExportRevisionList : UserControl
     private IReadOnlyList<GitCommit> _ordered = [];
     private Dictionary<string, int> _rowIndices = new(StringComparer.Ordinal);
     private string? _authoredEmail;
+    private IncrementalRevisionRows? _streamRows;
+    private bool _legacyAutoScroll;
+    internal bool IsPublishing { get; private set; }
 
     internal ExportRevisionList(string name, bool multiple, Control? prefixRows = null, HistoryViewPreferences? view = null)
     {
@@ -127,7 +131,8 @@ internal sealed class ExportRevisionList : UserControl
             row.PropertyChanged += (_, change) => { if (change.Property == BoundsProperty) { UpdateRow(row); } };
             return row;
         });
-        Rows.SelectionChanged += (_, _) => UpdatePresentation();
+        Rows.SelectionChanged += (_, _) => { if (!IsPublishing) { UpdatePresentation(); } };
+        _graph.IncrementalOrderChanged += () => { if (_streamRows is not null) { PublishIncrementalOrder(); } };
         Rows.ContainerPrepared += (_, _) => UpdatePresentation();
         Rows.ContainerIndexChanged += (_, _) => UpdatePresentation();
         Rows.GotFocus += (_, _) => UpdatePresentation();
@@ -163,6 +168,7 @@ internal sealed class ExportRevisionList : UserControl
 
     internal IReadOnlyList<GitCommit> SetData(IReadOnlyList<GitCommit> commits, IReadOnlyList<GitReference> references, string? head)
     {
+        if (_streamRows is not null) { _streamRows = null; Rows.AutoScrollToSelectedItem = _legacyAutoScroll; }
         _references = RevisionHistoryPresentation.FilterReferences(references, _view);
         _graph.Commits = commits;
         _graph.References = _references;
@@ -173,6 +179,77 @@ internal sealed class ExportRevisionList : UserControl
         Rows.ItemsSource = _ordered;
         UpdatePresentation();
         return _ordered;
+    }
+
+    internal void BeginIncrementalData(IReadOnlyList<GitReference> references, string? head, bool onlyFirstParent = false)
+    {
+        _references = RevisionHistoryPresentation.FilterReferences(references, _view);
+        if (_streamRows is null) { _legacyAutoScroll = Rows.AutoScrollToSelectedItem; }
+        _streamRows = new();
+        IsPublishing = true;
+        try
+        {
+            // Native anchor shifts otherwise queue a late ScrollIntoView during collection moves.
+            // Explicit GoTo/parent selection already reveals its target; native arrow focus remains active.
+            Rows.AutoScrollToSelectedItem = false;
+            _graph.BeginIncrementalData(head, onlyFirstParent);
+            _graph.References = _references;
+            _ordered = _streamRows;
+            _rowIndices = new(StringComparer.Ordinal);
+            Rows.ItemsSource = _streamRows;
+        }
+        finally { IsPublishing = false; }
+        UpdatePresentation();
+    }
+
+    internal IReadOnlyList<GitCommit> AppendCommits(IReadOnlyList<GitCommit> batch)
+    {
+        if (_streamRows is null) { throw new InvalidOperationException("No revision stream is active."); }
+        _graph.AppendCommits(batch); PublishIncrementalOrder(); return _streamRows;
+    }
+
+    internal void CompleteCommits()
+    {
+        if (_streamRows is null) { throw new InvalidOperationException("No revision stream is active."); }
+        _graph.CompleteCommits(); UpdatePresentation();
+    }
+
+    private void PublishIncrementalOrder()
+    {
+        if (_streamRows is null) { return; }
+        GitCommit[] selected = Rows.SelectedItems?.OfType<GitCommit>().ToArray() ?? [];
+        int anchorIndex = Rows.Selection.AnchorIndex;
+        string? anchor = anchorIndex >= 0 && anchorIndex < Rows.ItemCount ? (Rows.Items[anchorIndex] as GitCommit)?.Hash : null;
+        bool focused = Rows.IsKeyboardFocusWithin;
+        string? focusedKey = FocusedRowKey();
+        ScrollViewer? scroll = Rows.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        Vector? offset = scroll?.Offset;
+        IReadOnlyList<GitCommit> ordered = _graph.OrderedCommits;
+        IsPublishing = true;
+        try
+        {
+            // SelectionModel rejects source mutations inside its own BeginBatchUpdate.
+            _streamRows.PublishOrder(ordered);
+            GitCommit[] actual = Rows.SelectedItems?.OfType<GitCommit>().ToArray() ?? [];
+            if (!actual.Select(commit => commit.Hash).SequenceEqual(selected.Select(commit => commit.Hash)))
+            { Rows.SelectedItems = new AvaloniaList<object?>(selected.Cast<object?>()); }
+            if (anchor is not null && _streamRows.IndexOfHash(anchor) is int index && index >= 0 && Rows.Selection.AnchorIndex != index)
+            { Rows.Selection.AnchorIndex = index; }
+            if (focused && focusedKey is not null && FocusedRowKey() != focusedKey)
+            {
+                if (Rows.ContainerFromIndex(_streamRows.IndexOfHash(focusedKey)) is Control container) { container.Focus(); }
+                else { Rows.Focus(); }
+            }
+            if (offset.HasValue && scroll is not null && scroll.Offset != offset.Value) { scroll.Offset = offset.Value; }
+        }
+        finally { IsPublishing = false; }
+        UpdatePresentation();
+    }
+
+    private string? FocusedRowKey()
+    {
+        Control? focused = TopLevel.GetTopLevel(Rows)?.FocusManager?.GetFocusedElement() as Control;
+        return (focused?.GetSelfAndVisualAncestors().OfType<ListBoxItem>().FirstOrDefault()?.DataContext as GitCommit)?.Hash;
     }
 
     private void UpdatePresentation()
@@ -192,7 +269,8 @@ internal sealed class ExportRevisionList : UserControl
         if (row.Tag is not GitCommit commit) { return; }
         bool selected = Rows.SelectedItems?.OfType<GitCommit>().Any(entry => entry.Hash == commit.Hash) == true;
         RevisionHistoryRow.UpdateState(row, selected, Rows.IsKeyboardFocusWithin,
-            _view.HighlightAuthoredRevisions ? _authoredEmail : null, _rowIndices.GetValueOrDefault(commit.Hash), _view.DrawAlternateBackground);
+            _view.HighlightAuthoredRevisions ? _authoredEmail : null,
+            _streamRows?.IndexOfHash(commit.Hash) ?? _rowIndices.GetValueOrDefault(commit.Hash), _view.DrawAlternateBackground);
         // Notes and committer dates require the existing Browse metadata reader; no hidden reads are introduced here.
         RevisionHistoryPresentation.Apply(row, commit, _view, _references, translate: _translations.Translate);
     }

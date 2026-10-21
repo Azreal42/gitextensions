@@ -60,6 +60,8 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. SshEnvironmentScenarios.All,
     .. UnixSocketDirectoryScenarios.All,
     .. FileHistoryGraphScenarios.All,
+    .. GitRunnerSinkScenarios.All,
+    .. GitLogStreamingScenarios.All,
     .. QuickSearchMessageScenarios.All,
     .. ComparisonEndpointScenarios.All,
     .. ComparisonGroupScenarios.All,
@@ -231,6 +233,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 ];
 
 if (args.Contains("--unix-socket-directory-only", StringComparer.Ordinal)) { tests = UnixSocketDirectoryScenarios.All.ToArray(); }
+if (args.Contains("--history-streaming-only", StringComparer.Ordinal)) { tests = [.. GitRunnerSinkScenarios.All, .. GitLogStreamingScenarios.All]; }
 if (args.Contains("--file-history-graph-only", StringComparer.Ordinal)) { tests = FileHistoryGraphScenarios.All.ToArray(); }
 if (args.Contains("--quick-search-message-only", StringComparer.Ordinal)) { tests = QuickSearchMessageScenarios.All.ToArray(); }
 if (args.Contains("--reset-selected-patch-only", StringComparer.Ordinal)) { tests = ResetSelectedPatchScenarios.All.ToArray(); }

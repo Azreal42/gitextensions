@@ -6,10 +6,15 @@ using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
 
+/// <summary>A graph host's saved ceiling and optional private override; zero means unlimited.</summary>
+public sealed record HistoryFilterCommitLimit(int DefaultMaximum, int? OverrideMaximum = null);
+
 public sealed class HistoryFilterDialog : Window
 {
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly GitLogQuery _query;
+    private readonly HistoryFilterCommitLimit? _commitLimit;
+    private readonly CheckBox _limitEnabled = new() { Name = "CommitsLimitCheck", VerticalAlignment = VerticalAlignment.Center };
     private bool _closed;
     private readonly Dictionary<string, (CheckBox Enabled, TextBox Input)> _textFields = [];
     private readonly CheckBox _sinceEnabled = new();
@@ -30,11 +35,18 @@ public sealed class HistoryFilterDialog : Window
     public bool IsBranchFilterEnabled => _textFields["BranchFilter"].Enabled.IsChecked == true;
     public bool FullHistorySetting => _fullHistory.IsChecked == true;
     public bool SimplifyMergesSetting => _simplifyMerges.IsChecked == true;
+    public int? CommitLimitOverride => _commitLimit is not null && _limitEnabled.IsChecked == true ? (int)(_limit.Value ?? 0) : null;
 
     public HistoryFilterDialog(GitLogQuery query, string? rememberedBranchFilter = null, bool? branchFilterEnabled = null,
-        FileHistoryPreferences? fileHistoryPreferences = null)
+        FileHistoryPreferences? fileHistoryPreferences = null, HistoryFilterCommitLimit? commitLimit = null)
     {
         _query = query;
+        _commitLimit = commitLimit;
+        if (commitLimit is not null)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(commitLimit.DefaultMaximum);
+            if (commitLimit.OverrideMaximum is int maximum) { ArgumentOutOfRangeException.ThrowIfNegative(maximum); }
+        }
         Title = L("$this", "Filter revisions");
         Width = 520;
         SizeToContent = SizeToContent.Height;
@@ -52,8 +64,16 @@ public sealed class HistoryFilterDialog : Window
         bool currentBranch = !query.All && (query.BranchFilter ?? query.Revision) == "HEAD";
         AddText(fields, "BranchFilter", "Branch", rememberedBranchFilter ?? (currentBranch ? null : query.BranchFilter ?? query.Revision));
         _textFields["BranchFilter"].Enabled.IsChecked = branchFilterEnabled ?? (!currentBranch && (query.BranchFilter ?? query.Revision) is not null);
-        _limit.Value = query.Count;
-        AddField(fields, L("_NO_TRANSLATE_lblLimit", "Limit"), null, _limit);
+        if (commitLimit is null) { _limit.Value = query.Count; }
+        else
+        {
+            _limit.Minimum = 0; _limit.Maximum = int.MaxValue;
+            _limit.Value = commitLimit.OverrideMaximum ?? commitLimit.DefaultMaximum;
+            _limitEnabled.IsChecked = commitLimit.OverrideMaximum.HasValue;
+            _limit.IsEnabled = _limitEnabled.IsChecked == true;
+            _limitEnabled.IsCheckedChanged += (_, _) => _limit.IsEnabled = _limitEnabled.IsChecked == true;
+        }
+        AddField(fields, L("_NO_TRANSLATE_lblLimit", "Limit"), commitLimit is null ? null : _limitEnabled, _limit);
         AddOption(fields, _currentBranch, "CurrentBranchOnlyCheck", "Current branch only", currentBranch);
         AddOption(fields, _ignoreCase, "IgnoreCase", "Ignore case", query.IgnoreCase);
         AddOption(fields, _reflog, "ReflogCheck", "Reflog", query.Reflog);
@@ -73,6 +93,7 @@ public sealed class HistoryFilterDialog : Window
         reset.Click += (_, _) =>
         {
             _textFields["BranchFilter"].Enabled.IsChecked = false;
+            if (_commitLimit is not null) { _limitEnabled.IsChecked = false; }
             Close(query with { Skip = 0, Revision = _currentBranch.IsChecked == true ? "HEAD" : null, BranchFilter = null,
                 Author = null, Committer = null, Message = null, DiffContent = null, Path = null, Since = null, Until = null,
                 FirstParent = false, HideMergeCommits = false, SimplifyByDecoration = false,
@@ -99,7 +120,7 @@ public sealed class HistoryFilterDialog : Window
     public GitLogQuery ReadQuery() => _query with
     {
         Skip = 0,
-        Count = (int)(_limit.Value ?? 300),
+        Count = _commitLimit is null ? (int)(_limit.Value ?? 300) : _query.Count,
         Revision = _currentBranch.IsChecked == true ? "HEAD" : null,
         BranchFilter = _currentBranch.IsChecked == true || !IsBranchFilterEnabled ? null : RememberedBranchFilter,
         All = _currentBranch.IsChecked != true,
