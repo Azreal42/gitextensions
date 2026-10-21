@@ -47,6 +47,8 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly DetailedSettingsPage _detailedSettingsPage;
     internal DeleteUnusedBranchesSettingsSession DeleteUnusedBranchesSettingsSession { get; }
     private readonly DeleteUnusedBranchesSettingsPage _deleteUnusedBranchesSettingsPage;
+    internal BackgroundFetchSettingsSession BackgroundFetchSettingsSession { get; }
+    private readonly BackgroundFetchSettingsPage _backgroundFetchSettingsPage;
     internal RevisionLinksSettingsSession RevisionLinksSettingsSession { get; }
     private readonly RevisionLinksSettingsPage _revisionLinksSettingsPage;
     internal GitHubActionsSettingsSession GitHubActionsSettingsSession { get; }
@@ -102,7 +104,9 @@ internal sealed class DesktopSettingsDialog : Window
         BlameViewerSettingsSession? blameViewerSettings = null,
         CommitDialogSettingsSession? commitDialogSettings = null,
         Action<CommitDialogSettingsSaveReceipt>? publishCommitDialogSettings = null,
-        DeleteUnusedBranchesSettingsSession? deleteUnusedBranchesSettings = null)
+        DeleteUnusedBranchesSettingsSession? deleteUnusedBranchesSettings = null,
+        BackgroundFetchSettingsSession? backgroundFetchSettings = null,
+        Func<PluginScopedSettingsSaveReceipt, Task>? publishBackgroundFetchSettings = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -125,6 +129,9 @@ internal sealed class DesktopSettingsDialog : Window
         DeleteUnusedBranchesSettingsSession = deleteUnusedBranchesSettings ?? new(scopedRepository,
             initial.PluginSettings.GetValueOrDefault("dc3ca904-b9a5-4fe8-bf63-5b8ee9c2ddac"), workspace);
         _deleteUnusedBranchesSettingsPage = new(DeleteUnusedBranchesSettingsSession, translations);
+        BackgroundFetchSettingsSession = backgroundFetchSettings ?? new(scopedRepository,
+            initial.PluginSettings.GetValueOrDefault(BackgroundFetchSettingsCatalog.Definition.Id.ToString()), workspace);
+        _backgroundFetchSettingsPage = new(BackgroundFetchSettingsSession, translations);
         RevisionLinksSettingsSession = revisionLinksSettings ?? new(scopedRepository, workspace);
         _revisionLinksSettingsPage = new(RevisionLinksSettingsSession, translations) { Margin = new Thickness(12) };
         GitHubActionsSettingsSession = gitHubActionsSettings ?? new(scopedRepository, workspace);
@@ -254,7 +261,10 @@ internal sealed class DesktopSettingsDialog : Window
             new PluginRootIntroductionPage(translations), "plugin.png",
             Children: [new("PluginDeleteUnusedBranches", "Plugin: " + translations.Translate("DeleteUnusedBranchesPlugin", "Description", "Text", "Delete obsolete branches"),
                 _deleteUnusedBranchesSettingsPage, "../PluginIcons/IconDeleteUnusedBranches.png",
-                NavigationTitle: translations.Translate("DeleteUnusedBranchesPlugin", "Description", "Text", "Delete obsolete branches"))],
+                NavigationTitle: translations.Translate("DeleteUnusedBranchesPlugin", "Description", "Text", "Delete obsolete branches")),
+                new("PluginBackgroundFetch", "Plugin: " + translations.Translate("BackgroundFetchPlugin", "Description", "Text", "Periodic background fetch"),
+                    _backgroundFetchSettingsPage, "../PluginIcons/IconBackgroundFetch.png",
+                    NavigationTitle: translations.Translate("BackgroundFetchPlugin", "Description", "Text", "Periodic background fetch"))],
             NavigationTitle: translations.Translate("PluginsSettingsGroup", "$this", "Title", "Plugins")));
         Navigation = new(roots, translations);
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
@@ -292,10 +302,12 @@ internal sealed class DesktopSettingsDialog : Window
                 {
                     await DetailedSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await DeleteUnusedBranchesSettingsSession.InitializeAsync(_detailedCancellation.Token);
+                    await BackgroundFetchSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await RevisionLinksSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await GitHubActionsSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     _detailedSettingsPage.ShowLoadState();
                     _deleteUnusedBranchesSettingsPage.ShowLoadState();
+                    _backgroundFetchSettingsPage.ShowLoadState();
                     _revisionLinksSettingsPage.ShowLoadState();
                     _buildServerSettingsPage.ShowLoadState();
                 }
@@ -326,6 +338,10 @@ internal sealed class DesktopSettingsDialog : Window
                 _deleteUnusedBranchesSettingsPage.PrepareSave();
                 if (!_deleteUnusedBranchesSettingsPage.Validate(out string? pluginValidation))
                 { Navigation.SelectPage("PluginDeleteUnusedBranches"); _deleteUnusedBranchesSettingsPage.FocusInvalidControl(); notice.Text = pluginValidation; return false; }
+                activeSavePage = "PluginBackgroundFetch";
+                _backgroundFetchSettingsPage.PrepareSave();
+                if (!_backgroundFetchSettingsPage.Validate(out string? backgroundValidation))
+                { Navigation.SelectPage("PluginBackgroundFetch"); _backgroundFetchSettingsPage.FocusInvalidControl(); notice.Text = backgroundValidation; return false; }
                 if (!_commitDialogSettingsPage.Validate(out string? commitValidation))
                 { Navigation.SelectPage("Commit", true); notice.Text = commitValidation; return false; }
                 if (!_consoleStylePage.Validate(out string? consoleValidation))
@@ -457,6 +473,15 @@ internal sealed class DesktopSettingsDialog : Window
                     activeSavePage = "PluginDeleteUnusedBranches";
                     await DeleteUnusedBranchesSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     _deleteUnusedBranchesSettingsPage.AcceptSaved();
+                    activeSavePage = "PluginBackgroundFetch";
+                    await BackgroundFetchSettingsSession.SaveFilesAsync(_detailedCancellation.Token, async receipt =>
+                    {
+                        // The XML write has already been acknowledged. A later host
+                        // failure must leave Cancel aware of this durable change.
+                        saved = true;
+                        if (publishBackgroundFetchSettings is not null) { await publishBackgroundFetchSettings(receipt); }
+                    });
+                    _backgroundFetchSettingsPage.AcceptSaved();
                     activeSavePage = "RevisionLinks";
                     await RevisionLinksSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     _revisionLinksSettingsPage.AcceptSaved();

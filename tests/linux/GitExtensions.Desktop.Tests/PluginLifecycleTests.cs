@@ -19,19 +19,19 @@ public class PluginLifecycleTests
     {
         using Fixture fixture = await Fixture.CreateAsync("anchor\n", "anchor\n");
         MainWindow window = fixture.Window;
-        PluginDialog dialog = await OpenPluginAsync(window, BackgroundFetchService.Descriptor.Name);
-        Field<TextBox>(dialog, "arguments").Text = "config --local test.background marker";
-        Field<NumericUpDown>(dialog, "interval").Value = 0;
-        Field<CheckBox>(dialog, "immediate").IsChecked = true;
+        DesktopSettingsDialog dialog = await OpenPluginAsync(window, BackgroundFetchService.Descriptor.Name);
+        Field<TextBox>(dialog, "_gitCommand").Text = "config --local test.background marker";
+        Field<NumericUpDown>(dialog, "_fetchInterval").Value = 0;
+        Field<CheckBox>(dialog, "_fetchImmediatelyOnRepoOpening").IsChecked = true;
         await ApplyAsync(dialog);
         Assert.That(await LocalConfigAsync(fixture.Git, fixture.Repository, "test.background"), Is.Empty,
             "The background operation must wait while its settings dialog is open.");
-        Dictionary<string, string?> saved = new PreferencesStore().Load().PluginSettings[BackgroundFetchService.Descriptor.Id.ToString()];
+        GitXmlSettingsSnapshot saved = await GitXmlSettingsStore.LoadAsync(DetailedRepositorySettings.GlobalPath);
         Assert.Multiple(() =>
         {
-            Assert.That(saved["arguments"], Is.EqualTo("config --local test.background marker"));
-            Assert.That(saved["interval"], Is.EqualTo("0"));
-            Assert.That(saved["immediate"], Is.EqualTo("True").IgnoreCase);
+            Assert.That(saved.Values[BackgroundFetchSettingsCatalog.Definition.Key(BackgroundFetchSettingsCatalog.Find("_gitCommand"))], Is.EqualTo("config --local test.background marker"));
+            Assert.That(saved.Values[BackgroundFetchSettingsCatalog.Definition.Key(BackgroundFetchSettingsCatalog.Find("_fetchInterval"))], Is.EqualTo("0"));
+            Assert.That(saved.Values[BackgroundFetchSettingsCatalog.Definition.Key(BackgroundFetchSettingsCatalog.Find("_fetchImmediatelyOnRepoOpening"))], Is.EqualTo("True").IgnoreCase);
         });
         await ClosePluginAsync(window, dialog);
         await UntilAsync(async () => await LocalConfigAsync(fixture.Git, fixture.Repository, "test.background") == "marker");
@@ -46,12 +46,12 @@ public class PluginLifecycleTests
             reloaded.Show();
             await reloaded.OpenRepositoryAsync(fixture.Repository);
             await UntilAsync(async () => await LocalConfigAsync(fixture.Git, fixture.Repository, "test.background") == "marker");
-            PluginDialog reloadedDialog = await OpenPluginAsync(reloaded, BackgroundFetchService.Descriptor.Name);
+            DesktopSettingsDialog reloadedDialog = await OpenPluginAsync(reloaded, BackgroundFetchService.Descriptor.Name);
             Assert.Multiple(() =>
             {
-                Assert.That(Field<TextBox>(reloadedDialog, "arguments").Text, Is.EqualTo("config --local test.background marker"));
-                Assert.That(Field<NumericUpDown>(reloadedDialog, "interval").Value, Is.Zero);
-                Assert.That(Field<CheckBox>(reloadedDialog, "immediate").IsChecked, Is.True);
+                Assert.That(Field<TextBox>(reloadedDialog, "_gitCommand").Text, Is.EqualTo("config --local test.background marker"));
+                Assert.That(Field<NumericUpDown>(reloadedDialog, "_fetchInterval").Value, Is.Zero);
+                Assert.That(Field<CheckBox>(reloadedDialog, "_fetchImmediatelyOnRepoOpening").IsChecked, Is.True);
             });
             await ClosePluginAsync(reloaded, reloadedDialog);
             Assert.That(reloaded.LastException, Is.Null);
@@ -65,10 +65,10 @@ public class PluginLifecycleTests
         using Fixture fixture = await Fixture.CreateAsync("anchor\n", "anchor\n");
         string secondPath = Path.Combine(Path.GetDirectoryName(fixture.Repository)!, "second repository");
         GitRepository second = await GitRepository.InitAsync(secondPath);
-        PluginDialog dialog = await OpenPluginAsync(fixture.Window, BackgroundFetchService.Descriptor.Name);
-        Field<TextBox>(dialog, "arguments").Text = "config --local --add test.background marker";
-        Field<NumericUpDown>(dialog, "interval").Value = 5;
-        Field<CheckBox>(dialog, "immediate").IsChecked = false;
+        DesktopSettingsDialog dialog = await OpenPluginAsync(fixture.Window, BackgroundFetchService.Descriptor.Name);
+        Field<TextBox>(dialog, "_gitCommand").Text = "config --local --add test.background marker";
+        Field<NumericUpDown>(dialog, "_fetchInterval").Value = 5;
+        Field<CheckBox>(dialog, "_fetchImmediatelyOnRepoOpening").IsChecked = false;
         await ApplyAsync(dialog);
         await ClosePluginAsync(fixture.Window, dialog);
         await fixture.Window.OpenRepositoryAsync(secondPath);
@@ -107,10 +107,10 @@ public class PluginLifecycleTests
         File.SetUnixFileMode(executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         GitResult alias = await fixture.Git.RunAsync(fixture.Repository, ["config", "--local", "alias.fixture-lifecycle", "!" + ShellQuote(executable)]);
         Assert.That(alias.Success, Is.True, alias.StandardError);
-        PluginDialog dialog = await OpenPluginAsync(fixture.Window, BackgroundFetchService.Descriptor.Name);
-        Field<TextBox>(dialog, "arguments").Text = "fixture-lifecycle";
-        Field<NumericUpDown>(dialog, "interval").Value = 0;
-        Field<CheckBox>(dialog, "immediate").IsChecked = true;
+        DesktopSettingsDialog dialog = await OpenPluginAsync(fixture.Window, BackgroundFetchService.Descriptor.Name);
+        Field<TextBox>(dialog, "_gitCommand").Text = "fixture-lifecycle";
+        Field<NumericUpDown>(dialog, "_fetchInterval").Value = 0;
+        Field<CheckBox>(dialog, "_fetchImmediatelyOnRepoOpening").IsChecked = true;
         await ApplyAsync(dialog);
         await ClosePluginAsync(fixture.Window, dialog);
         await UntilAsync(() => Task.FromResult(File.Exists(started) && new FileInfo(started).Length > 0));
@@ -185,7 +185,7 @@ public class PluginLifecycleTests
         finally { Environment.SetEnvironmentVariable("GIT_CONFIG_GLOBAL", previousGlobal); }
     }
 
-    private static async Task<PluginDialog> OpenPluginAsync(MainWindow owner, string title)
+    private static async Task<DesktopSettingsDialog> OpenPluginAsync(MainWindow owner, string title)
     {
         MenuItem plugins = owner.GetVisualDescendants().OfType<Menu>().Single().Items.OfType<MenuItem>().Single(item => item.Header as string == "Plugins");
         MenuItem item = plugins.Items.OfType<MenuItem>().Single(item => item.Header as string == title);
@@ -194,23 +194,26 @@ public class PluginLifecycleTests
         plugins.IsSubMenuOpen = true;
         item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         plugins.IsSubMenuOpen = false;
-        await UntilAsync(() => Task.FromResult(owner.OwnedWindows.OfType<PluginDialog>().Any()));
-        PluginDialog dialog = owner.OwnedWindows.OfType<PluginDialog>().Single();
+        await UntilAsync(() => Task.FromResult(owner.OwnedWindows.OfType<DesktopSettingsDialog>().Any()));
+        DesktopSettingsDialog dialog = owner.OwnedWindows.OfType<DesktopSettingsDialog>().Single();
+        await UntilAsync(() => Task.FromResult(dialog.BackgroundFetchSettingsSession.Loaded && Field<Button>(dialog, "ApplyDesktopSettings").IsEnabled));
+        Assert.That(dialog.Navigation.SelectedPage.Id, Is.EqualTo("PluginBackgroundFetch"));
+        SettingsNavigationTestDriver.Select(dialog, "PluginBackgroundFetch");
+        Field<RadioButton>(dialog, "BackgroundFetchGlobalRB").IsChecked = true;
         dialog.UpdateLayout();
         return dialog;
     }
 
-    private static async Task ApplyAsync(PluginDialog dialog)
+    private static async Task ApplyAsync(DesktopSettingsDialog dialog)
     {
-        Field<Button>(dialog, "RunPlugin").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        await UntilAsync(() => Task.FromResult(!dialog.IsBusy));
-        Assert.That(dialog.LastError, Is.Null, dialog.LastException?.ToString() ?? dialog.LastError);
-        Assert.That(dialog.LastResult?.Success, Is.True);
+        Field<Button>(dialog, "ApplyDesktopSettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await UntilAsync(() => Task.FromResult(Field<Button>(dialog, "ApplyDesktopSettings").IsEnabled && !dialog.BackgroundFetchSettingsSession.HasChanges));
+        Assert.That(Field<TextBlock>(dialog, "SettingsNotice").Text, Is.Null.Or.Empty);
     }
 
-    private static async Task ClosePluginAsync(MainWindow owner, PluginDialog dialog)
+    private static async Task ClosePluginAsync(MainWindow owner, DesktopSettingsDialog dialog)
     {
-        Field<Button>(dialog, "ClosePlugin").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Field<Button>(dialog, "CancelDesktopSettings").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await UntilAsync(() => Task.FromResult(!owner.OwnedWindows.Contains(dialog) && !owner.IsBusy));
         Assert.That(owner.LastException, Is.Null, owner.LastException?.ToString());
     }

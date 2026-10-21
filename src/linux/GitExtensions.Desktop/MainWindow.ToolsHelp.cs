@@ -219,6 +219,17 @@ public sealed partial class MainWindow
                 _preferences = AdvancedSettingsValues.ApplyDesktop(_preferences, receipt.Values, receipt.Fields);
                 if (receipt.Fields.Any(field => field.Name is nameof(AdvancedSettingsValues.CheckForUpdates) or nameof(AdvancedSettingsValues.CheckForReleaseCandidates)))
                 { RequestAutomaticUpdateCheck(); }
+            },
+            publishBackgroundFetchSettings: async receipt =>
+            {
+                if (receipt.EffectiveChanged && settingsRepository is not null && ReferenceEquals(_repository, settingsRepository)
+                    && !_lifetime.IsCancellationRequested)
+                {
+                    // Publication follows the accepted file and belongs to the
+                    // browser lifetime, even when Settings is closing after Apply.
+                    await RegisterBackgroundFetchAsync(settingsRepository,
+                        GitExtensions.Linux.Plugins.BackgroundFetchOptions.FromValues(receipt.EffectiveValues));
+                }
             });
         if (!settingsOwner.IsVisible || settingsLifetime.IsCancellationRequested || !ReferenceEquals(settingsRepository, _repository)) { return; }
         bool settingsOwnerCloseRequested = false;

@@ -12,6 +12,10 @@ public sealed record BackgroundFetchOptions(string Arguments = "fetch --all", in
         PluginValues.Boolean(BackgroundFetchService.Descriptor, values, "submodules"),
         PluginValues.Boolean(BackgroundFetchService.Descriptor, values, "immediate"));
 
+    // One parser for the runtime and the scoped Settings page's explicit edits.
+    public string[] GetCommandArguments()
+        => GourceProcess.ParseArguments(string.IsNullOrWhiteSpace(Arguments) ? "fetch --all" : Arguments);
+
     private static int ReadInterval(IReadOnlyDictionary<string, string?> values)
         => int.TryParse(PluginValues.Text(BackgroundFetchService.Descriptor, values, "interval"), NumberStyles.Integer,
             CultureInfo.InvariantCulture, out int seconds) ? seconds : throw new ArgumentException("Fetch interval must be an integer number of seconds.", "interval");
@@ -51,7 +55,7 @@ public sealed class BackgroundFetchService(TimeProvider? timeProvider = null) : 
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(options);
-        string[] command = GourceProcess.ParseArguments(string.IsNullOrWhiteSpace(options.Arguments) ? "fetch --all" : options.Arguments);
+        string[] command = options.GetCommandArguments();
         await _lifecycle.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

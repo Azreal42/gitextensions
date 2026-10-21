@@ -66,6 +66,11 @@ public sealed partial class MainWindow
                 { await ShowSettingsPageAsync(showChecklist: false, initialPage: "PluginDeleteUnusedBranches", settingsOwnerOverride: pluginOwner,
                     fromScript: fromScript, cancellationToken: cancellationToken); }
             }
+            else if (plugin.Descriptor.Id == BackgroundFetchService.Descriptor.Id)
+            {
+                await ShowSettingsPageAsync(showChecklist: false, initialPage: "PluginBackgroundFetch", settingsOwnerOverride: pluginOwner,
+                    fromScript: fromScript, cancellationToken: cancellationToken);
+            }
             else if (plugin is FindLargeFilesPlugin)
             {
                 FindLargeFilesDialog dialog = new(repository, values);
@@ -99,12 +104,7 @@ public sealed partial class MainWindow
                 PluginDialog dialog = new(repository, plugin, values, async (settings, token) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
-                    if (plugin.Descriptor.Id == BackgroundFetchService.Descriptor.Id)
-                    {
-                        BackgroundFetchOptions options = BackgroundFetchOptions.FromValues(settings);
-                        await RegisterBackgroundFetchAsync(repository, options);
-                    }
-                    else if (plugin.Descriptor.Id == AutoCompileSubmodulesService.Descriptor.Id) { _ = AutoCompileSubmodulesOptions.FromValues(settings); }
+                    if (plugin.Descriptor.Id == AutoCompileSubmodulesService.Descriptor.Id) { _ = AutoCompileSubmodulesOptions.FromValues(settings); }
                     cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
                     SavePluginSettings(plugin.Descriptor, settings);
                 });
@@ -145,14 +145,32 @@ public sealed partial class MainWindow
         }
     }
 
-    private Task RegisterBackgroundFetchAsync(GitRepository repository, BackgroundFetchOptions? options = null)
-        => _backgroundFetch.RegisterAsync(new(repository,
+    private async Task RegisterBackgroundFetchAsync(GitRepository repository, BackgroundFetchOptions? options = null)
+    {
+        if (options is null)
+        {
+            BackgroundFetchSettingsSession settings = new(repository, PluginSettings(BackgroundFetchService.Descriptor));
+            await settings.InitializeAsync(_lifetime.Token);
+            if (!ReferenceEquals(repository, _repository) || _lifetime.IsCancellationRequested) { return; }
+            if (!settings.Loaded)
+            {
+                // Do not start a legacy timer under an unreadable scoped profile.
+                // Browsing remains available and the real read failure is visible.
+                await _backgroundFetch.UnregisterAsync();
+                LastException = settings.LoadError;
+                AppendOutput(T("Unable to read plugin settings."));
+                return;
+            }
+            options = settings.EffectiveOptions();
+        }
+        await _backgroundFetch.RegisterAsync(new(repository,
             IsGitBusy: () => Volatile.Read(ref _busy) || Volatile.Read(ref _pluginDialogOpen),
             RequestRefreshAsync: async token =>
             {
                 await Dispatcher.UIThread.InvokeAsync(() =>
                     token.IsCancellationRequested || _repository != repository || _busy ? Task.CompletedTask : RefreshAsync());
-            }), options ?? BackgroundFetchOptions.FromValues(PluginSettings(BackgroundFetchService.Descriptor)), _lifetime.Token);
+            }), options, _lifetime.Token);
+    }
 
     private async Task AfterSubmoduleUpdateAsync(GitRepository repository, Window owner, CancellationToken token)
     {
