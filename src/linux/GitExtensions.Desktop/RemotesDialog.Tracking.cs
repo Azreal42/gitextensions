@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
+using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 
 namespace GitExtensions.Linux.Desktop;
@@ -18,38 +20,79 @@ public sealed partial class RemotesDialog
     private GitBranchTrackingSnapshot? _trackingSelected;
     private Task _trackingWrites = Task.CompletedTask;
     private readonly Dictionary<(string Branch, bool Remote), Exception> _trackingErrors = [];
+    private readonly Grid _trackingHeaders = new() { Name = "BranchTrackingHeaders" };
+    private readonly List<WeakReference<Grid>> _trackingRowGrids = [];
+    private readonly double[] _trackingColumnWeights = [1, 1, 1];
+    private Task _trackingCopy = Task.CompletedTask;
+    internal Task TrackingPresentationCompletion => _trackingCopy;
     private int _trackingSort;
-    private bool _trackingDescending, _remoteDirty, _mergeDirty, _closingTracking, _trackingOperation;
+    private bool _trackingDescending, _remoteDirty, _mergeDirty, _closingTracking, _trackingCloseAccepted, _trackingOperation;
 
     private Control BuildTrackingLayout()
     {
         CompactList(_trackingList);
         _trackingList.ItemTemplate = new FuncDataTemplate<GitBranchTrackingSnapshot>((branch, _) =>
         {
-            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,*,*") };
+            Grid row = new() { Name = "BranchTrackingRow", Tag = branch?.LocalBranch, ColumnDefinitions = TrackingColumns(), ClipToBounds = true };
+            _trackingRowGrids.Add(new(row));
+            row.SizeChanged += (_, _) => AlignTrackingHeader(row);
             string[] values = [branch?.LocalBranch ?? "", branch?.Remote ?? "", branch?.MergeBranch ?? ""];
             for (int i = 0; i < values.Length; i++)
             {
-                TextBlock value = new() { Text = values[i], Margin = new Thickness(4, 1), MinHeight = 18, TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis };
+                // Four horizontal pixels remain below the source grid's five-pixel column minimum.
+                TextBlock value = new() { Text = values[i], Margin = new Thickness(2, 1), MinHeight = 18, TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis };
                 Grid.SetColumn(value, i); row.Children.Add(value);
             }
             return row;
         });
         ScrollViewer.SetHorizontalScrollBarVisibility(_trackingList, ScrollBarVisibility.Disabled);
-        Grid headers = new() { Name = "BranchTrackingHeaders", ColumnDefinitions = new ColumnDefinitions("*,*,*") };
+        _trackingHeaders.ColumnDefinitions = TrackingColumns();
+        _trackingList.SizeChanged += (_, _) => UpdateTrackingWidths();
         string[] captions = [C("BranchName", "Local branch name", "HeaderText"), C("RemoteCombo", "Remote repository", "HeaderText"), C("MergeWith", "Default merge with", "HeaderText")];
         for (int i = 0; i < captions.Length; i++)
         {
             int column = i;
-            Button heading = new() { Name = "BranchTrackingSort" + i, Content = captions[i], Height = 23, Padding = new Thickness(4, 1), HorizontalContentAlignment = HorizontalAlignment.Left };
+            Button heading = new() { Name = "BranchTrackingSort" + i, Content = captions[i], Height = 23, MinWidth = 0, Padding = new Thickness(1, 1), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left, ClipToBounds = true };
             heading.Click += (_, _) =>
             {
                 _trackingDescending = _trackingSort == column && !_trackingDescending; _trackingSort = column;
                 BindTracking(_trackingSelected?.LocalBranch);
+                _trackingList.Focus();
             };
-            Grid.SetColumn(heading, i); headers.Children.Add(heading); Track(heading);
+            Grid.SetColumn(heading, i); _trackingHeaders.Children.Add(heading); Track(heading);
+            Thumb grip = new() { Name = "ResizeBranchTracking" + i, Width = 5, Focusable = false,
+                HorizontalAlignment = HorizontalAlignment.Right, Background = Brushes.Transparent,
+                Cursor = new Cursor(StandardCursorType.SizeWestEast),
+                Template = new FuncControlTemplate<Thumb>((_, _) => new Border { Background = Brushes.Transparent }) };
+            grip.DragStarted += (_, _) => _trackingList.Focus();
+            grip.DragDelta += (_, args) => ResizeTrackingColumn(column, args.Vector.X);
+            Grid.SetColumn(grip, i); _trackingHeaders.Children.Add(grip);
         }
-        DockPanel table = new(); DockPanel.SetDock(headers, Dock.Top); table.Children.Add(headers); table.Children.Add(_trackingList);
+        _trackingList.KeyDown += (_, args) =>
+        {
+            if (args.Key == Key.C && args.KeyModifiers == KeyModifiers.Control && !_closingTracking
+                && _trackingList.SelectedItem is GitBranchTrackingSnapshot selected && Clipboard is { } clipboard)
+            {
+                args.Handled = true;
+                string text = TrackingCopyRow(selected.LocalBranch, selected.Remote ?? "", selected.MergeBranch ?? "");
+                // FullRowSelect + AutoHeader includes column headers only when every visible row is selected.
+                // This single-select grid can meet that condition only when it contains one branch.
+                if (_trackingList.ItemCount == 1) { text = TrackingCopyRow(captions) + "\r\n" + text; }
+                Task previous = _trackingCopy;
+                _trackingCopy = CopyAsync();
+                async Task CopyAsync()
+                {
+                    try
+                    {
+                        await previous;
+                        if (_closingTracking || !IsVisible) { return; }
+                        await clipboard.SetTextAsync(text);
+                    }
+                    catch (Exception error) { if (IsVisible) { ReportError(error); UpdateActions(); } }
+                }
+            }
+        };
+        DockPanel table = new(); DockPanel.SetDock(_trackingHeaders, Dock.Top); table.Children.Add(_trackingHeaders); table.Children.Add(_trackingList);
         Grid fields = new() { Name = "BranchTrackingFields", ColumnDefinitions = new ColumnDefinitions("150,*,Auto"), Margin = new Thickness(32, 5, 50, 5) };
         Field(fields, "label4", "&Local branch name", _trackingLocal);
         Field(fields, "label5", "&Remote repository", _trackingRemote);
@@ -60,6 +103,63 @@ public sealed partial class RemotesDialog
         Grid content = new() { Name = "DefaultPullBehaviorPage", RowDefinitions = new RowDefinitions("*,Auto"), Margin = new Thickness(6) };
         content.Children.Add(table); Grid.SetRow(fields, 1); content.Children.Add(fields); return content;
     }
+
+    // Reuse the classic Thumb/header pattern while retaining the source grid's Fill proportions.
+    private ColumnDefinitions TrackingColumns()
+    {
+        ColumnDefinitions result = new();
+        foreach (double weight in _trackingColumnWeights) { result.Add(new ColumnDefinition(weight, GridUnitType.Star) { MinWidth = 5 }); }
+        return result;
+    }
+
+    private void AlignTrackingHeader(Grid row)
+    {
+        if (row.Bounds.Width <= 0 || row.TranslatePoint(default, _trackingList) is not Point origin) { return; }
+        // Use the realized content viewport, including the real scrollbar and classic item padding.
+        // No guessed scrollbar width or replacement of rows is needed when only a column changes.
+        _trackingHeaders.Margin = new Thickness(Math.Max(0, origin.X), 0,
+            Math.Max(0, _trackingList.Bounds.Width - origin.X - row.Bounds.Width), 0);
+    }
+
+    private void UpdateTrackingWidths()
+    {
+        _trackingHeaders.ColumnDefinitions = TrackingColumns();
+        foreach (WeakReference<Grid> reference in _trackingRowGrids.ToArray())
+        {
+            if (reference.TryGetTarget(out Grid? row)) { row.ColumnDefinitions = TrackingColumns(); AlignTrackingHeader(row); }
+            else { _trackingRowGrids.Remove(reference); }
+        }
+    }
+
+    private void ResizeTrackingColumn(int column, double delta)
+    {
+        double[] widths = _trackingHeaders.ColumnDefinitions.Select(definition => definition.ActualWidth).ToArray();
+        if (widths.Length != 3 || widths.Any(width => width < 5)) { return; }
+        int[] others = column < 2 ? Enumerable.Range(column + 1, 2 - column).ToArray()
+            : Enumerable.Range(0, 2).ToArray();
+        // Fill columns after the resized one compensate. For the last column all preceding columns do.
+        double otherWidth = others.Sum(index => widths[index]);
+        double applied = Math.Clamp(delta, 5 - widths[column], otherWidth - others.Length * 5);
+        widths[column] += applied;
+        double remaining = otherWidth - applied;
+        List<int> pending = others.ToList();
+        while (pending.Count > 0)
+        {
+            double weight = pending.Sum(index => _trackingColumnWeights[index]);
+            int[] minimum = pending.Where(index => remaining * _trackingColumnWeights[index] / weight < 5).ToArray();
+            if (minimum.Length == 0)
+            {
+                foreach (int index in pending) { widths[index] = remaining * _trackingColumnWeights[index] / weight; }
+                break;
+            }
+            foreach (int index in minimum) { widths[index] = 5; remaining -= 5; pending.Remove(index); }
+        }
+        for (int index = 0; index < widths.Length; index++) { _trackingColumnWeights[index] = widths[index]; }
+        UpdateTrackingWidths();
+    }
+
+    // DataGridView UnicodeText replaces embedded TABs, preserves CR/LF and has no final row separator.
+    private static string TrackingCopyRow(params string[] values) => string.Join('\t', values.Select(value => value.Replace('\t', ' ')));
 
     private void ConfigureTracking()
     {
@@ -75,9 +175,11 @@ public sealed partial class RemotesDialog
         _trackingMerge.LostFocus += async (_, _) => { if (!_loading) { await QueueTrackingFieldAsync(remote: false); } };
         Closing += async (_, args) =>
         {
-            if (_closingTracking || !_remoteDirty && !_mergeDirty && _trackingWrites.IsCompleted) { return; }
+            if (_trackingCloseAccepted) { return; }
+            if (_closingTracking) { args.Cancel = true; return; }
+            if (!_remoteDirty && !_mergeDirty && _trackingWrites.IsCompleted && _trackingCopy.IsCompleted) { return; }
             args.Cancel = true; _closingTracking = true;
-            try { await FlushTrackingAsync(); Close(); }
+            try { await FlushTrackingAsync(); await _trackingCopy; _trackingCloseAccepted = true; Close(); }
             finally { _closingTracking = false; }
         };
     }
