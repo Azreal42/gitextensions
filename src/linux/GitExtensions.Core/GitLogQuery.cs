@@ -82,19 +82,31 @@ public sealed partial class GitRepository
         Func<IReadOnlyList<GitCommit>, CancellationToken, ValueTask> onBatch, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
+        return await StreamLogCoreAsync(query.ForRevisionGraph(), paths: null, rewriteParents: query.HasRevisionFilter,
+            maximumCommits, batchSize, onBatch, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<GitRevisionGraphStreamResult> StreamLogCoreAsync(GitLogQuery query, IReadOnlyList<string>? paths,
+        bool rewriteParents, int maximumCommits, int batchSize,
+        Func<IReadOnlyList<GitCommit>, CancellationToken, ValueTask> onBatch, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(onBatch);
         ArgumentOutOfRangeException.ThrowIfNegative(maximumCommits);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
         cancellationToken.ThrowIfCancellationRequested();
         using IDisposable operation = BeginOperation();
-        GitLogReadCommand? command = await BuildLogReadCommandAsync(query.ForRevisionGraph(), paths: null,
-            rewriteParents: query.HasRevisionFilter, maximumCommits, cancellationToken).ConfigureAwait(false);
+        GitLogReadCommand? command = await BuildLogReadCommandAsync(query, paths,
+            rewriteParents, maximumCommits, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (command is null) { return new(0, null); }
         GitLogStreamParser parser = new(batchSize, onBatch);
         // ExecuteAsync adds the same global and literal-path policy for an ordinary log command.
         // Keep the byte stream out of the captured-output execution path.
-        GitStreamResult result = await _runner.RunStreamingAsync(Path, [.. GlobalOptions, "--literal-pathspecs", .. command.Arguments],
+        // Prepared file paths already carry the readonly/literal prefix in the shared builder.
+        string[] arguments = paths is null ? [.. GlobalOptions, "--literal-pathspecs", .. command.Arguments]
+            : [.. GlobalOptions, .. command.Arguments];
+        GitStreamResult result = await _runner.RunStreamingAsync(Path, arguments,
             parser.ReadAsync, cancellationToken).ConfigureAwait(false);
         result = WithHistoryTextWarnings(result, parser);
         if (!result.Success)

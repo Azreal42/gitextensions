@@ -8,6 +8,12 @@ public sealed record GitFileHistoryGraphOptions(bool FollowRenames = true, bool 
 public sealed record GitFileHistoryGraph(IReadOnlyList<GitCommit> Commits, IReadOnlyList<string> Paths,
     IReadOnlyDictionary<string, string> PathByCommit);
 
+/// <summary>Readonly HEAD-followed names, prepared once before the first provisional graph batch.</summary>
+public sealed record GitFileHistoryGraphContext(IReadOnlyList<string> Paths, IReadOnlyDictionary<string, string> PathByCommit);
+
+/// <summary>Successful traversal and its names, including an empty traversal which emitted no batches.</summary>
+public sealed record GitFileHistoryGraphStreamResult(GitFileHistoryGraphContext Context, GitRevisionGraphStreamResult Traversal);
+
 public sealed partial class GitRepository
 {
     /// <summary>
@@ -19,6 +25,37 @@ public sealed partial class GitRepository
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(query.Count);
+        GitFileHistoryGraphContext context = await PrepareFileHistoryGraphAsync(query, options, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<GitCommit> commits = await GetLogCoreAsync(query.ForRevisionGraph(), context.Paths, rewriteParents: true, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new(commits, context.Paths, context.PathByCommit);
+    }
+
+    /// <summary>
+    /// Prepares HEAD-followed names once, then streams one graph traversal with that same readonly context in every batch.
+    /// Count is ignored; maximumCommits follows the ordinary streaming graph contract, including zero/unlimited and native overrides.
+    /// Batches remain provisional until successful return, which also carries the context when no commits were emitted.
+    /// </summary>
+    public async Task<GitFileHistoryGraphStreamResult> StreamFileHistoryGraphAsync(GitLogQuery query, int maximumCommits, int batchSize,
+        Func<GitFileHistoryGraphContext, IReadOnlyList<GitCommit>, CancellationToken, ValueTask> onBatch,
+        GitFileHistoryGraphOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(onBatch);
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumCommits);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+        cancellationToken.ThrowIfCancellationRequested();
+        using IDisposable operation = BeginOperation();
+        GitFileHistoryGraphContext context = await PrepareFileHistoryGraphAsync(query, options, cancellationToken).ConfigureAwait(false);
+        GitRevisionGraphStreamResult traversal = await StreamLogCoreAsync(query.ForRevisionGraph(), context.Paths, rewriteParents: true,
+            maximumCommits, batchSize, (batch, token) => onBatch(context, batch, token), cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new(context, traversal);
+    }
+
+    private async Task<GitFileHistoryGraphContext> PrepareFileHistoryGraphAsync(GitLogQuery query, GitFileHistoryGraphOptions? options,
+        CancellationToken cancellationToken)
+    {
         ArgumentOutOfRangeException.ThrowIfNegative(query.Skip);
         if (query.Since > query.Until) { throw new ArgumentException("History start date must not follow its end date.", nameof(query)); }
         if (query.Revision is not null && !string.IsNullOrWhiteSpace(query.BranchFilter))
@@ -40,9 +77,8 @@ public sealed partial class GitRepository
             string output = (await ExecuteAsync(arguments, cancellationToken).ConfigureAwait(false)).StandardOutput;
             ReadFollowedNames(output, paths, seen, names, cancellationToken);
         }
-        IReadOnlyList<GitCommit> commits = await GetLogCoreAsync(query.ForRevisionGraph(), paths, rewriteParents: true, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        return new(commits, paths.AsReadOnly(), new ReadOnlyDictionary<string, string>(names));
+        return new(paths.AsReadOnly(), new ReadOnlyDictionary<string, string>(names));
     }
 
     private async Task<string?> ReadFileHistoryHeadAsync(CancellationToken cancellationToken)

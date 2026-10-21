@@ -60,6 +60,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. SshEnvironmentScenarios.All,
     .. UnixSocketDirectoryScenarios.All,
     .. FileHistoryGraphScenarios.All,
+    .. FileHistoryStreamingScenarios.All,
     .. GitRunnerSinkScenarios.All,
     .. GitLogStreamingScenarios.All,
     .. RevisionAncestryScenarios.All,
@@ -244,6 +245,7 @@ if (args.Contains("--comparison-multiple-only", StringComparer.Ordinal))
 if (args.Contains("--revision-ancestry-only", StringComparer.Ordinal)) { tests = RevisionAncestryScenarios.All.ToArray(); }
 if (args.Contains("--history-streaming-only", StringComparer.Ordinal)) { tests = [.. GitRunnerSinkScenarios.All, .. GitLogStreamingScenarios.All]; }
 if (args.Contains("--file-history-graph-only", StringComparer.Ordinal)) { tests = FileHistoryGraphScenarios.All.ToArray(); }
+if (args.Contains("--file-history-streaming-only", StringComparer.Ordinal)) { tests = FileHistoryStreamingScenarios.All.ToArray(); }
 if (args.Contains("--quick-search-message-only", StringComparer.Ordinal)) { tests = QuickSearchMessageScenarios.All.ToArray(); }
 if (args.Contains("--artificial-reset-only", StringComparer.Ordinal)) { tests = ArtificialResetScenarios.All.ToArray(); }
 if (args.Contains("--reset-selected-patch-only", StringComparer.Ordinal)) { tests = ResetSelectedPatchScenarios.All.ToArray(); }
