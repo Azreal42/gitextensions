@@ -67,18 +67,24 @@ public sealed class ComparisonCommitPickerTests
         }
         AssertArtificial(picker, GitCompareRevisionKind.WorkingTree); Capture(picker, "comparison-picker-" + language + (dark ? "-dark.png" : "-light.png"));
         Press(picker, PhysicalKey.ArrowDown); AssertArtificial(picker, GitCompareRevisionKind.Index);
-        Press(picker, PhysicalKey.ArrowDown); Assert.That(rows.SelectedIndex, Is.EqualTo(0)); Assert.That(rows.IsKeyboardFocusWithin, Is.True);
+        Press(picker, PhysicalKey.ArrowDown); Assert.That(rows.SelectedIndex, Is.EqualTo(2)); Assert.That(rows.IsKeyboardFocusWithin, Is.True);
         Assert.That(Presenter(picker).Selection!.Commit, Is.SameAs(rows.SelectedItem));
         Press(picker, PhysicalKey.ArrowUp); AssertArtificial(picker, GitCompareRevisionKind.Index);
         Press(picker, PhysicalKey.ArrowUp); AssertArtificial(picker, GitCompareRevisionKind.WorkingTree);
-        Assert.That(rows.Items.Cast<object>().All(item => item is GitCommit), Is.True);
+        Assert.That(rows.Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind),
+            Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+        Assert.That(rows.Items.Cast<object>().All(item => item is GitCommit or ArtificialHistoryRevision), Is.True);
         string[] actualIds = (await f.Root.GitAsync("rev-list", "--all")).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.That(picker.GetVisualDescendants().OfType<CommitGraph>().Single().Commits.Select(commit => commit.Hash), Is.EquivalentTo(actualIds));
-        Press(picker, PhysicalKey.Tab); AssertArtificial(picker, GitCompareRevisionKind.Index);
-        Press(picker, PhysicalKey.Tab); Assert.That(rows.SelectedIndex, Is.EqualTo(0)); Assert.That(rows.IsKeyboardFocusWithin, Is.True);
-        Assert.That(Presenter(picker).Selection!.Commit, Is.SameAs(rows.SelectedItem));
-        Press(picker, PhysicalKey.Tab, RawInputModifiers.Shift); AssertArtificial(picker, GitCompareRevisionKind.Index);
-        Press(picker, PhysicalKey.Tab, RawInputModifiers.Shift); AssertArtificial(picker, GitCompareRevisionKind.WorkingTree);
+        object selected = rows.SelectedItem!;
+        Assert.That(Field<Button>(picker, "ChooseWorkingDirectoryRevision").Focusable, Is.False);
+        Assert.That(Field<Button>(picker, "ChooseIndexRevision").Focusable, Is.False);
+        Press(picker, PhysicalKey.Tab);
+        Assert.That(rows.IsKeyboardFocusWithin, Is.False, "The mixed grid is one Tab stop, like the Windows revision grid.");
+        Assert.That(rows.SelectedItem, Is.SameAs(selected));
+        Assert.That(Presenter(picker).Selection!.Revision.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
+        Press(picker, PhysicalKey.Tab, RawInputModifiers.Shift);
+        AssertArtificial(picker, GitCompareRevisionKind.WorkingTree); Assert.That(rows.SelectedItem, Is.SameAs(selected));
         Press(picker, PhysicalKey.Enter); Assert.That(await s.Selection, Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.WorkingTree)));
         Assert.That(await Materials(f.Root), Is.EqualTo(before));
     }
@@ -118,7 +124,9 @@ public sealed class ComparisonCommitPickerTests
         await using PickerLease s = await PickerLease.OpenAsync(root.Repository, new("", GitCompareRevisionKind.Index));
         AssertArtificial(s.Dialog, GitCompareRevisionKind.Index); Assert.That(Presenter(s.Dialog).Parents, Is.Empty);
         Assert.That(Field<StackPanel>(s.Dialog, "flowLayoutPanelParents").IsVisible, Is.False);
-        Assert.That(Field<ListBox>(s.Dialog, "ChooseRevision").Items, Is.Empty);
+        Assert.That(Field<ListBox>(s.Dialog, "ChooseRevision").Items.OfType<GitCommit>(), Is.Empty);
+        Assert.That(Field<ListBox>(s.Dialog, "ChooseRevision").Items.OfType<ArtificialHistoryRevision>().Select(item => item.Kind),
+            Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
         Pointer(Field<Button>(s.Dialog, "ChooseWorkingDirectoryRevision")); Assert.That(Presenter(s.Dialog).Parents.Single(), Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.Index)));
         Pointer(Field<Button>(s.Dialog, "linkLabelParent")); await s.Dialog.Completion; AssertArtificial(s.Dialog, GitCompareRevisionKind.Index);
         Press(s.Dialog, PhysicalKey.Enter); Assert.That(await s.Selection, Is.EqualTo(new GitCompareRevision("", GitCompareRevisionKind.Index)));
@@ -235,8 +243,11 @@ public sealed class ComparisonCommitPickerTests
     {
         ChooseCommitSelectionPresenter presenter = Presenter(picker);
         Assert.That(presenter.Selection!.Revision, Is.EqualTo(new GitCompareRevision("", kind))); Assert.That(presenter.Selection.Commit, Is.Null);
-        Assert.That(Field<ListBox>(picker, "ChooseRevision").SelectedItem, Is.Null, "The real grid must not retain a second selected row.");
-        Assert.That(Field<Button>(picker, kind == GitCompareRevisionKind.Index ? "ChooseIndexRevision" : "ChooseWorkingDirectoryRevision").IsKeyboardFocusWithin, Is.True);
+        ListBox rows = Field<ListBox>(picker, "ChooseRevision");
+        Assert.That(rows.SelectedItems, Has.Count.EqualTo(1), "Real commits and artificial endpoints share one native selection.");
+        Assert.That(rows.SelectedItem, Is.TypeOf<ArtificialHistoryRevision>());
+        Assert.That(((ArtificialHistoryRevision)rows.SelectedItem!).Revision, Is.EqualTo(presenter.Selection.Revision));
+        Assert.That(rows.IsKeyboardFocusWithin, Is.True);
     }
     private static ChooseCommitSelectionPresenter Presenter(TopLevel root) => root.GetVisualDescendants().OfType<ChooseCommitSelectionPresenter>().Single();
     private static T Field<T>(TopLevel root, string name) where T : Control => PushProcessTestDriver.Field<T>(root, name);

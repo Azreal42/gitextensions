@@ -91,6 +91,7 @@ internal partial class ChooseCommitDialog
             IReadOnlyList<GitReference> references = await Repository.GetReferencesAsync(token);
             token.ThrowIfCancellationRequested();
             if (!CanPublish(read)) { return; }
+            if (initial && read.Target is null && status.Head is not null) { read.Target = new(status.Head); }
             ApplyHistory(() => _revisions.BeginIncrementalData(references, status.Head, _showArtificial && !Repository.IsBare, read.Query.FirstParent));
             if (!(status.IsUnborn && read.Query.Revision == "HEAD"))
             {
@@ -110,16 +111,25 @@ internal partial class ChooseCommitDialog
             }
             token.ThrowIfCancellationRequested();
             if (!CanPublish(read)) { return; }
-            ApplyHistory(() => _revisions.CompleteCommits());
+            IReadOnlyList<string>? attachment = null;
+            if (_revisions.HasPendingArtificials && status.Head is not null)
+            {
+                try { attachment = await Repository.ReadRevisionAncestryAsync(status.Head, token); }
+                catch (GitCommandException) { attachment = []; } // Windows falls back to the first row when ancestry is unavailable.
+            }
+            token.ThrowIfCancellationRequested();
+            if (!CanPublish(read)) { return; }
+            ApplyHistory(() => _revisions.CompleteCommits(attachment));
             SelectPendingTarget(read);
             _loaded = true; read.Ready.TrySetResult(); read.Pulse();
             // Windows searches a bounded ancestry when the requested commit is excluded by the current filter/ceiling.
             if (read.Target?.Kind == GitCompareRevisionKind.Commit && read.Intent == _selectionVersion)
             {
-                IReadOnlyList<GitCommit> ancestors = await Repository.GetLogAsync(new(Count: 50, All: false, Revision: read.Target.Revision), token);
+                IReadOnlyList<string> ancestors = attachment is not null && read.Target.Revision == status.Head ? attachment
+                    : await Repository.ReadRevisionAncestryAsync(read.Target.Revision, token);
                 if (CanPublish(read) && read.Intent == _selectionVersion)
                 {
-                    foreach (GitCommit ancestor in ancestors) { if (ApplySelection(new(ancestor.Hash))) { break; } }
+                    foreach (string ancestor in ancestors) { if (ApplySelection(new(ancestor))) { break; } }
                 }
             }
         }

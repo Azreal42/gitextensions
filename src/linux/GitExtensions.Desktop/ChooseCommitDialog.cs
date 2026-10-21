@@ -60,7 +60,7 @@ internal partial class ChooseCommitDialog : RepositoryDialog
         Width = 1105 * 96d / 120; Height = 515 * 96d / 120; MinWidth = 620; MinHeight = 300; CanMinimize = false; ShowInTaskbar = false;
         using (Stream icon = AssetLoader.Open(new Uri("avares://GitExtensions/Assets/git-extensions-logo.ico"))) { Icon = new WindowIcon(icon); }
         CollapseEmptyStatus(); ConstrainStatusHeight("ChooseCommitError", 48);
-        _revisions = new(controls.Rows, _showArtificial, T, view) { Margin = new Thickness(4, 0, 4, 4) };
+        _revisions = new(controls.Rows, _showArtificial, T, view, general.ShowGitStatusForArtificialCommits) { Margin = new Thickness(4, 0, 4, 4) };
         _revisions.Rows.Focusable = true;
         _search = new() { Name = controls.Search, Height = DesktopFontMetrics.ToolbarHeight };
         _accept = new() { Name = controls.Accept, Content = Original("btnOK", "OK"), MinWidth = 110, IsDefault = true };

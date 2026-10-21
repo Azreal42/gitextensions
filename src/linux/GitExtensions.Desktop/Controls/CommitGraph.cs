@@ -6,6 +6,7 @@ using Avalonia.Media;
 using GitExtensions.Desktop.Controls.Graph;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
+using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Desktop.Controls;
 
@@ -20,6 +21,15 @@ public sealed class CommitGraph : Control
     public static readonly StyledProperty<bool> SelectionFocusedProperty = AvaloniaProperty.Register<CommitGraph, bool>(nameof(SelectionFocused), true);
     public static readonly StyledProperty<string?> AuthoredEmailProperty = AvaloniaProperty.Register<CommitGraph, string?>(nameof(AuthoredEmail));
     public static readonly StyledProperty<bool> DrawAlternateBackgroundProperty = AvaloniaProperty.Register<CommitGraph, bool>(nameof(DrawAlternateBackground));
+    private static readonly IBrush NonRelativeLight = Brush.Parse("#d3d3d3");
+    private static readonly IBrush NonRelativeDark = Brush.Parse("#707070");
+    private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
+    private bool _drawNonRelativesGray;
+    internal bool DrawNonRelativesGray
+    {
+        get => _drawNonRelativesGray;
+        set { if (_drawNonRelativesGray == value) { return; } _drawNonRelativesGray = value; InvalidateVisual(); }
+    }
     private double LeftInset => ShowReferenceLabels ? 12 : 2;
     public double LineHeight { get => GetValue(LineHeightProperty); set => SetValue(LineHeightProperty, value); }
     public double LaneWidth { get => GetValue(LaneWidthProperty); set => SetValue(LaneWidthProperty, value); }
@@ -113,10 +123,10 @@ public sealed class CommitGraph : Control
     internal IReadOnlyList<string> GetChildren(string hash)
         => _incrementalLayout?.GetChildren(hash) ?? _layout.Children.GetValueOrDefault(hash) ?? [];
 
-    internal void BeginIncrementalData(string? head, bool onlyFirstParent = false)
+    internal void BeginIncrementalData(string? head, bool onlyFirstParent = false, bool includeArtificial = false)
     {
         _onlyFirstParent = onlyFirstParent;
-        _incrementalLayout = new(onlyFirstParent, _options, head);
+        _incrementalLayout = new(onlyFirstParent, _options, head, includeArtificial);
         _commits = _incrementalLayout.Commits;
         CurrentHead = head;
         InvalidateMeasure(); InvalidateVisual();
@@ -128,16 +138,21 @@ public sealed class CommitGraph : Control
         _incrementalLayout.Append(batch); InvalidateMeasure(); InvalidateVisual();
     }
 
-    internal void CompleteCommits()
+    internal void CompleteCommits(IReadOnlyList<string>? headAncestors = null)
     {
         if (_incrementalLayout is null) { throw new InvalidOperationException("No revision stream is active."); }
-        _incrementalLayout.Complete(); InvalidateVisual();
+        _incrementalLayout.Complete(headAncestors); InvalidateMeasure(); InvalidateVisual();
     }
 
-    private int RenderCount => _incrementalLayout?.Count ?? _layout.Nodes.Count;
+    internal bool HasPendingArtificials => _incrementalLayout?.HasPendingArtificials == true;
+    internal bool IsRelativeKey(string key) => _relatedHashes?.Contains(key) ?? _incrementalLayout?.IsRelative(key) ?? true;
+    internal IReadOnlyList<object> OrderedItems => _incrementalLayout?.OrderedItems ?? _layout.Nodes.Select(node => (object)node.Commit).ToArray();
+
+    private int RenderCount => _incrementalLayout?.RowCount ?? _layout.Nodes.Count;
     private int RenderLaneCount => _incrementalLayout?.VisibleLaneCount ?? _layout.LaneCount;
-    private GitCommit CommitForRow(int row) => _incrementalLayout is { } incremental ? incremental.OrderedCommits[row] : _layout.Nodes[row].Commit;
-    private GraphNode? NodeForRow(int row) => _incrementalLayout is { } incremental ? incremental.GetPreparedNode(row) : _layout.Nodes[row];
+    private object ItemForRow(int row) => _incrementalLayout is { } incremental ? incremental.OrderedItems[row] : _layout.Nodes[row].Commit;
+    private PreparedHistoryGraphNode? NodeForRow(int row) => _incrementalLayout is { } incremental ? incremental.GetPreparedItemNode(row)
+        : new(_layout.Nodes[row].Commit, _layout.Nodes[row].Lane, _layout.Nodes[row].Color);
     private IReadOnlyList<GraphStroke> RenderStrokes => _incrementalLayout?.VisibleStrokes ?? _layout.Strokes;
     private IReadOnlyList<GraphRenderSegment> RenderSegmentsForRow(int row)
         => _incrementalLayout is { } incremental
@@ -228,8 +243,8 @@ public sealed class CommitGraph : Control
         {
             for (int row = firstRow; row <= lastRow; row++)
             {
-                GitCommit commit = CommitForRow(row);
-                IBrush background = RevisionHistoryRow.BackgroundFor(commit, _selectedHashSet.Contains(commit.Hash), SelectionFocused,
+                object item = ItemForRow(row);
+                IBrush background = RevisionHistoryRow.BackgroundFor(item as GitCommit, _selectedHashSet.Contains(HistoryRevisionItems.Key(item)), SelectionFocused,
                     AuthoredEmail, row, DrawAlternateBackground, dark);
                 context.FillRectangle(background, new Rect(0, row * LineHeight - _verticalOffset, Bounds.Width, LineHeight));
             }
@@ -256,8 +271,7 @@ public sealed class CommitGraph : Control
                             path.EndFigure(false);
                         }
                     }
-                    IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(segment.Child) && !_relatedHashes.Contains(segment.Parent)
-                        ? Brushes.Gray : palette[segment.Color];
+                    IBrush brush = RenderBrush(segment.Color, segment.Child, segment.Parent, dark, palette);
                     context.DrawGeometry(null, new Pen(brush, 2), geometry);
                 }
             }
@@ -270,20 +284,26 @@ public sealed class CommitGraph : Control
             double centerY = (stroke.Row + .5) * LineHeight - _verticalOffset;
             double boundaryY = centerY + LineHeight / 2;
             double x = X(stroke.CenterLane);
-            IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(stroke.Child) && !_relatedHashes.Contains(stroke.Parent)
-                ? Brushes.Gray : palette[stroke.Color];
+            IBrush brush = RenderBrush(stroke.Color, stroke.Child, stroke.Parent, dark, palette);
             context.DrawLine(new Pen(brush, 2), new Point(x, centerY), new Point(x, boundaryY));
             context.DrawEllipse(brush, null, new Point(x, boundaryY - 3), 2, 2);
         }
 
         for (int row = firstRow; row <= lastRow; row++)
         {
-            GraphNode? node = NodeForRow(row);
+            PreparedHistoryGraphNode? node = NodeForRow(row);
             if (node is null) { continue; }
             Point center = new(X(node.Lane), (row + 0.5) * LineHeight - _verticalOffset);
-            IBrush brush = _relatedHashes is not null && !_relatedHashes.Contains(node.Commit.Hash) ? Brushes.Gray : palette[node.Color];
-            _refsByHash.TryGetValue(node.Commit.Hash, out GitReference[]? refs);
-            bool isHead = node.Commit.Hash == _currentHead || refs?.Any(reference => reference.IsCurrent) is true;
+            string key = HistoryRevisionItems.Key(node.Item);
+            IBrush brush = RenderBrush(node.Color, key, null, dark, palette);
+            if (node.Item is ArtificialHistoryRevision)
+            {
+                // No references or HEAD outline: Windows draws the artificial node as a 10px circle.
+                context.DrawEllipse(brush, null, center, 5, 5); continue;
+            }
+            GitCommit commit = (GitCommit)node.Item;
+            _refsByHash.TryGetValue(commit.Hash, out GitReference[]? refs);
+            bool isHead = commit.Hash == _currentHead || refs?.Any(reference => reference.IsCurrent) is true;
             Pen? outline = isHead ? new Pen(dark ? Brushes.White : Brushes.Black, 2) : null;
 
             if (refs is { Length: > 0 })
@@ -314,19 +334,30 @@ public sealed class CommitGraph : Control
             }
             else
             {
-                context.DrawEllipse(brush, outline, center, node.Commit.Parents.Count > 1 ? 6 : 4, node.Commit.Parents.Count > 1 ? 6 : 4);
+                context.DrawEllipse(brush, outline, center, commit.Parents.Count > 1 ? 6 : 4, commit.Parents.Count > 1 ? 6 : 4);
             }
         }
     }
 
+    private IBrush RenderBrush(int color, string child, string? parent, bool dark, IBrush[] palette)
+    {
+        // Explicit branch/selection highlighting retains the host's existing priority and palette.
+        if (_relatedHashes is not null)
+        { return !_relatedHashes.Contains(child) && (parent is null || !_relatedHashes.Contains(parent)) ? Brushes.Gray : palette[color]; }
+        // Windows styles each segment from its CHILD's native relation flag, not from the parent's visibility.
+        if (_incrementalLayout is not null && DrawNonRelativesGray && !_incrementalLayout.IsRelative(child))
+        { return dark ? NonRelativeDark : NonRelativeLight; }
+        return palette[color];
+    }
+
     private double X(int lane) => LeftInset + (lane + 0.5) * LaneWidth;
 
-    internal static Color ReferenceColor(GitReference reference, bool dark)
+    internal static Color ReferenceColor(GitReference? reference, bool dark)
     {
-        if (reference.IsRemote && reference.RemoteColor is { Length: > 0 } configured && Color.TryParse(configured, out Color color)) { return color; }
-        return Color.Parse(reference.IsBranch ? dark ? "#7FE28A" : "#008000"
-            : reference.IsRemote ? dark ? "#fd9797" : "#8b0009"
-            : reference.IsTag ? dark ? "#40BAF7" : "#00008b"
+        if (reference is { IsRemote: true, RemoteColor: { Length: > 0 } configured } && Color.TryParse(configured, out Color color)) { return color; }
+        return Color.Parse(reference?.IsBranch == true ? dark ? "#7FE28A" : "#008000"
+            : reference?.IsRemote == true ? dark ? "#fd9797" : "#8b0009"
+            : reference?.IsTag == true ? dark ? "#40BAF7" : "#00008b"
             : dark ? "#cfb3b3" : "#808080");
     }
 
@@ -339,7 +370,10 @@ public sealed class CommitGraph : Control
             return;
         }
 
-        GitCommit commit = CommitForRow(row);
+        object item = ItemForRow(row);
+        if (item is ArtificialHistoryRevision artificial)
+        { ToolTip.SetTip(this, _translations.Translate(artificial.Subject)); return; }
+        GitCommit commit = (GitCommit)item;
         string references = _refsByHash.TryGetValue(commit.Hash, out GitReference[]? refs)
             ? string.Join(", ", refs.Select(reference => reference.ShortName)) + "\n" : "";
         ToolTip.SetTip(this, $"{references}{commit.Hash}\n{commit.Subject}\n{string.Join("\n", commit.Parents)}");

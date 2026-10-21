@@ -62,6 +62,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. FileHistoryGraphScenarios.All,
     .. GitRunnerSinkScenarios.All,
     .. GitLogStreamingScenarios.All,
+    .. RevisionAncestryScenarios.All,
     .. QuickSearchMessageScenarios.All,
     .. ComparisonEndpointScenarios.All,
     .. ComparisonGroupScenarios.All,
@@ -233,6 +234,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
 ];
 
 if (args.Contains("--unix-socket-directory-only", StringComparer.Ordinal)) { tests = UnixSocketDirectoryScenarios.All.ToArray(); }
+if (args.Contains("--revision-ancestry-only", StringComparer.Ordinal)) { tests = RevisionAncestryScenarios.All.ToArray(); }
 if (args.Contains("--history-streaming-only", StringComparer.Ordinal)) { tests = [.. GitRunnerSinkScenarios.All, .. GitLogStreamingScenarios.All]; }
 if (args.Contains("--file-history-graph-only", StringComparer.Ordinal)) { tests = FileHistoryGraphScenarios.All.ToArray(); }
 if (args.Contains("--quick-search-message-only", StringComparer.Ordinal)) { tests = QuickSearchMessageScenarios.All.ToArray(); }

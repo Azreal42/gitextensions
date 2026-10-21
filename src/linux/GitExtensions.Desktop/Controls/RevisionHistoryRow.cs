@@ -347,29 +347,36 @@ public static class RevisionHistoryRow
         }
     }
 
+    internal static Control CreateArtificialLabel(string text, bool fillRefLabels)
+    {
+        ReferenceBadge badge = new(text); badge.SetFilled(fillRefLabels); return badge;
+    }
+
     private sealed class ReferenceBadge : Border
     {
-        private readonly GitReference _reference;
+        private readonly GitReference? _reference;
         private readonly TextBlock _label;
         private readonly CurrentBranchArrow? _arrow;
         private ListBoxItem? _selectionOwner;
         private bool _filled;
         internal void SetFilled(bool filled)
         { if (_filled == filled) { return; } _filled = filled; UpdatePalette(); }
-        public ReferenceBadge(GitReference reference)
+        public ReferenceBadge(GitReference reference) : this(reference.ShortName, reference.IsCurrent, reference) { }
+        public ReferenceBadge(string artificialText) : this(artificialText, false, null) { }
+        private ReferenceBadge(string text, bool current, GitReference? reference)
         {
-            _reference = reference; Name = "RevisionReference"; Tag = reference;
+            _reference = reference; Name = reference is null ? "ArtificialRevisionLabel" : "RevisionReference"; Tag = reference;
             Height = DesktopFontMetrics.HistoryContentHeight(DesktopFonts.Active); BorderThickness = new Thickness(1); CornerRadius = new CornerRadius(5);
             Padding = new Thickness(3, 0); ClipToBounds = true;
-            _label = Cell("RevisionReferenceLabel", reference.ShortName); _label.Margin = default;
-            _label.FontWeight = reference.IsCurrent ? FontWeight.Bold : DesktopFonts.For(DesktopFontRole.Application).Weight;
-            Grid content = new() { ColumnDefinitions = new ColumnDefinitions(reference.IsCurrent ? "9,*" : "*") };
-            if (reference.IsCurrent)
+            _label = Cell("RevisionReferenceLabel", text); _label.Margin = default;
+            _label.FontWeight = current ? FontWeight.Bold : DesktopFonts.For(DesktopFontRole.Application).Weight;
+            Grid content = new() { ColumnDefinitions = new ColumnDefinitions(current ? "9,*" : "*") };
+            if (current)
             {
                 _arrow = new() { Name = "RevisionCurrentBranchArrow", Width = 9, Height = 16, VerticalAlignment = VerticalAlignment.Center };
                 content.Children.Add(_arrow); Grid.SetColumn(_label, 1);
             }
-            content.Children.Add(_label); Child = content; ToolTip.SetTip(this, reference.ShortName);
+            content.Children.Add(_label); Child = content; ToolTip.SetTip(this, text);
             ActualThemeVariantChanged += (_, _) => UpdatePalette();
             AttachedToVisualTree += (_, _) =>
             {

@@ -119,13 +119,19 @@ public sealed class ExportRevisionPresentationTests
         try
         {
             host.Show(); Pump(host);
-            Grid prefix = presenter.GetVisualDescendants().OfType<Grid>().Single(control => control.Name == "ChooseWorkingRevisions");
             Grid headers = presenter.GetVisualDescendants().OfType<Grid>().Single(control => control.Name == "RevisionColumnHeaders");
-            Assert.That(prefix.IsEffectivelyVisible, Is.True);
-            Assert.That(prefix.ColumnDefinitions[0].ActualWidth, Is.EqualTo(headers.ColumnDefinitions[0].ActualWidth));
-            Assert.That(prefix.ColumnDefinitions[0].ActualWidth, Is.EqualTo(showGraph ? 90 : 0));
-            Assert.That(prefix.Children.OfType<Canvas>().Select(canvas => canvas.IsVisible), Is.EqualTo(new[] { showGraph, showGraph }));
-            Button working = prefix.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ChooseWorkingDirectoryRevision");
+            Assert.That(headers.ColumnDefinitions[0].ActualWidth, Is.EqualTo(showGraph ? 90 : 0));
+            Assert.That(presenter.GetVisualDescendants().OfType<Grid>().Any(control => control.Name == "ChooseWorkingRevisions"), Is.False,
+                "The artificial rows scroll inside the same list; there is no pinned prefix.");
+            GitExtensions.Desktop.Controls.CommitGraph graph = presenter.GetVisualDescendants().OfType<GitExtensions.Desktop.Controls.CommitGraph>().Single();
+            Assert.That(graph.IsVisible, Is.EqualTo(showGraph));
+            Assert.That(presenter.Rows.Items.Cast<object>().Take(2).Cast<ArtificialHistoryRevision>().Select(item => item.Kind),
+                Is.EqualTo(new[] { GitCompareRevisionKind.WorkingTree, GitCompareRevisionKind.Index }));
+            Button working = presenter.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ChooseWorkingDirectoryRevision");
+            Control firstReal = Row(presenter.Rows, commits[0]);
+            Control realMessage = firstReal.GetVisualDescendants().OfType<Control>().Single(control => control.Name == "RevisionMessage");
+            Assert.That(working.TranslatePoint(default, host)!.Value.X, Is.EqualTo(realMessage.TranslatePoint(default, host)!.Value.X).Within(1),
+                "A single graph column aligns the real message and artificial label with graph hidden or visible.");
             Pointer(host, working);
             Assert.That(presenter.Selection!.Revision.Kind, Is.EqualTo(GitCompareRevisionKind.WorkingTree));
             Press(host, PhysicalKey.ArrowDown);

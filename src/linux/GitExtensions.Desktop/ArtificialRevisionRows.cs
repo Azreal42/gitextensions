@@ -1,3 +1,4 @@
+using GitExtensions.Desktop.Controls;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -9,6 +10,24 @@ namespace GitExtensions.Linux.Desktop;
 /// <summary>The compact worktree/index rows shared by Browse and the comparison commit chooser.</summary>
 internal sealed record ArtificialRevisionRows(Grid View, Button Working, Button Index, TextBlock WorkingState, TextBlock IndexState)
 {
+    /// <summary>The same label painter as real reference badges, hosted in a selectable native history row.</summary>
+    internal static Grid CreateItem(ArtificialHistoryRevision revision, Func<string, string> translate,
+        HistoryViewPreferences view, bool showStatus, string prefix = "Choose")
+    {
+        Grid row = new() { Name = "ArtificialRevisionHistoryRow", Tag = revision,
+            ColumnDefinitions = RevisionHistoryColumns.From(view).CreateDefinitions(), ClipToBounds = true };
+        Button label = new() { Name = prefix + (revision.Kind == GitCompareRevisionKind.WorkingTree ? "WorkingDirectoryRevision" : "IndexRevision"),
+            Focusable = false, MinHeight = 0, MinWidth = 0, Padding = default, BorderThickness = default, Background = Brushes.Transparent,
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center,
+            Content = RevisionHistoryRow.CreateArtificialLabel(translate(revision.Subject), view.FillRefLabels) };
+        Image status = Controls.OriginalMenuItems.Icon("RepoStateUnknown.png");
+        status.Name = "ArtificialRevisionStatus"; status.IsVisible = showStatus; status.Margin = new Thickness(6, 0, 0, 0);
+        ToolTip.SetTip(status, translate("Unknown"));
+        row.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4, 0),
+            VerticalAlignment = VerticalAlignment.Center, Children = { label, status } });
+        return row;
+    }
+
     internal static ArtificialRevisionRows Create(double rowHeight, Func<string, string> translate, string prefix = "", double graphWidth = 20)
     {
         Grid rows = new() { Name = prefix + "WorkingRevisions", ColumnDefinitions = new ColumnDefinitions { new(graphWidth, GridUnitType.Pixel), new(1, GridUnitType.Star) },

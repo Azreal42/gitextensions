@@ -5,48 +5,51 @@ using System.ComponentModel;
 namespace GitExtensions.Linux.Desktop;
 
 /// <summary>A stable native ItemsSource: append in ranges, reorder by Git identity, never Reset the loaded grid.</summary>
-internal sealed class IncrementalRevisionRows : ObservableCollection<GitCommit>
+internal sealed class IncrementalRevisionRows : ObservableCollection<object>
 {
     private readonly Dictionary<string, int> _indices = new(StringComparer.Ordinal);
-    internal int IndexOfHash(string hash) => _indices.GetValueOrDefault(hash, -1);
+    internal int IndexOfKey(string key) => _indices.GetValueOrDefault(key, -1);
+    internal int KeyIndex(string key) => IndexOfKey(key);
+    internal int IndexOfHash(string hash) => IndexOfKey(hash);
 
-    internal void PublishOrder(IReadOnlyList<GitCommit> desired)
+    internal void PublishOrder(IReadOnlyList<object> desired)
     {
         CheckReentrancy();
         if (desired.Count < Count) { throw new InvalidOperationException("A streamed append cannot remove an admitted revision."); }
         for (int index = 0; index < desired.Count; index++)
         {
-            GitCommit commit = desired[index];
-            if (index < Count && this[index].Hash == commit.Hash) { continue; }
-            if (_indices.TryGetValue(commit.Hash, out int oldIndex))
+            object item = desired[index];
+            string key = HistoryRevisionItems.Key(item);
+            if (index < Count && HistoryRevisionItems.Key(this[index]) == key) { continue; }
+            if (_indices.TryGetValue(key, out int oldIndex))
             {
                 // Real source Move, not WritableSelectedItems.Move. The caller restores selection/caret by key afterward.
                 Move(oldIndex, index);
                 for (int changed = Math.Min(oldIndex, index); changed <= Math.Max(oldIndex, index); changed++)
-                { _indices[this[changed].Hash] = changed; }
+                { _indices[HistoryRevisionItems.Key(this[changed])] = changed; }
             }
             else if (index == Count)
             {
                 int end = index;
-                while (end < desired.Count && !_indices.ContainsKey(desired[end].Hash)) { end++; }
-                GitCommit[] tail = Enumerable.Range(index, end - index).Select(i => desired[i]).ToArray();
+                while (end < desired.Count && !_indices.ContainsKey(HistoryRevisionItems.Key(desired[end]))) { end++; }
+                object[] tail = Enumerable.Range(index, end - index).Select(i => desired[i]).ToArray();
                 AppendRange(tail); index = end - 1;
             }
             else
             {
-                Insert(index, commit);
-                for (int changed = index; changed < Count; changed++) { _indices[this[changed].Hash] = changed; }
+                Insert(index, item);
+                for (int changed = index; changed < Count; changed++) { _indices[HistoryRevisionItems.Key(this[changed])] = changed; }
             }
         }
     }
 
-    private void AppendRange(GitCommit[] commits)
+    private void AppendRange(object[] items)
     {
-        if (commits.Length == 0) { return; }
+        if (items.Length == 0) { return; }
         int first = Count;
-        foreach (GitCommit commit in commits) { _indices.Add(commit.Hash, Items.Count); Items.Add(commit); }
+        foreach (object item in items) { _indices.Add(HistoryRevisionItems.Key(item), Items.Count); Items.Add(item); }
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
         OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, commits, first));
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, first));
     }
 }
