@@ -15,6 +15,7 @@ public abstract class StartupRepositoryDialog : Window
     private CancellationTokenSource? _operation;
     private bool _closeWhenIdle;
     private readonly Border _statusBorder;
+    private readonly bool _showOperationStatus;
     protected readonly DockPanel Root = new() { LastChildFill = true };
     protected readonly TextBlock Status = new() { Name = "StartupStatus", TextWrapping = TextWrapping.Wrap };
     public GitRepository? CreatedRepository { get; private set; }
@@ -22,8 +23,9 @@ public abstract class StartupRepositoryDialog : Window
     internal Exception? LastException { get; private set; }
     internal bool IsBusy { get; private set; }
 
-    protected StartupRepositoryDialog(string title)
+    protected StartupRepositoryDialog(string title, bool showOperationStatus = true)
     {
+        _showOperationStatus = showOperationStatus;
         Title = T(title);
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         CanResize = false;
@@ -53,7 +55,7 @@ public abstract class StartupRepositoryDialog : Window
         button.Click += async (_, _) =>
         {
             try { await action(); }
-            catch (Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; _statusBorder.IsVisible = true; }
+            catch (Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; _statusBorder.IsVisible = _showOperationStatus; }
         };
         return button;
     }
@@ -67,7 +69,7 @@ public abstract class StartupRepositoryDialog : Window
         _operation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
         foreach (Control input in _inputs) { input.IsEnabled = false; }
         Status.Text = T(label) + "…";
-        _statusBorder.IsVisible = true;
+        _statusBorder.IsVisible = _showOperationStatus;
         try { await action(_operation.Token); }
         catch (OperationCanceledException) { LastError = T("Operation cancelled"); Status.Text = LastError; }
         catch (Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
@@ -76,7 +78,7 @@ public abstract class StartupRepositoryDialog : Window
             _operation.Dispose();
             _operation = null;
             IsBusy = false;
-            _statusBorder.IsVisible = LastError is not null;
+            _statusBorder.IsVisible = _showOperationStatus && LastError is not null;
             foreach (Control input in _inputs) { input.IsEnabled = true; }
             UpdateActions();
             if (_closeWhenIdle) { Close(); }

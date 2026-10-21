@@ -404,11 +404,20 @@ public sealed partial class MainWindow : Window
 
     private async Task ChooseRepositoryAsync()
     {
-        string? path = await ExportDialogControls.FolderAsync(this, T("Open Git repository"), new ClonePreferencesStore().Load().EffectiveDestination);
-        if (path is not null)
+        if (_busy || _lifetime.IsCancellationRequested) { return; }
+        GitRepository? previous = _repository;
+        OperationFocus? focus = CaptureOperationFocus();
+        OpenRepositoryDialog dialog = new(new ClonePreferencesStore().Load().DefaultDestination,
+            previous?.Path, _repositoryHistory) { RequestedThemeVariant = WorkflowOwner.ActualThemeVariant };
+        using (WindowWork work = TrackWindowWork())
         {
-            await OpenRepositoryAsync(path);
+            await dialog.ShowDialog(WorkflowOwner);
+            await dialog.WindowWorkCompletion;
         }
+        if (!IsVisible || _lifetime.IsCancellationRequested || !ReferenceEquals(previous, _repository)) { return; }
+        if (dialog.CreatedRepository is GitRepository candidate)
+        { await OpenRepositoryAsync(candidate.Path, candidate); }
+        else { RestoreOperationFocus(focus); }
     }
 
     private async Task OpenLastVisitedRepositoryAsync(string path)
@@ -435,7 +444,11 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    public async Task OpenRepositoryAsync(string path)
+    public Task OpenRepositoryAsync(string path) => OpenRepositoryAsync(path, discovered: null);
+
+    // A successful Open local repository dialog already performed discovery. Keep
+    // the same publication path for status/history/services and reuse its runner.
+    private async Task OpenRepositoryAsync(string path, GitRepository? discovered)
     {
         if (IsCommitDiff) { await InitializeCommitDiffAsync(); return; }
         if (_busy || _lifetime.IsCancellationRequested) { return; }
@@ -443,7 +456,7 @@ public sealed partial class MainWindow : Window
         await RunAsync("Open repository", async _ =>
         {
             _operationReportDirectory = path;
-            GitRepository candidate = await GitRepository.OpenAsync(path, Token);
+            GitRepository candidate = discovered ?? await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
             await RefreshDataAsync(candidate, opening: true);
             // Bind the explicit modal bridge once; reopening the same path is

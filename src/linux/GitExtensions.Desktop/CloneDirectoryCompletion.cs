@@ -62,6 +62,9 @@ internal sealed class CloneDirectoryCompletion : IDisposable
     internal IReadOnlyList<Exception> Failures => _failures.ToArray();
     internal Task Idle => Task.WhenAll(_operations.ToArray());
     internal bool IsPending => _operations.Any(operation => !operation.IsCompleted);
+    internal bool IsOpen => _popup.IsOpen;
+    internal bool CanAcceptSuggestion => _popup.IsOpen && _suggestions.SelectedItem is string;
+    internal void Dismiss() { Invalidate(); _typed = null; }
 
     private void Changed(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
