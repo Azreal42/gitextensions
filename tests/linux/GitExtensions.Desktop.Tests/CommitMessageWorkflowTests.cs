@@ -305,7 +305,11 @@ public class CommitMessageWorkflowTests
         {
             Click(dialog, "Commit"); CommitEmptyDialog prompt = await EmptyDialog(dialog);
             Assert.That(ButtonText(Field<Button>(prompt, "StageUnstaged")), Is.EqualTo("Stage and commit all unstaged files"));
-            Click(prompt, "StageUnstaged"); await Idle(dialog, error: true);
+            Click(prompt, "StageUnstaged");
+            await Until(() => dialog.OwnedWindows.OfType<CommitStagingReportDialog>().Any());
+            CommitStagingReportDialog report = dialog.OwnedWindows.OfType<CommitStagingReportDialog>().Single();
+            PushProcessTestDriver.Pointer(Field<Button>(report, "StageDetailsClose"));
+            await Idle(dialog, error: true);
             Assert.That(dialog.LastError, Does.Contain("index.lock"));
             Assert.That(await fixture.Repository.ResolveRevisionAsync("HEAD"), Is.EqualTo(head));
             Assert.That(Message(dialog).Text, Is.EqualTo("Only visible change"));

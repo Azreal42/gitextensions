@@ -119,7 +119,9 @@ public sealed partial class CommitDialog : Window
     internal CommitDialog(GitRepository repository, CommitPreferencesStore? preferencesStore,
         Func<Window, CancellationToken, Task>? afterSubmoduleUpdateAsync,
         TargetedCommitKind initialKind, GitCommit? targetCommit,
-        Func<string, CancellationToken, Task<GitDictionarySettingsSnapshot>>? readSpellingSettingsAsync)
+        Func<string, CancellationToken, Task<GitDictionarySettingsSnapshot>>? readSpellingSettingsAsync,
+        Func<string, IReadOnlyList<string>, System.Diagnostics.Process>? startCommitTerminal = null,
+        string? commitHelperExecutable = null)
     {
         ArgumentNullException.ThrowIfNull(repository);
         if (!Enum.IsDefined(initialKind)) { throw new ArgumentOutOfRangeException(nameof(initialKind)); }
@@ -135,8 +137,6 @@ public sealed partial class CommitDialog : Window
         ConsoleStylePresentation.Bind(_output);
         foreach (Control input in new Control[] { _filter, _amend, _resetAuthor })
         { input.Height = input.MinHeight = DesktopFontMetrics.ToolbarHeight; }
-        _initialKind = initialKind;
-        _initialTarget = targetCommit;
         _afterSubmoduleUpdateAsync = afterSubmoduleUpdateAsync;
         _preferencesStore = preferencesStore ?? new CommitPreferencesStore();
         string profileRoot = Path.GetDirectoryName(Path.GetDirectoryName(_preferencesStore.FilePath))!;
@@ -147,9 +147,15 @@ public sealed partial class CommitDialog : Window
         _spelling = new(repository, _spellingView, desktopPreferences, readSettingsAsync: readSpellingSettingsAsync);
         _completion = new(_spellingView);
         _completion.SetEnabled(false);
-        _spelling.PreferencesAccepted += preferences => _completion.SetEnabled(preferences.ProvideAutocompletion);
+        _spelling.PreferencesAccepted += preferences => _completion.SetEnabled(_useFormCommitMessage && preferences.ProvideAutocompletion);
         _completion.CorpusPublished += _spelling.AddCompletionWords;
-        _preferences = _preferencesStore.Load();
+        _preferences = _preferencesStore.LoadForCommitEditorPolicy();
+        _useFormCommitMessage = _preferences.UseFormCommitMessage;
+        _startCommitTerminal = startCommitTerminal;
+        _commitHelperExecutable = commitHelperExecutable;
+        _initialKind = _useFormCommitMessage ? initialKind : TargetedCommitKind.Normal;
+        _initialTarget = _useFormCommitMessage ? targetCommit : null;
+        if (!_useFormCommitMessage) { _message.Watermark = C("_commitMessageDisabled", "Commit Message is requested during commit"); }
         InitializeMessageTemplates(profileRoot);
         Title = C("$this", "Commit");
         Width = 1100;
@@ -270,7 +276,7 @@ public sealed partial class CommitDialog : Window
         {
             _resetAuthor.IsVisible = _amend.IsChecked == true;
             if (_amend.IsChecked != true) { _resetAuthor.IsChecked = false; }
-            if (!_busy && _amend.IsChecked == true && string.IsNullOrWhiteSpace(_message.Text))
+            if (_useFormCommitMessage && !_busy && _amend.IsChecked == true && string.IsNullOrWhiteSpace(_message.Text))
             {
                 await RunAsync(T("Commit message"), async () =>
                 {
@@ -332,7 +338,11 @@ public sealed partial class CommitDialog : Window
             }
             if (_initialized && _kind.SelectedIndex == 0 && (!_draftReset || !string.IsNullOrEmpty(_message.Text) || _amend.IsChecked == true))
             {
-                try { _drafts?.Save(_message.Text, _amend.IsChecked == true, _preferences.RememberAmendCommitState); }
+                try
+                {
+                    if (_useFormCommitMessage) { _drafts?.Save(_message.Text, _amend.IsChecked == true, _preferences.RememberAmendCommitState); }
+                    else { _drafts?.SaveAmend(_amend.IsChecked == true, _preferences.RememberAmendCommitState); }
+                }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
                 {
                     args.Cancel = true;
@@ -389,6 +399,11 @@ public sealed partial class CommitDialog : Window
     {
         await RefreshDataAsync();
         _drafts = await CommitDraftStore.OpenAsync(_repository, OperationToken);
+        if (!_useFormCommitMessage)
+        {
+            if (!_drafts.IsMergeCommit && await _drafts.LoadAmendAsync(_preferences.RememberAmendCommitState, OperationToken)) { _amend.IsChecked = true; }
+            _initialized = true; return;
+        }
         if (_initialKind != TargetedCommitKind.Normal)
         {
             GitCommit target = _initialTarget ?? throw new InvalidOperationException("The targeted commit is missing.");
@@ -759,10 +774,8 @@ public sealed partial class CommitDialog : Window
         return RunAsync(T("Stage"), async () =>
         {
             string[] paths = await StageablePathsAsync(changes);
-            if (paths.Length > 0) { await _repository.StageAsync(paths, OperationToken); HasRepositoryChanges = true; }
-            if (all) { _unstagedView.ClearFilter(); }
-            await RefreshDataAsync();
-            if (paths.Length > 0) { RepositoryChanged?.Invoke(this, EventArgs.Empty); }
+            bool success = paths.Length == 0 || await StageUsingPolicyAsync(paths);
+            if (all && success) { _unstagedView.ClearFilter(); }
         });
     }
     private async Task<string[]> StageablePathsAsync(IEnumerable<GitChange> changes)
@@ -855,7 +868,7 @@ public sealed partial class CommitDialog : Window
             {
                 string rawMessage = _message.Text ?? "";
                 string message = CommitDraftStore.FormatMessage(rawMessage, !string.IsNullOrEmpty(_loadedTemplate), _preferences.EnsureCommitMessageSecondLineEmpty);
-                if (_kind.SelectedIndex != 1)
+                if (_useFormCommitMessage && _kind.SelectedIndex != 1)
                 {
                     ArgumentException.ThrowIfNullOrWhiteSpace(message);
                     if (message.Contains('\0')) { throw new ArgumentException("Commit messages cannot contain NUL."); }
@@ -867,16 +880,17 @@ public sealed partial class CommitDialog : Window
                 {
                     string[] paths = await StageablePathsAsync(unstagedChanges);
                     if (paths.Length == 0) { throw new InvalidOperationException(C("_noStagedChanges", "There are no staged changes")); }
-                    await _repository.StageAsync(paths, OperationToken);
+                    if (!await StageUsingPolicyAsync(paths)) { return; }
                     _unstagedView.ClearFilter();
                     HasRepositoryChanges = true;
                     await RefreshDataAsync();
+                    _commitPolicyRefreshPending = false;
                     RepositoryChanged?.Invoke(this, EventArgs.Empty);
                     if (!_status!.Changes.Any(change => change.IsStaged)) { throw new InvalidOperationException(C("_noStagedChanges", "There are no staged changes")); }
                     noStaged = false;
                 }
                 if (!await EnsureCommitBranchAsync()) { return; }
-                if (_kind.SelectedIndex != 1)
+                if (_useFormCommitMessage && _kind.SelectedIndex != 1)
                 {
                     _preferences = _preferencesStore.Load() with { LastCommitMessage = rawMessage };
                     _preferencesStore.Save(_preferences);
@@ -884,7 +898,7 @@ public sealed partial class CommitDialog : Window
                 }
                 GitCommit? target = _target.SelectedItem as GitCommit;
                 GitCommitOptions options = new(
-                    Message: _kind.SelectedIndex == 1 ? null : message,
+                    Message: !_useFormCommitMessage || _kind.SelectedIndex == 1 ? null : message,
                     Amend: _amend.IsChecked == true,
                     SignOff: _signOff.IsChecked,
                     Sign: _sign.SelectedIndex == 0 ? null : _sign.SelectedIndex > 1,
@@ -901,7 +915,9 @@ public sealed partial class CommitDialog : Window
                 using ScriptWorkflowScope scripts = new(this, _repository, OperationToken);
                 if (!await RunCommitScriptEventAsync(scripts, ScriptEvent.BeforeCommit)) { return; }
                 scripts.ThrowIfStopped();
-                GitResult result = await _repository.CommitAsync(options, scripts.Token);
+                GitResult result = _useFormCommitMessage
+                    ? await _repository.CommitAsync(options, scripts.Token)
+                    : await CommitUsingGitEditorAsync(options, scripts.Token);
                 HasCommitted = true;
                 HasRepositoryChanges = true;
                 _output.Text = result.StandardOutput + result.StandardError;
@@ -1069,9 +1085,9 @@ public sealed partial class CommitDialog : Window
         catch (Exception exception) { ShowFailure(label, exception); }
         finally
         {
-            if (_scriptRefreshPending && !OperationToken.IsCancellationRequested && !_closeWhenIdle && IsVisible)
+            if ((_scriptRefreshPending || _commitPolicyRefreshPending) && !OperationToken.IsCancellationRequested && !_closeWhenIdle && IsVisible)
             {
-                _scriptRefreshPending = false;
+                _scriptRefreshPending = false; _commitPolicyRefreshPending = false;
                 try { await RefreshDataAsync(); RepositoryChanged?.Invoke(this, EventArgs.Empty); }
                 catch (Exception error) { if (LastError is null) { ShowFailure(label, error); } }
             }
@@ -1114,11 +1130,13 @@ public sealed partial class CommitDialog : Window
         if (unavailable) { return; }
         _stage.IsEnabled = _unstagedView.SelectedTags.OfType<GitChange>().Any();
         _unstage.IsEnabled = _stagedView.SelectedTags.OfType<GitChange>().Any();
-        _target.IsEnabled = _kind.SelectedIndex != 0;
+        _kind.IsEnabled = _useFormCommitMessage;
+        _target.IsEnabled = _useFormCommitMessage && _kind.SelectedIndex != 0;
         _signingKey.IsEnabled = _sign.SelectedIndex == 3;
         _signingKey.IsVisible = _sign.SelectedIndex == 3;
         if (_signingKeyMenu is not null) { _signingKeyMenu.IsVisible = _sign.SelectedIndex == 3; }
-        _message.IsEnabled = _kind.SelectedIndex != 1;
+        _message.IsEnabled = _useFormCommitMessage && _kind.SelectedIndex != 1;
+        if (!_useFormCommitMessage) { _historyMenu.IsEnabled = false; _templatesMenu.IsEnabled = false; }
         _amend.IsEnabled = !_forcePushAfterSoftReset && _kind.SelectedIndex == 0 && _status is not null && !_status.IsUnborn;
         if (!_amend.IsEnabled && _amend.IsChecked == true) { _amend.IsChecked = false; }
         _resetAuthor.IsEnabled = _amend.IsChecked == true && string.IsNullOrWhiteSpace(_author.Text);
@@ -1127,7 +1145,7 @@ public sealed partial class CommitDialog : Window
         if (soft is not null) { soft.IsVisible = _amend.IsChecked == true; soft.IsEnabled = _headCommit?.Parents.Count > 0; }
         bool targetValid = _kind.SelectedIndex == 0 || _target.SelectedItem is GitCommit;
         string formatted = CommitDraftStore.FormatMessage(_message.Text ?? "", !string.IsNullOrEmpty(_loadedTemplate), _preferences.EnsureCommitMessageSecondLineEmpty);
-        bool messageValid = _kind.SelectedIndex == 1 || (!string.IsNullOrWhiteSpace(formatted) && !formatted.Contains('\0') && _message.Text != _loadedTemplate);
+        bool messageValid = !_useFormCommitMessage || _kind.SelectedIndex == 1 || (!string.IsNullOrWhiteSpace(formatted) && !formatted.Contains('\0') && _message.Text != _loadedTemplate);
         bool committable = _status is not null && !_status.Changes.Any(change => change.IsConflict);
         _commit.IsEnabled = _push.IsEnabled = targetValid && messageValid && committable;
         _stageHunk.IsEnabled = !_viewStaged && _diff.CanStagePatch && _patch?.Hunks.Count > 0;

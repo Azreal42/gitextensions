@@ -20,7 +20,7 @@ public sealed class CommitDialogSettingsPageTests
         Dictionary<string, byte[]> before = AdvancedSettingsUiDriver.Profiles();
         (DesktopSettingsDialog settings, Task<bool> closed) = f.Open("Commit");
         CommitDialogSettingsPage page = Field<CommitDialogSettingsPage>(settings, "CommitDialogSettingsPage");
-        Assert.That(page.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(6));
+        Assert.That(page.GetVisualDescendants().OfType<CheckBox>().Count(), Is.EqualTo(8));
         Assert.That(page.GetVisualDescendants().OfType<NumericUpDown>().Count(), Is.EqualTo(1));
         foreach (CommitDialogSetting choice in CommitDialogSettingsCatalog.Fields.Where(item => !item.IsNumber))
         {
@@ -35,13 +35,15 @@ public sealed class CommitDialogSettingsPageTests
             Border caption = Field<Border>(settings, group + "Caption");
             Assert.That(caption.GetVisualDescendants().OfType<TextBlock>().Single().Text, Is.EqualTo(f.Original("CommitDialogSettingsPage", group + ".Text")));
         }
-        Assert.That(page.GetVisualDescendants().OfType<Control>().Any(control => control.Name is "chkShowErrorsWhenStagingFiles" or "chkWriteCommitMessageInCommitWindow"), Is.False);
+        Assert.That(Field<CheckBox>(settings, "chkShowErrorsWhenStagingFiles").IsChecked, Is.True);
+        Assert.That(Field<CheckBox>(settings, "chkWriteCommitMessageInCommitWindow").IsChecked, Is.True);
         NumericUpDown number = Field<NumericUpDown>(settings, "_NO_TRANSLATE_CommitDialogNumberOfPreviousMessages");
         Assert.That(number.Minimum, Is.EqualTo(1)); Assert.That(number.Maximum, Is.EqualTo(999));
         CheckBox autocomplete = Field<CheckBox>(settings, "chkAutocomplete"); autocomplete.BringIntoView(); PortableHelperSettingsFixture.Pump(settings);
         PortableHelperSettingsFixture.Capture(settings, $"commit-settings-{language}-{(dark ? "dark" : "light")}.png");
         PushProcessTestDriver.Pointer(autocomplete); Assert.That(page.Draft.ProvideAutocompletion, Is.False);
         Assert.That(autocomplete.IsKeyboardFocusWithin, Is.True);
+        PortableHelperSettingsFixture.Press(settings, PhysicalKey.Tab); Assert.That(Field<CheckBox>(settings, "chkShowErrorsWhenStagingFiles").IsKeyboardFocusWithin, Is.True);
         PortableHelperSettingsFixture.Press(settings, PhysicalKey.Tab); Assert.That(Field<CheckBox>(settings, "chkEnsureCommitMessageSecondLineEmpty").IsKeyboardFocusWithin, Is.True);
         PortableHelperSettingsFixture.Press(settings, PhysicalKey.Enter); Assert.That(settings.IsVisible && !closed.IsCompleted, Is.True);
         Number(settings, "19"); Assert.That(page.Draft.NumberOfPreviousMessages, Is.EqualTo(19));
@@ -62,7 +64,7 @@ public sealed class CommitDialogSettingsPageTests
         foreach (CommitDialogSetting choice in CommitDialogSettingsCatalog.Fields.Where(item => !item.IsNumber))
         { AdvancedSettingsUiDriver.Set(settings, choice.Control, false); }
         Number(settings, "3"); await AdvancedSettingsUiDriver.Apply(f, settings, 1);
-        CommitDialogSettingsValues expected = new() { ProvideAutocompletion = false, EnsureCommitMessageSecondLineEmpty = false, NumberOfPreviousMessages = 3, RememberAmendCommitState = false, ShowCommitAndPush = false, ShowResetWorkTreeChanges = false, ShowResetAllChanges = false };
+        CommitDialogSettingsValues expected = new() { ShowErrorsWhenStagingFiles = false, UseFormCommitMessage = false, ProvideAutocompletion = false, EnsureCommitMessageSecondLineEmpty = false, NumberOfPreviousMessages = 3, RememberAmendCommitState = false, ShowCommitAndPush = false, ShowResetWorkTreeChanges = false, ShowResetAllChanges = false };
         Assert.That(new CommitDialogSettingsSession().Initial, Is.EqualTo(expected));
         Assert.That(desktop.Load().Dictionary, Is.EqualTo("none")); Assert.That(desktop.Load().MarkIllFormedLinesInCommitMsg, Is.False);
         Assert.That(desktop.Load().AutoNormaliseSymbol, Is.EqualTo("-")); Assert.That(commit.Load().DontConfirmAmend && commit.Load().CommitAndPushForcedWhenAmend, Is.True);

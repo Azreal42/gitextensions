@@ -689,6 +689,10 @@ public sealed partial class MainWindow : Window
         _operationReportDirectory = _repository?.Path;
         using IDisposable execution = _repository?.BeginOperation() ?? GitEnvironment.BeginOperation();
         using WindowWork work = TrackWindowWork();
+        // _busy is cleared before asynchronous finally tails finish. Keep all
+        // admitted operation leases until they drain, without the modeless set.
+        _repositoryOperationCompletion = _repositoryOperationCompletion.IsCompleted
+            ? work.Completion : Task.WhenAll(_repositoryOperationCompletion, work.Completion);
         OperationFocus? previousFocus = CaptureOperationFocus();
         bool resumeSelection = BrowserReads.Any(read => read.Current is not null) || _commitInfo.IsLoading;
         CancelBrowserReads();

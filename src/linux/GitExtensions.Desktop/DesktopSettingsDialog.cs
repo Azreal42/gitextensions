@@ -45,6 +45,8 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly AppearanceSettingsPage _appearanceSettingsPage;
     internal DetailedSettingsSession DetailedSettingsSession { get; }
     private readonly DetailedSettingsPage _detailedSettingsPage;
+    internal DeleteUnusedBranchesSettingsSession DeleteUnusedBranchesSettingsSession { get; }
+    private readonly DeleteUnusedBranchesSettingsPage _deleteUnusedBranchesSettingsPage;
     internal RevisionLinksSettingsSession RevisionLinksSettingsSession { get; }
     private readonly RevisionLinksSettingsPage _revisionLinksSettingsPage;
     internal GitHubActionsSettingsSession GitHubActionsSettingsSession { get; }
@@ -99,7 +101,8 @@ internal sealed class DesktopSettingsDialog : Window
         Action<AdvancedSettingsSaveReceipt>? publishAdvanced = null,
         BlameViewerSettingsSession? blameViewerSettings = null,
         CommitDialogSettingsSession? commitDialogSettings = null,
-        Action<CommitDialogSettingsSaveReceipt>? publishCommitDialogSettings = null)
+        Action<CommitDialogSettingsSaveReceipt>? publishCommitDialogSettings = null,
+        DeleteUnusedBranchesSettingsSession? deleteUnusedBranchesSettings = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -119,6 +122,9 @@ internal sealed class DesktopSettingsDialog : Window
         DetailedSettingsSession = detailedSettings ?? new(null, initial);
         DistributedSettingsWorkspace workspace = DetailedSettingsSession.Workspace;
         GitRepository? scopedRepository = DetailedSettingsSession.Repository;
+        DeleteUnusedBranchesSettingsSession = deleteUnusedBranchesSettings ?? new(scopedRepository,
+            initial.PluginSettings.GetValueOrDefault("dc3ca904-b9a5-4fe8-bf63-5b8ee9c2ddac"), workspace);
+        _deleteUnusedBranchesSettingsPage = new(DeleteUnusedBranchesSettingsSession, translations);
         RevisionLinksSettingsSession = revisionLinksSettings ?? new(scopedRepository, workspace);
         _revisionLinksSettingsPage = new(RevisionLinksSettingsSession, translations) { Margin = new Thickness(12) };
         GitHubActionsSettingsSession = gitHubActionsSettings ?? new(scopedRepository, workspace);
@@ -246,6 +252,9 @@ internal sealed class DesktopSettingsDialog : Window
         }
         roots.Add(new("Plugins", PageTitle("PluginRootIntroductionPage", "Plugins Settings"),
             new PluginRootIntroductionPage(translations), "plugin.png",
+            Children: [new("PluginDeleteUnusedBranches", "Plugin: " + translations.Translate("DeleteUnusedBranchesPlugin", "Description", "Text", "Delete obsolete branches"),
+                _deleteUnusedBranchesSettingsPage, "../PluginIcons/IconDeleteUnusedBranches.png",
+                NavigationTitle: translations.Translate("DeleteUnusedBranchesPlugin", "Description", "Text", "Delete obsolete branches"))],
             NavigationTitle: translations.Translate("PluginsSettingsGroup", "$this", "Title", "Plugins")));
         Navigation = new(roots, translations);
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
@@ -282,9 +291,11 @@ internal sealed class DesktopSettingsDialog : Window
                 try
                 {
                     await DetailedSettingsSession.InitializeAsync(_detailedCancellation.Token);
+                    await DeleteUnusedBranchesSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await RevisionLinksSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await GitHubActionsSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     _detailedSettingsPage.ShowLoadState();
+                    _deleteUnusedBranchesSettingsPage.ShowLoadState();
                     _revisionLinksSettingsPage.ShowLoadState();
                     _buildServerSettingsPage.ShowLoadState();
                 }
@@ -311,6 +322,10 @@ internal sealed class DesktopSettingsDialog : Window
                 await _revisionLinksSettingsPage.PrepareSaveAsync(_detailedCancellation.Token);
                 activeSavePage = "BuildServerIntegration";
                 _buildServerSettingsPage.PrepareSave();
+                activeSavePage = "PluginDeleteUnusedBranches";
+                _deleteUnusedBranchesSettingsPage.PrepareSave();
+                if (!_deleteUnusedBranchesSettingsPage.Validate(out string? pluginValidation))
+                { Navigation.SelectPage("PluginDeleteUnusedBranches"); _deleteUnusedBranchesSettingsPage.FocusInvalidControl(); notice.Text = pluginValidation; return false; }
                 if (!_commitDialogSettingsPage.Validate(out string? commitValidation))
                 { Navigation.SelectPage("Commit", true); notice.Text = commitValidation; return false; }
                 if (!_consoleStylePage.Validate(out string? consoleValidation))
@@ -439,6 +454,9 @@ internal sealed class DesktopSettingsDialog : Window
                     activeSavePage = "Detailed";
                     await DetailedSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     AcceptDetailedSaved();
+                    activeSavePage = "PluginDeleteUnusedBranches";
+                    await DeleteUnusedBranchesSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
+                    _deleteUnusedBranchesSettingsPage.AcceptSaved();
                     activeSavePage = "RevisionLinks";
                     await RevisionLinksSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     _revisionLinksSettingsPage.AcceptSaved();

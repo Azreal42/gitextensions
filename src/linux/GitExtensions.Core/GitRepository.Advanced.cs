@@ -118,39 +118,7 @@ public sealed partial class GitRepository
 
     public async Task<GitResult> CommitAsync(GitCommitOptions options, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        int targetedKinds = (options.FixupRevision is null ? 0 : 1)
-            + (options.SquashRevision is null ? 0 : 1) + (options.AmendRevision is null ? 0 : 1);
-        if (targetedKinds > 1 || options.Amend && targetedKinds != 0)
-        {
-            throw new ArgumentException("Choose one targeted commit kind; amending HEAD is a separate operation.", nameof(options));
-        }
-
-        if (options.Sign == false && options.SigningKey is not null)
-        {
-            throw new ArgumentException("A signing key requires signing.", nameof(options));
-        }
-
-        List<string> arguments = ["commit"];
-        if (options.NoVerify) { arguments.Add("--no-verify"); }
-        if (options.Amend)
-        {
-            arguments.Add("--amend");
-        }
-
-        if (options.SignOff)
-        {
-            arguments.Add("--signoff");
-        }
-
-        if (options.Sign == true || options.SigningKey is not null)
-        {
-            arguments.Add(options.SigningKey is null ? "--gpg-sign" : "--gpg-sign=" + options.SigningKey);
-        }
-        else if (options.Sign == false)
-        {
-            arguments.Add("--no-gpg-sign");
-        }
+        List<string> arguments = CreateCommitArguments(options);
 
         if (options.FixupRevision is not null)
         {
@@ -162,20 +130,7 @@ public sealed partial class GitRepository
             arguments.Add("--squash=" + await ResolveRevisionAsync(options.SquashRevision, cancellationToken).ConfigureAwait(false));
         }
 
-        if (options.AllowEmpty)
-        {
-            arguments.Add("--allow-empty");
-        }
-
-        if (options.ResetAuthor)
-        {
-            arguments.Add("--reset-author");
-        }
-
-        if (options.Author is not null)
-        {
-            arguments.Add("--author=" + options.Author);
-        }
+        AddCommitTailArguments(arguments, options);
 
         string? message = options.Message;
         if (message is null && options.TemplatePath is not null)

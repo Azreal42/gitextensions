@@ -240,6 +240,7 @@ public sealed partial class CommitDialog
     }
     private async Task<bool> ValidateCommitMessageAsync()
     {
+        if (!_useFormCommitMessage) { return true; }
         bool preferencesRead = ReadMessagePreferences(); // Fresh at commit; publication keeps formatting current without per-keystroke IO.
         if (_kind.SelectedIndex == 1) { return true; } // Git generates a fixup message; the disabled editor is not the message source.
         string text = _message.Text ?? "";

@@ -42,6 +42,7 @@ public sealed class DeleteUnusedBranchesDialog : RepositoryDialog
     private int _sortColumn = 1;
     private bool _descending, _updating;
 
+    public bool SettingsRequested { get; private set; }
     public DeleteUnusedBranchesPreview? LastPreview { get; private set; }
     public DeleteUnusedBranchesDeletionResult? LastDeletion { get; private set; }
     public IReadOnlyList<DeleteUnusedBranchCandidate> VisibleBranches => _displayed.Select(row => row.Branch).ToArray();
@@ -98,9 +99,9 @@ public sealed class DeleteUnusedBranchesDialog : RepositoryDialog
 
         _delete = Action("Delete", Caption("Delete", "Delete"), DeleteAsync); _delete.MinWidth = 75; _delete.Height = 25;
         Button close = new() { Name = "Cancel", Content = Caption("Cancel", "Close"), MinWidth = 75, Height = 25 }; close.Click += (_, _) => Close();
-        // Windows opens this plugin's global settings page. There is no portable page host yet: expose only a real supplied route.
+        // The host supplies the real page route and awaits this modal's drain before opening it.
         Button settings = new() { Name = "buttonSettings", Content = Caption("buttonSettings", "Settings"), MinWidth = 75, Height = 25, IsVisible = requestSettings is not null };
-        settings.Click += (_, _) => { if (!IsBusy) { Close(); requestSettings?.Invoke(); } }; Track(settings);
+        settings.Click += (_, _) => { if (!IsBusy) { SettingsRequested = true; Close(); requestSettings?.Invoke(); } }; Track(settings);
         Grid buttons = new() { Name = "tableLayoutPanel2", ColumnDefinitions = new("Auto,*,Auto,Auto"), Margin = new Thickness(6) };
         buttons.Children.Add(settings); Grid.SetColumn(_delete, 2); buttons.Children.Add(_delete);
         close.Margin = new Thickness(6, 0, 0, 0); Grid.SetColumn(close, 3); buttons.Children.Add(close);

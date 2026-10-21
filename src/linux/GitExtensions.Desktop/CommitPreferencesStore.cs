@@ -6,6 +6,8 @@ namespace GitExtensions.Linux.Desktop;
 /// <summary>AppSettings defaults used by FormCommit. Signing, author and NoVerify remain session choices.</summary>
 public sealed record CommitPreferences
 {
+    public bool ShowErrorsWhenStagingFiles { get; init; } = true;
+    public bool UseFormCommitMessage { get; init; } = true;
     public bool ShowCommitAndPush { get; init; } = true;
     public bool ShowResetWorkTreeChanges { get; init; } = true;
     public bool ShowResetAllChanges { get; init; } = true;
@@ -41,12 +43,22 @@ public sealed class CommitPreferencesStore
     }
     // A fresh default must not silently enable parent staging after a profile read failure.
     internal CommitPreferences LoadForSuperprojectStaging() => Read();
-    private CommitPreferences Read()
+    internal CommitPreferences LoadForStagingPolicy() => Read(rejectDuplicates: true);
+    internal CommitPreferences LoadForCommitEditorPolicy() => Read(rejectDuplicates: true);
+    private CommitPreferences Read(bool rejectDuplicates = false)
     {
         string json;
         try { json = File.ReadAllText(FilePath); }
         catch (FileNotFoundException) { return new(); }
         catch (DirectoryNotFoundException) { return new(); }
+        if (rejectDuplicates)
+        {
+            using JsonDocument parsed = JsonDocument.Parse(json);
+            if (parsed.RootElement.ValueKind != JsonValueKind.Object) { throw new JsonException("Commit preferences must contain an object."); }
+            HashSet<string> names = new(StringComparer.Ordinal);
+            foreach (JsonProperty property in parsed.RootElement.EnumerateObject())
+            { if (!names.Add(property.Name)) { throw new JsonException("Duplicate commit preference: " + property.Name); } }
+        }
         return (JsonSerializer.Deserialize<CommitPreferences>(json) ?? throw new JsonException("Commit preferences must contain an object.")).Normalize();
     }
     public void Save(CommitPreferences preferences)

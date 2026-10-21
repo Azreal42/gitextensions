@@ -2,6 +2,8 @@ namespace GitExtensions.Linux.Desktop;
 
 internal sealed record CommitDialogSettingsValues
 {
+    public bool ShowErrorsWhenStagingFiles { get; init; } = true;
+    public bool UseFormCommitMessage { get; init; } = true;
     public bool ProvideAutocompletion { get; init; } = true;
     public bool EnsureCommitMessageSecondLineEmpty { get; init; } = true;
     public int NumberOfPreviousMessages { get; init; } = 6;
@@ -12,6 +14,8 @@ internal sealed record CommitDialogSettingsValues
 
     internal object Get(string name) => name switch
     {
+        nameof(ShowErrorsWhenStagingFiles) => ShowErrorsWhenStagingFiles,
+        nameof(UseFormCommitMessage) => UseFormCommitMessage,
         nameof(ProvideAutocompletion) => ProvideAutocompletion,
         nameof(EnsureCommitMessageSecondLineEmpty) => EnsureCommitMessageSecondLineEmpty,
         nameof(NumberOfPreviousMessages) => NumberOfPreviousMessages,
@@ -23,6 +27,8 @@ internal sealed record CommitDialogSettingsValues
     };
     internal CommitDialogSettingsValues With(string name, object value) => name switch
     {
+        nameof(ShowErrorsWhenStagingFiles) => this with { ShowErrorsWhenStagingFiles = (bool)value },
+        nameof(UseFormCommitMessage) => this with { UseFormCommitMessage = (bool)value },
         nameof(ProvideAutocompletion) => this with { ProvideAutocompletion = (bool)value },
         nameof(EnsureCommitMessageSecondLineEmpty) => this with { EnsureCommitMessageSecondLineEmpty = (bool)value },
         nameof(NumberOfPreviousMessages) => this with { NumberOfPreviousMessages = (int)value },
@@ -39,6 +45,8 @@ internal sealed record CommitDialogSettingsValues
         {
             current = setting.Name switch
             {
+                nameof(ShowErrorsWhenStagingFiles) => current with { ShowErrorsWhenStagingFiles = values.ShowErrorsWhenStagingFiles },
+                nameof(UseFormCommitMessage) => current with { UseFormCommitMessage = values.UseFormCommitMessage },
                 nameof(EnsureCommitMessageSecondLineEmpty) => current with { EnsureCommitMessageSecondLineEmpty = values.EnsureCommitMessageSecondLineEmpty },
                 nameof(NumberOfPreviousMessages) => current with { NumberOfPreviousMessages = values.NumberOfPreviousMessages },
                 nameof(RememberAmendCommitState) => current with { RememberAmendCommitState = values.RememberAmendCommitState },
@@ -60,6 +68,8 @@ internal static class CommitDialogSettingsCatalog
     // Commit is acknowledged before Desktop; a later file failure cannot replay it.
     internal static IReadOnlyList<CommitDialogSetting> Fields { get; } = Array.AsReadOnly<CommitDialogSetting>(
     [
+        new(nameof(CommitDialogSettingsValues.ShowErrorsWhenStagingFiles), CommitProfile, "chkShowErrorsWhenStagingFiles", "Show errors when staging files"),
+        new(nameof(CommitDialogSettingsValues.UseFormCommitMessage), CommitProfile, "chkWriteCommitMessageInCommitWindow", "Compose commit messages in Commit dialog\r\n(otherwise the message will be requested during commit)"),
         new(nameof(CommitDialogSettingsValues.EnsureCommitMessageSecondLineEmpty), CommitProfile, "chkEnsureCommitMessageSecondLineEmpty", "Ensure the second line of commit message is empty"),
         new(nameof(CommitDialogSettingsValues.NumberOfPreviousMessages), CommitProfile, "_NO_TRANSLATE_CommitDialogNumberOfPreviousMessages", "Number of previous messages in commit dialog", true),
         new(nameof(CommitDialogSettingsValues.RememberAmendCommitState), CommitProfile, "cbRememberAmendCommitState", "Remember 'Amend commit' checkbox on commit form close"),

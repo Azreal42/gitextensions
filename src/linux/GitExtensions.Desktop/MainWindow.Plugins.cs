@@ -49,14 +49,22 @@ public sealed partial class MainWindow
             }
             else if (plugin is DeleteUnusedBranchesPlugin)
             {
-                DeleteUnusedBranchesDialog dialog = new(repository, values, (settings, token) =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
-                    SavePluginSettings(plugin.Descriptor, settings);
-                    return Task.CompletedTask;
-                });
+                using CancellationTokenSource read = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+                DeleteUnusedBranchesSettingsSession settings = new(repository, values);
+                await settings.InitializeAsync(read.Token);
+                read.Token.ThrowIfCancellationRequested();
+                if (_repository != repository || !pluginOwner.IsVisible) { return; }
+                bool requestedSettings = false;
+                DeleteUnusedBranchesDialog dialog = new(repository, settings.EngineValues(),
+                    requestSettings: () => requestedSettings = true);
                 dialog.Opened += async (_, _) => await dialog.InitializeAsync();
                 await ShowOwnedAsync(dialog);
+                // The explicit result is latched before Close, even when ShowDialog's
+                // continuation precedes the compatibility callback after Close.
+                if ((requestedSettings || dialog.SettingsRequested) && _repository == repository
+                    && pluginOwner.IsVisible && !_lifetime.IsCancellationRequested)
+                { await ShowSettingsPageAsync(showChecklist: false, initialPage: "PluginDeleteUnusedBranches", settingsOwnerOverride: pluginOwner,
+                    fromScript: fromScript, cancellationToken: cancellationToken); }
             }
             else if (plugin is FindLargeFilesPlugin)
             {

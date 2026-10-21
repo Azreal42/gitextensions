@@ -158,9 +158,13 @@ public sealed partial class MainWindow
 
     private Task ShowSettingsAsync() => ShowSettingsPageAsync(showChecklist: false);
 
-    private async Task ShowSettingsPageAsync(bool showChecklist)
+    private async Task ShowSettingsPageAsync(bool showChecklist, string? initialPage = null, Window? settingsOwnerOverride = null,
+        bool fromScript = false, CancellationToken cancellationToken = default)
     {
-        if (_busy) { return; }
+        Window settingsOwner = settingsOwnerOverride ?? this;
+        if (_busy && !fromScript || !settingsOwner.IsVisible || _lifetime.IsCancellationRequested) { return; }
+        using CancellationTokenSource settingsLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+        settingsLifetime.Token.ThrowIfCancellationRequested();
         FileHistoryPreferences fileHistory = _fileHistoryPreferencesStore.Load();
         HotkeyBindings hotkeys = DesktopHotkeys.Reload();
         DesktopPreferences initial = _preferencesStore.Load();
@@ -177,14 +181,14 @@ public sealed partial class MainWindow
         GitRepository? settingsRepository = _repository;
         DistributedSettingsWorkspace workspace = new(settingsRepository);
         DetailedSettingsSession detailed = new(settingsRepository, initial, workspace);
-        await detailed.InitializeAsync(_lifetime.Token);
-        using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, _lifetime.Token);
+        await detailed.InitializeAsync(settingsLifetime.Token);
+        using GitEnvironmentSettingsSession environment = new(new GitEnvironmentPreferencesStore(), _translations, () => settingsRepository, settingsLifetime.Token);
         DesktopSettingsDialog dialog = new(initial, _translations, _repository is not null, _historyView.Sort, fileHistory,
             hotkeys, bindings => new HotkeyPreferencesStore().Save(bindings), fonts.Preferences,
             (baseline, draft) => new FontPreferencesStore().SaveChanges(baseline, draft), fonts.LoadError, new ScriptsPreferencesStore().Load(), (baseline, draft) => new ScriptsPreferencesStore().SaveChanges(baseline, draft),
             owner => ReferenceEquals(settingsRepository, _repository) && owner.IsVisible && !_lifetime.IsCancellationRequested
                 ? ShowGitToolsSettingsAsync(owner) : Task.CompletedTask,
-            environment, ApplySettingsAsync, RepairEnvironmentAsync, showChecklist,
+            environment, ApplySettingsAsync, RepairEnvironmentAsync, showChecklist, initialPage: initialPage,
             generalSettings: general.Initial,
             cloneDestinations: _repositoryHistory.Recent.Select(entry => Path.GetDirectoryName(entry.Path))
                 .Where(path => !string.IsNullOrEmpty(path)).Select(path => path!).Distinct(StringComparer.Ordinal).ToArray(),
@@ -216,7 +220,37 @@ public sealed partial class MainWindow
                 if (receipt.Fields.Any(field => field.Name is nameof(AdvancedSettingsValues.CheckForUpdates) or nameof(AdvancedSettingsValues.CheckForReleaseCandidates)))
                 { RequestAutomaticUpdateCheck(); }
             });
-        bool accepted = await dialog.ShowDialog<bool>(this);
+        if (!settingsOwner.IsVisible || settingsLifetime.IsCancellationRequested || !ReferenceEquals(settingsRepository, _repository)) { return; }
+        bool settingsOwnerCloseRequested = false;
+        void SettingsClosing(object? sender, WindowClosingEventArgs args)
+        {
+            if (args.CloseReason != WindowCloseReason.OwnerWindowClosing) { return; }
+            // Children can veto owner Close before the owner's own Closing event.
+            // Seal this script continuation before ShowDialog can complete.
+            settingsOwnerCloseRequested = true;
+            settingsLifetime.Cancel();
+        }
+        void SettingsClosed(object? sender, EventArgs args)
+        {
+            // Mirror ShowOwnedAsync: a deferred child close must not lose the
+            // original script owner's single Close request after drainage.
+            if (settingsOwnerCloseRequested && settingsOwner.IsVisible) { settingsOwner.Close(); }
+        }
+        if (fromScript)
+        {
+            dialog.ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
+            dialog.Closing += SettingsClosing; dialog.Closed += SettingsClosed;
+        }
+        bool accepted;
+        try
+        {
+            using CancellationTokenRegistration settingsCancellation = settingsLifetime.Token.Register(() =>
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (dialog.IsVisible) { dialog.Close(); } }));
+            settingsLifetime.Token.ThrowIfCancellationRequested();
+            accepted = await dialog.ShowDialog<bool>(settingsOwner);
+            settingsLifetime.Token.ThrowIfCancellationRequested();
+        }
+        finally { dialog.Closing -= SettingsClosing; dialog.Closed -= SettingsClosed; }
         if (dialog.OpenGitConfiguration) { await ShowWorkflowAsync("Configuration"); return; }
         if (!accepted) { return; }
 

@@ -141,11 +141,16 @@ public sealed partial class GitRepository
         return ApplyFileEncodedPatchAsync(patch, staged, reverse, cancellationToken);
     }
 
-    public Task<GitResult> StageAsync(IEnumerable<string> paths, CancellationToken cancellationToken = default)
-        => MutateAsync(["add", "-A", "--", .. ValidatePaths(paths)], cancellationToken);
+    public async Task<GitResult> StageAsync(IEnumerable<string> paths, CancellationToken cancellationToken = default)
+    {
+        string[] selected = ValidatePaths(paths);
+        GitResult result = await StageAsync(selected, showErrorsWhenStagingFiles: true, cancellationToken).ConfigureAwait(false);
+        if (!result.Success) { throw new GitCommandException(["add", "-A", "--", .. selected], result); }
+        return result;
+    }
 
     public Task<GitResult> StageAllAsync(CancellationToken cancellationToken = default)
-        => MutateAsync(["add", "-A", "--", "."], cancellationToken);
+        => StageAsync(["."], cancellationToken);
 
     public async Task<GitResult> UnstageAsync(IEnumerable<string> paths, CancellationToken cancellationToken = default)
     {

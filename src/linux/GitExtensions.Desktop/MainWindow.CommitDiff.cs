@@ -106,6 +106,8 @@ public sealed partial class MainWindow
         WindowWork work = TrackWindowWork(); _modelessCommitDiffs.Add(child);
         TaskCompletionSource closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
         WeakReference<MainWindow> origin = new(launcher);
+        GitRepository? mutationRepository = child._commitDiffSource?.Repository;
+        Window? mutationOwner = launcher.Owner as Window;
         OperationFocus? captured = launcher.CaptureOperationFocus();
         GitRepository? focusRepository = captured?.Repository; string? focusCommit = captured?.CommitHash;
         WeakReference<Control>? focusInput = captured?.Input is Control capturedInput ? new(capturedInput) : null;
@@ -121,6 +123,11 @@ public sealed partial class MainWindow
             try
             {
                 await closed.Task; await child.WindowWorkCompletion;
+                // The independent window has no native Owner chain. Return its
+                // conservative receipt once, only to the Browse that launched it.
+                if (child.StandaloneMayHaveRepositoryChanges && mutationRepository is not null
+                    && origin.TryGetTarget(out MainWindow? receiver))
+                { await receiver.RefreshAfterModelessCommitDiffAsync(mutationRepository, mutationOwner, _lifetime.Token); }
                 if (restoreFocus && !_lifetime.IsCancellationRequested && origin.TryGetTarget(out MainWindow? window)
                     && window.IsVisible && window.IsEffectivelyEnabled && !window.OwnedWindows.Any(owned => owned.IsVisible))
                 {

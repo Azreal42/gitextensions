@@ -36,9 +36,12 @@ public sealed class CommitDraftStore
         string message = _encoding.GetString(bytes, offset, bytes.Length - offset);
         _loadedPath = path;
         _loadedMessage = message;
-        bool amend = rememberAmend && File.Exists(_amendPath) && bool.TryParse(await File.ReadAllTextAsync(_amendPath, cancellationToken).ConfigureAwait(false), out bool saved) && saved;
+        bool amend = await LoadAmendAsync(rememberAmend, cancellationToken).ConfigureAwait(false);
         return (message, amend);
     }
+
+    public async Task<bool> LoadAmendAsync(bool rememberAmend, CancellationToken cancellationToken = default)
+        => rememberAmend && File.Exists(_amendPath) && bool.TryParse(await File.ReadAllTextAsync(_amendPath, cancellationToken).ConfigureAwait(false), out bool saved) && saved;
 
     // Closing is synchronous so a repository/window cannot disappear before its draft is durable.
     public void Save(string? message, bool amend, bool rememberAmend)
@@ -49,6 +52,12 @@ public sealed class CommitDraftStore
         // belongs to Git until the user has edited this window's old draft.
         if (_loadedPath != path && _loadedMessage == (message ?? "")) { return; }
         WriteAtomic(path, _encoding.GetBytes(message ?? ""));
+        SaveAmend(amend, rememberAmend);
+    }
+
+    // The Git-editor mode never rewrites the disabled form's unrelated message draft.
+    public void SaveAmend(bool amend, bool rememberAmend)
+    {
         if (rememberAmend && amend) { WriteAtomic(_amendPath, Encoding.ASCII.GetBytes(bool.TrueString)); }
         else { File.Delete(_amendPath); }
     }

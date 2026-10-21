@@ -8,7 +8,7 @@ using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
 
-/// <summary>The seven original global controls with real consumers in this port.</summary>
+/// <summary>The nine original global controls with real consumers in this port.</summary>
 internal sealed class CommitDialogSettingsPage : UserControl
 {
     private readonly CommitDialogSettingsSession _session;
@@ -26,7 +26,9 @@ internal sealed class CommitDialogSettingsPage : UserControl
             .Replace("&&", "&", StringComparison.Ordinal).Replace("\r\n", "\n", StringComparison.Ordinal);
         StackPanel behaviour = new() { Name = "tableLayoutPanelBehaviour", Spacing = 2 };
         Add(behaviour, nameof(CommitDialogSettingsValues.ProvideAutocompletion));
+        Add(behaviour, nameof(CommitDialogSettingsValues.ShowErrorsWhenStagingFiles));
         Add(behaviour, nameof(CommitDialogSettingsValues.EnsureCommitMessageSecondLineEmpty));
+        Add(behaviour, nameof(CommitDialogSettingsValues.UseFormCommitMessage));
         _previous.Value = _baseline.NumberOfPreviousMessages;
         Grid number = new() { ColumnDefinitions = new("*,Auto"), ColumnSpacing = 8, Margin = new Thickness(0, 2) };
         number.Children.Add(new TextBlock { Name = "lblCommitDialogNumberOfPreviousMessages", Text = Text("lblCommitDialogNumberOfPreviousMessages", "Number of previous messages in commit dialog"),
