@@ -87,9 +87,12 @@ public sealed partial class MainWindow
         OperationFocus? historyFocus = _commits.IsKeyboardFocusWithin ? CaptureOperationFocus() : null;
         if (historyFocus is not null) { historyFocus = historyFocus with { PreserveUnselectedRow = true }; }
         bool mayHaveChanges = false;
+        Task publication = Task.CompletedTask;
         await RunAsync("Diff", async _ =>
         {
-            MainWindow log = RevisionLogWindow.Create(new(repository.Path));
+            RepositoryChangeContext? notifications = RepositoryChangesFor(repository);
+            MainWindow log = RevisionLogWindow.Create(new(repository.Path), ModelessApplicationLifetime);
+            log._repositoryChanges = notifications;
             Window owner = WorkflowOwner; log.RequestedThemeVariant = owner.ActualThemeVariant;
             CancellationToken command = Token;
             using CancellationTokenRegistration registration = command.Register(() =>
@@ -104,32 +107,32 @@ public sealed partial class MainWindow
             bool leaseOwnsOwner = ReferenceEquals(owner, this);
             WindowClosingBehavior previousClosingBehavior = owner.ClosingBehavior;
             if (leaseOwnsOwner) { owner.ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly; }
-            Exception? original = null;
+            notifications?.Lock();
             try { command.ThrowIfCancellationRequested(); await log.ShowDialog(owner); command.ThrowIfCancellationRequested(); }
-            catch (Exception error) { original = error; throw; }
             finally
             {
                 try
                 {
                     log.Close(); await log.WindowWorkCompletion;
-                    mayHaveChanges = log.StandaloneMayHaveRepositoryChanges;
-                    // Retain the signal even if the owner/read is cancelled. UI publication is guarded separately.
+                    // This observer only waits Log work and Notify (still locked),
+                    // never a Browse refresh or independent child's lifetime.
+                    await log._repositoryChangePublication;
+                    mayHaveChanges = log.StandaloneMayHaveRepositoryChanges || notifications?.HasPendingNotification == true;
                     if (mayHaveChanges) { AcceptStandaloneRepositoryMutationAttempt(repository); }
-                    if (mayHaveChanges && ReferenceEquals(repository, _repository) && ReferenceEquals(owner, WorkflowOwner)
-                        && owner.IsVisible && IsVisible && !_lifetime.IsCancellationRequested && !command.IsCancellationRequested)
-                    {
-                        try { await RefreshDataAsync(repository); }
-                        catch (Exception error) when (original is not null) { AppendOutput("Refresh after Log: " + error.Message); }
-                    }
                 }
                 finally
                 {
                     // Do not alter another host's policy or replace a policy changed meanwhile.
                     if (leaseOwnsOwner && owner.ClosingBehavior == WindowClosingBehavior.OwnerWindowOnly)
                     { owner.ClosingBehavior = previousClosingBehavior; }
+                    notifications?.UnLock();
+                    publication = notifications?.PublicationCompletion ?? Task.CompletedTask;
                 }
             }
         }, refresh: false);
+        // Only the receiving Browse can await its refresh after its own modal
+        // RunAsync lease ends. A nested standalone host must not await Browse.
+        if (!IsStandaloneDiff) { await publication; }
         // Mutating operations retain the ordinary selected-origin rule. The
         // shared restorer also refuses to steal a newer valid focus or outlive
         // this repository, owner, modal operation or window.

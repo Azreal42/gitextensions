@@ -446,6 +446,9 @@ public sealed partial class MainWindow : Window
             GitRepository candidate = await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
             await RefreshDataAsync(candidate, opening: true);
+            // Bind the explicit modal bridge once; reopening the same path is
+            // a new repository instance and must not reuse that subscription.
+            if (IsStandaloneDiff && _repositoryChanges is not null) { _repositoryChangeSource ??= candidate; }
             if (!IsStandaloneDiff)
             {
                 try { SaveRepositoryHistory(_repositoryHistory.Visit(candidate.Path)); }

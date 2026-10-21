@@ -61,6 +61,9 @@
     <Content Include="../../app/GitUI/Translation/*.xlf" Link="Translation/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Share the Windows notification lock/coalescing contract without WinForms. -->
+    <Compile Include="../../app/GitCommands/LockableNotifier.cs" Link="Shared/Notifications/LockableNotifier.cs" />
+    <Compile Include="../../app/GitExtensions.Extensibility/ILockableNotifier.cs" Link="Shared/Notifications/ILockableNotifier.cs" />
     <!-- Pure upstream branch labels and word-boundary rules shared by Commit, spelling and Git completion. -->
     <Compile Include="../../app/GitCommands/Git/DetachedHeadParser.cs" Link="Shared/Git/DetachedHeadParser.cs" />
     <Compile Include="../../app/GitUI/CommandsDialogs/CommitDialog/WordWrapper.cs" Link="Shared/CommitDialog/WordWrapper.cs" />

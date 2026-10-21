@@ -49,14 +49,15 @@ public sealed class ModelessCommitDiffMutationTests
         await using Host host = await Host.Open(git, secondary: true);
         object? source = History(host.Launcher).ItemsSource, otherSource = History(host.Root).ItemsSource;
         MainWindow child = await host.OpenDiff(); Assert.That(child.Owner, Is.Null);
-        ResetChangesDialog prompt = await OpenResetPrompt(child);
+        ResetChangesDialog prompt = await OpenResetPrompt(child); GitCommandLog.Clear();
         PushProcessTestDriver.Pointer(Field<Button>(prompt, "ConfirmResetChanges")); await ChildIdle(child);
         Assert.That(File.ReadAllText(git.File), Is.EqualTo("third\n")); Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
-        Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source), "The receiver is notified after this session drains, not by opening/reading it.");
-        GitCommandLog.Clear(); await host.CloseDiff(child);
+        await ReceiverRefresh(host.Launcher, source);
+        Assert.That(child.IsVisible, Is.True, "Publication follows the real mutating operation's drainage; the independent reader need not close.");
         Assert.That(History(host.Launcher).ItemsSource, Is.Not.SameAs(source));
         Assert.That(History(host.Root).ItemsSource, Is.SameAs(otherSource), "The lifetime root is not a second mutation recipient.");
         AssertOneHistoryRefresh(); Assert.That(Private<FileStatusListView>(host.Launcher, "_changesFilesView").Entries, Is.Empty);
+        await CloseWithoutAnotherRefresh(host, child);
         Assert.That((await git.Repository.GetStatusAsync()).Changes, Is.Empty);
     }
 
@@ -70,7 +71,8 @@ public sealed class ModelessCommitDiffMutationTests
         EffectDialog dialog = new(Repository(child), cancel, tail?.Task); Task modal = ShowDialog(child, dialog);
         try
         {
-            await Until(child, () => dialog.IsVisible); PushProcessTestDriver.Pointer(Field<Button>(dialog, "StageThenFail"));
+            await Until(child, () => dialog.IsVisible); GitCommandLog.Clear();
+            PushProcessTestDriver.Pointer(Field<Button>(dialog, "StageThenFail"));
             await Until(child, () => dialog.EffectWritten);
             Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
             if (cancel)
@@ -85,9 +87,11 @@ public sealed class ModelessCommitDiffMutationTests
                 PushProcessTestDriver.Pointer(Field<Button>(dialog, "CloseEffect")); await modal;
             }
             Assert.That(dialog.HasRepositoryChanges, Is.False); Assert.That(dialog.MayHaveRepositoryChanges, Is.True);
-            GitCommandLog.Clear(); await host.CloseDiff(child);
+            await ReceiverRefresh(host.Launcher, source);
+            Assert.That(child.IsVisible, Is.True, "Failure/cancellation still publishes the admitted effect after the owned operation has drained.");
             Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
             Assert.That(History(host.Launcher).ItemsSource, Is.Not.SameAs(source)); AssertOneHistoryRefresh();
+            await CloseWithoutAnotherRefresh(host, child);
             Assert.That((await git.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo(EffectDialog.EffectText));
         }
         finally { tail?.TrySetResult(); }
@@ -100,21 +104,34 @@ public sealed class ModelessCommitDiffMutationTests
         if (!OperatingSystem.IsLinux()) { Assert.Ignore("The private owned Git gate needs Linux procfs."); return; }
         using Fixture git = await History(); await using Host host = await Host.Open(git);
         MainWindow child = await host.OpenDiff(); object? source = History(host.Launcher).ItemsSource;
-        await StageAndFail(child); Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
         using GitGate gate = new(git);
-        Task busy = RunOwner(host.Launcher, async repository =>
-        {
-            CancellationToken token = Private<CancellationTokenSource>(host.Launcher, "_operation").Token;
-            GitResult result = await repository.RunAsync(["-c", "gitextensions.modelessGate=true", "status", "--porcelain"], token);
-            Assert.That(result.Success, Is.True, result.StandardError);
-        });
+        TaskCompletionSource tail = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        EffectDialog dialog = new(Repository(child), false, tail.Task); Task modal = ShowDialog(child, dialog);
         try
         {
+            await Until(child, () => dialog.IsVisible); PushProcessTestDriver.Pointer(Field<Button>(dialog, "StageThenFail"));
+            await Until(child, () => dialog.EffectWritten);
+            Assert.That(dialog.IsBusy, Is.True); Assert.That(dialog.AttemptCompletion.IsCompleted, Is.False);
+            Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
+            // Both windows use this same GitRepository. Acquire the real staged
+            // effect before the receiver's generic RunAsync command holds its
+            // mutation lock; the test tail still keeps the source work admitted.
+            Task busy = RunOwner(host.Launcher, async repository =>
+            {
+                CancellationToken token = Private<CancellationTokenSource>(host.Launcher, "_operation").Token;
+                GitResult result = await repository.RunAsync(["-c", "gitextensions.modelessGate=true", "status", "--porcelain"], token);
+                Assert.That(result.Success, Is.True, result.StandardError);
+            });
             await Until(host.Launcher, () => gate.Started && host.Launcher.IsBusy);
             Task operation = Private<Task>(host.Launcher, "_repositoryOperationCompletion");
             Assert.That(operation.IsCompleted, Is.False);
-            GitCommandLog.Clear(); child.Close(); await Until(host.Root, () => !child.IsVisible && child.WindowWorkCompletion.IsCompleted);
-            Assert.That(host.Root.ModelessCommitDiffWindows, Has.Count.EqualTo(1), "Retire still owns the pending receipt while the independent prior operation is blocked.");
+            GitCommandLog.Clear(); tail.TrySetResult(); await dialog.AttemptCompletion;
+            await Until(child, () => !dialog.IsBusy && dialog.LastError is not null);
+            Assert.That(dialog.HasRepositoryChanges, Is.False); Assert.That(dialog.MayHaveRepositoryChanges, Is.True);
+            PushProcessTestDriver.Pointer(Field<Button>(dialog, "CloseEffect")); await modal;
+            child.Close(); await Until(host.Root, () => !child.IsVisible && child.WindowWorkCompletion.IsCompleted);
+            Assert.That(host.Root.ModelessCommitDiffWindows, Has.Count.EqualTo(1), "The Browse focus return remains pending while the shared notification waits its prior operation; Closed did not originate this notification.");
+            Assert.That(operation.IsCompleted, Is.False);
             Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source)); AssertNoGlobalReads();
             Assert.That(busy.IsCompleted, Is.False);
             if (closeOwner)
@@ -133,7 +150,7 @@ public sealed class ModelessCommitDiffMutationTests
             }
             Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True, "Cancellation of UI publication never erases the child's admitted receipt.");
         }
-        finally { gate.Release(); }
+        finally { tail.TrySetResult(); gate.Release(); }
     }
 
     [AvaloniaTest]
@@ -175,8 +192,8 @@ public sealed class ModelessCommitDiffMutationTests
         MainWindow child = await host.OpenDiff(); object? source = History(host.Root).ItemsSource;
         Assert.That(ReferenceEquals(Repository(host.Root), Repository(host.Launcher)), Is.False);
         host.Launcher.Close(); await Until(host.Root, () => !host.Launcher.IsVisible && host.Launcher.WindowWorkCompletion.IsCompleted);
-        Assert.That(child.IsVisible, Is.True); await StageAndFail(child);
-        GitCommandLog.Clear(); await host.CloseDiff(child);
+        Assert.That(child.IsVisible, Is.True); GitCommandLog.Clear(); await StageAndFail(child);
+        await host.CloseDiff(child);
         Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True); Assert.That(History(host.Root).ItemsSource, Is.SameAs(source)); AssertNoGlobalReads();
     }
 
@@ -189,7 +206,7 @@ public sealed class ModelessCommitDiffMutationTests
         await host.Launcher.OpenRepositoryAsync(samePath ? git.Repository.Path : other.Repository.Path); await InputIdle(host.Launcher);
         Assert.That(Repository(host.Launcher), Is.Not.SameAs(original));
         object? source = History(host.Launcher).ItemsSource; object? selected = History(host.Launcher).SelectedItem;
-        await StageAndFail(child); GitCommandLog.Clear(); await host.CloseDiff(child);
+        GitCommandLog.Clear(); await StageAndFail(child); await host.CloseDiff(child);
         Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.True);
         Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source)); Assert.That(History(host.Launcher).SelectedItem, Is.SameAs(selected)); AssertNoGlobalReads();
     }
@@ -203,6 +220,19 @@ public sealed class ModelessCommitDiffMutationTests
         await Until(child, () => dialog.IsVisible); PushProcessTestDriver.Pointer(Field<Button>(dialog, "CloseEffect")); await modal;
         Assert.That(dialog.MayHaveRepositoryChanges, Is.False); Assert.That(child.StandaloneMayHaveRepositoryChanges, Is.False);
         GitCommandLog.Clear(); await host.CloseDiff(child); Assert.That(History(host.Root).ItemsSource, Is.SameAs(source)); AssertNoGlobalReads();
+    }
+
+    private static async Task ReceiverRefresh(MainWindow receiver, object? previousSource)
+    {
+        await Until(receiver, () => !receiver.IsBusy && !ReferenceEquals(History(receiver).ItemsSource, previousSource));
+        await Private<Task>(receiver, "_repositoryOperationCompletion");
+    }
+    private static async Task CloseWithoutAnotherRefresh(Host host, MainWindow child)
+    {
+        object? source = History(host.Launcher).ItemsSource; GitCommandLog.Clear();
+        await host.CloseDiff(child);
+        Assert.That(History(host.Launcher).ItemsSource, Is.SameAs(source), "A close with no new mutation cannot replay the already-published receipt.");
+        AssertNoGlobalReads();
     }
 
     private static async Task StageAndFail(MainWindow child)

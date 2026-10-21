@@ -32,7 +32,7 @@ public sealed partial class MainWindow
         {
             if (current is MainWindow host && host.IsStandaloneDiff
                 && ReferenceEquals(host._repository ?? host._commitDiffSource?.Repository, repository))
-            { host._commitDiffHasRepositoryChanges = true; }
+            { host._commitDiffHasRepositoryChanges = true; host.PublishStandaloneRepositoryChangeWhenIdle(repository); }
         }
     }
     internal string? CommitDiffRevision => _commitDiffSource?.Commit.Hash;
@@ -91,7 +91,7 @@ public sealed partial class MainWindow
     internal Task ShowCommitDiffAsync(GitCommit commit) => ReadBrowserAsync(_commitDiffOpenRead, "Commit diff", async (repository, token) =>
     {
         // Modeless windows belong to the application root lifetime, not the launcher or its native Owner chain.
-        if ((ModelessApplicationLifetime ?? Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow is not MainWindow root
+        if (ModelessRoot is not MainWindow root
             || root._lifetime.IsCancellationRequested || !root.IsVisible)
         { throw new InvalidOperationException("An application root is required to open an independent commit diff."); }
         MainWindow child = await CommitDiffWindow.CreateAsync(repository, commit.Hash, token);
@@ -106,8 +106,9 @@ public sealed partial class MainWindow
         WindowWork work = TrackWindowWork(); _modelessCommitDiffs.Add(child);
         TaskCompletionSource closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
         WeakReference<MainWindow> origin = new(launcher);
-        GitRepository? mutationRepository = child._commitDiffSource?.Repository;
-        Window? mutationOwner = launcher.Owner as Window;
+        GitRepository mutationRepository = child._commitDiffSource!.Repository;
+        child._repositoryChanges = launcher.RepositoryChangesFor(mutationRepository);
+        child._repositoryChangeSource = mutationRepository;
         OperationFocus? captured = launcher.CaptureOperationFocus();
         GitRepository? focusRepository = captured?.Repository; string? focusCommit = captured?.CommitHash;
         WeakReference<Control>? focusInput = captured?.Input is Control capturedInput ? new(capturedInput) : null;
@@ -123,11 +124,12 @@ public sealed partial class MainWindow
             try
             {
                 await closed.Task; await child.WindowWorkCompletion;
-                // The independent window has no native Owner chain. Return its
-                // conservative receipt once, only to the Browse that launched it.
-                if (child.StandaloneMayHaveRepositoryChanges && mutationRepository is not null
-                    && origin.TryGetTarget(out MainWindow? receiver))
-                { await receiver.RefreshAfterModelessCommitDiffAsync(mutationRepository, mutationOwner, _lifetime.Token); }
+                // Repository notifications follow actual source work, not Closed.
+                // Closing a readonly independent window only retires/restores focus.
+                await child._repositoryChangePublication;
+                if (child.StandaloneMayHaveRepositoryChanges && origin.TryGetTarget(out MainWindow? receiver)
+                    && receiver.WindowKind == MainWindowKind.Browse && child._repositoryChanges is { } notifications)
+                { await notifications.PublicationCompletion; }
                 if (restoreFocus && !_lifetime.IsCancellationRequested && origin.TryGetTarget(out MainWindow? window)
                     && window.IsVisible && window.IsEffectivelyEnabled && !window.OwnedWindows.Any(owned => owned.IsVisible))
                 {
