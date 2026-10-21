@@ -1,10 +1,12 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Layout;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 
 namespace GitExtensions.Linux.Desktop.Controls;
 
@@ -14,6 +16,13 @@ internal static class ClassicTreeViewAppearance
     internal static double RowHeight => DesktopFontMetrics.TreeRowHeight;
     internal const double Indent = 19, ChevronSize = 7;
     private const string TreeClass = "classic-tree";
+
+    static ClassicTreeViewAppearance()
+    {
+        // The native item has already replaced its request with PART_Header.
+        // Run before the presenter's instance handler consumes that rectangle.
+        Control.RequestBringIntoViewEvent.AddClassHandler<ScrollContentPresenter>(ConstrainHeaderReveal);
+    }
 
     public static Control Wrap(TreeView tree, double indent = Indent, double inset = 6, bool showRootLines = true)
     {
@@ -80,6 +89,53 @@ internal static class ClassicTreeViewAppearance
             }
         });
         return new Grid { ClipToBounds = true, Children = { tree, new ClassicTreeConnectors(tree, indent, showRootLines) { Name = "ClassicTreeConnectors", IsHitTestVisible = false } } };
+    }
+
+    private static void ConstrainHeaderReveal(ScrollContentPresenter presenter, RequestBringIntoViewEventArgs args)
+    {
+        if (presenter.TemplatedParent is not ScrollViewer { TemplatedParent: TreeView tree }
+            || !tree.Classes.Contains(TreeClass) || args.TargetObject is not TreeViewItem item
+            || item.GetVisualAncestors().OfType<TreeView>().FirstOrDefault() != tree)
+        { return; }
+
+        Control? header = item.GetVisualDescendants().OfType<Control>()
+            .FirstOrDefault(control => control.Name == "PART_Header" && control.TemplatedParent == item);
+        if (header is null || !header.IsMeasureValid || !header.IsArrangeValid
+            || header.TransformToVisual(item) is not Matrix transform)
+        { return; }
+
+        // The header Grid stretches to the longest sibling, even for a short
+        // label. DesiredSize includes Margin; the actual gutter and content do
+        // not. Keep native scrolling for their real measured extent, including
+        // deeply indented or long headers, without revealing blank row space.
+        double width = Math.Min(header.Bounds.Width,
+            Math.Max(0, header.DesiredSize.Width - header.Margin.Left - header.Margin.Right));
+        if (!double.IsFinite(width) || width <= 0) { return; }
+        Rect measured = new Rect(0, 0, width, header.Bounds.Height).TransformToAABB(transform);
+        args.TargetRect = new Rect(measured.X - PendingHorizontalOffset(presenter, item),
+            args.TargetRect.Y, measured.Width, args.TargetRect.Height);
+    }
+
+    private static double PendingHorizontalOffset(ScrollContentPresenter presenter, TreeViewItem item)
+    {
+        ItemsPresenter? child = presenter.Child as ItemsPresenter;
+        if (presenter.IsArrangeValid || child is null || !child.IsArrangeValid
+            || !double.IsNaN(child.Width) || child.MinWidth != 0 || child.MaxWidth != double.PositiveInfinity
+            || child.GetVisualParent() != presenter || child is ILogicalScrollable { IsLogicalScrollEnabled: true }
+            || presenter.Padding != default || presenter.BorderThickness != default || child.Margin != default
+            || presenter.HorizontalContentAlignment != HorizontalAlignment.Stretch || child.HorizontalAlignment != HorizontalAlignment.Stretch
+            || child.RenderTransform is not null || item.TransformToVisual(presenter) is not Matrix transform
+            || transform.M11 <= 0 || transform.M22 <= 0 || transform.M12 != 0 || transform.M21 != 0
+            || transform.M13 != 0 || transform.M23 != 0 || transform.M33 != 1)
+        { return 0; }
+
+        // Native BringIntoView adds the current Offset to coordinates from the
+        // last arrange. Selection, focus and an explicit reveal can all run
+        // before that arrange catches up. In this plain stretch host, Child.X
+        // is the negative arranged offset; normalize only its pending X delta,
+        // converted from presenter units to item units. Native Y stays intact.
+        double pending = (child.Bounds.X + presenter.Offset.X) / transform.M11;
+        return double.IsFinite(pending) ? pending : 0;
     }
 
     private static Selector Item(Selector? selector) => selector.OfType<TreeView>().Class(TreeClass).Descendant().OfType<TreeViewItem>();
