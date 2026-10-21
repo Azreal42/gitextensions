@@ -86,7 +86,7 @@ public sealed class AvailableEncodingsPreferencesStore
             { throw new JsonException("AvailableEncodings must be a semicolon-separated string."); }
             string value = list.GetString()!;
             string[] names;
-            try { names = Normalize(value.Length == 0 ? [] : value.Split(';')); }
+            try { names = string.IsNullOrWhiteSpace(value) ? Catalog.Defaults.ToArray() : Normalize(value.Split(';')); }
             catch (ArgumentException error) { throw new JsonException(error.Message, error); }
             return Result(Array.AsReadOnly(names), true, bytes);
         }

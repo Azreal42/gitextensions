@@ -81,6 +81,32 @@ public sealed class AvailableEncodingsDialogTests
         finally { AvailableEncodingsPreferencesStore.Saved -= saved; }
     }
 
+    [TestCase("")]
+    [TestCase(" ")]
+    [TestCase("\t\r\n")]
+    [TestCase("\u00a0")]
+    public void EmptyOrWhitespacePreferredListReadsWindowsDefaultsWithoutRepairingTheProfile(string value)
+    {
+        using Profile profile = new();
+        profile.Write(JsonSerializer.Serialize(new { Version = 1, AvailableEncodings = value, Future = new { raw = new[] { 1, 2 } } }));
+        byte[] before = File.ReadAllBytes(profile.Store.FilePath);
+        List<string> notifications = []; Action<string> saved = notifications.Add;
+        AvailableEncodingsPreferencesStore.Saved += saved;
+        try
+        {
+            AvailableEncodingsPreferencesLoadResult initial = profile.Store.Load();
+            Assert.That(initial.Existed, Is.True); Assert.That(initial.Error, Is.Null);
+            Assert.That(initial.Names, Is.EqualTo(profile.Store.Catalog.Defaults));
+            Assert.That(initial.OriginalBytes.ToArray(), Is.EqualTo(before));
+            AvailableEncodingsPreferencesLoadResult untouched = profile.Store.SaveChanges(initial, initial.Names);
+            Assert.That(untouched.Names, Is.EqualTo(profile.Store.Catalog.Defaults)); Assert.That(untouched.Error, Is.Null);
+            Assert.That(untouched.OriginalBytes.ToArray(), Is.EqualTo(before));
+            Assert.That(File.ReadAllBytes(profile.Store.FilePath), Is.EqualTo(before)); Assert.That(notifications, Is.Empty);
+            Assert.That(Directory.GetFiles(Path.GetDirectoryName(profile.Store.FilePath)!), Is.EqualTo(new[] { profile.Store.FilePath }));
+        }
+        finally { AvailableEncodingsPreferencesStore.Saved -= saved; }
+    }
+
     [Test]
     public void WindowsNamesAliasesDefaultAndIncludedOrderLoadWithoutRewritingOrNotifying()
     {
@@ -224,6 +250,49 @@ public sealed class AvailableEncodingsDialogTests
             byte[] bytes = File.ReadAllBytes(scope.Profile.Store.FilePath);
             AvailableEncodingsDialog untouched = new(scope.Profile.Store); Task<bool> untouchedTask = untouched.ShowDialog<bool>(owner); Pump(untouched); Click(untouched, "ButtonOk");
             Assert.That(await untouchedTask, Is.True); Assert.That(File.ReadAllBytes(scope.Profile.Store.FilePath), Is.EqualTo(bytes)); Assert.That(notifications, Has.Count.EqualTo(1));
+        }
+        finally { AvailableEncodingsPreferencesStore.Saved -= saved; }
+    }
+
+    [AvaloniaTest]
+    [TestCase("")]
+    [TestCase(" \t\r\n")]
+    public async Task EmptyPreferredListChooserUsesDefaultsAndOnlyAnExplicitChangedOkPublishes(string value)
+    {
+        using UiScope scope = new(); Window owner = scope.Owner();
+        scope.Profile.Write(JsonSerializer.Serialize(new { Version = 1, AvailableEncodings = value, Future = new { raw = new[] { 1, 2 } } }));
+        byte[] before = File.ReadAllBytes(scope.Profile.Store.FilePath);
+        List<string> notifications = []; Action<string> saved = notifications.Add;
+        AvailableEncodingsPreferencesStore.Saved += saved;
+        try
+        {
+            AvailableEncodingsDialog cancelled = new(scope.Profile.Store); Task<bool> cancelledTask = cancelled.ShowDialog<bool>(owner); Pump(cancelled);
+            ListBox included = Field<ListBox>(cancelled, "ListIncludedEncodings");
+            Assert.That(Names(included), Is.EqualTo(scope.Profile.Store.Catalog.Defaults)); Assert.That(cancelled.LastError, Is.Null);
+            Assert.That(Field<TextBlock>(cancelled, "AvailableEncodingsError").IsVisible, Is.False);
+            Assert.That(Field<Button>(cancelled, "ButtonOk").IsEnabled, Is.True);
+            foreach (string name in scope.Profile.Store.Catalog.Defaults.Where(scope.Profile.Store.Catalog.IsProtected))
+            { Select(included, name); Assert.That(Field<Button>(cancelled, "ToRight").IsEnabled, Is.False, name); }
+            Select(Field<ListBox>(cancelled, "ListAvailableEncodings"), "shift_jis"); Click(cancelled, "ToLeft");
+            Assert.That(Names(included).Last(), Is.EqualTo("shift_jis")); Click(cancelled, "ButtonCancel");
+            Assert.That(await cancelledTask, Is.False); Assert.That(File.ReadAllBytes(scope.Profile.Store.FilePath), Is.EqualTo(before));
+            Assert.That(notifications, Is.Empty); Assert.That(owner.OwnedWindows, Is.Empty);
+
+            AvailableEncodingsDialog untouched = new(scope.Profile.Store); Task<bool> untouchedTask = untouched.ShowDialog<bool>(owner); Pump(untouched);
+            Click(untouched, "ButtonOk"); Assert.That(await untouchedTask, Is.True);
+            Assert.That(untouched.Result.Names, Is.EqualTo(scope.Profile.Store.Catalog.Defaults));
+            Assert.That(File.ReadAllBytes(scope.Profile.Store.FilePath), Is.EqualTo(before)); Assert.That(notifications, Is.Empty);
+
+            AvailableEncodingsDialog accepted = new(scope.Profile.Store); Task<bool> acceptedTask = accepted.ShowDialog<bool>(owner); Pump(accepted);
+            Select(Field<ListBox>(accepted, "ListAvailableEncodings"), "shift_jis"); Click(accepted, "ToLeft"); Click(accepted, "ButtonOk");
+            Assert.That(await acceptedTask, Is.True);
+            Assert.That(accepted.Result.Names, Is.EqualTo(scope.Profile.Store.Catalog.Defaults.Append("shift_jis")));
+            Assert.That(scope.Profile.Store.Load().Names, Is.EqualTo(accepted.Result.Names));
+            Assert.That(notifications, Is.EqualTo(new[] { scope.Profile.Store.FilePath }));
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllBytes(scope.Profile.Store.FilePath));
+            Assert.That(document.RootElement.GetProperty("Future").GetProperty("raw").EnumerateArray().Select(item => item.GetInt32()), Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(Directory.GetFiles(Path.GetDirectoryName(scope.Profile.Store.FilePath)!, "*.tmp"), Is.Empty);
+            Assert.That(owner.OwnedWindows, Is.Empty);
         }
         finally { AvailableEncodingsPreferencesStore.Saved -= saved; }
     }
