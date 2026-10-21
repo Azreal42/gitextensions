@@ -14,6 +14,8 @@ Les racines Branches/Remotes utilisent LocalBranchRoot/RemoteBranchRoot ; les do
 
 Les listes Diff/File tree réutilisent ensuite ce décor avec leur propre retrait de 14 px et leurs options de lignes racines ; voir ADR 0062.
 
+La révélation conserve la gouttière et le libellé mesurés, sans faire défiler l’espace vide ajouté par un frère au nom long. Les demandes répétées avant le prochain layout compensent seulement le décalage horizontal en attente sur l’hôte natif compatible ; aucune écriture de l’offset ni layout forcé. Les autres templates gardent leur chemin natif, Y et hauteur restent inchangés. Cette politique commune couvre aussi fichiers, réglages, choix TeamCity et détails d’erreur.
+
 ## Pièges vérifiés
 
 Un padding de 6 px sur le TreeView faisait défiler horizontalement le viewport lors du focus du nœud. Le chevron se déplaçait alors de 6 px entre PointerPressed et PointerReleased, annulant le clic. Le retrait est placé dans chaque entête ; un vrai clic à coordonnées identiques et la navigation au clavier restent vérifiés.

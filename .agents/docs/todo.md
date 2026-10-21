@@ -1,10 +1,25 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. [Inventaire L25](../../artifacts/linux/portable-dialog-completions-20261020/review/root-inventory-review.json) contrôlé sur le primaire ; cinq changements Modal préexistants restent hors source compilée/testée/empaquetée.
+Mise à jour : 21 octobre 2026. Compléments L26/L27 sur `27fde6883` ; [inventaire contrôlé](../../artifacts/linux/portable-settings-completion-20261021/review/root-inventory-review.json) sur le primaire, cinq changements Modal préexistants distincts du build/paquet. La référence Desktop complète L25 reste historique.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+## Compléments L26/L27 — navigation et réglages portables
+
+Source `27fde68835809f7a73ea30eb4b4107ef2207e0c9` : [navigation](../../artifacts/linux/reference-selection-completion-20261021/review/source-import-review.json) et [réglages/notification](../../artifacts/linux/portable-settings-completion-20261021/review/source-import-review.json) commités ; composants et stores existants réemployés, niveaux/aspects inchangés.
+
+- [x] Ctrl+K sur trois côtés réels ou plus, ordre/collisions Windows et caret distinct ; Ctrl GoToRef réel vers la multisélection, sans filtre/reconstruction ([ADR0148](adr/ui/history/0148-fork-point-diff-base.md), [ADR0149](adr/ui/history/0149-underlined-reference-selection.md)).
+- [x] Révélation des entêtes mesurées des arbres partagés, sans saut horizontal lors de demandes répétées avant layout ; quatorze régressions, mêmes gestes natifs ([ADR0061](adr/ui/0061-compact-navigation-tree.md)).
+- [x] Neuf options Commit : erreurs de staging et vrai Git/éditeur raccordés, effets d’erreur/annulation conservés sans faux commit/push ([ADR0150](adr/preferences/commit/0150-global-commit-options.md)). Neuf réglages Delete obsolete branches dans Settings > Plugins, mêmes portées et routes menu/script ([ADR0151](adr/extensions/plugins/0151-delete-obsolete-branches-dialog.md)).
+- [x] Après fermeture/drain d’un CommitDiff indépendant, son reçu May rafraîchit seulement le Browse lanceur encore valide ; attente du travail en cours, aucun refresh pour lecture/F5 ([ADR0144](adr/ui/history/0144-dedicated-log-and-commit-diff.md)).
+
+[Build final](../../artifacts/linux/portable-settings-completion-20261021/review/root-final-compilation-review-02.json) : trois projets, zéro diagnostic. [Ciblé réglages](../../artifacts/linux/portable-settings-completion-20261021/review/root-targeted-review.json) : **472/472 Desktop, 42/42 Plugins** ; [navigation et composants partagés finaux](../../artifacts/linux/reference-selection-completion-20261021/targeted-07/root-retirement-review.json) : **394/394 Desktop, 42/42 Plugins**, périmètres partiellement communs. [Core complet frais](../../artifacts/linux/portable-settings-completion-20261021/review/root-core-full-review.json) : **1144/1144**, mêmes octets Core que le commit final. La référence Desktop complète 4051 reste L25, sans requalification automatique.
+
+[Natif source X11 privé](../../artifacts/linux/reference-selection-completion-20261021/review/root-native-review.json) : dix-huit checkpoints EN/clair et FR/sombre, multisélection, collisions et premières flèches grille/arbre ; deux fermetures normales. [Paquet exact](../../artifacts/linux/snapshots/27fde6883/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40206836 octets, SHA256 `2c36aae4d74270723516a434cdea46859668a945f3a06dc171b43186476c8f40` ; [contrôle](../../artifacts/linux/portable-settings-completion-20261021/review/root-package-review.json), publish/build puis cinq vérifications à 0 (premier essai arrêté faute de xvfb-run, même paquet repris), 402 fichiers/MD5, publish/payload identiques, DPKG et démarrage isolés. Aucun transfert de cet essai vers les interactions du bureau installé.
+
+- [ ] Ctrl GoToRef des endpoints artificiels ; lanceurs modeless Log/CommitDiff et mutations sans reçu existant ; types/cibles non-HEAD du mode éditeur Git ; page générique de tous les plugins et variantes FormStatus ; rapport HTML CI true. Services CI réels/authentifiés/Enterprise, macOS et audits Wayland/IME/DPI/accessibilité restent ouverts. GitHub Actions conserve sa page, ses statuts SHA et son rapport externe partagés ; jobs/logs/mutations de workflow ne sont pas des fenêtres Windows absentes.
 
 ## État détaillé par fenêtre
 
@@ -14,7 +29,7 @@ Historique ed86 : les [suites complètes](../../artifacts/linux/command-log-2026
 
 Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; compléments du cache réel ADR0140 ouverts ; audit étendu des processus externes ADR0142 (piles/thread UI traités par ADR0139) ; arguments, sorties et erreurs brutes exclus du journal de métadonnées (ADR0138), distinct de l’onglet cache explicite ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
 
-## Compléments portables — fenêtres et préférences
+## Compléments portables — lot L25 (historique)
 
 Source `1c6068f40` : composants et lecteurs communs, dimensions Windows et vraies opérations Git ; niveaux/aspects inchangés, treize familles encore ouvertes.
 
@@ -30,7 +45,7 @@ Source `1c6068f40` : composants et lecteurs communs, dimensions Windows et vraie
 
 [Paquet exact](../../artifacts/linux/snapshots/1c6068f40/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40188460 octets, SHA256 `6355b45dad41f02d796f26439a83b4cf695a14b7ddbbf8f73e8beb2796aee6f4` ; [vérification](../../artifacts/linux/portable-dialog-completions-20261020/review/root-package-review.json), sept phases à 0, publish/payload et 402 fichiers/MD5, français et Skia vérifiés, installation/démarrage DPKG isolés. [Inventaire régénéré/contrôlé](../../artifacts/linux/portable-dialog-completions-20261020/review/root-inventory-review.json), référence complète actualisée ; cinq Modal du primaire distincts.
 
-- [ ] Compléments encore ouverts : Ctrl+K à trois côtés ou plus, Ctrl GoToRef vers la multisélection de grille, deux options Commit non raccordées, page générale du plugin, notification des mutations du CommitDiff modeless indépendant et rapport HTML des fournisseurs concernés.
+- [x] Compléments réels de navigation, options Commit, page du plugin et notification CommitDiff → Browse traités dans L26/L27 ci-dessus ; extensions artificielles et rapport HTML restent ouverts.
 
 Git/headless et installation isolée ne qualifient pas les gestes natifs étendus, Wayland/DPI/IME/accessibilité, tous les signers/agents/serveurs authentifiés ni l’interaction du paquet installé sur le bureau. Aucun nouveau verdict natif, installation hôte ou push de ce lot.
 
