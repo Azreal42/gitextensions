@@ -36,7 +36,7 @@ public sealed class GitHubHostingSettingsDialogTests
             Assert.That(Field<TextBlock>(dialog, "GitHubAuthenticationMode").Text, Is.Not.Empty);
             Capture(dialog, "github-hosting-settings-" + language + (dark ? "-dark.png" : "-light.png"));
             PushProcessTestDriver.Pointer(Field<Button>(dialog, "GitHubSaveSettings")); Pump(owner);
-            Assert.That(await done, Is.True);
+            Assert.That(await done.WaitAsync(TimeSpan.FromSeconds(5)), Is.True);
             IReadOnlyDictionary<string, string?> saved = profile.Store.Load();
             Assert.That(GitHubHostingSettings.FromPluginSettings(saved).CredentialsFromPluginSettings(saved).BearerToken, Is.EqualTo("explicit-test-hosting-token"));
             Assert.That(saved[GitHubHostingSettings.TokenKey], Is.EqualTo("explicit-test-hosting-token"));
@@ -58,7 +58,7 @@ public sealed class GitHubHostingSettingsDialogTests
             Assert.That(dialog.IsVisible, Is.True); Assert.That(done.IsCompleted, Is.False);
             Assert.That(Field<TextBlock>(dialog, "GitHubHostingSettingsError").Text, Does.Contain("authentication"));
             Assert.That(File.ReadAllBytes(profile.Store.FilePath), Is.EqualTo(before));
-            PushProcessTestDriver.Pointer(Field<Button>(dialog, "GitHubCancelSettings")); Pump(owner); Assert.That(await done, Is.False);
+            PushProcessTestDriver.Pointer(Field<Button>(dialog, "GitHubCancelSettings")); Pump(owner); Assert.That(await done.WaitAsync(TimeSpan.FromSeconds(5)), Is.False);
             Assert.That(File.ReadAllBytes(profile.Store.FilePath), Is.EqualTo(before));
         }
         finally { dialog.Close(); owner.Close(); }
@@ -75,7 +75,7 @@ public sealed class GitHubHostingSettingsDialogTests
             Pump(dialog); Assert.That(opened, Is.Empty); Field<TextBox>(dialog, "GitHubWebUrl").Text = "https://enterprise.example";
             PushProcessTestDriver.Pointer(Field<Button>(dialog, "GitHubManageTokens")); Pump(dialog);
             Assert.That(opened, Is.EqualTo(new[] { "https://enterprise.example/settings/tokens" }));
-            Assert.That(File.Exists(profile.Store.FilePath), Is.False); dialog.Close(false); Assert.That(await done, Is.False);
+            Assert.That(File.Exists(profile.Store.FilePath), Is.False); dialog.Close(false); Assert.That(await done.WaitAsync(TimeSpan.FromSeconds(5)), Is.False);
         }
         finally { dialog.Close(); owner.Close(); }
     }
