@@ -385,7 +385,9 @@ public sealed class CommitTemplateDialogTests
             PushProcessTestDriver.Pointer(menu.Items.OfType<MenuItem>().First(i => i.Name == "RegisteredCommitTemplate")); await Idle(commit);
             Assert.That(Field<TextBox>(commit, "Message").Text, Is.EqualTo(expected));
             CommitTemplateRegistry.Unregister(name); menu = OpenTemplates(commit); Assert.That(menu.Items.OfType<MenuItem>().Any(i => i.Name == "RegisteredCommitTemplate"), Is.False);
-            Assert.That(menu.Items.OfType<Separator>().Count(), Is.EqualTo(2)); menu.Close();
+            Assert.That(menu.Items.OfType<MenuItem>().Single(item => item.Name == "GitHubIssueNotice").Tag,
+                Is.InstanceOf<CommitMessageTemplate>(), "The default GitHub no-token notice remains a registered provider entry after the external template is removed.");
+            Assert.That(menu.Items.OfType<Separator>().Count(), Is.EqualTo(3)); menu.Close();
         }
         finally { CommitTemplateRegistry.Unregister(name); }
     }

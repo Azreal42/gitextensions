@@ -157,6 +157,7 @@ public sealed partial class CommitDialog : Window
         _initialTarget = _useFormCommitMessage ? targetCommit : null;
         if (!_useFormCommitMessage) { _message.Watermark = C("_commitMessageDisabled", "Commit Message is requested during commit"); }
         InitializeMessageTemplates(profileRoot);
+        InitializeGitHubIssues(profileRoot);
         Title = C("$this", "Commit");
         Width = 1100;
         Height = 760;
@@ -328,6 +329,7 @@ public sealed partial class CommitDialog : Window
         };
         Closing += (_, args) =>
         {
+            Task issueDrain = BeginGitHubIssueClose();
             if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _spellingClosingOwner = Owner as Window; }
             if (_busy)
             {
@@ -346,13 +348,13 @@ public sealed partial class CommitDialog : Window
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
                 {
                     args.Cancel = true;
-                    _closeWhenIdle = false; _spellingClosingOwner = null;
+                    _closeWhenIdle = false; _spellingClosingOwner = null; _githubIssueClosing = false;
                     ShowFailure(T("Cannot save commit message"), exception);
                 }
             }
             if (args.Cancel || _spellingDrained) { return; }
             _spellingClosing = true;
-            Task drain = Task.WhenAll(_completion.BeginClose(), _spelling.BeginClose());
+            Task drain = Task.WhenAll(_completion.BeginClose(), _spelling.BeginClose(), issueDrain);
             if (drain.IsCompletedSuccessfully) { _spellingDrained = true; _spellingClosing = false; return; }
             args.Cancel = true;
             if (_spellingClose is null)

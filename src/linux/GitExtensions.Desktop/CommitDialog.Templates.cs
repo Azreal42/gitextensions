@@ -59,6 +59,8 @@ public sealed partial class CommitDialog
     private void RefreshTemplatesMenu()
     {
         ReadMessagePreferences(); List<object> items = [];
+        foreach (GitHubIssueMenuEntry entry in _githubIssueTemplates)
+        { Add(entry.Template, "GitHub32.png", entry.Notice ? "GitHubIssueNotice" : "GitHubIssueTemplate"); }
         try
         {
             foreach (var entry in CommitTemplateRegistry.Snapshot()) { Add(entry.Template, entry.Icon, "RegisteredCommitTemplate"); }

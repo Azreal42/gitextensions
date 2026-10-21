@@ -6,7 +6,7 @@ using System.Text.Json;
 using GitExtensions.Linux;
 using GitUIPluginInterfaces.BuildServerIntegration;
 
-internal static class GitHubHostingScenarios
+internal static partial class GitHubHostingScenarios
 {
     public static IReadOnlyList<(string Name, Func<Task> Run)> All { get; } =
     [
@@ -38,6 +38,7 @@ internal static class GitHubHostingScenarios
         ("GitHub PR diff projection preserves exact patches and matches API paths independently of ordering", ProjectionAsync),
         ("GitHub PR diff projection handles C quoted UTF8 control paths rename deletion and binary headers", QuotedProjectionAsync),
         ("GitHub PR diff projection refuses missing duplicate and ambiguous metadata instead of guessing", AmbiguousProjectionAsync),
+        .. AssignedIssueScenarios,
     ];
     private const string Sha = "0123456789abcdef0123456789abcdef01234567";
     private const string Secret = "fake-private-token";
