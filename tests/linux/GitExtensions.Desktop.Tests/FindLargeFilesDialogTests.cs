@@ -197,15 +197,36 @@ public sealed class FindLargeFilesDialogTests
     public async Task MainPluginMenuAutomaticallyScansAndRestoresThresholdAndRevisionThroughTheExistingStore()
     {
         await using Fixture f = await Fixture.Create(); MainWindow main = f.Track(new MainWindow()); main.Show(); await main.OpenRepositoryAsync(f.Repository.Path); await Until(() => !main.IsBusy);
+        string global = DetailedRepositorySettings.GlobalPath;
+        byte[]? originalXml = File.Exists(global) ? File.ReadAllBytes(global) : null;
+        byte[] originalJson = File.ReadAllBytes(new PreferencesStore().FilePath);
         FindLargeFilesDialog dialog = await Open(); Assert.That(dialog.LastAnalysis, Is.Not.Null); Assert.That(dialog.VisibleObjects, Has.Count.EqualTo(3));
         Field<NumericUpDown>(dialog, "FindLargeFilesMinimum").Value = 1.1m; Field<TextBox>(dialog, "FindLargeFilesRevision").Text = "HEAD~1";
         Pointer(Field<Button>(dialog, "AnalyzeLargeFiles")); await Idle(dialog); Assert.That(dialog.VisibleObjects, Has.Count.EqualTo(2));
-        Pointer(Field<Button>(dialog, "CloseLargeFiles")); string id = new FindLargeFilesPlugin().Descriptor.Id.ToString();
-        await Until(() => !main.OwnedWindows.Contains(dialog) && !main.IsBusy && new PreferencesStore().Load().PluginSettings.ContainsKey(id));
-        Assert.That(new PreferencesStore().Load().PluginSettings[id]["minimumMegabytes"], Is.EqualTo("1.1"));
-        Assert.That(new PreferencesStore().Load().PluginSettings[id]["revision"], Is.EqualTo("HEAD~1"));
-        FindLargeFilesDialog restored = await Open(); Assert.That(restored.CurrentValues, Is.EquivalentTo(dialog.CurrentValues));
-        Assert.That(restored.VisibleObjects, Has.Count.EqualTo(2)); Assert.That(restored.HasRepositoryChanges, Is.False); restored.Close();
+        Pointer(Field<Button>(dialog, "CloseLargeFiles"));
+        await Until(() => !main.OwnedWindows.Contains(dialog) && !main.IsBusy);
+        Assert.That(File.Exists(global), Is.EqualTo(originalXml is not null));
+        if (originalXml is not null) { Assert.That(File.ReadAllBytes(global), Is.EqualTo(originalXml)); }
+        Assert.That(File.ReadAllBytes(new PreferencesStore().FilePath), Is.EqualTo(originalJson), "An invocation must not silently write its temporary threshold or revision to JSON.");
+        FindLargeFilesDialog restored = await Open();
+        Assert.That(restored.CurrentValues["minimumMegabytes"], Is.EqualTo("1")); Assert.That(restored.CurrentValues["revision"], Is.EqualTo("HEAD"));
+        Assert.That(restored.VisibleObjects, Has.Count.EqualTo(3)); Assert.That(restored.HasRepositoryChanges, Is.False); restored.Close();
+        await Until(() => !main.OwnedWindows.Contains(restored) && !main.IsBusy);
+        main.KeyPressQwerty(PhysicalKey.Comma, Avalonia.Input.RawInputModifiers.Control);
+        main.KeyReleaseQwerty(PhysicalKey.Comma, Avalonia.Input.RawInputModifiers.Control);
+        await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any(window => window.IsVisible));
+        DesktopSettingsDialog settings = main.OwnedWindows.OfType<DesktopSettingsDialog>().Single(window => window.IsVisible);
+        await Until(() => settings.SimplePluginSettingsSessions.All(session => session.Loaded) && Field<Button>(settings, "ApplyDesktopSettings").IsEnabled);
+        SettingsNavigationTestDriver.Select(settings, "PluginFindLargeFiles"); Pointer(Field<RadioButton>(settings, "FindLargeFilesGlobalRB"));
+        TextBox size = Field<TextBox>(settings, "_sizeLargeFile"); Pointer(size);
+        settings.KeyPressQwerty(PhysicalKey.A, Avalonia.Input.RawInputModifiers.Control); settings.KeyReleaseQwerty(PhysicalKey.A, Avalonia.Input.RawInputModifiers.Control);
+        settings.KeyTextInput(3.5f.ToString(CultureInfo.CurrentCulture)); Pointer(Field<Button>(settings, "ApplyDesktopSettings"));
+        await Until(() => settings.SimplePluginSettingsSessions.All(session => !session.HasChanges) && Field<Button>(settings, "ApplyDesktopSettings").IsEnabled
+            && string.IsNullOrEmpty(Field<TextBlock>(settings, "SettingsNotice").Text));
+        Pointer(Field<Button>(settings, "CancelDesktopSettings")); await Until(() => !settings.IsVisible);
+        FindLargeFilesDialog applied = await Open(); Assert.That(applied.CurrentValues["minimumMegabytes"], Is.EqualTo("3.5"));
+        Assert.That(applied.VisibleObjects, Has.Count.EqualTo(1)); Assert.That(applied.HasRepositoryChanges, Is.False); applied.Close();
+        await Until(() => !main.OwnedWindows.Contains(applied) && !main.IsBusy);
 
         async Task<FindLargeFilesDialog> Open()
         {

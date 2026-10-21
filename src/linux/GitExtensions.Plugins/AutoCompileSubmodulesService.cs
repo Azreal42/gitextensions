@@ -26,14 +26,26 @@ public sealed class AutoCompileSubmodulesService
 
     // This is a post-update hook, not a substitute manual command. The UI host
     // provides its Yes/No/Cancel prompt and displays the returned process output.
-    public async Task<AutoCompileSubmodulesResult> AfterSubmoduleUpdateAsync(GitRepository repository, bool actionSucceeded,
+    public Task<AutoCompileSubmodulesResult> AfterSubmoduleUpdateAsync(GitRepository repository, bool actionSucceeded,
         AutoCompileSubmodulesOptions options, Func<AutoCompileBuildRequest, CancellationToken, Task<AutoCompileDecision>> confirmAsync,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(confirmAsync);
-        if (!actionSucceeded || !options.Enabled || !Directory.Exists(repository.Path)) { return new([]); }
+        return !actionSucceeded || !options.Enabled ? Task.FromResult(new AutoCompileSubmodulesResult([]))
+            : BuildAsync(repository, options, confirmAsync, cancellationToken);
+    }
+
+    // Explicit Execute is independent of Enabled, which gates only the automatic
+    // post-update hook. Both paths share enumeration, prompts and native drainage.
+    public async Task<AutoCompileSubmodulesResult> BuildAsync(GitRepository repository, AutoCompileSubmodulesOptions options,
+        Func<AutoCompileBuildRequest, CancellationToken, Task<AutoCompileDecision>> confirmAsync, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(confirmAsync);
+        if (!Directory.Exists(repository.Path)) { return new([]); }
         cancellationToken.ThrowIfCancellationRequested();
         GitCommandLogProcessContext journalContext = GitCommandLog.CaptureProcessContext();
         await _operation.WaitAsync(cancellationToken).ConfigureAwait(false);

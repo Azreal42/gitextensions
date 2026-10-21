@@ -49,6 +49,8 @@ internal sealed class DesktopSettingsDialog : Window
     private readonly DeleteUnusedBranchesSettingsPage _deleteUnusedBranchesSettingsPage;
     internal BackgroundFetchSettingsSession BackgroundFetchSettingsSession { get; }
     private readonly BackgroundFetchSettingsPage _backgroundFetchSettingsPage;
+    internal IReadOnlyList<SimplePluginSettingsSession> SimplePluginSettingsSessions { get; }
+    private readonly IReadOnlyList<PluginScopedSettingsPage> _simplePluginSettingsPages;
     internal RevisionLinksSettingsSession RevisionLinksSettingsSession { get; }
     private readonly RevisionLinksSettingsPage _revisionLinksSettingsPage;
     internal GitHubActionsSettingsSession GitHubActionsSettingsSession { get; }
@@ -106,7 +108,8 @@ internal sealed class DesktopSettingsDialog : Window
         Action<CommitDialogSettingsSaveReceipt>? publishCommitDialogSettings = null,
         DeleteUnusedBranchesSettingsSession? deleteUnusedBranchesSettings = null,
         BackgroundFetchSettingsSession? backgroundFetchSettings = null,
-        Func<PluginScopedSettingsSaveReceipt, Task>? publishBackgroundFetchSettings = null)
+        Func<PluginScopedSettingsSaveReceipt, Task>? publishBackgroundFetchSettings = null,
+        IReadOnlyList<SimplePluginSettingsSession>? simplePluginSettings = null)
     {
         Result = initial; HistorySortResult = historySort;
         GitEnvironmentSession = gitEnvironment;
@@ -132,6 +135,9 @@ internal sealed class DesktopSettingsDialog : Window
         BackgroundFetchSettingsSession = backgroundFetchSettings ?? new(scopedRepository,
             initial.PluginSettings.GetValueOrDefault(BackgroundFetchSettingsCatalog.Definition.Id.ToString()), workspace);
         _backgroundFetchSettingsPage = new(BackgroundFetchSettingsSession, translations);
+        SimplePluginSettingsSessions = Array.AsReadOnly((simplePluginSettings ?? SimplePluginSettingsCatalog.All.Select(entry =>
+            new SimplePluginSettingsSession(entry, scopedRepository, initial.PluginSettings.GetValueOrDefault(entry.Definition.Id.ToString()), workspace)).ToArray()).ToArray());
+        _simplePluginSettingsPages = Array.AsReadOnly(SimplePluginSettingsSessions.Select(session => new PluginScopedSettingsPage(session, translations)).ToArray());
         RevisionLinksSettingsSession = revisionLinksSettings ?? new(scopedRepository, workspace);
         _revisionLinksSettingsPage = new(RevisionLinksSettingsSession, translations) { Margin = new Thickness(12) };
         GitHubActionsSettingsSession = gitHubActionsSettings ?? new(scopedRepository, workspace);
@@ -264,7 +270,11 @@ internal sealed class DesktopSettingsDialog : Window
                 NavigationTitle: translations.Translate("DeleteUnusedBranchesPlugin", "Description", "Text", "Delete obsolete branches")),
                 new("PluginBackgroundFetch", "Plugin: " + translations.Translate("BackgroundFetchPlugin", "Description", "Text", "Periodic background fetch"),
                     _backgroundFetchSettingsPage, "../PluginIcons/IconBackgroundFetch.png",
-                    NavigationTitle: translations.Translate("BackgroundFetchPlugin", "Description", "Text", "Periodic background fetch"))],
+                    NavigationTitle: translations.Translate("BackgroundFetchPlugin", "Description", "Text", "Periodic background fetch")),
+                .. SimplePluginSettingsSessions.Select((session, index) => new SettingsNavigationPage(session.Entry.PageId,
+                    "Plugin: " + translations.Translate(session.Definition.Category, "Description", "Text", session.Definition.Description),
+                    _simplePluginSettingsPages[index], "../PluginIcons/" + session.Entry.Icon + ".png",
+                    NavigationTitle: translations.Translate(session.Definition.Category, "Description", "Text", session.Definition.Description)))],
             NavigationTitle: translations.Translate("PluginsSettingsGroup", "$this", "Title", "Plugins")));
         Navigation = new(roots, translations);
         Button save = new() { Name = "SaveDesktopSettings", Content = translations.Translate("OK"), MinWidth = 75, IsDefault = true };
@@ -303,11 +313,13 @@ internal sealed class DesktopSettingsDialog : Window
                     await DetailedSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await DeleteUnusedBranchesSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await BackgroundFetchSettingsSession.InitializeAsync(_detailedCancellation.Token);
+                    foreach (SimplePluginSettingsSession session in SimplePluginSettingsSessions) { await session.InitializeAsync(_detailedCancellation.Token); }
                     await RevisionLinksSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     await GitHubActionsSettingsSession.InitializeAsync(_detailedCancellation.Token);
                     _detailedSettingsPage.ShowLoadState();
                     _deleteUnusedBranchesSettingsPage.ShowLoadState();
                     _backgroundFetchSettingsPage.ShowLoadState();
+                    foreach (PluginScopedSettingsPage page in _simplePluginSettingsPages) { page.ShowLoadState(); }
                     _revisionLinksSettingsPage.ShowLoadState();
                     _buildServerSettingsPage.ShowLoadState();
                 }
@@ -342,6 +354,13 @@ internal sealed class DesktopSettingsDialog : Window
                 _backgroundFetchSettingsPage.PrepareSave();
                 if (!_backgroundFetchSettingsPage.Validate(out string? backgroundValidation))
                 { Navigation.SelectPage("PluginBackgroundFetch"); _backgroundFetchSettingsPage.FocusInvalidControl(); notice.Text = backgroundValidation; return false; }
+                for (int index = 0; index < _simplePluginSettingsPages.Count; index++)
+                {
+                    PluginScopedSettingsPage page = _simplePluginSettingsPages[index];
+                    activeSavePage = SimplePluginSettingsSessions[index].Entry.PageId; page.PrepareSave();
+                    if (!page.Validate(out string? simpleValidation))
+                    { Navigation.SelectPage(activeSavePage); page.FocusInvalidControl(); notice.Text = simpleValidation; return false; }
+                }
                 if (!_commitDialogSettingsPage.Validate(out string? commitValidation))
                 { Navigation.SelectPage("Commit", true); notice.Text = commitValidation; return false; }
                 if (!_consoleStylePage.Validate(out string? consoleValidation))
@@ -482,6 +501,12 @@ internal sealed class DesktopSettingsDialog : Window
                         if (publishBackgroundFetchSettings is not null) { await publishBackgroundFetchSettings(receipt); }
                     });
                     _backgroundFetchSettingsPage.AcceptSaved();
+                    for (int index = 0; index < SimplePluginSettingsSessions.Count; index++)
+                    {
+                        SimplePluginSettingsSession session = SimplePluginSettingsSessions[index]; activeSavePage = session.Entry.PageId;
+                        await session.SaveFilesAsync(_detailedCancellation.Token, _ => { saved = true; return Task.CompletedTask; });
+                        _simplePluginSettingsPages[index].AcceptSaved();
+                    }
                     activeSavePage = "RevisionLinks";
                     await RevisionLinksSettingsSession.SaveFilesAsync(_detailedCancellation.Token);
                     _revisionLinksSettingsPage.AcceptSaved();

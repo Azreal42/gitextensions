@@ -21,14 +21,14 @@ internal static class Dialogs
         => ShowMessageCoreAsync(owner, TranslationCatalog.LoadDefault().Translate("Error"), message, null, default);
 
     public static Task ShowMessageAsync(Window owner, string title, string message, bool warning,
-        CancellationToken cancellationToken = default)
-        => ShowMessageCoreAsync(owner, title, message, warning, cancellationToken);
+        CancellationToken cancellationToken = default, bool stopOnOwnerClose = false)
+        => ShowMessageCoreAsync(owner, title, message, warning, cancellationToken, stopOnOwnerClose: stopOnOwnerClose);
 
     public static Task ShowInformationAsync(Window owner, string title, string message, CancellationToken cancellationToken = default)
         => ShowMessageCoreAsync(owner, title, message, null, cancellationToken, "information");
 
     private static async Task ShowMessageCoreAsync(Window owner, string title, string message, bool? warning,
-        CancellationToken cancellationToken, string? informationIcon = null)
+        CancellationToken cancellationToken, string? informationIcon = null, bool stopOnOwnerClose = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
@@ -52,6 +52,12 @@ internal static class Dialogs
         {
             accept.Focus(); ModalWindowActivation.AfterMapping(dialog, () => dialog.IsVisible && !cancellationToken.IsCancellationRequested);
         };
+        bool ownerStopped = false;
+        if (stopOnOwnerClose)
+        {
+            dialog.Closing += (_, args) =>
+            { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { ownerStopped = true; } };
+        }
         using CancellationTokenRegistration close = cancellationToken.Register(() => Dispatcher.UIThread.Post(() =>
         { if (dialog.IsVisible) { dialog.Close(); } }));
         try
@@ -59,6 +65,9 @@ internal static class Dialogs
             cancellationToken.ThrowIfCancellationRequested();
             await dialog.ShowDialog(activeOwner);
             cancellationToken.ThrowIfCancellationRequested();
+            // Owner Closing can be raised after an owned child's completion.
+            // The opt-in caller must stop before its script can continue.
+            if (ownerStopped) { throw new OperationCanceledException("The message owner was closed.", cancellationToken); }
         }
         finally { dialog.Close(); }
     }

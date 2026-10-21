@@ -42,10 +42,11 @@ public sealed partial class MainWindow
             IReadOnlyDictionary<string, string?> values = PluginSettings(plugin.Descriptor);
             if (plugin is StatisticsPlugin statistics)
             {
-                StatisticsDialog dialog = new(repository, statistics.GetOptions(values));
+                SimplePluginSettingsSession settings = await ReadSimplePluginSettingsAsync(repository, SimplePluginSettingsCatalog.Statistics, cancellationToken);
+                if (_repository != repository || !pluginOwner.IsVisible) { return; }
+                StatisticsDialog dialog = new(repository, statistics.GetOptions(settings.InvocationValues()));
                 dialog.Opened += async (_, _) => await dialog.InitializeAsync();
-                await ShowOwnedAsync(dialog);
-                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
+                await ShowOwnedAsync(dialog); // Invocation options are temporary; Settings owns the defaults.
             }
             else if (plugin is DeleteUnusedBranchesPlugin)
             {
@@ -71,6 +72,11 @@ public sealed partial class MainWindow
                 await ShowSettingsPageAsync(showChecklist: false, initialPage: "PluginBackgroundFetch", settingsOwnerOverride: pluginOwner,
                     fromScript: fromScript, cancellationToken: cancellationToken);
             }
+            else if (plugin.Descriptor.Id == AutoCompileSubmodulesService.Descriptor.Id)
+            {
+                if (fromScript) { await ManualSubmoduleBuildAsync(repository, pluginOwner, cancellationToken); }
+                else { await RunAsync(T("Auto compile submodules"), active => ManualSubmoduleBuildAsync(active, pluginOwner, Token), refresh: false); }
+            }
             else if (plugin is CreateLocalBranchesPlugin)
             {
                 CreateLocalBranchesDialog dialog = new(repository);
@@ -79,10 +85,21 @@ public sealed partial class MainWindow
             }
             else if (plugin is FindLargeFilesPlugin)
             {
-                FindLargeFilesDialog dialog = new(repository, values);
+                SimplePluginSettingsSession settings = await ReadSimplePluginSettingsAsync(repository, SimplePluginSettingsCatalog.FindLargeFiles, cancellationToken);
+                if (_repository != repository || !pluginOwner.IsVisible) { return; }
+                IReadOnlyDictionary<string, string?> invocation;
+                try { invocation = settings.InvocationValues(); }
+                catch (ArgumentException error) when (error.ParamName == "minimumMegabytes")
+                {
+                    using WindowWork work = TrackWindowWork();
+                    using CancellationTokenSource notice = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+                    await Dialogs.ShowMessageAsync(pluginOwner, T("Find large files"), T(SimplePluginSettingsSession.UnsupportedThresholdMessage),
+                        warning: true, cancellationToken: notice.Token, stopOnOwnerClose: true);
+                    return; // No scanner and no configuration write follows this notice.
+                }
+                FindLargeFilesDialog dialog = new(repository, invocation);
                 dialog.Opened += async (_, _) => await dialog.InitializeAsync();
-                await ShowOwnedAsync(dialog);
-                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
+                await ShowOwnedAsync(dialog); // Threshold/revision edits apply to this scan only.
             }
             else if (plugin is GitImpactPlugin impact)
             {
@@ -100,17 +117,24 @@ public sealed partial class MainWindow
             }
             else if (plugin is GourcePlugin)
             {
-                GourceDialog dialog = new(repository, values);
+                SimplePluginSettingsSession settings = await ReadSimplePluginSettingsAsync(repository, SimplePluginSettingsCatalog.Gource, cancellationToken);
+                if (_repository != repository || !pluginOwner.IsVisible) { return; }
+                IReadOnlyDictionary<string, string?> defaults = settings.InvocationValues();
+                GourceOptions initial = new(defaults["executable"]!, defaults["arguments"]!, repository.Path);
+                GourceDialog dialog = new(repository, defaults, saveAcceptedSettings: async (accepted, token) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
+                    settings.StageAcceptedGource(initial, accepted);
+                    await settings.SaveFilesAsync(token);
+                });
                 dialog.Opened += async (_, _) => await dialog.InitializeAsync();
                 await ShowOwnedAsync(dialog);
-                SavePluginSettings(plugin.Descriptor, dialog.CurrentValues);
             }
             else
             {
                 PluginDialog dialog = new(repository, plugin, values, async (settings, token) =>
                 {
                     cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
-                    if (plugin.Descriptor.Id == AutoCompileSubmodulesService.Descriptor.Id) { _ = AutoCompileSubmodulesOptions.FromValues(settings); }
                     cancellationToken.ThrowIfCancellationRequested(); token.ThrowIfCancellationRequested();
                     SavePluginSettings(plugin.Descriptor, settings);
                 });
@@ -180,13 +204,10 @@ public sealed partial class MainWindow
 
     private async Task AfterSubmoduleUpdateAsync(GitRepository repository, Window owner, CancellationToken token)
     {
+        SimplePluginSettingsSession settings = await ReadSimplePluginSettingsAsync(repository, SimplePluginSettingsCatalog.AutoCompile, token);
         AutoCompileSubmodulesResult builds = await _autoCompile.AfterSubmoduleUpdateAsync(repository, actionSucceeded: true,
-            AutoCompileSubmodulesOptions.FromValues(PluginSettings(AutoCompileSubmodulesService.Descriptor)), (request, cancellation) => ConfirmSubmoduleBuildAsync(request, cancellation, owner), token);
-        foreach (AutoCompileBuildResult build in builds.Builds)
-        {
-            if (build.Result is not null) { AppendOutput(build.SolutionPath + "\n" + build.Result.StandardOutput + build.Result.StandardError); }
-            if (build.Error is not null) { AppendOutput(build.SolutionPath + "\n" + build.Error); }
-        }
+            settings.AutoCompileOptions(), (request, cancellation) => ConfirmSubmoduleBuildAsync(request, cancellation, owner), token);
+        ReportSubmoduleBuilds(builds);
     }
 
     private async Task<AutoCompileDecision> ConfirmSubmoduleBuildAsync(AutoCompileBuildRequest request, CancellationToken token, Window owner)
@@ -194,11 +215,13 @@ public sealed partial class MainWindow
 
     private async Task<AutoCompileDecision> ConfirmSubmoduleBuildOnUiAsync(AutoCompileBuildRequest request, CancellationToken token, Window owner)
     {
-        Window dialog = new() { Title = T("Auto compile submodules"), Width = 560, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        Window dialog = new() { Name = "AutoCompileBuildConfirmation", Title = T("Auto compile submodules"), Width = 560, SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, CanMinimize = false, CanMaximize = false,
+            ShowInTaskbar = false, RequestedThemeVariant = owner.ActualThemeVariant };
         StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
         foreach ((string text, AutoCompileDecision decision) in new[] { ("Build", AutoCompileDecision.Build), ("Skip", AutoCompileDecision.Skip), ("Cancel", AutoCompileDecision.Cancel) })
         {
-            Button button = new() { Content = T(text), IsCancel = decision == AutoCompileDecision.Cancel };
+            Button button = new() { Name = "AutoCompile" + text, Content = T(text), IsCancel = decision == AutoCompileDecision.Cancel };
             button.Click += (_, _) => dialog.Close(decision);
             actions.Children.Add(button);
         }
@@ -207,9 +230,17 @@ public sealed partial class MainWindow
             new TextBlock { Text = T("Build solution?") + "\n" + request.SolutionPath, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
             new TextBlock { Text = string.Join('\n', request.AllSolutions), TextWrapping = Avalonia.Media.TextWrapping.Wrap }, actions
         } };
-        using CancellationTokenRegistration cancellation = token.Register(() => Dispatcher.UIThread.Post(() => dialog.Close(AutoCompileDecision.Cancel)));
+        bool ownerCloseRequested = false;
+        dialog.Closing += (_, args) => { if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { ownerCloseRequested = true; } };
+        // Retain normal owner-close intent, replayed only after this child has
+        // actually closed. The helper posts rather than reentering owner Closing.
+        _ = new DeferredOwnerCloseReplay(dialog);
+        using CancellationTokenRegistration cancellation = token.Register(() => Dispatcher.UIThread.Post(() => { if (dialog.IsVisible) { dialog.Close(AutoCompileDecision.Cancel); } }));
         token.ThrowIfCancellationRequested();
-        return await dialog.ShowDialog<AutoCompileDecision?>(owner) ?? AutoCompileDecision.Cancel;
+        AutoCompileDecision outcome = await dialog.ShowDialog<AutoCompileDecision?>(owner) ?? AutoCompileDecision.Cancel;
+        token.ThrowIfCancellationRequested();
+        if (ownerCloseRequested) { throw new OperationCanceledException("The build owner was closed."); }
+        return outcome;
     }
 
     // These entries edit lifecycle settings; the services run at repository opening or after submodule update.

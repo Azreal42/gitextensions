@@ -20,8 +20,12 @@ public sealed class GourceDialog : RepositoryDialog
     private readonly IGourceAvatarProvider? _injectedAvatarProvider;
     private readonly Lazy<IGourceAvatarProvider> _legacyAvatarProvider = new(() => new GourceAvatarProvider());
     private readonly Button _start;
+    private readonly Button _executableBrowse;
+    private readonly Button _directoryBrowse;
     private readonly List<Button> _links = [];
     private bool _validRepository;
+    private readonly Func<GourceOptions, CancellationToken, Task>? _saveAcceptedSettings;
+    private GourceOptions? _pendingAcceptedSettings;
     public GourceLaunch? LastLaunch { get; private set; }
     public GourceOptions CurrentOptions => new(_path.Text ?? "", _arguments.Text ?? "", _directory.Text);
     public IReadOnlyDictionary<string, string?> CurrentValues => new Dictionary<string, string?>
@@ -30,11 +34,12 @@ public sealed class GourceDialog : RepositoryDialog
     };
 
     public GourceDialog(GitRepository repository, IReadOnlyDictionary<string, string?>? savedValues = null,
-        IGourceAvatarProvider? avatarProvider = null) : base(repository, "Gource")
+        IGourceAvatarProvider? avatarProvider = null,
+        Func<GourceOptions, CancellationToken, Task>? saveAcceptedSettings = null) : base(repository, "Gource")
     {
         _avatarLifetime = AvatarWindowLifetime.For(this);
         App.BindExistingAvatarRuntime(this);
-        _injectedAvatarProvider = avatarProvider;
+        _injectedAvatarProvider = avatarProvider; _saveAcceptedSettings = saveAcceptedSettings;
         _path.Text = savedValues?.GetValueOrDefault("executable") ?? "gource";
         _directory.Text = savedValues?.GetValueOrDefault("workingDirectory") is { Length: > 0 } directory ? directory : repository.Path;
         _arguments.Text = savedValues?.GetValueOrDefault("arguments") ?? new GourceOptions().Arguments;
@@ -43,9 +48,9 @@ public sealed class GourceDialog : RepositoryDialog
         AddField(fields, 0, "Path to Gource", _path);
         AddField(fields, 1, "Repository", _directory);
         AddField(fields, 2, "Arguments", _arguments); Grid.SetColumnSpan(_arguments, 2);
-        Button executableBrowse = Action("GourceBrowse", "Browse", BrowseExecutableAsync);
+        Button executableBrowse = _executableBrowse = Action("GourceBrowse", "Browse", BrowseExecutableAsync);
         Grid.SetRow(executableBrowse, 0); Grid.SetColumn(executableBrowse, 2); executableBrowse.Margin = new Thickness(3, 0); executableBrowse.Height = 24; fields.Children.Add(executableBrowse);
-        Button directoryBrowse = Action("WorkingDirBrowse", "Browse", BrowseDirectoryAsync);
+        Button directoryBrowse = _directoryBrowse = Action("WorkingDirBrowse", "Browse", BrowseDirectoryAsync);
         Grid.SetRow(directoryBrowse, 1); Grid.SetColumn(directoryBrowse, 2); directoryBrowse.Margin = new Thickness(3, 0); directoryBrowse.Height = 24; fields.Children.Add(directoryBrowse);
         DockPanel.SetDock(fields, Dock.Top); Root.Children.Add(fields);
         Grid bottom = new() { ColumnDefinitions = new("*,75"), Margin = new Thickness(12, 3, 12, 8) };
@@ -70,6 +75,13 @@ public sealed class GourceDialog : RepositoryDialog
 
     private async Task StartAsync()
     {
+        if (_pendingAcceptedSettings is not null)
+        {
+            // Retry the accepted write without launching a second process.
+            await RunAsync("Save settings", SaveAcceptedAsync);
+            if (_pendingAcceptedSettings is null && LastError is null) { Close(); }
+            return;
+        }
         AvatarOwnerScope? scope = _avatarLifetime.Scope;
         // An explicitly bound but unavailable window must never switch to the legacy provider.
         if (scope is null && _avatarLifetime.HasBinding) { return; }
@@ -85,9 +97,27 @@ public sealed class GourceDialog : RepositoryDialog
         await RunAsync("Start Gource", async token =>
         {
             LastLaunch = await plugin.LaunchAsync(Repository, options with { Executable = executable }, token);
+            if (_saveAcceptedSettings is not null)
+            {
+                _pendingAcceptedSettings = options;
+                await SaveAcceptedAsync(token);
+            }
             Status.Text = T("Gource started");
         });
-        if (LastLaunch is not null && LastError is null) Close();
+        if (_pendingAcceptedSettings is not null)
+        {
+            // Keep the exact accepted command visible during publication retry.
+            _path.IsReadOnly = _arguments.IsReadOnly = _directory.IsReadOnly = true;
+            Status.Text += "\n" + T("Gource is running. Start retries saving the accepted settings.");
+        }
+        if (LastLaunch is not null && LastError is null) { Close(); }
+    }
+
+    private async Task SaveAcceptedAsync(CancellationToken token)
+    {
+        if (_pendingAcceptedSettings is not { } accepted || _saveAcceptedSettings is null) { return; }
+        await _saveAcceptedSettings(accepted, token);
+        _pendingAcceptedSettings = null;
     }
 
     private async Task BrowseExecutableAsync()
@@ -159,5 +189,11 @@ public sealed class GourceDialog : RepositoryDialog
         input.Margin = new Thickness(3, 0); Grid.SetRow(input, row); Grid.SetColumn(input, 1); grid.Children.Add(input);
     }
 
-    protected override void UpdateActions() => _start.IsEnabled = _validRepository;
+    protected override void UpdateActions()
+    {
+        _start.IsEnabled = _validRepository;
+        bool pending = _pendingAcceptedSettings is not null;
+        _path.IsReadOnly = _arguments.IsReadOnly = _directory.IsReadOnly = pending;
+        _executableBrowse.IsEnabled = _directoryBrowse.IsEnabled = !pending;
+    }
 }

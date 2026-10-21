@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace GitExtensions.Linux.Desktop;
 
-internal enum PluginScopedSettingKind { Text, Integer, Boolean }
+internal enum PluginScopedSettingKind { Text, Integer, Boolean, Single }
 
 internal sealed record PluginScopedSetting(string Control, string Name, string Caption, string RuntimeKey,
     PluginScopedSettingKind Kind, string DefaultValue);
@@ -32,6 +32,7 @@ internal sealed class PluginScopedSettingsDefinition
     internal string OldKey(PluginScopedSetting setting) => Description + setting.Name;
     internal PluginScopedSetting Find(string control) => Fields.Single(field => field.Control == control);
     internal static bool? Boolean(string? value) => bool.TryParse(value, out bool result) ? result : null;
+    internal static float? Single(string? value) => float.TryParse(value, out float result) ? result : null;
     internal static int? Integer(string? value) => int.TryParse(value, NumberStyles.Integer, CultureInfo.CurrentCulture, out int result) ? result : null;
 }
 
@@ -86,12 +87,22 @@ internal class PluginScopedSettingsSession
         // the legacy Description prefix. It does not choose a prefix per file.
         string? value = Raw(scope, Definition.Key(setting), includeDrafts) ?? Raw(scope, Definition.OldKey(setting), includeDrafts);
         if (scope != GitDistributedSettingsScope.Effective) { return value; }
-        value ??= _legacy.GetValueOrDefault(setting.RuntimeKey);
+        if (value is null && _legacy.TryGetValue(setting.RuntimeKey, out string? legacy))
+        {
+            // Linux's old JSON runtime dictionary used invariant numbers. XML
+            // follows the original NumberSetting<float> current-culture binding.
+            value = setting.Kind == PluginScopedSettingKind.Single
+                ? float.TryParse(legacy, NumberStyles.Float, CultureInfo.InvariantCulture, out float prior)
+                    ? prior.ToString(CultureInfo.CurrentCulture) : null
+                : legacy;
+        }
         return setting.Kind switch
         {
             PluginScopedSettingKind.Boolean => (PluginScopedSettingsDefinition.Boolean(value) ?? bool.Parse(setting.DefaultValue)) ? "true" : "false",
             PluginScopedSettingKind.Integer => (PluginScopedSettingsDefinition.Integer(value)
                 ?? int.Parse(setting.DefaultValue, CultureInfo.InvariantCulture)).ToString(CultureInfo.InvariantCulture),
+            PluginScopedSettingKind.Single => (PluginScopedSettingsDefinition.Single(value)
+                ?? float.Parse(setting.DefaultValue, CultureInfo.InvariantCulture)).ToString(CultureInfo.CurrentCulture),
             _ => value ?? setting.DefaultValue
         };
     }
@@ -107,6 +118,19 @@ internal class PluginScopedSettingsSession
         else { edits[key] = value; }
     }
 
+    // Explicit runtime gestures (for example Gource Start) write the modern key
+    // through Windows' Effective routing, without making the Settings view editable.
+    internal void StageEffectiveValue(PluginScopedSetting setting, string value)
+    {
+        if (!Definition.Fields.Contains(setting)) { throw new ArgumentException("Unknown plugin setting.", nameof(setting)); }
+        GitDistributedSettingsSnapshot snapshot = _workspace.Snapshot ?? throw new InvalidOperationException("Plugin settings have not been loaded.");
+        string key = Definition.Key(setting);
+        foreach (Dictionary<string, string?> edits in _intentions.Values) { edits.Remove(key); }
+        foreach (GitDistributedSettingsDestination destination in snapshot.PlanChanges(GitDistributedSettingsScope.Effective,
+            new Dictionary<string, string?> { [key] = value }))
+        { Set(destination.Scope, setting, value); }
+    }
+
     // Runtime publication must never observe intentions belonging to a file that
     // has not been accepted. The page's Effective view may separately preview them.
     internal IReadOnlyDictionary<string, string?> EffectiveValues(bool includeDrafts = false)
@@ -114,7 +138,11 @@ internal class PluginScopedSettingsSession
         if (!Loaded) { throw new InvalidOperationException("Plugin settings could not be loaded.", LoadError); }
         Dictionary<string, string?> result = new(_legacy, StringComparer.Ordinal);
         foreach (PluginScopedSetting setting in Definition.Fields)
-        { result[setting.RuntimeKey] = Read(GitDistributedSettingsScope.Effective, setting, includeDrafts); }
+        {
+            string? value = Read(GitDistributedSettingsScope.Effective, setting, includeDrafts);
+            result[setting.RuntimeKey] = setting.Kind == PluginScopedSettingKind.Single
+                ? PluginScopedSettingsDefinition.Single(value)!.Value.ToString("R", CultureInfo.InvariantCulture) : value;
+        }
         return new ReadOnlyDictionary<string, string?>(result);
     }
 

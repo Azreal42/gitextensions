@@ -75,9 +75,16 @@ internal class PluginScopedSettingsPage : UserControl
             else
             {
                 TextBox text = new() { Name = setting.Control, Height = 24, MinHeight = 24, HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Watermark = string.Format(translations.Translate("DistributedSettingsPage", "_stringSettingPlaceholder", "Text",
-                        "no value set; for empty string, enter \"{0}\" without the double quotes"), EmptyStringValue) };
-                text.PropertyChanged += (_, change) => { if (change.Property == TextBox.TextProperty) { Changed(setting.Control); } };
+                    Watermark = setting.Kind == PluginScopedSettingKind.Single
+                        ? translations.Translate("SettingsPageBase", "_numberSettingPlaceholder", "Text", "no value set")
+                        : string.Format(translations.Translate("SettingsPageBase", "_stringSettingPlaceholder", "Text",
+                            "no value set; for empty string, enter \"{0}\" without the double quotes"), EmptyStringValue) };
+                text.PropertyChanged += (_, change) =>
+                {
+                    if (change.Property != TextBox.TextProperty) { return; }
+                    Changed(setting.Control);
+                    if (setting.Kind == PluginScopedSettingKind.Single) { ShowSingleState(text); }
+                };
                 editor = text;
             }
             _editors.Add(setting.Control, editor); Grid.SetRow(label, row); Grid.SetRow(editor, row++); Grid.SetColumn(editor, 1);
@@ -113,6 +120,8 @@ internal class PluginScopedSettingsPage : UserControl
                 CheckBox choice => choice.IsChecked is { } flag ? flag ? "true" : "false" : null,
                 NumericUpDown number => string.IsNullOrWhiteSpace(number.Text) ? null
                     : PluginScopedSettingsDefinition.Integer(number.Text) is { } count ? count.ToString(System.Globalization.CultureInfo.CurrentCulture) : number.Text?.Trim(),
+                TextBox text when setting.Kind == PluginScopedSettingKind.Single =>
+                    PluginScopedSettingsDefinition.Single(text.Text) is { } single ? single.ToString(System.Globalization.CultureInfo.CurrentCulture) : null,
                 TextBox text => string.IsNullOrWhiteSpace(text.Text) ? null
                     : text.Text?.Trim() == EmptyStringValue ? "" : text.Text?.Trim(),
                 _ => throw new InvalidOperationException("Unknown plugin setting control.")
@@ -120,6 +129,16 @@ internal class PluginScopedSettingsPage : UserControl
             _session.Set(_scope, setting, value);
         }
         _dirty.Clear();
+    }
+    private static void ShowSingleState(TextBox text)
+    {
+        if (!string.IsNullOrEmpty(text.Text) && PluginScopedSettingsDefinition.Single(text.Text) is null)
+        {
+            // Same invalid-number indication as NumberSettingTextBoxBinding<T>.
+            text.Background = Brushes.Red;
+            text.Foreground = new SolidColorBrush(ClassicTextContrast.AdaptForeground(Colors.Red, Colors.Black));
+        }
+        else { text.ClearValue(TextBox.BackgroundProperty); text.ClearValue(TextBox.ForegroundProperty); }
     }
     internal void PrepareSave() => Flush();
     internal bool Validate(out string? error)
@@ -163,7 +182,10 @@ internal class PluginScopedSettingsPage : UserControl
                     case NumericUpDown number:
                         number.Value = PluginScopedSettingsDefinition.Integer(value);
                         number.Text = value ?? ""; break;
-                    case TextBox text: text.Text = value is { Length: 0 } ? EmptyStringValue : value ?? ""; break;
+                    case TextBox text:
+                        text.Text = setting.Kind == PluginScopedSettingKind.Single ? value ?? "" : value is { Length: 0 } ? EmptyStringValue : value ?? "";
+                        if (setting.Kind == PluginScopedSettingKind.Single) { ShowSingleState(text); }
+                        break;
                 }
             }
             _notice.Text = _session.LoadError is not null ? _translations.Translate("Unable to read plugin settings.")

@@ -17,7 +17,8 @@ public sealed class FindLargeFilesDialog : RepositoryDialog
 {
     private const string Columns = "60,*,75,112,94,126,60";
     private readonly FindLargeFilesPlugin _plugin = new();
-    private readonly NumericUpDown _minimum = new() { Name = "FindLargeFilesMinimum", Minimum = 0, Increment = 0.1m, FormatString = "0.###", Width = 100 };
+    private readonly NumericUpDown _minimum = new() { Name = "FindLargeFilesMinimum", Minimum = 0, Maximum = long.MaxValue / 1048576m,
+        Increment = 0.1m, FormatString = "G29", ParsingNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands, Width = 100 };
     private readonly TextBox _revision = new() { Name = "FindLargeFilesRevision", Width = 150 };
     private readonly ListBox _objects = new() { Name = "FindLargeFilesObjects", SelectionMode = SelectionMode.Single };
     private readonly Grid _headers = new() { Name = "FindLargeFilesHeaders", ColumnDefinitions = new(Columns), Height = 25 };
@@ -41,8 +42,8 @@ public sealed class FindLargeFilesDialog : RepositoryDialog
     {
         Name = "FindLargeFilesDialog"; Width = 820; Height = 460; MinWidth = 760; MinHeight = 350;
         ConstrainStatusHeight("FindLargeFilesStatus", 72);
-        _minimum.Value = decimal.TryParse(savedValues?.GetValueOrDefault("minimumMegabytes"), NumberStyles.AllowDecimalPoint,
-            CultureInfo.InvariantCulture, out decimal minimum) && minimum >= 0 ? minimum : 1;
+        _minimum.Value = decimal.TryParse(savedValues?.GetValueOrDefault("minimumMegabytes"), NumberStyles.Float,
+            CultureInfo.InvariantCulture, out decimal minimum) && minimum >= 0 && minimum <= _minimum.Maximum ? minimum : 1;
         _revision.Text = savedValues?.GetValueOrDefault("revision") ?? "HEAD";
         Button analyze = Action("AnalyzeLargeFiles", "Find large files", InitializeAsync); analyze.Height = 25;
         StackPanel settings = new() { Name = "FindLargeFilesSettings", Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(8, 4), Children =

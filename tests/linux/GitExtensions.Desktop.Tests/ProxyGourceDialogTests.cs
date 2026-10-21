@@ -226,9 +226,11 @@ public class ProxyGourceDialogTests
             using JsonDocument invocation = JsonDocument.Parse(File.ReadAllText(executable.Log));
             Assert.That(invocation.RootElement.GetProperty("args").EnumerateArray().Select(value => value.GetString()),
                 Is.EqualTo(new[] { "--title", "From main menu", "--literal", "$(touch MAIN_SENTINEL)" }));
-            string id = new GourcePlugin().Descriptor.Id.ToString();
-            await Until(() => !fixture.Window.IsBusy && new PreferencesStore().Load().PluginSettings.GetValueOrDefault(id)?.GetValueOrDefault("executable") == executable.Path);
-            Assert.That(new PreferencesStore().Load().PluginSettings[id]["arguments"], Is.EqualTo(arguments));
+            await Until(() => !fixture.Window.IsBusy);
+            GitXmlSettingsSnapshot saved = await GitXmlSettingsStore.LoadAsync(DetailedRepositorySettings.GlobalPath);
+            PluginScopedSettingsDefinition definition = SimplePluginSettingsCatalog.Gource.Definition;
+            Assert.That(saved.Values[definition.Key(definition.Find("_gourcePath"))], Is.EqualTo(executable.Path));
+            Assert.That(saved.Values[definition.Key(definition.Find("_gourceArguments"))], Is.EqualTo(arguments));
             Assert.That(File.Exists(Path.Combine(fixture.Repository, "MAIN_SENTINEL")), Is.False);
             executable.Release();
             GourceDialog restored = await OpenAsync();
