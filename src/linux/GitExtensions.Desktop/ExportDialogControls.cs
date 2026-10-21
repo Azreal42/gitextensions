@@ -6,6 +6,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using GitExtensions.Desktop.Controls;
 using GitExtensions.Linux.Desktop.Localization;
 
@@ -91,41 +93,57 @@ internal static class ExportDialogControls
 internal sealed class ExportRevisionList : UserControl
 {
     internal ListBox Rows { get; }
-    private readonly CommitGraph _graph = new() { Width = 90 };
+    private readonly CommitGraph _graph = new() { Width = RevisionHistoryColumns.GraphWidth, LaneWidth = 12, ShowReferenceLabels = false };
+    private readonly HistoryViewPreferences _view;
+    private readonly TranslationCatalog _translations;
+    private IReadOnlyList<GitReference> _references = [];
+    private IReadOnlyList<GitCommit> _ordered = [];
+    private Dictionary<string, int> _rowIndices = new(StringComparer.Ordinal);
+    private string? _authoredEmail;
 
-    internal ExportRevisionList(string name, bool multiple, Control? prefixRows = null)
+    internal ExportRevisionList(string name, bool multiple, Control? prefixRows = null, HistoryViewPreferences? view = null)
     {
+        // A chooser can pass the exact snapshot used by its query. Other historical callers capture it once here.
+        _view = view ?? new HistoryViewPreferencesStore().Load();
+        _translations = TranslationCatalog.LoadDefault();
         DetailedGraphSettings.Bind(_graph);
-        TranslationCatalog translations = TranslationCatalog.LoadDefault();
-        DesktopFontSession fonts = DesktopFonts.Active;
-        double hashWidth = DesktopFontMetrics.HashWidth(fonts.For(DesktopFontRole.Monospace));
-        Rows = new ListBox { Name = name, SelectionMode = multiple ? SelectionMode.Multiple : SelectionMode.Single };
+        Rows = new ListBox { Name = name, Focusable = true, Padding = default,
+            SelectionMode = multiple ? SelectionMode.Multiple : SelectionMode.Single };
         Rows.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
-            Setters = { new Setter(HeightProperty, _graph.LineHeight), new Setter(MinHeightProperty, _graph.LineHeight), new Setter(PaddingProperty, new Thickness(4, 1)), new Setter(MarginProperty, new Thickness(0)) }
+            Setters = { new Setter(HeightProperty, _graph.LineHeight), new Setter(MinHeightProperty, _graph.LineHeight),
+                new Setter(PaddingProperty, new Thickness(0, 1)), new Setter(MarginProperty, new Thickness(0)),
+                new Setter(ListBoxItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch),
+                new Setter(ListBoxItem.VerticalContentAlignmentProperty, VerticalAlignment.Center) }
         });
         Rows.ItemTemplate = new FuncDataTemplate<GitCommit>((commit, _) =>
         {
-            Grid row = new() { ColumnDefinitions = new ColumnDefinitions("*,120,125,75"), Height = _graph.LineHeight - 2 };
-            row.ColumnDefinitions[3].Width = new GridLength(hashWidth);
-            string[] values = [commit?.Subject ?? "", commit?.AuthorName ?? "", commit?.AuthoredAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "", commit?.Hash[..Math.Min(9, commit.Hash.Length)] ?? ""];
-            for (int column = 0; column < values.Length; column++)
-            {
-                TextBlock cell = new() { Text = values[column], Margin = new Thickness(4, 0), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
-                fonts.Apply(cell, column == 3 ? DesktopFontRole.Monospace : DesktopFontRole.Application);
-                Grid.SetColumn(cell, column);
-                row.Children.Add(cell);
-            }
+            Control row = RevisionHistoryRow.Create(commit, _references, _view.RelativeDate);
+            row.Tag = commit;
+            UpdateRow(row);
+            // Selection can precede realization, and a virtualized row may be arranged before its host is focused.
+            row.AttachedToVisualTree += (_, _) => UpdateRow(row);
+            row.Loaded += (_, _) => UpdateRow(row);
+            row.PropertyChanged += (_, change) => { if (change.Property == BoundsProperty) { UpdateRow(row); } };
             return row;
         });
+        Rows.SelectionChanged += (_, _) => UpdatePresentation();
+        Rows.ContainerPrepared += (_, _) => UpdatePresentation();
+        Rows.ContainerIndexChanged += (_, _) => UpdatePresentation();
+        Rows.GotFocus += (_, _) => UpdatePresentation();
+        Rows.LostFocus += (_, _) => Dispatcher.UIThread.Post(UpdatePresentation);
+        Rows.ActualThemeVariantChanged += (_, _) => UpdatePresentation();
+        Rows.Loaded += (_, _) => UpdatePresentation();
         Rows.AddHandler(ScrollViewer.ScrollChangedEvent, (_, change) => { if (change.Source is ScrollViewer viewer) { _graph.VerticalOffset = viewer.Offset.Y; } });
         DockPanel panel = new() { LastChildFill = true };
-        Grid headings = new() { ColumnDefinitions = new ColumnDefinitions("90,*,120,125,75"), Height = _graph.LineHeight };
-        headings.ColumnDefinitions[4].Width = new GridLength(hashWidth);
-        string[] labels = ["Graph", "Message", "Author", "Date", "Commit"];
+        RevisionHistoryColumns columns = RevisionHistoryColumns.From(_view);
+        Grid headings = new() { Name = "RevisionColumnHeaders", ColumnDefinitions = columns.CreateDefinitions(includeGraph: true, showGraph: _view.ShowGraph), Height = _graph.LineHeight };
+        string[] labels = _view.ShowNotesColumn ? ["Graph", "Message", "Author", "Date", "Commit", "Notes"] : ["Graph", "Message", "Author", "Date", "Commit"];
+        bool[] visible = [_view.ShowGraph, true, _view.ShowAuthor, _view.ShowDate, _view.ShowId, _view.ShowNotesColumn];
         for (int column = 0; column < labels.Length; column++)
         {
-            TextBlock label = new() { Text = translations.Translate(labels[column]), Margin = new Thickness(4, 2), VerticalAlignment = VerticalAlignment.Center };
+            TextBlock label = new() { Text = _translations.Translate(labels[column]), IsVisible = visible[column], Margin = new Thickness(4, 2), VerticalAlignment = VerticalAlignment.Center };
+            DesktopFonts.Apply(label, DesktopFontRole.Application);
             Grid.SetColumn(label, column);
             headings.Children.Add(label);
         }
@@ -134,6 +152,8 @@ internal sealed class ExportRevisionList : UserControl
         panel.Children.Add(header);
         if (prefixRows is not null) { DockPanel.SetDock(prefixRows, Dock.Top); panel.Children.Add(prefixRows); }
         Grid content = new() { ColumnDefinitions = new ColumnDefinitions("90,*") };
+        content.ColumnDefinitions[0].Width = new GridLength(_view.ShowGraph ? RevisionHistoryColumns.GraphWidth : 0);
+        _graph.IsVisible = _view.ShowGraph;
         content.Children.Add(_graph);
         Grid.SetColumn(Rows, 1);
         content.Children.Add(Rows);
@@ -143,11 +163,38 @@ internal sealed class ExportRevisionList : UserControl
 
     internal IReadOnlyList<GitCommit> SetData(IReadOnlyList<GitCommit> commits, IReadOnlyList<GitReference> references, string? head)
     {
+        _references = RevisionHistoryPresentation.FilterReferences(references, _view);
         _graph.Commits = commits;
-        _graph.References = references;
+        _graph.References = _references;
         _graph.CurrentHead = head;
-        Rows.ItemsSource = _graph.OrderedCommits;
-        return _graph.OrderedCommits;
+        _ordered = _graph.OrderedCommits;
+        _rowIndices = _ordered.Select((commit, index) => (commit.Hash, Index: index))
+            .ToDictionary(entry => entry.Hash, entry => entry.Index, StringComparer.Ordinal);
+        Rows.ItemsSource = _ordered;
+        UpdatePresentation();
+        return _ordered;
+    }
+
+    private void UpdatePresentation()
+    {
+        GitCommit[] selected = Rows.SelectedItems?.OfType<GitCommit>().ToArray() ?? [];
+        if (selected.Length == 1) { _authoredEmail = selected[0].AuthorEmail; }
+        else if (selected.Length == 0) { _authoredEmail = null; }
+        _graph.SelectedHashes = selected.Select(commit => commit.Hash).ToArray();
+        _graph.SelectionFocused = Rows.IsKeyboardFocusWithin;
+        _graph.AuthoredEmail = _view.HighlightAuthoredRevisions ? _authoredEmail : null;
+        _graph.DrawAlternateBackground = _view.DrawAlternateBackground;
+        foreach (Control row in Rows.GetVisualDescendants().OfType<Control>().Where(control => control.Name == "RevisionHistoryRow")) { UpdateRow(row); }
+    }
+
+    private void UpdateRow(Control row)
+    {
+        if (row.Tag is not GitCommit commit) { return; }
+        bool selected = Rows.SelectedItems?.OfType<GitCommit>().Any(entry => entry.Hash == commit.Hash) == true;
+        RevisionHistoryRow.UpdateState(row, selected, Rows.IsKeyboardFocusWithin,
+            _view.HighlightAuthoredRevisions ? _authoredEmail : null, _rowIndices.GetValueOrDefault(commit.Hash), _view.DrawAlternateBackground);
+        // Notes and committer dates require the existing Browse metadata reader; no hidden reads are introduced here.
+        RevisionHistoryPresentation.Apply(row, commit, _view, _references, translate: _translations.Translate);
     }
 }
 

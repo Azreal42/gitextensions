@@ -9,6 +9,7 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class HistoryFilterDialog : Window
 {
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
+    private readonly GitLogQuery _query;
     private bool _closed;
     private readonly Dictionary<string, (CheckBox Enabled, TextBox Input)> _textFields = [];
     private readonly CheckBox _sinceEnabled = new();
@@ -33,6 +34,7 @@ public sealed class HistoryFilterDialog : Window
     public HistoryFilterDialog(GitLogQuery query, string? rememberedBranchFilter = null, bool? branchFilterEnabled = null,
         FileHistoryPreferences? fileHistoryPreferences = null)
     {
+        _query = query;
         Title = L("$this", "Filter revisions");
         Width = 520;
         SizeToContent = SizeToContent.Height;
@@ -71,7 +73,9 @@ public sealed class HistoryFilterDialog : Window
         reset.Click += (_, _) =>
         {
             _textFields["BranchFilter"].Enabled.IsChecked = false;
-            Close(new GitLogQuery { Count = query.Count, Revision = _currentBranch.IsChecked == true ? "HEAD" : null,
+            Close(query with { Skip = 0, Revision = _currentBranch.IsChecked == true ? "HEAD" : null, BranchFilter = null,
+                Author = null, Committer = null, Message = null, DiffContent = null, Path = null, Since = null, Until = null,
+                FirstParent = false, HideMergeCommits = false, SimplifyByDecoration = false,
                 All = _currentBranch.IsChecked != true, Reflog = _reflog.IsChecked == true, IgnoreCase = _ignoreCase.IsChecked == true,
                 FullHistory = _fullHistory.IsChecked == true, SimplifyMerges = _simplifyMerges.IsChecked == true });
         };
@@ -91,8 +95,10 @@ public sealed class HistoryFilterDialog : Window
         Closed += (_, _) => _closed = true;
     }
 
-    public GitLogQuery ReadQuery() => new()
+    // A filter editor owns its visible fields, never the host's boundary, sort or ref-inclusion policy.
+    public GitLogQuery ReadQuery() => _query with
     {
+        Skip = 0,
         Count = (int)(_limit.Value ?? 300),
         Revision = _currentBranch.IsChecked == true ? "HEAD" : null,
         BranchFilter = _currentBranch.IsChecked == true || !IsBranchFilterEnabled ? null : RememberedBranchFilter,

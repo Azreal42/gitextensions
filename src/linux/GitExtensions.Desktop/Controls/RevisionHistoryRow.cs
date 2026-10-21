@@ -183,18 +183,16 @@ public static class RevisionHistoryRow
         public void ApplyPresentation(Presentation value)
         {
             if (_commit is null) { return; }
+            new RevisionHistoryColumns(value.ShowAvatar, value.ShowAuthor, value.ShowDate, value.ShowId, value.ShowNotesColumn).Apply(ColumnDefinitions);
             Grid author = Children.OfType<Grid>().Single();
             author.Children[0].IsVisible = value.ShowAvatar;
             author.Children[1].IsVisible = value.ShowAuthor;
             author.ColumnDefinitions[0].Width = new GridLength(value.ShowAvatar ? 20 : 0);
-            ColumnDefinitions[1].Width = new GridLength(value.ShowAuthor ? 150 : value.ShowAvatar ? 20 : 0);
             TextBlock date = Children.OfType<TextBlock>().Single(c => c.Name == "RevisionDate");
             date.IsVisible = value.ShowDate;
             date.Text = value.RelativeDate ? FormatRelativeDate(value.Date, DateTimeOffset.Now) : value.Date.LocalDateTime.ToString("G", CultureInfo.CurrentCulture);
             ToolTip.SetTip(date, value.Date.LocalDateTime.ToString("G", CultureInfo.CurrentCulture));
-            ColumnDefinitions[2].Width = new GridLength(value.ShowDate ? 100 : 0);
             Children.OfType<TextBlock>().Single(c => c.Name == "RevisionHash").IsVisible = value.ShowId;
-            ColumnDefinitions[3].Width = new GridLength(value.ShowId ? HashWidth() : 0);
             if (value.ShowNotesColumn && _notes is null)
             {
                 _notes = Cell("RevisionNotes", ""); if (ColumnDefinitions.Count < 5) { ColumnDefinitions.Add(new ColumnDefinition(220, GridUnitType.Pixel)); }
@@ -204,7 +202,6 @@ public static class RevisionHistoryRow
             {
                 _notes.Text = string.Join(' ', value.Notes.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
                 ToolTip.SetTip(_notes, value.Notes); _notes.IsVisible = value.ShowNotesColumn;
-                ColumnDefinitions[4].Width = new GridLength(value.ShowNotesColumn ? 220 : 0);
             }
             MessageCell message = Children.OfType<MessageCell>().Single();
             message.SetPresentation(value.Details, value.References.Where(r => r.RevisionHash == _commit.Hash).DistinctBy(r => r.Name, StringComparer.Ordinal)
@@ -215,8 +212,7 @@ public static class RevisionHistoryRow
         public HistoryRow(GitCommit? commit)
         {
             _commit = commit; Name = "RevisionHistoryRow";
-            ColumnDefinitions = new ColumnDefinitions("*,150,100,75");
-            ColumnDefinitions[3].Width = new GridLength(HashWidth());
+            ColumnDefinitions = new RevisionHistoryColumns().CreateDefinitions();
             Height = DesktopFontMetrics.HistoryContentHeight(DesktopFonts.Active); ClipToBounds = true;
             ActualThemeVariantChanged += (_, _) => ApplyState();
             AttachedToVisualTree += (_, _) => ApplyState();
@@ -243,8 +239,6 @@ public static class RevisionHistoryRow
             ApplyBuildColor();
         }
     }
-
-    private static double HashWidth() => DesktopFontMetrics.HashWidth(DesktopFonts.For(DesktopFontRole.Monospace));
 
     private static TextBlock Cell(string name, string value)
     {

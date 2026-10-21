@@ -32,15 +32,17 @@ internal sealed class ChooseCommitSelectionPresenter : UserControl
     internal event EventHandler? SelectionChanged;
     internal event EventHandler? AcceptRequested;
 
-    internal ChooseCommitSelectionPresenter(string rowsName, bool showArtificial, Func<string, string> translate)
+    internal ChooseCommitSelectionPresenter(string rowsName, bool showArtificial, Func<string, string> translate, HistoryViewPreferences? view = null)
     {
+        view ??= new HistoryViewPreferencesStore().Load();
         if (showArtificial)
         {
-            _artificial = ArtificialRevisionRows.Create(DesktopFontMetrics.GraphRowHeight(DesktopFonts.Active), translate, "Choose", graphWidth: 90);
+            _artificial = ArtificialRevisionRows.Create(DesktopFontMetrics.GraphRowHeight(DesktopFonts.Active), translate, "Choose",
+                graphWidth: view.ShowGraph ? RevisionHistoryColumns.GraphWidth : 0);
             _artificial.View.IsVisible = false; _artificial.WorkingState.IsVisible = _artificial.IndexState.IsVisible = false;
             Configure(_artificial.Working, GitCompareRevisionKind.WorkingTree); Configure(_artificial.Index, GitCompareRevisionKind.Index);
         }
-        _commits = new(rowsName, false, _artificial?.View); Content = _commits;
+        _commits = new(rowsName, false, _artificial?.View, view); Content = _commits;
         Rows.SelectionChanged += (_, _) => { if (!_selecting) { Publish(Rows.SelectedItem is GitCommit commit ? ChooseCommitSelection.FromCommit(commit) : null); } };
         Rows.DoubleTapped += (_, args) =>
         {

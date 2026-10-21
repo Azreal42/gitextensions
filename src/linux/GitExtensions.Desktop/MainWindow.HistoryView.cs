@@ -26,10 +26,8 @@ public sealed partial class MainWindow
         });
     }
 
-    private GitReference[] HistoryViewReferences(IEnumerable<GitReference> references) => references.Where(r =>
-        (!r.IsRemote || _historyView.ShowRemoteBranches) && (!r.IsTag || _historyView.ShowTags)
-        && (!r.Name.StartsWith("refs/sessions/", StringComparison.Ordinal) || _historyView.ShowSessionCheckpoints)
-        && (r.Name != "refs/stash" || _historyView.ShowStashes)).ToArray();
+    private GitReference[] HistoryViewReferences(IEnumerable<GitReference> references)
+        => RevisionHistoryPresentation.FilterReferences(references, _historyView);
 
     private async Task LoadHistoryViewMetadataAsync(GitRepository repository, IReadOnlyList<GitCommit> commits, CancellationToken token)
     {
@@ -77,18 +75,11 @@ public sealed partial class MainWindow
 
     private void ApplyHistoryRowOptions(Control row, GitCommit commit)
     {
-        var metadata = _historyMetadata.GetValueOrDefault(commit.Hash);
-        DateTimeOffset date = _historyView.ShowAuthorDate || metadata.Date == default ? commit.AuthoredAt : metadata.Date;
-        string body = _historyView.ShowBody ? string.Join(' ', commit.Body.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)) : "";
-        string note = metadata.Notes ?? "";
-        string details = body + (_historyView.ShowNotes && !_historyView.ShowNotesColumn && note.Length > 0
-            ? "  [" + T("Notes") + "] " + string.Join(' ', note.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)) : "");
         bool dim = _historyView.DrawNonRelativesTextGray
             && (_highlightedHistoryBranch ?? _relatedHistory) is { Count: > 0 } related
             && !related.Contains(commit.Hash);
-        RevisionHistoryRow.ApplyPresentation(row, new(_historyView.ShowAvatar, _historyView.ShowAuthor, _historyView.ShowDate,
-            _historyView.ShowId, _historyView.RelativeDate, _historyView.ShowNotesColumn, date, details, note, dim,
-            HistoryViewReferences(_navigationReferences), _historyView.FillRefLabels));
+        RevisionHistoryPresentation.Apply(row, commit, _historyView, HistoryViewReferences(_navigationReferences),
+            _historyMetadata.GetValueOrDefault(commit.Hash), dim, T);
     }
 
     private IReadOnlySet<string>? RelatedHistory(string? revision, bool descendants)

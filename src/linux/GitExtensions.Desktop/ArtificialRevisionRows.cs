@@ -16,7 +16,7 @@ internal sealed record ArtificialRevisionRows(Grid View, Button Working, Button 
         Button[] buttons = new Button[2]; TextBlock[] states = new TextBlock[2];
         for (int i = 0; i < 2; i++)
         {
-            Canvas graph = new() { Width = graphWidth, Height = rowHeight };
+            Canvas graph = new() { Width = graphWidth, Height = rowHeight, IsVisible = graphWidth > 0 };
             graph.Children.Add(new Avalonia.Controls.Shapes.Line { StartPoint = new Point(8, 0), EndPoint = new Point(8, rowHeight), Stroke = Brush.Parse("#d3d3d3"), StrokeThickness = 1.5 });
             Avalonia.Controls.Shapes.Ellipse node = new() { Width = 7, Height = 7, Fill = Brush.Parse("#d3d3d3") };
             Canvas.SetLeft(node, 4.5); Canvas.SetTop(node, (rowHeight - 7) / 2); graph.Children.Add(node);
