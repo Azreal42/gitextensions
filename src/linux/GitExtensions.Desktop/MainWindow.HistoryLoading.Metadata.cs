@@ -36,7 +36,9 @@ public sealed partial class MainWindow
         }
         finally { _refreshing = refreshing; }
         UpdateHistoryPresentation();
-        if (LastException is null && !_busy && load.RetainedFailure is null) { _state.Text = _repositorySummary; }
+        if (LastException is null && !_busy && load.RetainedFailure is null
+            && (GitHubActionsError is null || !ReferenceEquals(_gitHubActionsPublishedRepository, _repository)))
+        { _state.Text = _repositorySummary; }
         RestoreRetainedHistoryFailure(load);
     }
 

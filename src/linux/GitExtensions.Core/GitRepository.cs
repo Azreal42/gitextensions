@@ -19,6 +19,8 @@ public sealed partial class GitRepository
     public GitExecutionEnvironment ExecutionEnvironment => _runner.ExecutionEnvironment;
     /// <summary>Pins this repository's executable and environment through a multi-command workflow.</summary>
     public IDisposable BeginOperation() => _runner.BeginOperation();
+    /// <summary>Reinstalls an owned workflow's captured executable and environment for this scope.</summary>
+    public IDisposable BeginOperation(GitExecutionEnvironment environment) => _runner.BeginOperation(environment);
     /// <summary>Discovery metadata; populated by OpenAsync or GetInfoAsync.</summary>
     public GitRepositoryInfo? Info { get; private set; }
     public bool IsBare => Info?.IsBare == true;

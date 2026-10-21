@@ -31,6 +31,7 @@ public sealed partial class MainWindow
                 change.SimilarityPercent)).ToArray())], preserveSelection);
         if (selectedPath is not null && changes.FirstOrDefault(change => change.Path == selectedPath) is GitChange selected)
         { _changesFilesView.SelectTags([selected]); }
+        if (SelectedWorkingChange is null) { ClearWorkingDiff(); }
     }
 
     private void ClearWorkingDiff()

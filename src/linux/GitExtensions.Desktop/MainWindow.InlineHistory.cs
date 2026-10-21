@@ -114,6 +114,12 @@ public sealed partial class MainWindow
             ? new(selected[^1], selected[0]) : null;
     }
 
+    private bool IsCurrentInitialComparison(BrowseInitialComparison comparison)
+    {
+        GitCompareRevision[] selected = SelectedHistoryRevisions();
+        return selected.Length == 2 && selected[0] == comparison.Selected && selected[1] == comparison.First;
+    }
+
     private Task HandleHistorySelectionChanged(SelectionChangedEventArgs args)
     {
         if (_refreshing) { return Task.CompletedTask; }
@@ -122,10 +128,15 @@ public sealed partial class MainWindow
         return PublishHistorySelectionChange();
     }
 
-    private Task PublishHistorySelectionChange()
+    private Task PublishHistorySelectionChange() => PublishHistorySelectionChangeCore(null);
+
+    private Task PublishHistorySelectionChangeCore(BrowseInitialComparison? retainedComparison)
     {
         _parentChildNavigation?.RevisionsSelectionChanged();
-        UpdateTypedHistorySelection(); CancelRevisionReads(); RememberRevisionNavigation();
+        UpdateTypedHistorySelection();
+        if (retainedComparison is not null && IsCurrentInitialComparison(retainedComparison))
+        { _browseInitialComparison = retainedComparison; }
+        CancelRevisionReads(); RememberRevisionNavigation();
         RefreshRebaseMenu(); RefreshRevisionContextMenu(); OnGitHubActionsSelectionChanged(); UpdateHistoryPresentation();
         if (PrimaryHistoryItem is GitCommit commit) { UpdateCommitInfo(commit); _gpgInfo.Text = null; }
         else { ClearCommitInformation(); _gpgInfo.Text = ""; }

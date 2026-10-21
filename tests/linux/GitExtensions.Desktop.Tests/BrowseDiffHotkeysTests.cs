@@ -178,6 +178,9 @@ public sealed class BrowseDiffHotkeysTests
             await Until(() => main.GetVisualDescendants().OfType<FileStatusListView>().Any(view => view.Name == "CommitFileStatusList" && view.IsEffectivelyVisible && view.Entries.Count > 0), main);
             FileStatusListView view = Node<FileStatusListView>(main, "CommitFileStatusList");
             TreeViewItem row = FileStatusTestHelpers.Rows(view.Tree).Single(item => item.Tag is string path && path == "file.txt");
+            await Until(() => row.GetVisualDescendants().OfType<Control>().SingleOrDefault(control => control.Name == "PART_Header"
+                && control.GetVisualAncestors().OfType<TreeViewItem>().FirstOrDefault() == row)
+                is { IsEffectivelyVisible: true, Bounds.Width: > 0, Bounds.Height: > 0 }, main);
             PushProcessTestDriver.Pointer(Header(row)); await Idle(main);
             ContextMenu menu = view.Tree.ContextMenu!;
             Control returnFocus = view.Tree;
@@ -229,6 +232,8 @@ public sealed class BrowseDiffHotkeysTests
             Press(main, PhysicalKey.Digit3, RawInputModifiers.Control);
             FileStatusListView view = Node<FileStatusListView>(main, "RevisionFileStatusList");
             await Until(() => view.IsEffectivelyVisible && view.Entries.Count > 0, main);
+            // Groups become visible before their already-owned selected-file document read finishes.
+            await main.RepositoryMutationCompletion; Pump(main);
             TreeViewItem row = FileStatusTestHelpers.Rows(view.Tree).Single(item => item.Tag is RevisionDiffFileSelection { File.Path: "file.txt" });
             Pointer(Header(row), MouseButton.Right);
             ContextMenu menu = view.Tree.ContextMenu!;

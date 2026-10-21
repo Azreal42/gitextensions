@@ -353,7 +353,9 @@ public sealed class GeneralBrowseStatusTests
         {
             new PreferencesStore().Save(preferences with { Language = "English", HistoryLimit = 30 });
             Main = new MainWindow(new BrowseRequest(Git.Repository.Path)) { Width = 1800, Height = 1000 };
-            Main.Show(); await Until(() => !Main.IsBusy && Private<GitRepository?>(Main, "_repository") is not null); Pump(Main);
+            Main.Show(); await Until(() => !Main.IsBusy && Private<GitRepository?>(Main, "_repository") is not null
+                && Main.HistoryLoadingCompletion.IsCompleted);
+            await Main.HistoryLoadingCompletion; Pump(Main);
             Assert.That(Main.LastException, Is.Null, Main.LastException?.ToString()); return Main;
         }
         internal async Task ChangeSettingAsync(string name)

@@ -231,6 +231,12 @@ public sealed class BisectRevisionContextTests
         Assert.That((await f.Repository.GetBisectStateAsync()).GoodRevisions, Does.Contain(target));
         Assert.That(f.History.ItemsSource, Is.SameAs(source)); Assert.That(f.Main.LastException, Is.SameAs(error));
         FirstArrow(f, target, up: true);
+        await f.Main.RepositoryMutationCompletion;
+        Assert.That(f.Main.LastException, Is.SameAs(error), "A sibling panel read cannot recover the native failure after its partial effects were refreshed.");
+        Assert.That(Field<Button>(f.Main, "ViewErrorDetails").IsVisible, Is.True);
+        await Refresh(f.Main); await Idle(f.Main);
+        Assert.That(f.Main.LastException, Is.Null, "A new explicit refresh is a real recovery boundary.");
+        Assert.That((await f.Repository.GetBisectStateAsync()).GoodRevisions, Does.Contain(target));
     }
 
     [AvaloniaTest]

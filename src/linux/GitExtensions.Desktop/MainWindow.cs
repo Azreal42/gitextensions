@@ -490,6 +490,7 @@ public sealed partial class MainWindow : Window
     {
         if (_busy || _lifetime.IsCancellationRequested) { return; }
         if (requireRepository && _repository is null) { _state.Text = "Open a repository first"; return; }
+        BrowseHistoryLoad? historyAtAdmission = _historyLoad;
         InvalidateErrorReport();
         _operationReportDirectory = _repository?.Path;
         using IDisposable execution = _repository?.BeginOperation() ?? GitEnvironment.BeginOperation();
@@ -525,7 +526,7 @@ public sealed partial class MainWindow : Window
             if (refresh && _repository is not null) { await RefreshDataAsync(_repository); }
             success = true;
         }
-        catch (OperationCanceledException) { _state.Text = "Operation cancelled"; AppendOutput(label + ": cancelled"); CaptureInterruptedHistoryFailure(); }
+        catch (OperationCanceledException) { _state.Text = "Operation cancelled"; AppendOutput(label + ": cancelled"); CaptureInterruptedHistoryFailure(historyAtAdmission, refresh || historyMutation); }
         catch (Exception exception)
         {
             LastException = exception;
@@ -540,7 +541,7 @@ public sealed partial class MainWindow : Window
                 _errorContext = ExceptionReportContext.Capture(label, _operationReportDirectory, DesktopVersion, exception);
                 _errorDetails.IsVisible = true; _errorDetails.IsEnabled = _errorReportCompletion.IsCompleted;
             }
-            CaptureInterruptedHistoryFailure();
+            CaptureInterruptedHistoryFailure(historyAtAdmission, refresh || historyMutation);
         }
         finally
         {
@@ -555,7 +556,9 @@ public sealed partial class MainWindow : Window
             }
             _busy = false;
             SetActionsEnabled(true);
-            if (success && _historyLoad?.Error is null) { _state.Text = _repositorySummary; }
+            if (success && _historyLoad?.Error is null
+                && (GitHubActionsError is null || !ReferenceEquals(_gitHubActionsPublishedRepository, _repository)))
+            { _state.Text = _repositorySummary; }
             if (_pendingDiffAppearance && !_lifetime.IsCancellationRequested) { await ReloadDiffAppearancesAsync(); }
             if (_historyLoad is { PendingPanels: true } history && CanPublishHistory(history))
             { await ResumeProgressivePanelsAsync(history); }

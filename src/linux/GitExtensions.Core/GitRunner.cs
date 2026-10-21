@@ -53,6 +53,15 @@ public sealed class GitRunner
         return new GitEnvironmentOperation(() => _operation.Value = previous);
     }
 
+    /// <summary>Uses one already-captured environment for this scope and restores the preceding operation on disposal.</summary>
+    public IDisposable BeginOperation(GitExecutionEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+        GitExecutionEnvironment? previous = _operation.Value;
+        _operation.Value = environment;
+        return new GitEnvironmentOperation(() => _operation.Value = previous);
+    }
+
     /// <summary>Optional desktop fallback. Applied only to child processes with a display, preserving explicit user helpers.</summary>
     public static string? AskpassFallbackPath { get; set; }
     /// <summary>The desktop UI culture name, propagated only to its askpass fallback. It never contains credential data.</summary>

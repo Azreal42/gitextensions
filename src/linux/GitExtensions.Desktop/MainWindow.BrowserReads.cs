@@ -59,9 +59,11 @@ public sealed partial class MainWindow
         bool displayedInformationError = informationError && ReferenceEquals(repository, _commitInformationErrorRepository)
             && _commitInformationErrorHash is not null && CurrentDisplayedCommit?.Hash == _commitInformationErrorHash;
         bool historyError = LastException is not null && ReferenceEquals(LastException, _historyLoad?.Error);
+        bool retainedOperationError = LastException is not null && _historyLoad is { } currentHistory
+            && ReferenceEquals(repository, currentHistory.Repository) && ReferenceEquals(LastException, currentHistory.RetainedFailure?.Error);
         // Sibling panel reads do not recover another current source's failure.
         // A new information read can recover its own error, but retains independent inherited errors.
-        if (informationRead ? informationError : !displayedInformationError && !historyError) { LastException = null; }
+        if (informationRead ? informationError : !displayedInformationError && !historyError && !retainedOperationError) { LastException = null; }
         if (informationRead)
         { _commitInformationError = null; _commitInformationErrorRepository = null; _commitInformationErrorHash = null; }
         try { await action(repository, token); }

@@ -63,7 +63,9 @@ public sealed class GitEnvironmentStartupTests
         await Until(() => File.Exists(f.Ready));
         GitEnvironment.Configure(new() { Executable = second });
         File.WriteAllText(f.Release, "release");
-        await Until(() => !settings.IsVisible && Read<GitRepository?>(f.Main, "_repository") is not null && !f.Main.IsBusy);
+        await Until(() => !settings.IsVisible && Read<GitRepository?>(f.Main, "_repository") is not null && !f.Main.IsBusy
+            && f.Main.HistoryLoadingCompletion.IsCompleted);
+        await f.Main.HistoryLoadingCompletion;
         Assert.That(File.ReadAllLines(f.Log).Length, Is.GreaterThan(1), "Discovery and the real repository refresh must both have run.");
         Assert.That(File.ReadAllLines(f.Log).All(line => line == "selected"), Is.True,
             "The CLI request must resolve and open under one execution snapshot even after another window publishes a choice.");

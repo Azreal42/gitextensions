@@ -132,7 +132,11 @@ public sealed partial class MainWindow
         _tabs.SelectionChanged += async (_, args) =>
         {
             if (!_layingOutCommitInfo && args.Source == _tabs && !_busy)
-            { await LoadVisibleRevisionPanelAsync(); }
+            {
+                Task panel = LoadVisibleRevisionPanelAsync();
+                Task working = (_tabs.SelectedItem as TabItem)?.Name == "ChangesTab" ? LoadSelectedDiffAsync() : Task.CompletedTask;
+                await Task.WhenAll(panel, working);
+            }
         };
         Grid.SetRow(_tabs, 2);
         right.Children.Add(_tabs);

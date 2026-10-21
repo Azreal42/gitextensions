@@ -21,7 +21,7 @@ public sealed partial class MainWindow
             ? new[] { load.Requested, load.First }.OfType<GitCompareRevision>().Select(HistoryRevisionKey).Distinct(StringComparer.Ordinal).ToArray()
             : changedHead && !load.PreserveSelection && load.Status.Head is not null ? [load.Status.Head]
             : !load.ChangedRepository && load.Bookmark.Selection.Length > 0
-                ? load.Bookmark.Recency.Reverse().Where(load.Bookmark.Selection.Contains).Concat(load.Bookmark.Selection).Distinct(StringComparer.Ordinal).ToArray()
+                ? load.Bookmark.Selection
                 : load.Status.Head is not null ? [load.Status.Head] : [];
         load.SelectionPending = load.PendingSelection.Length > 0;
     }
@@ -29,6 +29,9 @@ public sealed partial class MainWindow
     private Task PublishProgressiveHistory(BrowseHistoryLoad load, IReadOnlyList<GitCommit> batch, bool final, bool rebuild = false)
     {
         if (!CanPublishHistory(load)) { return Task.CompletedTask; }
+        // Dispatcher callbacks do not inherit the reader's operation scope. Their owned
+        // branch, inventory and initial panel reads use the same captured environment.
+        using IDisposable environment = load.Repository.BeginOperation(load.ExecutionEnvironment);
         bool first = !load.Published;
         HistoryBookmark bookmark = CaptureHistoryBookmark();
         bool focused = _commits.IsKeyboardFocusWithin;
@@ -96,8 +99,7 @@ public sealed partial class MainWindow
     private void RestoreProgressiveSelection(BrowseHistoryLoad load, HistoryBookmark bookmark, bool first, bool final)
     {
         bool pending = load.SelectionPending && load.Intent == _historyIntentVersion;
-        string[] keys = pending ? load.PendingSelection : bookmark.Recency.Reverse().Where(bookmark.Selection.Contains)
-            .Concat(bookmark.Selection).Distinct(StringComparer.Ordinal).ToArray();
+        string[] keys = pending ? load.PendingSelection : bookmark.Selection;
         object[] selected = keys.Select(HistoryItem).OfType<object>().ToArray();
         bool allTargets = pending && selected.Length == keys.Length;
         bool explicitMissing = load.Requested is not null && pending && !allTargets;
@@ -111,17 +113,25 @@ public sealed partial class MainWindow
         string[] actual = (_commits.SelectedItems?.Cast<object>() ?? []).Select(HistoryRevisionItems.Key).ToArray();
         if (!actual.SequenceEqual(selected.Select(HistoryRevisionItems.Key)))
         { _commits.SelectedItems = new AvaloniaList<object?>(selected.Cast<object?>()); }
+        HashSet<string> selectedKeys = selected.Select(HistoryRevisionItems.Key).ToHashSet(StringComparer.Ordinal);
         _historySelectionOrder.Clear();
-        _historySelectionOrder.AddRange(selected.Reverse().Select(HistoryRevisionItems.Key));
+        // Native SelectedItems order and comparison recency are separate state. A
+        // refresh/append restores both; explicit initial endpoints establish new recency.
+        if (!pending || load.Requested is null && !load.ChangedRepository)
+        { _historySelectionOrder.AddRange((pending ? load.Bookmark : bookmark).Recency.Where(selectedKeys.Contains)); }
+        foreach (object item in selected.Reverse())
+        { string key = HistoryRevisionItems.Key(item); if (!_historySelectionOrder.Contains(key)) { _historySelectionOrder.Add(key); } }
         _quickSearchLastCommit = _historySelectionOrder.LastOrDefault();
         if (_parentChildLatestCommit is null || HistoryItem(_parentChildLatestCommit) is null || first && pending)
         { _parentChildLatestCommit = _quickSearchLastCommit; }
+        BrowseInitialComparison? retainedComparison = ProgressiveInitialComparison(load);
         UpdateTypedHistorySelection();
         if (pending && load.First is not null && load.Requested is not null && allTargets)
-        { _browseInitialComparison = new(load.First, load.Requested); }
-        else if (load.Comparison is { } pair && load.Intent == _historyIntentVersion
-            && HistoryItem(pair.First) is not null && HistoryItem(pair.Selected) is not null)
-        { _browseInitialComparison = pair; }
+        {
+            load.Comparison = new(load.First, load.Requested);
+            _browseInitialComparison = load.Comparison;
+        }
+        else if (retainedComparison is not null) { _browseInitialComparison = retainedComparison; }
         string? anchor = pending && load.First is not null && allTargets ? HistoryRevisionKey(load.First)
             : bookmark.Anchor ?? (first ? load.Bookmark.Anchor : null);
         if (anchor is not null && _historyRows.IndexOfKey(anchor) is int anchorIndex && anchorIndex >= 0)
@@ -145,6 +155,14 @@ public sealed partial class MainWindow
         }
     }
 
+    private BrowseInitialComparison? ProgressiveInitialComparison(BrowseHistoryLoad load)
+    {
+        // A batch/panel publication is not a new selection gesture. Keep the initial
+        // pair only while its generation, user intention and exact ordered endpoints survive.
+        return CanPublishHistory(load) && load.Intent == _historyIntentVersion
+            && load.Comparison is { } pair && _browseInitialComparison == pair && IsCurrentInitialComparison(pair) ? pair : null;
+    }
+
     private void PublishHistoryHost(BrowseHistoryLoad load)
     {
         if (load.Opening)
@@ -152,6 +170,7 @@ public sealed partial class MainWindow
             _repository = load.Repository;
             if (load.ChangedRepository)
             {
+                ClearRevisionDiff(); ClearRevisionPreview(); _loadedDiffSelection = null;
                 _comparisonBase = null; _navigationSelectionKey = null; _authoredEmail = null;
                 _quickSearchArtificialSelection = null; _quickSearchLastCommit = null; _browseInitialComparison = null;
                 _historyMetadata = new(StringComparer.Ordinal);
@@ -191,7 +210,7 @@ public sealed partial class MainWindow
         load.PendingPanels = false;
         try
         {
-            _historySelectionWork = PublishHistorySelectionChange();
+            _historySelectionWork = PublishHistorySelectionChangeCore(ProgressiveInitialComparison(load));
             await _historySelectionWork;
             if (!CanPublishHistory(load)) { return; }
             if ((_tabs.SelectedItem as TabItem)?.Name == "ChangesTab") { await LoadSelectedDiffAsync(); }

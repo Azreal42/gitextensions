@@ -392,6 +392,9 @@ public class ViewerHostReadingTests
     {
         await Until(() => !main.IsBusy);
         SelectTab(main, "DiffTab");
+        Task foreground = main.RepositoryMutationCompletion;
+        await Until(() => foreground.IsCompleted);
+        await foreground;
         TreeView files = Find<TreeView>(main, "RevisionFiles");
         TreeViewItem row = FileStatusTestHelpers.Rows(files).Single(item => item.Tag is RevisionDiffFileSelection selection && selection.File.Path == path);
         foreach (TreeViewItem parent in files.Items.OfType<TreeViewItem>()) { parent.IsExpanded = true; }

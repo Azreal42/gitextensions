@@ -11,6 +11,7 @@ public sealed partial class MainWindow
         GitLogQuery query, HistoryBookmark bookmark, long intent, bool opening, bool preserveSelection)
     {
         internal readonly GitRepository Repository = repository;
+        internal readonly GitExecutionEnvironment ExecutionEnvironment = repository.ExecutionEnvironment;
         internal readonly GitRepository? Origin = origin;
         internal readonly CancellationTokenSource Cancellation = cancellation;
         internal readonly TaskCompletionSource Ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -129,7 +130,7 @@ public sealed partial class MainWindow
         {
             await previousWork;
             token.ThrowIfCancellationRequested();
-            using IDisposable environment = load.Repository.BeginOperation();
+            using IDisposable environment = load.Repository.BeginOperation(load.ExecutionEnvironment);
             ApplyReferenceSorting(load.Repository);
             if (load.Requested?.Kind == GitCompareRevisionKind.Commit)
             { load.Requested = load.Requested with { Revision = await load.Repository.ResolveRevisionAsync(load.Requested.Revision, token) }; }
@@ -236,10 +237,15 @@ public sealed partial class MainWindow
         }
     }
 
-    private void CaptureInterruptedHistoryFailure()
+    private void CaptureInterruptedHistoryFailure(BrowseHistoryLoad? historyAtAdmission, bool mutationCapable)
     {
-        if (_interruptedHistory is { } interrupted)
-        { interrupted.RetainedFailure = new(LastException, _state.Text); }
+        HistoryOperationFailure failure = new(LastException, _state.Text);
+        if (_interruptedHistory is { } interrupted) { interrupted.RetainedFailure = failure; }
+        // Some mutators refresh their real partial effects before rethrowing the native failure.
+        // Ready can already have admitted that operation's new reader, independently of EOF.
+        if (mutationCapable && _historyLoad is { Published: true } admitted
+            && !ReferenceEquals(admitted, historyAtAdmission) && ReferenceEquals(admitted.Repository, _repository))
+        { admitted.RetainedFailure = failure; }
     }
 
     private void RestoreRetainedHistoryFailure(BrowseHistoryLoad load)
