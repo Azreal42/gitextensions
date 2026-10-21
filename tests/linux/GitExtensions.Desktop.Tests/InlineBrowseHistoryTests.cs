@@ -111,7 +111,8 @@ public sealed class InlineBrowseHistoryTests
         Press(f.Main, PhysicalKey.ArrowUp); await f.IdleAsync(); Assert.That(f.Rows.SelectedIndex, Is.EqualTo(page));
         Press(f.Main, PhysicalKey.PageDown); await f.IdleAsync(); Assert.That(f.Rows.SelectedIndex, Is.GreaterThan(page));
         Assert.That(f.Rows.IsKeyboardFocusWithin, Is.True); await f.SelectAsync(Index);
-        f.Main.Width = f.Main.MinWidth; f.Main.Height = f.Main.MinHeight; Pump(f.Main);
+        f.Main.Width = f.Main.MinWidth; f.Main.Height = f.Main.MinHeight;
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); Pump(f.Main);
         Capture(f.Main, "browse-inline-" + language + (dark ? "-dark" : "-light"));
         f.NoReload(source); await f.UnchangedAsync();
     }
@@ -749,7 +750,7 @@ public sealed class InlineBrowseHistoryTests
     private static void Capture(Window window, string name)
     {
         string directory = Environment.GetEnvironmentVariable("GITEXTENSIONS_SCREENSHOTS") ?? TestContext.CurrentContext.WorkDirectory; Directory.CreateDirectory(directory);
-        using var frame = window.GetLastRenderedFrame(); Assert.That(frame, Is.Not.Null);
+        using var frame = window.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
         string path = Path.Combine(directory, name + "-" + Guid.NewGuid().ToString("N") + ".png"); frame!.Save(path); TestContext.AddTestAttachment(path);
     }
     private static bool Alive((int Pid, string Start) identity)

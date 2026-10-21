@@ -94,14 +94,19 @@ public sealed class CommitInformationView : UserControl, IDisposable
             int row = _header.RowDefinitions.Count; _header.RowDefinitions.Add(new(GridLength.Auto));
             TextBlock label = new() { Text = T(field) + ":", VerticalAlignment = VerticalAlignment.Top };
             Control value = field is "Children" or "Parents" ? new WrapPanel { Orientation = Orientation.Horizontal }
-                : new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, Focusable = true, Background = Brushes.Transparent, Name = "CommitInformation" + field.Replace(" ", "") };
+                : new SelectableTextBlock { TextWrapping = TextWrapping.NoWrap, Focusable = true, Background = Brushes.Transparent, Name = "CommitInformation" + field.Replace(" ", "") };
             Grid.SetRow(label, row); Grid.SetRow(value, row); Grid.SetColumn(value, 1);
             _header.Children.Add(label); _header.Children.Add(value); _fields.Add(field, (label, value));
         }
         Border message = new() { Child = MessageControl };
         message.Bind(Border.BackgroundProperty, new DynamicResourceExtension("ClassicMenuBrush"));
         _headerLayout.Children.Add(_authorAvatar); Grid.SetColumn(_header, 1); _headerLayout.Children.Add(_header);
-        StackPanel content = new() { Children = { _headerLayout, message, _supplementary } };
+        ScrollViewer headerScroll = new()
+        {
+            Name = "CommitInformationHeaderScroll", Content = _headerLayout, Focusable = false,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
+        StackPanel content = new() { Children = { headerScroll, message, _supplementary } };
         ScrollViewer viewer = new()
         {
             Name = "CommitInformationScroll", Content = content,

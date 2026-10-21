@@ -109,7 +109,7 @@ public sealed partial class MainWindow
 
         Grid right = new() { RowDefinitions = new RowDefinitions("53*,4,47*") };
         _revisionPanels = new Grid { Name = "RevisionPanels" };
-        _revisionPanels.SizeChanged += (_, _) => LimitCommitInfoWidth();
+        _revisionPanels.LayoutUpdated += (_, _) => LimitCommitInfoWidth();
         _revisionTable = WithQuickSearchNotice(BuildRevisionTable());
         _commitInfoSplitter = new GridSplitter { Name = "CommitInfoSplitter", Width = 4, HorizontalAlignment = HorizontalAlignment.Stretch, ResizeDirection = GridResizeDirection.Columns };
         _revisionPanels.Children.Add(_revisionTable);
@@ -217,7 +217,7 @@ public sealed partial class MainWindow
         if (_revisionPanels is null || _revisionTable is null || _commitInfoSplitter is null || _commitInfoTab is null) { return; }
         if (!Enum.IsDefined(position)) { throw new ArgumentOutOfRangeException(nameof(position)); }
         TabItem? selected = _tabs.SelectedItem as TabItem;
-        if (_commitInfo.Parent == _revisionPanels && _commitInfo.Bounds.Width > 0) { _commitInfoWidth = _commitInfo.Bounds.Width; }
+        RememberCommitInfoWidth();
         _layingOutCommitInfo = true;
         try
         {
@@ -253,13 +253,6 @@ public sealed partial class MainWindow
         finally { _layingOutCommitInfo = false; }
         if (persist) { _browserLayoutPreferences.Save(new(position)); }
         if (!_busy) { _ = LoadVisibleRevisionPanelAsync(); }
-    }
-
-    private void LimitCommitInfoWidth()
-    {
-        if (_revisionPanels is null || _commitInfoPosition == CommitInfoPosition.BelowList || _revisionPanels.Bounds.Width <= 0) { return; }
-        // Keep the information panel fixed on resize, while leaving space for the graph and history at narrow widths.
-        _revisionPanels.ColumnDefinitions[_commitInfoPosition == CommitInfoPosition.LeftwardFromList ? 0 : 2].MaxWidth = Math.Max(120, _revisionPanels.Bounds.Width - 300);
     }
 
     private void FocusCommitInformation()
