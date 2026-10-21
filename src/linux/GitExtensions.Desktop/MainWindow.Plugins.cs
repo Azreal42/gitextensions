@@ -71,6 +71,12 @@ public sealed partial class MainWindow
                 await ShowSettingsPageAsync(showChecklist: false, initialPage: "PluginBackgroundFetch", settingsOwnerOverride: pluginOwner,
                     fromScript: fromScript, cancellationToken: cancellationToken);
             }
+            else if (plugin is CreateLocalBranchesPlugin)
+            {
+                CreateLocalBranchesDialog dialog = new(repository);
+                await ShowOwnedAsync(dialog);
+                await dialog.WindowWorkCompletion;
+            }
             else if (plugin is FindLargeFilesPlugin)
             {
                 FindLargeFilesDialog dialog = new(repository, values);

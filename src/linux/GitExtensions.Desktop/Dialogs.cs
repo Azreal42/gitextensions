@@ -24,8 +24,11 @@ internal static class Dialogs
         CancellationToken cancellationToken = default)
         => ShowMessageCoreAsync(owner, title, message, warning, cancellationToken);
 
+    public static Task ShowInformationAsync(Window owner, string title, string message, CancellationToken cancellationToken = default)
+        => ShowMessageCoreAsync(owner, title, message, null, cancellationToken, "information");
+
     private static async Task ShowMessageCoreAsync(Window owner, string title, string message, bool? warning,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, string? informationIcon = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
@@ -35,10 +38,11 @@ internal static class Dialogs
             WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = activeOwner.ActualThemeVariant };
         Button accept = new() { Name = "MessageDialogAccept", Content = translations.Translate("OK"), IsDefault = true, IsCancel = true, MinWidth = 75 };
         accept.Click += (_, _) => dialog.Close();
-        Grid body = new() { ColumnDefinitions = new(warning is null ? "*" : "Auto,*"), ColumnSpacing = 10 };
-        if (warning is bool isWarning) { body.Children.Add(ResetDialogControls.Icon(isWarning ? "Warning" : "StatusBadgeError")); }
+        string? icon = informationIcon ?? (warning is bool isWarning ? isWarning ? "Warning" : "StatusBadgeError" : null);
+        Grid body = new() { ColumnDefinitions = new(icon is null ? "*" : "Auto,*"), ColumnSpacing = 10 };
+        if (icon is not null) { body.Children.Add(ResetDialogControls.Icon(icon)); }
         TextBlock text = new() { Name = "MessageDialogText", Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-        Grid.SetColumn(text, warning is null ? 0 : 1); body.Children.Add(text);
+        Grid.SetColumn(text, icon is null ? 0 : 1); body.Children.Add(text);
         dialog.Content = new StackPanel { Margin = new Thickness(12), Spacing = 10, Children =
         {
             body,
