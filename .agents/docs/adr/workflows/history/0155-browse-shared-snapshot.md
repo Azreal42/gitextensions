@@ -12,6 +12,6 @@ ShowArtificial republie le snapshot en place sans relire l’historique. Si HEAD
 
 Le rétablissement WT exécute `checkout -- .`, celui de l’Index `reset --hard --quiet --`. `clean -d -f --` reste explicite, après succès sous la même lease ; effets partiels et annulation imposent drainage puis rafraîchissement.
 
-Limites : rendu/layout minimum 860 en français sombre et Browse progressif restent ouverts. Niveaux inchangés, treize familles ouvertes, aucun N4. Le code reste la source de vérité.
+Suites : [ADR0157](0157-progressive-browse-host.md) raccorde Browse progressif ; [ADR0158](../../ui/layout/0158-compact-browse-layout.md) traite la largeur minimale, avec leurs périmètres et limites dans le TODO. Niveaux inchangés, treize familles ouvertes, aucun N4. Le code reste la source de vérité.
 
 Sources : [MainWindow.InlineHistory](../../../../../src/linux/GitExtensions.Desktop/MainWindow.InlineHistory.cs), [HistoryView](../../../../../src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs), [RevisionGridControl Windows](../../../../../src/app/GitUI/UserControls/RevisionGrid/RevisionGridControl.cs). Autres repères : `FocusRestoration`, `GitRepository.ComparisonGroups.Multiple/RevisionAncestry/ArtificialReset` ; scénarios `SourceSnapshotTests`, `InlineBrowseHistoryTests`, `ArtificialResetScenarios`, sans résultat déduit de leur présence.

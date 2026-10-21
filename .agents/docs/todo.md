@@ -1,8 +1,22 @@
 # TODO
 
-Mise à jour : 22 octobre 2026. H36 : Browse progressif et frontières d’opération implémentés ; source `62352f455`, suites automatisées complètes et paquet isolé vérifiés. Le rendu minimum 860, l’interaction du paquet installé et la parité globale restent ouverts.
+Mise à jour : 22 octobre 2026. H37 : panneaux Browse lisibles à largeur réduite, largeur choisie conservée ; source `20ad0380e`, tests ciblés et nouveau paquet isolé vérifiés. Le contrôle natif du paquet installé et la parité globale restent ouverts.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+<a id="h37-compact-browse-layout"></a>
+## H37 — Browse à largeur réduite
+
+[ADR0158](adr/ui/layout/0158-compact-browse-layout.md). Source `20ad0380e7f741591e31327f2a07a7eb7eb08f79` ; [commit et périmètre](../../artifacts/linux/compact-browse-layout-20261022/review/source-import-review.json), cinq fichiers modifiés. Les 14 fichiers hors lot restent préservés et exclus du worktree compilé et du paquet.
+
+- [x] À 860×620, les sujets restent visibles avec CommitInfo latéral ; les positions gauche/droite/dessous restent explicites. La largeur demandée au séparateur est retrouvée après rétrécissement, changement de position et réagrandissement.
+- [x] En-tête partagé sans découpage automatique des valeurs ; défilement horizontal jusqu’au hash complet, message et références toujours repliés. Resize et défilement conservent contrôles, lecteurs, sélection et focus.
+- [x] [96/96 Desktop et 42/42 Plugins](../../artifacts/linux/compact-browse-layout-20261022/review/root-neighbor-qualification-review.json) sur les binaires du commit exact, dont dix nouveaux cas forts et les 86 identités antérieures conservées ; [compilation](../../artifacts/linux/compact-browse-layout-20261022/review/root-final-compilation-review.json) de trois projets sans avertissement/erreur. [Rendus EN clair/FR sombre revus](../../artifacts/linux/compact-browse-layout-20261022/review/root-corrected-targeted-review.json), clic/débordement/Échap/flèche, geste horizontal réel et séparateur vérifiés headless. [Causes conservées](failure.md#h37-compact-browse-layout).
+- [ ] Cumul Notes/CI et grandes polices, autres langues/thèmes, qualification native du paquet installé, DPI/Wayland/accessibilité, services CI réels/authentifiés/Enterprise et macOS. Treize familles métier restent ouvertes ; aucun N4.
+
+[Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/20ad0380e/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : **40293624 octets**, SHA-256 `a1bab6d866aff0b2e9aa963f9596e5ecf70372d418d59da6e6c62f007593342b`. [Contrôle](../../artifacts/linux/compact-browse-layout-20261022/review/root-package-review.json) : sept phases réussies, 356 fichiers publiés comparés, 402 MD5, modes/français/Skia vérifiés ; installation et démarrage isolés, base dpkg hôte inchangée. Aucune installation hôte ni push.
+
+[Inventaire frais](../../artifacts/linux/compact-browse-layout-20261022/review/root-inventory-review.json) : 2636 fichiers C# sans diagnostic, 99 fenêtres métier (98 équivalents) et 32 pages (31 portées), niveaux et référence de validation inchangés. Les sources/tests Modal préexistants du primaire sont des entrées de syntaxe uniquement. Les suites complètes **4 570 Desktop / 1 205 Core / 42 Plugins** restent la preuve H36 au commit `62352f455` ; elles ne sont pas rejouées en H37. Les autres sources/configurations, assets et outils de paquet sont inchangés par rapport à H36.
 
 <a id="h36-progressive-history"></a>
 ## H36 — historique progressif
@@ -12,7 +26,7 @@ Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/t
 - [x] Browse, fichier/dossier et Log : premier lot utilisable pendant un parcours continu, même liste/graphe WT–Index–commits, objets/sélection/ancre/focus/viewport conservés. Lot distinct du plafond ; renommages prêts avant le premier lot fichier.
 - [x] Panneaux et inventaire indépendants ; nouvelle intention prioritaire, lecteur remplacé annulé et drainé, mutations protégées et diagnostics conservés. EOF ne relit pas le panneau inchangé ; activation working, changement de dépôt, ordre natif et paires initiales gardent leurs contrats.
 - [x] [Suites complètes](../../artifacts/linux/progressive-browse-host-20261021/review/root-full-review.json) : **4 570/4 570 Desktop, 1 205/1 205 Core, 42/42 Plugins**, sur les binaires du commit exact, sources stables et processus retirés. Les 4 560 cas Desktop et 1 197 Core antérieurs sont conservés. Les passages rouges et leurs causes restent dans [Failure](failure.md#h36-progressive-host) et les résultats bruts.
-- [ ] Minimum 860 en français sombre, audits natifs/visuels étendus, grilles/menus/filtres complets du chooser et héritage runtime ; services CI réels/authentifiés/Enterprise, macOS et parité globale.
+- [ ] Audits natifs/visuels étendus, grilles/menus/filtres complets du chooser et héritage runtime ; services CI réels/authentifiés/Enterprise, macOS et parité globale. Le rendu minimum est traité au périmètre [H37](#h37-compact-browse-layout).
 
 [Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/62352f455/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : **40315348 octets**, SHA-256 `82c787ef30a31745dc9048a9ea81ac9065c2e9fc4f02f24dbcef7d274b4bce14`. [Contrôle](../../artifacts/linux/progressive-browse-host-20261021/review/root-package-review.json) : sept phases réussies, 356 fichiers publiés comparés, 402 empreintes MD5, français et Skia local ; installation/démarrage isolés, base dpkg hôte inchangée.
 

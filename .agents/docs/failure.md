@@ -2,6 +2,16 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="h37-compact-browse-layout"></a>
+## H37 — taille réduite et lisibilité
+
+- Un PNG de 860 px peut contenir une scène de 1440 px simplement recadrée. Après resize, attendre le nouveau layout puis capturer un rendu frais ; `GetLastRenderedFrame` seul ne le prouve pas. La barre réelle tenait déjà : aucun correctif produit de barre n’était nécessaire.
+- Réserver 300 px à l’historique ne suffit pas lorsque ses seules colonnes fixes prennent 325 px ; le sujet devient nul. Le budget doit inclure colonnes effectivement visibles, graphe et chrome, sans recopier la politique des colonnes du composant partagé. [Référence rouge : quatre sujets nuls](../../artifacts/linux/compact-browse-layout-20261022/review/root-baseline-review.json).
+- `Bounds.Width` est la largeur limitée par l’hôte, pas celle demandée au séparateur. La mémoriser au changement de position perdait le choix 535 au profit de 361. Conserver la largeur absolue demandée ; [référence des gestes](../../artifacts/linux/compact-browse-layout-20261022/review/root-baseline-width-review.json).
+- Dix tests verts et un sujet positif ne prouvaient pas la lisibilité de CommitInfo : les valeurs étaient découpées lettre par lettre. [Premier candidat visuellement refusé](../../artifacts/linux/compact-browse-layout-20261022/review/root-corrected01-visual-rejection.json). Vérifier lignes réellement rendues, absence d’ellipse et accès au dernier caractère par un vrai geste horizontal ; conserver message/références repliés.
+
+[Décision](adr/ui/layout/0158-compact-browse-layout.md), [preuve et limites actuelles](todo.md#h37-compact-browse-layout). Les résultats rouges et le candidat refusé restent distincts du passage final.
+
 <a id="h36-progressive-host"></a>
 ## H36 — historique progressif (garde-fous)
 

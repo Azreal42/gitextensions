@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "62352f45506d3d45120640f386169de96e672c79",
-  "source_digest_sha256": "819d9fb1ddaf302c20415503221c952ed2d9c375a147e5bd279e6eb803821e8e",
-  "scanned_csharp_files": 2634,
+  "code_reference_commit": "20ad0380e7f741591e31327f2a07a7eb7eb08f79",
+  "source_digest_sha256": "9fcb77a3901fad858336ae917adb0226a2815d6d0173c1625b7555890b842942",
+  "scanned_csharp_files": 2636,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -4612,7 +4612,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutCommitAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 447,
+          "line": 440,
           "kind": "window"
         },
         {
@@ -8527,7 +8527,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 415,
+          "line": 408,
           "kind": "window"
         },
         {
@@ -14691,7 +14691,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 415,
+          "line": 408,
           "kind": "window"
         },
         {
@@ -23526,6 +23526,10 @@
           "line": 8
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.CommitInfoLayout.cs",
+          "line": 9
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Comparisons.cs",
           "line": 5
         },
@@ -25372,7 +25376,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 442,
+      "line": 435,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
