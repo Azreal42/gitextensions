@@ -14,7 +14,6 @@ public sealed partial class CompareRevisionsDialog
     private SelectionRead? _requestedSelection, _loadedSelection;
     private Task? _selectionTask;
     private bool _selectionClosing, _selectionClosed;
-    private Window? _closingSelectionOwner;
     internal Task SelectionCompletion => Task.WhenAll(_selectionTasks.ToArray());
     internal bool IsSelectionLoading => _selectionTasks.Any(task => !task.IsCompleted);
 
@@ -23,7 +22,6 @@ public sealed partial class CompareRevisionsDialog
         Closing += (_, args) =>
         {
             if (_selectionClosed) { return; }
-            if (args.CloseReason == WindowCloseReason.OwnerWindowClosing) { _closingSelectionOwner = Owner as Window; }
             _selectionClosing = true; _selectionLifetime.Cancel(); CancelSelectionRead();
             Task pending = SelectionCompletion;
             if (!pending.IsCompleted) { args.Cancel = true; _ = CloseAfterSelectionAsync(pending); }
@@ -32,8 +30,6 @@ public sealed partial class CompareRevisionsDialog
         {
             _selectionClosed = true;
             _selectionLifetime.Dispose();
-            Window? owner = _closingSelectionOwner; _closingSelectionOwner = null;
-            if (owner is not null) { Dispatcher.UIThread.Post(() => { if (owner.IsVisible) { owner.Close(); } }); }
         };
     }
 

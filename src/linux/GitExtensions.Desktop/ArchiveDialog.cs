@@ -106,7 +106,7 @@ public sealed class ArchiveDialog : RepositoryDialog
 
     private async Task ChooseRevisionAsync()
     {
-        GitCommit? revision = await ExportRevisionPicker.ShowAsync(this, Repository);
+        GitCommit? revision = await ExportRevisionPicker.ShowAsync(this, Repository, _revision.Text);
         if (revision is null) { return; }
         _revision.Text = revision.Hash;
         _exactPaths.IsVisible = false;
@@ -116,7 +116,7 @@ public sealed class ArchiveDialog : RepositoryDialog
 
     private async Task ChooseComparisonAsync()
     {
-        GitCommit? revision = await ExportRevisionPicker.ShowAsync(this, Repository);
+        GitCommit? revision = await ExportRevisionPicker.ShowAsync(this, Repository, _comparison.Text);
         if (revision is not null) { _comparison.Text = revision.Hash; _comparisonEnabled.IsChecked = true; }
     }
 

@@ -55,23 +55,12 @@ public sealed partial class MainWindow
 
     private Control BuildVirtualRevisionRows()
     {
-        double rowHeight = BrowseRowHeight;
-        Grid rows = new() { Name = "WorkingRevisions", ColumnDefinitions = new ColumnDefinitions("20,*"),
-            RowDefinitions = new RowDefinitions { new RowDefinition(rowHeight, GridUnitType.Pixel), new RowDefinition(rowHeight, GridUnitType.Pixel) } };
-        // These are actual worktree/index actions, outside the commit model.
+        ArtificialRevisionRows rows = ArtificialRevisionRows.Create(BrowseRowHeight, T);
+        // Keep Browse's existing callbacks, status and navigation policy; share only the visual construction.
         for (int i = 0; i < 2; i++)
         {
-            Canvas graph = new() { Width = 20, Height = rowHeight };
-            graph.Children.Add(new Avalonia.Controls.Shapes.Line { StartPoint = new Point(8, 0), EndPoint = new Point(8, rowHeight), Stroke = Brush.Parse("#d3d3d3"), StrokeThickness = 1.5 });
-            Avalonia.Controls.Shapes.Ellipse node = new() { Width = 7, Height = 7, Fill = Brush.Parse("#d3d3d3") };
-            Canvas.SetLeft(node, 4.5); Canvas.SetTop(node, (rowHeight - 7) / 2); graph.Children.Add(node);
-            Grid.SetRow(graph, i); rows.Children.Add(graph);
-            Button action = new RevisionSearchButton { Name = i == 0 ? "WorkingDirectoryRevision" : "IndexRevision", Height = rowHeight, MinHeight = rowHeight,
-                MinWidth = 0, HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(4, 0), Margin = new Thickness(2, 0, 0, 0) };
-            action.Content = new TextBlock { Text = T(i == 0 ? "Working directory" : "Commit index"), VerticalAlignment = VerticalAlignment.Center };
-            TextBlock state = new() { Text = "✓", Foreground = Brush.Parse("#24c221"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0) };
-            StackPanel content = new() { Orientation = Orientation.Horizontal, Height = rowHeight, Children = { action, state } };
-            Grid.SetRow(content, i); Grid.SetColumn(content, 1); rows.Children.Add(content);
+            Button action = i == 0 ? rows.Working : rows.Index;
+            TextBlock state = i == 0 ? rows.WorkingState : rows.IndexState;
             bool staged = i == 1;
             action.Click += async (_, _) => await ActivateArtificialRevisionAsync(staged);
             action.GotFocus += (_, _) => UpdateArtificialHistorySelectionAppearance();
@@ -82,8 +71,7 @@ public sealed partial class MainWindow
             if (i == 0) { _workingRevision = action; _workingRevisionState = state; }
             else { _indexRevision = action; _indexRevisionState = state; }
         }
-        rows.Bind(BackgroundProperty, new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("ClassicWindowBrush"));
-        return rows;
+        return rows.View;
     }
 
     private async Task ActivateArtificialRevisionAsync(bool staged)

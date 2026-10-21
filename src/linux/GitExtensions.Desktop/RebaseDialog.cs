@@ -330,11 +330,30 @@ public sealed class RebaseDialog : RepositoryDialog
         using CancellationTokenRegistration close = linked.Token.Register(() => Dispatcher.UIThread.Post(child.Close));
         try { await child.ShowDialog(this); } finally { if (child.IsVisible) { child.Close(); } }
     }
-    private async Task ChooseFromAsync()
+    private Task ChooseFromAsync() => RunAsync("Choose revision", async token =>
     {
-        GitCommit? selected = await RebaseRevisionPicker.ShowAsync(this, Repository, _from.Text, _token);
-        if (selected is not null && !_closingAccepted && IsVisible && !_token.IsCancellationRequested) { _from.Text = selected.Hash; }
-    }
+        using IDisposable environment = Repository.BeginOperation();
+        string? initial = _from.Text;
+        if (string.IsNullOrWhiteSpace(initial))
+        {
+            try { initial = await Repository.ResolveRevisionAsync("HEAD^", token); }
+            catch (GitCommandException) { /* The root commit has no first parent. */ }
+        }
+        string? boundary = null;
+        if (!string.IsNullOrWhiteSpace(_onto.Text))
+        {
+            try
+            {
+                string head = await Repository.ResolveRevisionAsync("HEAD", token);
+                string onto = await Repository.ResolveRevisionAsync(_onto.Text, token);
+                boundary = head == onto ? head : await Repository.GetComparisonMergeBaseAsync(new(head), new(onto), token);
+            }
+            catch (Exception error) when (error is GitCommandException or ArgumentException)
+            { /* Like Windows, an unresolved onto/merge-base leaves the current branch unbounded. */ }
+        }
+        GitCommit? selected = await RebaseRevisionPicker.ShowAsync(this, Repository, initial, token, boundary);
+        if (selected is not null && !_closingAccepted && IsVisible && !token.IsCancellationRequested) { _from.Text = selected.Hash; }
+    }, cancellationToken: _token);
     private async Task ShowPatchAsync()
     {
         if (IsBusy || _patches.SelectedItem is not GitRebasePatch patch) { return; }
@@ -370,32 +389,12 @@ public sealed class RebaseDialog : RepositoryDialog
     }
 }
 
-internal sealed class RebaseRevisionPicker : RepositoryDialog
+internal sealed class RebaseRevisionPicker : ChooseCommitDialog
 {
-    private readonly ExportRevisionList _revisions = new("RebaseChooseRevision", false);
-    private readonly string? _initial;
-    private RebaseRevisionPicker(GitRepository repository, string? initial) : base(repository, "Choose revision")
-    {
-        _initial = initial; Name = "RebaseRevisionPicker"; Width = 780; Height = 420; MinWidth = 620; MinHeight = 300;
-        Button select = Action("ChooseRebaseCommit", "OK", () => { if (_revisions.Rows.SelectedItem is GitCommit commit) { Close(commit); } return Task.CompletedTask; }); select.IsDefault = true;
-        Button cancel = new() { Name = "CancelRebaseChoice", Content = T("Cancel"), IsCancel = true }; cancel.Click += (_, _) => Close(null);
-        StackPanel buttons = ExportDialogControls.Buttons(cancel, select); DockPanel.SetDock(buttons, Dock.Bottom); Root.Children.Add(buttons);
-        _revisions.Margin = new Thickness(10, 6); Root.Children.Add(_revisions); Track(_revisions);
-    }
-    public override Task InitializeAsync() => RunAsync("Choose revision", async token =>
-    {
-        IReadOnlyList<GitCommit> commits = await Repository.GetLogAsync(new GitLogQuery(Count: 500, All: false, Revision: "HEAD"), token);
-        _revisions.SetData(commits, await Repository.GetReferencesAsync(token), (await Repository.GetStatusAsync(token)).Head);
-        string? initial = null;
-        if (!string.IsNullOrWhiteSpace(_initial))
-        { try { initial = await Repository.ResolveRevisionAsync(_initial, token); } catch (GitCommandException) { } }
-        _revisions.Rows.SelectedItem = commits.FirstOrDefault(commit => commit.Hash == initial) ?? commits.ElementAtOrDefault(1) ?? commits.FirstOrDefault();
-    });
-    internal static async Task<GitCommit?> ShowAsync(Window owner, GitRepository repository, string? initial, CancellationToken token)
-    {
-        RebaseRevisionPicker picker = new(repository, initial) { RequestedThemeVariant = owner.ActualThemeVariant };
-        picker.Opened += async (_, _) => await picker.InitializeAsync();
-        using CancellationTokenRegistration close = token.Register(() => Dispatcher.UIThread.Post(picker.Close));
-        try { return await picker.ShowDialog<GitCommit?>(owner); } finally { if (picker.IsVisible) { picker.Close(); } }
-    }
+    private RebaseRevisionPicker(GitRepository repository, string? initial, CancellationToken token, string? boundary)
+        : base(repository, new(initial, CurrentBranchOnly: true, LastRevisionToDisplayHash: boundary),
+            new("RebaseChooseRevision", "ChooseRebaseCommit", "CancelRebaseChoice", "RebaseRevisionSearch", "SearchRebaseRevision"), token) { }
+
+    internal static Task<GitCommit?> ShowAsync(Window owner, GitRepository repository, string? initial, CancellationToken token, string? boundary = null)
+        => ShowPickerAsync(new RebaseRevisionPicker(repository, initial, token, boundary), owner, token);
 }

@@ -179,7 +179,7 @@ public sealed class CherryPickDialog : RepositoryDialog
 
     private async Task ChooseAsync()
     {
-        GitCommit? commit = await CherryPickRevisionPicker.ShowAsync(this, Repository, Revision);
+        GitCommit? commit = await CherryPickRevisionPicker.ShowAsync(this, Repository, Revision, _token);
         if (commit is null) { return; }
         await RunAsync("Revision", token => LoadRevisionAsync(commit.Hash, token), cancellationToken: _token);
         FocusOriginalControl();
@@ -332,27 +332,11 @@ public static class CherryPickSequence
     }
 }
 
-internal sealed class CherryPickRevisionPicker : RepositoryDialog
+internal sealed class CherryPickRevisionPicker : ChooseCommitDialog
 {
-    private readonly ExportRevisionList _revisions = new("CherryPickChooseRevision", false);
-    private readonly TextBox _search = new() { Name = "CherryPickRevisionSearch", Height = 24 };
-    private readonly string? _initial;
-    private CherryPickRevisionPicker(GitRepository repository, string? initial) : base(repository, "Choose revision")
-    {
-        _initial = initial; Name = "CherryPickRevisionPicker"; Width = 780; Height = 420; MinWidth = 620; MinHeight = 300;
-        Button select = Action("ChooseCherryPickCommit", "OK", () => { if (_revisions.Rows.SelectedItem is GitCommit commit) { Close(commit); } return Task.CompletedTask; }); select.IsDefault = true;
-        StackPanel buttons = ExportDialogControls.Buttons(Action("CancelCherryPickChoice", "Cancel", () => { Close(null); return Task.CompletedTask; }), select);
-        DockPanel.SetDock(buttons, Dock.Bottom); Root.Children.Add(buttons);
-        Grid search = ExportDialogControls.Fields(); ExportDialogControls.Field(search, T("Message"), _search, Action("SearchCherryPickRevision", "Search", InitializeAsync));
-        search.Margin = new Thickness(10, 6); DockPanel.SetDock(search, Dock.Top); Root.Children.Add(search);
-        _revisions.Margin = new Thickness(10, 0, 10, 6); Root.Children.Add(_revisions); Track(_search, _revisions);
-    }
-    public override Task InitializeAsync() => RunAsync("Choose revision", async token =>
-    {
-        IReadOnlyList<GitCommit> commits = await Repository.GetLogAsync(new GitLogQuery(Count: 500, Message: string.IsNullOrWhiteSpace(_search.Text) ? null : _search.Text), token);
-        _revisions.SetData(commits, await Repository.GetReferencesAsync(token), (await Repository.GetStatusAsync(token)).Head);
-        _revisions.Rows.SelectedItem = commits.FirstOrDefault(commit => commit.Hash == _initial) ?? commits.FirstOrDefault();
-    });
-    internal static async Task<GitCommit?> ShowAsync(Window owner, GitRepository repository, string? initial)
-    { CherryPickRevisionPicker picker = new(repository, initial) { RequestedThemeVariant = owner.ActualThemeVariant }; await picker.InitializeAsync(); return await picker.ShowDialog<GitCommit?>(owner); }
+    private CherryPickRevisionPicker(GitRepository repository, string? initial, CancellationToken token)
+        : base(repository, new(initial), new("CherryPickChooseRevision", "ChooseCherryPickCommit", "CancelCherryPickChoice", "CherryPickRevisionSearch", "SearchCherryPickRevision"), token) { }
+
+    internal static Task<GitCommit?> ShowAsync(Window owner, GitRepository repository, string? initial, CancellationToken token = default)
+        => ShowPickerAsync(new CherryPickRevisionPicker(repository, initial, token), owner, token);
 }

@@ -31,6 +31,8 @@ public sealed record GitLogQuery(
     public bool IncludeLatestStashInBranchFilter { get; init; } = true;
     public bool IncludeStashes { get; init; } = true;
     public bool IncludeSessionRefs { get; init; } = true;
+    /// <summary>Windows chooser boundary: append the symmetric exclusion ...SHA, not an inclusive row cut.</summary>
+    public string? LastRevisionToDisplayHash { get; init; }
     public GitLogSort Sort { get; init; } = GitLogSort.GitDefault;
     /// <summary>Windows graph filters which can hide parents; branch/date/reflog/first-parent alone do not.</summary>
     public bool HasRevisionFilter => Author is not null || Committer is not null || Message is not null
@@ -134,6 +136,12 @@ public sealed partial class GitRepository
             if (!query.IncludeStashes) { arguments.Add("--exclude=refs/stash"); }
             if (!query.IncludeSessionRefs) { arguments.Add("--exclude=refs/sessions/*"); }
             arguments.Add("--all");
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.LastRevisionToDisplayHash))
+        {
+            string boundary = await ResolveRevisionAsync(query.LastRevisionToDisplayHash, cancellationToken).ConfigureAwait(false);
+            arguments.Add("..." + boundary);
         }
 
         arguments.Add("--");

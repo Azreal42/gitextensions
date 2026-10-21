@@ -36,6 +36,7 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
     private bool _mergeBaseLoaded;
     private bool _loading;
     private bool _bare;
+    private bool _revisionPickerOpen;
     public GitComparison? Comparison => _comparison;
     public string? MergeBaseRevision => _fixedMergeBase;
 
@@ -169,18 +170,40 @@ public sealed partial class CompareRevisionsDialog : RepositoryDialog
         finally { _loading = false; }
         await InitializeAsync();
     }
-    private async Task ChooseBranchAsync(ComparisonRevisionSelector selector)
+    private Task ChooseBranchAsync(ComparisonRevisionSelector selector)
+        => ChooseRevisionAsync(selector, async (initial, token) =>
+        {
+            GitReference? chosen = await CompareBranchPicker.ShowAsync(this, Repository, initial, initial.Revision, token);
+            return chosen is null ? null : new GitCompareRevision(chosen.Name);
+        });
+
+    private Task ChooseCommitAsync(ComparisonRevisionSelector selector)
+        => ChooseRevisionAsync(selector, (initial, token) => ExportRevisionPicker.ShowComparisonAsync(this, Repository, initial, token));
+
+    private async Task ChooseRevisionAsync(ComparisonRevisionSelector selector,
+        Func<GitCompareRevision, CancellationToken, Task<GitCompareRevision?>> choose)
     {
-        GitReference? chosen = await CompareBranchPicker.ShowAsync(this, Repository, selector.Read(), selector.Read().Revision);
-        if (chosen is null) { return; }
-        _loading = true; try { selector.Set(new(chosen.Name)); } finally { _loading = false; }
-        await InitializeAsync();
-    }
-    private async Task ChooseCommitAsync(ComparisonRevisionSelector selector)
-    {
-        GitCommit? chosen = await ExportRevisionPicker.ShowAsync(this, Repository);
-        if (chosen is null) { return; }
-        _loading = true; try { selector.Set(new(chosen.Hash)); } finally { _loading = false; }
+        if (_selectionClosing || IsBusy || _revisionPickerOpen) { return; }
+        _revisionPickerOpen = true;
+        // Join the existing close/drain queue without making InitializeAsync await its own picker task.
+        TaskCompletionSource drained = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        _selectionTasks.Add(drained.Task);
+        // This tracked child is canceled and drained here; let our Closing retain the actual owner request first.
+        WindowClosingBehavior previousClosingBehavior = ClosingBehavior;
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
+        GitCompareRevision? chosen;
+        try { chosen = await choose(selector.Read(), _selectionLifetime.Token); }
+        catch (OperationCanceledException) when (_selectionClosing) { return; }
+        catch (Exception error) { if (!_selectionClosing && IsVisible) { ReportError(error); } return; }
+        finally
+        {
+            // Match the scoped policy used by Revision Log; leave any intervening owner policy unchanged.
+            if (ClosingBehavior == WindowClosingBehavior.OwnerWindowOnly) { ClosingBehavior = previousClosingBehavior; }
+            _revisionPickerOpen = false;
+            _selectionTasks.Remove(drained.Task); drained.TrySetResult();
+        }
+        if (chosen is null || _selectionClosing || !IsVisible) { return; }
+        _loading = true; try { selector.Set(chosen); } finally { _loading = false; }
         await InitializeAsync();
     }
     private Task OpenToolAsync(bool directory) => RunComparisonAsync("Open with diff tool", async token =>

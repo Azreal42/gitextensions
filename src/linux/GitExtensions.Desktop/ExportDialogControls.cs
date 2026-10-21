@@ -93,7 +93,7 @@ internal sealed class ExportRevisionList : UserControl
     internal ListBox Rows { get; }
     private readonly CommitGraph _graph = new() { Width = 90 };
 
-    internal ExportRevisionList(string name, bool multiple)
+    internal ExportRevisionList(string name, bool multiple, Control? prefixRows = null)
     {
         DetailedGraphSettings.Bind(_graph);
         TranslationCatalog translations = TranslationCatalog.LoadDefault();
@@ -132,6 +132,7 @@ internal sealed class ExportRevisionList : UserControl
         Border header = ClassicChrome.Border(headings, new Thickness(0, 0, 0, 1));
         DockPanel.SetDock(header, Dock.Top);
         panel.Children.Add(header);
+        if (prefixRows is not null) { DockPanel.SetDock(prefixRows, Dock.Top); panel.Children.Add(prefixRows); }
         Grid content = new() { ColumnDefinitions = new ColumnDefinitions("90,*") };
         content.Children.Add(_graph);
         Grid.SetColumn(Rows, 1);
@@ -150,43 +151,15 @@ internal sealed class ExportRevisionList : UserControl
     }
 }
 
-internal sealed class ExportRevisionPicker : RepositoryDialog
+internal sealed class ExportRevisionPicker : ChooseCommitDialog
 {
-    private readonly ExportRevisionList _revisions = new("ChooseRevision", false);
-    private readonly TextBox _search = new() { Name = "RevisionSearch", Height = DesktopFontMetrics.ToolbarHeight };
+    private ExportRevisionPicker(GitRepository repository, string? initial, CancellationToken token, ChooseCommitRequest? request = null)
+        : base(repository, request ?? new(initial), new("ChooseRevision", "Choose", "CancelChoose", "RevisionSearch", "SearchRevision"), token) { }
 
-    private ExportRevisionPicker(GitRepository repository) : base(repository, "Choose revision")
-    {
-        Width = 780;
-        Height = 420;
-        MinWidth = 620;
-        MinHeight = 300;
-        Button select = Action("Choose", "OK", () => { if (_revisions.Rows.SelectedItem is GitCommit revision) { Close(revision); } return Task.CompletedTask; });
-        StackPanel buttons = ExportDialogControls.Buttons(Action("CancelChoose", "Cancel", () => { Close(null); return Task.CompletedTask; }), select);
-        DockPanel.SetDock(buttons, Dock.Bottom);
-        Root.Children.Add(buttons);
-        Grid search = ExportDialogControls.Fields();
-        ExportDialogControls.Field(search, T("Message"), _search, Action("SearchRevision", "Search", InitializeAsync));
-        search.Margin = new Thickness(10, 6);
-        DockPanel.SetDock(search, Dock.Top);
-        Root.Children.Add(search);
-        _revisions.Margin = new Thickness(10, 0, 10, 6);
-        Root.Children.Add(_revisions);
-        Track(_search, _revisions);
-    }
+    internal static Task<GitCommit?> ShowAsync(Window owner, GitRepository repository, string? initial = null, CancellationToken token = default)
+        => ShowPickerAsync(new ExportRevisionPicker(repository, initial, token), owner, token);
 
-    public override Task InitializeAsync() => RunAsync("Load revisions", async token =>
-    {
-        IReadOnlyList<GitCommit> revisions = await Repository.GetLogAsync(new GitLogQuery(Count: 500, Message: string.IsNullOrWhiteSpace(_search.Text) ? null : _search.Text), token);
-        _revisions.SetData(revisions, await Repository.GetReferencesAsync(token), (await Repository.GetStatusAsync(token)).Head);
-        _revisions.Rows.SelectedIndex = revisions.Count == 0 ? -1 : 0;
-        Status.Text = T("Choose revision");
-    });
-
-    internal static async Task<GitCommit?> ShowAsync(Window owner, GitRepository repository)
-    {
-        ExportRevisionPicker picker = new(repository);
-        await picker.InitializeAsync();
-        return await picker.ShowDialog<GitCommit?>(owner);
-    }
+    internal static Task<GitCompareRevision?> ShowComparisonAsync(Window owner, GitRepository repository, GitCompareRevision initial, CancellationToken token = default)
+        => ShowComparisonPickerAsync(new ExportRevisionPicker(repository, null, token,
+            new(initial.Kind == GitCompareRevisionKind.Commit ? initial.Revision : null, ShowArtificial: true, PreselectSelection: initial)), owner, token);
 }

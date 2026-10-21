@@ -227,6 +227,7 @@ public class RenameCompareDialogTests
             Click(dialog, "ComparisonCompareCommit");
             await Until(() => dialog.OwnedWindows.OfType<ExportRevisionPicker>().Any());
             ExportRevisionPicker commits = dialog.OwnedWindows.OfType<ExportRevisionPicker>().Single();
+            await Idle(commits);
             ListBox rows = Field<ListBox>(commits, "ChooseRevision");
             rows.SelectedItem = rows.Items.OfType<GitCommit>().Single(commit => commit.Hash == initial);
             Click(commits, "Choose"); await Until(() => !dialog.OwnedWindows.Contains(commits)); await Idle(dialog);

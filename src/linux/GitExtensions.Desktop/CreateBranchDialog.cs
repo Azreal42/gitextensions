@@ -118,7 +118,7 @@ public sealed class CreateBranchDialog : RepositoryDialog
     private async Task ChooseAsync()
     {
         if (!_userAbleToChangeRevision || IsBusy) { return; }
-        GitCommit? selected = await ExportRevisionPicker.ShowAsync(this, Repository);
+        GitCommit? selected = await ExportRevisionPicker.ShowAsync(this, Repository, _revision.Text);
         if (selected is null) { return; }
         _revision.Text = selected.Hash;
         await RunAsync("Revision", async token => _summary.Text = await ReferenceDialogControls.SummaryAsync(Repository, selected.Hash, token));
