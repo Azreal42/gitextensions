@@ -2,6 +2,17 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+## H30 — fenêtres et réglages portables
+
+Les essais refusés restent dans [le lot](../../artifacts/linux/portable-window-options-20261021/). Ne pas confondre ces causes produit et les corrections de fixtures :
+
+- La largeur fixe du dialogue de branches débordait en français ; laisser la taille au contenu. Dans sparse, l’éditeur multiligne consommait Ctrl+Entrée avant le handler bubble : traiter le geste en tunnel. [Mesures et correction](../../artifacts/linux/portable-window-options-20261021/review/dialog-diagnostic01-root-corrections.json).
+- Le ListBox du sélecteur refusait le focus malgré des appels Focus ; activer Focusable dans ce dialogue. Un GotFocus programmatique après RunAsync remplaçait ensuite Index/WorkingTree par le premier commit : distinguer Tab des retours internes. [Diagnostic](../../artifacts/linux/portable-window-options-20261021/settings-focus-diagnostic-01/desktop.log), [correction](../../artifacts/linux/portable-window-options-20261021/review/settings-chooser02-corrections.json).
+- Une fenêtre enfant occupée pouvait veto la fermeture avant que Compare reçoive Closing, perdant la demande du propriétaire racine. Garder la politique OwnerWindowOnly pendant le seul picker possédé, puis restaurer la politique capturée après drainage ; réemployer DeferredOwnerCloseReplay. Le [témoin rouge](../../artifacts/linux/portable-window-options-20261021/picker-diagnostic-02/desktop.log) attend réellement le propriétaire fermé ; le [diagnostic suivant](../../artifacts/linux/portable-window-options-20261021/picker-diagnostic-03/root-retirement-review.json) passe 26 cas ; le [suivant](../../artifacts/linux/portable-window-options-20261021/picker-diagnostic-04/root-retirement-review.json) ajoute les quatre fermetures du sélecteur de branches, sans qualification globale.
+- Les tests doivent viser l’intersection visible de l’entête Settings, conserver absence/octets des profils facultatifs et établir la culture dans leur appelant : le changement fait dans une factory async ne s’y propage pas. La fixture attend aussi le replay réel du propriétaire, pas seulement la disparition des enfants. Les assertions et les gestes restent conservés.
+
+Un seuil JSON ancien invalide au format invariant ne doit pas être réinterprété selon la langue (1,5 devenait 15 ou 1.5) ; reprendre le défaut sans réécrire le profil. Le XML garde le parsing Single localisé Windows.
+
 ## H29 — ouverture locale
 
 Le diagnostic du réessai avec espaces a confirmé un focus conservé : un popup filesystem en erreur, sans suggestion, absorbait Entrée. Réserver la touche seulement au MRU ou à une vraie suggestion ; sinon fermer ce popup et valider avec la même Entrée. [Échec et preuve](../../artifacts/linux/open-repository-dialog-20261021/review/retry-cause-review.json), régression conservée. Le pilote de test transmet un seul clic réel à travers l’overlay connu et utilise Escape avant de viser un éditeur recouvert.
@@ -22,7 +33,7 @@ Qualification de la correction : 54/54 Desktop (cinq classes) et 42/42 Plugins v
 
 | Observation | Cause / suite |
 | --- | --- |
-| Tableau Recovery trop haut | Le rendu natif du lot Jenkins montre les SHA complets repliés dans des colonnes étroites ; rapprocher les lignes simples du tableau Windows sans modifier les hashes copiés. [Capture](../../artifacts/linux/jenkins-20261020/native-01/frames/0047-click.png). |
+| Tableau Recovery replié | Le code Windows utilise WrapMode=True et AllCells : le repli des SHA est intentionnel. Ne pas traiter la capture étroite comme une fenêtre absente ; audit natif étendu de la grille encore ouvert. |
 | Flux Updates sans publication Linux | Au 20/10/2026, aucune release du fork ; les artifacts CI ne sont pas des assets de release. Le dialogue ne transforme pas cette absence en erreur réseau ni en promesse de paquet. |
 | Solution originale WinForms/Win32 | Portage UI et frontières OS encore incomplet ; le packaging ne résout pas cette dépendance. |
 | Chemins Linux à octets non UTF-8 | API .NET basée sur string UTF-8 ; Unicode valide couvert, roundtrip des octets invalides à traiter. |

@@ -1,10 +1,27 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H29 : 101/101 Desktop (neuf classes) et 42/42 Plugins sur les octets commités `f9fd07a57`. H28 et les lots antérieurs conservent leurs preuves historiques ; la référence Desktop complète L25 reste distincte.
+Mise à jour : 21 octobre 2026. H30 : 562/562 Desktop (44 classes réellement sélectionnées), 9/9 Core et 42/42 Plugins sur les octets commités `b84ae9caf`. H29 et les lots antérieurs gardent leurs preuves historiques ; la référence Desktop complète L25 reste distincte.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+## H30 — compléments portables et sélecteurs communs
+
+Source : `b84ae9caf9cb17497fe48f6b67445533bb7096dd` ; [équivalence source et commits](../../artifacts/linux/portable-window-options-20261021/review/source-import-review.json). Composants et moteurs partagés ; niveaux de migration inchangés.
+
+- [x] Défauts Windows d’encodages retrouvés après une préférence vide, sans réparation du profil ([ADR0094](adr/preferences/configuration/0094-git-configuration-and-encodings.md)).
+- [x] Cinq champs BackgroundFetch et neuf champs AutoCompile/Find/Statistics/Gource dans les portées XML communes ; mêmes routes menu/scripts, defaults distincts des options temporaires, sauvegardes acquittées et Gource réessayable sans second lancement ([ADR0008](adr/extensions/plugins/0008-local-lifecycle.md), [ADR0014](adr/extensions/plugins/0014-native-settings.md)).
+- [x] Fenêtre compacte de branches locales ([ADR0005](adr/extensions/plugins/0005-portable-contract.md)), Save sparse distinct de Refresh et fermeture dirty ([ADR0152](adr/workflows/repositories/0152-sparse-save-and-refresh.md)), colonnes tracking redimensionnables et copie native/AutoHeader ([ADR0067](adr/workflows/remotes/0067-remote-settings.md)).
+- [x] Sélecteur de commit commun : préselection, GoTo/parents, borne native Rebase, focus et premiers gestes clavier ; endpoints Index/WorkingTree typés pour Compare. Les sélecteurs de branches et de commits de Compare partagent annulation et drainage, y compris fermeture du propriétaire ([ADR0153](adr/workflows/history/0153-shared-commit-chooser.md)).
+
+[Compilation et validation ciblée](../../artifacts/linux/portable-window-options-20261021/review/root-targeted-review.json) : **562/562 Desktop, 9/9 Core sparse et 42/42 Plugins** ; toutes les identités des ciblés antérieurs conservées, sources/binaires stables et processus retirés. Les sept régressions GitHub Actions et les parcours Browser focus sont inclus ; aucune nouvelle qualification de serveur CI réel/authentifié. Huit captures de pages plugins et deux captures du sélecteur en EN clair/FR sombre inspectées ([revue](../../artifacts/linux/portable-window-options-20261021/review/simple-chooser-visual-review.json)). Les échecs et causes restent dans [Failure](failure.md#h30--fenêtres-et-réglages-portables).
+
+[Compilation finale](../../artifacts/linux/portable-window-options-20261021/review/root-final-compilation-review.json) du commit : trois projets sans diagnostic, mêmes octets source que le ciblé. [Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/b84ae9caf/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 248 896 octets, SHA256 `3f250c76e60ed7bdaf6c5453887627b1d233fdb5afd80e6e27bc48fe9c7026f7` ; [revue](../../artifacts/linux/portable-window-options-20261021/review/root-package-review.json), sept phases à 0, 356 fichiers publiés comparés et 402 MD5, français et Skia vérifiés. Installation et démarrage DPKG isolés réussis ; aucun essai natif interactif ni installation hôte. La suite Desktop complète de référence reste L25.
+
+[Inventaire régénéré et contrôlé](../../artifacts/linux/portable-window-options-20261021/review/root-inventory-review.json) : 99 fenêtres métier (98 avec équivalent Linux, diagnostic PuTTY hors périmètre) et 32 pages (31 portées, extension Explorer hors périmètre), 116 types de fenêtres Linux. Niveaux inchangés et cinq sources/tests Modal du primaire conservés séparément du build/paquet propre.
+
+Restent notamment : grille/filtres Windows complets du chooser (500 commits et lignes artificielles épinglées), contrats restants Proxy/helper issues GitHub, rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
 
 ## H29 — ouverture locale de dépôt
 
@@ -35,7 +52,7 @@ Source `27fde68835809f7a73ea30eb4b4107ef2207e0c9` : [navigation](../../artifacts
 
 [Natif source X11 privé](../../artifacts/linux/reference-selection-completion-20261021/review/root-native-review.json) : dix-huit checkpoints EN/clair et FR/sombre, multisélection, collisions et premières flèches grille/arbre ; deux fermetures normales. [Paquet exact](../../artifacts/linux/snapshots/27fde6883/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40206836 octets, SHA256 `2c36aae4d74270723516a434cdea46859668a945f3a06dc171b43186476c8f40` ; [contrôle](../../artifacts/linux/portable-settings-completion-20261021/review/root-package-review.json), publish/build puis cinq vérifications à 0 (premier essai arrêté faute de xvfb-run, même paquet repris), 402 fichiers/MD5, publish/payload identiques, DPKG et démarrage isolés. Aucun transfert de cet essai vers les interactions du bureau installé.
 
-- [ ] Ctrl GoToRef des endpoints artificiels ; mutations sans reçu existant ; types/cibles non-HEAD du mode éditeur Git ; page générique de tous les plugins et variantes FormStatus ; rapport HTML CI true. Services CI réels/authentifiés/Enterprise, macOS et audits Wayland/IME/DPI/accessibilité restent ouverts. GitHub Actions conserve sa page, ses statuts SHA et son rapport externe partagés ; jobs/logs/mutations de workflow ne sont pas des fenêtres Windows absentes.
+- [ ] Ctrl GoToRef des endpoints artificiels ; mutations sans reçu existant ; types/cibles non-HEAD du mode éditeur Git ; autres contrats plugins et variantes FormStatus ; rapport HTML CI true. Services CI réels/authentifiés/Enterprise, macOS et audits Wayland/IME/DPI/accessibilité restent ouverts. GitHub Actions conserve sa page, ses statuts SHA et son rapport externe partagés ; jobs/logs/mutations de workflow ne sont pas des fenêtres Windows absentes.
 
 ## État détaillé par fenêtre
 
@@ -43,7 +60,7 @@ La [matrice exhaustive Windows → Linux](windows-linux-window-inventory.md) dis
 
 Historique ed86 : les [suites complètes](../../artifacts/linux/command-log-20261020/review/root-full-review.json) ont tourné sur la source exacte figée dans un worktree propre ; l’[équivalence de source](../../artifacts/linux/command-log-20261020/review/source-import-review.json) conserve les cinq modifications Modal distinctes du primaire, sans qualification de l’ensemble du checkout modifié.
 
-Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; compléments du cache réel ADR0140 ouverts ; audit étendu des processus externes ADR0142 (piles/thread UI traités par ADR0139) ; arguments, sorties et erreurs brutes exclus du journal de métadonnées (ADR0138), distinct de l’onglet cache explicite ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; remotes vides/inactifs et paramètres globaux/locaux/distribués restent ouverts. Les familles globales restent ouvertes.
+Écarts concrets à traiter selon cette matrice : audit natif étendu du gestionnaire et de l’assistant de conflit de sous-module ; compléments PR GitHub et autres hébergeurs/CI ; compléments des raccourcis, audit étendu des scripts et compléments des fontes ADR0091, compléments de langue ; compléments du cache réel ADR0140 ouverts ; audit étendu des processus externes ADR0142 (piles/thread UI traités par ADR0139) ; arguments, sorties et erreurs brutes exclus du journal de métadonnées (ADR0138), distinct de l’onglet cache explicite ; audit natif étendu de l’askpass (Wayland, DPI/accessibilité, matériel FIDO et invites localisées). Le tri/priorités et GitDefault sans option sont portés sur le périmètre ADR 0082 ; CommitInfo est porté sur le périmètre partagé de l’ADR 0083, suites complètes et natif Browse ciblé vérifiés ; les contrôles et paramètres encore identifiés par fenêtre dans la matrice restent ouverts. Les familles globales restent ouvertes.
 
 ## Compléments portables — lot L25 (historique)
 

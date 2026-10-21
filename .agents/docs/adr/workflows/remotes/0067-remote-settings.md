@@ -4,6 +4,8 @@ Statut : accepté sur un périmètre ciblé ; audit natif exhaustif ouvert.
 
 Le développeur retrouve les deux onglets de FormRemotes : remotes actifs/inactifs et tracking des branches. Browse, Pull et Push ouvrent la même fenêtre. Sauvegarder un remote déclenche Fetch puis actualise les choix ; modifier le tracking valide à la perte de focus, sans déplacer HEAD ni lancer de transfert.
 
+Les trois colonnes de tracking se redimensionnent à la poignée et gardent leurs proportions quand la fenêtre change de taille, sans perdre la branche sélectionnée ni les saisies en cours. Ctrl+C dans la grille copie les trois valeurs enregistrées de la ligne, même tronquées à l’écran ; les en-têtes sont inclus si cette branche est la seule ligne affichée. Les éditeurs gardent leur propre copie native. Fermer attend aussi les copies et validations déjà engagées.
+
 Reprendre les dispositions, icônes, traductions et normaliseur Windows. Les cadres et petits contrôles sont partagés avec Pull ; le réglage avancé rend Prefix et Color accessibles. Les couleurs par remote sont consommées par le graphe, sans changer les couleurs par défaut.
 
 Conserver les listes d’URL ordonnées, clés inconnues, refspecs et réglages non exposés. L’éditeur modifie la première URL fetch et la dernière push explicite ; sans push séparé, Git utilise toutes les URL fetch. L’affichage Pull/Push respecte les resets de listes. PuTTY/Pageant n’est pas une deuxième gestion des identifiants Linux : conserver les anciennes clés opaques et utiliser Git/OpenSSH/askpass existants.
@@ -16,6 +18,6 @@ Ne pas modifier global/includes silencieusement : les opérations structurelles 
 
 Save recharge les listes même sans champ modifié, comme Initialize sous Windows. Sérialiser ce rechargement avec les validations de tracking ; réserver sa place avant toute désactivation ou perte de focus réentrante. Une valeur validée pendant une écriture doit atteindre Git et rester affichée sans clic supplémentaire.
 
-Repères : RemotesDialog.*, GitRepository.RemoteSettings.*, GitRemoteSettings, ClassicChoiceAppearance, MainWindow.Workflows, PullDialog.Source, PushDialog. Référence Windows : FormRemotes et ConfigFileRemoteSettingsManager.
+Repères : RemotesDialog.*, RemotesDialog.Tracking, GitRepository.RemoteSettings.*, GitRemoteSettings, ClassicChoiceAppearance, MainWindow.Workflows, PullDialog.Source, PushDialog. Référence Windows : FormRemotes et ConfigFileRemoteSettingsManager.
 
-Validation ciblée : RemotesDialogTests, RemotesTrackingValidationTests, RemoteReferenceColorTests et RemoteSettingsScenarios ; exécutions complètes et paquet liés au commit dans le TODO. La grille de tracking utilise une liste sortable ; redimensionnement des colonnes et copie de cellules WinForms restent à reprendre. Scripts Before/AfterFetch et audit natif étendu restent ouverts. N3 ne vaut pas parité intégrale.
+Validation ciblée : RemotesDialogTests, RemotesTrackingValidationTests, RemoteReferenceColorTests et RemoteSettingsScenarios ; exécutions complètes et paquet liés au commit dans le TODO. Scripts Before/AfterFetch et audit natif étendu restent ouverts. N3 ne vaut pas parité intégrale.

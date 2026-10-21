@@ -8,7 +8,7 @@ Distinguer absence, chaîne vide et entrée sans valeur. Le helper vide réiniti
 
 Le sélecteur d’encodages reprend les deux listes Windows. Sa préférence XDG est commune à Config et aux lecteurs, indépendante de la configuration Git : OK enfant reste acquis après Cancel parent. Retirer un favori ne change pas l’encodage du fichier courant. Un profil illisible est signalé et ne peut être écrasé par défaut. Les codecs stricts et les octets des patches restent inchangés.
 
-Repères : `GitToolsSettingsPage/Dialog/DraftSession`, `GitRepository.ToolConfiguration`, `AvailableEncodingsDialog/Catalog/PreferencesStore`, `DiffViewerReadingMenu`. Git 2.26 reste requis par ce lecteur à origines ; édition brute disponible séparément. Global hors dépôt dans l’UI, découverte exhaustive et audit natif des nouveaux champs/pickers restent ouverts. Écart connu : la liste préférée enregistrée vide reste vide sur Linux, tandis que Windows reprend les défauts ; seules les bases déjà incluses sont protégées du retrait.
+Repères : `GitToolsSettingsPage/Dialog/DraftSession`, `GitRepository.ToolConfiguration`, `AvailableEncodingsDialog/Catalog/PreferencesStore`, `DiffViewerReadingMenu`. Git 2.26 reste requis par ce lecteur à origines ; édition brute disponible séparément. Global hors dépôt dans l’UI, découverte exhaustive et audit natif des nouveaux champs/pickers restent ouverts. Comme Windows, une préférence vide ou composée d’espaces reprend les encodages par défaut, sans écriture implicite ; seules les bases déjà incluses sont protégées du retrait.
 
 [Suites complètes](../../../../../artifacts/linux/git-config-20261018/full-03/parent-verification.json). La matrice distingue ce lot des validations natives précédentes de l’ADR 0093.
 

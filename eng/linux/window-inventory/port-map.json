@@ -1205,8 +1205,8 @@
         "RemotesDialog",
         "AdvancedOptionsVisibility"
       ],
-      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture. ADR0135 : capture globale par nouvelle fenêtre via le lecteur cosmétique commun, défaut false sans réparation ; override showAdvanced court-circuité conservé. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO.",
-      "remaining": "Redimensionnement des colonnes/copie de cellules de la grille tracking non repris ; audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation. Le natif ADR0135 ne qualifie pas une nouvelle interaction Remotes ; consommateur couvert par le ciblé, audit étendu ouvert.",
+      "implemented": "Deux onglets Windows partagés par Browse/Pull/Push : actifs/inactifs, ajout/rename/suppression, URL fetch/push multiples conservées, prefix/couleur, tracking validé au focus et Fetch après Save ; snapshots gardés, cas hérités et erreurs partielles explicites. Save recharge aussi sans champ modifié ; rechargement et validations sérialisés pour conserver la seconde valeur validée pendant une écriture. ADR0135 : capture globale par nouvelle fenêtre via le lecteur cosmétique commun, défaut false sans réparation ; override showAdvanced court-circuité conservé. Suites complètes et paquet ac59 qualifiés ; preuves et limites dans TODO. La grille tracking partage les colonnes redimensionnables avec largeurs minimales et proportionnelles ; Ctrl+C reprend la cellule ou ligne sauvegardée et AutoHeader Windows, sans remplacer les éditeurs ni reconstruire les lignes.",
+      "remaining": "Audit natif exhaustif et événements Before/AfterFetch ouverts. Git/OpenSSH remplace PuTTY/Pageant ; anciennes clés conservées. Opérations impossibles à masquer localement sur une configuration héritée refusées avant mutation. Le natif ADR0135 ne qualifie pas une nouvelle interaction Remotes ; consommateur couvert par le ciblé, audit étendu ouvert.",
       "visual": "rapproche",
       "tests": [
         "RemotesDialogTests",
@@ -1214,7 +1214,8 @@
         "PushDialogTests",
         "PullLayoutTests",
         "RemotesTrackingValidationTests",
-        "AdvancedOptionsVisibilityTests"
+        "AdvancedOptionsVisibilityTests",
+        "RemotesTrackingGridTests"
       ],
       "adr": [
         "0067",
@@ -1298,9 +1299,11 @@
         "MainWindow",
         "FileEditorDialog",
         "FileEditorWorkflow",
-        "FileMenuOperations"
+        "FileMenuOperations",
+        "ExportRevisionPicker",
+        "CompareBranchPicker"
       ],
-      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque. La liste partagée suit les quatre modes de troncature globale ; texte affiché et ancien nom restent distincts des chemins et endpoints Git, avec limites communes Compact/submodule (ADR0100). Edit working file utilise FileEditorWorkflow/Dialog avec ligne/codec du lecteur admissible et refresh après effets acquis (ADR0123) ; Rename/Move utilise le SimplePrompt commun avec brouillon/retry (ADR0126). Les preuves natives des autres hôtes ne sont pas transférées. Complément L25 : Open submodule transmet au Browse enfant les deux OID gitlink réellement capturés, dans leur sens, via le transport typé partagé ; Index est résolu en gitlink enfant et WorkingTree reste une source live (ADR0147).",
+      "implemented": "Comparaisons commit/index/WT, lecteurs texte/image et groupes A→B/Range/BASE→B/BASE→A avec leur paire propre ; topologie capturée, endpoints artificiels dynamiques et lecteurs ciblés annulables. Listes et menus partagés avec Browse : métadonnées natives, mutations partitionnées, sources Commit/Index/WT, outils personnalisés et fichiers mémorisés ; WT reste éditable. Interactive add/Reset chunk utilisent les vrais add/checkout --patch, avec acquittement, annulation et drainage. Le diff suit le clic droit pendant le popup ; Reset décrit la révision effective du groupe. Multisélection Diff/File tree, côté B issu du vrai fichier focalisé, sélection et première flèche conservées après outil ; lectures ciblées pendant le menu ouvert. Menus fichiers Scripts et gestes RepositoryDialog raccordés avec sélection/paire/position capturées ; pas de révision Browse fabriquée quand cet hôte manque. La liste partagée suit les quatre modes de troncature globale ; texte affiché et ancien nom restent distincts des chemins et endpoints Git, avec limites communes Compact/submodule (ADR0100). Edit working file utilise FileEditorWorkflow/Dialog avec ligne/codec du lecteur admissible et refresh après effets acquis (ADR0123) ; Rename/Move utilise le SimplePrompt commun avec brouillon/retry (ADR0126). Les preuves natives des autres hôtes ne sont pas transférées. Complément L25 : Open submodule transmet au Browse enfant les deux OID gitlink réellement capturés, dans leur sens, via le transport typé partagé ; Index est résolu en gitlink enfant et WorkingTree reste une source live (ADR0147). Le choix de commit des deux côtés partage désormais le dialogue commun, avec préselection Commit/Index/WorkingTree typée et parents WorkingTree→Index→HEAD capturé ; Cancel garde la paire et la comparaison. Le picker rejoint SelectionCompletion avant fermeture, puis quitte cette file avant la relecture de comparaison (ADR0153). Sélecteurs de branches et de commits joints au même drainage et à la même politique de fermeture possédée, restaurée après le retour ; annulation des lectures de références et compteurs incluse.",
       "remaining": "FormDiff reste N2. History et Blame sur Index/WT utilisent par défaut le Browse indépendant et leurs endpoints typés ; l’adaptation explicite à HEAD ne concerne que le dialogue dédié lorsque UseBrowseForFileHistory=false. Aucun faux blame artificiel. Audit étendu des scripts ouvert ; Visual Studio indisponible. Découverte/réglages exhaustifs des outils, cas First vide/root initial, plages clavier sans oracle Windows et variantes de rendu/plateforme restent ouverts. Essais natifs et limites dans le TODO ; aucune parité globale certifiée. Reprise des flags masqués via Commit → Unstaged → Settings. Le ShowSkip de FormDiff Windows ne fournit pas de refresh fonctionnel à deux révisions ; aucune nouvelle fonction Compare déclarée pour ce contrôle. Audit des autres variantes de prompts encore ouvert. Transport vérifié en Git/headless dans ce lot ; variantes natives encore ouvertes.",
       "visual": "integre",
       "tests": [
@@ -1321,7 +1324,9 @@
         "ScriptLaunchIntegrationTests",
         "FileEditorConsumerTests",
         "GenericPromptHostTests",
-        "SubmoduleBrowseComparisonTests"
+        "SubmoduleBrowseComparisonTests",
+        "ComparisonCommitPickerTests",
+        "CompareBranchPickerLifecycleTests"
       ],
       "adr": [
         "0016",
@@ -1332,7 +1337,8 @@
         "0078",
         "0123",
         "0126",
-        "0147"
+        "0147",
+        "0153"
       ],
       "extra_evidence": [
         {
@@ -1699,13 +1705,16 @@
       "linux": [
         "SparseCheckoutDialog"
       ],
-      "implemented": "Lecture/édition des patterns, cone mode et mise à jour du worktree.",
-      "remaining": "Comparer la totalité de l’interface Windows, des préférences et des cas de rafraîchissement.",
+      "implemented": "Édition et lecture des règles existantes, y compris désactivées, cone mode et commandes Save/Refresh séparées. Save enregistre paramètres/règles sans toucher index ni fichiers ; Refresh applique explicitement le choix. Fichiers et configuration par worktree protégés par les verrous Git ; Ctrl+Entrée enregistre, fermeture dirty Yes/No/Cancel et drainage des écritures admises partagés.",
+      "remaining": "Audit natif étendu, préférences et toutes les variantes de disposition Windows encore ouverts. Sauvegardes de fichiers acquittées séparément, sans transaction globale contre les éditeurs externes.",
       "visual": "adapte",
       "tests": [
-        "RepositoryDialogTests"
+        "RepositoryDialogTests",
+        "SparseCheckoutDialogTests"
       ],
-      "adr": []
+      "adr": [
+        "0152"
+      ]
     },
     "GitUI.CommandsDialogs.FormSubmodules": {
       "feature": "Gestion des sous-modules",
@@ -1798,21 +1807,28 @@
       "group": "helpers",
       "level": "N2",
       "linux": [
+        "ChooseCommitDialog",
+        "ChooseCommitSelectionPresenter",
+        "file:src/linux/GitExtensions.Desktop/ArtificialRevisionRows.cs",
         "CherryPickRevisionPicker",
         "RevertRevisionPicker",
         "RebaseRevisionPicker",
         "ExportRevisionPicker"
       ],
-      "implemented": "Sélecteurs spécialisés utilisés par les workflows correspondants.",
-      "remaining": "Pas de sélecteur générique unique avec toute la grille/filtration Windows.",
+      "implemented": "Choix commun sur la grille existante, préselection résolue, GoTo partagé et deux liens parents ; Rebase garde la branche actuelle et la borne native exclusive du merge-base. Les adaptateurs historiques conservent leurs retours GitCommit ; Compare reçoit Commit/Index/WorkingTree typés, avec préférence capturée et garde bare. Une sélection unique assure les flèches entre surfaces ; lectures, enfant GoTo et fermeture partagent le drainage.",
+      "remaining": "Historique limité à 500 commits et au filtre message existant ; grille/filtration Windows complètes encore ouvertes. Les deux lignes artificielles sont épinglées en tête sous l’en-tête, sans reproduire leur insertion avant HEAD dans le flux Windows. Variantes natives, plateformes et interaction installée restent à qualifier dans le TODO.",
       "visual": "adapte",
       "tests": [
         "CherryPickDialogTests",
         "ResetRevertDialogTests",
         "RebaseDialogTests",
-        "ExportDialogTests"
+        "ExportDialogTests",
+        "ChooseCommitDialogTests",
+        "ComparisonCommitPickerTests"
       ],
-      "adr": []
+      "adr": [
+        "0153"
+      ]
     },
     "GitUI.HelperDialogs.FormStatus": {
       "feature": "Sortie/erreur Git",
@@ -2016,8 +2032,8 @@
         "AvailableEncodingsPreferencesStore",
         "DiffViewerReadingMenu"
       ],
-      "implemented": "Dialogue à deux listes Selected/Available reprenant les libellés XLF Windows et les boutons >/<, ajout/retrait conservant l’ordre inclus, protection des encodages de base déjà inclus (ASCII, UTF-16 LE/BE, UTF-8 et encodage système), UTF-7 exclu et UTF-8 sans BOM. Catalogue des encodages .NET 10/CodePages connus et réellement disponibles, y compris multioctets, indépendant des règles strictes de décodage et de patch du Core. Préférences partagées entre FilesEncoding de Config et les sélecteurs diff/viewer ; une sélection courante retirée des favoris reste présente. Defaults Windows adaptés à la plateforme (Default, ASCII, Unicode, UTF-8, OEM et code page active). OK publie la préférence du dialogue enfant ; Cancel/Escape/fermeture du propriétaire abandonnent son brouillon.",
-      "remaining": "Préférence Linux XDG indépendante, sans import implicite du profil Windows. Catalogue dépendant des codecs de la plateforme ; complément borné des métadonnées .NET 10 omettant notamment GB18030, sans promesse de codecs futurs. Parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : ajout puis Cancel, ajout puis OK, Cancel parent et liste incluse retrouvée après redémarrage. Audit natif étendu (retrait/protection/clavier/erreurs/owner-close, autres thèmes/langues, Wayland/DPI/accessibilité) et nouveau paquet interactif encore ouverts. Écart connu : une liste préférée enregistrée vide reste vide sur Linux ; Windows reprend ses défauts. Les bases absentes ne sont pas réintroduites automatiquement, leur protection concerne seulement celles déjà incluses.",
+      "implemented": "Dialogue à deux listes Selected/Available reprenant les libellés XLF Windows et les boutons >/<, ajout/retrait conservant l’ordre inclus, protection des encodages de base déjà inclus (ASCII, UTF-16 LE/BE, UTF-8 et encodage système), UTF-7 exclu et UTF-8 sans BOM. Catalogue des encodages .NET 10/CodePages connus et réellement disponibles, y compris multioctets, indépendant des règles strictes de décodage et de patch du Core. Préférences partagées entre FilesEncoding de Config et les sélecteurs diff/viewer ; une sélection courante retirée des favoris reste présente. Defaults Windows adaptés à la plateforme (Default, ASCII, Unicode, UTF-8, OEM et code page active). OK publie la préférence du dialogue enfant ; Cancel/Escape/fermeture du propriétaire abandonnent son brouillon. Une préférence vide ou composée d’espaces reprend les défauts Windows sans écrire le profil.",
+      "remaining": "Préférence Linux XDG indépendante, sans import implicite du profil Windows. Catalogue dépendant des codecs de la plateforme ; complément borné des métadonnées .NET 10 omettant notamment GB18030, sans promesse de codecs futurs. Parcours source964 X11 anglais/clair borné (a79 ne change que les fixtures) : ajout puis Cancel, ajout puis OK, Cancel parent et liste incluse retrouvée après redémarrage. Audit natif étendu (retrait/protection/clavier/erreurs/owner-close, autres thèmes/langues, Wayland/DPI/accessibilité) et nouveau paquet interactif encore ouverts. Les bases absentes ne sont pas réintroduites automatiquement, leur protection concerne seulement celles déjà incluses.",
       "visual": "rapproche",
       "tests": [
         "AvailableEncodingsDialogTests",
@@ -2560,13 +2576,15 @@
       "group": "plugins",
       "level": "N2",
       "linux": [
-        "PluginDialog",
+        "CreateLocalBranchesDialog",
         "CreateLocalBranchesPlugin"
       ],
-      "implemented": "Contrat/options plugin et création réelle des branches depuis les remotes.",
-      "remaining": "Formulaire spécifique Windows remplacé par une UI générique ; parité des détails et audit natif restant.",
-      "visual": "generique",
-      "tests": [],
+      "implemented": "Fenêtre compacte dédiée : choix du remote et action de création, libellés et dimensions Windows adaptés au DPI. Moteur existant partagé, vrais résultats Git, HEAD symboliques exclus et branches locales existantes préservées ; message possédé, erreur conservée et réessai. Lecture/exécution liées au propriétaire avec drainage.",
+      "remaining": "Audit natif exhaustif, autres plateformes et interactions du paquet installé encore ouverts.",
+      "visual": "rapproche",
+      "tests": [
+        "CreateLocalBranchesDialogTests"
+      ],
       "adr": [
         "0005"
       ],
@@ -2643,14 +2661,17 @@
       "linux": [
         "FindLargeFilesDialog"
       ],
-      "implemented": "Scan/tri, sélection, export et retrait contrôlé des chemins de l’historique.",
+      "implemented": "Scan/tri, sélection, export et retrait contrôlé des chemins de l’historique. Défaut de taille issu des portées XML communes ; fraction Single localisée convertie explicitement en seuil invariant, valeurs non prises en charge signalées avant scanner. Seuil/révision de cette invocation temporaires, sans réécriture des défauts à la fermeture.",
       "remaining": "Audit natif de la matrice destructive/annulation/récupération encore ouvert.",
       "visual": "rapproche",
       "tests": [
-        "FindLargeFilesDialogTests"
+        "FindLargeFilesDialogTests",
+        "SimplePluginSettingsPageTests",
+        "SimplePluginSettingsIntegrationTests"
       ],
       "adr": [
-        "0053"
+        "0053",
+        "0008"
       ]
     },
     "GitExtensions.Plugins.Gource.GourceStart": {
@@ -2662,17 +2683,19 @@
         "AvatarProviderBinding",
         "AvatarService"
       ],
-      "implemented": "Options, exécutable/répertoire littéraux, avatars et lancement natif. Export Avatar branché sur la politique et les caches partagés, sans repli legacy implicite d’un propriétaire lié non prêt ; génération et tâches réellement drainées à la fermeture. Providers injectés conservés en emprunt. Cette intégration est couverte hors réseau/headless, distinctement du lancement natif historique de l’outil.",
+      "implemented": "Options, exécutable/répertoire littéraux, avatars et lancement natif. Export Avatar branché sur la politique et les caches partagés, sans repli legacy implicite d’un propriétaire lié non prêt ; génération et tâches réellement drainées à la fermeture. Providers injectés conservés en emprunt. Cette intégration est couverte hors réseau/headless, distinctement du lancement natif historique de l’outil. Chemin/arguments issus des mêmes portées XML que Settings ; seuls les champs modifiés sont enregistrés après un lancement accepté. Échec partiel de sauvegarde visible, réessai sans second viewer et acquittement par fichier ; working directory reste temporaire.",
       "remaining": "Audit visuel/fonctionnel de toutes les options et de l’outil externe restant. Nouveau socle Avatar partagé couvert par full et paquet exact ; aucun parcours Gource natif déduit du natif Browse/Appearance, aucun transfert du natif historique ni certification des services réseau réels.",
       "visual": "adapte",
       "tests": [
         "ProxyGourceDialogTests",
         "GourceAvatarProviderTests",
         "AvatarServiceTests",
-        "AvatarWindowLifetimeTests"
+        "AvatarWindowLifetimeTests",
+        "SimplePluginSettingsIntegrationTests"
       ],
       "adr": [
-        "0014"
+        "0014",
+        "0008"
       ]
     },
     "GitExtensions.Plugins.ProxySwitcher.ProxySwitcherForm": {
@@ -2700,14 +2723,17 @@
       "linux": [
         "StatisticsDialog"
       ],
-      "implemented": "Calculs et graphiques natifs, critères et préférences.",
+      "implemented": "Calculs et graphiques natifs, critères et préférences. Trois défauts Windows dans les pages XML communes ; contrôles de la fenêtre métier temporaires, sans écriture automatique à la fermeture.",
       "remaining": "Comparer l’intégralité des contrôles, graphiques et formats Windows.",
       "visual": "adapte",
       "tests": [
-        "StatisticsDialogTests"
+        "StatisticsDialogTests",
+        "SimplePluginSettingsPageTests",
+        "SimplePluginSettingsIntegrationTests"
       ],
       "adr": [
-        "0005"
+        "0005",
+        "0008"
       ]
     },
     "GitExtensions.Plugins.GitImpact.FormImpact": {
@@ -3645,19 +3671,33 @@
         "DeleteUnusedBranchesSettingsSession",
         "DeleteUnusedBranchesSettingsCatalog",
         "DistributedSettingsWorkspace",
-        "DesktopSettingsDialog"
+        "DesktopSettingsDialog",
+        "PluginScopedSettingsPage",
+        "PluginScopedSettingsSession",
+        "BackgroundFetchSettingsPage",
+        "BackgroundFetchSettingsSession",
+        "SimplePluginSettingsCatalog",
+        "SimplePluginSettingsSession"
       ],
-      "implemented": "Paramètres persistants des huit plugins et services BackgroundFetch/AutoCompile. Neuf réglages Delete obsolete branches dans Settings > Plugins, XML par portée, héritage GUID/ancien préfixe/JSON et route possédée depuis preview/script ; 36 tests Git/headless passent.",
-      "remaining": "Pas de page générique intégrée pour tous les plugins Windows ; les six fournisseurs CI ont leurs pages dédiées, avec leurs périmètres et limites propres. Nouvelles éditions de l’âge bornées à 100000 jours ; Search temporaire et absence de transaction entre fichiers. Audit natif étendu ouvert.",
+      "implemented": "Paramètres persistants des huit plugins et services BackgroundFetch/AutoCompile. Neuf réglages Delete obsolete branches dans Settings > Plugins, XML par portée, héritage GUID/ancien préfixe/JSON et route possédée depuis preview/script ; 36 tests Git/headless passent. Les cinq champs Windows de BackgroundFetch et neuf champs AutoCompile/Find/Statistics/Gource réutilisent les mêmes portées XML, héritage et workspace ; seuls les changements explicites sont écrits. Menu/scripts ouvrent ces pages possédées ; Apply reconfigure la même instance BackgroundFetch et ne compile rien. Les options métier temporaires restent distinctes des défauts Settings.",
+      "remaining": "Les autres contrats plugins restent à auditer ; Proxy et le helper issues GitHub ne sont pas complétés par ces neuf champs. Les fournisseurs CI gardent leurs pages et limites dédiées. Search temporaire pour les branches obsolètes, âge nouvellement édité borné à 100000 jours et absence de transaction entre fichiers. Audit natif étendu ouvert.",
       "visual": "integre",
       "tests": [
         "DeleteUnusedBranchesSettingsSessionTests",
         "DeleteUnusedBranchesSettingsPageTests",
         "DeleteUnusedBranchesSettingsIntegrationTests",
-        "DeleteUnusedBranchesSettingsScriptRouteTests"
+        "DeleteUnusedBranchesSettingsScriptRouteTests",
+        "BackgroundFetchSettingsSessionTests",
+        "BackgroundFetchSettingsPageTests",
+        "BackgroundFetchSettingsIntegrationTests",
+        "SimplePluginSettingsSessionTests",
+        "SimplePluginSettingsPageTests",
+        "SimplePluginSettingsIntegrationTests"
       ],
       "adr": [
-        "0151"
+        "0151",
+        "0008",
+        "0014"
       ]
     },
     "AppVeyorIntegration.Settings.AppVeyorSettingsUserControl": {
