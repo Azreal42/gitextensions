@@ -79,7 +79,11 @@ public sealed record GitRepositoryInfo(string RootPath, string GitDirectory, str
 public enum GitResetMode { Soft, Mixed, Hard, Keep, Merge }
 public sealed record GitSearchMatch(string Path, int LineNumber, string Text);
 public sealed record GitReflogEntry(string Hash, string Selector, string Description, DateTimeOffset CommitDate);
-public sealed record GitSparseCheckoutState(bool Enabled, bool ConeMode, bool SparseIndex, IReadOnlyList<string> Patterns);
+public sealed record GitSparseCheckoutState(bool Enabled, bool ConeMode, bool SparseIndex, IReadOnlyList<string> Patterns)
+{
+    // An intentionally saved empty rule set is distinct from an unconfigured checkout.
+    public bool RulesFileExists { get; init; }
+}
 public sealed record GitBisectState(bool IsActive, string? StartingRevision, string? CurrentRevision, string? BadRevision,
     IReadOnlyList<string> GoodRevisions, IReadOnlyList<string> SkippedRevisions, string? FirstBadRevision, string Log, bool NoCheckout, bool FirstParent)
 {

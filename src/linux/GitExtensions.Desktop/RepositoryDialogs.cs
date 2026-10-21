@@ -15,6 +15,7 @@ public abstract class RepositoryDialog : Window
     private readonly CancellationTokenSource _lifetime = new();
     private readonly List<Control> _inputs = [];
     private readonly Border _statusBorder;
+    private readonly DeferredOwnerCloseReplay _ownerCloseReplay;
     private CancellationTokenSource? _operation;
     private bool _closeWhenIdle;
     private Func<Task>? _pendingDiffReload;
@@ -37,7 +38,7 @@ public abstract class RepositoryDialog : Window
         _statusBorder = ClassicChrome.Border(Status, new Thickness(0, 1, 0, 0), new Thickness(10, 5));
         DockPanel.SetDock(_statusBorder, Dock.Bottom);
         Root.Children.Add(_statusBorder);
-        _ = new DeferredOwnerCloseReplay(this);
+        _ownerCloseReplay = new DeferredOwnerCloseReplay(this);
         Closing += (_, args) =>
         {
             if (IsBusy) { args.Cancel = true; _closeWhenIdle = true; _operation?.Cancel(); }
@@ -84,6 +85,7 @@ public abstract class RepositoryDialog : Window
 
     protected void ReportError(Exception exception) { LastException = exception; LastError = exception.Message; Status.Text = exception.Message; }
     protected void ClearError() { LastError = null; LastException = null; }
+    protected void RevokeDeferredOwnerClose() => _ownerCloseReplay.RevokeOwnerClose();
 
     protected void CollapseEmptyStatus()
     {
@@ -441,82 +443,186 @@ public sealed class SparseCheckoutDialog : RepositoryDialog
     private readonly CheckBox _enabled = new() { Name = "SparseEnabled" };
     private readonly CheckBox _cone = new() { Name = "SparseCone" };
     private readonly CheckBox _sparseIndex = new() { Name = "SparseIndex" };
+    private readonly CheckBox _refresh = new() { Name = "SparseRefreshOnSave", IsChecked = true };
     private readonly TextBox _rules = CreateRulesEditor();
+    private readonly Button _reapply, _save;
+    private GitSparseCheckoutState? _state;
+    private bool _savedEnabled, _savedCone, _savedSparseIndex, _allowClose, _askingClose, _closed;
+    private string _savedRules = "";
+
     private static TextBox CreateRulesEditor()
     {
         TextBox editor = new() { Name = "SparseRules", AcceptsReturn = true, AcceptsTab = true };
         DesktopFonts.Apply(editor, DesktopFontRole.Code); return editor;
     }
-    private readonly Button _reapply;
-    private GitSparseCheckoutState? _state;
 
     public SparseCheckoutDialog(GitRepository repository) : base(repository, "Sparse working copy")
     {
-        Width = 800;
-        Height = 600;
-        MinWidth = 600;
-        MinHeight = 420;
+        Width = 800; Height = 600; MinWidth = 600; MinHeight = 420;
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         StackPanel header = new() { Margin = new Thickness(10), Spacing = 6 };
         header.Children.Add(new TextBlock { Text = T("Sparse working copy"), FontWeight = FontWeight.Bold });
         header.Children.Add(new TextBlock { Text = T("Specify the rules for including or excluding files and directories."), TextWrapping = TextWrapping.Wrap });
         _enabled.Content = T("Enable sparse checkout for this repository");
         _cone.Content = T("Cone mode: literal directories, one per line");
         _sparseIndex.Content = T("Sparse index");
-        header.Children.Add(_enabled);
-        header.Children.Add(_cone);
-        header.Children.Add(_sparseIndex);
-        _cone.IsCheckedChanged += (_, _) => _sparseIndex.IsEnabled = !IsBusy && _enabled.IsChecked == true && _cone.IsChecked == true;
+        header.Children.Add(_enabled); header.Children.Add(_cone); header.Children.Add(_sparseIndex);
+        _cone.IsCheckedChanged += (_, _) => UpdateActions();
         _enabled.IsCheckedChanged += (_, _) => UpdateActions();
-        DockPanel.SetDock(header, Dock.Top);
-        Root.Children.Add(header);
-        StackPanel buttons = new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(10) };
-        _reapply = Action("ReapplySparse", "Refresh working copy", () => RunAsync("Refresh working copy", async token => { await Repository.ReapplySparseCheckoutAsync(token); Status.Text = T("Working copy refreshed"); }, changes: true));
-        buttons.Children.Add(_reapply);
-        buttons.Children.Add(Action("SaveSparse", "Save", SaveAsync));
-        buttons.Children.Add(Action("CancelSparse", "Cancel", () => { Close(); return Task.CompletedTask; }));
-        DockPanel.SetDock(buttons, Dock.Bottom);
-        Root.Children.Add(buttons);
-        _rules.Margin = new Thickness(10, 0, 10, 10);
-        Root.Children.Add(_rules);
-        Track(_enabled, _cone, _sparseIndex, _rules);
-        KeyDown += async (_, args) =>
+        DockPanel.SetDock(header, Dock.Top); Root.Children.Add(header);
+        _refresh.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        _refresh.Content = new TextBlock { Name = "SparseRefreshLabel", Text = T("Refresh working copy using the current settings and rules"), TextWrapping = TextWrapping.Wrap };
+        ToolTip.SetTip(_refresh, T("As the sparse working copy rules are changed, it might become outdated.")
+            + "\n" + T("Refreshes the working copy against the current set of the rules to restore any missing files and remove any extra files."));
+        _reapply = Action("ReapplySparse", "Refresh working copy", ReapplyAsync);
+        _save = Action("SaveSparse", "Save", SaveAndCloseAsync);
+        StackPanel buttons = new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right,
+            Children = { _reapply, _save, Action("CancelSparse", "Cancel", () => { Close(); return Task.CompletedTask; }) } };
+        StackPanel footer = new() { Margin = new Thickness(10), Spacing = 8, Children = { _refresh, buttons } };
+        DockPanel.SetDock(footer, Dock.Bottom); Root.Children.Add(footer);
+        _rules.Margin = new Thickness(10, 0, 10, 10); Root.Children.Add(_rules);
+        Track(_enabled, _cone, _sparseIndex, _refresh, _rules);
+        AddHandler(KeyDownEvent, (_, args) =>
         {
-            if (args.Key == Key.Enter && args.KeyModifiers == KeyModifiers.Control) { args.Handled = true; await SaveAsync(); }
+            if (args.Key == Key.Enter && args.KeyModifiers == KeyModifiers.Control)
+            { args.Handled = true; _ = SaveAndCloseAsync(); }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        Closing += (_, args) =>
+        {
+            if (_allowClose || IsBusy || !IsDirty) { return; }
+            args.Cancel = true;
+            if (!_askingClose)
+            { _askingClose = true; Avalonia.Threading.Dispatcher.UIThread.Post(() => { _ = ConfirmCloseAsync(); }); }
         };
+        Closed += (_, _) => _closed = true;
+        UpdateActions();
     }
+
+    private bool IsDirty => _state is not null && ((_enabled.IsChecked == true) != _savedEnabled
+        || (_cone.IsChecked == true) != _savedCone || (_sparseIndex.IsChecked == true) != _savedSparseIndex
+        || (_rules.Text ?? "") != _savedRules);
 
     public override Task InitializeAsync() => RunAsync("Sparse checkout status", async token =>
     {
-        _state = await Repository.GetSparseCheckoutAsync(token);
-        _enabled.IsChecked = _state.Enabled;
-        _cone.IsChecked = !_state.Enabled || _state.ConeMode;
-        _sparseIndex.IsChecked = _state.SparseIndex;
-        _rules.Text = string.Join('\n', _state.Patterns);
-        Status.Text = T(_state.Enabled ? "Sparse checkout is enabled." : "Sparse checkout is disabled.");
+        await LoadStateAsync(token);
+        Status.Text = T(_state!.Enabled ? "Sparse checkout is enabled." : "Sparse checkout is disabled.");
     });
 
-    private async Task SaveAsync()
+    private async Task LoadStateAsync(CancellationToken token)
     {
-        bool enabled = _enabled.IsChecked == true;
-        bool cone = _cone.IsChecked == true;
-        bool sparseIndex = _sparseIndex.IsChecked == true;
-        string[] lines = (_rules.Text ?? "").Split('\n').Select(line => line.TrimEnd('\r')).Where(line => line.Length > 0).ToArray();
-        if (_state?.Enabled == true && !enabled && !await Dialogs.ConfirmAsync(this, T("Disable sparse checkout"), T("Restore the full working copy for this repository?"))) { return; }
+        _state = await Repository.GetSparseCheckoutAsync(token);
+        _enabled.IsChecked = _state.Enabled;
+        _cone.IsChecked = _state.ConeMode || !_state.Enabled && !_state.RulesFileExists;
+        _sparseIndex.IsChecked = _state.SparseIndex;
+        _rules.Text = string.Join('\n', _state.Patterns);
+        AcceptChanges();
+    }
+
+    private void AcceptChanges()
+    {
+        _savedEnabled = _enabled.IsChecked == true; _savedCone = _cone.IsChecked == true;
+        _savedSparseIndex = _sparseIndex.IsChecked == true; _savedRules = _rules.Text ?? "";
+    }
+
+    private async Task SaveAndCloseAsync()
+    {
+        if (_closed || IsBusy) { return; }
+        try
+        {
+            if (await SaveAsync()) { if (!_closed) { _allowClose = true; Close(); } }
+            else { RevokeDeferredOwnerClose(); }
+        }
+        catch (Exception error)
+        { RevokeDeferredOwnerClose(); if (!_closed) { ReportError(error); } }
+    }
+
+    private async Task<bool> SaveAsync()
+    {
+        if (_closed || IsBusy || _state is null || _askingClose && OwnedWindows.Any(window => window.IsVisible)) { return false; }
+        bool enabled = _enabled.IsChecked == true, cone = _cone.IsChecked == true;
+        bool sparseIndex = cone && _sparseIndex.IsChecked == true, refresh = _refresh.IsChecked == true;
+        if (!IsDirty && !refresh) { return true; }
+        if (refresh && _state.Enabled && !enabled && !await Dialogs.ConfirmAsync(this, T("Disable sparse checkout"), T("Restore the full working copy for this repository?"))) { return false; }
+        bool saved = false;
         await RunAsync("Save sparse checkout", async token =>
         {
-            if (!enabled) { await Repository.DisableSparseCheckoutAsync(token); }
-            else if (cone) { await Repository.SetSparseCheckoutAsync(lines, sparseIndex, token); }
-            else { await Repository.SetSparsePatternsAsync(lines, token); }
-            _state = await Repository.GetSparseCheckoutAsync(token);
-            _rules.Text = string.Join('\n', _state.Patterns);
-            Status.Text = T("Sparse checkout saved");
+            if (IsDirty)
+            {
+                string[] lines = (_rules.Text ?? "").Split('\n').Select(line => line.TrimEnd('\r')).Where(line => line.Length > 0).ToArray();
+                await Repository.SaveSparseCheckoutSettingsAsync(enabled, cone, sparseIndex, lines, token);
+            }
+            if (refresh)
+            {
+                if (enabled) { await Repository.ReapplySparseCheckoutAsync(token); }
+                else { await Repository.DisableSparseCheckoutAsync(token); }
+            }
+            // Settings alone do not imply that the checkout has been refreshed.
+            // A save-only write already admitted by Core is drained even if owner-close
+            // cancelled our operation. Complete its readback before the deferred Close.
+            _state = await Repository.GetSparseCheckoutAsync(refresh ? token : CancellationToken.None);
+            _sparseIndex.IsChecked = _state.SparseIndex;
+            _rules.Text = string.Join('\n', _state.Patterns); AcceptChanges();
+            Status.Text = T("Sparse checkout saved"); saved = true;
         }, changes: true);
+        return saved;
+    }
+
+    private Task ReapplyAsync() => RunAsync("Refresh working copy", async token =>
+    {
+        // Reapply uses persisted settings. Draft rules remain dirty until Save.
+        bool preserveDraft = IsDirty;
+        if (_state?.Enabled == true) { await Repository.ReapplySparseCheckoutAsync(token); }
+        else { await Repository.DisableSparseCheckoutAsync(token); }
+        if (!preserveDraft) { await LoadStateAsync(token); }
+        Status.Text = T("Working copy refreshed");
+    }, changes: true);
+
+    private async Task ConfirmCloseAsync()
+    {
+        try
+        {
+            if (_closed || !IsVisible) { return; }
+            int answer = await AskSaveAsync();
+            if (_closed) { return; }
+            bool accepted = answer == 2 || answer == 1 && await SaveAsync();
+            if (_closed) { return; }
+            if (accepted) { _allowClose = true; Close(); }
+            else { RevokeDeferredOwnerClose(); }
+        }
+        catch (Exception error)
+        { RevokeDeferredOwnerClose(); if (!_closed) { ReportError(error); } }
+        finally { _askingClose = false; }
+    }
+
+    private async Task<int> AskSaveAsync()
+    {
+        Window dialog = new() { Name = "SaveSparseQuestion", Title = T("Sparse working copy"), Width = 440,
+            SizeToContent = SizeToContent.Height, CanResize = false, CanMinimize = false, CanMaximize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = ActualThemeVariant };
+        Button? defaultButton = null;
+        StackPanel buttons = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 6 };
+        foreach ((string text, int value) in new[] { ("Yes", 1), ("No", 2), ("Cancel", 0) })
+        {
+            Button button = new() { Name = "SparseSave" + text, Content = T(text), MinWidth = 75, Height = 25, IsDefault = value == 1, IsCancel = value == 0 };
+            button.Click += (_, _) => dialog.Close(value); buttons.Children.Add(button);
+            if (value == 1) { defaultButton = button; }
+        }
+        dialog.Opened += (_, _) =>
+        {
+            ModalWindowActivation.AfterMapping(dialog, () => !_closed && IsVisible && dialog.IsVisible);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            { if (!_closed && IsVisible && dialog.IsVisible) { defaultButton?.Focus(); } }, Avalonia.Threading.DispatcherPriority.Loaded);
+        };
+        dialog.Content = new StackPanel { Margin = new Thickness(12), Spacing = 12, Children =
+        { new TextBlock { Text = T("You have made changes to settings or rules.\nWould you like to save them?"), TextWrapping = TextWrapping.Wrap }, buttons } };
+        try { return await dialog.ShowDialog<int>(this); }
+        finally { dialog.Close(); }
     }
 
     protected override void UpdateActions()
     {
-        _cone.IsEnabled = _rules.IsEnabled = !IsBusy && _enabled.IsChecked == true;
+        _cone.IsEnabled = _rules.IsEnabled = !IsBusy && _state is not null && _enabled.IsChecked == true;
         _sparseIndex.IsEnabled = _cone.IsEnabled && _cone.IsChecked == true;
-        _reapply.IsEnabled = !IsBusy && _state?.Enabled == true;
+        _save.IsEnabled = _reapply.IsEnabled = !IsBusy && _state is not null;
     }
 }

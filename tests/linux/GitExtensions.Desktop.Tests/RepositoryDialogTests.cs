@@ -77,12 +77,17 @@ public class RepositoryDialogTests
                 Assert.That(File.Exists(Path.Combine(fixture.Repository, "excluded", "file.txt")), Is.False);
                 Assert.That(File.Exists(Path.Combine(fixture.Repository, "file.txt")), Is.True, "Cone mode retains root-level files.");
             });
+            Assert.That(dialog.IsVisible, Is.False, "A successful Save closes the editor like Windows.");
+            dialog = new SparseCheckoutDialog(repository); dialog.Show(); await dialog.InitializeAsync();
+            rules = Field<TextBox>(dialog, "SparseRules");
             Field<CheckBox>(dialog, "SparseCone").IsChecked = false;
             rules.Text = "/*\n!/excluded/\n";
             Click(dialog, "SaveSparse");
             await Idle(dialog);
             Assert.That(dialog.LastError, Is.Null);
-            await dialog.InitializeAsync();
+            Assert.That(dialog.IsVisible, Is.False);
+            dialog = new SparseCheckoutDialog(repository); dialog.Show(); await dialog.InitializeAsync();
+            rules = Field<TextBox>(dialog, "SparseRules");
             Assert.That(rules.Text, Is.EqualTo("/*\n!/excluded/"));
             Assert.That(Field<CheckBox>(dialog, "SparseCone").IsChecked, Is.False);
             Assert.That(Field<CheckBox>(dialog, "SparseIndex").IsEnabled, Is.False);

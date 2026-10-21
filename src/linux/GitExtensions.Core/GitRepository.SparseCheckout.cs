@@ -57,15 +57,20 @@ public sealed partial class GitRepository
         bool enabled = await GetBooleanConfigAsync("core.sparseCheckout", cancellationToken).ConfigureAwait(false);
         bool cone = await GetBooleanConfigAsync("core.sparseCheckoutCone", cancellationToken).ConfigureAwait(false);
         bool sparseIndex = await GetBooleanConfigAsync("index.sparse", cancellationToken).ConfigureAwait(false);
-        string[] patterns = enabled
-            ? (await ExecuteAsync(["sparse-checkout", "list"], cancellationToken).ConfigureAwait(false)).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            : [];
+        // Saved rules remain editable after disabling without refreshing the checkout.
+        // The command-local override only permits this read; it does not enable sparse checkout on disk.
+        if (!enabled && (await GetInfoAsync(cancellationToken).ConfigureAwait(false)).IsBare)
+        { return new GitSparseCheckoutState(false, cone, sparseIndex, []); }
+        await EnsureWorktreeAsync(cancellationToken).ConfigureAwait(false);
+        string[] patterns = (await ExecuteAsync(["-c", "core.sparseCheckout=true", "sparse-checkout", "list"], cancellationToken).ConfigureAwait(false))
+            .StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         if (cone)
         {
             patterns = patterns.Select(GitQuotedPath.Decode).ToArray();
         }
 
-        return new GitSparseCheckoutState(enabled, cone, sparseIndex, patterns);
+        return new GitSparseCheckoutState(enabled, cone, sparseIndex, patterns)
+        { RulesFileExists = File.Exists(await GetGitPathAsync("info/sparse-checkout", cancellationToken).ConfigureAwait(false)) };
     }
 
     private async Task<bool> GetBooleanConfigAsync(string key, CancellationToken cancellationToken)

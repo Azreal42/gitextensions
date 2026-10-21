@@ -15,6 +15,10 @@ internal sealed class DeferredOwnerCloseReplay
         window.Closed += Closed;
     }
 
+    // A dirty-close Cancel consumes the user's earlier owner-close request.
+    // Consumers opt in explicitly; existing replay behavior is otherwise unchanged.
+    internal void RevokeOwnerClose() => _owner = null;
+
     private void Closing(object? sender, WindowClosingEventArgs args)
     {
         // A derived asynchronous flush can veto even when the base is not busy.
