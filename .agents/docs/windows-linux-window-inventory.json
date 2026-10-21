@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "e7fea161ca6ecbe026a7a4cc4c034406076c0887",
-  "source_digest_sha256": "a77d96ba3dc063d7c091da134650cf02469b9f6a61a5d5c443faa64cf0f0760d",
-  "scanned_csharp_files": 2617,
+  "code_reference_commit": "3dd4eb92652259d0cfa954fba55404bf3daad597",
+  "source_digest_sha256": "e9b9cd94f5c9a45ee1cb93dafffa655dfb430e4b6e0e1d772e96adbde416c961",
+  "scanned_csharp_files": 2626,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -2466,7 +2466,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ChooseRepositoryAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.cs",
-          "line": 405,
+          "line": 390,
           "kind": "window"
         },
         {
@@ -2946,6 +2946,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialRevisionMenuTests.cs",
+          "test_class": "ArtificialRevisionMenuTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BackgroundFetchSettingsIntegrationTests.cs",
           "test_class": "BackgroundFetchSettingsIntegrationTests",
           "passed_in_reference_run": 0,
@@ -3322,7 +3328,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 331,
+          "line": 329,
           "kind": "window"
         }
       ],
@@ -4599,14 +4605,14 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutRevisionWithConfirmationAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.RevisionMenu.cs",
-          "line": 242,
+          "line": 265,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.CheckoutCommitAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 439,
+          "line": 442,
           "kind": "window"
         },
         {
@@ -5274,6 +5280,12 @@
           "test_class": "AppearanceDictionaryTests",
           "passed_in_reference_run": 15,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialRevisionMenuTests.cs",
+          "test_class": "ArtificialRevisionMenuTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BackgroundFetchSettingsIntegrationTests.cs",
@@ -6283,7 +6295,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 331,
+          "line": 329,
           "kind": "window"
         },
         {
@@ -6859,7 +6871,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 331,
+          "line": 329,
           "kind": "window"
         }
       ],
@@ -8275,6 +8287,12 @@
       ],
       "tests": [
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialRevisionMenuTests.cs",
+          "test_class": "ArtificialRevisionMenuTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonFileMenuTests.cs",
           "test_class": "ComparisonFileMenuTests",
           "passed_in_reference_run": 6,
@@ -8509,7 +8527,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 408,
+          "line": 411,
           "kind": "window"
         },
         {
@@ -9198,6 +9216,12 @@
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialRevisionMenuTests.cs",
+          "test_class": "ArtificialRevisionMenuTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ComparisonFileMenuTests.cs",
           "test_class": "ComparisonFileMenuTests",
@@ -10967,7 +10991,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ApplyHistoryViewPresentation",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.HistoryView.cs",
-          "line": 67,
+          "line": 115,
           "kind": "window"
         },
         {
@@ -12356,6 +12380,12 @@
           "test_class": "AdvancedSettingsConsumerTests",
           "passed_in_reference_run": 7,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ArtificialRevisionMenuTests.cs",
+          "test_class": "ArtificialRevisionMenuTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/BackgroundFetchSettingsIntegrationTests.cs",
@@ -14661,7 +14691,7 @@
           "id": "GitExtensions.Linux.Desktop.MainWindow",
           "label": "MainWindow.ShowWorkflowAsync",
           "source": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-          "line": 408,
+          "line": 411,
           "kind": "window"
         },
         {
@@ -19549,7 +19579,7 @@
           "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
           "label": "ExportRevisionPicker",
           "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 331,
+          "line": 329,
           "kind": "window"
         },
         {
@@ -22835,11 +22865,11 @@
       "id": "GitExtensions.Linux.Desktop.ExportRevisionPicker",
       "name": "ExportRevisionPicker",
       "source": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-      "line": 331,
+      "line": 329,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/ExportDialogControls.cs",
-          "line": 331
+          "line": 329
         }
       ],
       "bases": [
@@ -23442,6 +23472,10 @@
           "line": 6
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.ArtificialRevisionMenu.cs",
+          "line": 5
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.ArtificialRevisions.cs",
           "line": 9
         },
@@ -23568,6 +23602,10 @@
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Hotkeys.cs",
           "line": 6
+        },
+        {
+          "path": "src/linux/GitExtensions.Desktop/MainWindow.InlineHistory.cs",
+          "line": 10
         },
         {
           "path": "src/linux/GitExtensions.Desktop/MainWindow.Jenkins.cs",
@@ -25316,7 +25354,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Browser.cs",
-      "line": 434,
+      "line": 437,
       "method": "ShowWorkflowAsync",
       "text": "new() { Title = T(name) + \" — Git Extensions\", Width = 960, Height = 600, Content = content, WindowStartupLocation = WindowStartupLocation.CenterOwner, RequestedThemeVariant = Actu",
       "platform": "linux",
@@ -25336,7 +25374,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.QuickSearch.cs",
-      "line": 270,
+      "line": 174,
       "method": "ShowQuickSearchHelpAsync",
       "text": "new()",
       "platform": "linux",

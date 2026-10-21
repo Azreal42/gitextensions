@@ -6,6 +6,8 @@ Besoin : comparer BASE/A/B sans remplacer l’aperçu de Browse, avec les choix 
 
 Décision : dialogue dédié et endpoints commit/index/worktree typés ; BASE initiale et HEAD de topologie figés à l’ouverture, index/worktree restant dynamiques. Changer ou échanger les sélecteurs ne recalcule pas la BASE initiale de la case. Chemins renommés et non suivis littéraux ; relire après un outil externe, même en échec/annulation. Démarrer les lectures après établissement du propriétaire.
 
+Le raccord Browse des sélections réelles et artificielles communes, de leur ordre WinForms et de leurs parents typés est décrit dans [ADR0155](../history/0155-browse-shared-snapshot.md), qualification H35 par suites complètes et paquet isolé ; parité complète ouverte.
+
 A→B reste principal. Si une BASE commune diffère des deux extrémités et que ShowAll est activé, présenter A→B, Range (si Git le permet), BASE→B, BASE→A dans cet ordre. La préférence globale, activée par défaut, est commune à Browse/Compare et relue au calcul affiché.
 
 Chaque groupe conserve sa paire typée : lecture, blobs, enregistrement et outil fichier suivent le groupe choisi ; l’outil de dossier suit la paire effective du formulaire. Range capture ses vrais commits et garde un lecteur dédié, sans faux fichier, vue blob ou action fichier ; le filtre de liste ne devient pas filtre de contenu Range.

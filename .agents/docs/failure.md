@@ -2,6 +2,19 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="h35-browse-shared-snapshot"></a>
+## H35 — snapshot et endpoints Browse (garde-fous)
+
+- Une clé seule ne garantit pas un message ou des parents frais. Comparer le payload complet, publier sans Reset et garder les endpoints typés ; la base du diff ne remplace pas le vrai parent Index/WT.
+- Le menu View peut encore être l’origine capturée lorsqu’il retire la dernière ligne. Renvoyer alors vers la grille vide à Loaded, avec les gardes existantes ; ne pas reprendre un focus utilisateur plus récent. La [trace et la correction bornée](../../artifacts/linux/browse-inline-history-20261021/review/ui06-correction/review.md) restent distinctes du contrôle suivant.
+- Fenêtre ouverte ou busy déjà false ne prouve ni données prêtes ni action postée engagée. Attendre la cible et son bouton prêts, puis l’opération admise. Le journal est limité à 500 entrées : utiliser l’Id monotone, pas Count/Skip ; un `for-each-ref --contains` de CommitInfo visible n’est pas un refresh historique.
+- `WindowWorkCompletion` comprend les sessions modeless enfants. Le récepteur attend sa frontière d’opération Git ; attendre toute la fenêtre avec l’enfant encore ouvert peut créer un cycle. Le drainage global reste requis après fermeture.
+- Une annulation après reset peut laisser des effets réels. Le clean reste explicite après succès sous la même lease ; drainer puis rafraîchir même en échec partiel.
+
+- Dans les six helpers stricts de retrait PID/start audités, la disparition Linux du processus pendant la lecture de son `stat` est un cas distinct des autres erreurs IO ; conserver ces dernières et ne jamais assimiler un zombie à un acteur retiré. Les anciens helpers plus larges restent une dette séparée.
+
+Validation finale : [suites complètes](../../artifacts/linux/browse-inline-history-20261021/review/root-full-review.json), **4 560 Desktop / 1 197 Core / 42 Plugins**, toutes réussies, puis [paquet isolé](../../artifacts/linux/browse-inline-history-20261021/review/root-package-review.json) sur les mêmes sources `3dd4eb926`. Les essais intermédiaires refusés restent dans les artefacts ; ils ne sont pas la qualification finale.
+
 <a id="h34-inline-artificials"></a>
 ## H34 — lignes de travail dans le flux
 

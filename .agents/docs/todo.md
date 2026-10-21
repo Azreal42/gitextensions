@@ -1,10 +1,30 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H34 : endpoints artificiels dans le flux du sélecteur, 187/187 Desktop, 42/42 Core ciblés et 42/42 Plugins sur les octets commités `e7fea161c`. Les suites complètes historiques restent distinguées ci-dessous.
+Mise à jour : 21 octobre 2026. H35 : snapshot Browse commun, source `3dd4eb926` ; **4 560 Desktop / 1 197 Core / 42 Plugins réussis**, paquet Debian isolé vérifié. Parité complète et installation hôte de ce paquet restent ouvertes.
 
-Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
+Les [suites complètes H35](../../artifacts/linux/browse-inline-history-20261021/review/root-full-review.json) valident les octets source du commit courant dans le worktree propre. Les [suites historiques](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` et les lots précédents gardent leurs preuves distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+<a id="h35-browse-shared-snapshot"></a>
+## H35 — snapshot Browse commun
+
+[ADR0155](adr/workflows/history/0155-browse-shared-snapshot.md). Source `3dd4eb92652259d0cfa954fba55404bf3daad597`, [import explicite](../../artifacts/linux/browse-inline-history-20261021/review/source-import-review.json) de 103 fichiers ; les 14 fichiers hors lot sont préservés et exclus du worktree compilé.
+
+- [x] Même ListBox/graphe pour WT, Index et commits ; snapshot EOF borné sans Reset, réemploi des lignes inchangées et conservation sélection/ancre/focus/viewport. Le streaming du chooser ne qualifie pas Browse progressif.
+- [x] Ordre WinForms récent d’abord, clic droit latest, comparaisons typées : à quatre avec All parents, A est l’index 2 ; sans All parents ou au-delà de quatre, dernière sélection→B. Vrais parents des métadonnées, aucun OID artificiel.
+- [x] Refresh générique suivant le nouveau HEAD ; intention de retour contextuel explicite conservée (raffinement Linux). Republication artificielle en place sans lecture d’historique, cache de placement jusqu’à 50 révisions natives si HEAD masqué ; seuls le panneau actif et CommitInfo visible peuvent être relus si la sélection change.
+- [x] Reset WT/Index ciblé, confirmation commune, clean seulement explicite après succès, même lease et rafraîchissement après drainage, y compris effets partiels.
+
+[Suites complètes](../../artifacts/linux/browse-inline-history-20261021/review/root-full-review.json) : **4 560/4 560 Desktop, 1 197/1 197 Core, 42/42 Plugins**, sorties réelles à zéro, acteurs retirés et sources/binaires stables. [Recompilation finale](../../artifacts/linux/browse-inline-history-20261021/review/root-final-compilation-review.json) : trois projets, zéro avertissement/erreur ; seules les métadonnées de commit changent après les suites, qui ne sont pas rejouées sur ces binaires reconstruits.
+
+[Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/3dd4eb926/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40286512 octets, SHA-256 `0696853ff6eeb8037a14b95cd4586ff0ba1413167b84d25b49452cf99edfdcbc`. [Contrôle](../../artifacts/linux/browse-inline-history-20261021/review/root-package-review.json) : sept phases réussies, 356 fichiers publiés comparés, 402 empreintes MD5, ressources françaises et Skia local ; installation et démarrage isolés. La base dpkg hôte est inchangée.
+
+[Inventaire régénéré](../../artifacts/linux/browse-inline-history-20261021/review/root-inventory-review.json) : **99 fenêtres métier** (98 avec équivalent, diagnostic PuTTY hors périmètre), **32 pages** (31 portées, extension Explorer hors périmètre), 115 types Window Avalonia. Niveaux et référence de tests historique de la matrice inchangés ; les sources Modal du primaire ne deviennent pas des sources compilées du paquet.
+
+[Captures revues](../../artifacts/linux/browse-inline-history-20261021/review/root-visual-review.json) : anglais clair et français sombre, grille dense et diff typé. À 860 px, la largeur réservée à CommitInfo et le débordement de la barre restent à corriger. Ce contrôle visuel n’est pas une qualification interactive du paquet installé.
+
+Limites : rendu/layout au minimum 860 en français sombre, audits visuels/natifs étendus et Browse progressif ouverts. Niveaux inchangés, treize familles ouvertes, aucun N4. Les résultats antérieurs ne sont pas transférés. [Pièges](failure.md#h35-browse-shared-snapshot).
 
 ## H34 — lignes de travail et sélection communes
 
@@ -77,7 +97,7 @@ Source : `b84ae9caf9cb17497fe48f6b67445533bb7096dd` ; [équivalence source et co
 
 [Inventaire régénéré et contrôlé](../../artifacts/linux/portable-window-options-20261021/review/root-inventory-review.json) : 99 fenêtres métier (98 avec équivalent Linux, diagnostic PuTTY hors périmètre) et 32 pages (31 portées, extension Explorer hors périmètre), 116 types de fenêtres Linux. Niveaux inchangés et cinq sources/tests Modal du primaire conservés séparément du build/paquet propre.
 
-Restent notamment : grille/filtres Windows complets du chooser (lecteur traité par H33, endpoints intégrés par H34 ; préfixe Browse encore séparé), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
+Restent notamment : grille/filtres Windows complets du chooser (lecteur traité par H33, endpoints intégrés par H34 ; raccord snapshot Browse traité dans H35 ci-dessus, Browse progressif ouvert), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
 
 ## H29 — ouverture locale de dépôt
 
