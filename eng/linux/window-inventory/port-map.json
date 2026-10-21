@@ -847,9 +847,13 @@
         "file:src/linux/GitExtensions.Desktop/CommitDialog.CommitPolicy.cs",
         "CommitStagingReportDialog",
         "file:src/linux/GitExtensions.Core/GitRepository.Staging.cs",
-        "file:src/linux/GitExtensions.Core/GitRepository.CommitEditor.cs"
+        "file:src/linux/GitExtensions.Core/GitRepository.CommitEditor.cs",
+        "file:src/linux/GitExtensions.Desktop/CommitDialog.GitHubIssues.cs",
+        "file:src/linux/GitExtensions.Core/GitHubIssueHelperSettings.cs",
+        "GitHubIssueCommitTemplates",
+        "file:src/linux/GitExtensions.Core/GitHubHostingIssues.cs"
       ],
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103). Branche/superproject (ADR0104) : bouton/raccourci Create branch, statut→tracking et nom suggéré sans écraser la saisie ; quatre choix en HEAD détachée hors rebase. Stage global mémorisé/relu après commit et push réussis : seul le gitlink associé au HEAD enfant final est indexé ; erreurs et effets restent visibles. Toolbar canonique avec Options à droite/débordement et CommandLink commun. Core20 et Desktop415 ciblés, natif source français/sombre/X11 et paquet isolé vérifiés séparément ; périmètres et preuves dans le TODO, sans nouveau full ni certification de parité. ADR0150 : erreurs de staging au geste, override safecrlf temporaire et rapport readonly ; option sans message de formulaire capturée à l’ouverture et vrai Git/éditeur sous lease Core jusqu’au drainage. Échecs/annulations conservent les effets sans faux commit/push ; 16 nouveaux cas Git/headless.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103). Branche/superproject (ADR0104) : bouton/raccourci Create branch, statut→tracking et nom suggéré sans écraser la saisie ; quatre choix en HEAD détachée hors rebase. Stage global mémorisé/relu après commit et push réussis : seul le gitlink associé au HEAD enfant final est indexé ; erreurs et effets restent visibles. Toolbar canonique avec Options à droite/débordement et CommandLink commun. Core20 et Desktop415 ciblés, natif source français/sombre/X11 et paquet isolé vérifiés séparément ; périmètres et preuves dans le TODO, sans nouveau full ni certification de parité. ADR0150 : erreurs de staging au geste, override safecrlf temporaire et rapport readonly ; option sans message de formulaire capturée à l’ouverture et vrai Git/éditeur sous lease Core jusqu’au drainage. Échecs/annulations conservent les effets sans faux commit/push ; 16 nouveaux cas Git/headless. Assistant issues GitHub3 : deux options originales dans Hosting, issues assignées par REST borné filtrées sur les remotes réels, modèles privés par Commit et application littérale undoable. Arrivée des choix sans changement du message/focus/menu ouvert, fermeture et seconde fermeture drainées ; troncature visible, aucun registre global d’issues. ADR0154 ; qualification ciblée distincte des preuves historiques.",
       "remaining": "Ignore occurrence au même texte reste une adaptation Linux explicite. Audit étendu des scripts/erreurs/fermetures et réserves antérieures Commit ouverts. Le paquet du lot branche/superproject est vérifié isolément, sans validation interactive ; commit/push/staging, geste detached et redémarrage restent non exécutés en natif, le parcours source accepté est borné au français/sombre/X11 ; aucun full sur sa source, référence complète069 historique inchangée. Création Worktrees gérée depuis un sous-module absorbé : défaut distinct du linked child natif Core. Premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. N2 conservé, aucune parité globale certifiée. Mode éditeur Git : types/cibles non-HEAD exclus, Amend HEAD disponible ; add -A littéral conservé. Rapport FormStatus général et macOS ouverts.",
       "visual": "rapproche",
       "tests": [
@@ -873,7 +877,9 @@
         "CommitTemplateDialogTests",
         "CommitBranchTests",
         "CommitSuperprojectTests",
-        "CommitGlobalOptionsTests"
+        "CommitGlobalOptionsTests",
+        "GitHubIssueHelperCommitTests",
+        "GitHubIssueHelperSettingsTests"
       ],
       "adr": [
         "0018",
@@ -887,7 +893,8 @@
         "0102",
         "0103",
         "0104",
-        "0150"
+        "0150",
+        "0154"
       ],
       "extra_evidence": [
         {
@@ -2139,9 +2146,11 @@
         "AdvancedSettingsSession",
         "SshSettingsPage",
         "BlameViewerSettingsPage",
-        "BlameViewerSettingsSession"
+        "BlameViewerSettingsSession",
+        "ProxySwitcherSettingsSession",
+        "PluginScopedSettingsPage"
       ],
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (périmètre historique ADR0125), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130). Ce lot complète les dix-sept confirmations et la page globale Blame viewer, raccordées à Apply/Cancel partagé et vérifiées dans les suites complètes de sa source.",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (périmètre historique ADR0125), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130). Ce lot complète les dix-sept confirmations et la page globale Blame viewer, raccordées à Apply/Cancel partagé et vérifiées dans les suites complètes de sa source. Proxy Switcher utilise aussi le workspace XML commun et Apply/Cancel : quatre champs originaux et mot de passe masqué ; aucune écriture JSON automatique.",
       "remaining": "N2 : options/pages Windows restantes et variantes des pages Plugins ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "tests": [
@@ -2173,7 +2182,9 @@
         "SshSettingsSessionTests",
         "ConfirmationsFourPoliciesTests",
         "BlameViewerSettingsPageTests",
-        "BlameViewerSettingsSessionTests"
+        "BlameViewerSettingsSessionTests",
+        "ProxySwitcherSettingsPageTests",
+        "ProxySwitcherSettingsIntegrationTests"
       ],
       "adr": [
         "0060",
@@ -2191,7 +2202,8 @@
         "0128",
         "0129",
         "0130",
-        "0017"
+        "0017",
+        "0014"
       ]
     },
     "GitUI.HelperDialogs.FormBuildServerCredentials": {
@@ -2704,13 +2716,20 @@
       "level": "N3",
       "linux": [
         "ProxySwitcherDialog",
-        "ProxySwitcherSettingsDialog"
+        "ProxySwitcherSettingsSession",
+        "PluginScopedSettingsPage",
+        "DesktopSettingsDialog",
+        "file:src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs"
       ],
-      "implemented": "Profils, configuration Git/environnement et réglages persistants.",
-      "remaining": "Toutes les variantes de profils et leur rendu natif restent à auditer.",
+      "implemented": "Aperçu http.proxy effectif/global masqué, Set/Unset Git réels ; Settings ouvre la page commune possédée. Quatre StringSettings Windows, ordre et clés GUID historiques, portées XML Effective/Local/Distributed/Global et CAS communs ; défauts runtime uniquement acquittés, mot de passe masqué enregistré seulement par Apply/OK, sans writer JSON à la fermeture. Fallback ancien limité aux trois valeurs non secrètes, sans migration implicite. Settings seul conserve la grille Browse et ne modifie pas le proxy Git.",
+      "remaining": "Audit natif étendu des portées, erreurs, thèmes/langues et interactions du paquet installé ; variantes Wayland/IME/DPI/accessibilité ouvertes. Aucun profil Windows supplémentaire ni parité globale déduit du ciblé Git/headless.",
       "visual": "adapte",
       "tests": [
-        "ProxyGourceDialogTests"
+        "ProxyGourceDialogTests",
+        "PluginLifecycleTests",
+        "ProxySwitcherSettingsSessionTests",
+        "ProxySwitcherSettingsPageTests",
+        "ProxySwitcherSettingsIntegrationTests"
       ],
       "adr": [
         "0014"

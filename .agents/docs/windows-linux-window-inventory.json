@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "code_reference_commit": "b84ae9caf9cb17497fe48f6b67445533bb7096dd",
-  "source_digest_sha256": "6d2551853de2af8c782c2f8b6731ee1fc598744c7f9df5bbd2f6448e3ec3d9db",
-  "scanned_csharp_files": 2589,
+  "code_reference_commit": "40d8e1a32a809768401c3c15e2bda89c30e48fec",
+  "source_digest_sha256": "fe583789c4fa019c3579f2a78323a4ee71f39d88aab8ac631d72d4be040100d1",
+  "scanned_csharp_files": 2600,
   "parsed_configurations": [
     "Windows release",
     "Windows debug",
@@ -26,7 +26,7 @@
     "settings_types": 36,
     "settings_pages": 32,
     "settings_support_classes": 4,
-    "linux_window_types": 116,
+    "linux_window_types": 115,
     "linux_abstract_bases": 4,
     "linux_dynamic_factories": 36,
     "windows_dynamic_hosts": 2,
@@ -1254,8 +1254,8 @@
       "feature": "Plugin : proxy",
       "group": "plugins",
       "level": "N3",
-      "implemented": "Profils, configuration Git/environnement et réglages persistants.",
-      "remaining": "Toutes les variantes de profils et leur rendu natif restent à auditer.",
+      "implemented": "Aperçu http.proxy effectif/global masqué, Set/Unset Git réels ; Settings ouvre la page commune possédée. Quatre StringSettings Windows, ordre et clés GUID historiques, portées XML Effective/Local/Distributed/Global et CAS communs ; défauts runtime uniquement acquittés, mot de passe masqué enregistré seulement par Apply/OK, sans writer JSON à la fermeture. Fallback ancien limité aux trois valeurs non secrètes, sans migration implicite. Settings seul conserve la grille Browse et ne modifie pas le proxy Git.",
+      "remaining": "Audit natif étendu des portées, erreurs, thèmes/langues et interactions du paquet installé ; variantes Wayland/IME/DPI/accessibilité ouvertes. Aucun profil Windows supplémentaire ni parité globale déduit du ciblé Git/headless.",
       "visual": "adapte",
       "linux": [
         {
@@ -1266,14 +1266,280 @@
           "kind": "window"
         },
         {
-          "id": "GitExtensions.Linux.Desktop.ProxySwitcherSettingsDialog",
-          "label": "ProxySwitcherSettingsDialog",
-          "source": "src/linux/GitExtensions.Desktop/ProxySwitcherDialog.cs",
-          "line": 98,
+          "id": "GitExtensions.Linux.Desktop.ProxySwitcherSettingsSession",
+          "label": "ProxySwitcherSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ProxySwitcherSettingsSession.cs",
+          "line": 17,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.PluginScopedSettingsPage",
+          "label": "PluginScopedSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/PluginScopedSettingsPage.cs",
+          "line": 14,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.DesktopSettingsDialog",
+          "label": "DesktopSettingsDialog",
+          "source": "src/linux/GitExtensions.Desktop/DesktopSettingsDialog.cs",
+          "line": 14,
           "kind": "window"
+        },
+        {
+          "label": "MainWindow.Plugins.cs",
+          "source": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedOptionsVisibilityTests.cs",
+          "test_class": "AdvancedOptionsVisibilityTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsConsumerTests.cs",
+          "test_class": "AdvancedSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AdvancedSettingsPageTests.cs",
+          "test_class": "AdvancedSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceDictionaryTests.cs",
+          "test_class": "AppearanceDictionaryTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsConsumerTests.cs",
+          "test_class": "AppearanceSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsLayoutTests.cs",
+          "test_class": "AppearanceSettingsLayoutTests",
+          "passed_in_reference_run": 2,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AppearanceSettingsSessionTests.cs",
+          "test_class": "AppearanceSettingsSessionTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AutomaticUpdatesTests.cs",
+          "test_class": "AutomaticUpdatesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarCommitInfoTests.cs",
+          "test_class": "AvatarCommitInfoTests",
+          "passed_in_reference_run": 1,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/AvatarSettingsConsumerTests.cs",
+          "test_class": "AvatarSettingsConsumerTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BackgroundFetchSettingsIntegrationTests.cs",
+          "test_class": "BackgroundFetchSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BackgroundFetchSettingsPageTests.cs",
+          "test_class": "BackgroundFetchSettingsPageTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BlameViewerSettingsPageTests.cs",
+          "test_class": "BlameViewerSettingsPageTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/BrowseStartupTests.cs",
+          "test_class": "BrowseStartupTests",
+          "passed_in_reference_run": 14,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ClassicMenuTests.cs",
+          "test_class": "ClassicMenuTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsConsumerTests.cs",
+          "test_class": "ColorsSettingsConsumerTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ColorsSettingsPageTests.cs",
+          "test_class": "ColorsSettingsPageTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitDialogSettingsConsumerTests.cs",
+          "test_class": "CommitDialogSettingsConsumerTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitDialogSettingsPageTests.cs",
+          "test_class": "CommitDialogSettingsPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/CommitGlobalOptionsTests.cs",
+          "test_class": "CommitGlobalOptionsTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsFourPoliciesTests.cs",
+          "test_class": "ConfirmationsFourPoliciesTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ConfirmationsSettingsPageTests.cs",
+          "test_class": "ConfirmationsSettingsPageTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DeleteUnusedBranchesSettingsIntegrationTests.cs",
+          "test_class": "DeleteUnusedBranchesSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DeleteUnusedBranchesSettingsPageTests.cs",
+          "test_class": "DeleteUnusedBranchesSettingsPageTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DeleteUnusedBranchesSettingsScriptRouteTests.cs",
+          "test_class": "DeleteUnusedBranchesSettingsScriptRouteTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/DetailedSettingsPageTests.cs",
+          "test_class": "DetailedSettingsPageTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FileHistoryPreferencesTests.cs",
+          "test_class": "FileHistoryPreferencesTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FilePathPresentationIntegrationTests.cs",
+          "test_class": "FilePathPresentationIntegrationTests",
+          "passed_in_reference_run": 19,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FindLargeFilesDialogTests.cs",
+          "test_class": "FindLargeFilesDialogTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/FontSettingsTests.cs",
+          "test_class": "FontSettingsTests",
+          "passed_in_reference_run": 18,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralBrowseStatusTests.cs",
+          "test_class": "GeneralBrowseStatusTests",
+          "passed_in_reference_run": 28,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GeneralSettingsSessionTests.cs",
+          "test_class": "GeneralSettingsSessionTests",
+          "passed_in_reference_run": 23,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitConfigurationPageTests.cs",
+          "test_class": "GitConfigurationPageTests",
+          "passed_in_reference_run": 21,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentSettingsHostTests.cs",
+          "test_class": "GitEnvironmentSettingsHostTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitEnvironmentStartupTests.cs",
+          "test_class": "GitEnvironmentStartupTests",
+          "passed_in_reference_run": 5,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitToolsSettingsDialogTests.cs",
+          "test_class": "GitToolsSettingsDialogTests",
+          "passed_in_reference_run": 13,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HelpImagesPreferencesTests.cs",
+          "test_class": "HelpImagesPreferencesTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HistorySortDefaultTests.cs",
+          "test_class": "HistorySortDefaultTests",
+          "passed_in_reference_run": 7,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeysSettingsPageTests.cs",
+          "test_class": "HotkeysSettingsPageTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LanguagePreferencesTests.cs",
+          "test_class": "LanguagePreferencesTests",
+          "passed_in_reference_run": 26,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/LeftPanelSelectedRefsTests.cs",
+          "test_class": "LeftPanelSelectedRefsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PluginLifecycleTests.cs",
           "test_class": "PluginLifecycleTests",
@@ -1281,9 +1547,105 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/PluginRootIntroductionPageTests.cs",
+          "test_class": "PluginRootIntroductionPageTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ProxyGourceDialogTests.cs",
           "test_class": "ProxyGourceDialogTests",
           "passed_in_reference_run": 8,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsPageTests.cs",
+          "test_class": "ProxySwitcherSettingsPageTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsSessionTests.cs",
+          "test_class": "ProxySwitcherSettingsSessionTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
+          "test_class": "ReferenceSortingNavigationTests",
+          "passed_in_reference_run": 4,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingSettingsTests.cs",
+          "test_class": "ReferenceSortingSettingsTests",
+          "passed_in_reference_run": 10,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RemotesDialogTests.cs",
+          "test_class": "RemotesDialogTests",
+          "passed_in_reference_run": 25,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/RepositoryBranchVisibilityTests.cs",
+          "test_class": "RepositoryBranchVisibilityTests",
+          "passed_in_reference_run": 27,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ScriptsSettingsPageTests.cs",
+          "test_class": "ScriptsSettingsPageTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SettingsNavigationTests.cs",
+          "test_class": "SettingsNavigationTests",
+          "passed_in_reference_run": 20,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SimpleHelpDisplayDialogTests.cs",
+          "test_class": "SimpleHelpDisplayDialogTests",
+          "passed_in_reference_run": 6,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SimplePluginSettingsIntegrationTests.cs",
+          "test_class": "SimplePluginSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SimplePluginSettingsPageTests.cs",
+          "test_class": "SimplePluginSettingsPageTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/SshSettingsSessionTests.cs",
+          "test_class": "SshSettingsSessionTests",
+          "passed_in_reference_run": 9,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/TruncatePathPreferencesTests.cs",
+          "test_class": "TruncatePathPreferencesTests",
+          "passed_in_reference_run": 15,
+          "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/UpdatePreferencesTests.cs",
+          "test_class": "UpdatePreferencesTests",
+          "passed_in_reference_run": 14,
           "results_present": true
         }
       ],
@@ -2357,7 +2719,7 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.LoadTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.cs",
-          "line": 983,
+          "line": 985,
           "kind": "window"
         },
         {
@@ -2405,14 +2767,14 @@
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.ApplyMessageTemplateAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
-          "line": 134,
+          "line": 136,
           "kind": "window"
         },
         {
           "id": "GitExtensions.Linux.Desktop.CommitDialog",
           "label": "CommitDialog.ValidateCommitMessageAsync",
           "source": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
-          "line": 241,
+          "line": 243,
           "kind": "window"
         },
         {
@@ -2698,6 +3060,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubIssueHelperCommitTests.cs",
+          "test_class": "GitHubIssueHelperCommitTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
           "test_class": "HotkeyHostDialogTests",
           "passed_in_reference_run": 26,
@@ -2708,6 +3076,12 @@
           "test_class": "MainFileStatusListTests",
           "passed_in_reference_run": 5,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RebaseDialogTests.cs",
@@ -4592,7 +4966,7 @@
       "feature": "Préparation et création de commit",
       "group": "operations",
       "level": "N2",
-      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103). Branche/superproject (ADR0104) : bouton/raccourci Create branch, statut→tracking et nom suggéré sans écraser la saisie ; quatre choix en HEAD détachée hors rebase. Stage global mémorisé/relu après commit et push réussis : seul le gitlink associé au HEAD enfant final est indexé ; erreurs et effets restent visibles. Toolbar canonique avec Options à droite/débordement et CommandLink commun. Core20 et Desktop415 ciblés, natif source français/sombre/X11 et paquet isolé vérifiés séparément ; périmètres et preuves dans le TODO, sans nouveau full ni certification de parité. ADR0150 : erreurs de staging au geste, override safecrlf temporaire et rapport readonly ; option sans message de formulaire capturée à l’ouverture et vrai Git/éditeur sous lease Core jusqu’au drainage. Échecs/annulations conservent les effets sans faux commit/push ; 16 nouveaux cas Git/headless.",
+      "implemented": "Staging, diff, message/template configuré, amend, historique, hooks et Commit & Push. L’ouverture depuis un sous-module prend la première Échap sans réparation de focus. Unstaged/Settings révèle les fichiers Skip/Assume sans faux changement ; retrait par menu, première flèche et disponibilité Ignore/Exclude revus dans le périmètre du TODO. Raccourcis configurables partagés sur les commandes existantes ; gestes affichés et actifs communs, ADR0089. Menus Staged/Unstaged et gestes Scripts du host ; BeforeCommit peut opposer un veto, AfterCommit suit le succès, dont le chemin commit vide partagé. Les listes Staged et Unstaged suivent la troncature globale ; le changement de présentation conserve lignes, sélection et diff, sauf changement réel des fichiers admis par le filtre Filename only (ADR0100). Le message garde le TextBox natif avec correction NetSpell, suggestions/Add/Ignore/Remove, délai 250 ms, limite 4999 et suspension IME. Choix effectif local/distribué/global, menu Commit local au XML Windows et user.dic par profil ; lectures et moteurs retirés drainés à la fermeture (ADR0101). La désactivation None retire aussi les marques précédentes sans modifier le texte, régression pixels, ciblé05 et full03 vérifiés. Paquet exact isolé vérifié ; natif source anglais/clair/X11 ciblé accepté : Appearance Cancel/Apply/OK, suggestions, remplacement/Undo, retrait immédiat des marques par None et persistance au vrai redémarrage, deux sorties normales (TODO Dictionary). Complétion Windows des noms/stems actuels et anciens, symboles des deux côtés MM et cinq préfixes fixes ; patch U5 puis HEAD courant/ancien puis travail, extracteurs/matching Windows liés. Popup 200 ms/≥2, Ctrl+Espace explicite, résultat unique, notice/retour sans rejeu pendant le chargement ; TextBox natif/Undo/focus/IME. None indépendant ; ensemble des mots append-only pendant la vie de l’éditeur, exemptions NetSpell sensibles à la casse en mémoire, réinjectées au changement de moteur, sans user.dic. Adaptations statut du vrai Refresh réussi, contexte Git capturé, XDG, Compiled seule/timeout de 250 ms visible et UI Avalonia (ADR0102). Full02 et paquet exact vérifiés ; natif borné : Anglais/clair/X11 privé : premier clic et saisie, nom/stem, flèche/Tab et Undo ; Ctrl+Espace, métadonnée avec espace final, plus de cinq choix et Échap ; clic de suggestion sans perte de focus, en-US avec symbole exempté et seule faute soulignée, None immédiat, Provide off/on et vrai redémarrage avec brouillon/réglages conservés. Deux sorties normales et owner à 0 ; seuls draft et XML local attendus sont ajoutés, sans user.dic. Style de complétion partagé sur 8d9 : seule la sélection est bleue ; build/ciblé106 et natif Commit anglais/clair/X11 vérifiés séparément du full/paquet069 (TODO Complétion). Bibliothèque applicative de messages distincte de Git commit.template : deux onglets/dix emplacements initiaux, six règles, Conventional, profils partagés et WordWrapper lié. Échap du déroulant et choix clavier sous parent survolé corrigés ; ciblé primaire214/214, natif source anglais/clair/X11 borné et paquet03 isolé vérifiés séparément, sans nouveau full (ADR0103). Branche/superproject (ADR0104) : bouton/raccourci Create branch, statut→tracking et nom suggéré sans écraser la saisie ; quatre choix en HEAD détachée hors rebase. Stage global mémorisé/relu après commit et push réussis : seul le gitlink associé au HEAD enfant final est indexé ; erreurs et effets restent visibles. Toolbar canonique avec Options à droite/débordement et CommandLink commun. Core20 et Desktop415 ciblés, natif source français/sombre/X11 et paquet isolé vérifiés séparément ; périmètres et preuves dans le TODO, sans nouveau full ni certification de parité. ADR0150 : erreurs de staging au geste, override safecrlf temporaire et rapport readonly ; option sans message de formulaire capturée à l’ouverture et vrai Git/éditeur sous lease Core jusqu’au drainage. Échecs/annulations conservent les effets sans faux commit/push ; 16 nouveaux cas Git/headless. Assistant issues GitHub3 : deux options originales dans Hosting, issues assignées par REST borné filtrées sur les remotes réels, modèles privés par Commit et application littérale undoable. Arrivée des choix sans changement du message/focus/menu ouvert, fermeture et seconde fermeture drainées ; troncature visible, aucun registre global d’issues. ADR0154 ; qualification ciblée distincte des preuves historiques.",
       "remaining": "Ignore occurrence au même texte reste une adaptation Linux explicite. Audit étendu des scripts/erreurs/fermetures et réserves antérieures Commit ouverts. Le paquet du lot branche/superproject est vérifié isolément, sans validation interactive ; commit/push/staging, geste detached et redémarrage restent non exécutés en natif, le parcours source accepté est borné au français/sombre/X11 ; aucun full sur sa source, référence complète069 historique inchangée. Création Worktrees gérée depuis un sous-module absorbé : défaut distinct du linked child natif Core. Premier Ctrl+Espace pendant le chargement, autres langues/thèmes, Wayland/IME-daemon/DPI/accessibilité et paquet interactif restent ouverts. N2 conservé, aucune parité globale certifiée. Mode éditeur Git : types/cibles non-HEAD exclus, Amend HEAD disponible ; add -A littéral conservé. Rapport FormStatus général et macOS ouverts.",
       "visual": "rapproche",
       "extra_evidence": [
@@ -4855,6 +5229,31 @@
           "source": "src/linux/GitExtensions.Core/GitRepository.CommitEditor.cs",
           "line": 1,
           "kind": "source"
+        },
+        {
+          "label": "CommitDialog.GitHubIssues.cs",
+          "source": "src/linux/GitExtensions.Desktop/CommitDialog.GitHubIssues.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "label": "GitHubIssueHelperSettings.cs",
+          "source": "src/linux/GitExtensions.Core/GitHubIssueHelperSettings.cs",
+          "line": 1,
+          "kind": "source"
+        },
+        {
+          "id": "GitExtensions.Linux.GitHubIssueCommitTemplates",
+          "label": "GitHubIssueCommitTemplates",
+          "source": "src/linux/GitExtensions.Core/GitHubAssignedIssue.cs",
+          "line": 6,
+          "kind": "component"
+        },
+        {
+          "label": "GitHubHostingIssues.cs",
+          "source": "src/linux/GitExtensions.Core/GitHubHostingIssues.cs",
+          "line": 1,
+          "kind": "source"
         }
       ],
       "tests": [
@@ -5069,6 +5468,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubIssueHelperCommitTests.cs",
+          "test_class": "GitHubIssueHelperCommitTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubIssueHelperSettingsTests.cs",
+          "test_class": "GitHubIssueHelperSettingsTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
           "test_class": "HotkeyHostDialogTests",
           "passed_in_reference_run": 26,
@@ -5085,6 +5496,12 @@
           "test_class": "NetSpellUnicodeTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceDialogTests.cs",
@@ -5195,7 +5612,8 @@
         ".agents/docs/adr/preferences/commit-completion/0102-commit-message-completion.md",
         ".agents/docs/adr/preferences/commit-templates/0103-commit-message-templates.md",
         ".agents/docs/adr/workflows/commits/0104-commit-branch-and-superproject.md",
-        ".agents/docs/adr/preferences/commit/0150-global-commit-options.md"
+        ".agents/docs/adr/preferences/commit/0150-global-commit-options.md",
+        ".agents/docs/adr/extensions/github/0154-issue-commit-templates.md"
       ]
     },
     {
@@ -8063,7 +8481,7 @@
       "feature": "Paramètres de l’application",
       "group": "settings",
       "level": "N2",
-      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (périmètre historique ADR0125), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130). Ce lot complète les dix-sept confirmations et la page globale Blame viewer, raccordées à Apply/Cancel partagé et vérifiées dans les suites complètes de sa source.",
+      "implemented": "Arbre compact Windows, ordre relatif et icônes des pages disponibles ; instances conservées, recherche AND surlignée sans filtre, Entrée cyclique, mémoire de page dans le processus et Goto explicite. Checklist à la racine Git Extensions ; Git introduction/Paths/Config. Thème/langue dans Appearance, normalisation et options dans Advanced. Apply et SaveAll publient toutes les pages sans fermer ; Cancel conserve les publications acquises et abandonne les brouillons suivants. Fonts reprend la référence fusionnée après publication. ADR0096 : suites fraîches 2006/720/35 et paquet exact vérifiés ; natif source7c52 anglais/clair/X11, premier clic et flèches, recherche, Apply/Cancel, mémoire, Config enfant et vrai redémarrage. Les périmètres antérieurs de langue, polices/EOL, historique fichier, scripts, raccourcis et environnement restent détaillés par page. Pages Console, Revision links et Build server integration/GitHub Actions raccordées au même Apply/Cancel ; XML partagé avec Detailed pour les pages scoped concernées, publication de la console vers les vrais consommateurs. ADR0107–0109. Confirmations (périmètre historique ADR0125), Colors Graph (5/6) et six champs Advanced utilisent les profils existants, brouillons et publications acquittées (ADR0125/0128/0129) ; les autres options Windows et la parité globale restent ouvertes. SSH reprend sa place sous Git Extensions, sa réparation et le profil/session communs aux chemins Git (ADR0130). Ce lot complète les dix-sept confirmations et la page globale Blame viewer, raccordées à Apply/Cancel partagé et vérifiées dans les suites complètes de sa source. Proxy Switcher utilise aussi le workspace XML commun et Apply/Cancel : quatre champs originaux et mot de passe masqué ; aucune écriture JSON automatique.",
       "remaining": "N2 : options/pages Windows restantes et variantes des pages Plugins ; sources Global/Local/distribuées de toutes les pages encore ouvertes. Config reste un dialogue enfant avec ses propres brouillons/portées. Audit natif étendu des hôtes, erreurs, thèmes/langues, Wayland/DPI/accessibilité ouvert ; aucune parité globale ni certification interactive du paquet.",
       "visual": "rapproche",
       "linux": [
@@ -8198,6 +8616,20 @@
           "label": "BlameViewerSettingsSession",
           "source": "src/linux/GitExtensions.Desktop/BlameViewerSettingsSession.cs",
           "line": 4,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.ProxySwitcherSettingsSession",
+          "label": "ProxySwitcherSettingsSession",
+          "source": "src/linux/GitExtensions.Desktop/ProxySwitcherSettingsSession.cs",
+          "line": 17,
+          "kind": "component"
+        },
+        {
+          "id": "GitExtensions.Linux.Desktop.PluginScopedSettingsPage",
+          "label": "PluginScopedSettingsPage",
+          "source": "src/linux/GitExtensions.Desktop/PluginScopedSettingsPage.cs",
+          "line": 14,
           "kind": "component"
         }
       ],
@@ -8545,6 +8977,18 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsPageTests.cs",
+          "test_class": "ProxySwitcherSettingsPageTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -8645,7 +9089,8 @@
         ".agents/docs/adr/preferences/colors/0128-graph-colors.md",
         ".agents/docs/adr/preferences/advanced/0129-advanced-local-workflows.md",
         ".agents/docs/adr/preferences/environment/0130-native-ssh-settings.md",
-        ".agents/docs/adr/workflows/files/0017-blame-preferences.md"
+        ".agents/docs/adr/workflows/files/0017-blame-preferences.md",
+        ".agents/docs/adr/extensions/plugins/0014-native-settings.md"
       ]
     },
     {
@@ -9914,6 +10359,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -10354,6 +10805,12 @@
           "test_class": "PluginRootIntroductionPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
@@ -10953,6 +11410,12 @@
           "test_class": "PluginRootIntroductionPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
@@ -12021,6 +12484,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubIssueHelperCommitTests.cs",
+          "test_class": "GitHubIssueHelperCommitTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/HotkeyHostDialogTests.cs",
           "test_class": "HotkeyHostDialogTests",
           "passed_in_reference_run": 26,
@@ -12031,6 +12500,12 @@
           "test_class": "MainFileStatusListTests",
           "passed_in_reference_run": 5,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/RevisionAdvancedTests.cs",
@@ -12624,6 +13099,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PushDetailedSettingsTests.cs",
           "test_class": "PushDetailedSettingsTests",
           "passed_in_reference_run": 7,
@@ -13075,6 +13556,12 @@
           "test_class": "PluginRootIntroductionPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
@@ -13892,6 +14379,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/PullAdvancedDialogTests.cs",
           "test_class": "PullAdvancedDialogTests",
           "passed_in_reference_run": 15,
@@ -14588,6 +15081,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -15162,6 +15661,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -15553,6 +16058,12 @@
           "test_class": "PluginRootIntroductionPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
@@ -16079,6 +16590,12 @@
           "results_present": true
         },
         {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
+        },
+        {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
           "test_class": "ReferenceSortingNavigationTests",
           "passed_in_reference_run": 4,
@@ -16573,6 +17090,12 @@
           "test_class": "PluginRootIntroductionPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
@@ -17185,6 +17708,12 @@
           "test_class": "PluginRootIntroductionPageTests",
           "passed_in_reference_run": 6,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/ProxySwitcherSettingsIntegrationTests.cs",
+          "test_class": "ProxySwitcherSettingsIntegrationTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/ReferenceSortingNavigationTests.cs",
@@ -18828,7 +19357,7 @@
           "id": "GitExtensions.Linux.Desktop.GitHubHostingSettingsDialog",
           "label": "GitHubHostingSettingsDialog",
           "source": "src/linux/GitExtensions.Desktop/GitHubHostingSettingsDialog.cs",
-          "line": 12,
+          "line": 14,
           "kind": "window"
         },
         {
@@ -18910,6 +19439,12 @@
           "test_class": "GitHubHostingSettingsDialogTests",
           "passed_in_reference_run": 4,
           "results_present": true
+        },
+        {
+          "source": "tests/linux/GitExtensions.Desktop.Tests/GitHubIssueHelperSettingsTests.cs",
+          "test_class": "GitHubIssueHelperSettingsTests",
+          "passed_in_reference_run": 0,
+          "results_present": false
         },
         {
           "source": "tests/linux/GitExtensions.Desktop.Tests/JenkinsIntegrationTests.cs",
@@ -21542,6 +22077,10 @@
           "line": 3
         },
         {
+          "path": "src/linux/GitExtensions.Desktop/CommitDialog.GitHubIssues.cs",
+          "line": 5
+        },
+        {
           "path": "src/linux/GitExtensions.Desktop/CommitDialog.IndexFlags.cs",
           "line": 3
         },
@@ -22079,6 +22618,11 @@
       "abstract": false,
       "windows": [
         {
+          "id": "GitExtensions.Plugins.ProxySwitcher.ProxySwitcherForm",
+          "name": "ProxySwitcherForm",
+          "level": "N3"
+        },
+        {
           "id": "GitUI.CommandsDialogs.FormSettings",
           "name": "FormSettings",
           "level": "N2"
@@ -22551,11 +23095,11 @@
       "id": "GitExtensions.Linux.Desktop.GitHubHostingSettingsDialog",
       "name": "GitHubHostingSettingsDialog",
       "source": "src/linux/GitExtensions.Desktop/GitHubHostingSettingsDialog.cs",
-      "line": 12,
+      "line": 14,
       "sources": [
         {
           "path": "src/linux/GitExtensions.Desktop/GitHubHostingSettingsDialog.cs",
-          "line": 12
+          "line": 14
         }
       ],
       "bases": [
@@ -23417,30 +23961,6 @@
       ],
       "bases": [
         "RepositoryDialog"
-      ],
-      "abstract": false,
-      "windows": [
-        {
-          "id": "GitExtensions.Plugins.ProxySwitcher.ProxySwitcherForm",
-          "name": "ProxySwitcherForm",
-          "level": "N3"
-        }
-      ],
-      "note": ""
-    },
-    {
-      "id": "GitExtensions.Linux.Desktop.ProxySwitcherSettingsDialog",
-      "name": "ProxySwitcherSettingsDialog",
-      "source": "src/linux/GitExtensions.Desktop/ProxySwitcherDialog.cs",
-      "line": 98,
-      "sources": [
-        {
-          "path": "src/linux/GitExtensions.Desktop/ProxySwitcherDialog.cs",
-          "line": 98
-        }
-      ],
-      "bases": [
-        "Window"
       ],
       "abstract": false,
       "windows": [
@@ -24608,7 +25128,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.CommitDialog",
       "path": "src/linux/GitExtensions.Desktop/CommitDialog.Templates.cs",
-      "line": 263,
+      "line": 265,
       "method": "ConfirmCommitWarningAsync",
       "text": "new() { Name = \"CommitValidation\", Title = C(\"_commitValidationCaption\", \"Commit validation\"), Width = 520, SizeToContent = SizeToContent.Height,",
       "platform": "linux",
@@ -24718,7 +25238,7 @@
       "type": "Window",
       "owner": "GitExtensions.Linux.Desktop.MainWindow",
       "path": "src/linux/GitExtensions.Desktop/MainWindow.Plugins.cs",
-      "line": 218,
+      "line": 231,
       "method": "ConfirmSubmoduleBuildOnUiAsync",
       "text": "new() { Name = \"AutoCompileBuildConfirmation\", Title = T(\"Auto compile submodules\"), Width = 560, SizeToContent = SizeToContent.Height,",
       "platform": "linux",

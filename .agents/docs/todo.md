@@ -1,10 +1,25 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H30 : 562/562 Desktop (44 classes réellement sélectionnées), 9/9 Core et 42/42 Plugins sur les octets commités `b84ae9caf`. H29 et les lots antérieurs gardent leurs preuves historiques ; la référence Desktop complète L25 reste distincte.
+Mise à jour : 21 octobre 2026. H31 : 305/305 Desktop (27 classes), 35/35 Core Hosting et 42/42 Plugins sur les octets du checkout commité `40d8e1a32`. H30 et les lots antérieurs gardent leurs preuves historiques ; la référence complète L25 reste distincte.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+## H31 — Proxy commun et assistant issues GitHub
+
+Source : `40d8e1a32a809768401c3c15e2bda89c30e48fec` ; [équivalence du checkout testé et des commits](../../artifacts/linux/plugin-defaults-20261021/review/source-import-review.json). Proxy : `15d51765e` ; application GitHub : `5a213d4a5` ; attentes de tests bornées : `40d8e1a32`.
+
+- [x] Quatre défauts Proxy Windows dans Settings → Plugins, mêmes clés/portées XML et Apply/Cancel communs ; mot de passe masqué, aucun writer JSON de fermeture. Settings ne fait ni Set Git ni refresh Browse ; menu/scripts et opérations Git réelles partagent le parcours ([ADR0014](adr/extensions/plugins/0014-native-settings.md)).
+- [x] Deux options GitHub3 actives, champ numérique natif et traductions originales ; issues assignées via le transport Hosting borné. Choix privés par Commit, message/focus/menu ouvert inchangés au chargement, application undoable, annulation et vraie fermeture drainées, y compris Git occupé et veto de draft ([ADR0154](adr/extensions/github/0154-issue-commit-templates.md)).
+
+[Ciblé final](../../artifacts/linux/plugin-defaults-20261021/review/root-targeted-review.json) : **305/305 Desktop, 35/35 Core et 42/42 Plugins**, toutes les identités des 303 cas du premier passage et des 111 Proxy conservées. Sources/binaires stables, acteurs retirés ; 44 nouveaux cas Desktop et sept Core. [Six captures EN clair/FR sombre inspectées](../../artifacts/linux/plugin-defaults-20261021/review/root-visual-review.json), sans qualification native ni serveur GitHub authentifié réel. [Échecs et corrections](failure.md#h31--proxy-et-issues-github).
+
+[Compilation finale](../../artifacts/linux/plugin-defaults-20261021/review/root-final-compilation-review.json) : trois projets, zéro diagnostic, mêmes sources que le ciblé. [Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/40d8e1a32/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : 40 255 704 octets, SHA256 `cb499cc22e78b81f7452d3cd58237bf008c72fb8c745e51c598a604808f9aa89` ; [revue](../../artifacts/linux/plugin-defaults-20261021/review/root-package-review.json), sept phases à 0, 356 fichiers publiés comparés et 402 MD5, français/Skia vérifiés, installation et démarrage DPKG isolés. Aucun push ni installation hôte ; modifications Modal et documentation préexistantes conservées hors compilation/paquet propres.
+
+[Inventaire régénéré et contrôlé](../../artifacts/linux/plugin-defaults-20261021/review/root-inventory-review.json) : 99 fenêtres métier (98 avec équivalent Linux) et 32 pages (31 portées), 115 types de fenêtres Linux. Niveaux inchangés ; le diagnostic PuTTY et l’extension Explorer restent spécifiques Windows. Les cinq sources/tests Modal du primaire restent distincts du build et du paquet propres.
+
+Les limites restantes comprennent les grilles/filtres complets du chooser, le rapport HTML CI true, les autres contrats plugins et les serveurs réels/authentifiés/Enterprise. macOS et les audits natifs étendus restent ouverts. La suite complète de référence L25 et les niveaux de la matrice ne sont pas promus par ce ciblé.
 
 ## H30 — compléments portables et sélecteurs communs
 
@@ -21,7 +36,7 @@ Source : `b84ae9caf9cb17497fe48f6b67445533bb7096dd` ; [équivalence source et co
 
 [Inventaire régénéré et contrôlé](../../artifacts/linux/portable-window-options-20261021/review/root-inventory-review.json) : 99 fenêtres métier (98 avec équivalent Linux, diagnostic PuTTY hors périmètre) et 32 pages (31 portées, extension Explorer hors périmètre), 116 types de fenêtres Linux. Niveaux inchangés et cinq sources/tests Modal du primaire conservés séparément du build/paquet propre.
 
-Restent notamment : grille/filtres Windows complets du chooser (500 commits et lignes artificielles épinglées), contrats restants Proxy/helper issues GitHub, rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
+Restent notamment : grille/filtres Windows complets du chooser (500 commits et lignes artificielles épinglées), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
 
 ## H29 — ouverture locale de dépôt
 

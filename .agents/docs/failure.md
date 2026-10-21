@@ -2,6 +2,17 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+## H31 — Proxy et issues GitHub
+
+- [Compilation02](../../artifacts/linux/plugin-defaults-20261021/build-02/desktop.log) : `GitRemote` expose `FetchUrls`, pas `Url` ; reprendre le consommateur Hosting existant. [Compilation03](../../artifacts/linux/plugin-defaults-20261021/build-03/desktop.log) : modificateurs explicites du clavier headless. [Compilation06](../../artifacts/linux/plugin-defaults-20261021/build-06/desktop.log) : CS9124, conserver le texte initial dans un champ readonly.
+- [Premier ciblé](../../artifacts/linux/plugin-defaults-20261021/integration-01/results/desktop.trx) : 287/303. Onze échecs venaient du CTS déjà détruit lors d’un deuxième Close : détacher sa référence à Closed avant Cancel/Dispose. Le fournisseur GitHub actif ajoute aussi une section au menu ; adapter seulement ce comptage, conserver les oracles d’ordre, d’undo et de désenregistrement.
+- Quatre échecs numériques : le template/LostFocus normalisait le texte brut et Save pouvait accepter l’ancienne valeur. Le brouillon doit précéder cette normalisation. [Relance02](../../artifacts/linux/plugin-defaults-20261021/integration-02/desktop.log) interrompue après 165 succès : le sens du `TextConverter` était inversé, Save refusait de fermer une modale attendue sans délai. [État vivant préservé](../../artifacts/linux/plugin-defaults-20261021/integration-02/live-stall-evidence.json) et séquence de test conservés ; borner ces attentes. La [source Avalonia exacte](https://raw.githubusercontent.com/AvaloniaUI/Avalonia/11.3.22/src/Avalonia.Controls/NumericUpDown/NumericUpDown.cs) utilise Convert pour texte → valeur, ConvertBack pour valeur → texte.
+- [Diagnostic](../../artifacts/linux/plugin-defaults-20261021/github-diag-01/results/desktop.trx) : 105/106, seul le champ vide + Entrée conservait l’ancienne limite. Le contrôle saute le converter pour le vide ; capturer ce texte à Save avant le default button/LostFocus. Retirer la clé comme le binding Windows, garder les deux gestes réels et les autres oracles.
+
+Le générateur d’inventaire indexe les classes, pas les records : référencer `GitHubIssueHelperSettings` par son fichier source, sans modifier les fenêtres détectées ni leurs niveaux.
+
+[Validation finale](../../artifacts/linux/plugin-defaults-20261021/review/root-targeted-review.json) : 305/305 Desktop, 35/35 Core et 42/42 Plugins sur le checkout commité `40d8e1a32`, sans transfert aux tests natifs/serveurs réels. Les octets du checkout restent stables à l’alignement du commit ; ne pas confondre les blobs Git et les fichiers avec les fins de ligne déclarées par `.gitattributes`.
+
 ## H30 — fenêtres et réglages portables
 
 Les essais refusés restent dans [le lot](../../artifacts/linux/portable-window-options-20261021/). Ne pas confondre ces causes produit et les corrections de fixtures :
