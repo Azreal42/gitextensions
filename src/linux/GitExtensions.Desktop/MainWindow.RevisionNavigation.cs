@@ -18,11 +18,16 @@ public sealed partial class MainWindow
     private void RememberRevisionNavigation()
     {
         if (_refreshing || _movingRevisionNavigation || _commits.SelectedItem is not GitCommit commit) { return; }
+        PushRevisionNavigation(commit.Hash);
+    }
+
+    private void PushRevisionNavigation(string hash)
+    {
         if (_revisionNavigationRepository != _repository)
         { _revisionNavigation.Clear(); _revisionNavigationIndex = -1; _revisionNavigationRepository = _repository; }
-        if (_revisionNavigationIndex >= 0 && _revisionNavigation[_revisionNavigationIndex] == commit.Hash) { return; }
+        if (_revisionNavigationIndex >= 0 && _revisionNavigation[_revisionNavigationIndex] == hash) { return; }
         _revisionNavigation.RemoveRange(_revisionNavigationIndex + 1, _revisionNavigation.Count - _revisionNavigationIndex - 1);
-        _revisionNavigation.Add(commit.Hash); _revisionNavigationIndex = _revisionNavigation.Count - 1;
+        _revisionNavigation.Add(hash); _revisionNavigationIndex = _revisionNavigation.Count - 1;
     }
 
     private async Task GoToRevisionAsync()

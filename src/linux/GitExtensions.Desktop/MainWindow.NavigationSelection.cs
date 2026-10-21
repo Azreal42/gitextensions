@@ -18,10 +18,15 @@ public sealed partial class MainWindow
 
     private void ConfigureNavigationSelection()
     {
-        _navigation.AddHandler(PointerPressedEvent, (_, args) =>
+        // Run on the ancestor before TreeView's native Ctrl-single toggle can
+        // clear the cursor; a same-node Ctrl click must change only its mark.
+        AddHandler(PointerPressedEvent, (_, args) =>
         {
             if (_busy || _refreshing || _updatingNavigation || _repository is null || _lifetime.IsCancellationRequested || IsBranchFilterOwnerClosing
-                || args.Source is not Avalonia.Visual source) { return; }
+                || args.Source is not Avalonia.Visual source || !source.GetSelfAndVisualAncestors().Contains(_navigation)) { return; }
+            // Capture before this handler changes SelectedItem or focus. A
+            // separate handler can run later on the same routed-event surface.
+            _leftPanelReferenceModifiers = args.KeyModifiers;
             TreeViewItem? node = source.GetSelfAndVisualAncestors().OfType<TreeViewItem>().FirstOrDefault();
             if (node is null || !_navigationKeys.TryGetValue(node, out string? key)
                 || source.GetSelfAndVisualAncestors().TakeWhile(ancestor => ancestor != node).Any(ancestor => ancestor is ToggleButton)) { return; }

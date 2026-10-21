@@ -76,32 +76,7 @@ public sealed partial class MainWindow
         _commits.LostFocus += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateHistoryPresentation);
         _commits.ActualThemeVariantChanged += (_, _) => UpdateHistoryPresentation();
         _commits.ContextMenu = BuildRevisionContextMenu();
-        _navigation.SelectionChanged += async (_, _) =>
-        {
-            if (_refreshing || _updatingNavigation || _busy || _lifetime.IsCancellationRequested
-                || _navigation.SelectedItem is not TreeViewItem item) { return; }
-            _goToCommitRead.Cancel();
-            if (item.Tag is GitReference reference)
-            {
-                _references.SelectedItem = reference;
-                // Windows Node.GoToRevision selects the ref in the existing grid.
-                // A global refresh here disables this very row after click one,
-                // preventing its separate double-click checkout gesture.
-                await ReadBrowserAsync(_goToCommitRead, "Go to commit", async (repository, token) =>
-                {
-                    object? selected = _commits.SelectedItem;
-                    string selection = RevisionSelectionIdentity;
-                    string hash = await repository.ResolveRevisionAsync(reference.Name, token);
-                    token.ThrowIfCancellationRequested();
-                    if (_repository != repository || _navigation.SelectedItem != item || _busy
-                        || !ReferenceEquals(_commits.SelectedItem, selected) || RevisionSelectionIdentity != selection
-                        || _refreshing || _updatingNavigation || IsBranchFilterOwnerClosing) { return; }
-                    SelectVisibleRevision(hash, focus: false);
-                });
-            }
-            else if (item.Tag is GitWorktree { Head: { } head }) { SelectVisibleRevision(head, focus: false); }
-            else if (item.Tag is string workflow) { await ShowWorkflowAsync(workflow); }
-        };
+        InitializeLeftPanelReferenceNavigation();
 
         if (IsCommitDiff) { return BuildCommitDiffLayout(); }
         if (IsRevisionLog) { return BuildRevisionLogLayout(); }

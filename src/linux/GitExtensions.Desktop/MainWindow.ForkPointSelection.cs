@@ -1,3 +1,4 @@
+using Avalonia.Collections;
 using Avalonia.Controls;
 
 namespace GitExtensions.Linux.Desktop;
@@ -8,9 +9,7 @@ public sealed partial class MainWindow
     {
         if (!CanQuickSearch) { return Task.CompletedTask; }
         GitCompareRevision[] revisions = ForkPointSelectedRevisions();
-        // Windows' >2 native SelectedRows ordering is not yet qualified by this bounded candidate.
-        // Preserve that state instead of guessing an order or dropping additional endpoints.
-        if (revisions.Length is 0 or > 2) { return Task.CompletedTask; }
+        if (revisions.Length == 0) { return Task.CompletedTask; }
         GitCompareRevision revision = revisions[^1];
         while (revision.Kind is GitCompareRevisionKind.WorkingTree or GitCompareRevisionKind.Index)
         {
@@ -36,10 +35,22 @@ public sealed partial class MainWindow
             && RelativeRevisionChildren(new(current.Hash)).Count == 1);
 
         GitCompareRevision fork = new(current.Hash);
-        // For one/two inputs Windows re-toggles exactly the first input after
-        // selecting fork. If it is the same row, the last row may not be deselected.
-        GitCompareRevision[] selection = revisions[0] == fork ? [fork] : [revisions[0], fork];
-        return ApplyLoadedHistorySelectionAsync(selection, current);
+        // RevisionGridControl first selects the fork, then re-toggles all but
+        // the old base (or the sole input). WinForms SelectedRows is newest first:
+        // adding prepends; removing the last survivor is forbidden. CurrentCell
+        // changes only when a toggle leaves one row, even if the fork is removed.
+        List<GitCompareRevision> selection = [fork];
+        GitCompareRevision currentCell = fork;
+        foreach (GitCompareRevision selected in revisions.Take(Math.Max(1, revisions.Length - 1)))
+        {
+            int index = selection.IndexOf(selected);
+            if (index < 0) { selection.Insert(0, selected); }
+            else if (selection.Count > 1) { selection.RemoveAt(index); }
+            if (selection.Count == 1) { currentCell = selection[0]; }
+        }
+        if (currentCell.Kind != GitCompareRevisionKind.Commit
+            || !loaded.TryGetValue(currentCell.Revision, out GitCommit? focused)) { return Task.CompletedTask; }
+        return ApplyLoadedHistorySelectionAsync(selection, focused);
     }
 
     private GitCompareRevision[] ForkPointSelectedRevisions()
@@ -52,7 +63,14 @@ public sealed partial class MainWindow
             if (index is 0 or 1)
             { return [new("", index == 0 ? GitCompareRevisionKind.WorkingTree : GitCompareRevisionKind.Index)]; }
         }
-        return SelectedRevisionDiffCommits().Select(commit => new GitCompareRevision(commit.Hash)).ToArray();
+        HashSet<string> selected = (_commits.SelectedItems?.OfType<GitCommit>() ?? [])
+            .Select(commit => commit.Hash).ToHashSet(StringComparer.Ordinal);
+        // ObserveQuickSearchSelection records additions in insertion order.
+        // WinForms builds SelectedRows from its head-inserting band list instead.
+        GitCompareRevision[] revisions = _historySelectionOrder.AsEnumerable().Reverse()
+            .Where(selected.Contains).Select(hash => new GitCompareRevision(hash)).ToArray();
+        // Do not publish a partial selection if a source rebind is incomplete.
+        return revisions.Length == selected.Count ? revisions : [];
     }
 
     // The loaded graph owns rows; the existing comparison readers own endpoint IO.
@@ -64,7 +82,9 @@ public sealed partial class MainWindow
             .OfType<GitCommit>().ToArray();
         if (rows.Length != selection.Count(revision => revision.Kind == GitCompareRevisionKind.Commit)
             || !_commits.Items.OfType<GitCommit>().Any(commit => commit.Hash == currentCell.Hash)) { return Task.CompletedTask; }
-        bool changed = !ForkPointSelectedRevisions().SequenceEqual(selection);
+        bool changed = !ForkPointSelectedRevisions().SequenceEqual(selection)
+            || !(_commits.SelectedItems?.OfType<GitCommit>() ?? []).SequenceEqual(rows)
+            || rows.Length > 0 && !ReferenceEquals(_commits.SelectedItem, rows[0]);
         GitCompareRevision primary = selection[0];
         if (changed)
         {
@@ -74,13 +94,11 @@ public sealed partial class MainWindow
             try
             {
                 _browseInitialComparison = null; _selectedArtificialHistoryRevision = null; _quickSearchArtificialSelection = null;
-                _commits.Selection.BeginBatchUpdate();
-                try
-                {
-                    _commits.Selection.Clear();
-                    foreach (GitCommit commit in rows) { _commits.Selection.Select(_commits.Items.IndexOf(commit)); }
-                }
-                finally { _commits.Selection.EndBatchUpdate(); }
+                // The public setter synchronizes this ordered writable list in
+                // one model batch. A raw model batch alone retains the old order
+                // of surviving SelectedItems; its first Select owns the primary.
+                _commits.SelectedItems = new AvaloniaList<object?>(rows);
+                _commits.Selection.AnchorIndex = _commits.Items.IndexOf(currentCell);
                 if (selection.Any(revision => revision.Kind != GitCompareRevisionKind.Commit))
                 {
                     _browseInitialComparison = new(selection[^1], primary);
@@ -102,12 +120,13 @@ public sealed partial class MainWindow
         _applyingQuickSearchSelection = true;
         try
         {
-            // SetSelectedRevision initially sets CurrentCell to the fork row;
-            // re-toggling the original row does not move that keyboard anchor.
+            // SetSelectedRevision starts at the fork. A collision that leaves
+            // one survivor moves CurrentCell; otherwise it can stay unselected.
             if (_commits.ContainerFromItem(currentCell) is Control row) { row.Focus(); }
             else { _commits.Focus(); }
         }
         finally { _applyingQuickSearchSelection = false; }
+        _commits.Selection.AnchorIndex = _commits.Items.IndexOf(currentCell);
         _quickSearchArtificialSelection = primary.Kind != GitCompareRevisionKind.Commit ? primary : null;
         _quickSearchReturnTab = null;
         RefreshRebaseMenu(); RefreshRevisionContextMenu(); RefreshHistoryMenuStates();

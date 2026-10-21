@@ -108,8 +108,9 @@ public sealed class ForkPointSelectionTests
     public async Task ABaseThatReachesTheKeptOriginalRowCollapsesToThatRowWithoutDeselectingTheLastSelection()
     {
         await using Fixture f = await Fixture.CreateAsync();
-        await f.SelectAsync(f.R); await f.AddAsync(f.M);
-        Assert.That(f.Selected, Is.EqualTo(new[] { f.R, f.M })); await f.NextAsync();
+        // Native SelectedRows is newest first: M then Ctrl+R supplies [R,M].
+        await f.SelectAsync(f.M); await f.AddAsync(f.R);
+        Assert.That(f.Selected, Is.EqualTo(new[] { f.M, f.R })); await f.NextAsync();
         Assert.That(f.Selected, Is.EqualTo(new[] { f.R })); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.R));
         f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
     }
@@ -173,15 +174,109 @@ public sealed class ForkPointSelectionTests
         f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
     }
 
-    // Safety coverage for an explicit open parity gap, not a Windows conformance oracle.
     [AvaloniaTest]
-    public async Task TheBoundedCandidateDoesNotDropOrReorderAnUnqualifiedThreeEndpointSelection()
+    public async Task ThreeEndpointSelectionReplacesTheOldBaseAndReversesTheRetoggledSurvivorsLikeWindows()
     {
         await using Fixture f = await Fixture.CreateAsync();
         await f.SelectAsync(f.T); await f.AddAsync(f.Q); await f.AddAsync(f.P);
-        string[] before = f.Selected; int commands = GitCommandLog.Snapshot().Count; IInputElement? focused = f.Main.FocusManager?.GetFocusedElement();
-        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(before)); Assert.That(f.Main.FocusManager?.GetFocusedElement(), Is.SameAs(focused));
-        Assert.That(GitCommandLog.Snapshot().Count, Is.EqualTo(commands)); f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+        string[] navigation = f.Navigation(); int navigationIndex = f.NavigationIndex;
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(new[] { f.Q, f.P, f.M }));
+        f.AssertComparison(f.M, f.Q); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.M));
+        Assert.That(f.Navigation(), Is.EqualTo(navigation)); Assert.That(f.NavigationIndex, Is.EqualTo(navigationIndex));
+        f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
+    [TestCase("T,Q,P", "Q,P,M", "M", "E", "M")]
+    [TestCase("T,Q,M", "Q,M", "M", "E", "M")]
+    [TestCase("T,M,Q", "Q", "Q", "P", "R")]
+    [TestCase("T,M,Q,P", "Q,P", "M", "E", "P")]
+    [TestCase("T,Q,M,P", "Q,P", "P", "M", "P")]
+    [TestCase("T,Q,P,E", "Q,P,E,M", "M", "E", "E")]
+    [TestCase("T,Q,P,E,R", "Q,P,E,R,M", "M", "E", "M")]
+    public async Task NativeRetoggleOrderAndCollisionsKeepTheCorrectPrimaryCaretAndFirstPhysicalArrow(
+        string clicks, string expectedRows, string caret, string firstUp, string comparisonBase)
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        Assert.That(f.History.Items.OfType<GitCommit>().Select(commit => commit.Hash),
+            Is.EqualTo(f.Hashes("T,E,M,P,Q,R")), "The native graph order fixes the physical Up neighbour without sorting a test oracle.");
+        string[] inputs = f.Hashes(clicks), expected = f.Hashes(expectedRows);
+        await f.SelectAsync(inputs[0]); foreach (string hash in inputs.Skip(1)) { await f.AddAsync(hash); }
+        Assert.That(f.Selected, Is.EquivalentTo(inputs));
+        string[] navigation = f.Navigation(); int navigationIndex = f.NavigationIndex;
+        List<string[]> publications = [];
+        f.History.SelectionChanged += (_, _) => publications.Add(f.Selected);
+        await f.NextAsync();
+        Assert.That(f.Selected, Is.EqualTo(expected));
+        Assert.That((f.History.SelectedItem as GitCommit)?.Hash, Is.EqualTo(expected[0]), "The displayed commit and shared readers must use the Windows primary.");
+        Assert.That(publications.Count, Is.EqualTo(1), "Publish the final selection once, without a transient empty or fork-only detail read.");
+        Assert.That(publications[0], Is.EqualTo(expected), "Every observer sees the final canonical order immediately.");
+        Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.Hash(caret)));
+        Assert.That(f.History.Selection.AnchorIndex, Is.EqualTo(f.History.Items.IndexOf(f.Reader.Single(commit => commit.Hash == f.Hash(caret)))));
+        GitRevisionDiffGroupKind kind = expected.Length == 1 ? GitRevisionDiffGroupKind.Parent : GitRevisionDiffGroupKind.Comparison;
+        IReadOnlyList<GitRevisionDiffGroup> groups = (IReadOnlyList<GitRevisionDiffGroup>)Private(f.Main, "_revisionDiffGroups")!;
+        Assert.That(groups.Any(group => group.Kind == kind && group.Revision == expected[0] && group.BaseRevision == f.Hash(comparisonBase)), Is.True);
+        Assert.That(f.Navigation(), Is.EqualTo(navigation)); Assert.That(f.NavigationIndex, Is.EqualTo(navigationIndex));
+        Assert.That(f.Main.OwnedWindows.Where(window => window.IsVisible), Is.Empty); f.AssertNoReload();
+        Press(f.Main, PhysicalKey.ArrowUp); await f.IdleAsync();
+        Assert.That(f.Selected, Is.EqualTo(new[] { f.Hash(firstUp) }));
+        Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.Hash(firstUp))); Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
+        f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
+    public async Task RepeatedThreeSideCommandsReverseTheRetoggledSidesEvenWhenTheLoadedRootIsAlreadyTheBase()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        await f.SelectAsync(f.T); await f.AddAsync(f.Q); await f.AddAsync(f.P);
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("Q,P,M"))); f.AssertComparison(f.M, f.Q);
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("P,Q,R"))); f.AssertComparison(f.R, f.P);
+        Assert.That((f.History.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.P)); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.R));
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("Q,P,R"))); f.AssertComparison(f.R, f.Q);
+        Assert.That((f.History.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.Q)); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.R));
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("P,Q,R"))); f.AssertComparison(f.R, f.P);
+        f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
+    public async Task TwoRawPointerSelectionsUseNativeRecencyRatherThanTheOldListBoxPrimary()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        await f.SelectAsync(f.R); await f.AddAsync(f.M);
+        Assert.That(f.Selected, Is.EqualTo(f.Hashes("R,M")));
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("M,R"))); f.AssertComparison(f.R, f.M);
+        Assert.That((f.History.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.M)); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.R));
+        f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
+    public async Task APhysicalShiftRangeUsesNativeInsertionOrderAndTheSurvivingCaretAfterCollision()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        Assert.That(f.History.Items.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(f.Hashes("T,E,M,P,Q,R")));
+        await f.SelectAsync(f.T); await f.ShiftAsync(f.P);
+        Assert.That(f.Selected, Is.EquivalentTo(f.Hashes("T,E,M,P")));
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("E,P"))); f.AssertComparison(f.P, f.E);
+        Assert.That((f.History.SelectedItem as GitCommit)?.Hash, Is.EqualTo(f.E)); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.P));
+        Assert.That(f.History.Selection.AnchorIndex, Is.EqualTo(f.History.Items.IndexOf(f.Reader.Single(commit => commit.Hash == f.P))));
+        Press(f.Main, PhysicalKey.ArrowUp); await f.IdleAsync();
+        Assert.That(f.Selected, Is.EqualTo(new[] { f.M })); Assert.That(FocusedCommit(f.Main), Is.EqualTo(f.M));
+        f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
+    }
+
+    [AvaloniaTest]
+    public async Task AtomicMultiSidePublicationKeepsTheExistingBackAndForwardBookmarksUsable()
+    {
+        await using Fixture f = await Fixture.CreateAsync();
+        await f.SelectAsync(f.R); await f.SelectAsync(f.T); await f.AddAsync(f.Q); await f.AddAsync(f.P);
+        string[] navigation = f.Navigation(); int navigationIndex = f.NavigationIndex;
+        await f.NextAsync(); Assert.That(f.Selected, Is.EqualTo(f.Hashes("Q,P,M")));
+        Assert.That(f.Navigation(), Is.EqualTo(navigation)); Assert.That(f.NavigationIndex, Is.EqualTo(navigationIndex));
+        Press(f.Main, PhysicalKey.ArrowLeft, RawInputModifiers.Alt); await f.IdleAsync(); Assert.That(f.Selected, Is.EqualTo(new[] { f.R }));
+        Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
+        Press(f.Main, PhysicalKey.ArrowRight, RawInputModifiers.Alt); await f.IdleAsync(); Assert.That(f.Selected, Is.EqualTo(new[] { f.T }));
+        Assert.That(f.History.IsKeyboardFocusWithin, Is.True);
+        f.AssertNoReload(); Assert.That(await f.MaterialAsync(), Is.EqualTo(f.Ready));
     }
 
     private sealed record Material(string Head, string Index, string Refs, string Configuration, string Files);
@@ -189,6 +284,9 @@ public sealed class ForkPointSelectionTests
     {
         internal MainWindow Main => main;
         internal string R => r; internal string Q => q; internal string P => p; internal string M => m; internal string T => t;
+        internal string E => Reader.Single(commit => commit.Subject == "Other child E").Hash;
+        internal string Hash(string name) => name switch { "R" => R, "Q" => Q, "P" => P, "M" => M, "E" => E, "T" => T, _ => throw new ArgumentException("Unknown fixture row.", nameof(name)) };
+        internal string[] Hashes(string names) => names.Split(',').Select(Hash).ToArray();
         internal ListBox History => Field<ListBox>(main, "RevisionHistory");
         internal CommitGraph Graph => main.GetVisualDescendants().OfType<CommitGraph>().Single();
         internal IReadOnlyList<GitCommit> Reader => Graph.Commits;
@@ -247,6 +345,7 @@ public sealed class ForkPointSelectionTests
         }
         internal async Task SelectAsync(string hash) { Click(hash); await IdleAsync(); }
         internal async Task AddAsync(string hash) { Click(hash, RawInputModifiers.Control); await IdleAsync(); }
+        internal async Task ShiftAsync(string hash) { Click(hash, RawInputModifiers.Shift); await IdleAsync(); }
         private void Click(string hash, RawInputModifiers modifiers = RawInputModifiers.None)
         {
             GitCommit commit = History.Items.OfType<GitCommit>().Single(item => item.Hash == hash); History.ScrollIntoView(commit); Pump(main);

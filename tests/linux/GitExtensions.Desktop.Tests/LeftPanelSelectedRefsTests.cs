@@ -38,7 +38,10 @@ public sealed class LeftPanelSelectedRefsTests
         f.Click(Leaf(main, Remote), RawInputModifiers.Control); await f.IdleAsync();
         f.Click(Leaf(main, Tag), RawInputModifiers.Control); await f.IdleAsync();
         AssertMarks(main, Local, Remote, Tag);
-        Assert.That(((GitCommit)f.History.SelectedItem!).Hash, Is.EqualTo(f.Middle));
+        // Each different node invokes Windows GoToRef with Ctrl: the tag
+        // toggles the remote's same SHA off, leaving the original local SHA.
+        Assert.That(((GitCommit)f.History.SelectedItem!).Hash, Is.EqualTo(f.First));
+        Assert.That(f.History.SelectedItems!.OfType<GitCommit>().Select(commit => commit.Hash), Is.EqualTo(new[] { f.First }));
         Assert.That(f.Tree.SelectedItem, Is.SameAs(Leaf(main, Tag)));
         Assert.That(Leaf(main, Tag).IsKeyboardFocusWithin, Is.True);
         AssertUnchangedHistory(f, source, rows, expression);
