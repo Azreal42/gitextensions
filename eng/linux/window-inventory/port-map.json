@@ -1824,10 +1824,12 @@
         "ExportRevisionPicker",
         "file:src/linux/GitExtensions.Desktop/ChooseCommitDialog.History.cs",
         "file:src/linux/GitExtensions.Core/GitLogQuery.cs",
-        "file:src/linux/GitExtensions.Desktop/Controls/Graph/IncrementalCommitGraphLayout.cs"
+        "file:src/linux/GitExtensions.Desktop/Controls/Graph/IncrementalCommitGraphLayout.cs",
+        "file:src/linux/GitExtensions.Desktop/HistoryRevisionItems.cs",
+        "file:src/linux/GitExtensions.Core/GitRepository.RevisionAncestry.cs"
       ],
-      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents natifs, Current initial éditable et borne Rebase conservée. H33 : parcours Git unique en lots attendus, liste et graphe incrémentaux, source/objets/ancre/focus/viewport conservés ; première portion utilisable pendant la lecture. Présélection/GoTo/parents hors premier lot, dernière intention utilisateur prioritaire, plafond global et override privé (0 sans plafond), Reset hérité. Fermeture/validation drainent les générations admises. Commits réels et Index/WorkingTree typés, garde bare et gouttières cohérentes avec le graphe masqué.",
-      "remaining": "Héritage runtime complet, regex/options avancées, recherche rapide, menus et commandes Windows encore ouverts. Artificiels épinglés sous l’en-tête Export, sans insertion avant HEAD dans le flux. Métadonnées notes/date de committer, statuts et gris des relations pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. ADR0153.",
+      "implemented": "Dialogue commun aux adaptateurs historiques et à Compare, avec lignes/colonnes/badges inline de Browse et vue capturée. Filtre avancé partagé privé, parents natifs, Current initial éditable et borne Rebase conservée. H33 : parcours Git unique en lots attendus, liste et graphe incrémentaux, source/objets/ancre/focus/viewport conservés ; première portion utilisable pendant la lecture. Présélection/GoTo/parents hors premier lot, dernière intention utilisateur prioritaire, plafond global et override privé (0 sans plafond), Reset hérité. Fermeture/validation drainent les générations admises. Commits réels et Index/WorkingTree typés, garde bare et gouttières cohérentes avec le graphe masqué. H34 : endpoints typés dans le même flux/graphe, avant HEAD ou son premier ancêtre visible après EOF ; vraie lecture indépendante de 50 ancêtres, aucun faux OID ni plafond consommé. Préselection HEAD, badges partagés, relations grises natives, sélection/Tab uniques et PageUp/PageDown des listes simples ; maintien du viewport lors d’une arrivée tardive.",
+      "remaining": "Héritage runtime complet, regex/options avancées, recherche rapide, menus et commandes Windows encore ouverts. Métadonnées notes/date de committer et statuts dynamiques pas tous alimentés ; variantes natives/plateformes/interaction installée ouvertes. Le préfixe Browse reste séparé du modèle commun. ADR0153.",
       "visual": "adapte",
       "tests": [
         "CherryPickDialogTests",
@@ -1839,7 +1841,9 @@
         "ChooseCommitFilterTests",
         "ExportRevisionPresentationTests",
         "ChooseCommitStreamingTests",
-        "IncrementalRevisionGraphTests"
+        "IncrementalRevisionGraphTests",
+        "ArtificialRevisionGraphTests",
+        "InlineArtificialHistoryTests"
       ],
       "adr": [
         "0153"

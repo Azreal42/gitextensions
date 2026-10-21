@@ -1,10 +1,23 @@
 # TODO
 
-Mise à jour : 21 octobre 2026. H33 : historique incrémental du chooser, 110/110 Desktop, 21/21 Core streaming, 16/16 Core historique fichier et 42/42 Plugins sur les octets commités `9d95be81d`. Les validations complètes historiques et les passages combinés Core restent distingués ci-dessous.
+Mise à jour : 21 octobre 2026. H34 : endpoints artificiels dans le flux du sélecteur, 187/187 Desktop, 42/42 Core ciblés et 42/42 Plugins sur les octets commités `e7fea161c`. Les suites complètes historiques restent distinguées ci-dessous.
 
 Les [suites complètes](../../artifacts/linux/portable-dialog-completions-20261020/review/root-full-review.json) portent sur `1c6068f4017eae8344eee25ad3f7bd280cbaa847` dans le worktree propre. Les lots précédents gardent leurs preuves historiques distinctes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+## H34 — lignes de travail et sélection communes
+
+Source : `e7fea161ca6ecbe026a7a4cc4c034406076c0887` ; [équivalence des sources](../../artifacts/linux/inline-artificial-history-20261021/review/source-import-review.json), [ADR0153](adr/workflows/history/0153-shared-commit-chooser.md).
+
+- [x] WorkingTree/Index typés dans la même liste et le même graphe, juste avant HEAD capturé ; fin filtrée placée via 50 ancêtres natifs, sans faux commit ni changement du parent Index. Dépôt bare, préférence, unborn et plafond réel respectés. Badges/colonnes partagés, relations grises natives, une seule sélection et un seul arrêt Tab.
+- [x] Préselection HEAD même après une branche plus récente ; Page précédente/suivante et première flèche suivantes déplacent la sélection. Source/objets/ancre/focus/viewport conservés pendant l’arrivée de HEAD après 600 commits d’une autre branche.
+
+[Validation ciblée](../../artifacts/linux/inline-artificial-history-20261021/review/root-targeted-review.json) : **187/187 Desktop (17 classes), 5/5 Core ancêtres, 21/21 Core streaming, 16/16 Core historique fichier, 42/42 Plugins**. Les 110 identités Desktop H33 sont conservées ; 16 nouveaux cas modèle, 12 UI et cinq Core. [Deux rendus minimum EN clair/FR sombre inspectés](../../artifacts/linux/inline-artificial-history-20261021/review/root-visual-review.json). Aucune nouvelle suite complète ni interaction native installée déduite de ces essais.
+
+[Paquet 7.2.1-linux-alpha](../../artifacts/linux/snapshots/e7fea161c/deb/gitextensions_7.2.1~linux-alpha_amd64.deb) : **40,281,124 octets**, SHA256 `fccdd0e37952e87b5cd830f7dcc6e76a636704e4edb2429c2701fcfb14f4af43` ; [revue](../../artifacts/linux/inline-artificial-history-20261021/review/root-package-review.json). Sept phases réussies, publication comparée au payload, français et Skia vérifiés ; installation/démarrage DPKG isolés. La reconstruction finale après commit garde les mêmes sources que le ciblé, avec des binaires de métadonnées distingués. Aucun push ni installation hôte.
+
+[Inventaire actualisé](../../artifacts/linux/inline-artificial-history-20261021/review/root-inventory-review.json) : 2617 fichiers C# sans diagnostic de syntaxe, comptes inchangés. Restent l’intégration du préfixe Browse au modèle commun, menus/navigation/recherche complets du chooser, héritage runtime et métadonnées/statuts dynamiques. Niveaux et treize familles ouvertes inchangés, aucun N4 ; les sources Modal préexistantes restent hors build/paquet propres. [Échecs et causes](failure.md#h34-inline-artificials).
 
 ## H33 — lecteur incrémental du sélecteur
 
@@ -64,7 +77,7 @@ Source : `b84ae9caf9cb17497fe48f6b67445533bb7096dd` ; [équivalence source et co
 
 [Inventaire régénéré et contrôlé](../../artifacts/linux/portable-window-options-20261021/review/root-inventory-review.json) : 99 fenêtres métier (98 avec équivalent Linux, diagnostic PuTTY hors périmètre) et 32 pages (31 portées, extension Explorer hors périmètre), 116 types de fenêtres Linux. Niveaux inchangés et cinq sources/tests Modal du primaire conservés séparément du build/paquet propre.
 
-Restent notamment : grille/filtres Windows complets du chooser (lecteur 500 traité par H33 ; lignes artificielles encore épinglées), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
+Restent notamment : grille/filtres Windows complets du chooser (lecteur traité par H33, endpoints intégrés par H34 ; préfixe Browse encore séparé), autres contrats plugins (Proxy/helper issues GitHub traités dans H31), rapport HTML CI embarqué, serveurs réels/authentifiés/Enterprise et audits natifs étendus. macOS, Wayland/IME/DPI/accessibilité et interaction du nouveau paquet installé restent distincts. La matrice ne déclare aucun N4.
 
 ## H29 — ouverture locale de dépôt
 

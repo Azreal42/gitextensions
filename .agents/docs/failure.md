@@ -2,6 +2,13 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="h34-inline-artificials"></a>
+## H34 — lignes de travail dans le flux
+
+- [Ciblé01 186/187](../../artifacts/linux/inline-artificial-history-20261021/targeted-01/results/desktop.trx) : ListBox Avalonia délègue PageUp/PageDown au défilement sans déplacer la sélection. La liste simple commune déplace désormais la sélection d’une page et replace le focus sur son ancre native ; première flèche suivante vérifiée, sans réparation dans le test. [187/187 après correction](../../artifacts/linux/inline-artificial-history-20261021/review/root-targeted-review.json).
+- Les anciens tests imposaient un préfixe séparé, une sélection de liste vide et deux arrêts Tab artificiels. Leur contrat structurel a été corrigé avant exécution vers la liste unique Windows, avec endpoints typés et assertions métier conservées ; [revue avant tests](../../artifacts/linux/inline-artificial-history-20261021/review/historical-test-contract-update.json). Les dix cas incrémentaux H33 restent byte-identiques.
+- Les deux premiers builds ont signalé un import du namespace des colonnes/badges et une construction de chaîne ambiguë dans un nouveau test. Le moteur/layout legacy est conservé ; aucun échec n’est reclassé en succès.
+
 <a id="h33-streamed-chooser"></a>
 ## H33 — historique incrémental du sélecteur
 
