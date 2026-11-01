@@ -1787,6 +1787,9 @@ sealed class RepositoryFixture : IDisposable
         await repository.SetConfigAsync("commit.gpgsign", "false");
         await repository.SetConfigAsync("tag.gpgsign", "false");
         await repository.SetConfigAsync("core.hooksPath", "/dev/null");
+        // Byte-exact repository snapshots must not race Git's detached maintenance after commits.
+        await repository.SetConfigAsync("maintenance.auto", "false");
+        await repository.SetConfigAsync("gc.auto", "0");
     }
 
     public void Dispose() => Directory.Delete(Root, recursive: true);

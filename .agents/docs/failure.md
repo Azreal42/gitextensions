@@ -6,6 +6,7 @@ Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidat
 ## CI Linux — formats Git et durée réelle
 
 - Git 2.55 entoure `bad` de guillemets dans les conclusions de `BISECT_LOG` ; les préfixes et offsets fixes perdaient le premier mauvais commit et les candidats après Skip. Corriger les deux consommateurs via un lecteur commun, couvrir ancien/nouveau format et journal partiel ; ne pas modifier l’oracle métier du commit recherché. La sortie native visible dans Process peut aussi porter ces guillemets.
+- Le [premier run corrigé](https://github.com/Azreal42/gitextensions/actions/runs/41345878865) fait 1 209/1 210 Core : un snapshot strict rencontrait `.git/objects/maintenance.lock`, supprimé par une maintenance Git détachée après commit. La fixture Core commune désactive `maintenance.auto` et `gc.auto` avant son premier commit. Garder les captures et assertions byte-exactes ; ne pas ignorer les locks ni modifier les préférences des dépôts utilisateur.
 - La limite CI de 30 minutes était inférieure à la durée observée de la seule suite Desktop complète H36 (46 minutes). Garder tous les tests et dimensionner la limite ; ne pas confondre une validation locale ciblée et un run distant complet.
 - `tee` sans `pipefail` masque un échec. Choisir explicitement Bash dans Actions, vérifier la propagation d’un code non nul et uploader les logs même si Core échoue avant la création du premier TRX.
 
