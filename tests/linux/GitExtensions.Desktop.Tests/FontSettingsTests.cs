@@ -209,7 +209,14 @@ public sealed class FontSettingsTests
     private static void ChooseFamily(Window window, FontFamily family)
     {
         ListBox list = Field<ListBox>(window, "FontFamily"); int index = list.Items.OfType<FontFamily>().ToList().FindIndex(item => item.Name == family.Name);
-        Assert.That(index, Is.GreaterThanOrEqualTo(0)); PushProcessTestDriver.Pointer(list); Press(window, PhysicalKey.Home);
+        Assert.That(index, Is.GreaterThanOrEqualTo(0));
+        // A short list can leave its viewport center below every row. Only an
+        // actual row receives keyboard focus; clicking that empty space does not.
+        ListBoxItem row = list.GetVisualDescendants().OfType<ListBoxItem>().First(item => item.IsEffectivelyVisible
+            && item.TranslatePoint(new Point(item.Bounds.Width / 2, item.Bounds.Height / 2), list) is Point center
+            && new Rect(list.Bounds.Size).Contains(center));
+        PushProcessTestDriver.Pointer(row); Assert.That(list.IsKeyboardFocusWithin, Is.True);
+        Press(window, PhysicalKey.Home);
         for (int i = 0; i < index; i++) { Press(window, PhysicalKey.ArrowDown); }
         Assert.That((list.SelectedItem as FontFamily)?.Name, Is.EqualTo(family.Name));
     }
@@ -230,7 +237,14 @@ public sealed class FontSettingsTests
     private static async Task<(DesktopSettingsDialog, Task)> OpenSettings(Scope scope, MainWindow main)
     {
         Task operation = (Task)typeof(MainWindow).GetMethod("ShowSettingsAsync", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(main, null)!;
-        await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any()); DesktopSettingsDialog dialog = scope.Own(main.OwnedWindows.OfType<DesktopSettingsDialog>().Single()); Pump(dialog); return (dialog, operation);
+        await Until(() => main.OwnedWindows.OfType<DesktopSettingsDialog>().Any()); DesktopSettingsDialog dialog = scope.Own(main.OwnedWindows.OfType<DesktopSettingsDialog>().Single()); Pump(dialog);
+        bool checklistOnOpen = dialog.Navigation.SelectedPage.Id == "Checklist";
+        // Opening Settings reads its scoped pages before a possible Checklist
+        // scan. Wait for the real save action, including that initial scan.
+        await Until(() => Field<Button>(dialog, "SaveDesktopSettings").IsEffectivelyEnabled
+            && dialog.GitEnvironmentSession is { IsBusy: false } session
+            && (!checklistOnOpen || session.LastScan is not null));
+        Pump(dialog); return (dialog, operation);
     }
     private static async Task CloseBrowse(MainWindow main)
     { main.Close(); await Until(() => !main.IsVisible && main.WindowWorkCompletion.IsCompleted); await main.WindowWorkCompletion; }

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
@@ -187,7 +188,15 @@ public sealed class ScriptsSettingsPageTests
     }
 
     private static void OpenScripts(Window w) { SettingsNavigationTestDriver.Select(w, "Scripts"); Pump(w); }
-    private static void ClickEditor(Window w, string name) { Control editor = Field<Control>(w, name); Reveal(w, editor); PushProcessTestDriver.Pointer(editor); }
+    private static void ClickEditor(Window w, string name)
+    {
+        CheckBox editor = Field<CheckBox>(w, name);
+        bool expected = editor.IsChecked != true;
+        Reveal(w, editor);
+        PushProcessTestDriver.Pointer(editor);
+        Pump(w);
+        Assert.That(editor.IsChecked, Is.EqualTo(expected), name + " must toggle from the single real click.");
+    }
     private static void Edit(Window w, string name, string value)
     {
         TextBox input = Field<TextBox>(w, name); Reveal(w, input); PushProcessTestDriver.Pointer(input);
@@ -203,16 +212,26 @@ public sealed class ScriptsSettingsPageTests
     private static void Reveal(Window w, Control control)
     {
         ScrollViewer scroll = Field<ScrollViewer>(w, "ScriptsPropertiesScroll");
+        ScrollContentPresenter viewport = scroll.GetVisualDescendants().OfType<ScrollContentPresenter>()
+            .Single(presenter => ReferenceEquals(presenter.TemplatedParent, scroll));
         for (int i = 0; i < 35; i++)
         {
-            Pump(w); Point? center = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), w);
-            Point? top = scroll.TranslatePoint(default, w);
-            if (center is Point c && top is Point t && new Rect(t, scroll.Bounds.Size).Contains(c)
-                && (w.InputHitTest(c) as Visual)?.GetSelfAndVisualAncestors().Contains(control) == true) { return; }
-            Assert.That(top, Is.Not.Null); Point wheel = top!.Value + new Vector(6, scroll.Bounds.Height / 2);
-            w.MouseMove(wheel); w.MouseWheel(wheel, new Vector(0, center?.Y < top.Value.Y ? 2 : -2), RawInputModifiers.None);
+            // Pointer() settles render jobs too. Observe the same settled geometry
+            // and expose the whole target: focusing a clipped checkbox can scroll
+            // it between pointer down and release, so its center alone is insufficient.
+            for (int frame = 0; frame < 10; frame++) { Pump(w); }
+            Point origin = control.TranslatePoint(default, w)!.Value;
+            Rect bounds = new(origin, control.Bounds.Size);
+            Point center = bounds.Center;
+            Point top = viewport.TranslatePoint(default, w)!.Value;
+            Rect clip = new(top, viewport.Bounds.Size);
+            if (clip.Inflate(.5).Contains(bounds)
+                && (w.InputHitTest(center) as Visual)?.GetSelfAndVisualAncestors().Contains(control) == true) { return; }
+            Point wheel = top + new Vector(6, viewport.Bounds.Height / 2);
+            w.MouseMove(wheel);
+            w.MouseWheel(wheel, new Vector(0, bounds.Top < clip.Top ? 1 : -1), RawInputModifiers.None);
         }
-        Assert.Fail("The real wheel did not expose " + control.Name);
+        Assert.Fail("The real wheel did not fully expose " + control.Name + "; bounds=" + control.Bounds + "; offset=" + scroll.Offset + "; viewport=" + viewport.Bounds);
     }
     private static T Field<T>(TopLevel w, string name) where T : Control => w.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
     private static void Pump(TopLevel w) { Dispatcher.UIThread.RunJobs(); w.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }

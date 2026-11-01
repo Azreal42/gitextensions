@@ -73,15 +73,11 @@ public class DiffViewerPreferencesTests
         }
 
         using TemporaryDirectory temporary = new(); DiffViewerPreferencesStore store = new(temporary.Path);
-        DirectoryInfo? root = new(AppContext.BaseDirectory);
-        while (root is not null && !File.Exists(System.IO.Path.Combine(root.FullName, ".dotnet", "dotnet"))) { root = root.Parent; }
-        DirectoryInfo repositoryRoot = root ?? throw new AssertionException("A fresh process must execute with the repository's actual .NET runtime.");
         foreach (bool remember in new[] { false, true })
         {
             Assert.That(store.Save(new(false, false, DiffViewerAppearance.GitWordDiff, remember)), Is.True);
             Assert.That(store.Load().Appearance, Is.EqualTo(DiffViewerAppearance.GitWordDiff));
-            ProcessStartInfo start = new(System.IO.Path.Combine(repositoryRoot.FullName, ".dotnet", "dotnet"))
-            { WorkingDirectory = repositoryRoot.FullName, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+            ProcessStartInfo start = TestDotnetHost.CreateStartInfo();
             foreach (string argument in new[] { "test", "tests/linux/GitExtensions.Desktop.Tests/GitExtensions.Desktop.Tests.csproj", "-c", "Release", "--no-build", "--no-restore",
                 "--filter", "FullyQualifiedName~GitExtensions.Desktop.Tests.DiffViewerPreferencesTests.NewProcessReadsOnlyPersistedAppearance", "--", "NUnit.NumberOfTestWorkers=0" }) { start.ArgumentList.Add(argument); }
             start.Environment[probeDirectoryVariable] = temporary.Path;

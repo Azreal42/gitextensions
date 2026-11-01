@@ -110,15 +110,13 @@ public class DiffViewerRenderingPreferencesTests
             return;
         }
         using DiffViewerPreferencesTests.TemporaryDirectory directory = new(); DiffViewerPreferencesStore store = new(directory.Path);
-        DirectoryInfo? root = new(AppContext.BaseDirectory); while (root is not null && !File.Exists(Path.Combine(root.FullName, ".dotnet/dotnet"))) { root = root.Parent; }
-        DirectoryInfo checkout = root ?? throw new AssertionException("No actual .NET runtime for new-process rendering proof.");
         Assert.That(store.SaveSettings(store.Load() with { RememberNonPrintingChars = true }), Is.True);
         Assert.That(store.SaveRenderingOptions(new(), new(true, false)), Is.True); await Probe("original");
         Assert.That(store.SaveCurrentViewSettingsAsDefault(), Is.True); await Probe("saved");
         Assert.That(store.SaveRenderingOptions(new(true, false), new()), Is.True); await Probe("saved");
         async Task Probe(string expected)
         {
-            ProcessStartInfo start = new(Path.Combine(checkout.FullName, ".dotnet/dotnet")) { WorkingDirectory = checkout.FullName, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+            ProcessStartInfo start = TestDotnetHost.CreateStartInfo();
             foreach (string argument in new[] { "test", "tests/linux/GitExtensions.Desktop.Tests/GitExtensions.Desktop.Tests.csproj", "-c", "Release", "--no-build", "--no-restore", "--filter",
                 "FullyQualifiedName~GitExtensions.Desktop.Tests.DiffViewerRenderingPreferencesTests.ARealNewProcessReadsTheSavedRenderingBaselineNotRememberedSessionValues", "--", "NUnit.NumberOfTestWorkers=0" }) { start.ArgumentList.Add(argument); }
             start.Environment[directoryVariable] = directory.Path; start.Environment[expectedVariable] = expected;

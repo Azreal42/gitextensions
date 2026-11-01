@@ -41,7 +41,15 @@ public sealed class CommitBranchTests
         MenuItem create = CreateItem(dialog);
         Assert.That(create.Items.Count, Is.Zero, "Create branch is an action, not a checkout dropdown.");
         Image branchIcon = create.GetVisualDescendants().OfType<Image>().Single();
-        Assert.That(branchIcon.Source, Is.Not.Null); Assert.That(branchIcon.Bounds.Size, Is.EqualTo(new Size(16, 16)));
+        Assert.That(branchIcon.Source, Is.Not.Null);
+        // Compact ToolStrip commands can overflow with the host's actual font.
+        // Check the rendered icon of the action the user can really see.
+        MenuItem visibleCreate = RevealCreateItem(dialog);
+        Image visibleIcon = visibleCreate.GetVisualDescendants().OfType<Image>().Single();
+        Assert.That(visibleIcon.Source, Is.SameAs(branchIcon.Source));
+        Assert.That(visibleIcon.Bounds.Size, Is.EqualTo(new Size(16, 16)));
+        CompactMenuToolbar toolbar = CompactMenuToolbar.For(Field<Menu>(dialog, "CommitToolbar"))!;
+        if (toolbar.Overflow.IsSubMenuOpen) { Press(dialog, PhysicalKey.Escape); }
         Assert.That(Field<Button>(dialog, "CommitBranchRemote").IsEffectivelyVisible, Is.True);
         Button link = Field<Button>(dialog, "CommitBranchRemote");
         dialog.MouseMove(new Point(0, 0)); Dispatcher.UIThread.RunJobs();
@@ -131,7 +139,7 @@ public sealed class CommitBranchTests
         await using Scope f = await Scope.CreateAsync(); await f.StageAsync(); CommitDialog dialog = await f.OpenAsync();
         TextBox editor = Field<TextBox>(dialog, "Message"); editor.Text = "Draft survives branch creation";
         string initial = await f.Git.Repository.ResolveRevisionAsync("HEAD"); string index = await f.IndexAsync();
-        PushProcessTestDriver.Pointer(CreateItem(dialog));
+        PushProcessTestDriver.Pointer(RevealCreateItem(dialog));
         CreateBranchDialog child = await CreateChild(dialog); await Until(() => !child.IsBusy);
         Assert.That(Field<TextBox>(child, "CreateBranchName").Text, Is.EqualTo("main"));
         Assert.That(Field<TextBox>(child, "CreateBranchRevision").Text, Is.EqualTo("HEAD"));
@@ -640,6 +648,25 @@ public sealed class CommitBranchTests
         return owner.OwnedWindows.OfType<CheckoutBranchDialog>().Single(window => window.IsVisible);
     }
 
+    private static MenuItem RevealCreateItem(CommitDialog dialog)
+    {
+        PumpToolbar(dialog);
+        MenuItem canonical = CreateItem(dialog);
+        CompactMenuToolbar toolbar = CompactMenuToolbar.For(Field<Menu>(dialog, "CommitToolbar"))!;
+        if (!toolbar.IsOverflowed(canonical))
+        {
+            Assert.That(canonical.IsEffectivelyVisible, Is.True);
+            return canonical;
+        }
+        Assert.That(canonical.IsVisible, Is.False);
+        PushProcessTestDriver.Pointer(toolbar.Overflow);
+        MenuItem proxy = toolbar.ProxyFor(canonical);
+        PumpToolbar(TopLevel.GetTopLevel(proxy)!);
+        Assert.That(proxy.IsEffectivelyVisible, Is.True);
+        Assert.That(proxy.Tag, Is.SameAs(canonical));
+        Assert.That(HeaderText(proxy.Header), Is.EqualTo(HeaderText(canonical.Header)));
+        return proxy;
+    }
     private static MenuItem CreateItem(CommitDialog dialog) => Field<Menu>(dialog, "CommitToolbar").Items.OfType<MenuItem>().Single(item => item.Name == "CommitCreateBranch");
     private static string? RemoteText(CommitDialog dialog) => Field<Button>(dialog, "CommitBranchRemote").Content as string;
     private static string SelectedPath(TreeView tree) => (tree.SelectedItem as TreeViewItem)?.Tag is GitChange change ? change.Path : "";

@@ -226,11 +226,7 @@ public class RevisionAdvancedTests
             Assert.That(File.Exists(application), Is.True);
             Assert.That(File.Exists(Path.ChangeExtension(application, "runtimeconfig.json")), Is.True,
                 "Use the current test output's executable assembly and runtime configuration, never an installed payload.");
-            DirectoryInfo? checkout = new(AppContext.BaseDirectory);
-            while (checkout is not null && !File.Exists(Path.Combine(checkout.FullName, ".dotnet", "dotnet"))) { checkout = checkout.Parent; }
-            string? host = checkout is null ? Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") : Path.Combine(checkout.FullName, ".dotnet", "dotnet");
-            Assert.That(host is not null && Path.IsPathFullyQualified(host) && File.Exists(host) && Path.GetFileName(host) == "dotnet", Is.True,
-                "A verified existing SDK host is required for the native child editor.");
+            string host = TestDotnetHost.Executable;
             string directory = Path.Combine("/tmp", "gitextensions-targeted-editor-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             NativeEditorLauncher launcher = new(directory);
