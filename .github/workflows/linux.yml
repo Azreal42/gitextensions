@@ -42,16 +42,10 @@ jobs:
       - name: Build Linux solution
         run: dotnet build GitExtensions.Linux.slnx --configuration Release
 
-      - name: Exercise Git workflows against real repositories
+      - name: Test Debian metadata determinism
         run: |
           mkdir -p artifacts/linux/test-results
-          dotnet run --project tests/linux/GitExtensions.Core.Tests --configuration Release --no-build 2>&1 | tee artifacts/linux/test-results/core.log
-
-      - name: Exercise portable plugins against real repositories
-        run: dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build 2>&1 | tee artifacts/linux/test-results/plugins.log
-
-      - name: Test desktop workflows and graph
-        run: dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --logger "console;verbosity=normal" --logger trx --results-directory artifacts/linux/test-results 2>&1 | tee artifacts/linux/test-results/desktop.log
+          python3 -B -m unittest discover -s eng/linux/tests -v 2>&1 | tee artifacts/linux/test-results/package-metadata.log
 
       - name: Build Debian package
         run: eng/linux/build-deb.sh
@@ -65,7 +59,26 @@ jobs:
           dpkg-deb --extract "$package" artifacts/linux/package-payload
           version=$(dotnet msbuild src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj -nologo -getProperty:Version)
           eng/linux/build-deb.sh --publish-directory artifacts/linux/package-payload/usr/lib/gitextensions --version "$version" --output artifacts/linux/reproduced
-          cmp "$package" "artifacts/linux/reproduced/${package##*/}"
+          reproduced="artifacts/linux/reproduced/${package##*/}"
+          if ! cmp "$package" "$reproduced"; then
+            dpkg-deb --control "$package" artifacts/linux/package-control
+            dpkg-deb --control "$reproduced" artifacts/linux/reproduced-control
+            diff -u artifacts/linux/package-control/control artifacts/linux/reproduced-control/control || true
+            diff -u artifacts/linux/package-control/md5sums artifacts/linux/reproduced-control/md5sums || true
+            sha256sum "$package" "$reproduced"
+            exit 1
+          fi
+
+      - name: Exercise Git workflows against real repositories
+        run: |
+          mkdir -p artifacts/linux/test-results
+          dotnet run --project tests/linux/GitExtensions.Core.Tests --configuration Release --no-build 2>&1 | tee artifacts/linux/test-results/core.log
+
+      - name: Exercise portable plugins against real repositories
+        run: dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build 2>&1 | tee artifacts/linux/test-results/plugins.log
+
+      - name: Test desktop workflows and graph
+        run: dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --logger "console;verbosity=normal" --logger trx --results-directory artifacts/linux/test-results 2>&1 | tee artifacts/linux/test-results/desktop.log
 
       - name: Install package and open repository
         run: |
@@ -79,6 +92,18 @@ jobs:
           name: gitextensions-linux-amd64
           path: artifacts/linux/deb/*.deb
           if-no-files-found: error
+
+      - name: Upload failed package diagnostics
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: linux-package-diagnostics
+          path: |
+            artifacts/linux/deb/*.deb
+            artifacts/linux/reproduced/*.deb
+            artifacts/linux/package-control/
+            artifacts/linux/reproduced-control/
+          if-no-files-found: ignore
 
       - name: Upload test results
         if: always()

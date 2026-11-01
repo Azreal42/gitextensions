@@ -130,7 +130,7 @@ install -m 0644 "$repo_root/setup/assets/Logo/git-extensions-logo-256px.png" "$s
 
 maintainer=${DEB_MAINTAINER:-"Git Extensions contributors"}
 [[ "$maintainer" != *$'\n'* && "$maintainer" != *$'\r'* ]] || fail "Invalid DEB_MAINTAINER"
-installed_size=$(du -sk "$stage/usr" | cut -f1)
+installed_size=$(python3 "$repo_root/eng/linux/package-installed-size.py" "$stage/usr")
 while IFS= read -r line; do
     line=${line//@VERSION@/$deb_version}
     line=${line//@ARCHITECTURE@/$architecture}
@@ -144,6 +144,6 @@ done < "$repo_root/setup/linux/control.in" > "$stage/DEBIAN/control"
 )
 find "$stage" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
 package="$output_dir/gitextensions_${deb_version}_${architecture}.deb"
-dpkg-deb --root-owner-group --uniform-compression -Zxz -z9 --build "$stage" "$work_dir/package.deb"
+dpkg-deb --root-owner-group --uniform-compression --threads-max=1 -Zxz -z9 --build "$stage" "$work_dir/package.deb"
 mv -- "$work_dir/package.deb" "$package"
 printf 'Package: %s\n' "$package"

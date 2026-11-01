@@ -10,4 +10,6 @@ Conséquence : vérifier l'extraction, les dépendances, le lancement graphique 
 
 La CI Linux conserve les suites Core, Plugins et Desktop complètes comme barrières avant publication du paquet. Les journaux sont récupérables en échec ; le `.deb` est uploadé seulement après les contrôles de payload, reproductibilité, installation et démarrage du workflow. La preuve distante reste liée au commit du run, distincte des validations locales.
 
+L’archive utilise un mode XZ fixe. Installed-Size suit les unités logiques de la [Debian Policy 5.6.20](https://www.debian.org/doc/debian-policy/ch-controlfields.html#installed-size), indépendamment des blocs alloués. Les tests de métadonnées et la reconstruction depuis le payload extrait précèdent les suites longues ; un échec conserve les deux archives et les différences des fichiers de contrôle. La publication reste après toutes les suites et le démarrage du paquet installé.
+
 Repères : `eng/linux/`, `setup/linux/`, [déploiement Avalonia Linux](https://docs.avaloniaui.net/docs/deployment/linux).
