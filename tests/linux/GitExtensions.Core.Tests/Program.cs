@@ -88,6 +88,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     .. GitHubForkCloneScenarios.All,
     .. RemoteHeadsScenarios.All,
     .. SparseCheckoutSaveScenarios.All,
+    .. BisectLogScenarios.All,
     ("unborn status and unstage", UnbornAsync),
     ("repository discovery normalizes subdirectories and metadata to root", DiscoveryAsync),
     ("repository discovery resolves linked worktree files and metadata", LinkedDiscoveryAsync),
@@ -302,6 +303,7 @@ if (args.Contains("--git-environment-compatibility-only", StringComparer.Ordinal
     .. AskpassInformationScenarios.All, .. AskpassModesScenarios.All, .. HistoryRemovalScenarios.All]; }
 if (args.Contains("--git-config-advanced-only", StringComparer.Ordinal)) { tests = GitConfigAdvancedScenarios.All.ToArray(); }
 if (args.Contains("--configuration-fields-only", StringComparer.Ordinal)) { tests = ConfigurationFieldsScenarios.All.ToArray(); }
+if (args.Contains("--bisect-only", StringComparer.Ordinal)) { tests = tests.Where(test => test.Name.StartsWith("bisect ", StringComparison.Ordinal)).ToArray(); }
 
 int failures = 0;
 foreach ((string name, Func<Task> run) in tests)
@@ -804,7 +806,7 @@ static async Task BisectAsync()
         state = await fixture.Repository.GetBisectStateAsync();
     }
 
-    Assert(state.FirstBadRevision == commits[5] && state.BadRevision == commits[5] && state.Log.Contains("# first bad commit:", StringComparison.Ordinal), "Exact first bad commit");
+    Assert(state.FirstBadRevision == commits[5] && state.BadRevision == commits[5] && state.Log.Contains("[" + commits[5] + "]", StringComparison.Ordinal), "Exact first bad commit");
     await fixture.Repository.ResetBisectAsync();
     Assert(!(await fixture.Repository.GetBisectStateAsync()).IsActive && (await fixture.Repository.GetStatusAsync()).Branch == "main"
         && await fixture.Repository.ResolveRevisionAsync("HEAD") == commits[8] && File.ReadAllText(fixture.File("version.txt")) == "8", "Reset restores original branch and tree");

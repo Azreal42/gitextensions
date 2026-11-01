@@ -88,9 +88,8 @@ public sealed record GitBisectState(bool IsActive, string? StartingRevision, str
     IReadOnlyList<string> GoodRevisions, IReadOnlyList<string> SkippedRevisions, string? FirstBadRevision, string Log, bool NoCheckout, bool FirstParent)
 {
     public bool IsInconclusive => Log.Contains("# only skipped commits left to test", StringComparison.Ordinal);
-    public IReadOnlyList<string> PossibleFirstBadRevisions => Log.Split('\n')
-        .Where(line => line.StartsWith("# possible first bad commit: [", StringComparison.Ordinal))
-        .Select(line => line[30..line.IndexOf(']', 30)]).Distinct(StringComparer.Ordinal).ToArray();
+    public IReadOnlyList<string> PossibleFirstBadRevisions => GitBisectLog.ReadBadRevisions(Log, possible: true)
+        .Distinct(StringComparer.Ordinal).ToArray();
 }
 public sealed record GitNote(string ObjectHash, string NoteHash, string NotesRef);
 public sealed record GitCommitOptions(

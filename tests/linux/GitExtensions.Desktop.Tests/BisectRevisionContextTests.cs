@@ -129,7 +129,7 @@ public sealed class BisectRevisionContextTests
         Assert.That(process.IsVisible, Is.True); Assert.That(process.UseDialogSettings, Is.False);
         Assert.That(process.Result?.ExitCode, Is.EqualTo(inconclusive ? 2 : 0)); Assert.That(process.Error, Is.Null);
         Assert.That(Field<TextBox>(process, "ProcessOutput").Text,
-            Does.Contain(inconclusive ? "first bad commit could be any of" : "is the first bad commit"));
+            Does.Match(inconclusive ? "first (?:bad|'bad') commit could be any of" : "is the first (?:bad|'bad') commit"));
         Assert.That(process.Outcome?.WasCancelled, Is.False); await Acknowledge(f, process);
         Assert.That(f.History.IsKeyboardFocusWithin, Is.True); FirstArrow(f, target, up: false);
     }

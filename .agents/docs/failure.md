@@ -2,6 +2,15 @@
 
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
+<a id="ci-linux-bisect"></a>
+## CI Linux — formats Git et durée réelle
+
+- Git 2.55 entoure `bad` de guillemets dans les conclusions de `BISECT_LOG` ; les préfixes et offsets fixes perdaient le premier mauvais commit et les candidats après Skip. Corriger les deux consommateurs via un lecteur commun, couvrir ancien/nouveau format et journal partiel ; ne pas modifier l’oracle métier du commit recherché. La sortie native visible dans Process peut aussi porter ces guillemets.
+- La limite CI de 30 minutes était inférieure à la durée observée de la seule suite Desktop complète H36 (46 minutes). Garder tous les tests et dimensionner la limite ; ne pas confondre une validation locale ciblée et un run distant complet.
+- `tee` sans `pipefail` masque un échec. Choisir explicitement Bash dans Actions, vérifier la propagation d’un code non nul et uploader les logs même si Core échoue avant la création du premier TRX.
+
+[Périmètre et validation](todo.md#ci-linux-bisect).
+
 <a id="h37-compact-browse-layout"></a>
 ## H37 — taille réduite et lisibilité
 

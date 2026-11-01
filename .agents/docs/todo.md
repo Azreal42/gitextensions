@@ -1,8 +1,18 @@
 # TODO
 
-Mise à jour : 22 octobre 2026. H37 : panneaux Browse lisibles à largeur réduite, largeur choisie conservée ; source `20ad0380e`, tests ciblés et nouveau paquet isolé vérifiés. Le contrôle natif du paquet installé et la parité globale restent ouverts.
+Mise à jour : 1 novembre 2026. Compatibilité Bisect avec Git récent et pipeline Linux corrigés ; résultats distants sur GitHub Actions. Les limites de parité et de qualification native du portage restent ouvertes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+<a id="ci-linux-bisect"></a>
+## CI Linux — compatibilité Bisect et paquet
+
+Les trois échecs du [run du 18 octobre](https://github.com/Azreal42/gitextensions/actions/runs/39137856623) venaient du format `first 'bad' commit` de Git 2.55. Le lecteur commun [GitBisectLog](../../src/linux/GitExtensions.Core/GitBisectLog.cs) accepte aussi l’ancien format, préserve les SHA complets de 40/64 caractères et ignore les lignes incomplètes ; mêmes résultats définitifs et candidats, sans modifier les effets Git ([ADR0051](adr/desktop/browse/0051-undo-and-bisect.md)).
+
+- [x] Cinq nouveaux scénarios de compatibilité ; référence avant correction : 6/9 Bisect. Validation locale corrigée : **1 210/1 210 Core, 42/42 Plugins et 58/58 Desktop Bisect/Process**, compilation sans avertissement ni erreur.
+- [x] Journaux Core/Plugins/Desktop conservés même en échec ; Bash avec `pipefail` préserve le code de sortie à travers `tee`. Limite portée à 90 minutes pour garder la suite Desktop complète, qui dépassait seule les 30 minutes initiales.
+
+Le [workflow Linux](../../.github/workflows/linux.yml) garde Core, Plugins et Desktop complets comme étapes bloquantes, puis construit, contrôle, installe et démarre le `.deb` avant son upload. Son [résultat distant](https://github.com/Azreal42/gitextensions/actions/workflows/linux.yml?query=branch%3Amigration%2Flinux) reste distinct des tests locaux ciblés ; cette correction ne clôt aucune famille de migration. Les journaux locaux sont dans `artifacts/linux/ci-repair-20261101/`.
 
 <a id="h37-compact-browse-layout"></a>
 ## H37 — Browse à largeur réduite

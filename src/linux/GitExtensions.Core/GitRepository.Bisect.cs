@@ -118,13 +118,7 @@ public sealed partial class GitRepository
         string? bad = references.FirstOrDefault(reference => reference.Name == "refs/bisect/bad")?.Hash;
         string[] good = references.Where(reference => reference.Name.StartsWith("refs/bisect/good-", StringComparison.Ordinal)).Select(reference => reference.Hash).ToArray();
         string[] skipped = references.Where(reference => reference.Name.StartsWith("refs/bisect/skip-", StringComparison.Ordinal)).Select(reference => reference.Hash).ToArray();
-        string? firstBad = log.Split('\n').LastOrDefault(line => line.StartsWith("# first bad commit: [", StringComparison.Ordinal));
-        if (firstBad is not null)
-        {
-            const int hashStart = 21;
-            int end = firstBad.IndexOf(']', hashStart);
-            firstBad = end >= hashStart ? firstBad[hashStart..end] : null;
-        }
+        string? firstBad = GitBisectLog.ReadBadRevisions(log).LastOrDefault();
 
         bool firstParent = File.Exists(await GetGitPathAsync("BISECT_FIRST_PARENT", cancellationToken).ConfigureAwait(false));
         return new GitBisectState(true, original, current, bad, good, skipped, firstBad, log, noCheckout, firstParent);

@@ -18,7 +18,11 @@ jobs:
   linux:
     name: Linux desktop and Debian package
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    # The full desktop suite alone can exceed 30 minutes. Keep every suite in the gate.
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -39,13 +43,15 @@ jobs:
         run: dotnet build GitExtensions.Linux.slnx --configuration Release
 
       - name: Exercise Git workflows against real repositories
-        run: dotnet run --project tests/linux/GitExtensions.Core.Tests --configuration Release --no-build
+        run: |
+          mkdir -p artifacts/linux/test-results
+          dotnet run --project tests/linux/GitExtensions.Core.Tests --configuration Release --no-build 2>&1 | tee artifacts/linux/test-results/core.log
 
       - name: Exercise portable plugins against real repositories
-        run: dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build
+        run: dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build 2>&1 | tee artifacts/linux/test-results/plugins.log
 
       - name: Test desktop workflows and graph
-        run: dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --logger trx --results-directory artifacts/linux/test-results
+        run: dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --logger trx --results-directory artifacts/linux/test-results 2>&1 | tee artifacts/linux/test-results/desktop.log
 
       - name: Build Debian package
         run: eng/linux/build-deb.sh
@@ -79,5 +85,5 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: linux-test-results
-          path: artifacts/linux/test-results/*.trx
+          path: artifacts/linux/test-results/
           if-no-files-found: ignore

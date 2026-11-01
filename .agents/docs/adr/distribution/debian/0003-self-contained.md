@@ -8,4 +8,6 @@ Décision : publier le runtime .NET avec l'application, installer les fichiers s
 
 Conséquence : vérifier l'extraction, les dépendances, le lancement graphique et l'installation du paquet ; pas de post-install qui modifie des dépôts ou des identifiants.
 
+La CI Linux conserve les suites Core, Plugins et Desktop complètes comme barrières avant publication du paquet. Les journaux sont récupérables en échec ; le `.deb` est uploadé seulement après les contrôles de payload, reproductibilité, installation et démarrage du workflow. La preuve distante reste liée au commit du run, distincte des validations locales.
+
 Repères : `eng/linux/`, `setup/linux/`, [déploiement Avalonia Linux](https://docs.avaloniaui.net/docs/deployment/linux).
