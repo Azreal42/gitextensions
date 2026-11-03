@@ -83,7 +83,7 @@ def verify(args):
         if machine(executable) != args.runtime:
             raise ValueError("Wrong native apphost architecture")
         if mac:
-            run(["codesign", "--verify", "--strict", "--verbose=2", bundle])
+            run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", bundle])
         environment = os.environ.copy()
         for name, child in [("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache"), ("XDG_DATA_HOME", "data")]:
             environment[name] = str(root / child)

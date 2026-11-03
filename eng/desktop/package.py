@@ -68,7 +68,7 @@ def sign_bundle(bundle, identity, repository):
     if identity != "-":
         command.extend(["--timestamp", "--options=runtime", "--entitlements", entitlements])
     run([*command, bundle])
-    run(["codesign", "--verify", "--strict", "--verbose=2", bundle])
+    run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", bundle])
 
 
 def build(args):
@@ -92,6 +92,8 @@ def build(args):
     bundle = stage / "Git Extensions.app" if mac else stage / "GitExtensions"
     payload = bundle / "Contents/MacOS" if mac else bundle
     payload.mkdir(parents=True)
+    resources = bundle / "Contents/Resources" if mac else payload
+    resources.mkdir(exist_ok=True)
     publish = ["-c", "Release", "-r", args.runtime, "--self-contained", "true", "--output", payload,
                "--disable-build-servers", "-m:1", f"-p:Version={version}", "-p:ContinuousIntegrationBuild=true",
                "-p:UseSharedCompilation=false", "-p:PublishSingleFile=false", "-p:PublishTrimmed=false"]
@@ -110,17 +112,17 @@ def build(args):
         raise ValueError("A Linux-only process launcher must not enter a Windows/macOS delivery")
     if not mac and machine(payload / "gitextensions-askpass.exe") != args.runtime:
         raise ValueError("The native askpass host does not match the delivery runtime")
-    notices = payload / "third-party-notices"
+    # Versioned notice directories are resources, not nested code bundles.
+    # Apple interprets directories containing a period in MacOS as bundles.
+    notices = resources / "third-party-notices"
     cache = Path(os.environ.get("NUGET_PACKAGES", str(Path.home() / ".nuget/packages")))
     run([sys.executable, repository / "eng/linux/collect-package-notices.py", payload / "GitExtensions.deps.json", cache, notices])
-    shutil.copy2(repository / "LICENSE.md", payload / "LICENSE.md")
+    shutil.copy2(repository / "LICENSE.md", resources / "LICENSE.md")
     local_notices = notices / "GitExtensions.Avalonia.Skia.Patched"
     local_notices.mkdir()
     for name in ["LICENSE.txt", "NOTICE.md"]:
         shutil.copy2(repository / "src/linux/GitExtensions.Avalonia.Skia.Patched" / name, local_notices / name)
     if mac:
-        resources = bundle / "Contents/Resources"
-        resources.mkdir()
         create_icon(repository, resources)
         info = {"CFBundleName": "Git Extensions", "CFBundleDisplayName": "Git Extensions", "CFBundleExecutable": "GitExtensions",
                 "CFBundleIdentifier": "io.github.gitextensions.avalonia", "CFBundlePackageType": "APPL",
