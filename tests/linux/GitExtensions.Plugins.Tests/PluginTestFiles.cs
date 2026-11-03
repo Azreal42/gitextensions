@@ -8,6 +8,8 @@ namespace GitExtensions.Plugins.Tests;
 
 internal static class PluginTestFiles
 {
+    private static bool CanMaterialize(string path)
+        => !OperatingSystem.IsWindows() || path.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && !path.Contains('\\');
     internal static string PhysicalPath(string path)
     {
         if (!OperatingSystem.IsMacOS()) { return Path.GetFullPath(path); }
@@ -23,7 +25,7 @@ internal static class PluginTestFiles
     // those names. Both operating systems read the same real Git tree/index.
     internal static async Task StageBlobAsync(GitRepository repository, string path, byte[] content)
     {
-        bool materialized = !OperatingSystem.IsWindows() || path.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && !path.Contains('\\');
+        bool materialized = CanMaterialize(path);
         if (materialized) { await File.WriteAllBytesAsync(Path.Combine(repository.Path, path), content); }
         GitRunner runner = new(repository.GitExecutable);
         GitBinaryResult blob = await runner.RunBinaryAsync(repository.Path, ["hash-object", "-w", "--stdin"], standardInput: content);
@@ -36,6 +38,14 @@ internal static class PluginTestFiles
         GitBinaryResult added = await runner.RunBinaryAsync(repository.Path,
             ["-c", "core.protectNTFS=false", .. options, "update-index", "-z", "--index-info"], standardInput: record);
         if (!added.Success) { throw new InvalidOperationException(added.StandardError); }
+    }
+    internal static async Task RemoveBlobAsync(GitRepository repository, string path)
+    {
+        GitBinaryResult removed = await new GitRunner(repository.GitExecutable).RunBinaryAsync(repository.Path,
+            ["-c", "core.protectNTFS=false", "update-index", "-z", "--index-info"],
+            standardInput: Encoding.UTF8.GetBytes("0 " + new string('0', 40) + "\t" + path + "\0"));
+        if (!removed.Success) { throw new InvalidOperationException(removed.StandardError); }
+        if (CanMaterialize(path)) { File.Delete(Path.Combine(repository.Path, path)); }
     }
     internal static void DeleteDirectory(string root)
     {

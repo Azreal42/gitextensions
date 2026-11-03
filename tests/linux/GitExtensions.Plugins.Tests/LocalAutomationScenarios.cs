@@ -253,7 +253,8 @@ public static class LocalAutomationScenarios
     {
         using AutomationFixture fixture = await AutomationFixture.CreateAsync();
         using FakeExecutable executable = new(fixture.Root);
-        string solution = Path.Combine(fixture.Repository.Path, "submodule été", "single [*] $(literal).SLN");
+        string solution = Path.Combine(fixture.Repository.Path, "submodule été",
+            OperatingSystem.IsWindows() ? "single [x] $(literal).SLN" : "single [*] $(literal).SLN");
         Directory.CreateDirectory(Path.GetDirectoryName(solution)!);
         File.WriteAllText(solution, "A fake builder does not parse solution content.");
         AutoCompileSubmodulesService service = new();

@@ -31,7 +31,18 @@
 
 static volatile sig_atomic_t stop_requested;
 static int events_fd;
+static int child_events[2];
 static void request_stop(int signal_number) { (void)signal_number; stop_requested = 1; }
+static void child_changed(int signal_number)
+{
+    (void)signal_number;
+    int saved = errno;
+    char value = 'E';
+    /* Both ends are nonblocking. A full pipe already contains a wakeup; never
+     * call stdio, allocate, or reap a child from this signal handler. */
+    ssize_t ignored = write(child_events[1], &value, 1);
+    (void)ignored; errno = saved;
+}
 static int record(uint32_t kind, pid_t actor, uint32_t value)
 {
     uint32_t message[4] = { htonl(0x47455031), htonl(kind), htonl((uint32_t)actor), htonl(value) };
@@ -259,6 +270,14 @@ int main(int argc, char **argv)
     ssize_t count;
     do { count = read(control_fd, &acknowledgement, 1); } while (count < 0 && errno == EINTR && !stop_requested);
     if (count != 1 || acknowledgement != 'A' || stop_requested) return 1;
+    if (pipe(child_events) != 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
+    for (int index = 0; index < 2; index++) {
+        if (fcntl(child_events[index], F_SETFD, FD_CLOEXEC) != 0 || fcntl(child_events[index], F_SETFL, O_NONBLOCK) != 0) {
+            (void)record(4, getpid(), (uint32_t)errno); return 1;
+        }
+    }
+    action.sa_handler = child_changed; action.sa_flags = SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &action, NULL) != 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
     int exec_error[2];
     if (pipe(exec_error) != 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
     if (fcntl(exec_error[1], F_SETFD, FD_CLOEXEC) != 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
@@ -266,6 +285,7 @@ int main(int argc, char **argv)
     if (child < 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
     if (child == 0) {
         close(exec_error[0]); close(control_fd); close(events_fd);
+        close(child_events[0]); close(child_events[1]);
         for (int number = 1; number < NSIG; number++) signal(number, SIG_DFL);
         sigset_t empty; sigemptyset(&empty); sigprocmask(SIG_SETMASK, &empty, NULL);
         if (child_session || setpgid(0, 0) == 0) execv(argv[executable], &argv[executable]);
@@ -287,12 +307,21 @@ int main(int argc, char **argv)
     if (capture_actor(child, child, 1) != 0) { failure = errno; stop_requested = 1; }
 #endif
     while (1) {
-        struct pollfd descriptors[2] = {
+        struct pollfd descriptors[3] = {
             { .fd = control_fd, .events = POLLIN | POLLHUP },
-            { .fd = exec_done ? -1 : exec_error[0], .events = POLLIN | POLLHUP }
+            { .fd = exec_done ? -1 : exec_error[0], .events = POLLIN | POLLHUP },
+            { .fd = child_events[0], .events = POLLIN }
         };
-        int polled = poll(descriptors, 2, 10);
+        /* A running primary wakes us through SIGCHLD or the control channel.
+         * Keep the bounded scan only for grace deadlines and descendant drain,
+         * including a fresh frontier after an adopted bridge was reaped. */
+        int polled = poll(descriptors, 3, stop_requested || exited ? 10 : -1);
         if (polled < 0 && errno != EINTR) { stop_requested = 1; failure = errno; }
+        if (polled > 0 && descriptors[2].revents != 0) {
+            char pending[128]; ssize_t received;
+            do { received = read(child_events[0], pending, sizeof(pending)); } while (received > 0 || (received < 0 && errno == EINTR));
+            if (received == 0 || (received < 0 && errno != EAGAIN)) { stop_requested = 1; failure = received == 0 ? EIO : errno; }
+        }
         if (polled > 0 && (descriptors[0].revents & (POLLIN | POLLHUP | POLLERR))) {
             char command; ssize_t received = read(control_fd, &command, 1);
             if (received <= 0 || command == 'C') stop_requested = 1;

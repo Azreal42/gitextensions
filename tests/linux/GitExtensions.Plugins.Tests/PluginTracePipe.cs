@@ -35,9 +35,22 @@ internal sealed class PluginTracePipe : IDisposable
         await _connected!.WaitAsync(TimeSpan.FromSeconds(20));
         if (!GetClientPid(_windows!.SafePipeHandle, out uint pid)) { throw new Win32Exception(Marshal.GetLastPInvokeError()); }
         if (pid != expectedPid) { throw new InvalidOperationException("The native Git process is not the trace pipe's client."); }
+        using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(20));
+        while (true)
+        {
+            // Observe the kernel's unread bytes without releasing the writer.
+            // Connecting to an endpoint alone is not proof of trace I/O.
+            if (!Peek(_windows.SafePipeHandle, IntPtr.Zero, 0, IntPtr.Zero, out uint available, IntPtr.Zero))
+            { throw new Win32Exception(Marshal.GetLastPInvokeError()); }
+            if (available >= _windows.InBufferSize) { return; }
+            await Task.Delay(10, deadline.Token);
+        }
     }
     public void Dispose() { _windows?.Dispose(); if (!OperatingSystem.IsWindows()) { File.Delete(Path); } }
     [DllImport("libc", EntryPoint = "mkfifo", SetLastError = true)] private static extern int MkFifo([MarshalAs(UnmanagedType.LPUTF8Str)] string path, uint mode);
     [DllImport("kernel32.dll", EntryPoint = "GetNamedPipeClientProcessId", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetClientPid(SafePipeHandle pipe, out uint pid);
+    [DllImport("kernel32.dll", EntryPoint = "PeekNamedPipe", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)] private static extern bool Peek(SafePipeHandle pipe, IntPtr buffer, uint size,
+        IntPtr read, out uint available, IntPtr remaining);
 }

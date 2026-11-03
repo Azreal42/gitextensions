@@ -48,11 +48,21 @@ public static class StatisticsScenarios
     private static async Task WorkingTreeAsync()
     {
         using StatisticsFixture fixture = await StatisticsFixture.CreateAsync();
-        const string literal = "été\nquote'\"tab\t.cs";
+        const string opaque = "été\nquote'\"tab\t.cs";
+        string literal = OperatingSystem.IsWindows() ? "été quote' [literal] $(verbatim).cs" : opaque;
         fixture.Write(literal, "one\n");
         fixture.Write("removed.cs", "removed\n");
         fixture.WriteBytes("binary.cs", [0xff, 0, 0x0a, 0x01, 0]);
-        await fixture.CommitAsync("HEAD files");
+        await fixture.Repository.StageAllAsync();
+        if (OperatingSystem.IsWindows())
+        {
+            // LOC needs a real worktree file. Retain the original impossible
+            // NTFS name as a real HEAD entry too; it must remain unmaterialized.
+            await PluginTestFiles.StageBlobAsync(fixture.Repository, opaque, "one\n"u8.ToArray());
+        }
+        await fixture.CommitAsync("HEAD files", stageAll: false);
+        GitResult headPaths = await fixture.Repository.RunAsync(["ls-tree", "-r", "--name-only", "-z", "HEAD"]);
+        Check(headPaths.StandardOutput.Split('\0').Contains(opaque, StringComparer.Ordinal), "The original opaque path was lost from the actual Git tree.");
         fixture.Write(literal, "one\ntwo\n");
         fixture.Write("untracked.cs", "untracked\n");
         fixture.Write("staged.cs", "staged\n");
@@ -168,18 +178,19 @@ public static class StatisticsScenarios
     {
         using StatisticsFixture fixture = await StatisticsFixture.CreateAsync();
         const string original = "été\n'\t.txt", renamed = "renamed\n\tété.txt";
-        fixture.Write(original, "one\ntwo\nthree\n");
-        await fixture.CommitAsync("First", "2026-01-05T12:00:00+02:00", "A");
-        fixture.Write(original, "one\nchanged\nthree\nextra\n");
-        await fixture.CommitAsync("Second", "2026-01-06T12:00:00+02:00", "B");
-        fixture.WriteBytes("binary\nü.bin", [0, 1, 2, 0xff, 0x0a]);
-        await fixture.CommitAsync("Binary", "2026-01-07T12:00:00+02:00", "C");
-        await fixture.GitAsync("mv", "--", original, renamed);
-        await fixture.CommitAsync("Rename", "2026-01-08T12:00:00+02:00", "A");
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, original, "one\ntwo\nthree\n"u8.ToArray());
+        await fixture.CommitAsync("First", "2026-01-05T12:00:00+02:00", "A", stageAll: false);
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, original, "one\nchanged\nthree\nextra\n"u8.ToArray());
+        await fixture.CommitAsync("Second", "2026-01-06T12:00:00+02:00", "B", stageAll: false);
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, "binary\nü.bin", [0, 1, 2, 0xff, 0x0a]);
+        await fixture.CommitAsync("Binary", "2026-01-07T12:00:00+02:00", "C", stageAll: false);
+        await PluginTestFiles.RemoveBlobAsync(fixture.Repository, original);
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, renamed, "one\nchanged\nthree\nextra\n"u8.ToArray());
+        await fixture.CommitAsync("Rename", "2026-01-08T12:00:00+02:00", "A", stageAll: false);
         const string copied = "copy\n\tété.txt";
-        fixture.Write(copied, "one\nchanged\nthree\nextra\n");
-        fixture.Write(renamed, "one\nchanged\nthree\nextra\nchanged again\n");
-        await fixture.CommitAsync("Copy a modified source", "2026-01-09T12:00:00+02:00", "A");
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, copied, "one\nchanged\nthree\nextra\n"u8.ToArray());
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, renamed, "one\nchanged\nthree\nextra\nchanged again\n"u8.ToArray());
+        await fixture.CommitAsync("Copy a modified source", "2026-01-09T12:00:00+02:00", "A", stageAll: false);
         GitImpactPlugin plugin = new();
         GitImpactReport report = await plugin.AnalyzeAsync(fixture.Repository, new(FirstDayOfWeek: DayOfWeek.Monday));
         Check(report.Total == new GitImpactData(5, 6, 1) && report.Commits.Select(item => item.Hash).Distinct().Count() == 5, "Impact skipped headers or miscounted numstat/copy detection.");
@@ -318,9 +329,9 @@ internal sealed class StatisticsFixture : IDisposable
         if (!result.Success) throw new GitCommandException(arguments, result);
     }
     internal async Task CommitAsync(string message, string date = "2026-01-05T12:00:00+00:00", string author = "Statistics User",
-        string email = "statistics@example.invalid", string? committerDate = null)
+        string email = "statistics@example.invalid", string? committerDate = null, bool stageAll = true)
     {
-        await Repository.StageAllAsync();
+        if (stageAll) { await Repository.StageAllAsync(); }
         string[] arguments = ["commit", "--allow-empty", "-m", message];
         GitResult result = await Runner.RunAsync(Repository.Path, arguments, environment: new Dictionary<string, string?>
         {

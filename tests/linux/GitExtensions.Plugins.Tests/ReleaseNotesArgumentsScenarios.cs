@@ -73,7 +73,10 @@ internal static class ReleaseNotesArgumentsScenarios
     private static async Task LiteralPathAsync()
     {
         using global::Fixture f = await global::Fixture.CreateAsync(); string from = await f.Repository.ResolveRevisionAsync("HEAD");
-        const string literal = "literal ' \"雪\\line\n\t{braces} $(touch SENTINEL).txt";
+        // Windows Git treats a backslash as a separator even with literal
+        // pathspecs. The opaque entry retains quotes, tabs and newlines there.
+        string literal = OperatingSystem.IsWindows() ? "literal ' \"雪 line\n\t{braces} $(touch SENTINEL).txt"
+            : "literal ' \"雪\\line\n\t{braces} $(touch SENTINEL).txt";
         await PluginTestFiles.StageBlobAsync(f.Repository, literal, "selected\n"u8.ToArray());
         string selected = await f.CommitAtAsync(f.Repository, "Selected literal path", global::Fixture.Now.AddDays(-2), stageAll: false);
         await PluginTestFiles.StageBlobAsync(f.Repository, "unrelated.txt", "unrelated\n"u8.ToArray());
@@ -82,11 +85,8 @@ internal static class ReleaseNotesArgumentsScenarios
         await PluginTestFiles.StageBlobAsync(f.Repository, optionName, "literal option-looking path\n"u8.ToArray());
         string optionCommit = await f.CommitAtAsync(f.Repository, "Literal option-looking filename", global::Fixture.Now, stageAll: false);
         string before = Snapshot(f.Repository.Path);
-        // Git for Windows normally normalizes backslashes as separators.
-        // Rooted literal magic preserves this exact tree entry's name bytes.
-        string pathspec = OperatingSystem.IsWindows() ? ":(top,literal)" + literal : literal;
         PluginResult result = await new ReleaseNotesGeneratorPlugin().ExecuteAsync(new(f.Repository),
-            Values(from, DefaultArguments + " -- " + FormatLiteral(Quote(pathspec))));
+            Values(from, DefaultArguments + " -- " + FormatLiteral(Quote(literal))));
         Check(result.Table!.Rows.Count == 1 && selected.StartsWith(result.Table!.Rows[0].Key, StringComparison.Ordinal), "The quoted literal pathspec was split, expanded or failed to filter Git.");
         result = await new ReleaseNotesGeneratorPlugin().ExecuteAsync(new(f.Repository), Values(from, DefaultArguments + " -- " + FormatLiteral(Quote(optionName))));
         Check(result.Table!.Rows.Count == 1 && optionCommit.StartsWith(result.Table!.Rows[0].Key, StringComparison.Ordinal), "A literal --output-looking path after -- was rejected as an option.");
@@ -144,6 +144,15 @@ internal static class ReleaseNotesArgumentsScenarios
         string nativeGit = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
             .Where(path => path.Length > 0).Select(path => Path.Combine(path.Trim('"'), gitName)).First(File.Exists);
         nativeGit = PluginTestFiles.PhysicalPath(new FileInfo(nativeGit).ResolveLinkTarget(true)?.FullName ?? nativeGit);
+        if (OperatingSystem.IsWindows())
+        {
+            // cmd/git.exe is a launcher. Execute the actual Git image, whose
+            // own PID must be the named pipe's kernel-authenticated client.
+            GitResult execPath = await new GitRunner(nativeGit).RunAsync(f.Root, ["--exec-path"]);
+            Check(execPath.Success, execPath.StandardError);
+            nativeGit = Path.GetFullPath(Path.Combine(execPath.StandardOutput.Trim(), "..", "..", "bin", "git.exe"));
+            Check(File.Exists(nativeGit), "The actual Git for Windows binary is unavailable: " + nativeGit);
+        }
         using PluginTracePipe pipe = new(gate);
         await File.WriteAllTextAsync(Path.Combine(gate, "native-git"), nativeGit, new UTF8Encoding(false));
         await File.WriteAllTextAsync(Path.Combine(gate, "trace-path"), pipe.Path, new UTF8Encoding(false));

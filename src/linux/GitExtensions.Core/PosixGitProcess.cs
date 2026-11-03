@@ -159,17 +159,16 @@ internal sealed class PosixGitProcess : IDisposable
         { throw new InvalidDataException("The authenticated launcher differs from the reserved primary child."); }
     }
 
-    private static async Task<int> ObserveExitAsync(int processId)
-    {
-        while (true)
+    private static Task<int> ObserveExitAsync(int processId)
+        // This wait must leave our direct child's PID reserved. A dedicated
+        // blocking waiter avoids timer latency and ThreadPool starvation while
+        // the admitted pipe/control operations await their own actual I/O.
+        => Task.Factory.StartNew(() =>
         {
-            int result = ObserveChild(processId, out int code);
+            int result = WaitChild(processId, out int code);
             if (result > 0) { return code; }
-            if (result < 0 && Marshal.GetLastPInvokeError() != 4)
-            { throw NativeError(Marshal.GetLastPInvokeError(), "Cannot observe the private supervisor."); }
-            await Task.Delay(10).ConfigureAwait(false);
-        }
-    }
+            throw NativeError(Marshal.GetLastPInvokeError(), "Cannot observe the private supervisor.");
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
     private async Task<Record> ReadAsync()
     {
@@ -252,8 +251,8 @@ internal sealed class PosixGitProcess : IDisposable
     private static extern int Spawn([MarshalAs(UnmanagedType.LPUTF8Str)] string executable,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string directory, IntPtr arguments, IntPtr environment,
         [In, MarshalAs(UnmanagedType.LPArray, SizeConst = 5)] int[] descriptors, out int processId);
-    [DllImport("gitextensions-posix", EntryPoint = "ge_observe_child", SetLastError = true)]
-    private static extern int ObserveChild(int processId, out int code);
+    [DllImport("gitextensions-posix", EntryPoint = "ge_wait_child", SetLastError = true)]
+    private static extern int WaitChild(int processId, out int code);
     [DllImport("gitextensions-posix", EntryPoint = "ge_reap_child", SetLastError = true)]
     private static extern int ReapChild(int processId);
     [DllImport("gitextensions-posix", EntryPoint = "ge_kill_reserved_child", SetLastError = true)]

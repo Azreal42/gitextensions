@@ -75,11 +75,13 @@ int ge_spawn_supervisor(const char *executable, const char *directory,
 /* Observation deliberately leaves the unmanaged direct child unreaped. Its
  * PID remains reserved through pre-ACK cancellation and final I/O cleanup. */
 __attribute__((visibility("default")))
-int ge_observe_child(int process_id, int *code)
+int ge_wait_child(int process_id, int *code)
 {
     siginfo_t state = { 0 };
-    if (waitid(P_PID, (id_t)process_id, &state, WEXITED | WNOHANG | WNOWAIT) != 0) return -1;
-    if (state.si_pid == 0) return 0;
+    int result;
+    do { result = waitid(P_PID, (id_t)process_id, &state, WEXITED | WNOWAIT); } while (result != 0 && errno == EINTR);
+    if (result != 0) return -1;
+    if (state.si_pid != process_id) { errno = EIO; return -1; }
     *code = state.si_code == CLD_EXITED ? state.si_status : 128 + state.si_status;
     return 1;
 }
