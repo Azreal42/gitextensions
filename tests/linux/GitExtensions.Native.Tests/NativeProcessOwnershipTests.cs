@@ -99,7 +99,7 @@ public sealed class NativeProcessOwnershipTests
             Assert.That(result.StandardErrorBytes, Is.EqualTo(prefix));
             using JsonDocument observed = JsonDocument.Parse(await File.ReadAllTextAsync(report));
             Assert.That(observed.RootElement.GetProperty("arguments").EnumerateArray().Select(x => x.GetString()), Is.EqualTo(literal));
-            Assert.That(observed.RootElement.GetProperty("cwd").GetString(), Is.EqualTo(f.Root));
+            Assert.That(observed.RootElement.GetProperty("cwd").GetString(), Is.EqualTo(f.ExpectedWorkingDirectory));
             Assert.That(observed.RootElement.GetProperty("value").GetString(), Is.EqualTo("captured ' λ & %literal%"));
         }
         finally { cancel.Cancel(); try { await operation.WaitAsync(Limit); } catch { } }
@@ -143,6 +143,25 @@ public sealed class NativeProcessOwnershipTests
     [DllImport("libgitextensions-posix.dylib", EntryPoint = "ge_process_is_running", SetLastError = true)]
     private static extern int ProcessIsRunning(int processId);
 
+    [SupportedOSPlatform("macos")]
+    [DllImport("libc", EntryPoint = "realpath", SetLastError = true)]
+    private static extern IntPtr RealPath([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr resolved);
+
+    private static string ExpectedWorkingDirectory(string path)
+    {
+        if (!OperatingSystem.IsMacOS()) { return path; }
+        // getcwd resolves ancestor symlinks too: macOS TMPDIR commonly starts
+        // with /var, which is an alias of /private/var. Keep the aliased launch
+        // path and compare the result against its independently resolved target.
+        IntPtr buffer = Marshal.AllocHGlobal(4096); // Darwin PATH_MAX is 1024 bytes.
+        try
+        {
+            if (RealPath(path, buffer) == IntPtr.Zero) { throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()); }
+            return Marshal.PtrToStringUTF8(buffer)!;
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
     private static Process StartProbe(string workingDirectory, IEnumerable<string> arguments)
     {
         ProcessStartInfo start = new(Executable) { WorkingDirectory = workingDirectory, UseShellExecute = false, CreateNoWindow = true };
@@ -165,8 +184,13 @@ public sealed class NativeProcessOwnershipTests
     private sealed class Fixture : IDisposable
     {
         internal string Root { get; } = Path.Combine(Path.GetTempPath(), "native ownership ' λ & " + Guid.NewGuid().ToString("N"));
+        internal string ExpectedWorkingDirectory { get; }
         internal GitRunner Runner { get; } = new(Executable);
-        internal Fixture() { System.IO.Directory.CreateDirectory(Root); }
+        internal Fixture()
+        {
+            System.IO.Directory.CreateDirectory(Root);
+            ExpectedWorkingDirectory = NativeProcessOwnershipTests.ExpectedWorkingDirectory(Root);
+        }
         internal string Directory(string name) { string path = Path.Combine(Root, name); System.IO.Directory.CreateDirectory(path); return path; }
         public void Dispose() => System.IO.Directory.Delete(Root, recursive: true);
     }
