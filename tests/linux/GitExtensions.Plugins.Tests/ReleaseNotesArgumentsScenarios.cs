@@ -153,7 +153,7 @@ internal static class ReleaseNotesArgumentsScenarios
             nativeGit = Path.GetFullPath(Path.Combine(execPath.StandardOutput.Trim(), "..", "..", "bin", "git.exe"));
             Check(File.Exists(nativeGit), "The actual Git for Windows binary is unavailable: " + nativeGit);
         }
-        using PluginTracePipe pipe = new(gate);
+        await using PluginTracePipe pipe = new(gate);
         await File.WriteAllTextAsync(Path.Combine(gate, "native-git"), nativeGit, new UTF8Encoding(false));
         await File.WriteAllTextAsync(Path.Combine(gate, "trace-path"), pipe.Path, new UTF8Encoding(false));
         GitRepository gated = new(f.Repository.Path, new GitRunner(GitExecutionEnvironment.Capture(new GitEnvironmentOptions { Executable = wrapper })));
