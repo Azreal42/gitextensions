@@ -76,14 +76,16 @@ internal static class DesktopFontResolver
     private static FontFamily Fallback(DesktopFontRole role, bool bold, bool italic)
     {
         FontFamily[] fonts = FontManager.Current.SystemFonts.Where(font => !font.Name.StartsWith('@')).ToArray();
-        string[] preferred = role is DesktopFontRole.Code or DesktopFontRole.Monospace
-            ? ["DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono"] : ["Segoe UI", "Noto Sans", "DejaVu Sans"];
+        bool fixedPitch = role is DesktopFontRole.Code or DesktopFontRole.Monospace;
+        string[] preferred = fixedPitch
+            ? ["Consolas", "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono", "Menlo", "Monaco", "Courier New"]
+            : ["Segoe UI", "Noto Sans", "DejaVu Sans", "Helvetica Neue", "Arial"];
         foreach (string name in preferred)
         {
             FontFamily? candidate = fonts.FirstOrDefault(font => string.Equals(font.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (candidate is not null && Face(candidate, bold, italic) is { Found: true, Matches: true } face && (role != DesktopFontRole.Code || face.Fixed)) { return candidate; }
+            if (candidate is not null && Face(candidate, bold, italic) is { Found: true, Matches: true } face && (!fixedPitch || face.Fixed)) { return candidate; }
         }
-        return fonts.FirstOrDefault(font => Face(font, bold, italic) is { Found: true, Matches: true } face && (role != DesktopFontRole.Code || face.Fixed)) ?? FontFamily.Default;
+        return fonts.FirstOrDefault(font => Face(font, bold, italic) is { Found: true, Matches: true } face && (!fixedPitch || face.Fixed)) ?? FontFamily.Default;
     }
 
     private static (bool Found, bool Fixed, string? Name, bool Matches) Face(FontFamily family, bool bold, bool italic)

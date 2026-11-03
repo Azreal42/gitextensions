@@ -11,8 +11,12 @@ Objectif actif : même application fonctionnelle sur les trois systèmes. [ADR01
 
 - [x] Composant commun pour liens/fichiers, casse des variables Windows, chemins d’éditeur Git contenant espaces/apostrophes. Validation locale : 56 tests ciblés ; rebase avec le vrai éditeur et focus/identité de grille conservés.
 - [x] Première archive autonome Windows construite et vérifiée statiquement depuis Linux, helper askpass natif inclus, aucun lanceur Linux ; correction de propagation du RID dans les projets intermédiaires.
-- [ ] Jobs natifs Windows x64 et macOS Intel/Apple Silicon : contrats portables, livraison extraite, backend graphique et capture. Les résultats des nouveaux jobs restent à examiner.
-- [ ] Terminaison des descendants, console interactive/PTY, terminaux et environnement, journaux atomiques/verrous macOS ; suites métier complètes et parcours natifs sur Windows/macOS. Aucun état de parité globale n’est déclaré.
+- [x] [Windows x64 et Mac Intel au commit `9af47cfdb`](https://github.com/Azreal42/gitextensions/actions/runs/41657405557) : 127/127 contrats natifs chacun, archives extraites contrôlées, vrai backend graphique et capture. Signature ad hoc Mac vérifiée, sans notarisation. Ce résultat reste limité au sous-ensemble portable.
+- [x] Sélection des mises à jour par système/architecture, ABI Darwin Intel et chemins Git for Windows corrigés ; préservation des journaux de rebase par renommage natif sans remplacement.
+- [x] [Linux `d0fb60fe4`](https://github.com/Azreal42/gitextensions/actions/runs/41646245616) : 1 210 Core, 42 Plugins, 4 592 Desktop, aucun ignoré ; `.deb` reproductible, extrait, installé et démarré sur le runner.
+- [x] Repli typographique Mac revu sur la capture native : familles sans empattements et métriques fixes explicites ; 207 tests ciblés locaux passent, préférences enregistrées conservées.
+- [ ] Résultat final du nouveau correctif de polices sur les trois runners (131 contrats), dernière suite Linux complète (4 620 Desktop) et nouveaux paquets.
+- [ ] Terminaison des descendants, console interactive/PTY, terminaux et environnement, qualification des verrous macOS ; suites métier complètes et parcours natifs sur Windows/macOS. Aucun état de parité globale n’est déclaré.
 
 <a id="ci-linux-bisect"></a>
 ## CI Linux — compatibilité Bisect et paquet
