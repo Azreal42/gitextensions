@@ -164,7 +164,7 @@ public sealed partial class GitRepository
         if (journals.Error is not null) { throw new InvalidOperationException("The rebase journal is invalid. Abort remains available. " + journals.Error); }
         EnsureRebaseMetadataSafety(directory); EnsureRebaseMetadataFileSafety(System.IO.Path.Combine(directory, "state.json"));
         RebaseEditorState state = GitRebaseEditor.ReadState(directory);
-        if (state.DonePath != System.IO.Path.Combine(lease.GitDirectory, "rebase-merge", "done"))
+        if (!GitRebaseEditor.SamePath(state.DonePath, System.IO.Path.Combine(lease.GitDirectory, "rebase-merge", "done")))
         { throw new IOException("The legacy rebase journal belongs to another worktree."); }
         _ = GitRebaseEditor.GetStrictEncoding(state.EncodingName);
         Encoding encoding = await GetCommitMessageEncodingAsync(token).ConfigureAwait(false);
@@ -186,7 +186,11 @@ public sealed partial class GitRepository
     }
 
     private async Task<string> GetGitPathAsync(string name, CancellationToken cancellationToken)
-        => (await ExecuteAsync(["rev-parse", "--path-format=absolute", "--git-path", name], cancellationToken).ConfigureAwait(false)).StandardOutput.TrimEnd('\r', '\n');
+    {
+        string path = (await ExecuteAsync(["rev-parse", "--path-format=absolute", "--git-path", name], cancellationToken).ConfigureAwait(false)).StandardOutput.TrimEnd('\r', '\n');
+        if (!System.IO.Path.IsPathFullyQualified(path)) { throw new InvalidDataException("Git did not return an absolute administrative path."); }
+        return System.IO.Path.GetFullPath(path);
+    }
 
     private async Task<IReadOnlyList<string>> GetRebaseCommitsAsync(string upstream, string head, CancellationToken cancellationToken)
         => (await ExecuteAsync(["rev-list", "--reverse", "--topo-order", "--no-merges", upstream + ".." + head], cancellationToken).ConfigureAwait(false))

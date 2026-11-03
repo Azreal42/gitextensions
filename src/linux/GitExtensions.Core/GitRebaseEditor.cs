@@ -124,4 +124,12 @@ public static partial class GitRebaseEditor
         string executable = OperatingSystem.IsWindows() ? path.Replace('\\', '/') : path;
         return "'" + executable.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
     }
+
+    internal static bool SamePath(string? first, string? second)
+    {
+        if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)
+            || !System.IO.Path.IsPathFullyQualified(first) || !System.IO.Path.IsPathFullyQualified(second)) { return false; }
+        return string.Equals(System.IO.Path.GetFullPath(first), System.IO.Path.GetFullPath(second),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+    }
 }

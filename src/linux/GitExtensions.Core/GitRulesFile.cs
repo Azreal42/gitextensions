@@ -53,7 +53,9 @@ internal readonly record struct GitRulesIdentity(ulong Device, ulong Inode, uint
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
         {
             byte[] stat = new byte[256];
-            if (LStat(path, stat) == 0) { return Parse(stat); }
+            int result = OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.X64
+                ? LStatMacInode64(path, stat) : LStat(path, stat);
+            if (result == 0) { return Parse(stat); }
             int error = Marshal.GetLastPInvokeError();
             if (error == 2) { return null; }
             throw new IOException("Cannot inspect rules file path: " + path, new Win32Exception(error));
@@ -69,7 +71,9 @@ internal readonly record struct GitRulesIdentity(ulong Device, ulong Inode, uint
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
         {
             byte[] stat = new byte[256];
-            if (FStat(handle, stat) != 0) { throw new IOException("Cannot identify the opened rules file.", new Win32Exception(Marshal.GetLastPInvokeError())); }
+            int result = OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.X64
+                ? FStatMacInode64(handle, stat) : FStat(handle, stat);
+            if (result != 0) { throw new IOException("Cannot identify the opened rules file.", new Win32Exception(Marshal.GetLastPInvokeError())); }
             return Parse(stat);
         }
         return new((ulong)File.GetCreationTimeUtc(handle).Ticks, 0, 0x8000);
@@ -87,6 +91,12 @@ internal readonly record struct GitRulesIdentity(ulong Device, ulong Inode, uint
     private static extern int LStat([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [Out] byte[] value);
     [DllImport("libc", EntryPoint = "fstat", SetLastError = true)]
     private static extern int FStat(SafeFileHandle handle, [Out] byte[] value);
+    // Darwin x64 keeps the old inode ABI under the unadorned symbol. Its public
+    // headers redirect modern struct stat calls to $INODE64; arm64 needs no suffix.
+    [DllImport("libc", EntryPoint = "lstat$INODE64", SetLastError = true)]
+    private static extern int LStatMacInode64([MarshalAs(UnmanagedType.LPUTF8Str)] string path, [Out] byte[] value);
+    [DllImport("libc", EntryPoint = "fstat$INODE64", SetLastError = true)]
+    private static extern int FStatMacInode64(SafeFileHandle handle, [Out] byte[] value);
 }
 
 internal static class GitRulesFiles

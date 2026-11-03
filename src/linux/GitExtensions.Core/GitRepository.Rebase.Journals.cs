@@ -29,7 +29,7 @@ public sealed partial class GitRepository
                 if (name == GitRebaseEditor.NativeStateDirectoryName)
                 {
                     NativeRebaseEditorState state = GitRebaseEditor.ReadNativeState(directory);
-                    if (state.GitDirectory != gitDirectory || state.SkippedCommits is null
+                    if (!GitRebaseEditor.SamePath(state.GitDirectory, gitDirectory) || state.SkippedCommits is null
                         || state.SkippedCommits.Any(hash => hash is null || !IsRebaseHash(hash)))
                     { throw new IOException("The native rebase journal has an invalid worktree identity or skipped-commit list."); }
                     // Older non-UTF8 native scripts can be mixed or recoded by Git's
@@ -44,7 +44,7 @@ public sealed partial class GitRepository
                 else
                 {
                     RebaseEditorState state = GitRebaseEditor.ReadState(directory);
-                    if (state.DonePath != System.IO.Path.Combine(gitDirectory, "rebase-merge", "done") || state.Messages is null
+                    if (!GitRebaseEditor.SamePath(state.DonePath, System.IO.Path.Combine(gitDirectory, "rebase-merge", "done")) || state.Messages is null
                         || state.Messages.Any(message => !IsRebaseHash(message.Key) || message.Value is null))
                     { throw new IOException("The legacy rebase journal has an invalid worktree identity or saved-message list."); }
                     _ = GitRebaseEditor.GetStrictEncoding(state.EncodingName);

@@ -54,7 +54,7 @@ public sealed partial class GitRepository
     private static Task CleanupRebaseStateAsync(string directory, RebaseLease lease, bool createdByThisCommand = false)
     {
         string name = System.IO.Path.GetFileName(directory);
-        if (System.IO.Path.GetDirectoryName(directory) != lease.GitDirectory
+        if (!GitRebaseEditor.SamePath(System.IO.Path.GetDirectoryName(directory), lease.GitDirectory)
             || name is not ("gitextensions-rebase" or GitRebaseEditor.NativeStateDirectoryName))
         { throw new IOException("The rebase journal is outside its leased worktree."); }
         EnsureRebaseMetadataSafety(directory);
@@ -67,13 +67,13 @@ public sealed partial class GitRepository
             if (name == GitRebaseEditor.NativeStateDirectoryName)
             {
                 NativeRebaseEditorState state = GitRebaseEditor.ReadNativeState(directory);
-                if (state.GitDirectory != lease.GitDirectory)
+                if (!GitRebaseEditor.SamePath(state.GitDirectory, lease.GitDirectory))
                 { throw new IOException("The native rebase journal belongs to another worktree."); }
             }
             else
             {
                 RebaseEditorState state = GitRebaseEditor.ReadState(directory);
-                if (state.DonePath != System.IO.Path.Combine(lease.GitDirectory, "rebase-merge", "done"))
+                if (!GitRebaseEditor.SamePath(state.DonePath, System.IO.Path.Combine(lease.GitDirectory, "rebase-merge", "done")))
                 { throw new IOException("The legacy rebase journal belongs to another worktree."); }
                 _ = GitRebaseEditor.GetStrictEncoding(state.EncodingName);
             }

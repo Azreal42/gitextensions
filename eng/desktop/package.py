@@ -55,15 +55,19 @@ def sign_bundle(bundle, identity, repository):
     for path in sorted(native.rglob("*")):
         if not path.is_file():
             continue
+        # Sign nested code before the main apphost, whose location makes
+        # codesign validate its containing bundle. Managed PE assemblies and
+        # the askpass script are code too, even though they are not Mach-O.
+        if path.name == "GitExtensions":
+            continue
         with path.open("rb") as stream:
-            is_native = stream.read(4) in [b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe"]
-        if not is_native:
+            header = stream.read(4)
+            is_code = header in [b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf"] or header[:2] in [b"MZ", b"#!"]
+        if not is_code:
             continue
         command = ["codesign", "--force", "--sign", identity]
         if identity != "-":
             command.extend(["--timestamp", "--options=runtime"])
-            if path.name == "GitExtensions":
-                command.extend(["--entitlements", entitlements])
         run([*command, path])
     command = ["codesign", "--force", "--sign", identity]
     if identity != "-":

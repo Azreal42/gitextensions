@@ -97,10 +97,10 @@ public static partial class GitRebaseEditor
         NativeRebaseEditorState state = JsonSerializer.Deserialize<NativeRebaseEditorState>(File.ReadAllBytes(statePath))
             ?? throw new FormatException("Invalid native rebase editor state.");
         if (!System.IO.Path.IsPathFullyQualified(state.RepositoryPath) || !System.IO.Path.IsPathFullyQualified(state.GitDirectory)
-            || fullDirectory != System.IO.Path.Combine(state.GitDirectory, NativeStateDirectoryName))
+            || !SamePath(fullDirectory, System.IO.Path.Combine(state.GitDirectory, NativeStateDirectoryName)))
         { throw new InvalidOperationException("Native rebase editor state is outside its Git directory."); }
         GitRepositoryInfo info = NativeEditorRepository(state.RepositoryPath).GetInfoAsync().GetAwaiter().GetResult();
-        if (info.RootPath != state.RepositoryPath || info.GitDirectory != state.GitDirectory || info.IsBare)
+        if (!SamePath(info.RootPath, state.RepositoryPath) || !SamePath(info.GitDirectory, state.GitDirectory) || info.IsBare)
         { throw new InvalidOperationException("Native rebase editor state belongs to a different repository."); }
         _ = GetStrictEncoding(state.EncodingName);
         ValidateNativeTodoEncoding(state);
@@ -177,7 +177,7 @@ public static partial class GitRebaseEditor
         string[] allowed = kind == GitRebaseEditorKind.Todo ? [System.IO.Path.Combine(merge, "git-rebase-todo")]
             : [System.IO.Path.Combine(state.GitDirectory, "COMMIT_EDITMSG"), System.IO.Path.Combine(merge, "message"),
                System.IO.Path.Combine(merge, "message-squash"), System.IO.Path.Combine(merge, "message-fixup")];
-        if (!allowed.Contains(path, StringComparer.Ordinal) || !Directory.Exists(merge))
+        if (!allowed.Any(candidate => SamePath(candidate, path)) || !Directory.Exists(merge))
         { throw new InvalidOperationException("Git supplied an unexpected file, or this rebase is no longer active."); }
         RejectLink(merge); RejectLink(path); RejectLink(directory);
         return path;
