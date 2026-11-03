@@ -32,7 +32,7 @@ public sealed class GitCommandException : Exception
 }
 
 /// <summary>Runs Git directly. Paths, revision names and messages never pass through a shell.</summary>
-public sealed class GitRunner
+public sealed partial class GitRunner
 {
     private readonly string? _legacyExecutable;
     private readonly GitExecutionEnvironment? _fixedEnvironment;
@@ -236,6 +236,8 @@ public sealed class GitRunner
     private static async Task<GitBinaryResult> RunProcessAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken,
         byte[]? standardInput, Action<GitProcessOutput>? outputReceived, GitProcessLaunch? launch, Action<int>? processStarted, GitStreamCapture? streamCapture)
     {
+        if (OperatingSystem.IsWindows())
+        { return await RunWindowsProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, processStarted, streamCapture).ConfigureAwait(false); }
         using Process process = new() { StartInfo = startInfo };
         using GitProcessGroup? processes = OperatingSystem.IsLinux() ? new GitProcessGroup() : null;
         process.Start();
@@ -261,7 +263,7 @@ public sealed class GitRunner
                 if (processStarted is not null) { control = NotifyStartedAsync(control, process.Id, processStarted, cancellationToken); }
             }
             else { processStarted?.Invoke(process.Id); }
-            input = WriteInputAsync(process, standardInput, cancellationToken);
+            input = WriteInputAsync(process.StandardInput.BaseStream, standardInput, cancellationToken, process.StandardInput.Close);
             Task exited = process.WaitForExitAsync(CancellationToken.None);
             // Monitor all four directions from the outset. Git can produce stdout while a large stdin is still blocked.
             List<Task> pending = [exited, input, output, error, control];
@@ -322,14 +324,14 @@ public sealed class GitRunner
         token.ThrowIfCancellationRequested(); callback(processId);
     }
 
-    private static async Task<IOException?> WriteInputAsync(Process process, byte[]? standardInput, CancellationToken token)
+    private static async Task<IOException?> WriteInputAsync(Stream stream, byte[]? standardInput, CancellationToken token, Action? close = null)
     {
         IOException? error = null;
-        try { if (standardInput is not null) { await process.StandardInput.BaseStream.WriteAsync(standardInput, token).ConfigureAwait(false); } }
+        try { if (standardInput is not null) { await stream.WriteAsync(standardInput, token).ConfigureAwait(false); } }
         catch (IOException exception) { error = exception; }
         finally
         {
-            try { process.StandardInput.Close(); }
+            try { if (close is null) { stream.Close(); } else { close(); } }
             catch (IOException exception) { error ??= exception; }
         }
         // Git can reject input and close its pipe; preserve its real failure rather than substitute Broken pipe.

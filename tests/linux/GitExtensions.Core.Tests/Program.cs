@@ -4,6 +4,11 @@ using System.IO.Compression;
 using GitCommands.Git;
 using GitExtensions.Linux;
 
+if (args.FirstOrDefault() == "--native-process-probe")
+{
+    return await NativeProcessProbe.RunAsync(args[1..]);
+}
+
 if (args.Length == 3 && args[0] == "--lease-stream-probe")
 {
     FileStreamOptions options = new() { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.None };

@@ -58,6 +58,12 @@ jobs:
 
       # These are the initial portable contracts. Linux retains its complete
       # independent workflow; remaining platform-specific suites still need porting.
+      - name: Exercise actual Windows process ownership
+        if: matrix.runtime == 'win-x64'
+        run: |
+          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter "TestCategory=WindowsNative" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/windows-kernel"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Exercise portable Git and UI workflows
         run: |
           dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --filter "TestCategory=CrossPlatform|FullyQualifiedName~AskpassProtocolTests|FullyQualifiedName~AskpassModesWindowTests" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results"

@@ -1,5 +1,9 @@
 # Failure
 
+## Descendants sans pipe — 3 novembre 2026
+
+[ADR0160](adr/platform/0160-native-process-ownership.md). L’ancien chemin Windows/macOS ne tentait `Kill(true)` que si le parent vivait encore ; ce code ne couvre pas les écrivains survivants. Le nouveau banc contrôle aussi un enfant à pipes indépendants : sur Linux, l’opération est revenue normalement après la sortie du parent alors que cet enfant vivait encore. Échec isolé conservé, hors annonce de qualification Windows ; aucun oracle supprimé. Les quatre cas comparables réussis ne clôturent pas cette limite de propriété POSIX. Un superviseur POSIX reste à réaliser, avec réservation des identités jusqu’au drainage.
+
 ## Qualification native et courses de tests — 3 novembre 2026
 
 [ADR0159](adr/platform/0159-avalonia-three-platforms.md) conserve les limites et les runs. Les runners réels ont révélé les séparateurs Git for Windows, l’ABI inode64 Darwin Intel, l’ordre de signature et les notices versionnées placées dans un emplacement de code Mac. Corrections dans le lecteur commun et le packaging ; signature récursive contrôlée après extraction.
