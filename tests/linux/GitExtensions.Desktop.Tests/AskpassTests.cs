@@ -3,6 +3,7 @@ using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
+using GitExtensions.Linux;
 using GitExtensions.Linux.Desktop;
 using NUnit.Framework;
 using System.Globalization;
@@ -16,9 +17,13 @@ public class AskpassTests
     public void HelperRestoresUiCultureAndInvalidCultureKeepsTheCurrentLocale()
     {
         CultureInfo previous = CultureInfo.CurrentUICulture;
+        CultureInfo? previousDefault = CultureInfo.DefaultThreadCurrentUICulture;
         string? previousEnvironment = Environment.GetEnvironmentVariable("GITEXTENSIONS_UI_CULTURE");
+        string? previousProfile = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME"), previousAskpass = GitRunner.AskpassUiCulture;
+        string profile = Path.Combine(Path.GetTempPath(), "askpass-language-" + Guid.NewGuid().ToString("N"));
         try
         {
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", profile);
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
             Environment.SetEnvironmentVariable("GITEXTENSIONS_UI_CULTURE", "fr-FR");
             AskpassApplication.ApplyUiCulture();
@@ -34,7 +39,11 @@ public class AskpassTests
         finally
         {
             CultureInfo.CurrentUICulture = previous;
+            CultureInfo.DefaultThreadCurrentUICulture = previousDefault;
+            GitRunner.AskpassUiCulture = previousAskpass;
             Environment.SetEnvironmentVariable("GITEXTENSIONS_UI_CULTURE", previousEnvironment);
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", previousProfile);
+            if (Directory.Exists(profile)) { Directory.Delete(profile, true); }
         }
     }
 

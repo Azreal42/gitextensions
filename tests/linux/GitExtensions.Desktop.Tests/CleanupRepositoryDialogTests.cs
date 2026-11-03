@@ -443,7 +443,9 @@ public sealed class CleanupRepositoryDialogTests
             if (OperatingSystem.IsWindows()) { throw new PlatformNotSupportedException("Linux Git process fixture."); }
             string script = System.IO.Path.Combine(Root, "gated-git"), marker = System.IO.Path.Combine(Root, "runner.pid");
             string condition = stage == "submodules" ? "'submodule' in a and 'foreach' in a" : "'clean' in a and " + (stage == "preview" ? "'--dry-run' in a" : "'-f' in a");
-            await System.IO.File.WriteAllTextAsync(script, "#!/usr/bin/python3\nimport os,pathlib,sys,time\na=sys.argv[1:]\nif " + condition + ":\n pathlib.Path(" + JsonSerializer.Serialize(marker) + ").write_text(str(os.getpid()))\n time.sleep(60)\nos.execvp('git',['git']+a)\n");
+            await System.IO.File.WriteAllTextAsync(script, "#!/usr/bin/python3\nimport os,sys,time\na=sys.argv[1:]\nif " + condition + ":\n"
+                + TestSignalFile.Python(JsonSerializer.Serialize(marker), "str(os.getpid())", 1)
+                + " time.sleep(60)\nos.execvp('git',['git']+a)\n");
             System.IO.File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return (new GitRepository(Repository.Path, new GitRunner(script)), marker);
         }
         public async ValueTask DisposeAsync()

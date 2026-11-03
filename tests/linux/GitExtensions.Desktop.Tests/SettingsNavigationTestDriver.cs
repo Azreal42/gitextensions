@@ -15,6 +15,17 @@ namespace GitExtensions.Desktop.Tests;
 /// <summary>Exercise the visible Settings tree, including expansion, before editing a page.</summary>
 internal static class SettingsNavigationTestDriver
 {
+    internal static async Task ReadyAsync(Window window, string controlName = "SaveDesktopSettings")
+    {
+        System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+        Control control = PushProcessTestDriver.Field<Control>(window, controlName);
+        bool Ready() => control.IsEffectivelyVisible && control.IsEffectivelyEnabled;
+        Pump(window);
+        while (!Ready() && clock.Elapsed < TimeSpan.FromSeconds(15)) { await Task.Delay(10); Pump(window); }
+        Pump(window);
+        Assert.That(Ready(), Is.True, "The real Settings control did not become available: " + controlName);
+    }
+
     internal static void Select(Window window, string id)
     {
         Pump(window);

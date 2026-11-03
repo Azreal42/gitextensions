@@ -394,8 +394,9 @@ public sealed class ChooseCommitDialogTests
             string directory = f.Output("choose gate " + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory); string script = Path.Combine(directory, "git");
             string match = kind == "log" ? "for arg in \"$@\"; do [ \"$arg\" != log ] || blocked=yes; done\n"
                 : "for arg in \"$@\"; do [ \"$arg\" != refs/tags/ ] || blocked=yes; done\n";
-            await File.WriteAllTextAsync(script, "#!/bin/sh\nblocked=no\n" + match + "if [ \"$blocked\" = yes ]; then printf '%s' \"$$\" > " + Quote(Path.Combine(directory, "native.pid"))
-                + "; while [ ! -f " + Quote(Path.Combine(directory, "release")) + " ]; do sleep .02; done; fi\nexec /usr/bin/git \"$@\"\n");
+            await File.WriteAllTextAsync(script, "#!/bin/sh\nblocked=no\n" + match + "if [ \"$blocked\" = yes ]; then\n"
+                + TestSignalFile.ShellPids(Path.Combine(directory, "native.pid"), "$$")
+                + "while [ ! -f " + Quote(Path.Combine(directory, "release")) + " ]; do sleep .02; done; fi\nexec /usr/bin/git \"$@\"\n");
             File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             return new(new GitRepository(f.Repository.Path, new GitRunner(script)), directory);
         }

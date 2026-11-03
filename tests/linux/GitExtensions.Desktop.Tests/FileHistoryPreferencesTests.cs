@@ -222,7 +222,9 @@ public sealed class FileHistoryPreferencesTests
 
         using Fixture f = await Fixture.CreateAsync();
         string gate = f.Output("block-history"), marker = f.Output("history-pid"), wrapper = f.Output("history-git");
-        await File.WriteAllTextAsync(wrapper, "#!/usr/bin/python3\nimport os,sys,time\nif 'log' in sys.argv and os.path.exists(" + JsonSerializer.Serialize(gate) + "):\n open(" + JsonSerializer.Serialize(marker) + ",'w').write(str(os.getpid()))\n while os.path.exists(" + JsonSerializer.Serialize(gate) + "): time.sleep(.01)\nos.execv('/usr/bin/git',['git']+sys.argv[1:])\n");
+        await File.WriteAllTextAsync(wrapper, "#!/usr/bin/python3\nimport os,sys,time\nif 'log' in sys.argv and os.path.exists(" + JsonSerializer.Serialize(gate) + "):\n"
+            + TestSignalFile.Python(JsonSerializer.Serialize(marker), "str(os.getpid())", 1)
+            + " while os.path.exists(" + JsonSerializer.Serialize(gate) + "): time.sleep(.01)\nos.execv('/usr/bin/git',['git']+sys.argv[1:])\n");
         File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         Button ownerInput = new() { Content = "Owner" }; Window owner = new() { Content = ownerInput }; owner.Show();
         FileHistoryDialog dialog = new(new GitRepository(f.Repository.Path, new GitRunner(wrapper)), "file.txt"); dialog.Show(owner);

@@ -173,16 +173,12 @@ public sealed class ArtificialRevisionMenuTests
         internal void SelectRow(RawInputModifiers modifiers)
         {
             Rows.ScrollIntoView(row); Pump(main); ListBoxItem target = (ListBoxItem)Rows.ContainerFromItem(row)!;
-            Point point = target.TranslatePoint(new Point(100, target.Bounds.Height / 2), main)!.Value;
-            Assert.That((main.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(target), Is.True);
-            main.MouseDown(point, MouseButton.Left, modifiers); main.MouseUp(point, MouseButton.Left, modifiers); Pump(main);
+            PushProcessTestDriver.Pointer(target, MouseButton.Left, modifiers, new Point(100, target.Bounds.Height / 2)); Pump(main);
         }
         internal ContextMenu OpenContext()
         {
             Rows.ScrollIntoView(row); Pump(main); ListBoxItem target = (ListBoxItem)Rows.ContainerFromItem(row)!;
-            Point point = target.TranslatePoint(new Point(100, target.Bounds.Height / 2), main)!.Value;
-            Assert.That((main.InputHitTest(point) as Visual)?.GetSelfAndVisualAncestors().Contains(target), Is.True);
-            main.MouseDown(point, MouseButton.Right); main.MouseUp(point, MouseButton.Right); Pump(main);
+            PushProcessTestDriver.Pointer(target, MouseButton.Right, localPoint: new Point(100, target.Bounds.Height / 2)); Pump(main);
             Assert.That(Rows.ContextMenu!.IsOpen, Is.True); return Rows.ContextMenu;
         }
         internal MenuItem Command(string name) => Rows.ContextMenu!.Items.OfType<MenuItem>().Single(item => item.Name == name);

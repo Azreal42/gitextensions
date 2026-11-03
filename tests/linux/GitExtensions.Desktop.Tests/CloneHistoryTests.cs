@@ -161,7 +161,8 @@ public class CloneHistoryTests
         new ClonePreferencesStore().Save(new(fixture.Root, false));
         Dictionary<string, byte[]> before = HistoryFiles(sources, local);
         string script = Path.Combine(fixture.Root, "blocked ssh.py"), pidFile = Path.Combine(fixture.Root, "ssh.pid");
-        await File.WriteAllTextAsync(script, "#!/usr/bin/python3\nimport os,time\nfrom pathlib import Path\nPath(" + JsonSerializer.Serialize(pidFile) + ").write_text(str(os.getpid()))\ntime.sleep(60)\n");
+        await File.WriteAllTextAsync(script, "#!/usr/bin/python3\nimport os,time\n"
+            + TestSignalFile.Python(JsonSerializer.Serialize(pidFile), "str(os.getpid())") + "time.sleep(60)\n");
         File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         using EnvironmentScope ssh = new(new() { ["GIT_SSH"] = script, ["GIT_SSH_COMMAND"] = null, ["GIT_SSH_VARIANT"] = "ssh" });
         CloneDialog dialog = NewClone(fixture.Root, "ssh://example.invalid/no-real-network.git", "cancelled clone");

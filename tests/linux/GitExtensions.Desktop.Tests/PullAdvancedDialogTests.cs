@@ -297,7 +297,9 @@ public class PullAdvancedDialogTests
         await using Fixture f = await Fixture.CreateAsync(); await File.WriteAllTextAsync(f.Root.File, "recover cancellation\n");
         new PullPreferencesStore().Save(new(AutoStash: true));
         string marker = f.Root.Output("pull-started"), helper = marker + ".py";
-        await File.WriteAllTextAsync(helper, "#!/usr/bin/python3\nimport os,pathlib,sys,time\nif 'pull' in sys.argv[1:]:\n pathlib.Path(" + JsonSerializer.Serialize(marker) + ").write_text(str(os.getpid()))\n time.sleep(30)\nos.execvp('git',['git']+sys.argv[1:])\n");
+        await File.WriteAllTextAsync(helper, "#!/usr/bin/python3\nimport os,sys,time\nif 'pull' in sys.argv[1:]:\n"
+            + TestSignalFile.Python(JsonSerializer.Serialize(marker), "str(os.getpid())", 1)
+            + " time.sleep(30)\nos.execvp('git',['git']+sys.argv[1:])\n");
         File.SetUnixFileMode(helper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         PullDialog dialog = await f.OpenAsync(repository: new(f.Repository.Path, new GitRunner(helper)));
         Task execution = dialog.ExecuteAsync(dialog); await Until(() => File.Exists(marker));

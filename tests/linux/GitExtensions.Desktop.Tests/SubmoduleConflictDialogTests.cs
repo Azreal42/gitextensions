@@ -301,7 +301,9 @@ public sealed class SubmoduleConflictDialogTests
         internal async Task<string> BlockStageAsync()
         {
             if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
-            string path = Root.Output("private-stage-git"); await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport sys,os,subprocess,time\na=sys.argv[1:]\nif 'add' in a:\n p=subprocess.Popen(['/usr/bin/sleep','60'])\n with open(__file__+'.actors','w') as f: f.write(str(os.getpid())+' '+str(p.pid))\n time.sleep(60)\nos.execv('/usr/bin/git',['git']+a)\n");
+            string path = Root.Output("private-stage-git"); await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport sys,os,subprocess,time\na=sys.argv[1:]\nif 'add' in a:\n p=subprocess.Popen(['/usr/bin/sleep','60'])\n"
+                + TestSignalFile.Python("__file__+'.actors'", "str(os.getpid())+' '+str(p.pid)", 1)
+                + " time.sleep(60)\nos.execv('/usr/bin/git',['git']+a)\n");
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return path;
         }
         internal static async Task<GitResult> GitAsync(GitRepository repository, params string[] args) { GitResult result = await repository.RunAsync(args); Assert.That(result.Success, Is.True, result.StandardError); return result; }

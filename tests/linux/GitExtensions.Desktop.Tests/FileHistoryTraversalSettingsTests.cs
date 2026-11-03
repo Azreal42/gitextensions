@@ -291,7 +291,9 @@ public sealed class FileHistoryTraversalSettingsTests
                     AdditionalSettings = new() { ["UnrelatedFutureValue"] = future.RootElement.Clone() } });
                 string bin = fixture.Output("trace-bin"), trace = fixture.Output("git-argv.jsonl"), gate = fixture.Output("hold-traversal"), marker = fixture.Output("native-pids.json");
                 Directory.CreateDirectory(bin); string wrapper = Path.Combine(bin, "git");
-                await File.WriteAllTextAsync(wrapper, "#!/usr/bin/python3\nimport json,os,subprocess,sys\na=sys.argv[1:]\nwith open(" + JsonSerializer.Serialize(trace) + ", 'a', encoding='utf-8') as f: f.write(json.dumps(a)+'\\n')\nif 'log' in a and '--full-history' in a and os.path.exists(" + JsonSerializer.Serialize(gate) + "):\n child=subprocess.Popen(['/bin/sleep','60'])\n with open(" + JsonSerializer.Serialize(marker) + ", 'w') as f: json.dump([os.getpid(),child.pid],f)\n child.wait()\nos.execv('/usr/bin/git',['git',*a])\n");
+                await File.WriteAllTextAsync(wrapper, "#!/usr/bin/python3\nimport json,os,subprocess,sys\na=sys.argv[1:]\nwith open(" + JsonSerializer.Serialize(trace) + ", 'a', encoding='utf-8') as f: f.write(json.dumps(a)+'\\n')\nif 'log' in a and '--full-history' in a and os.path.exists(" + JsonSerializer.Serialize(gate) + "):\n child=subprocess.Popen(['/bin/sleep','60'])\n"
+                    + TestSignalFile.Python(JsonSerializer.Serialize(marker), "json.dumps([os.getpid(),child.pid])", 1)
+                    + " child.wait()\nos.execv('/usr/bin/git',['git',*a])\n");
                 File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
                 fixture.SetEnvironment("PATH", bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"));
                 main = new(new BrowseRequest(PathFilter: path is null ? null : new(path, BrowsePathKind.File)))

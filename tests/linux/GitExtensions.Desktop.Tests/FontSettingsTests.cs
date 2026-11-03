@@ -123,6 +123,7 @@ public sealed class FontSettingsTests
         try
         {
             (DesktopSettingsDialog dialog, Task operation) = await OpenSettings(scope, main); OpenFonts(dialog);
+            await SettingsNavigationTestDriver.ReadyAsync(dialog);
             PushProcessTestDriver.Pointer(Field<CheckBox>(dialog, "ShowEolMarkerAsGlyph"));
             PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings")); await operation.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.That(scope.Store.Load().ShowEolMarkerAsGlyph, Is.True); Assert.That(DesktopFonts.Active, Is.SameAs(active)); Assert.That(active.ShowEolMarkerAsGlyph, Is.False);
@@ -155,6 +156,7 @@ public sealed class FontSettingsTests
         try
         {
             (DesktopSettingsDialog dialog, Task operation) = await OpenSettings(scope, main); OpenFonts(dialog);
+            await SettingsNavigationTestDriver.ReadyAsync(dialog);
             Assert.That(Field<TextBlock>(dialog, "FontsNotice").Text, Does.Contain("Unable to read"));
             PushProcessTestDriver.Pointer(Field<CheckBox>(dialog, "ShowEolMarkerAsGlyph")); PushProcessTestDriver.Pointer(Field<Button>(dialog, "SaveDesktopSettings"));
             Assert.That(dialog.IsVisible, Is.True); Assert.That(File.ReadAllBytes(scope.Store.FilePath), Is.EqualTo(before));

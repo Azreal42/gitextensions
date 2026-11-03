@@ -184,7 +184,7 @@ public sealed class AutomaticUpdatesTests
         AdvancedSettingsUiDriver.Set(settings, "chkCheckForUpdates", true); AdvancedSettingsUiDriver.Set(settings, "chkCheckForRCVersions", true);
         // Opening Settings asynchronously loads its detailed pages. Yield to that
         // work before the real click; pumping synchronously cannot complete it.
-        await Until(() => AdvancedSettingsUiDriver.Field<Button>(settings, "ApplyDesktopSettings").IsEnabled, settings);
+        await SettingsNavigationTestDriver.ReadyAsync(settings, "ApplyDesktopSettings");
         PushProcessTestDriver.Pointer(AdvancedSettingsUiDriver.Field<Button>(settings, "ApplyDesktopSettings"));
         await Until(() => f.Clients.Count == 1 && settings.Navigation.IsEnabled, settings);
         Assert.That(f.Store.Load().CheckForUpdates && f.Store.Load().CheckForReleaseCandidates, Is.True);

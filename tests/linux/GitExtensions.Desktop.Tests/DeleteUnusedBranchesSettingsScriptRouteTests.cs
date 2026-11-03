@@ -128,6 +128,7 @@ public sealed class DeleteUnusedBranchesSettingsScriptRouteTests
             DesktopSettingsDialog settings = await OpenSettings(f.Window, commit, preview); EditPluginDraft(settings);
             SettingsNavigationTestDriver.Select(settings, "GitSsh");
             SshSettingsPage ssh = settings.GitEnvironmentSession!.SshPage;
+            await SettingsNavigationTestDriver.ReadyAsync(settings, "Other");
             CancellationToken pickerToken = default; bool pickerEntered = false;
             ssh.PickExecutable = token => { pickerToken = token; pickerEntered = true; return reply.Task; };
             Pointer(Field<RadioButton>(settings, "Other")); Pointer(Field<Button>(settings, "OtherSshBrowse"));

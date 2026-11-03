@@ -286,7 +286,9 @@ public sealed partial class GitProcessDialogTests
         {
             if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("The private descendant fixture requires Linux."); }
             string wrapper = Path.Combine(Root, "gated-git-" + Guid.NewGuid().ToString("N")); static string Quote(string text) => "'" + text.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
-            File.WriteAllText(wrapper, "#!/bin/sh\ncase \" $* \" in *" + Quote(" " + command + " ") + "*)\n /usr/bin/env git \"$@\"\n status=$?\n sleep 60 &\n child=$!\n printf '%s %s\\n' \"$$\" \"$child\" > " + Quote(wrapper + ".pids") + "\n while test ! -f " + Quote(wrapper + ".release") + "; do sleep 0.02; done\n kill \"$child\" 2>/dev/null || :\n wait \"$child\" 2>/dev/null || :\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
+            File.WriteAllText(wrapper, "#!/bin/sh\ncase \" $* \" in *" + Quote(" " + command + " ") + "*)\n /usr/bin/env git \"$@\"\n status=$?\n sleep 60 &\n child=$!\n"
+                + TestSignalFile.ShellPids(wrapper + ".pids", "$$", "$child")
+                + " while test ! -f " + Quote(wrapper + ".release") + "; do sleep 0.02; done\n kill \"$child\" 2>/dev/null || :\n wait \"$child\" 2>/dev/null || :\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
             File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return wrapper;
         }
         public string Materials() => string.Join('\n', Directory.GetFiles(Repository.Path, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal)

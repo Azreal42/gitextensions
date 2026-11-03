@@ -173,7 +173,8 @@ public class CloneInitDialogTests
         string root = Path.GetDirectoryName(fixture.Repository)!;
         string script = Path.Combine(root, "slow-ssh.py");
         string pidFile = Path.Combine(root, "ssh.pid");
-        await File.WriteAllTextAsync(script, "#!/usr/bin/python3\nimport os,time\nwith open(" + System.Text.Json.JsonSerializer.Serialize(pidFile) + ", 'w') as output: output.write(str(os.getpid()))\ntime.sleep(60)\n");
+        await File.WriteAllTextAsync(script, "#!/usr/bin/python3\nimport os,time\n"
+            + TestSignalFile.Python(System.Text.Json.JsonSerializer.Serialize(pidFile), "str(os.getpid())") + "time.sleep(60)\n");
         File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         string? previousSsh = Environment.GetEnvironmentVariable("GIT_SSH");
         string? previousCommand = Environment.GetEnvironmentVariable("GIT_SSH_COMMAND");

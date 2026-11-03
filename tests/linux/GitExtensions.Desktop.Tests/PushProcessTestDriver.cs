@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using GitExtensions.Linux.Desktop;
@@ -49,7 +50,10 @@ internal static class PushProcessTestDriver
     internal static T Field<T>(TopLevel root, string name) where T : Control
         => root.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
 
-    internal static void Pointer(Control control)
+    internal static void Pointer(Control control) => Pointer(control, MouseButton.Left);
+
+    internal static void Pointer(Control control, MouseButton button,
+        RawInputModifiers modifiers = RawInputModifiers.None, Point? localPoint = null)
     {
         TopLevel top = TopLevel.GetTopLevel(control)!;
         // Rendering publishes hit-test data through more dispatcher jobs. Settle
@@ -59,14 +63,14 @@ internal static class PushProcessTestDriver
             Dispatcher.UIThread.RunJobs(); top.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         }
         Dispatcher.UIThread.RunJobs();
-        Point? translated = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), top);
+        Point? translated = control.TranslatePoint(localPoint ?? new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), top);
         Visual? hit = translated is Point target ? top.InputHitTest(target) as Visual : null;
         bool ready = translated is Point center && control.IsEffectivelyVisible && control.IsEffectivelyEnabled
             && new Rect(default, top.ClientSize).Contains(center) && hit?.GetSelfAndVisualAncestors().Contains(control) == true;
         string details = ready ? "" : CapturePointerFailure(control, top, translated, hit);
         Assert.That(ready, Is.True, "Real pointer target: " + control.Name + "\n" + details);
         Point point = translated!.Value;
-        top.MouseMove(point); top.MouseDown(point, MouseButton.Left); top.MouseUp(point, MouseButton.Left);
+        top.MouseMove(point); top.MouseDown(point, button, modifiers); top.MouseUp(point, button, modifiers);
         Dispatcher.UIThread.RunJobs();
     }
 

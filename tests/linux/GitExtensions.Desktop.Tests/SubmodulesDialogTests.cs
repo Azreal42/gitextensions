@@ -409,14 +409,18 @@ public sealed class SubmodulesDialogTests
         {
             if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
             string path = Root.Output("private-update-git");
-            await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport os,sys,subprocess,time\na=sys.argv[1:]\nif 'submodule' in a and a[a.index('submodule')+1]=='update':\n p=subprocess.Popen(['/usr/bin/sleep','60'])\n with open(__file__+'.actors','w') as f: f.write(str(os.getpid())+' '+str(p.pid))\n time.sleep(60)\nos.execv('/usr/bin/git',['git']+a)\n");
+            await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport os,sys,subprocess,time\na=sys.argv[1:]\nif 'submodule' in a and a[a.index('submodule')+1]=='update':\n p=subprocess.Popen(['/usr/bin/sleep','60'])\n"
+                + TestSignalFile.Python("__file__+'.actors'", "str(os.getpid())+' '+str(p.pid)", 1)
+                + " time.sleep(60)\nos.execv('/usr/bin/git',['git']+a)\n");
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return path;
         }
         internal async Task<string> BlockPostRefreshAsync()
         {
             if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
             string path = Root.Output("private-post-refresh-git");
-            await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport os,sys,subprocess,time\na=sys.argv[1:]\nc=a[a.index('submodule')+1] if 'submodule' in a else ''\nif c=='update':\n r=subprocess.run(['/usr/bin/git']+a)\n if r.returncode==0: open(__file__+'.updated','w').close()\n sys.exit(r.returncode)\nif c=='status' and os.path.exists(__file__+'.updated'):\n p=subprocess.Popen(['/usr/bin/sleep','60'])\n with open(__file__+'.actors','w') as f: f.write(str(os.getpid())+' '+str(p.pid))\n time.sleep(60)\nos.execv('/usr/bin/git',['git']+a)\n");
+            await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport os,sys,subprocess,time\na=sys.argv[1:]\nc=a[a.index('submodule')+1] if 'submodule' in a else ''\nif c=='update':\n r=subprocess.run(['/usr/bin/git']+a)\n if r.returncode==0: open(__file__+'.updated','w').close()\n sys.exit(r.returncode)\nif c=='status' and os.path.exists(__file__+'.updated'):\n p=subprocess.Popen(['/usr/bin/sleep','60'])\n"
+                + TestSignalFile.Python("__file__+'.actors'", "str(os.getpid())+' '+str(p.pid)", 1)
+                + " time.sleep(60)\nos.execv('/usr/bin/git',['git']+a)\n");
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return path;
         }
         internal static async Task<GitResult> GitAsync(GitRepository repository, params string[] arguments)

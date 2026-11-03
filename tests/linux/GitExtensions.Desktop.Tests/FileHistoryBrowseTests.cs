@@ -199,7 +199,9 @@ public sealed class FileHistoryBrowseTests
         string wrapper = f.Output("gate-bin"), marker = f.Output("git-started"), release = f.Output("release");
         Directory.CreateDirectory(wrapper);
         string executable = Path.Combine(wrapper, "git");
-        await File.WriteAllTextAsync(executable, "#!/usr/bin/python3\nimport os,sys,time\nif 'log' in sys.argv:\n open(" + System.Text.Json.JsonSerializer.Serialize(marker) + ", 'w').write(str(os.getpid()))\n while not os.path.exists(" + System.Text.Json.JsonSerializer.Serialize(release) + "): time.sleep(.01)\nos.execv('/usr/bin/git',['git']+sys.argv[1:])\n");
+        await File.WriteAllTextAsync(executable, "#!/usr/bin/python3\nimport os,sys,time\nif 'log' in sys.argv:\n"
+            + TestSignalFile.Python(System.Text.Json.JsonSerializer.Serialize(marker), "str(os.getpid())", 1)
+            + " while not os.path.exists(" + System.Text.Json.JsonSerializer.Serialize(release) + "): time.sleep(.01)\nos.execv('/usr/bin/git',['git']+sys.argv[1:])\n");
         File.SetUnixFileMode(executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         f.SetEnvironment("PATH", wrapper + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"));
         MainWindow main = new(new BrowseRequest(PathFilter: new("file.txt", BrowsePathKind.File)));

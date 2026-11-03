@@ -259,7 +259,9 @@ public sealed class PullProcessDialogTests
             if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("The private Git process gate requires Linux."); }
             string gate = Root.Output("gated-git-" + Guid.NewGuid().ToString("N")); static string Quote(string value) => "'" + value.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
             string checkpoint = blockCheckpoint ? "case \" $* \" in *' stash push '*) : > " + Quote(gate + ".active") + ";; *' stash list '*) if test -f " + Quote(gate + ".active") + "; then\n sleep 60 &\n child=$!\n printf '%s %s\\n' \"$$\" \"$child\" > " + Quote(gate + ".checkpoint.pids") + "\n : > " + Quote(gate + ".checkpoint-started") + "\n wait\n fi;; esac\n" : "";
-            File.WriteAllText(gate, "#!/bin/sh\n" + checkpoint + "case \" $* \" in *' pull '*) : > " + Quote(gate + ".pull-started") + ";; esac\ncase \" $* \" in *" + Quote(" " + command + " ") + "*)\n /usr/bin/env git \"$@\"\n status=$?\n sleep 60 &\n child=$!\n printf '%s %s\\n' \"$$\" \"$child\" > " + Quote(gate + ".pids") + "\n while test ! -f " + Quote(gate + ".release") + "; do sleep 0.02; done\n kill \"$child\" 2>/dev/null || :\n wait \"$child\" 2>/dev/null || :\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
+            File.WriteAllText(gate, "#!/bin/sh\n" + checkpoint + "case \" $* \" in *' pull '*) : > " + Quote(gate + ".pull-started") + ";; esac\ncase \" $* \" in *" + Quote(" " + command + " ") + "*)\n /usr/bin/env git \"$@\"\n status=$?\n sleep 60 &\n child=$!\n"
+                + TestSignalFile.ShellPids(gate + ".pids", "$$", "$child")
+                + " while test ! -f " + Quote(gate + ".release") + "; do sleep 0.02; done\n kill \"$child\" 2>/dev/null || :\n wait \"$child\" 2>/dev/null || :\n exit \"$status\";;\n *) exec /usr/bin/env git \"$@\";;\nesac\n");
             File.SetUnixFileMode(gate, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); return gate;
         }
         internal void Release(string gate) => File.WriteAllText(gate + ".release", "release\n");

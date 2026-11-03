@@ -469,7 +469,9 @@ public sealed class WorktreeDialogTests
         if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException(); }
         string path = f.Output("worktree-wrapper-" + Guid.NewGuid().ToString("N") + ".py");
         string behavior = slow
-            ? "    child = subprocess.Popen(['/bin/sleep', '120'])\n    with open(" + System.Text.Json.JsonSerializer.Serialize(actors) + ", 'w') as output:\n        output.write(str(os.getpid()) + ' ' + str(child.pid))\n    while True:\n        time.sleep(1)\n"
+            ? "    child = subprocess.Popen(['/bin/sleep', '120'])\n"
+                + TestSignalFile.Python(System.Text.Json.JsonSerializer.Serialize(actors), "str(os.getpid()) + ' ' + str(child.pid)", 4)
+                + "    while True:\n        time.sleep(1)\n"
             : "    print('fixture worktree creation failure', file=sys.stderr, flush=True)\n    sys.exit(53)\n";
         await File.WriteAllTextAsync(path, "#!/usr/bin/python3\nimport os, subprocess, sys, time\nargs = sys.argv[1:]\n"
             + "if 'worktree' in args and args[args.index('worktree') + 1:args.index('worktree') + 2] == ['add'] and '-h' not in args:\n"
