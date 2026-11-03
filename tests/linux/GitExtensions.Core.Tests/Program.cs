@@ -4,6 +4,19 @@ using System.IO.Compression;
 using GitCommands.Git;
 using GitExtensions.Linux;
 
+if (args.Length == 3 && args[0] == "--lease-stream-probe")
+{
+    FileStreamOptions options = new() { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.None };
+    if (!OperatingSystem.IsWindows()) { options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite; }
+    try
+    {
+        using FileStream stream = new(args[1], options);
+        File.WriteAllText(args[2], "acquired");
+    }
+    catch (IOException error) { File.WriteAllText(args[2], "refused:" + error.HResult.ToString("X8")); }
+    return 0;
+}
+
 if (args.Length == 3 && args[0] == "--unix-socket-directory-worker")
 {
     return await UnixSocketDirectoryScenarios.RunWorkerAsync(args[1], args[2]);
