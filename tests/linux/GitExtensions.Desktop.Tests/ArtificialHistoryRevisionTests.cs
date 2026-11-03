@@ -189,7 +189,9 @@ public sealed class ArtificialHistoryRevisionTests
             string root = fixture.Output("index-read-gate"); Directory.CreateDirectory(root);
             _release = Path.Combine(root, "release"); _marker = Path.Combine(root, "started");
             string executable = Path.Combine(root, "git");
-            string script = "#!/usr/bin/python3\nimport os,sys,time\na=sys.argv[1:]\nif 'diff' in a and '--cached' in a and '--name-status' not in a and '--raw' not in a and 'file.txt' in a:\n with open(" + System.Text.Json.JsonSerializer.Serialize(_marker) + ",'w') as f: f.write(str(os.getpid()))\n while not os.path.exists(" + System.Text.Json.JsonSerializer.Serialize(_release) + "): time.sleep(.01)\nos.execv('/usr/bin/git',['git']+a)\n";
+            string script = "#!/usr/bin/python3\nimport os,sys,time\na=sys.argv[1:]\nif 'diff' in a and '--cached' in a and '--name-status' not in a and '--raw' not in a and 'file.txt' in a:\n"
+                + TestSignalFile.Python(System.Text.Json.JsonSerializer.Serialize(_marker), "str(os.getpid())", 1)
+                + " while not os.path.exists(" + System.Text.Json.JsonSerializer.Serialize(_release) + "): time.sleep(.01)\nos.execv('/usr/bin/git',['git']+a)\n";
             File.WriteAllText(executable, script);
             if (OperatingSystem.IsLinux()) { File.SetUnixFileMode(executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); }
             fixture.SetEnvironment("PATH", root + Path.PathSeparator + _path);
