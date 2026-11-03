@@ -1,5 +1,13 @@
 # Failure
 
+## Qualification native et courses de tests — 3 novembre 2026
+
+[ADR0159](adr/platform/0159-avalonia-three-platforms.md) conserve les limites et les runs. Les runners réels ont révélé les séparateurs Git for Windows, l’ABI inode64 Darwin Intel, l’ordre de signature et les notices versionnées placées dans un emplacement de code Mac. Corrections dans le lecteur commun et le packaging ; signature récursive contrôlée après extraction.
+
+Le vérificateur traitait à tort askpass sans invite comme une erreur : l’invite par défaut OpenSSH est conservée, et les arguments en excès restent refusés sans sortie. La capture Mac a révélé un repli serif arbitraire : familles sans empattements/fixes explicites, métriques contrôlées. Un Apply de test précédait le chargement asynchrone des pages ; l’attente réelle garde le clic et ses assertions. Un autre test envoyait un key-up après la fermeture effective du backend ; deux parcours équivalents n’envoient plus d’événement à une fenêtre détruite, sans retirer les assertions sur le callback en attente et les processus Git.
+
+Le premier pipeline natif complet `41660089091` passe 131 cas par système et démarre ses trois livraisons. Les annulations ARM de `41656633912`/`41657405557` ont eu lieu avant toute exécution, avec diagnostic GitHub de capacité ; elles ne sont jamais comptées comme des tests. La dernière source (PATH capturé et fermetures) a 167 tests locaux ciblés réussis, puis reste soumise aux suites complètes et aux jobs natifs.
+
 ## Portabilité Avalonia — premiers contrats
 
 Le SDK considérait les bibliothèques intermédiaires comme indépendantes du RID : une publication Windows depuis Linux recevait le helper ELF de Core. Le garde-fou de livraison a arrêté le premier essai ; `IsRidAgnostic=false` propage désormais le RID dans le graphe concerné. L’archive suivante contient des exécutables PE x64 et aucun helper Linux. Le premier test de règles attendait à tort InvalidOperationException : le contrat existant est IOException, préimage toujours préservée. Le build suivant a signalé une annotation nullable incorrecte dans le nouveau test de grille ; correction de type uniquement, puis 56/56 ciblés. Les preuves locales statiques restent distinctes des futurs contrôles natifs.

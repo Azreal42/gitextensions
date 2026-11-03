@@ -136,7 +136,11 @@ public sealed class CreateBranchInitializationFocusTests
         try
         {
             await Until(() => gate.HasStarted); int pid = int.Parse(await System.IO.File.ReadAllTextAsync(gate.Started));
-            if (escape) { dialog.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None); dialog.KeyReleaseQwerty(PhysicalKey.Escape, RawInputModifiers.None); }
+            if (escape)
+            {
+                dialog.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+                if (dialog.IsVisible) { dialog.KeyReleaseQwerty(PhysicalKey.Escape, RawInputModifiers.None); }
+            }
             else { dialog.Close(); }
             await Until(() => initialize?.IsCompleted == true && shown.IsCompleted); await initialize!; await shown; Pump(owner);
             Assert.That(dialog.IsVisible, Is.False); Assert.That(dialog.IsBusy, Is.False); Assert.That(Alive(pid), Is.False, "The actual blocked Git reader must be reaped.");

@@ -281,7 +281,9 @@ public sealed class CommitInformationIntegrationTests
                     (main.IsVisible, rowRepaintsAfterClosing, graphFocusChangesAfterClosing, row.Background, graph.SelectionFocused));
             };
             main.KeyPressQwerty(PhysicalKey.Digit2, RawInputModifiers.Control);
-            main.KeyReleaseQwerty(PhysicalKey.Digit2, RawInputModifiers.Control);
+            // KeyPress drains dispatcher jobs and can finish the deferred close.
+            // A destroyed native window cannot receive the subsequent key-up.
+            if (main.IsVisible) { main.KeyReleaseQwerty(PhysicalKey.Digit2, RawInputModifiers.Control); }
             Assert.That(closeRequested, Is.True);
             await Until(() => afterQueuedPresentation.HasValue);
             var observed = afterQueuedPresentation!.Value;

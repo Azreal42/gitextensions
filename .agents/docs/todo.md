@@ -15,7 +15,9 @@ Objectif actif : même application fonctionnelle sur les trois systèmes. [ADR01
 - [x] Sélection des mises à jour par système/architecture, ABI Darwin Intel et chemins Git for Windows corrigés ; préservation des journaux de rebase par renommage natif sans remplacement.
 - [x] [Linux `d0fb60fe4`](https://github.com/Azreal42/gitextensions/actions/runs/41646245616) : 1 210 Core, 42 Plugins, 4 592 Desktop, aucun ignoré ; `.deb` reproductible, extrait, installé et démarré sur le runner.
 - [x] Repli typographique Mac revu sur la capture native : familles sans empattements et métriques fixes explicites ; 207 tests ciblés locaux passent, préférences enregistrées conservées.
-- [ ] Résultat final du nouveau correctif de polices sur les trois runners (131 contrats), dernière suite Linux complète (4 620 Desktop) et nouveaux paquets.
+- [x] [Premier pipeline natif complet `e38053dd7`](https://github.com/Azreal42/gitextensions/actions/runs/41660089091) : 131/131 cas sur Windows et les deux Mac, les trois archives contrôlées et les trois backends démarrés ; capture Mac corrigée revue.
+- [x] Deux parcours de test qui pouvaient envoyer un key-up après destruction de fenêtre corrigés ; résolution des outils configurés via le PATH capturé. 167 tests combinés locaux passent.
+- [ ] Dernière source : 133 contrats natifs, suite Linux complète (4 622 Desktop), installation et nouveaux paquets.
 - [ ] Terminaison des descendants, console interactive/PTY, terminaux et environnement, qualification des verrous macOS ; suites métier complètes et parcours natifs sur Windows/macOS. Aucun état de parité globale n’est déclaré.
 
 <a id="ci-linux-bisect"></a>
