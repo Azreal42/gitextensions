@@ -1,5 +1,9 @@
 # Failure
 
+## Supervision macOS — 3 novembre 2026
+
+Un helper de notification de démarrage sans annotation OS a été rejeté par CA1416 ; ajouter la même borne macOS que son appelant, sans désactiver l’analyse. Recompilation sans avertissement/erreur. La revue des en-têtes Apple montre aussi que `fcntl` est variadique : le pont C à signature fixe laisse le compilateur traiter les arguments de pile Apple Silicon. La compilation C locale et deux vrais arbres Linux passent ; l’ABI et l’exécution macOS restent soumises à la CI native.
+
 ## Fixture d’héritage Windows — 3 novembre 2026
 
 Le premier job noyau `41694781899` passe trois cas sur cinq, dont le parent sorti avec pipes indépendants et les deux échanges binaires. Les deux cas hérités échouent sur leur marqueur stdout : `Process.Start` sans aucun flux redirigé et sans console ne pose pas `STARTF_USESTDHANDLES`. La fixture redirige désormais stdin pour transmettre explicitement les deux handles de sortie du parent. Les marqueurs stdout/stderr et les oracles de drainage restent obligatoires ; quatre cas comparables Linux repassent. Les journaux et le TRX Windows initiaux sont conservés.

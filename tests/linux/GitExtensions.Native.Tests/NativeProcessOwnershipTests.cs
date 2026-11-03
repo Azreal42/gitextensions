@@ -1,16 +1,18 @@
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text.Json;
 using GitExtensions.Linux;
 using NUnit.Framework;
 
 namespace GitExtensions.Native.Tests;
 
-// These kernel contracts are scheduled on Windows, independently of the shared
-// portable suite and the complete Linux suites. There is no simulated job backend.
-[TestFixture, Category("WindowsNative"), NonParallelizable]
-public sealed class WindowsProcessOwnershipTests
+// The same kernel contracts run on real Windows and Mac hosts. Linux's existing
+// backend and its closed-pipe gap are tracked separately; there is no simulated OS.
+[TestFixture, Category("NativeProcessOwnership"), NonParallelizable]
+public sealed class NativeProcessOwnershipTests
 {
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(20);
 
@@ -46,25 +48,33 @@ public sealed class WindowsProcessOwnershipTests
             if (parentExits)
             {
                 await File.WriteAllTextAsync(Path.Combine(owned, "allow-parent-exit"), "go");
-                await parent.WaitForExitAsync().WaitAsync(Limit);
+                await WaitUntilStoppedAsync(parent);
             }
-            Assert.That(child.HasExited, Is.False);
+            Assert.That(IsRunning(child), Is.True);
             Assert.That(operation.IsCompleted, Is.False, "EOF and an exited parent do not release a live owned child.");
             cancel.Cancel();
             Assert.CatchAsync<OperationCanceledException>(async () => await operation.WaitAsync(Limit));
-            Assert.That(parent.HasExited, Is.True); Assert.That(child.HasExited, Is.True);
-            Assert.That(other.HasExited, Is.False, "A separate invocation of the same program is outside this private job.");
+            Assert.That(IsRunning(parent), Is.False); Assert.That(IsRunning(child), Is.False);
+            Assert.That(IsRunning(other), Is.True, "A separate invocation of the same program is outside this private operation.");
         }
         finally
         {
             cancel.Cancel();
             // Stable handles belong only to this fixture. Preserve the assertion
             // failure, then drain its actors even if a candidate backend is broken.
-            Stop(child); Stop(parent);
+            if (!OperatingSystem.IsMacOS()) { Stop(child); Stop(parent); }
             await File.WriteAllTextAsync(Path.Combine(owned, "release"), "release");
             await File.WriteAllTextAsync(Path.Combine(unrelated, "release"), "release");
-            try { await other.WaitForExitAsync().WaitAsync(Limit); } finally { Stop(other); }
+            try { await other.WaitForExitAsync().WaitAsync(Limit); }
+            finally { if (!OperatingSystem.IsMacOS()) { Stop(other); } }
             if (operation is not null) { try { await operation.WaitAsync(Limit); } catch { } }
+            if (OperatingSystem.IsMacOS())
+            {
+                // Release files retire these controlled actors cooperatively;
+                // never signal a recycled numeric Unix PID from test cleanup.
+                if (child is not null) { await WaitUntilStoppedAsync(child); }
+                if (parent is not null) { await WaitUntilStoppedAsync(parent); }
+            }
             child?.Dispose(); parent?.Dispose();
         }
     }
@@ -112,6 +122,26 @@ public sealed class WindowsProcessOwnershipTests
         try { if (!process.HasExited) { process.Kill(entireProcessTree: true); } process.WaitForExit(); }
         catch (InvalidOperationException) { }
     }
+
+    private static bool IsRunning(Process process)
+    {
+        if (!OperatingSystem.IsMacOS()) { return !process.HasExited; }
+        int state = ProcessIsRunning(process.Id);
+        if (state < 0) { throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()); }
+        return state != 0;
+    }
+
+    private static async Task WaitUntilStoppedAsync(Process process)
+    {
+        if (!OperatingSystem.IsMacOS()) { await process.WaitForExitAsync().WaitAsync(Limit); return; }
+        Stopwatch watch = Stopwatch.StartNew();
+        while (IsRunning(process) && watch.Elapsed < Limit) { await Task.Delay(10); }
+        Assert.That(IsRunning(process), Is.False, "The native actor has not stopped: " + process.Id);
+    }
+
+    [SupportedOSPlatform("macos")]
+    [DllImport("libgitextensions-posix.dylib", EntryPoint = "ge_process_is_running", SetLastError = true)]
+    private static extern int ProcessIsRunning(int processId);
 
     private static Process StartProbe(string workingDirectory, IEnumerable<string> arguments)
     {

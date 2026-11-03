@@ -58,10 +58,9 @@ jobs:
 
       # These are the initial portable contracts. Linux retains its complete
       # independent workflow; remaining platform-specific suites still need porting.
-      - name: Exercise actual Windows process ownership
-        if: matrix.runtime == 'win-x64'
+      - name: Exercise actual native process ownership
         run: |
-          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter "TestCategory=WindowsNative" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/windows-kernel"
+          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter "TestCategory=NativeProcessOwnership" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/native-kernel"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Exercise portable Git and UI workflows

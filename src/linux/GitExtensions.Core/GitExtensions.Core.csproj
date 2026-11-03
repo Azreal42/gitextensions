@@ -6,7 +6,28 @@
   </PropertyGroup>
   <PropertyGroup>
     <_BuildLinuxGitHelper Condition="$([MSBuild]::IsOSPlatform('Linux')) and ('$(RuntimeIdentifier)' == '' or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux-')))">true</_BuildLinuxGitHelper>
+    <_BuildMacGitSupervisor Condition="$([MSBuild]::IsOSPlatform('OSX')) and ('$(RuntimeIdentifier)' == '' or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('osx-')))">true</_BuildMacGitSupervisor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(_BuildMacGitSupervisor)' == 'true'">
+    <_MacGitRuntime Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_MacGitRuntime>
+    <_MacGitRuntime Condition="'$(_MacGitRuntime)' == ''">$(NETCoreSdkRuntimeIdentifier)</_MacGitRuntime>
+    <_MacGitArch Condition="'$(_MacGitRuntime)' == 'osx-x64'">x86_64</_MacGitArch>
+    <_MacGitArch Condition="'$(_MacGitRuntime)' == 'osx-arm64'">arm64</_MacGitArch>
+    <_MacGitDirectory>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'native', '$(Configuration)', '$(_MacGitRuntime)'))</_MacGitDirectory>
+    <_MacGitPath>$(_MacGitDirectory)/gitextensions-posix</_MacGitPath>
+    <_MacGitBridge>$(_MacGitDirectory)/libgitextensions-posix.dylib</_MacGitBridge>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_BuildMacGitSupervisor)' == 'true'">
+    <Content Include="$(_MacGitPath)" Link="gitextensions-posix" TargetPath="gitextensions-posix" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(_MacGitBridge)" Link="libgitextensions-posix.dylib" TargetPath="libgitextensions-posix.dylib" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="BuildMacGitSupervisor" BeforeTargets="PrepareForBuild;AssignTargetPaths" Condition="'$(_BuildMacGitSupervisor)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'$(_MacGitArch)' == ''" Text="The private Mac supervisor requires osx-x64 or osx-arm64." />
+    <MakeDir Directories="$(_MacGitDirectory)" />
+    <Exec Command="cc -std=c11 -O2 -Wall -Wextra -Werror -arch $(_MacGitArch) -mmacosx-version-min=15.0 &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix.c&quot; -o &quot;$(_MacGitPath)&quot;" />
+    <Exec Command="cc -std=c11 -O2 -Wall -Wextra -Werror -arch $(_MacGitArch) -mmacosx-version-min=15.0 -dynamiclib -Wl,-install_name,@rpath/libgitextensions-posix.dylib &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix-bridge.c&quot; -o &quot;$(_MacGitBridge)&quot;" />
+    <ItemGroup><FileWrites Include="$(_MacGitPath);$(_MacGitBridge)" /></ItemGroup>
+  </Target>
   <PropertyGroup Condition="'$(_BuildLinuxGitHelper)' == 'true'">
     <!-- Override GitProcessCompiler with an executable path for cross-RID builds. Never silently use a host binary. -->
     <GitProcessHelperRuntime Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</GitProcessHelperRuntime>

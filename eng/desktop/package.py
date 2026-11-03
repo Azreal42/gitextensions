@@ -110,6 +110,13 @@ def build(args):
             raise FileNotFoundError(f"Incomplete self-contained delivery: {name}")
     if (payload / "gitextensions-exec").exists():
         raise ValueError("A Linux-only process launcher must not enter a Windows/macOS delivery")
+    if mac:
+        supervisor = payload / "gitextensions-posix"
+        if not supervisor.is_file() or machine(supervisor) != args.runtime:
+            raise ValueError("The private POSIX supervisor does not match the Mac delivery runtime")
+        if machine(payload / "libgitextensions-posix.dylib") != args.runtime:
+            raise ValueError("The POSIX descriptor bridge does not match the Mac delivery runtime")
+        supervisor.chmod(0o755)
     if not mac and machine(payload / "gitextensions-askpass.exe") != args.runtime:
         raise ValueError("The native askpass host does not match the delivery runtime")
     # Versioned notice directories are resources, not nested code bundles.

@@ -25,7 +25,8 @@ Dernière qualification `fc453b846` : [Linux complet](https://github.com/Azreal4
 La source en cours ajoute le contrôle interprocessus de rebase : 151 contrats portables, cinq contrats noyau Windows distincts et 4 625 Desktop attendus en Linux. Les [pipelines Linux](https://github.com/Azreal42/gitextensions/actions/workflows/linux.yml?query=branch%3Amigration%2Flinux) et [natifs](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amigration%2Flinux) font foi pour chaque commit ; les preuves locales ne remplacent pas ces exécutions.
 
 - [x] Verrou de rebase éprouvé localement entre deux apphosts pendant un vrai rebase, puis libération du même chemin et état Git contrôlés ; 151 contrats portables passent. Preuve native macOS/Windows encore attendue.
-- [ ] [Propriété native des processus](adr/platform/0160-native-process-ownership.md) : Job Object Windows implémenté, cinq tests noyau ajoutés à sa CI ; qualification Windows encore attendue. Le cas sans pipe est rouge sur le backend Linux existant et guide la supervision POSIX à poursuivre sur Linux/macOS.
+- [x] [Propriété Windows](adr/platform/0160-native-process-ownership.md) qualifiée sur `e8ef4816d` : cinq contrats noyau, 151 portables et archive démarrée sur le vrai runner. Le verrou de rebase passe aussi sur Mac Intel.
+- [ ] Superviseur macOS, pont ABI et cinq contrats noyau partagés implémentés ; première qualification native encore attendue. Deux arbres POSIX réels passent sous Linux, ainsi que quatre cas de banc et 151 portables. Le backend Linux courant garde son échec isolé sans pipe ; le nouveau superviseur n’y est pas encore branché.
 - [ ] Terminaison des descendants, console interactive/PTY, terminaux et environnement, qualification des verrous macOS ; suites métier complètes et parcours natifs sur Windows/macOS. Aucun état de parité globale n’est déclaré.
 
 <a id="ci-linux-bisect"></a>

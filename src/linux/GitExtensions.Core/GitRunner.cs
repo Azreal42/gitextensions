@@ -238,6 +238,8 @@ public sealed partial class GitRunner
     {
         if (OperatingSystem.IsWindows())
         { return await RunWindowsProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, processStarted, streamCapture).ConfigureAwait(false); }
+        if (OperatingSystem.IsMacOS())
+        { return await RunMacProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, processStarted, streamCapture).ConfigureAwait(false); }
         using Process process = new() { StartInfo = startInfo };
         using GitProcessGroup? processes = OperatingSystem.IsLinux() ? new GitProcessGroup() : null;
         process.Start();
