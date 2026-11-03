@@ -27,7 +27,7 @@ jobs:
         include:
           - os: windows-2025
             runtime: win-x64
-          - os: macos-15
+          - os: macos-26
             runtime: osx-arm64
           - os: macos-15-intel
             runtime: osx-x64
