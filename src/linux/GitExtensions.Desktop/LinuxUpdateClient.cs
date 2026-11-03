@@ -24,16 +24,19 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
     private const int MaxPages = 5;
     private readonly HttpClient _http;
     private readonly string? _architecture;
+    private readonly DesktopPlatform _platform;
     private readonly TimeSpan _requestTimeout;
     private readonly string _cacheDirectory;
 
-    internal LinuxUpdateClient(HttpMessageHandler? handler = null, string? architecture = null, string? cacheDirectory = null, TimeSpan? requestTimeout = null)
+    internal LinuxUpdateClient(HttpMessageHandler? handler = null, string? architecture = null, string? cacheDirectory = null, TimeSpan? requestTimeout = null,
+        DesktopPlatform? platform = null)
     {
         _http = new(handler ?? new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.GZip })
         { Timeout = Timeout.InfiniteTimeSpan };
         _architecture = architecture ?? RuntimeInformation.ProcessArchitecture switch { Architecture.X64 => "amd64", Architecture.Arm64 => "arm64", _ => null };
+        _platform = platform ?? DesktopResourceLauncher.CurrentPlatform;
         _cacheDirectory = cacheDirectory ?? Path.Combine(Environment.GetEnvironmentVariable("XDG_CACHE_HOME") is { Length: > 0 } cache && Path.IsPathFullyQualified(cache)
-            ? cache : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache"), "gitextensions", "updates");
+            ? cache : DefaultCacheDirectory(), "gitextensions", "updates");
         _requestTimeout = requestTimeout ?? TimeSpan.FromSeconds(30);
         if (_requestTimeout <= TimeSpan.Zero || _requestTimeout > TimeSpan.FromMinutes(5)) { throw new ArgumentOutOfRangeException(nameof(requestTimeout)); }
     }
@@ -41,7 +44,7 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
     public async Task<LinuxUpdateSearch> FindAsync(LinuxReleaseVersion current, bool includePrereleases, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        if (_architecture is not ("amd64" or "arm64")) { throw new NotSupportedException("No Linux package is available for this architecture."); }
+        if (_architecture is not ("amd64" or "arm64")) { throw new NotSupportedException("No application package is available for this architecture."); }
         using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         deadline.CancelAfter(_requestTimeout);
         try
@@ -57,7 +60,7 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
                 if (json.RootElement.ValueKind != JsonValueKind.Array) { throw new IOException("GitHub returned an invalid release list."); }
                 foreach (JsonElement item in json.RootElement.EnumerateArray())
                 {
-                    LinuxUpdateRelease? release = ParseRelease(item, _architecture, includePrereleases);
+                    LinuxUpdateRelease? release = ParseRelease(item, _architecture, _platform, includePrereleases);
                     if (release is null) { continue; }
                     compatible = true;
                     if (release.Version.CompareTo(current) > 0 && (best is null || release.Version.CompareTo(best.Version) > 0)) { best = release; }
@@ -73,7 +76,7 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
         catch (HttpRequestException) { throw new IOException("Could not contact GitHub. Check the network connection and try again."); }
     }
 
-    private static LinuxUpdateRelease? ParseRelease(JsonElement item, string architecture, bool includePrereleases)
+    private static LinuxUpdateRelease? ParseRelease(JsonElement item, string architecture, DesktopPlatform platform, bool includePrereleases)
     {
         if (item.ValueKind != JsonValueKind.Object || Bool(item, "draft") != false || Bool(item, "prerelease") is not { } prerelease) { return null; }
         string? tag = Text(item, "tag_name"); LinuxReleaseVersion? version = LinuxReleaseVersion.Parse(tag);
@@ -81,7 +84,10 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
         string releaseUrl = RepositoryUrl + "/releases/tag/" + Uri.EscapeDataString(tag!);
         if (!ExactUri(Text(item, "html_url"), releaseUrl, out Uri? releaseUri)
             || !item.TryGetProperty("assets", out JsonElement assets) || assets.ValueKind != JsonValueKind.Array) { return null; }
-        string fileName = "gitextensions_" + version.DebianVersion + "_" + architecture + ".deb";
+        string fileName = platform == DesktopPlatform.Linux
+            ? "gitextensions_" + version.DebianVersion + "_" + architecture + ".deb"
+            : "gitextensions_" + version.Text + "_" + (platform == DesktopPlatform.Windows ? "win-" : "osx-")
+                + (architecture == "amd64" ? "x64" : "arm64") + ".zip";
         string downloadUrl = RepositoryUrl + "/releases/download/" + Uri.EscapeDataString(tag!) + "/" + Uri.EscapeDataString(fileName);
         LinuxUpdateRelease? found = null;
         foreach (JsonElement asset in assets.EnumerateArray())
@@ -162,11 +168,14 @@ internal sealed class LinuxUpdateClient : ILinuxUpdateClient
     private static HttpRequestMessage Request(Uri uri, bool json)
     {
         HttpRequestMessage request = new(HttpMethod.Get, uri);
-        request.Headers.UserAgent.ParseAdd("GitExtensions/7.2.1-linux-alpha");
+        request.Headers.UserAgent.ParseAdd("GitExtensions/7.2.1-avalonia-alpha");
         request.Headers.Accept.Add(new(json ? "application/vnd.github+json" : "application/octet-stream"));
         if (json) { request.Headers.Add("X-GitHub-Api-Version", "2022-11-28"); }
         return request;
     }
+    private static string DefaultCacheDirectory() => OperatingSystem.IsWindows()
+        ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), OperatingSystem.IsMacOS() ? "Library/Caches" : ".cache");
     private static bool AllowedDownloadUri(Uri uri) => uri.IsAbsoluteUri && uri.Scheme == "https" && uri.Port == 443
         && uri.UserInfo.Length == 0 && uri.Fragment.Length == 0 && uri.Host is "github.com" or "release-assets.githubusercontent.com" or "objects.githubusercontent.com";
     private static bool ExactUri(string? value, string expected, out Uri? uri)

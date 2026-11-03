@@ -11,7 +11,7 @@ using GitExtensions.Linux.Desktop.Localization;
 
 namespace GitExtensions.Linux.Desktop;
 
-/// <summary>The compact Windows Updates form; Linux downloads a verified package for the desktop installer.</summary>
+/// <summary>The compact Windows Updates form; downloads a verified native package or portable archive.</summary>
 internal sealed class UpdatesDialog : Window
 {
     private readonly ILinuxUpdateClient _client;
@@ -104,7 +104,8 @@ internal sealed class UpdatesDialog : Window
         _release = result.Release;
         if (_release is not null) { RestoreReleaseLabel(); }
         else { _label.Text = result.HasCompatiblePublications ? T("_noUpdatesFound", "No updates found")
-            : T("_noLinuxRelease", "No compatible Linux package has been published on the fork releases."); }
+            : OperatingSystem.IsLinux() ? T("_noLinuxRelease", "No compatible Linux package has been published on the fork releases.")
+            : T("_noNativeRelease", "No compatible package for this system has been published on the fork releases."); }
     }
 
     private async Task DownloadOrOpenAsync()
@@ -127,7 +128,9 @@ internal sealed class UpdatesDialog : Window
     private void RestoreReleaseLabel()
     {
         if (_package is not null)
-        { _label.Text = string.Format(_text.CurrentCulture, T("_downloaded", "Package downloaded to {0}. Open it with your desktop package installer to install the update."), _package); }
+        { _label.Text = string.Format(_text.CurrentCulture, OperatingSystem.IsLinux()
+            ? T("_downloaded", "Package downloaded to {0}. Open it with your desktop package installer to install the update.")
+            : T("_archiveDownloaded", "Archive downloaded to {0}. Extract it and replace the application to install the update."), _package); }
         else if (_release is { } release)
         { _label.Text = string.Format(_text.CurrentCulture, T("_newVersionAvailable", "There is a new version {0} of Git Extensions available"), release.Version.Text)
             + (release.Sha256 is null ? "\n" + T("_unverified", "Verification information is unavailable. Use Direct Download.") : ""); }
