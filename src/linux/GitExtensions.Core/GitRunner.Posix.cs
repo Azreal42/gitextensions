@@ -5,11 +5,11 @@ namespace GitExtensions.Linux;
 
 public sealed partial class GitRunner
 {
-    [SupportedOSPlatform("macos")]
-    private static async Task<GitBinaryResult> RunMacProcessAsync(ProcessStartInfo start, CancellationToken token,
+    [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+    private static async Task<GitBinaryResult> RunPosixProcessAsync(ProcessStartInfo start, GitProcessLaunch? launch, CancellationToken token,
         byte[]? standardInput, Action<GitProcessOutput>? observer, Action<int>? processStarted, GitStreamCapture? capture)
     {
-        MacGitProcess process = MacGitProcess.Start(start, token); Exception? failure = null;
+        PosixGitProcess process = PosixGitProcess.Start(start, token, childCreatesSession: OperatingSystem.IsLinux()); Exception? failure = null;
         using MemoryStream? outputBuffer = capture is null ? new() : null, errorBuffer = capture is null ? new() : null;
         Task output = capture is null ? CopyOutputAsync(process.StandardOutput, outputBuffer!, GitProcessOutputStream.StandardOutput, observer)
             : capture.CopyStandardOutputAsync(process.StandardOutput, token);
@@ -17,13 +17,14 @@ public sealed partial class GitRunner
             : capture.CopyStandardErrorAsync(process.StandardError);
         Task<IOException?> input = Task.FromResult<IOException?>(null);
         Task exited = process.WaitForExitAsync(), control = process.Control;
-        Task started = NotifyMacStartedAsync(process, processStarted, token);
+        Task started = NotifyPosixStartedAsync(process, launch, processStarted, token);
+        Task primary = ObservePrimaryExitAsync(process, launch);
         TaskCompletionSource canceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using CancellationTokenRegistration registration = token.Register(() => canceled.TrySetResult());
         try
         {
             input = WriteInputAsync(process.StandardInput, standardInput, token);
-            List<Task> pending = [started, control, exited, input, output, error];
+            List<Task> pending = [started, control, primary, exited, input, output, error];
             while (pending.Count != 0)
             {
                 Task completed = await Task.WhenAny(pending.Append(canceled.Task)).ConfigureAwait(false);
@@ -41,6 +42,7 @@ public sealed partial class GitRunner
         catch (Exception initial)
         {
             failure = initial;
+            if (OperatingSystem.IsLinux()) { launch!.CancelUnacknowledgedHandshake(); }
             if (await process.StopAsync().ConfigureAwait(false) is Exception stopFailure)
             {
                 failure.Data["GitProcessStopFailure"] = stopFailure;
@@ -49,7 +51,7 @@ public sealed partial class GitRunner
             }
             try { await exited.ConfigureAwait(false); }
             catch (Exception waitFailure) { failure.Data["GitProcessWaitFailure"] = waitFailure; }
-            try { await Task.WhenAll(started, control, input, output, error).ConfigureAwait(false); }
+            try { await Task.WhenAll(started, control, primary, input, output, error).ConfigureAwait(false); }
             catch { /* The initial failure survives the actual supervisor wait and admitted I/O. */ }
             throw;
         }
@@ -60,10 +62,18 @@ public sealed partial class GitRunner
         }
     }
 
-    [SupportedOSPlatform("macos")]
-    private static async Task NotifyMacStartedAsync(MacGitProcess process, Action<int>? callback, CancellationToken token)
+    [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+    private static async Task NotifyPosixStartedAsync(PosixGitProcess process, GitProcessLaunch? launch, Action<int>? callback, CancellationToken token)
     {
         int processId = await process.Started.ConfigureAwait(false);
+        if (OperatingSystem.IsLinux())
+        { await launch!.ObserveExecAsync(processId, process.AuthenticatePrimary, token).ConfigureAwait(false); }
         token.ThrowIfCancellationRequested(); callback?.Invoke(processId);
+    }
+    [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+    private static async Task ObservePrimaryExitAsync(PosixGitProcess process, GitProcessLaunch? launch)
+    {
+        await process.PrimaryExit.ConfigureAwait(false);
+        if (OperatingSystem.IsLinux()) { launch!.ParentExited(); }
     }
 }

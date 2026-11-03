@@ -60,7 +60,9 @@ jobs:
       # independent workflow; remaining platform-specific suites still need porting.
       - name: Exercise actual native process ownership
         run: |
-          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter "TestCategory=NativeProcessOwnership" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/native-kernel"
+          $filter = "TestCategory=NativeProcessOwnership"
+          if ($IsMacOS) { $filter += "|TestCategory=MacProcessStartup" }
+          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter $filter --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/native-kernel"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Exercise portable Git and UI workflows

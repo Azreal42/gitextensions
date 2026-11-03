@@ -291,7 +291,7 @@ internal static class ScriptRuntimeScenarios
             publish('child-born', stat(child.pid))
             while True: time.sleep(.01)
             """);
-        using CancellationTokenSource cancellation = new(); int parent = 0; Actor? leader = null, child = null;
+        using CancellationTokenSource cancellation = new(); int parent = 0; Actor? leader = null, child = null, supervisor = null;
         Task<ScriptProcessResult> run = new ScriptProcessRunner().RunAsync("/usr/bin/python3", fixture.Path, [script, fixture.Path], cancellation.Token,
             processStarted: started => parent = started.ProcessId);
         try
@@ -299,7 +299,12 @@ internal static class ScriptRuntimeScenarios
             await UntilAsync(() => parent > 0 && File.Exists(Path.Combine(fixture.Path, "child-ready")), TimeSpan.FromSeconds(5));
             leader = Identity(File.ReadAllText(Path.Combine(fixture.Path, "parent-ready")));
             child = Identity(File.ReadAllText(Path.Combine(fixture.Path, "child-ready")));
-            Check(leader.Value.Pid == parent && leader.Value.Parent == Environment.ProcessId && leader.Value.Group == parent && leader.Value.Session == parent
+            supervisor = Identity(File.ReadAllText("/proc/" + leader.Value.Parent + "/stat"));
+            Check(supervisor.Value.Parent == Environment.ProcessId && supervisor.Value.Pid == supervisor.Value.Group
+                && supervisor.Value.Pid == supervisor.Value.Session && leader.Value.Started >= supervisor.Value.Started
+                && new FileInfo("/proc/" + supervisor.Value.Pid + "/exe").LinkTarget == Path.Combine(AppContext.BaseDirectory, "gitextensions-posix"),
+                "The actual native supervisor must directly own the private script process.");
+            Check(leader.Value.Pid == parent && leader.Value.Parent == supervisor.Value.Pid && leader.Value.Group == parent && leader.Value.Session == parent
                 && child.Value.Parent == parent && child.Value.Group == parent && child.Value.Session == parent
                 && child.Value.Started >= leader.Value.Started && Live(leader.Value) && Live(child.Value) && !run.IsCompleted,
                 "Actual private leader and closed-pipe descendant must be pending with witnessed incarnations.");
@@ -315,7 +320,7 @@ internal static class ScriptRuntimeScenarios
             // Failure cleanup is separate from assertions and can never become a successful cancellation witness.
             if (leader is null && File.Exists(Path.Combine(fixture.Path, "parent-ready"))) { leader = Identity(File.ReadAllText(Path.Combine(fixture.Path, "parent-ready"))); }
             if (child is null && File.Exists(Path.Combine(fixture.Path, "child-born"))) { child = Identity(File.ReadAllText(Path.Combine(fixture.Path, "child-born"))); }
-            if (leader is Actor owned && owned.Pid == parent && owned.Parent == Environment.ProcessId && owned.Group == parent && owned.Session == parent
+            if (leader is Actor owned && owned.Pid == parent && supervisor is Actor owner && owner.Parent == Environment.ProcessId && owned.Parent == owner.Pid && owned.Group == parent && owned.Session == parent
                 && child is Actor descendant && descendant.Parent == parent && descendant.Group == parent && descendant.Session == parent && descendant.Started >= owned.Started)
             {
                 await CleanupAsync(descendant);

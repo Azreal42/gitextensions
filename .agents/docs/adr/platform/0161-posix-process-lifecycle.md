@@ -1,0 +1,17 @@
+# ADR 0161 · Cycle de vie des commandes POSIX
+
+Statut : qualification en cours. [Objectif trois plateformes](0159-avalonia-three-platforms.md), [propriété native](0160-native-process-ownership.md). Le cas Linux « parent sorti, enfant vivant sans flux hérités » échouait sur la source `226d0b29a` ; il passe avec ce raccord.
+
+`GitRunner.Posix` partage le moteur Linux/macOS. Le pont C construit les structures natives de `posix_spawn`, mappe seulement cinq descripteurs et crée la session avant le chargement. Le parent conserve son propre superviseur non récollecté jusqu’au nettoyage : son PID reste réservé, y compris pour annuler un chargeur bloqué avant HELLO. ACK précède tout fork Git.
+
+Sous Linux, le primaire reste le lanceur `gitextensions-exec` inchangé : sélection de l’exécutable, argv littéraux, GEX1 et témoin d’errno sont conservés. Son véritable PID est publié après l’acquittement d’exécution. Le superviseur devient sous-récollecteur, conserve le primaire avec `WNOWAIT`, capture les acteurs via pidfd et accorde à chacun son SIGINT puis sa grâce de 500 ms. Le dernier front de ses enfants directs doit être vide avant le retour ; EOF ne suffit plus.
+
+Les tests vérifient la chaîne parentale et les images natives réelles. Le statut naturel des orphelins reste une lecture de `waitpid` par un intercepteur de test indépendant ; il ne provient pas d’un statut inventé par le programme enfant ou le runner. Les références de sortie sont des pidfd Linux, des événements kqueue Mac et des handles Windows ; un zombie réservé reste distingué d’un acteur vivant. Le nouveau test Mac charge un vrai constructeur avant main/HELLO, exige sa fin avant le retour d’annulation et garde un nettoyage coopératif du banc.
+
+L’activation GNU complète redirigeait les conversions numériques du superviseur vers glibc 2.38. Les fonctions nécessaires sont exposées par `_DEFAULT_SOURCE` et POSIX ; les imports restent au minimum 2.34 du contrôle Debian. `eng/linux/verify-native-runtime.py` bloque un helper absent, une mauvaise architecture ou une ABI plus récente que cette déclaration. Le vrai binaire antérieur est rejeté ; la variante corrigée est acceptée. Le paquet Windows/Mac refuse les artefacts Linux.
+
+Première vérification locale : compilation sans avertissement/erreur, 1 210 Core, 42 Plugins, cinq contrats noyau et 151 Desktop portables réussis ; les 1 210 identités Core antérieures sont conservées. Après correction ABI : 93 scénarios de cycle de vie, cinq contrats noyau, 42 Plugins, 151 Desktop portables et cinq contrôles Debian réussis. La dernière revue du scan procfs repasse les 93 scénarios et les cinq contrats ; les vrais ELF respectent 2.34. Le paquet reste à contrôler au commit exact. La CI garde les suites Linux complètes et ajoute cinq contrats noyau ; Windows en conserve cinq et Mac ajoute le constructeur bloqué à ses cinq contrats. Les exécutions natives et paquets du commit final restent à qualifier.
+
+Restent : console interactive/PTY et IPC, descendants Mac sortis de leur groupe, suites métier natives complètes et qualification ARM réelle. Aucun état de migration globale achevée n’est déclaré. Sources et journaux : `artifacts/cross-platform/20261103/posix-lifecycle-*`.
+
+Repères : [pidfd](https://man7.org/linux/man-pages/man2/pidfd_open.2.html), [spawn glibc](https://github.com/bminor/glibc/blob/master/posix/spawn.h), [événements Apple](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/event.h).

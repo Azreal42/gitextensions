@@ -6,11 +6,11 @@ using System.Runtime.Versioning;
 using System.Text.Json;
 using GitExtensions.Linux;
 using NUnit.Framework;
+using Microsoft.Win32.SafeHandles;
 
 namespace GitExtensions.Native.Tests;
 
-// The same kernel contracts run on real Windows and Mac hosts. Linux's existing
-// backend and its closed-pipe gap are tracked separately; there is no simulated OS.
+// The same contracts exercise actual native kernel references on every host.
 [TestFixture, Category("NativeProcessOwnership"), NonParallelizable]
 public sealed class NativeProcessOwnershipTests
 {
@@ -24,8 +24,8 @@ public sealed class NativeProcessOwnershipTests
         using Fixture f = new(); using CancellationTokenSource cancel = new();
         ConcurrentQueue<GitProcessOutput> observed = new();
         string owned = f.Directory("owned"), unrelated = f.Directory("unrelated");
-        using Process other = StartProbe(unrelated, ["hold", unrelated]); _ = other.SafeHandle;
-        Process? parent = null, child = null; Task<GitBinaryResult>? operation = null;
+        using NativeActor other = new(StartProbe(unrelated, ["hold", unrelated]), managedChild: true);
+        NativeActor? parent = null, child = null; Task<GitBinaryResult>? operation = null;
         try
         {
             await ReadyAsync(Path.Combine(unrelated, "child-ready.json"));
@@ -33,8 +33,8 @@ public sealed class NativeProcessOwnershipTests
                 outputReceived: observed.Enqueue);
             await ReadyAsync(Path.Combine(owned, "tree-ready.json"), operation);
             using JsonDocument actors = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(owned, "tree-ready.json")));
-            parent = Process.GetProcessById(actors.RootElement.GetProperty("parent").GetInt32()); _ = parent.SafeHandle;
-            child = Process.GetProcessById(actors.RootElement.GetProperty("child").GetInt32()); _ = child.SafeHandle;
+            parent = new(Process.GetProcessById(actors.RootElement.GetProperty("parent").GetInt32()));
+            child = new(Process.GetProcessById(actors.RootElement.GetProperty("child").GetInt32()));
             if (!independentPipes)
             {
                 bool Seen(GitProcessOutputStream stream, string marker) => Encoding.ASCII.GetString(observed.Where(x => x.Stream == stream)
@@ -116,32 +116,69 @@ public sealed class NativeProcessOwnershipTests
         Assert.That(File.Exists(path), Is.True, "Native fixture readiness: " + path);
     }
 
-    private static void Stop(Process? process)
+    private static void Stop(NativeActor? actor) => actor?.Stop();
+    private static bool IsRunning(NativeActor actor) => actor.IsRunning;
+    private static async Task WaitUntilStoppedAsync(NativeActor actor)
+        => await actor.WaitForExitAsync().WaitAsync(Limit);
+
+    internal sealed class NativeActor : IDisposable
     {
-        if (process is null) { return; }
-        try { if (!process.HasExited) { process.Kill(entireProcessTree: true); } process.WaitForExit(); }
-        catch (InvalidOperationException) { }
+        private readonly Process _process;
+        private readonly SafeFileHandle? _reference;
+        private readonly bool _managedChild;
+        private bool _stopped;
+        internal int Id => _process.Id;
+        internal NativeActor(Process process, bool managedChild = false)
+        {
+            _process = process; _managedChild = managedChild;
+            try
+            {
+                if (OperatingSystem.IsWindows()) { _ = process.SafeHandle; }
+                else
+                {
+                    int descriptor = OpenReference(process.Id);
+                    if (descriptor < 0) { throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()); }
+                    _reference = new((IntPtr)descriptor, ownsHandle: true);
+                }
+            }
+            catch { process.Dispose(); throw; }
+        }
+        internal bool IsRunning
+        {
+            get
+            {
+                if (OperatingSystem.IsWindows()) { return !_process.HasExited; }
+                if (_stopped) { return false; }
+                int state = ReferenceIsRunning(_reference!);
+                if (state < 0) { throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()); }
+                _stopped = state == 0;
+                return !_stopped;
+            }
+        }
+        internal async Task WaitForExitAsync()
+        {
+            if (OperatingSystem.IsWindows() || _managedChild) { await _process.WaitForExitAsync(); return; }
+            while (IsRunning) { await Task.Delay(10); }
+        }
+        internal void Stop()
+        {
+            if (OperatingSystem.IsMacOS()) { return; } // Controlled actors use release files on Mac.
+            if (OperatingSystem.IsWindows())
+            {
+                if (!_process.HasExited) { _process.Kill(entireProcessTree: true); }
+                return;
+            }
+            if (StopReference(_reference!) != 0) { throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()); }
+        }
+        public void Dispose() { _reference?.Dispose(); _process.Dispose(); }
     }
 
-    private static bool IsRunning(Process process)
-    {
-        if (!OperatingSystem.IsMacOS()) { return !process.HasExited; }
-        int state = ProcessIsRunning(process.Id);
-        if (state < 0) { throw new System.ComponentModel.Win32Exception(Marshal.GetLastPInvokeError()); }
-        return state != 0;
-    }
-
-    private static async Task WaitUntilStoppedAsync(Process process)
-    {
-        if (!OperatingSystem.IsMacOS()) { await process.WaitForExitAsync().WaitAsync(Limit); return; }
-        Stopwatch watch = Stopwatch.StartNew();
-        while (IsRunning(process) && watch.Elapsed < Limit) { await Task.Delay(10); }
-        Assert.That(IsRunning(process), Is.False, "The native actor has not stopped: " + process.Id);
-    }
-
-    [SupportedOSPlatform("macos")]
-    [DllImport("libgitextensions-posix.dylib", EntryPoint = "ge_process_is_running", SetLastError = true)]
-    private static extern int ProcessIsRunning(int processId);
+    [DllImport("gitextensions-posix", EntryPoint = "ge_open_process_reference", SetLastError = true)]
+    private static extern int OpenReference(int processId);
+    [DllImport("gitextensions-posix", EntryPoint = "ge_process_reference_is_running", SetLastError = true)]
+    private static extern int ReferenceIsRunning(SafeFileHandle reference);
+    [DllImport("gitextensions-posix", EntryPoint = "ge_stop_process_reference", SetLastError = true)]
+    private static extern int StopReference(SafeFileHandle reference);
 
     [SupportedOSPlatform("macos")]
     [DllImport("libc", EntryPoint = "realpath", SetLastError = true)]
@@ -169,7 +206,7 @@ public sealed class NativeProcessOwnershipTests
         return Process.Start(start)!;
     }
 
-    private static string Executable
+    internal static string Executable
     {
         get
         {

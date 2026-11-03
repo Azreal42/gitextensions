@@ -15,6 +15,15 @@ internal static partial class GitProcessStreamingScenarios
         return new(int.Parse(stat[..name].Trim(), CultureInfo.InvariantCulture), int.Parse(fields[1], CultureInfo.InvariantCulture),
             int.Parse(fields[2], CultureInfo.InvariantCulture), int.Parse(fields[3], CultureInfo.InvariantCulture), long.Parse(fields[19], CultureInfo.InvariantCulture));
     }
+    private static ProcessIdentity WitnessSupervisor(ProcessIdentity primary)
+    {
+        ProcessIdentity owner = Identity("/proc/" + primary.Parent + "/stat");
+        Check(owner.Parent == Environment.ProcessId && owner.Pid == owner.Group && owner.Pid == owner.Session
+            && primary.Started >= owner.Started && LinuxProcessState.IsRunning(owner.Pid)
+            && new FileInfo("/proc/" + owner.Pid + "/exe").LinkTarget == Path.Combine(AppContext.BaseDirectory, "gitextensions-posix"),
+            "The primary must belong to the actual live, directly spawned private native supervisor.");
+        return owner;
+    }
     private static string OrphanWrapper(RepositoryFixture fixture)
     {
         if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("This fixture witnesses Linux sessions and orphaned pipes."); }
@@ -31,8 +40,9 @@ internal static partial class GitProcessStreamingScenarios
         await Until(() => File.Exists(wrapper + ".pids") && File.ReadAllText(wrapper + ".pids").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length == 2);
         int[] ids = File.ReadAllText(wrapper + ".pids").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray();
         ProcessIdentity parent = Identity(wrapper + ".parent-stat"), child = Identity("/proc/" + ids[1] + "/stat");
-        Check(parent.Pid == ids[0] && parent.Parent == Environment.ProcessId && parent.Group == parent.Pid && parent.Session == parent.Pid,
-            "setsid must exec in the direct Process.Start child, with a private SID/PGID equal to its PID; no hidden fork is allowed.");
+        ProcessIdentity supervisor = WitnessSupervisor(parent);
+        Check(parent.Pid == ids[0] && parent.Parent == supervisor.Pid && parent.Group == parent.Pid && parent.Session == parent.Pid,
+            "The authenticated exec child must retain its actual PID and private SID/PGID beneath the witnessed supervisor.");
         Check(child.Pid == ids[1] && child.Group == parent.Group && child.Session == parent.Session && child.Started >= parent.Started,
             "The pipe holder must belong to this invocation's private group and session.");
         await Until(() => !LinuxProcessState.IsRunning(parent.Pid));

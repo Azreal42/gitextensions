@@ -238,92 +238,9 @@ public sealed partial class GitRunner
     {
         if (OperatingSystem.IsWindows())
         { return await RunWindowsProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, processStarted, streamCapture).ConfigureAwait(false); }
-        if (OperatingSystem.IsMacOS())
-        { return await RunMacProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, processStarted, streamCapture).ConfigureAwait(false); }
-        using Process process = new() { StartInfo = startInfo };
-        using GitProcessGroup? processes = OperatingSystem.IsLinux() ? new GitProcessGroup() : null;
-        process.Start();
-        using MemoryStream? buffer = streamCapture is null ? new() : null;
-        using MemoryStream? errorBuffer = streamCapture is null ? new() : null;
-        Task output = streamCapture is null
-            ? CopyOutputAsync(process.StandardOutput.BaseStream, buffer!, GitProcessOutputStream.StandardOutput, outputReceived)
-            : streamCapture.CopyStandardOutputAsync(process.StandardOutput.BaseStream, cancellationToken);
-        Task error = streamCapture is null
-            ? CopyOutputAsync(process.StandardError.BaseStream, errorBuffer!, GitProcessOutputStream.StandardError, outputReceived)
-            : streamCapture.CopyStandardErrorAsync(process.StandardError.BaseStream);
-        Task control = Task.CompletedTask;
-        Task<IOException?> input = Task.FromResult<IOException?>(null);
-        TaskCompletionSource cancellation = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        using CancellationTokenRegistration registration = cancellationToken.Register(() => cancellation.TrySetResult());
-        try
-        {
-            if (OperatingSystem.IsLinux())
-            {
-                processes!.CaptureStartedChild(process);
-                processes!.PinOutputPipes(process.StandardOutput.BaseStream, process.StandardError.BaseStream);
-                control = launch!.ObserveExecAsync(process.Id, processes, cancellationToken);
-                if (processStarted is not null) { control = NotifyStartedAsync(control, process.Id, processStarted, cancellationToken); }
-            }
-            else { processStarted?.Invoke(process.Id); }
-            input = WriteInputAsync(process.StandardInput.BaseStream, standardInput, cancellationToken, process.StandardInput.Close);
-            Task exited = process.WaitForExitAsync(CancellationToken.None);
-            // Monitor all four directions from the outset. Git can produce stdout while a large stdin is still blocked.
-            List<Task> pending = [exited, input, output, error, control];
-            while (pending.Count > 0)
-            {
-                Task completed = await Task.WhenAny(pending.Append(cancellation.Task)).ConfigureAwait(false);
-                // Keep this signal until every pipe reaches EOF, including after an already exited parent.
-                if (completed == cancellation.Task) { cancellationToken.ThrowIfCancellationRequested(); }
-                await completed.ConfigureAwait(false); pending.Remove(completed);
-                if (OperatingSystem.IsLinux() && completed == exited) { launch!.ParentExited(); }
-            }
-            cancellationToken.ThrowIfCancellationRequested();
-            IOException? inputError = await input.ConfigureAwait(false);
-            if (process.ExitCode == 0 && inputError is not null)
-            {
-                throw inputError;
-            }
-
-            // The streaming capture owns only its bounded stderr prefix and counters, never a stdout snapshot.
-            if (streamCapture is not null) { return new GitBinaryResult(process.ExitCode, [], ""); }
-            List<string> warnings = [];
-            byte[] errorBytes = errorBuffer!.ToArray();
-            return new GitBinaryResult(process.ExitCode, buffer!.ToArray(), GitOutputText.Utf8(errorBytes, "stderr", warnings))
-            { StandardErrorBytes = errorBytes, Warnings = warnings };
-        }
-        catch (Exception failure)
-        {
-            if (OperatingSystem.IsLinux())
-            {
-                try { launch!.CancelUnacknowledgedHandshake(); }
-                catch (Exception handshakeFailure) { failure.Data["GitProcessHandshakeStopFailure"] = handshakeFailure; }
-                // Ownership was captured synchronously after Process.Start: neither HELLO nor exec completion gates stopping.
-                if (await processes!.StopAsync().ConfigureAwait(false) is Exception stopFailure)
-                {
-                    failure.Data["GitProcessStopFailure"] = stopFailure;
-                    // Surface the initial exception even if permissions prevent stopping an inherited writer.
-                    try { process.StandardInput.Dispose(); process.StandardOutput.Dispose(); process.StandardError.Dispose(); }
-                    catch (Exception closeFailure) { failure.Data["GitProcessPipeCloseFailure"] = closeFailure; }
-                }
-            }
-            else
-            {
-                try { if (!process.HasExited) { process.Kill(entireProcessTree: true); } }
-                catch (InvalidOperationException) { /* The process exited between HasExited and Kill. */ }
-            }
-            try { await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false); }
-            catch (Exception waitFailure) { failure.Data["GitProcessWaitFailure"] = waitFailure; }
-            if (OperatingSystem.IsLinux()) { launch!.ParentExited(); }
-            try { await Task.WhenAll(input, output, error, control).ConfigureAwait(false); }
-            catch { /* Preserve the original failure after the child and its pipes have stopped. */ }
-            throw;
-        }
-    }
-
-    private static async Task NotifyStartedAsync(Task nativeExec, int processId, Action<int> callback, CancellationToken token)
-    {
-        await nativeExec.ConfigureAwait(false);
-        token.ThrowIfCancellationRequested(); callback(processId);
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+        { return await RunPosixProcessAsync(startInfo, launch, cancellationToken, standardInput, outputReceived, processStarted, streamCapture).ConfigureAwait(false); }
+        throw new PlatformNotSupportedException("Git process ownership requires Windows, Linux or macOS.");
     }
 
     private static async Task<IOException?> WriteInputAsync(Stream stream, byte[]? standardInput, CancellationToken token, Action? close = null)

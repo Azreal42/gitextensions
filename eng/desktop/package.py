@@ -108,7 +108,8 @@ def build(args):
     for name in required:
         if not (payload / name).is_file():
             raise FileNotFoundError(f"Incomplete self-contained delivery: {name}")
-    if (payload / "gitextensions-exec").exists():
+    if ((payload / "gitextensions-exec").exists() or (payload / "libgitextensions-posix.so").exists()
+            or not mac and ((payload / "gitextensions-posix").exists() or (payload / "libgitextensions-posix.dylib").exists())):
         raise ValueError("A Linux-only process launcher must not enter a Windows/macOS delivery")
     if mac:
         supervisor = payload / "gitextensions-posix"

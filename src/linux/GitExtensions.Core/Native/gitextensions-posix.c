@@ -3,6 +3,9 @@
  * Control descriptors are private inherited pipe ends, never repository files.
  */
 #define _DARWIN_C_SOURCE
+#ifndef __APPLE__
+#define _DEFAULT_SOURCE
+#endif
 #define _POSIX_C_SOURCE 200809L
 #include <arpa/inet.h>
 #include <errno.h>
@@ -23,6 +26,7 @@
 #else
 #include <dirent.h>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 #endif
 
 static volatile sig_atomic_t stop_requested;
@@ -47,10 +51,118 @@ static int64_t milliseconds(void)
     return (int64_t)value.tv_sec * 1000 + value.tv_nsec / 1000000;
 }
 
-/* No numeric PID is used to signal a non-child. The only group signaled is
- * reserved by the unreaped primary child. Linux subreaper children additionally
- * remain waitable by this single-threaded supervisor until it reaps them.
- */
+#ifndef __APPLE__
+struct owned_actor { pid_t pid; int descriptor; int64_t interrupted; int forced; };
+static struct owned_actor *actors;
+static size_t actor_count, actor_capacity;
+static int discovery_started;
+static int actor_alive(size_t index)
+{
+    if (actors[index].descriptor < 0) return 0;
+    struct pollfd descriptor = { .fd = actors[index].descriptor, .events = POLLIN };
+    int result;
+    do { result = poll(&descriptor, 1, 0); } while (result < 0 && errno == EINTR);
+    if (result < 0) return -1;
+    if (descriptor.revents & (POLLIN | POLLHUP)) return 0;
+    if (descriptor.revents != 0) { errno = EIO; return -1; }
+    return 1;
+}
+static int actor_index(pid_t pid)
+{
+    for (size_t index = 0; index < actor_count; index++) {
+        int alive = actor_alive(index);
+        if (alive < 0) return -2;
+        if (!alive && actors[index].descriptor >= 0) {
+            close(actors[index].descriptor); actors[index].descriptor = -1;
+        }
+        if (alive && actors[index].pid == pid) return (int)index;
+    }
+    return -1;
+}
+static int process_state(pid_t pid, pid_t *parent, pid_t *session, char *state)
+{
+    char path[128], text[4096];
+    if (snprintf(path, sizeof(path), "/proc/%ld/stat", (long)pid) >= (int)sizeof(path)) { errno = EOVERFLOW; return -1; }
+    FILE *file = fopen(path, "r");
+    if (file == NULL) return errno == ENOENT || errno == ESRCH ? 0 : -1;
+    errno = 0;
+    size_t length = fread(text, 1, sizeof(text) - 1, file);
+    int failed = ferror(file), original_error = errno;
+    fclose(file); text[length] = '\0';
+    if (failed || length == 0) {
+        errno = original_error != 0 ? original_error : EIO;
+        return errno == ENOENT || errno == ESRCH ? 0 : -1;
+    }
+    char *end = strrchr(text, ')'); long ppid, group, sid;
+    if (end == NULL || sscanf(end + 2, "%c %ld %ld %ld", state, &ppid, &group, &sid) != 4) { errno = EIO; return -1; }
+    *parent = (pid_t)ppid; *session = (pid_t)sid; return 1;
+}
+static int capture_actor(pid_t pid, pid_t session, int direct_child)
+{
+    int existing = actor_index(pid);
+    if (existing >= 0) return 0;
+    if (existing == -2) return -1;
+    pid_t parent, sid; char state;
+    int found = process_state(pid, &parent, &sid, &state);
+    if (found < 0 && errno == EACCES && !direct_child) return 0;
+    if (found <= 0) return found;
+    int anchor = actor_index(parent);
+    if (anchor == -2) return -1;
+    if (!direct_child && parent != getpid() && sid != session && anchor < 0) return 0;
+    int descriptor = (int)syscall(SYS_pidfd_open, pid, 0);
+    if (descriptor < 0) return errno == ESRCH ? 0 : -1;
+    found = process_state(pid, &parent, &sid, &state);
+    struct pollfd ready = { .fd = descriptor, .events = POLLIN };
+    int polled;
+    do { polled = poll(&ready, 1, 0); } while (polled < 0 && errno == EINTR);
+    int owned = direct_child || parent == getpid() || sid == session;
+    if (!owned && anchor >= 0 && parent == actors[anchor].pid) {
+        int alive = actor_alive((size_t)anchor);
+        if (alive < 0) { close(descriptor); return -1; }
+        owned = alive;
+    }
+    if (found <= 0 || polled != 0 || !owned) {
+        int error = errno; close(descriptor); errno = error;
+        return found < 0 || polled < 0 ? -1 : 0;
+    }
+    if (actor_count == actor_capacity) {
+        size_t capacity = actor_capacity == 0 ? 8 : actor_capacity * 2;
+        struct owned_actor *grown = realloc(actors, capacity * sizeof(*actors));
+        if (grown == NULL) { close(descriptor); return -1; }
+        actors = grown; actor_capacity = capacity;
+    }
+    actors[actor_count++] = (struct owned_actor){ .pid = pid, .descriptor = descriptor, .interrupted = -1, .forced = 0 };
+    return 0;
+}
+static int signal_actor(size_t index, int number)
+{
+    int result;
+    do { result = (int)syscall(SYS_pidfd_send_signal, actors[index].descriptor, number, NULL, 0); }
+    while (result != 0 && errno == EINTR);
+    return result == 0 || errno == ESRCH ? 0 : -1;
+}
+static int advance_stops(void)
+{
+    for (size_t index = 0; index < actor_count; index++) {
+        int alive = actor_alive(index);
+        if (alive < 0) return -1;
+        if (!alive) continue;
+        if (actors[index].interrupted < 0) {
+            if (signal_actor(index, SIGINT) != 0) return -1;
+            actors[index].interrupted = milliseconds();
+        }
+        if (!actors[index].forced && milliseconds() - actors[index].interrupted >= 500) {
+            if (signal_actor(index, SIGSTOP) != 0 || signal_actor(index, SIGKILL) != 0) return -1;
+            actors[index].forced = 1;
+        }
+    }
+    return 0;
+}
+#endif
+
+/* The unreaped primary reserves the private group/session identity. Linux
+ * additionally owns adopted children as a single-threaded child subreaper;
+ * pidfds protect every individual signal, including actors which escape it. */
 static int live_members(pid_t group, int stopping, int force)
 {
     int live = 0;
@@ -71,40 +183,50 @@ static int live_members(pid_t group, int stopping, int force)
         if (count != (int)sizeof(info)) { free(members); if (errno == 0) errno = EIO; return -1; }
         if (info.pbi_pgid == (uint32_t)group && info.pbi_status != SZOMB) live++;
     }
-    (void)stopping; (void)force;
-    free(members);
+    (void)stopping; (void)force; free(members);
 #else
-    int reaped = 0;
-    DIR *processes = opendir("/proc");
-    if (processes == NULL) return -1;
-    struct dirent *entry;
-    while ((entry = readdir(processes)) != NULL) {
-        char *end; long candidate = strtol(entry->d_name, &end, 10);
-        if (*entry->d_name == '\0' || *end != '\0' || candidate <= 1 || candidate == group || candidate == getpid()) continue;
-        char path[128], text[4096];
-        if (snprintf(path, sizeof(path), "/proc/%ld/stat", candidate) >= (int)sizeof(path)) continue;
-        FILE *file = fopen(path, "r");
-        if (file == NULL) { if (errno == ENOENT || errno == ESRCH || errno == EACCES) continue; closedir(processes); return -1; }
-        size_t length = fread(text, 1, sizeof(text) - 1, file); fclose(file); text[length] = '\0';
-        char *name_end = strrchr(text, ')'); char state; long parent, member_group;
-        if (name_end == NULL || sscanf(name_end + 2, "%c %ld %ld", &state, &parent, &member_group) != 3) continue;
-        int adopted = parent == getpid();
-        if (member_group != group && !adopted) continue;
-        if (state == 'Z' || state == 'X' || state == 'x') {
-            if (adopted) { int status; if (waitpid((pid_t)candidate, &status, WNOHANG) == candidate) reaped = 1; }
-            continue;
+    (void)force;
+    if (stopping) {
+        DIR *processes = opendir("/proc");
+        if (processes == NULL) return -1;
+        struct dirent *entry;
+        while ((entry = readdir(processes)) != NULL) {
+            char *end; long candidate = strtol(entry->d_name, &end, 10);
+            if (*entry->d_name == '\0' || *end != '\0' || candidate <= 1 || candidate == getpid()) continue;
+            if (capture_actor((pid_t)candidate, group, 0) != 0 || (discovery_started && advance_stops() != 0)) { closedir(processes); return -1; }
         }
-        live++;
-        if (stopping && adopted) {
-            /* Our own unreaped child cannot be recycled while we signal it. */
-            if (force) { (void)kill((pid_t)candidate, SIGSTOP); (void)kill((pid_t)candidate, SIGKILL); }
-            else (void)kill((pid_t)candidate, SIGINT);
+        closedir(processes);
+        discovery_started = 1;
+        if (advance_stops() != 0) return -1;
+    }
+    char path[128];
+    if (snprintf(path, sizeof(path), "/proc/self/task/%ld/children", (long)getpid()) >= (int)sizeof(path)) { errno = EOVERFLOW; return -1; }
+    FILE *children = fopen(path, "r");
+    if (children == NULL) return -1;
+    long candidate; int changed = 0, scanned;
+    while ((scanned = fscanf(children, "%ld", &candidate)) == 1) {
+        if (candidate == group) continue; // The primary must remain unreaped.
+        siginfo_t state = { 0 };
+        if (waitid(P_PID, (id_t)candidate, &state, WEXITED | WNOHANG | WNOWAIT) != 0) {
+            if (errno == EINTR) { live++; continue; }
+            int error = errno; fclose(children); errno = error; return -1;
+        }
+        if (state.si_pid == candidate) {
+            int result;
+            do { result = waitpid((pid_t)candidate, NULL, WNOHANG); } while (result < 0 && errno == EINTR);
+            if (result != candidate) { int error = errno; fclose(children); errno = error; return -1; }
+            changed = 1;
+        } else {
+            live++;
+            if (stopping && capture_actor((pid_t)candidate, group, 1) != 0) { int error = errno; fclose(children); errno = error; return -1; }
         }
     }
-    closedir(processes);
-    /* Reparenting can change an earlier candidate in this finite snapshot.
-     * A pass which reaped a bridge must be followed by a fresh full pass. */
-    if (live == 0 && reaped) return 1;
+    int error = ferror(children) || scanned != EOF; fclose(children);
+    if (error) { errno = EIO; return -1; }
+    if (stopping && advance_stops() != 0) return -1;
+    // With a dead reserved primary and no other direct child, a subreaper has
+    // no live descendant frontier. Reaping a bridge requires a fresh snapshot.
+    if (live == 0 && changed) live = 1;
 #endif
     return live;
 }
@@ -118,7 +240,9 @@ static int descriptor(const char *text)
 
 int main(int argc, char **argv)
 {
-    if (argc < 5 || strcmp(argv[3], "--") != 0) return 2;
+    int child_session = argc > 5 && strcmp(argv[3], "--child-sets-session") == 0;
+    int executable = child_session ? 5 : 4;
+    if (argc <= executable || strcmp(argv[executable - 1], "--") != 0) return 2;
     int control_fd = descriptor(argv[1]); events_fd = descriptor(argv[2]);
     if (control_fd < 0 || events_fd < 0 || control_fd == events_fd) return 2;
     if (fcntl(control_fd, F_SETFD, FD_CLOEXEC) != 0 || fcntl(events_fd, F_SETFD, FD_CLOEXEC) != 0) return 2;
@@ -144,16 +268,24 @@ int main(int argc, char **argv)
         close(exec_error[0]); close(control_fd); close(events_fd);
         for (int number = 1; number < NSIG; number++) signal(number, SIG_DFL);
         sigset_t empty; sigemptyset(&empty); sigprocmask(SIG_SETMASK, &empty, NULL);
-        if (setpgid(0, 0) == 0) execv(argv[4], &argv[4]);
+        if (child_session || setpgid(0, 0) == 0) execv(argv[executable], &argv[executable]);
         int error = errno; ssize_t sent;
         do { sent = write(exec_error[1], &error, sizeof(error)); } while (sent < 0 && errno == EINTR);
         _exit(127);
     }
     close(exec_error[1]);
-    if (setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) stop_requested = 1;
+    if (!child_session && setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) stop_requested = 1;
+    /* Only Git and its descendants retain the actual standard streams. EOF is
+     * observable independently of the supervisor's mandatory process drain. */
+    close(STDIN_FILENO); close(STDOUT_FILENO); close(STDERR_FILENO);
     if (fcntl(exec_error[0], F_SETFL, O_NONBLOCK) != 0) stop_requested = 1;
     int native_error = 0, exec_done = 0; size_t exec_bytes = 0;
     int exited = 0, failure = 0; int64_t stopping_at = -1;
+#ifdef __APPLE__
+    int group_interrupted = 0, primary_interrupted = 0;
+#else
+    if (capture_actor(child, child, 1) != 0) { failure = errno; stop_requested = 1; }
+#endif
     while (1) {
         struct pollfd descriptors[2] = {
             { .fd = control_fd, .events = POLLIN | POLLHUP },
@@ -181,16 +313,28 @@ int main(int argc, char **argv)
         }
         if (stop_requested && stopping_at < 0) stopping_at = milliseconds();
         int force = stop_requested && (stopping_at < 0 || milliseconds() - stopping_at >= 500);
+#ifdef __APPLE__
         if (stop_requested) {
-            if (force) { (void)kill(-child, SIGSTOP); (void)kill(-child, SIGKILL); }
-            else (void)kill(-child, SIGINT);
+            if (force) {
+                (void)kill(child, SIGSTOP); (void)kill(child, SIGKILL);
+                (void)kill(-child, SIGSTOP); (void)kill(-child, SIGKILL);
+            } else if (!group_interrupted) {
+                if (kill(-child, SIGINT) == 0) group_interrupted = 1;
+                else if (errno == ESRCH && !primary_interrupted) { (void)kill(child, SIGINT); primary_interrupted = 1; }
+                else if (errno != ESRCH) failure = errno;
+            }
         }
+#endif
         siginfo_t state; memset(&state, 0, sizeof(state));
         if (waitid(P_PID, (id_t)child, &state, WEXITED | WNOHANG | WNOWAIT) != 0) {
             if (errno == EINTR) continue;
             failure = errno; stop_requested = 1; break;
         }
-        exited = state.si_pid == child;
+        if (!exited && state.si_pid == child) {
+            exited = 1;
+            int primary_code = state.si_code == CLD_EXITED ? state.si_status : 128 + state.si_status;
+            if (record(5, child, (uint32_t)primary_code) != 0) stop_requested = 1;
+        }
         int members = live_members(child, stop_requested, force);
         if (members < 0) { if (errno == EAGAIN) continue; failure = errno; stop_requested = 1; continue; }
         if (exited && members == 0) break;

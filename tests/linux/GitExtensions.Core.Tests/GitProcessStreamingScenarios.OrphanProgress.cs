@@ -79,11 +79,16 @@ internal static partial class GitProcessStreamingScenarios
             """ + "\n");
         File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         Pipes pipes = new(); using CancellationTokenSource cancellation = new();
-        Task<GitResult> command = new GitRepository(fixture.Repository.Path, new GitRunner(wrapper)).MarkBisectAsync(GitBisectOption.Good, head, cancellation.Token, pipes.Receive);
+        NativeWaitWitness waitWitness = await CreateNativeWaitWitnessAsync(fixture);
+        Dictionary<string, string?> environment = new(GitExecutionEnvironment.Capture(new() { Executable = wrapper }).EnvironmentVariables);
+        waitWitness.Apply(environment);
+        GitRunner runner = new(GitExecutionEnvironment.Capture(new() { Executable = wrapper }, environment));
+        Task<GitResult> command = new GitRepository(fixture.Repository.Path, runner).MarkBisectAsync(GitBisectOption.Good, head, cancellation.Token, pipes.Receive);
         try
         {
             await Until(() => File.Exists(wrapper + ".children")); ProcessIdentity parent = Identity(wrapper + ".parent-stat");
-            Check(parent.Parent == Environment.ProcessId && parent.Pid == parent.Group && parent.Pid == parent.Session,
+            ProcessIdentity supervisor = WitnessSupervisor(parent);
+            Check(parent.Parent == supervisor.Pid && parent.Pid == parent.Group && parent.Pid == parent.Session,
                 "The actual directly started parent must execute in its private group and session.");
             foreach (string role in new[] { "stdout", "stderr" })
             {
@@ -101,7 +106,7 @@ internal static partial class GitProcessStreamingScenarios
             foreach (PipeHolder holder in holders)
             {
                 ProcessIdentity current = Identity("/proc/" + holder.Identity.Pid + "/stat");
-                Check(current.Parent == Environment.ProcessId && current.Started == holder.Identity.Started
+                Check(current.Parent == supervisor.Pid && current.Started == holder.Identity.Started
                     && current.Group == parent.Group && current.Session == parent.Session,
                     "The exact live holders must be adopted orphans without changing their private group/session.");
                 GitResult metadata = await DirectLaunch("/usr/bin/stat", fixture.Root,
@@ -125,9 +130,8 @@ internal static partial class GitProcessStreamingScenarios
                 Check(signaled.Pid == holder.Identity.Pid && signaled.Started == holder.Identity.Started
                     && signaled.Group == holder.Identity.Group && signaled.Session == holder.Identity.Session,
                     "The real SIGINT witness must belong to the same independently held pipe actor incarnation.");
-                int waited = WaitFixtureChild(holder.Identity.Pid, out int status, 1);
-                Check(waited == holder.Identity.Pid, "The exact orphan's actual termination status must be waitable by its fixture subreaper.");
-                reaped.Add(waited);
+                int status = waitWitness.StatusFor(supervisor.Pid, holder.Identity.Pid);
+                reaped.Add(holder.Identity.Pid);
                 Check((status & 0x7F) == 0 && ((status >> 8) & 0xFF) == 130,
                     "An exit-on-INT holder must actually exit130 naturally; a forced SIGKILL or a self-reported status is insufficient.");
             }

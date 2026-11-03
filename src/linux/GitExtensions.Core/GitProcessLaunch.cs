@@ -52,6 +52,9 @@ internal sealed class GitProcessLaunch : IDisposable
     }
 
     internal async Task ObserveExecAsync(int processId, GitProcessGroup processes, CancellationToken cancellationToken)
+        => await ObserveExecAsync(processId, processes.AuthenticateLeader, cancellationToken).ConfigureAwait(false);
+
+    internal async Task ObserveExecAsync(int processId, Action<int> authenticate, CancellationToken cancellationToken)
     {
         try
         {
@@ -64,7 +67,7 @@ internal sealed class GitProcessLaunch : IDisposable
             byte[]? hello = await ReceiveRecordAsync(connection).ConfigureAwait(false);
             if (hello is null || !ValidRecord(hello, processId, 0, 0))
             { throw new InvalidDataException("The private Git launcher did not provide a valid handshake."); }
-            processes.AuthenticateLeader(processId);
+            authenticate(processId);
             cancellationToken.ThrowIfCancellationRequested();
             // The child cannot exec or exit as Git until this acknowledgement is sent. This removes the exit/accept race.
             Volatile.Write(ref _acknowledged, 1);

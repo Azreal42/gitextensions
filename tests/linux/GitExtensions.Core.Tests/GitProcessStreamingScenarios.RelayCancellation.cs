@@ -202,11 +202,13 @@ internal static partial class GitProcessStreamingScenarios
                 await Until(() => File.Exists(prefix + ".foreign-ready"));
                 Check(ReadRelay(prefix, ".foreign-ready").GetProperty("git_exit").GetInt32() == 0, "The foreign control must run real native Git first.");
             }
+            NativeWaitWitness waitWitness = await CreateNativeWaitWitnessAsync(fixture);
             Dictionary<string, string?> environment = new()
             {
                 ["GIT_SSH"] = Path.Combine(directory, "relay-ssh"), ["GIT_SSH_VARIANT"] = "ssh", ["GIT_SSH_COMMAND"] = null,
                 ["GIT_ASKPASS"] = "/bin/false", ["SSH_ASKPASS"] = "/bin/false"
             };
+            waitWitness.Apply(environment);
             command = new GitRunner(Path.Combine(directory, "relay-git")).RunAsync(fixture.Repository.Path,
                 ["ls-remote", "--heads", "--", "ssh://private-relay.invalid/repository"], cancellation.Token,
                 environment: environment, outputReceived: pipes.Receive);
@@ -216,7 +218,8 @@ internal static partial class GitProcessStreamingScenarios
                 ssh = WitnessIdentity(ready.GetProperty("actor")), upload = WitnessIdentity(ready.GetProperty("upload"));
             actors.AddRange([git, ssh, upload]);
             if (closedActor) { actors.Add(WitnessIdentity(ready.GetProperty("closed"))); }
-            Check(leader.Parent == Environment.ProcessId && leader.Pid == leader.Group && leader.Pid == leader.Session,
+            ProcessIdentity supervisor = WitnessSupervisor(leader);
+            Check(leader.Parent == supervisor.Pid && leader.Pid == leader.Group && leader.Pid == leader.Session,
                 "The real Git launch must own its direct relay and private session.");
             Check(git.Parent == leader.Pid && ssh.Parent == git.Pid && upload.Parent == ssh.Pid
                 && actors.All(actor => actor.Group == leader.Group && actor.Session == leader.Session && LinuxProcessState.IsRunning(actor.Pid)),
@@ -244,8 +247,8 @@ internal static partial class GitProcessStreamingScenarios
             if (closedActor) { Check(waited.GetProperty("closed_pid").GetInt32() == actors[^1].Pid && waited.GetProperty("closed_exit").GetInt32() == 130, "The closed-pipe actor needs a real natural child wait130, not forced SIGKILL."); }
             foreach (ProcessIdentity orphan in new[] { git, ssh })
             {
-                int actual = WaitFixtureChild(orphan.Pid, out int status, 1);
-                Check(actual == orphan.Pid, "The exact adopted native Git/SSH actor must have an actual waitable exit."); reaped.Add(actual);
+                int status = waitWitness.StatusFor(supervisor.Pid, orphan.Pid);
+                reaped.Add(orphan.Pid);
                 Check(orphan == ssh ? (status & 0x7F) == 0 && ((status >> 8) & 0xFF) == 130 : (status & 0x7F) != 9,
                     "The actual orphan wait must retain graceful interruption instead of a forced SIGKILL.");
             }

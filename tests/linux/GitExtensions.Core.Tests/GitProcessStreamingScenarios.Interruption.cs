@@ -175,7 +175,8 @@ internal static partial class GitProcessStreamingScenarios
         {
             LockWitness witness = await WitnessCheckout(fixture, checkout); await Until(() => File.Exists(wrapper + ".parent-stat"));
             ProcessIdentity parent = Identity(wrapper + ".parent-stat"); await Until(() => !LinuxProcessState.IsRunning(parent.Pid));
-            Check(parent.Parent == Environment.ProcessId && parent.Pid == parent.Group && parent.Pid == parent.Session
+            ProcessIdentity supervisor = WitnessSupervisor(parent);
+            Check(parent.Parent == supervisor.Pid && parent.Pid == parent.Group && parent.Pid == parent.Session
                 && witness.Git.Session == parent.Session && witness.Git.Group == parent.Group && witness.Git.Started >= parent.Started
                 && !command.IsCompleted, "The original direct leader must have exited while its real Git descendant still owns the lock/output pipes.");
             await CheckHeldLock(fixture, witness); cancellation.Cancel();
@@ -256,7 +257,8 @@ internal static partial class GitProcessStreamingScenarios
         {
             await Until(() => File.Exists(wrapper + ".stat") && pipes.Output.Length > 0); ProcessIdentity actor = Identity(wrapper + ".stat");
             ProcessIdentity child = Identity(wrapper + ".child.stat"); detachedPipes = child;
-            Check(actor.Parent == Environment.ProcessId && actor.Pid == actor.Group && actor.Pid == actor.Session && LinuxProcessState.IsRunning(actor.Pid),
+            ProcessIdentity supervisor = WitnessSupervisor(actor);
+            Check(actor.Parent == supervisor.Pid && actor.Pid == actor.Group && actor.Pid == actor.Session && LinuxProcessState.IsRunning(actor.Pid),
                 "The SIGINT-ignoring actor must be this invocation's actual live private leader.");
             Check(child.Parent == actor.Pid && child.Group == actor.Group && child.Session == actor.Session && child.Started >= actor.Started
                 && Enumerable.Range(0, 3).All(fd => new FileInfo("/proc/" + child.Pid + "/fd/" + fd).LinkTarget == "/dev/null"),
@@ -311,7 +313,8 @@ internal static partial class GitProcessStreamingScenarios
             __attribute__((constructor)) static void before_main(void) { stop_at("before-hello"); }
             int execv(const char *path, char *const arguments[])
             {
-                stop_at("before-exec");
+                const char *target = getenv("GITEXTENSIONS_PRIVATE_LAUNCH_TARGET");
+                if (target != NULL && strcmp(path, target) == 0) stop_at("before-exec");
                 int (*next)(const char *, char *const []) = (int (*)(const char *, char *const []))dlsym(RTLD_NEXT, "execv");
                 if (next == NULL) { errno = ENOSYS; return -1; }
                 return next(path, arguments);
@@ -328,23 +331,27 @@ internal static partial class GitProcessStreamingScenarios
             using CancellationTokenSource cancellation = new(); int callbacks = 0;
             Task<GitResult> command = new GitRunner(target).RunAsync(fixture.Repository.Path, ["log", "-1", "--format=%H"], cancellation.Token,
                 environment: new Dictionary<string, string?> { ["LD_PRELOAD"] = library, ["GITEXTENSIONS_PRIVATE_LAUNCH_PHASE"] = phase,
-                    ["GITEXTENSIONS_PRIVATE_LAUNCH_MARKER"] = marker }, outputReceived: _ => callbacks++);
-            ProcessIdentity? witness = null;
+                    ["GITEXTENSIONS_PRIVATE_LAUNCH_MARKER"] = marker, ["GITEXTENSIONS_PRIVATE_LAUNCH_TARGET"] = target }, outputReceived: _ => callbacks++);
+            ProcessIdentity? witness = null, supervisorWitness = null;
             try
             {
                 await Until(() => File.Exists(marker) && int.TryParse(File.ReadAllText(marker).Trim(), out _));
                 int pid = int.Parse(File.ReadAllText(marker).Trim(), CultureInfo.InvariantCulture);
                 await Until(() => File.ReadAllText("/proc/" + pid + "/stat").Split(") ", StringSplitOptions.None)[^1][0] is 'T' or 't');
                 ProcessIdentity actor = Identity("/proc/" + pid + "/stat"); witness = actor;
-                Check(actor.Parent == Environment.ProcessId && new FileInfo("/proc/" + pid + "/exe").LinkTarget == Path.Combine(AppContext.BaseDirectory, "gitextensions-exec")
-                    && !command.IsCompleted && callbacks == 0 && !File.Exists(dispatched), "The actual no-fork native child must be stopped before Git dispatch.");
-                Check(phase == "before-hello" ? actor.Session == Identity("/proc/" + Environment.ProcessId + "/stat").Session
-                    : actor.Pid == actor.Session && actor.Pid == actor.Group,
-                    "The real constructor precedes HELLO/setsid; the real execv call follows ACK/setsid.");
+                string expectedImage = phase == "before-hello" ? "gitextensions-posix" : "gitextensions-exec";
+                if (phase == "before-exec") { supervisorWitness = WitnessSupervisor(actor); }
+                Check(actor.Parent == (supervisorWitness?.Pid ?? Environment.ProcessId)
+                    && new FileInfo("/proc/" + pid + "/exe").LinkTarget == Path.Combine(AppContext.BaseDirectory, expectedImage)
+                    && !command.IsCompleted && callbacks == 0 && !File.Exists(dispatched),
+                    "The actual native image must be stopped before Git dispatch, beneath its witnessed owner.");
+                Check(actor.Pid == actor.Session && actor.Pid == actor.Group,
+                    "Native spawn isolates the supervisor before its constructor; the exec child establishes its own session before Git execv.");
                 cancellation.Cancel();
                 try { await command.WaitAsync(TimeSpan.FromSeconds(10)); throw new InvalidOperationException("Native pre-exec cancellation fabricated a Git result."); }
                 catch (OperationCanceledException) { }
-                Check(!LinuxProcessState.IsRunning(pid) && callbacks == 0 && !File.Exists(dispatched) && await Head(fixture) == head
+                Check(!LinuxProcessState.IsRunning(pid) && (supervisorWitness is null || !LinuxProcessState.IsRunning(supervisorWitness.Value.Pid))
+                    && callbacks == 0 && !File.Exists(dispatched) && await Head(fixture) == head
                     && File.ReadAllBytes(fixture.File(".git/index")).SequenceEqual(index),
                     "Cancellation must terminate the actual stopped launcher before returning, with no exec, output or Git effects.");
             }

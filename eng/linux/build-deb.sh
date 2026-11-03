@@ -45,7 +45,7 @@ case "$runtime" in
     linux-arm64) architecture=arm64; elf_machine=183 ;;
     *) fail "Unsupported runtime: $runtime" ;;
 esac
-for tool in dpkg dpkg-deb git gzip find install md5sum od python3 sh sort touch; do
+for tool in dpkg dpkg-deb git gzip find install md5sum od python3 readelf sh sort touch; do
     command -v "$tool" >/dev/null || fail "Required tool not found: $tool"
 done
 
@@ -96,6 +96,8 @@ elf_header=$(od -An -tx1 -N6 "$publish_dir/GitExtensions" | tr -d ' \n')
 [[ "$elf_header" == 7f454c460201 ]] || fail "Published executable must be a 64-bit little-endian ELF"
 machine=$(od -An -tu2 -j18 -N2 "$publish_dir/GitExtensions" | tr -d ' ')
 [[ "$machine" == "$elf_machine" ]] || fail "Published executable does not match $runtime"
+python3 "$repo_root/eng/linux/verify-native-runtime.py" --directory "$publish_dir" --runtime "$runtime" \
+    --control "$repo_root/setup/linux/control.in"
 
 stage="$work_dir/stage"
 install -d "$stage/DEBIAN" "$stage/usr/lib/gitextensions" "$stage/usr/bin" \

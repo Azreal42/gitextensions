@@ -1,5 +1,11 @@
 # Failure
 
+## Raccord POSIX Linux — 3 novembre 2026
+
+[ADR0161](adr/platform/0161-posix-process-lifecycle.md). EOF et parent sorti ne prouvaient pas la fin d’un enfant à flux fermés : le nouveau banc échouait sur `226d0b29a`. Le sous-récollecteur privé garde ce front jusqu’à l’arrêt réel ; les cinq contrats passent. Les anciennes assertions de parent direct attendent désormais la chaîne complète et les images du superviseur/lanceur. Le statut naturel 130 reste observé au vrai `waitpid` par une bibliothèque de test indépendante ; il n’est pas remplacé par un booléen ou un statut déclaré par l’acteur.
+
+Un processus non enfant observé par `Process.HasExited` peut rester vu vivant lorsqu’il est zombie. Le banc utilise désormais pidfd/kqueue pour l’événement de sortie, tout en laissant le superviseur réserver ses identités. Le contrôle ELF a également révélé les conversions C23 activées par `_GNU_SOURCE`, qui exigeaient glibc 2.38 contre le minimum Debian 2.34. `_DEFAULT_SOURCE` suffit au superviseur ; un garde-fou vérifie les vrais imports de chaque helper avant emballage. Le binaire incompatible et le contre-exemple corrigé sont conservés.
+
 ## Supervision macOS — 3 novembre 2026
 
 Un helper de notification de démarrage sans annotation OS a été rejeté par CA1416 ; ajouter la même borne macOS que son appelant, sans désactiver l’analyse. Recompilation sans avertissement/erreur. La revue des en-têtes Apple montre aussi que `fcntl` est variadique : le pont C à signature fixe laisse le compilateur traiter les arguments de pile Apple Silicon. La compilation C locale et deux vrais arbres Linux passent ; l’ABI et l’exécution macOS restent soumises à la CI native.

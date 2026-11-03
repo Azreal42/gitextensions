@@ -39,10 +39,14 @@
     <_GitProcessHelperDirectory>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'native', '$(Configuration)', '$(GitProcessHelperRuntime)'))</_GitProcessHelperDirectory>
     <GitProcessHelperDirectory>$([System.IO.Path]::GetFullPath('$(_GitProcessHelperDirectory)'))</GitProcessHelperDirectory>
     <GitProcessHelperPath>$(GitProcessHelperDirectory)/gitextensions-exec</GitProcessHelperPath>
+    <_LinuxGitSupervisor>$(GitProcessHelperDirectory)/gitextensions-posix</_LinuxGitSupervisor>
+    <_LinuxGitBridge>$(GitProcessHelperDirectory)/libgitextensions-posix.so</_LinuxGitBridge>
   </PropertyGroup>
   <ItemGroup Condition="'$(_BuildLinuxGitHelper)' == 'true'">
     <Content Include="$(GitProcessHelperPath)" Link="gitextensions-exec" TargetPath="gitextensions-exec"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(_LinuxGitSupervisor)" Link="gitextensions-posix" TargetPath="gitextensions-posix" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(_LinuxGitBridge)" Link="libgitextensions-posix.so" TargetPath="libgitextensions-posix.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <!-- Also build before content is requested transitively or when publishing skips the managed build. -->
   <Target Name="BuildGitProcessHelper" BeforeTargets="PrepareForBuild;AssignTargetPaths"
@@ -55,8 +59,10 @@
     </PropertyGroup>
     <WriteLinesToFile File="$(GitProcessHelperDirectory)/compiler-command.txt" Lines="$(_GitProcessCompileCommand)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <Exec Command="$(_GitProcessCompileCommand)" />
+    <Exec Command="&quot;$(GitProcessCompiler)&quot; -std=c11 -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,relro,-z,now -D$(_GitProcessArch) &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix.c&quot; -o &quot;$(_LinuxGitSupervisor)&quot;" />
+    <Exec Command="&quot;$(GitProcessCompiler)&quot; -std=c11 -O2 -Wall -Wextra -Werror -fPIC -shared -Wl,-z,relro,-z,now -D$(_GitProcessArch) &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix-bridge.c&quot; -o &quot;$(_LinuxGitBridge)&quot;" />
     <ItemGroup>
-      <FileWrites Include="$(GitProcessHelperPath);$(GitProcessHelperDirectory)/compiler-command.txt" />
+      <FileWrites Include="$(GitProcessHelperPath);$(_LinuxGitSupervisor);$(_LinuxGitBridge);$(GitProcessHelperDirectory)/compiler-command.txt" />
     </ItemGroup>
   </Target>
   <ItemGroup>
