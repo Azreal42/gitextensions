@@ -16,6 +16,8 @@ Les premiers jobs natifs ont révélé deux défauts corrigés : normalisation d
 
 Les jobs `Avalonia native platforms` exécutent les premiers contrats portables, les dialogues askpass headless puis le vrai programme publié. La suite Linux complète reste indépendante. Les suites Windows/macOS complètes, encore liées à des fixtures Unix, restent à porter sans remplacer leurs assertions métier par des tests plus faibles.
 
+Le contrôle de livraison askpass rejette seulement les arguments en excès : une invite omise est valide selon le contrat OpenSSH déjà testé. Le helper Windows transmet aussi cette invocation au dialogue par défaut, sans confondre absence et chaîne vide. Les 143 tests locaux ciblés passent ; les contrôles de signature et d’empreintes du bundle Mac extrait ont passé sur Intel avant ce défaut du vérificateur.
+
 La recherche de mises à jour choisit le `.deb` Linux ou l’archive Windows/macOS correspondant à l’architecture native ; elle garde les contrôles des URI, tailles et empreintes. Les 92 tests locaux ciblés passent, dont 13 contrats de sélection et téléchargement portables. Le test de mise à jour via Settings attend maintenant le chargement asynchrone avant son clic réel sur Apply. Le premier run Linux de cette série (`41646245616`) a passé toute la suite et publié son `.deb`.
 
 La préservation explicite des journaux orphelins emploie `renameat2(RENAME_NOREPLACE)` sous Linux, `renamex_np(RENAME_EXCL)` sous macOS et `MoveFileExW` sans remplacement/copie sous Windows. Les tests portent sur l’entrée déplacée (fichier, dossier, lien valide ou cassé), les octets de sa cible et l’identité du checkout ; 47 tests locaux ciblés passent. La qualification Windows/macOS de cette nouvelle primitive reste confiée aux jobs natifs.

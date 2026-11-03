@@ -275,6 +275,9 @@
           "SmartFormat": "[3.6.0, )"
         }
       },
+      "gitextensions-askpass": {
+        "type": "Project"
+      },
       "gitextensions.avalonia.skia.patched": {
         "type": "Project",
         "dependencies": {

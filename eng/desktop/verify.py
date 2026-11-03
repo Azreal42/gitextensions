@@ -95,7 +95,9 @@ def verify(args):
         if "Git Extensions " + manifest["version"] not in version.stdout:
             raise ValueError("Wrong application version: " + version.stdout + version.stderr)
         helper = payload / ("gitextensions-askpass" if mac else "gitextensions-askpass.exe")
-        for arguments in [[], ["invalid first", "invalid second"]]:
+        # No prompt is a valid OpenSSH request and opens the default dialog.
+        # Only excess arguments must fail without opening a window or writing.
+        for arguments in [["invalid first", "invalid second"], ["one", "two", "three"]]:
             response = subprocess.run([str(helper), *arguments], env=environment, capture_output=True, timeout=30)
             if response.returncode != 1 or response.stdout or response.stderr:
                 raise ValueError("Askpass bad-arity protocol failed")

@@ -8,15 +8,10 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args.Length != 1) { return 1; }
+        ProcessStartInfo? start = CreateStartInfo(args);
+        if (start is null) { return 1; }
         try
         {
-            ProcessStartInfo start = new(Path.Combine(AppContext.BaseDirectory, "GitExtensions.exe"))
-            {
-                UseShellExecute = false, CreateNoWindow = true,
-                RedirectStandardOutput = true, RedirectStandardError = true,
-                ArgumentList = { "--askpass", args[0] }
-            };
             using Process child = Process.Start(start) ?? throw new IOException("Cannot start the askpass application.");
             // Relay protocol bytes without transcoding, logging, or evaluating the prompt/response.
             Task output = child.StandardOutput.BaseStream.CopyToAsync(Console.OpenStandardOutput());
@@ -25,5 +20,20 @@ internal static class Program
             return child.ExitCode;
         }
         catch (Exception) { return 1; }
+    }
+
+    internal static ProcessStartInfo? CreateStartInfo(IReadOnlyList<string> arguments)
+    {
+        // OpenSSH may omit the prompt; the UI then supplies its default prompt.
+        // One empty prompt is still different from no prompt at all.
+        if (arguments.Count > 1) { return null; }
+        ProcessStartInfo start = new(Path.Combine(AppContext.BaseDirectory, "GitExtensions.exe"))
+        {
+            UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true,
+            ArgumentList = { "--askpass" }
+        };
+        foreach (string argument in arguments) { start.ArgumentList.Add(argument); }
+        return start;
     }
 }

@@ -4,4 +4,7 @@
     <AssemblyName>gitextensions-askpass</AssemblyName>
     <IsPublishable>true</IsPublishable>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="GitExtensions.Desktop.Tests" />
+  </ItemGroup>
 </Project>
