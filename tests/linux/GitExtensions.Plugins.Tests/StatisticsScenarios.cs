@@ -301,7 +301,8 @@ internal sealed class StatisticsFixture : IDisposable
         await repository.SetConfigAsync("user.name", "Statistics User");
         await repository.SetConfigAsync("user.email", "statistics@example.invalid");
         await repository.SetConfigAsync("commit.gpgsign", "false");
-        await repository.SetConfigAsync("core.hooksPath", "/dev/null");
+        await repository.SetConfigAsync("core.hooksPath", PluginTestProfile.EmptyHooks(repository));
+        await repository.SetConfigAsync("core.autocrlf", "false");
         return new(root, repository);
     }
     internal void Write(string path, string content) => WriteBytes(path, Encoding.UTF8.GetBytes(content));
@@ -328,5 +329,5 @@ internal sealed class StatisticsFixture : IDisposable
         });
         if (!result.Success) throw new GitCommandException(arguments, result);
     }
-    public void Dispose() => Directory.Delete(Root, recursive: true);
+    public void Dispose() => PluginTestFiles.DeleteDirectory(Root);
 }

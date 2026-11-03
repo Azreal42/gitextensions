@@ -70,6 +70,13 @@ jobs:
           dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --filter "TestCategory=CrossPlatform|FullyQualifiedName~AskpassProtocolTests|FullyQualifiedName~AskpassModesWindowTests" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Exercise the complete plugin suite against real repositories
+        run: |
+          $results = "artifacts/desktop/${{ matrix.runtime }}/results/plugins"
+          New-Item -ItemType Directory -Force -Path $results | Out-Null
+          dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build --no-restore 2>&1 | Tee-Object -FilePath "$results/plugins.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Publish a self-contained native delivery
         run: |
           python -B eng/desktop/package.py --runtime "${{ matrix.runtime }}" --output "artifacts/desktop/${{ matrix.runtime }}/delivery"

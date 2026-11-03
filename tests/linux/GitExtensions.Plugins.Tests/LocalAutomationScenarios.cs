@@ -75,7 +75,7 @@ public static class LocalAutomationScenarios
         Invocation call = executable.Calls.Single();
         Check(call.Arguments.SequenceEqual(new[] { "--title", "Repository été", "--literal", literal, "--empty", "", "--escaped", "a b" }),
             "Arguments changed at the executable boundary.");
-        Check(call.WorkingDirectory == directory && launch.ProcessId == call.ProcessId, "Configured Linux working directory or process was lost.");
+        Check(call.WorkingDirectory == PluginTestFiles.PhysicalPath(directory) && launch.ProcessId == call.ProcessId, "Configured native working directory or process was lost.");
         Check(!File.Exists(Path.Combine(directory, "SENTINEL")), "Gource invoked a command shell.");
     }
 
@@ -270,7 +270,7 @@ public static class LocalAutomationScenarios
         AutoCompileSubmodulesResult result = await service.AfterSubmoduleUpdateAsync(fixture.Repository, true, new(true, executable.Path), Confirm);
         Check(prompts == 1 && result.Builds.Single().Result?.Success == true && !result.Cancelled, "Single solution was skipped by the historical loop boundary defect.");
         Invocation call = executable.Calls.Single();
-        Check(call.Arguments.SequenceEqual(new[] { solution, "/p:Configuration=Debug" }) && call.WorkingDirectory == fixture.Repository.Path,
+        Check(call.Arguments.SequenceEqual(new[] { solution, "/p:Configuration=Debug" }) && call.WorkingDirectory == PluginTestFiles.PhysicalPath(fixture.Repository.Path),
             "Default original build arguments or literal solution path changed.");
     }
 
@@ -322,15 +322,11 @@ public static class LocalAutomationScenarios
             (_, _) => Task.FromResult(AutoCompileDecision.Build), cancellation.Token);
         await WaitForAsync(() => executable.Calls.Count == 1);
         int pid = executable.Calls.Single().ProcessId;
+        using PluginProcessReference process = new(pid);
+        Check(process.Image == PluginTestFiles.PhysicalPath(executable.Path), "The pinned build actor is not this fixture's executable.");
         cancellation.Cancel();
         await ThrowsAsync<OperationCanceledException>(() => operation);
-        await WaitForAsync(() => !IsProcessRunning(pid));
-    }
-
-    private static bool IsProcessRunning(int pid)
-    {
-        try { using Process process = Process.GetProcessById(pid); return !process.HasExited; }
-        catch (ArgumentException) { return false; }
+        Check(!process.IsRunning, "Cancellation returned before the pinned build process exited.");
     }
     private static string Quote(string value) => "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
     private static Dictionary<string, string?> Values(params (string Key, string Value)[] items) => items.ToDictionary(item => item.Key, item => (string?)item.Value);
@@ -361,7 +357,8 @@ public static class LocalAutomationScenarios
             await repository.SetConfigAsync("user.name", "Automation Test");
             await repository.SetConfigAsync("user.email", "automation@example.invalid");
             await repository.SetConfigAsync("commit.gpgsign", "false");
-            await repository.SetConfigAsync("core.hooksPath", "/dev/null");
+            await repository.SetConfigAsync("core.hooksPath", PluginTestProfile.EmptyHooks(repository));
+            await repository.SetConfigAsync("core.autocrlf", "false");
             await CommitAsync("Initial commit", repository: repository);
             return repository;
         }
@@ -373,7 +370,7 @@ public static class LocalAutomationScenarios
         }
         public async Task RunnerAsync(string directory, params string[] arguments)
         { GitResult result = await _runner.RunAsync(directory, arguments); Check(result.Success, result.StandardError); }
-        public void Dispose() => Directory.Delete(Root, recursive: true);
+        public void Dispose() => PluginTestFiles.DeleteDirectory(Root);
     }
 
     private sealed record Invocation([property: JsonPropertyName("args")] string[] Arguments,
@@ -385,24 +382,8 @@ public static class LocalAutomationScenarios
         public string Path { get; }
         public FakeExecutable(string root, bool hold = false, bool fail = false)
         {
-            if (OperatingSystem.IsWindows()) { throw new PlatformNotSupportedException("These executable-boundary scenarios run on Linux."); }
             _directory = System.IO.Path.Combine(root, "fake executable été " + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(_directory);
-            Path = System.IO.Path.Combine(_directory, "configured program");
-            File.WriteAllText(Path, """
-                #!/usr/bin/python3
-                import json, os, pathlib, sys, time
-                root = pathlib.Path(__file__).parent
-                with (root / 'calls.jsonl').open('a', encoding='utf-8') as output:
-                    output.write(json.dumps({'args': sys.argv[1:], 'cwd': os.getcwd(), 'pid': os.getpid()}, ensure_ascii=False) + '\n')
-                while (root / 'hold').exists() and not (root / 'release').exists():
-                    time.sleep(0.01)
-                print('fake build output')
-                if (root / 'fail').exists():
-                    print('fake build failure', file=sys.stderr)
-                    sys.exit(7)
-                """ + "\n");
-            File.SetUnixFileMode(Path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            Path = PluginExecutableFixture.Install(_directory, "configured program", "automation");
             if (hold) { File.WriteAllText(System.IO.Path.Combine(_directory, "hold"), ""); }
             if (fail) { File.WriteAllText(System.IO.Path.Combine(_directory, "fail"), ""); }
         }
@@ -413,7 +394,8 @@ public static class LocalAutomationScenarios
                 string file = System.IO.Path.Combine(_directory, "calls.jsonl");
                 if (!File.Exists(file)) { return []; }
                 List<Invocation> calls = [];
-                foreach (string line in File.ReadAllLines(file))
+                using StreamReader reader = new(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                while (reader.ReadLine() is string line)
                 {
                     try { if (JsonSerializer.Deserialize<Invocation>(line) is { } call) { calls.Add(call); } }
                     catch (JsonException) { /* A line being written will be read on the next poll. */ }
@@ -430,8 +412,7 @@ public static class LocalAutomationScenarios
                 try
                 {
                     using Process process = Process.GetProcessById(call.ProcessId);
-                    if (!process.HasExited) { process.Kill(entireProcessTree: true); }
-                    process.WaitForExit(1000);
+                    if (!process.WaitForExit(20000)) { throw new TimeoutException("The released private fixture did not exit."); }
                 }
                 catch (ArgumentException) { }
                 catch (InvalidOperationException) { }

@@ -84,22 +84,13 @@ internal static class ExternalBuildCommandLogScenarios
     private sealed class PrivateBuild : IAsyncDisposable
     {
         private readonly string _root;
-        internal string Executable => Path.Combine(_root, "configured-build-name-secret");
+        internal string Executable { get; }
         internal string Marker => Path.Combine(_root, "pid");
         internal int Pid { get; private set; }
         internal PrivateBuild(string root)
         {
-            if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("Private build fixtures require Linux."); }
-            _root = Path.Combine(root, "private-build"); Directory.CreateDirectory(_root);
-            File.WriteAllText(Executable, """
-                #!/usr/bin/python3
-                import os,pathlib,sys,time
-                root=pathlib.Path(__file__).parent
-                (root/'pid.tmp').write_text(str(os.getpid())); (root/'pid.tmp').replace(root/'pid')
-                while not (root/'release').exists(): time.sleep(0.01)
-                print('build-output-secret'); print('build-error-secret',file=sys.stderr); sys.exit(7)
-                """);
-            File.SetUnixFileMode(Executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            _root = Path.Combine(root, "private-build");
+            Executable = PluginExecutableFixture.Install(_root, "configured-build-name-secret", "build");
         }
         internal void Release() => File.WriteAllText(Path.Combine(_root, "release"), "release");
         internal async Task ReadyAsync()

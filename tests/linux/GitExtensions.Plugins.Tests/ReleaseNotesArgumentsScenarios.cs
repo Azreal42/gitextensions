@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using GitExtensions.Linux;
 using GitExtensions.Linux.Plugins;
@@ -74,16 +74,19 @@ internal static class ReleaseNotesArgumentsScenarios
     {
         using global::Fixture f = await global::Fixture.CreateAsync(); string from = await f.Repository.ResolveRevisionAsync("HEAD");
         const string literal = "literal ' \"雪\\line\n\t{braces} $(touch SENTINEL).txt";
-        File.WriteAllText(Path.Combine(f.Repository.Path, literal), "selected\n");
-        string selected = await f.CommitAtAsync(f.Repository, "Selected literal path", global::Fixture.Now.AddDays(-2));
-        File.WriteAllText(Path.Combine(f.Repository.Path, "unrelated.txt"), "unrelated\n");
-        await f.CommitAtAsync(f.Repository, "Unrelated path", global::Fixture.Now.AddDays(-1));
+        await PluginTestFiles.StageBlobAsync(f.Repository, literal, "selected\n"u8.ToArray());
+        string selected = await f.CommitAtAsync(f.Repository, "Selected literal path", global::Fixture.Now.AddDays(-2), stageAll: false);
+        await PluginTestFiles.StageBlobAsync(f.Repository, "unrelated.txt", "unrelated\n"u8.ToArray());
+        await f.CommitAtAsync(f.Repository, "Unrelated path", global::Fixture.Now.AddDays(-1), stageAll: false);
         const string optionName = "--output=literal {braces}.txt";
-        File.WriteAllText(Path.Combine(f.Repository.Path, optionName), "literal option-looking path\n");
-        string optionCommit = await f.CommitAtAsync(f.Repository, "Literal option-looking filename", global::Fixture.Now);
+        await PluginTestFiles.StageBlobAsync(f.Repository, optionName, "literal option-looking path\n"u8.ToArray());
+        string optionCommit = await f.CommitAtAsync(f.Repository, "Literal option-looking filename", global::Fixture.Now, stageAll: false);
         string before = Snapshot(f.Repository.Path);
+        // Git for Windows normally normalizes backslashes as separators.
+        // Rooted literal magic preserves this exact tree entry's name bytes.
+        string pathspec = OperatingSystem.IsWindows() ? ":(top,literal)" + literal : literal;
         PluginResult result = await new ReleaseNotesGeneratorPlugin().ExecuteAsync(new(f.Repository),
-            Values(from, DefaultArguments + " -- " + FormatLiteral(Quote(literal))));
+            Values(from, DefaultArguments + " -- " + FormatLiteral(Quote(pathspec))));
         Check(result.Table!.Rows.Count == 1 && selected.StartsWith(result.Table!.Rows[0].Key, StringComparison.Ordinal), "The quoted literal pathspec was split, expanded or failed to filter Git.");
         result = await new ReleaseNotesGeneratorPlugin().ExecuteAsync(new(f.Repository), Values(from, DefaultArguments + " -- " + FormatLiteral(Quote(optionName))));
         Check(result.Table!.Rows.Count == 1 && optionCommit.StartsWith(result.Table!.Rows[0].Key, StringComparison.Ordinal), "A literal --output-looking path after -- was rejected as an option.");
@@ -131,62 +134,49 @@ internal static class ReleaseNotesArgumentsScenarios
     }
     private static async Task CancellationAsync()
     {
-        if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("The real FIFO cancellation fixture requires Linux."); }
         using global::Fixture f = await global::Fixture.CreateAsync(); string from = await f.Repository.ResolveRevisionAsync("HEAD");
         await f.CommitAtAsync(f.Repository, "Read me", global::Fixture.Now); string before = Snapshot(f.Repository.Path);
         using CancellationTokenSource pre = new(); pre.Cancel();
         await ThrowsAsync<OperationCanceledException>(() => new ReleaseNotesGeneratorPlugin().ExecuteAsync(new(f.Repository), Values(from), pre.Token));
-        string gate = Path.Combine(f.Root, "git-log-gate"); Directory.CreateDirectory(gate); string wrapper = Path.Combine(gate, "git");
-        File.WriteAllText(wrapper, """
-            #!/usr/bin/python3
-            import json,os,pathlib,sys
-            args=sys.argv[1:];i=0
-            while i<len(args):
-                if args[i] in ['-c','--git-dir','--work-tree','--namespace','-C','--config-env']:i+=2;continue
-                if args[i].startswith('-'):i+=1;continue
-                break
-            env=dict(os.environ)
-            if i<len(args) and args[i]=='log':
-                root=pathlib.Path(__file__).parent;fifo=root/'trace.fifo';os.mkfifo(fifo,0o600)
-                fields=pathlib.Path('/proc/self/stat').read_text().rsplit(')',1)[1].split()
-                (root/'pid.tmp').write_text(json.dumps(dict(pid=os.getpid(),start_ticks=int(fields[19]))));(root/'pid.tmp').replace(root/'pid.json')
-                env['GIT_TRACE2_EVENT']=str(fifo)
-            os.execve('/usr/bin/git',['/usr/bin/git',*args],env)
-            """);
-        File.SetUnixFileMode(wrapper, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        string gate = Path.Combine(f.Root, "git-log-gate");
+        string wrapper = PluginExecutableFixture.Install(gate, "git", "git-log");
+        string gitName = OperatingSystem.IsWindows() ? "git.exe" : "git";
+        string nativeGit = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
+            .Where(path => path.Length > 0).Select(path => Path.Combine(path.Trim('"'), gitName)).First(File.Exists);
+        nativeGit = PluginTestFiles.PhysicalPath(new FileInfo(nativeGit).ResolveLinkTarget(true)?.FullName ?? nativeGit);
+        using PluginTracePipe pipe = new(gate);
+        await File.WriteAllTextAsync(Path.Combine(gate, "native-git"), nativeGit, new UTF8Encoding(false));
+        await File.WriteAllTextAsync(Path.Combine(gate, "trace-path"), pipe.Path, new UTF8Encoding(false));
         GitRepository gated = new(f.Repository.Path, new GitRunner(GitExecutionEnvironment.Capture(new GitEnvironmentOptions { Executable = wrapper })));
         using CancellationTokenSource cancellation = new();
         Task<PluginResult> pending = new ReleaseNotesGeneratorPlugin().ExecuteAsync(new(gated), Values(from), cancellation.Token);
-        int pid = 0; long start = 0; bool genuineGit = false;
-        string nativeGit = new FileInfo("/usr/bin/git").ResolveLinkTarget(true)?.FullName ?? Path.GetFullPath("/usr/bin/git");
+        PluginProcessReference? git = null;
         try
         {
             Stopwatch timer = Stopwatch.StartNew(); string marker = Path.Combine(gate, "pid.json");
-            while (timer.Elapsed < TimeSpan.FromSeconds(20))
+            while (!File.Exists(marker) && timer.Elapsed < TimeSpan.FromSeconds(20))
             {
-                if (File.Exists(marker))
-                {
-                    using JsonDocument json = JsonDocument.Parse(File.ReadAllText(marker)); pid = json.RootElement.GetProperty("pid").GetInt32(); start = json.RootElement.GetProperty("start_ticks").GetInt64();
-                    if (Matching(pid, start) && new FileInfo("/proc/" + pid + "/exe").ResolveLinkTarget(true)?.FullName == nativeGit) { genuineGit = true; break; }
-                }
+                if (pending.IsCompleted) { await pending; throw new InvalidOperationException("Git exited before the blocked trace was witnessed."); }
                 await Task.Delay(10);
             }
-            Check(genuineGit && pid > 0 && Matching(pid, start) && !pending.IsCompleted, "The real Git log never reached its blocked FIFO.");
+            Check(File.Exists(marker), "The native Git fixture did not publish its actual child PID.");
+            using JsonDocument json = JsonDocument.Parse(await File.ReadAllTextAsync(marker));
+            int pid = json.RootElement.GetProperty("pid").GetInt32();
+            git = new(pid);
+            Check(string.Equals(git.Image, nativeGit, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal),
+                "The pinned trace actor is not the selected native Git image.");
+            await pipe.AssertClientAsync(pid);
+            Check(git.IsRunning && !pending.IsCompleted, "The real Git log never reached its blocked trace pipe.");
             cancellation.Cancel();
             await ThrowsAsync<OperationCanceledException>(() => pending.WaitAsync(TimeSpan.FromSeconds(20)));
-            Check(!Matching(pid, start), "Cancellation returned before the exact native Git PID had been reaped.");
+            Check(!git.IsRunning, "Cancellation returned before the pinned native Git process had exited.");
             Unchanged(f, before);
         }
         finally
         {
             cancellation.Cancel();
             try { await pending.WaitAsync(TimeSpan.FromSeconds(20)); } catch (OperationCanceledException) { }
+            git?.Dispose();
         }
-    }
-    private static bool Matching(int pid, long start)
-    {
-        try { return long.Parse(File.ReadAllText("/proc/" + pid + "/stat").Split(')')[^1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[19], CultureInfo.InvariantCulture) == start; }
-        catch (FileNotFoundException) { return false; }
-        catch (DirectoryNotFoundException) { return false; }
     }
 }

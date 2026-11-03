@@ -3,8 +3,12 @@ using GitExtensions.Linux;
 using GitExtensions.Linux.Plugins;
 using GitExtensions.Plugins.Tests;
 
+if (PluginExecutableFixture.IsChild) { return await PluginExecutableFixture.RunChildAsync(args); }
+
+using PluginTestProfile profile = new();
+
 // Exercise actual Git repositories and local bare remotes; no network or test adapter is needed.
-Environment.SetEnvironmentVariable("GIT_CONFIG_GLOBAL", "/dev/null");
+Environment.SetEnvironmentVariable("GIT_CONFIG_GLOBAL", profile.GlobalConfig);
 Environment.SetEnvironmentVariable("GIT_CONFIG_NOSYSTEM", "1");
 Environment.SetEnvironmentVariable("GIT_CONFIG_COUNT", "1");
 Environment.SetEnvironmentVariable("GIT_CONFIG_KEY_0", "protocol.file.allow");
@@ -262,7 +266,8 @@ sealed class Fixture : IDisposable
         await repository.SetConfigAsync("user.name", "Plugin Test");
         await repository.SetConfigAsync("user.email", "plugin-test@example.invalid");
         await repository.SetConfigAsync("commit.gpgsign", "false");
-        await repository.SetConfigAsync("core.hooksPath", "/dev/null");
+        await repository.SetConfigAsync("core.hooksPath", PluginTestProfile.EmptyHooks(repository));
+        await repository.SetConfigAsync("core.autocrlf", "false");
         await fixture.CommitAtAsync(repository, "Base", DateTimeOffset.Parse("2000-01-01T12:00:00+00:00", CultureInfo.InvariantCulture));
         return fixture;
     }
@@ -286,12 +291,12 @@ sealed class Fixture : IDisposable
     {
         Fixture fixture = await CreateAsync();
         byte[] content = Enumerable.Range(0, 4096).Select(index => (byte)(index % 256)).ToArray();
-        File.WriteAllBytes(Path.Combine(fixture.Repository.Path, LiteralPath), content);
-        File.WriteAllBytes(Path.Combine(fixture.Repository.Path, "z duplicate.bin"), content);
-        fixture.FirstBlobCommit = await fixture.CommitAtAsync(fixture.Repository, "First blobs", DateTimeOffset.Parse("2001-01-01T12:00:00+00:00", CultureInfo.InvariantCulture));
-        File.WriteAllBytes(Path.Combine(fixture.Repository.Path, "second.bin"), Enumerable.Repeat((byte)42, 8192).ToArray());
-        File.WriteAllText(Path.Combine(fixture.Repository.Path, "small.txt"), "small");
-        await fixture.CommitAtAsync(fixture.Repository, "Second blobs", DateTimeOffset.Parse("2020-01-01T12:00:00+00:00", CultureInfo.InvariantCulture));
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, LiteralPath, content);
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, "z duplicate.bin", content);
+        fixture.FirstBlobCommit = await fixture.CommitAtAsync(fixture.Repository, "First blobs", DateTimeOffset.Parse("2001-01-01T12:00:00+00:00", CultureInfo.InvariantCulture), stageAll: false);
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, "second.bin", Enumerable.Repeat((byte)42, 8192).ToArray());
+        await PluginTestFiles.StageBlobAsync(fixture.Repository, "small.txt", "small"u8.ToArray());
+        await fixture.CommitAtAsync(fixture.Repository, "Second blobs", DateTimeOffset.Parse("2020-01-01T12:00:00+00:00", CultureInfo.InvariantCulture), stageAll: false);
         return fixture;
     }
 
@@ -303,13 +308,14 @@ sealed class Fixture : IDisposable
         await clone.SetConfigAsync("user.name", "Plugin Test");
         await clone.SetConfigAsync("user.email", "plugin-test@example.invalid");
         await clone.SetConfigAsync("commit.gpgsign", "false");
-        await clone.SetConfigAsync("core.hooksPath", "/dev/null");
+        await clone.SetConfigAsync("core.hooksPath", PluginTestProfile.EmptyHooks(clone));
+        await clone.SetConfigAsync("core.autocrlf", "false");
         return clone;
     }
 
-    internal async Task<string> CommitAtAsync(GitRepository repository, string message, DateTimeOffset date)
+    internal async Task<string> CommitAtAsync(GitRepository repository, string message, DateTimeOffset date, bool stageAll = true)
     {
-        await repository.StageAllAsync();
+        if (stageAll) { await repository.StageAllAsync(); }
         string timestamp = date.ToString("yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture);
         GitResult result = await Runner.RunAsync(repository.Path,
             ["commit", "--allow-empty", "--cleanup=verbatim", "-m", message], environment:
@@ -319,5 +325,5 @@ sealed class Fixture : IDisposable
     }
 
     internal async Task<string> AllRefsAsync() => (await Repository.RunAsync(["show-ref"])).StandardOutput;
-    public void Dispose() => Directory.Delete(Root, recursive: true);
+    public void Dispose() => PluginTestFiles.DeleteDirectory(Root);
 }
