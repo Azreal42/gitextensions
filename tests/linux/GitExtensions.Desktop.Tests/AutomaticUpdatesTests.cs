@@ -12,7 +12,7 @@ using static GitExtensions.Desktop.Tests.UpdatesDialogTests;
 
 namespace GitExtensions.Desktop.Tests;
 
-[NonParallelizable]
+[NonParallelizable, Category("CrossPlatform")]
 public sealed class AutomaticUpdatesTests
 {
     [AvaloniaTest]
@@ -236,7 +236,10 @@ public sealed class AutomaticUpdatesTests
         internal void SetPreferences(DesktopPreferences preferences) => Store.Save(preferences);
         private void Show(bool enable)
         {
-            Main = new MainWindow(); Main.ExternalLauncher = info => { Opened.Add(info.ArgumentList.Single()); return null; };
+            Main = new MainWindow(); Main.ExternalLauncher = info =>
+            {
+                Opened.Add(info.UseShellExecute ? info.FileName : info.ArgumentList.Last()); return null;
+            };
             Main.UpdatesClientFactory = () => { UpdatesTestClient client = new() { IgnoreCancellation = _ignoreCancellation }; Clients.Add(client); return client; };
             if (enable) { Main.EnableAutomaticUpdates(State, () => Now); }
             Main.Show(); Main.Activate(); Pump(Main);

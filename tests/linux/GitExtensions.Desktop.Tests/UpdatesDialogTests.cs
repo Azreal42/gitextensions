@@ -16,7 +16,7 @@ using NUnit.Framework;
 
 namespace GitExtensions.Desktop.Tests;
 
-[NonParallelizable]
+[NonParallelizable, Category("CrossPlatform")]
 public sealed class UpdatesDialogTests
 {
     [AvaloniaTest]
@@ -39,7 +39,9 @@ public sealed class UpdatesDialogTests
         Assert.Multiple(() =>
         {
             Assert.That(Field<TextBlock>(f.Dialog, "UpdateLabel").Text, Is.EqualTo(compatible
-                ? "No updates found" : "No compatible Linux package has been published on the fork releases."));
+                ? "No updates found" : OperatingSystem.IsLinux()
+                    ? "No compatible Linux package has been published on the fork releases."
+                    : "No compatible package for this system has been published on the fork releases."));
             Assert.That(Field<ProgressBar>(f.Dialog, "progressBar1").IsVisible, Is.False);
             Assert.That(Field<CheckBox>(f.Dialog, "IncludePrereleases").IsEnabled, Is.True);
             Assert.That(Field<Button>(f.Dialog, "linkChangeLog").IsVisible, Is.False);
@@ -111,7 +113,7 @@ public sealed class UpdatesDialogTests
         f.Client.Downloads[0].Progress!.Report(43);
         await Until(() => Field<ProgressBar>(f.Dialog, "progressBar1").Value == 43, f.Dialog);
         Assert.That(Field<ProgressBar>(f.Dialog, "progressBar1").IsIndeterminate, Is.False); Assert.That(f.Opened, Is.Empty);
-        const string package = "/tmp/update cache/gitextensions_8.0.0~linux-alpha.1_amd64.deb";
+        string package = Path.Combine(Path.GetTempPath(), "update cache", release.FileName);
         f.Client.Downloads[0].Result.SetResult(package); await Complete(f.Dialog);
         Assert.Multiple(() =>
         {
