@@ -107,7 +107,6 @@ public sealed partial class GitRepository
             string[] paths = RebaseJournalNames.Select(name => System.IO.Path.Combine(lease.GitDirectory, name))
                 .Where(RebaseJournalEntryExists).ToArray();
             if (paths.Length == 0) { return []; }
-            if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("Preserving rebase journal entries without following links currently requires Linux."); }
             token.ThrowIfCancellationRequested();
             List<GitRebasePreservedJournal> preserved = [];
             foreach (string path in paths)
@@ -115,9 +114,9 @@ public sealed partial class GitRepository
                 EnsureRebaseMetadataSafety(lease.GitDirectory);
                 if (HasRebaseBackend(lease)) { throw new IOException("A Git rebase became active; its remaining journal has been preserved in place."); }
                 string destination = path + "-preserved-" + Guid.NewGuid().ToString("N");
-                // renameat2 operates on the entry itself, including dangling/directory links.
-                // NOREPLACE also prevents overwriting an independently created destination.
-                if (RenameRebaseJournalEntry(-100, path, -100, destination, 1) != 0)
+                // The native rename moves the entry itself, including dangling links,
+                // and atomically refuses an independently created destination.
+                if (!TryRenameRebaseJournalEntry(path, destination))
                 {
                     int errno = Marshal.GetLastPInvokeError();
                     string completed = string.Join("; ", preserved.Select(entry => entry.PreservedPath));
@@ -129,7 +128,34 @@ public sealed partial class GitRepository
             return preserved;
         }, cancellationToken);
 
+    private static bool TryRenameRebaseJournalEntry(string path, string destination)
+    {
+        if (OperatingSystem.IsLinux()) { return RenameRebaseJournalEntryLinux(-100, path, -100, destination, 1) == 0; } // RENAME_NOREPLACE
+        if (OperatingSystem.IsMacOS()) { return RenameRebaseJournalEntryMac(path, destination, 4) == 0; } // RENAME_EXCL
+        if (OperatingSystem.IsWindows())
+        {
+            // No REPLACE_EXISTING or COPY_ALLOWED: rename on the same volume only.
+            return RenameRebaseJournalEntryWindows(WindowsPath(path), WindowsPath(destination), 0);
+        }
+        throw new PlatformNotSupportedException("Rebase journal preservation requires Windows, Linux or macOS.");
+
+        static string WindowsPath(string value)
+        {
+            string full = System.IO.Path.GetFullPath(value);
+            return full.StartsWith(@"\\?\", StringComparison.Ordinal) ? full
+                : full.StartsWith(@"\\", StringComparison.Ordinal) ? @"\\?\UNC\" + full[2..] : @"\\?\" + full;
+        }
+    }
+
     [DllImport("libc", EntryPoint = "renameat2", SetLastError = true)]
-    private static extern int RenameRebaseJournalEntry(int oldDirectory, [MarshalAs(UnmanagedType.LPUTF8Str)] string oldPath,
+    private static extern int RenameRebaseJournalEntryLinux(int oldDirectory, [MarshalAs(UnmanagedType.LPUTF8Str)] string oldPath,
         int newDirectory, [MarshalAs(UnmanagedType.LPUTF8Str)] string newPath, uint flags);
+
+    [DllImport("libc", EntryPoint = "renamex_np", SetLastError = true)]
+    private static extern int RenameRebaseJournalEntryMac([MarshalAs(UnmanagedType.LPUTF8Str)] string oldPath,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string newPath, uint flags);
+
+    [DllImport("kernel32.dll", EntryPoint = "MoveFileExW", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool RenameRebaseJournalEntryWindows(string oldPath, string newPath, uint flags);
 }
