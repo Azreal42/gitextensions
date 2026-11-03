@@ -55,15 +55,10 @@ def sign_bundle(bundle, identity, repository):
     for path in sorted(native.rglob("*")):
         if not path.is_file():
             continue
-        # Sign nested code before the main apphost, whose location makes
-        # codesign validate its containing bundle. Managed PE assemblies and
-        # the askpass script are code too, even though they are not Mach-O.
+        # Contents/MacOS is a code location: codesign also requires signatures
+        # for the managed/runtime data and notices placed beside the apphost.
+        # Sign every nested file before sealing the main executable's bundle.
         if path.name == "GitExtensions":
-            continue
-        with path.open("rb") as stream:
-            header = stream.read(4)
-            is_code = header in [b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf"] or header[:2] in [b"MZ", b"#!"]
-        if not is_code:
             continue
         command = ["codesign", "--force", "--sign", identity]
         if identity != "-":
