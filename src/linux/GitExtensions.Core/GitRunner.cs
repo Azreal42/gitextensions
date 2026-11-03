@@ -211,6 +211,10 @@ public sealed class GitRunner
                 launch = _legacyExecutable is not null ? GitProcessLaunch.Configure(startInfo)
                     : GitProcessLaunch.Configure(startInfo, executionEnvironment.GetVariable("PATH") ?? "");
             }
+            else if (_legacyExecutable is null)
+            {
+                startInfo.FileName = GitConfiguredExecutable.Resolve(startInfo.FileName, executionEnvironment.GetVariable("PATH"));
+            }
             cancellationToken.ThrowIfCancellationRequested();
             GitBinaryResult result = await RunProcessAsync(startInfo, cancellationToken, standardInput, outputReceived, launch, startedObserver, streamCapture).ConfigureAwait(false);
             exitCode = result.ExitCode;
