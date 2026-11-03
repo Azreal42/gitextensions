@@ -1,5 +1,9 @@
 # Failure
 
+## Fixture d’héritage Windows — 3 novembre 2026
+
+Le premier job noyau `41694781899` passe trois cas sur cinq, dont le parent sorti avec pipes indépendants et les deux échanges binaires. Les deux cas hérités échouent sur leur marqueur stdout : `Process.Start` sans aucun flux redirigé et sans console ne pose pas `STARTF_USESTDHANDLES`. La fixture redirige désormais stdin pour transmettre explicitement les deux handles de sortie du parent. Les marqueurs stdout/stderr et les oracles de drainage restent obligatoires ; quatre cas comparables Linux repassent. Les journaux et le TRX Windows initiaux sont conservés.
+
 ## Descendants sans pipe — 3 novembre 2026
 
 [ADR0160](adr/platform/0160-native-process-ownership.md). L’ancien chemin Windows/macOS ne tentait `Kill(true)` que si le parent vivait encore ; ce code ne couvre pas les écrivains survivants. Le nouveau banc contrôle aussi un enfant à pipes indépendants : sur Linux, l’opération est revenue normalement après la sortie du parent alors que cet enfant vivait encore. Échec isolé conservé, hors annonce de qualification Windows ; aucun oracle supprimé. Les quatre cas comparables réussis ne clôturent pas cette limite de propriété POSIX. Un superviseur POSIX reste à réaliser, avec réservation des identités jusqu’au drainage.

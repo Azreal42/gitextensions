@@ -18,6 +18,9 @@ internal static class NativeProcessProbe
             ProcessStartInfo child = new(Environment.ProcessPath!)
             {
                 UseShellExecute = false, CreateNoWindow = true,
+                // One redirected handle makes Process populate STARTF_USESTDHANDLES
+                // on Windows; the two nonredirected outputs then inherit our real pipes.
+                RedirectStandardInput = true,
                 RedirectStandardOutput = independentPipes, RedirectStandardError = independentPipes
             };
             foreach (string value in new[] { "--native-process-probe", "hold", args[1] }) { child.ArgumentList.Add(value); }

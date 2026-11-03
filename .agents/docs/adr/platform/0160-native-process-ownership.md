@@ -10,6 +10,8 @@ Le contrôle portable de rebase ouvre le vrai lock depuis un autre apphost penda
 
 Preuves locales : compilation sans avertissement/erreur ; 1 210 Core, 151 portables, puis quatre cas de banc compatibles Linux (pipes hérités et duplex) réussis. Les appels noyau Windows restent à qualifier sur le runner réel. Journaux dans `artifacts/cross-platform/20261103/`.
 
+Le premier job Windows `41694781899` passe trois cas, dont le drainage sans pipes et les échanges binaires. Les deux cas hérités ont révélé un défaut du banc : le second `Process.Start` sans redirection n’alimentait pas les handles de sortie avec `CreateNoWindow`. La redirection de stdin force leur transmission explicite ; les assertions de marqueurs restent inchangées. La nouvelle source reste à requalifier nativement.
+
 Le cas sans pipe a été exécuté séparément sur le backend Linux existant : le runner est revenu sans annulation alors qu’un enfant était encore vivant. Échec conservé dans `posix-closed-pipes-baseline`, nettoyage des seuls acteurs du test par références conservées. Cette limite POSIX reste ouverte ; la nouvelle étape Windows ne remplace aucun contrôle Linux ni la future supervision macOS. La console interactive/PTY, les descendants sortis de leur groupe et les suites natives complètes restent également à traiter.
 
 Repères : [Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects), [création suspendue et handles](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw), [CI native](../../../../.github/workflows/avalonia-platforms.yml).
