@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace GitExtensions.Linux;
 
 /// <summary>Runs Git with a genuine private controlling terminal while inheriting the caller's terminal I/O.</summary>
-[SupportedOSPlatform("linux")]
+[SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
 public static class GitInteractiveTerminalProcess
 {
     public static async Task<GitResult> RunAsync(string repositoryPath, string gitExecutable, IReadOnlyList<string> arguments,
@@ -22,59 +22,47 @@ public static class GitInteractiveTerminalProcess
         ArgumentException.ThrowIfNullOrWhiteSpace(gitExecutable);
         ArgumentNullException.ThrowIfNull(arguments);
         cancellationToken.ThrowIfCancellationRequested();
-        const string script = "/usr/bin/script";
-        if (!File.Exists(script)) { throw new FileNotFoundException("Interactive Git requires the util-linux script executable.", script); }
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        { throw new PlatformNotSupportedException("Interactive Git requires a supported native terminal backend."); }
         if (!Directory.Exists(repositoryPath)) { throw new DirectoryNotFoundException(repositoryPath); }
-        string command = string.Join(" ", new[] { gitExecutable }.Concat(arguments).Select(Quote));
-        ProcessStartInfo start = new(script) { WorkingDirectory = repositoryPath, UseShellExecute = false };
+        ProcessStartInfo start = new(gitExecutable) { WorkingDirectory = repositoryPath, UseShellExecute = false };
         environment?.ApplyTo(start);
-        foreach (string value in new[] { "--quiet", "--return", "--flush", "--command", command, "/dev/null" }) { start.ArgumentList.Add(value); }
-        // script allocates a new PTY/controlling terminal after the private exec helper creates its session.
-        // Do not apply the noninteractive runner's GIT_EDITOR=true or close stdin: 'e' must launch the real editor.
+        foreach (string argument in arguments) { start.ArgumentList.Add(argument); }
+        // Preserve the real user's editor and terminal input; only pagers are
+        // disabled. Native argv and exec errors do not pass through a shell.
         start.Environment["GIT_PAGER"] = "cat";
         start.Environment["GIT_TERMINAL_PROMPT"] = "1";
         start.Environment["LC_ALL"] = "C.UTF-8";
-        using GitProcessLaunch launch = environment is null ? GitProcessLaunch.Configure(start)
-            : GitProcessLaunch.Configure(start, environment.GetVariable("PATH") ?? "");
-        using GitProcessGroup group = new();
-        using Process process = new() { StartInfo = start };
-        process.Start();
-        Task control = Task.CompletedTask;
-        Task exited = process.WaitForExitAsync(CancellationToken.None);
+        PosixGitProcess process = PosixGitProcess.Start(start, cancellationToken, terminal: true, inheritConsole: true);
+        Task exited = process.WaitForExitAsync();
         TaskCompletionSource cancelled = new(TaskCreationOptions.RunContinuationsAsynchronously);
         using CancellationTokenRegistration registration = cancellationToken.Register(() => cancelled.TrySetResult());
+        Exception? failure = null;
         try
         {
-            group.CaptureStartedChild(process);
-            control = launch.ObserveExecAsync(process.Id, group, cancellationToken);
-            List<Task> pending = [control, exited];
+            List<Task> pending = [process.Started, process.Control, exited];
             while (pending.Count > 0)
             {
                 Task completed = await Task.WhenAny(pending.Append(cancelled.Task)).ConfigureAwait(false);
                 if (completed == cancelled.Task) { cancellationToken.ThrowIfCancellationRequested(); }
                 await completed.ConfigureAwait(false); pending.Remove(completed);
-                if (completed == exited) { launch.ParentExited(); }
             }
             cancellationToken.ThrowIfCancellationRequested();
             return new(process.ExitCode, "", "");
         }
+        catch (Exception error)
+        {
+            failure = error;
+            if (await process.StopAsync().ConfigureAwait(false) is Exception cleanup) { error.Data["InteractiveGitStopFailure"] = cleanup; }
+            try { await Task.WhenAll(process.Started, process.Control, exited).ConfigureAwait(false); }
+            catch { /* Keep the original error after all admitted native operations finish. */ }
+            throw;
+        }
         finally
         {
-            launch.CancelUnacknowledgedHandshake();
-            Exception? cleanup = await group.StopAsync().ConfigureAwait(false);
-            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-            launch.ParentExited();
-            try { await control.ConfigureAwait(false); }
-            catch when (cancellationToken.IsCancellationRequested || cleanup is not null) { }
-            if (cleanup is not null) { throw new IOException("The private interactive Git process could not be drained.", cleanup); }
+            try { process.Dispose(); }
+            catch (Exception cleanup) when (failure is not null) { failure.Data["InteractiveGitDisposeFailure"] = cleanup; }
         }
     }
 
-    // Every argument, including executable and hostile filenames, is one POSIX shell word.
-    internal static string Quote(string value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        if (value.Contains('\0')) { throw new ArgumentException("Interactive Git arguments cannot contain NUL.", nameof(value)); }
-        return "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
-    }
 }

@@ -1,5 +1,9 @@
 # Failure
 
+## Suites complètes après supervision POSIX — 4 novembre 2026
+
+Le Linux `44ccea0c4` atteint la limite de 90 minutes : Core/Plugins passent, Desktop reste incomplet avec douze échecs conservés. Douze reprises inchangées passent localement, puis le [Linux complet `ed1161b8c`](https://github.com/Azreal42/gitextensions/actions/runs/41732665464) passe les 4 625 Desktop, Core et Plugins, et installe/démarre son paquet reproductible. Cela qualifie ce nouveau passage ; le run annulé reste un échec. La correction des attentes est décrite dans [ADR0163](adr/platform/0163-process-exit-notifications.md). Le [natif final `36c8f7761`](https://github.com/Azreal42/gitextensions/actions/runs/41734483458) passe les 42 Plugins Windows et Mac, sans affaiblir la preuve PID/données du test Trace2.
+
 ## Raccord POSIX Linux — 3 novembre 2026
 
 [ADR0161](adr/platform/0161-posix-process-lifecycle.md). EOF et parent sorti ne prouvaient pas la fin d’un enfant à flux fermés : le nouveau banc échouait sur `226d0b29a`. Le sous-récollecteur privé garde ce front jusqu’à l’arrêt réel ; les cinq contrats passent. Les anciennes assertions de parent direct attendent désormais la chaîne complète et les images du superviseur/lanceur. Le statut naturel 130 reste observé au vrai `waitpid` par une bibliothèque de test indépendante ; il n’est pas remplacé par un booléen ou un statut déclaré par l’acteur.

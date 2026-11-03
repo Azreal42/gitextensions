@@ -1,6 +1,6 @@
 # ADR 0162 · Suite Plugins sur les hôtes natifs
 
-Statut : 42/42 qualifiés sur les deux Mac au commit `a0f471f40` ; correctifs Windows en qualification. [Objectif trois plateformes](0159-avalonia-three-platforms.md), [supervision POSIX](0161-posix-process-lifecycle.md). Aucun changement produit ou de thème dans les fixtures.
+Statut : 42/42 qualifiés sur Windows x64, Mac Intel et Apple Silicon au commit `36c8f7761`. [Objectif trois plateformes](0159-avalonia-three-platforms.md), [supervision POSIX](0161-posix-process-lifecycle.md). Aucun changement produit ou de thème dans les fixtures.
 
 Les 42 scénarios Plugins gardent leurs noms et assertions métier. Un vrai apphost .NET, copié sous le nom de l’exécutable configuré, remplace les scripts Python Linux : argv littéraux, répertoire, PID journalisé, sorties, code 7, attente et annulation sont observés à la frontière du processus. Le profil Git est un fichier privé et les hooks un répertoire vide ; aucun `/dev/null` ni Python système n’est nécessaire.
 
@@ -15,3 +15,5 @@ La CI native exécute la suite entière sans filtre et publie son journal ; le w
 Repères : [Trace2 Git](https://github.com/git/git/blob/master/trace2/tr2_dst.c), [named pipes Git for Windows](https://github.com/git-for-windows/git/blob/main/compat/mingw.c), [index-info](https://github.com/git/git/blob/master/builtin/update-index.c).
 
 Second passage Windows au commit `ed1161b8c` : 41/42 ; le vrai PID est désormais correct, mais la première connexion est déjà fermée lors du contrôle des octets (erreur 109). La fixture prépare plusieurs instances asynchrones, remplace les connexions transitoires fermées et ne valide que le client qui garde de vraies données non lues. Le PID et la quantité de données restent exigés ; DisposeAsync ferme et attend tous les connecteurs privés. La suite Linux reste à 42/42 après ce changement ; nouveau passage Windows requis. [Instances de pipes Windows](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-instances), [Peek sans consommation](https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-peeknamedpipe).
+
+Qualification finale [native `36c8f7761`](https://github.com/Azreal42/gitextensions/actions/runs/41734483458) : 42/42 Plugins sur chacun des trois hôtes, sans ignoré, cinq contrats noyau Windows / six par Mac et 151 Desktop par hôte. Archives et preuves téléchargées, manifestes, empreintes et captures des vrais backends revus. Le pair Trace2 Windows garde 18 250 octets non lus au-delà du tampon de 4 096 après une connexion transitoire fermée. Cette preuve ferme la fixture Plugins, pas les suites Core/Desktop natives complètes.

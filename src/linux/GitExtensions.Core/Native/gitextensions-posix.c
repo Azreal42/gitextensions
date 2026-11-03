@@ -20,6 +20,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include "gitextensions-terminal.h"
 #ifdef __APPLE__
 #include <libproc.h>
 #include <sys/proc.h>
@@ -252,7 +253,8 @@ static int descriptor(const char *text)
 int main(int argc, char **argv)
 {
     int child_session = argc > 5 && strcmp(argv[3], "--child-sets-session") == 0;
-    int executable = child_session ? 5 : 4;
+    int terminal = argc > 5 && strcmp(argv[3], "--terminal") == 0;
+    int executable = child_session || terminal ? 5 : 4;
     if (argc <= executable || strcmp(argv[executable - 1], "--") != 0) return 2;
     int control_fd = descriptor(argv[1]); events_fd = descriptor(argv[2]);
     if (control_fd < 0 || events_fd < 0 || control_fd == events_fd) return 2;
@@ -281,23 +283,39 @@ int main(int argc, char **argv)
     int exec_error[2];
     if (pipe(exec_error) != 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
     if (fcntl(exec_error[1], F_SETFD, FD_CLOEXEC) != 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
+    struct terminal_io terminal_io;
+    if (terminal) {
+        terminal_initialize(&terminal_io);
+        if (terminal_prepare(&terminal_io) != 0) {
+            int error = errno; terminal_close(&terminal_io); (void)record(4, getpid(), (uint32_t)error); return 1;
+        }
+    }
     pid_t child = fork();
-    if (child < 0) { (void)record(4, getpid(), (uint32_t)errno); return 1; }
+    if (child < 0) {
+        int error = errno; if (terminal) terminal_close(&terminal_io);
+        (void)record(4, getpid(), (uint32_t)error); return 1;
+    }
     if (child == 0) {
         close(exec_error[0]); close(control_fd); close(events_fd);
         close(child_events[0]); close(child_events[1]);
         for (int number = 1; number < NSIG; number++) signal(number, SIG_DFL);
         sigset_t empty; sigemptyset(&empty); sigprocmask(SIG_SETMASK, &empty, NULL);
-        if (child_session || setpgid(0, 0) == 0) execv(argv[executable], &argv[executable]);
+        if (terminal) {
+            close(terminal_io.master);
+            if (terminal_io.input.owned) close(terminal_io.input.descriptor);
+            if (terminal_io.output.owned) close(terminal_io.output.descriptor);
+            if (login_tty(terminal_io.slave) == 0) terminal_exec(&argv[executable]);
+        } else if (child_session || setpgid(0, 0) == 0) execv(argv[executable], &argv[executable]);
         int error = errno; ssize_t sent;
         do { sent = write(exec_error[1], &error, sizeof(error)); } while (sent < 0 && errno == EINTR);
         _exit(127);
     }
     close(exec_error[1]);
-    if (!child_session && setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) stop_requested = 1;
+    if (!child_session && !terminal && setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) stop_requested = 1;
     /* Only Git and its descendants retain the actual standard streams. EOF is
      * observable independently of the supervisor's mandatory process drain. */
-    close(STDIN_FILENO); close(STDOUT_FILENO); close(STDERR_FILENO);
+    if (terminal) { close(terminal_io.slave); terminal_io.slave = -1; }
+    else { close(STDIN_FILENO); close(STDOUT_FILENO); close(STDERR_FILENO); }
     if (fcntl(exec_error[0], F_SETFL, O_NONBLOCK) != 0) stop_requested = 1;
     int native_error = 0, exec_done = 0; size_t exec_bytes = 0;
     int exited = 0, failure = 0; int64_t stopping_at = -1;
@@ -307,15 +325,17 @@ int main(int argc, char **argv)
     if (capture_actor(child, child, 1) != 0) { failure = errno; stop_requested = 1; }
 #endif
     while (1) {
-        struct pollfd descriptors[3] = {
+        struct pollfd descriptors[6] = {
             { .fd = control_fd, .events = POLLIN | POLLHUP },
             { .fd = exec_done ? -1 : exec_error[0], .events = POLLIN | POLLHUP },
-            { .fd = child_events[0], .events = POLLIN }
+            { .fd = child_events[0], .events = POLLIN },
+            { .fd = -1 }, { .fd = -1 }, { .fd = -1 }
         };
+        if (terminal) terminal_poll(&terminal_io, descriptors + 3, stop_requested);
         /* A running primary wakes us through SIGCHLD or the control channel.
          * Keep the bounded scan only for grace deadlines and descendant drain,
          * including a fresh frontier after an adopted bridge was reaped. */
-        int polled = poll(descriptors, 3, stop_requested || exited ? 10 : -1);
+        int polled = poll(descriptors, 6, stop_requested || exited ? 10 : terminal ? 100 : -1);
         if (polled < 0 && errno != EINTR) { stop_requested = 1; failure = errno; }
         if (polled > 0 && descriptors[2].revents != 0) {
             char pending[128]; ssize_t received;
@@ -326,6 +346,9 @@ int main(int argc, char **argv)
             char command; ssize_t received = read(control_fd, &command, 1);
             if (received <= 0 || command == 'C') stop_requested = 1;
             else { stop_requested = 1; failure = EPROTO; }
+        }
+        if (terminal && polled >= 0 && terminal_cycle(&terminal_io, descriptors + 3, stop_requested) != 0) {
+            failure = errno; stop_requested = 1;
         }
         if (!exec_done && polled > 0 && (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR))) {
             ssize_t received = read(exec_error[0], (char *)&native_error + exec_bytes, sizeof(native_error) - exec_bytes);
@@ -366,9 +389,10 @@ int main(int argc, char **argv)
         }
         int members = live_members(child, stop_requested, force);
         if (members < 0) { if (errno == EAGAIN) continue; failure = errno; stop_requested = 1; continue; }
-        if (exited && members == 0) break;
+        if (exited && members == 0 && (!terminal || stop_requested || (terminal_io.master_eof && terminal_io.outgoing.count == 0))) break;
     }
     close(exec_error[0]);
+    if (terminal) terminal_close(&terminal_io);
     /* Only now may the group leader's PID be released. */
     int status;
     do { count = waitpid(child, &status, 0); } while (count < 0 && errno == EINTR);

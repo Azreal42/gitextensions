@@ -29,25 +29,34 @@ internal sealed class PosixGitProcess : IDisposable
     internal int ExitCode => _exit?.IsCompletedSuccessfully == true && _exit.Result == _exitCode ? _exitCode
         : throw new IOException("The supervisor exit differs from its terminal report.");
 
-    internal static PosixGitProcess Start(ProcessStartInfo start, CancellationToken token, bool childCreatesSession = false)
+    internal static PosixGitProcess Start(ProcessStartInfo start, CancellationToken token, bool childCreatesSession = false,
+        bool terminal = false, bool inheritConsole = false)
     {
+        if (inheritConsole && !terminal || terminal && childCreatesSession)
+        { throw new ArgumentException("A terminal owns its session and may inherit only its caller's standard I/O."); }
         token.ThrowIfCancellationRequested();
         string helper = Path.Combine(AppContext.BaseDirectory, "gitextensions-posix");
         if (!File.Exists(helper)) { throw new FileNotFoundException("The private POSIX Git supervisor is unavailable.", helper); }
         start.Environment.TryGetValue("PATH", out string? path);
-        string executable = GitConfiguredExecutable.Resolve(start.FileName, path);
+        // The terminal's native exec loop uses its captured PATH and working
+        // directory, with no shell fallback or implicit current-directory search.
+        string executable = terminal ? start.FileName : GitConfiguredExecutable.Resolve(start.FileName, path);
         PosixGitProcess owner = new();
         try
         {
-            using Pipe input = new(PipeDirection.Out), output = new(PipeDirection.In), error = new(PipeDirection.In),
-                commands = new(PipeDirection.Out), events = new(PipeDirection.In);
-            owner.StandardInput = input.TakeServer(); owner.StandardOutput = output.TakeServer(); owner.StandardError = error.TakeServer();
+            using Pipe? input = inheritConsole ? null : new(PipeDirection.Out), output = inheritConsole ? null : new(PipeDirection.In),
+                error = inheritConsole ? null : new(PipeDirection.In);
+            using Pipe commands = new(PipeDirection.Out), events = new(PipeDirection.In);
+            if (!inheritConsole)
+            { owner.StandardInput = input!.TakeServer(); owner.StandardOutput = output!.TakeServer(); owner.StandardError = error!.TakeServer(); }
             owner._commands = commands.TakeServer(); owner._events = events.TakeServer();
             // None of the parent's descriptors is temporarily made inheritable.
             // Explicit high duplicates also avoid dup2 clobbering a later source.
-            using SafeFileHandle fd0 = input.Duplicate(), fd1 = output.Duplicate(), fd2 = error.Duplicate(),
+            using SafeFileHandle fd0 = inheritConsole ? DuplicateStandard(0) : input!.Duplicate(),
+                fd1 = inheritConsole ? DuplicateStandard(1) : output!.Duplicate(), fd2 = inheritConsole ? DuplicateStandard(2) : error!.Duplicate(),
                 fd3 = commands.Duplicate(), fd4 = events.Duplicate();
-            string[] prefix = childCreatesSession ? [helper, "3", "4", "--child-sets-session", "--", executable]
+            string[] prefix = terminal ? [helper, "3", "4", "--terminal", "--", executable]
+                : childCreatesSession ? [helper, "3", "4", "--child-sets-session", "--", executable]
                 : [helper, "3", "4", "--", executable];
             using Utf8Vector arguments = new(prefix.Concat(start.ArgumentList));
             using Utf8Vector environment = new(start.Environment.Where(pair => pair.Value is not null).Select(pair => pair.Key + "=" + pair.Value));
@@ -67,6 +76,13 @@ internal sealed class PosixGitProcess : IDisposable
             try { owner.Dispose(); } catch (Exception cleanup) { failure.Data["PosixFactoryCleanupFailure"] = cleanup; }
             throw;
         }
+    }
+
+    private static SafeFileHandle DuplicateStandard(int descriptor)
+    {
+        int copy = DuplicateRawDescriptor(descriptor, 64);
+        if (copy < 0) { throw NativeError(Marshal.GetLastPInvokeError(), "Cannot inherit the interactive terminal stream."); }
+        return new((IntPtr)copy, ownsHandle: true);
     }
 
     private async Task ObserveAsync(CancellationToken token)
@@ -247,6 +263,8 @@ internal sealed class PosixGitProcess : IDisposable
     // Native code owns platform structs and variadic calls on each ABI.
     [DllImport("gitextensions-posix", EntryPoint = "ge_duplicate_cloexec", SetLastError = true)]
     private static extern int DuplicateDescriptor(SafePipeHandle descriptor, int minimum);
+    [DllImport("gitextensions-posix", EntryPoint = "ge_duplicate_cloexec", SetLastError = true)]
+    private static extern int DuplicateRawDescriptor(int descriptor, int minimum);
     [DllImport("gitextensions-posix", EntryPoint = "ge_spawn_supervisor")]
     private static extern int Spawn([MarshalAs(UnmanagedType.LPUTF8Str)] string executable,
         [MarshalAs(UnmanagedType.LPUTF8Str)] string directory, IntPtr arguments, IntPtr environment,

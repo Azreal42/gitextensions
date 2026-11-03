@@ -59,13 +59,14 @@
     </PropertyGroup>
     <WriteLinesToFile File="$(GitProcessHelperDirectory)/compiler-command.txt" Lines="$(_GitProcessCompileCommand)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <Exec Command="$(_GitProcessCompileCommand)" />
-    <Exec Command="&quot;$(GitProcessCompiler)&quot; -std=c11 -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,relro,-z,now -D$(_GitProcessArch) &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix.c&quot; -o &quot;$(_LinuxGitSupervisor)&quot;" />
+    <Exec Command="&quot;$(GitProcessCompiler)&quot; -std=c11 -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,relro,-z,now -D$(_GitProcessArch) &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix.c&quot; -lutil -o &quot;$(_LinuxGitSupervisor)&quot;" />
     <Exec Command="&quot;$(GitProcessCompiler)&quot; -std=c11 -O2 -Wall -Wextra -Werror -fPIC -shared -Wl,-z,relro,-z,now -D$(_GitProcessArch) &quot;$(MSBuildProjectDirectory)/Native/gitextensions-posix-bridge.c&quot; -o &quot;$(_LinuxGitBridge)&quot;" />
     <ItemGroup>
       <FileWrites Include="$(GitProcessHelperPath);$(_LinuxGitSupervisor);$(_LinuxGitBridge);$(GitProcessHelperDirectory)/compiler-command.txt" />
     </ItemGroup>
   </Target>
   <ItemGroup>
+    <InternalsVisibleTo Include="GitExtensions.Native.Tests" />
     <!-- Pure original GPG DTOs and shared Windows status classification; no WinForms/module controller dependency. -->
     <Compile Include="../../app/GitCommands/Git/Gpg/CommitStatus.cs" Link="Shared/Gpg/CommitStatus.cs" />
     <Compile Include="../../app/GitCommands/Git/Gpg/TagStatus.cs" Link="Shared/Gpg/TagStatus.cs" />

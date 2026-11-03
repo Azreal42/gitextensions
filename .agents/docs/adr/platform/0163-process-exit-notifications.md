@@ -1,6 +1,6 @@
 # ADR 0163 · Notifications de sortie des processus
 
-Statut : implémenté, suites locales réussies ; qualification CI finale en cours. [Cycle de vie POSIX](0161-posix-process-lifecycle.md), [suite Plugins native](0162-native-plugin-suite.md).
+Statut : implémenté ; Linux complet et trois livraisons natives qualifiés aux périmètres ci-dessous. [Cycle de vie POSIX](0161-posix-process-lifecycle.md), [suite Plugins native](0162-native-plugin-suite.md).
 
 Les attentes périodiques du superviseur et du parent managé ajoutaient environ 20 ms à chaque commande courte. La suite Core CI passait de 326 à 1 552 secondes entre les sources `226d0b29a` et `44ccea0c4`, tout en restant fonctionnelle. Deux cents vrais appels `git --version`, après échauffement, mesurent une médiane de 21,24 ms avant et 4,67 ms après, sur la même machine ; ce gain local ne vaut pas mesure native Mac ou Windows.
 
@@ -13,3 +13,5 @@ Vérification locale : compilation sans avertissement/erreur ; cinq contrats noy
 Le premier benchmark après modification avait réutilisé un cache MSBuild de référence DLL avec des helpers récents ; il échoue et reste archivé. Le projet de mesure est isolé, et les SHA de la DLL et des trois helpers doivent correspondre au produit avant exécution. Journaux, échantillons et contrôles : `artifacts/cross-platform/20261103/process-exit-events`.
 
 Repères : [waitid et WNOWAIT](https://man7.org/linux/man-pages/man2/waitid.2.html), [fonctions sûres dans un handler](https://man7.org/linux/man-pages/man7/signal-safety.7.html).
+
+[Linux complet `ed1161b8c`](https://github.com/Azreal42/gitextensions/actions/runs/41732665464) : 1 210 Core, 42 Plugins, 4 625 Desktop, cinq contrats noyau et cinq contrôles Debian, sans ignoré. Paquet reproductible, extrait puis installé et démarré sur le runner ; artefacts téléchargés et TRX contrôlés. [Natif `36c8f7761`](https://github.com/Azreal42/gitextensions/actions/runs/41734483458) : Windows et les deux Mac passent leurs contrats noyau, les 42 Plugins et 151 Desktop, archives et backends contrôlés. Le [Linux complet de cette dernière source](https://github.com/Azreal42/gitextensions/actions/runs/41734483452) passe également : mêmes 4 625 identités Desktop et cinq contrats noyau, Core/Plugins complets, paquet reproductible installé/démarré. `.deb` téléchargé : SHA-256 `3962c84895b64294fa8f20bddde081a5747a4c84ba124202fa68e23b6e7b2c49`.

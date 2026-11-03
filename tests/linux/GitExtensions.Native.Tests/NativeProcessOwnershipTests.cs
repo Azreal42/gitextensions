@@ -184,7 +184,7 @@ public sealed class NativeProcessOwnershipTests
     [DllImport("libc", EntryPoint = "realpath", SetLastError = true)]
     private static extern IntPtr RealPath([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr resolved);
 
-    private static string ExpectedWorkingDirectory(string path)
+    internal static string ExpectedWorkingDirectory(string path)
     {
         if (!OperatingSystem.IsMacOS()) { return path; }
         // getcwd resolves ancestor symlinks too: macOS TMPDIR commonly starts
