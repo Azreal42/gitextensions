@@ -31,8 +31,7 @@ public sealed class GoToCommitDialog : Window
     {
         _repository = repository; _source = _expression;
         _readClipboard = readClipboard ?? (async token => Clipboard is null ? null : await ClipboardExtensions.TryGetTextAsync(Clipboard).WaitAsync(token));
-        openLink ??= uri => LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
-            { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource);
+        openLink ??= uri => LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(uri.AbsoluteUri), GitCommandLogProcessKind.OpenResource);
         Name = "GoToCommitDialog"; Title = Original("$this", "Go to commit");
         Width = MinWidth = 604; Height = MinHeight = 302; SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false; CanMinimize = CanMaximize = false;

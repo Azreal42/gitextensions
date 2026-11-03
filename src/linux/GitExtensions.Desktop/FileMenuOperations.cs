@@ -51,8 +51,8 @@ internal sealed class FileMenuOperations
             case FileMenuCommand.EditWorkingFile: await EditWorkingFileAsync(selection); return;
             case FileMenuCommand.OpenWorkingFile:
             case FileMenuCommand.OpenWorkingFileWith:
-                string? app = command == FileMenuCommand.OpenWorkingFileWith ? await ChooseApplicationAsync(selection) : "xdg-open";
-                if (app is not null) { Launch(Path.Combine(selection.Repository.Path, selection.Paths.Single()), app, selection, journalContext); }
+                string? app = command == FileMenuCommand.OpenWorkingFileWith ? await ChooseApplicationAsync(selection) : null;
+                if (command == FileMenuCommand.OpenWorkingFile || app is not null) { Launch(Path.Combine(selection.Repository.Path, selection.Paths.Single()), app, selection, journalContext); }
                 return;
             case FileMenuCommand.OpenRevisionFile:
             case FileMenuCommand.OpenRevisionFileWith:
@@ -69,7 +69,7 @@ internal sealed class FileMenuOperations
                 string full = Path.Combine(selection.Repository.Path, selection.CopyPaths.FirstOrDefault() ?? selection.Paths[0]);
                 string directory = Directory.Exists(full) ? full : Path.GetDirectoryName(full)!;
                 while (!Directory.Exists(directory) && Path.GetDirectoryName(directory) is string parent) { directory = parent; }
-                Launch(directory, "xdg-open", selection, journalContext); return;
+                Launch(directory, null, selection, journalContext); return;
             case FileMenuCommand.FileHistory:
                 FileMenuLeaf history = selection.Leaves.First();
                 if (selection.Leaves.Select(leaf => leaf.Second).Distinct().Count() != 1) { throw new InvalidOperationException("Select files from one revision for file history."); }
@@ -114,12 +114,13 @@ internal sealed class FileMenuOperations
         => _run(label, async token => { EnsureCurrent(selection); token.ThrowIfCancellationRequested(); await operation(token); }, changes);
     private void EnsureCurrent(FileMenuSelection selection)
     { _lifetime.ThrowIfCancellationRequested(); if (!_isCurrent(selection) || !_owner.IsVisible) { throw new InvalidOperationException(_translate("The file selection has changed.")); } }
-    private void Launch(string path, string application, FileMenuSelection selection, GitCommandLogProcessContext? journalContext)
-    { EnsureCurrent(selection); LoggedExternalProcess.Start(new ProcessStartInfo(application) { UseShellExecute = false, WorkingDirectory = selection.Repository.Path, ArgumentList = { path } },
+    private void Launch(string path, string? application, FileMenuSelection selection, GitCommandLogProcessContext? journalContext)
+    { EnsureCurrent(selection); LoggedExternalProcess.Start(application is null ? DesktopResourceLauncher.CreateStartInfo(path, selection.Repository.Path)
+        : new ProcessStartInfo(application) { UseShellExecute = false, WorkingDirectory = selection.Repository.Path, ArgumentList = { path } },
         GitCommandLogProcessKind.OpenResource, _launch, journalContext, cancellationToken: _lifetime); }
     private async Task<string?> ChooseApplicationAsync(FileMenuSelection selection)
     {
-        string[]? values = await Dialogs.PromptAsync(Owner, _translate("Open with"), (_translate("Application executable"), "/usr/bin/"));
+        string[]? values = await Dialogs.PromptAsync(Owner, _translate("Open with"), (_translate("Application executable"), OperatingSystem.IsWindows() ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) : "/usr/bin/"));
         if (values is null) { return null; } EnsureCurrent(selection);
         string executable = values[0];
         if (!Path.IsPathFullyQualified(executable) || !File.Exists(executable)) { throw new ArgumentException(_translate("Select an existing application executable.")); }
@@ -193,8 +194,8 @@ internal sealed class FileMenuOperations
     }
     private async Task OpenRevisionAsync(FileMenuSelection selection, bool withApplication, GitCommandLogProcessContext? journalContext)
     {
-        string? application = withApplication ? await ChooseApplicationAsync(selection) : "xdg-open";
-        if (application is null) { return; } EnsureCurrent(selection);
+        string? application = withApplication ? await ChooseApplicationAsync(selection) : null;
+        if (withApplication && application is null) { return; } EnsureCurrent(selection);
         FileMenuLeaf leaf = selection.Leaves.Single();
         await RunAsync("Open this revision", selection, async token =>
         {

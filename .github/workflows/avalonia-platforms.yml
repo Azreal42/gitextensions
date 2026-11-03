@@ -1,0 +1,88 @@
+name: Avalonia native platforms
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: 1
+  PYTHONIOENCODING: utf-8
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_CLI_HOME: ${{ github.workspace }}/artifacts/dotnet-home
+  NUGET_PACKAGES: ${{ github.workspace }}/artifacts/nuget
+
+jobs:
+  native:
+    name: Native Avalonia ${{ matrix.runtime }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025
+            runtime: win-x64
+          - os: macos-15
+            runtime: osx-arm64
+          - os: macos-15-intel
+            runtime: osx-x64
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+
+      - name: Build the Avalonia solution on the native host
+        run: |
+          dotnet build GitExtensions.Linux.slnx --configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # These are the initial portable contracts. Linux retains its complete
+      # independent workflow; remaining platform-specific suites still need porting.
+      - name: Exercise portable Git and UI workflows
+        run: |
+          dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --filter "TestCategory=CrossPlatform|FullyQualifiedName~AskpassProtocolTests|FullyQualifiedName~AskpassModesWindowTests" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Publish a self-contained native delivery
+        run: |
+          python -B eng/desktop/package.py --runtime "${{ matrix.runtime }}" --output "artifacts/desktop/${{ matrix.runtime }}/delivery"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify the extracted delivery and actual desktop backend
+        run: |
+          python -B eng/desktop/verify.py --runtime "${{ matrix.runtime }}" --directory "artifacts/desktop/${{ matrix.runtime }}/delivery" --results "artifacts/desktop/${{ matrix.runtime }}/results"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload native delivery
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: avalonia-${{ matrix.runtime }}
+          path: artifacts/desktop/${{ matrix.runtime }}/delivery/*.zip
+          if-no-files-found: error
+
+      - name: Upload native test evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: avalonia-native-tests-${{ matrix.runtime }}
+          path: artifacts/desktop/${{ matrix.runtime }}/results/
+          if-no-files-found: ignore

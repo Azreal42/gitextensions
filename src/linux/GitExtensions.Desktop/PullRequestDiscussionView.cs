@@ -16,7 +16,7 @@ internal sealed class PullRequestDiscussionView : ScrollViewer
     private static readonly Regex BodyUrls = new("https?://[^\\s<>\"'\\)\\]]+", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     internal Func<Uri, Task> OpenLink { get; set; } = uri =>
     {
-        ProcessStartInfo start = new("xdg-open") { UseShellExecute = false }; start.ArgumentList.Add(uri.AbsoluteUri);
+        ProcessStartInfo start = DesktopResourceLauncher.CreateStartInfo(uri.AbsoluteUri);
         LoggedExternalProcess.Start(start, GitCommandLogProcessKind.OpenResource); return Task.CompletedTask;
     };
     internal event Action<string>? LinkError;

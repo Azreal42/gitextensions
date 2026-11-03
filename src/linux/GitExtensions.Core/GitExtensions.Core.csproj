@@ -4,7 +4,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+  <PropertyGroup>
+    <_BuildLinuxGitHelper Condition="$([MSBuild]::IsOSPlatform('Linux')) and ('$(RuntimeIdentifier)' == '' or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux-')))">true</_BuildLinuxGitHelper>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_BuildLinuxGitHelper)' == 'true'">
     <!-- Override GitProcessCompiler with an executable path for cross-RID builds. Never silently use a host binary. -->
     <GitProcessHelperRuntime Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</GitProcessHelperRuntime>
     <GitProcessHelperRuntime Condition="'$(GitProcessHelperRuntime)' == ''">$(NETCoreSdkRuntimeIdentifier)</GitProcessHelperRuntime>
@@ -16,13 +19,13 @@
     <GitProcessHelperDirectory>$([System.IO.Path]::GetFullPath('$(_GitProcessHelperDirectory)'))</GitProcessHelperDirectory>
     <GitProcessHelperPath>$(GitProcessHelperDirectory)/gitextensions-exec</GitProcessHelperPath>
   </PropertyGroup>
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+  <ItemGroup Condition="'$(_BuildLinuxGitHelper)' == 'true'">
     <Content Include="$(GitProcessHelperPath)" Link="gitextensions-exec" TargetPath="gitextensions-exec"
              CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <!-- Also build before content is requested transitively or when publishing skips the managed build. -->
   <Target Name="BuildGitProcessHelper" BeforeTargets="PrepareForBuild;AssignTargetPaths"
-          Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(DesignTimeBuild)' != 'true'">
+          Condition="'$(_BuildLinuxGitHelper)' == 'true' and '$(DesignTimeBuild)' != 'true'">
     <Error Condition="'$(_GitProcessArch)' == ''" Text="The private Git process launcher supports linux-x64 and linux-arm64 only; unsupported RID $(GitProcessHelperRuntime)." />
     <Error Condition="'$(GitProcessCompiler)' == ''" Text="A cross-RID Git process launcher requires an explicit target compiler: -p:GitProcessCompiler=/absolute/path/to/compiler." />
     <MakeDir Directories="$(GitProcessHelperDirectory)" />

@@ -352,7 +352,7 @@ public sealed class GitRunner
         startInfo.Environment.TryGetValue("DISPLAY", out string? display);
         startInfo.Environment.TryGetValue("WAYLAND_DISPLAY", out string? waylandDisplay);
         if (string.IsNullOrEmpty(helper) || !Path.IsPathFullyQualified(helper) || !File.Exists(helper)
-            || string.IsNullOrWhiteSpace(display) && string.IsNullOrWhiteSpace(waylandDisplay))
+            || OperatingSystem.IsLinux() && string.IsNullOrWhiteSpace(display) && string.IsNullOrWhiteSpace(waylandDisplay))
         {
             return;
         }

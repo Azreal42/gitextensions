@@ -1,8 +1,18 @@
 # TODO
 
-Mise à jour : 1 novembre 2026. Compatibilité Bisect avec Git récent et pipeline Linux corrigés ; résultats distants sur GitHub Actions. Les limites de parité et de qualification native du portage restent ouvertes.
+Mise à jour : 3 novembre 2026. Extension Windows/Linux/macOS de la même application Avalonia en cours ; contrats portables et CI native ajoutés. Les limites de parité et de qualification complète restent ouvertes.
 
 Une case cochée atteste le sous-périmètre décrit, avec preuve dans le code/tests ou résultat exécuté. Elle ne clôt pas sa famille historique. Migration complète : toutes les familles ouvertes couvertes, audit de parité, paquet installé et application démarrée sur Linux.
+
+<a id="avalonia-three-platforms"></a>
+## Avalonia — Windows, Linux et macOS
+
+Objectif actif : même application fonctionnelle sur les trois systèmes. [ADR0159](adr/platform/0159-avalonia-three-platforms.md). La CI Linux verte [f89569ea7](https://github.com/Azreal42/gitextensions/actions/runs/41356892376) reste la référence antérieure ; elle ne qualifie pas Windows/macOS.
+
+- [x] Composant commun pour liens/fichiers, casse des variables Windows, chemins d’éditeur Git contenant espaces/apostrophes. Validation locale : 56 tests ciblés ; rebase avec le vrai éditeur et focus/identité de grille conservés.
+- [x] Première archive autonome Windows construite et vérifiée statiquement depuis Linux, helper askpass natif inclus, aucun lanceur Linux ; correction de propagation du RID dans les projets intermédiaires.
+- [ ] Jobs natifs Windows x64 et macOS Intel/Apple Silicon : contrats portables, livraison extraite, backend graphique et capture. Les résultats des nouveaux jobs restent à examiner.
+- [ ] Terminaison des descendants, console interactive/PTY, terminaux et environnement, journaux atomiques/verrous macOS ; suites métier complètes et parcours natifs sur Windows/macOS. Aucun état de parité globale n’est déclaré.
 
 <a id="ci-linux-bisect"></a>
 ## CI Linux — compatibilité Bisect et paquet

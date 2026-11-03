@@ -9,7 +9,7 @@
   <ItemGroup>
     <!-- Keep the Windows contributor lists as raw XML; no ResX code generation or duplicated names. -->
     <EmbeddedResource Include="../../app/GitUI/Properties/Resources.resx" Link="Resources/Contributors.Windows.xml" LogicalName="GitExtensions.Contributors.Windows.xml" Type="Non-Resx" />
-    <Content Include="gitextensions-askpass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Condition="!$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-')) and ('$(RuntimeIdentifier)' != '' or !$([MSBuild]::IsOSPlatform('Windows')))" Include="gitextensions-askpass" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="../GitExtensions.Core/GitExtensions.Core.csproj" />
     <ProjectReference Include="../GitExtensions.SpellChecking/GitExtensions.SpellChecking.csproj" />
     <ProjectReference Include="../GitExtensions.Plugins/GitExtensions.Plugins.csproj" />

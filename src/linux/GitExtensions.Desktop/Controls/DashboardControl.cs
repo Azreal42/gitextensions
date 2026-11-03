@@ -319,7 +319,7 @@ public sealed class DashboardControl : UserControl, IDisposable
 
     private static Task OpenUrlAsync(string url)
     {
-        LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } }, GitCommandLogProcessKind.OpenResource);
+        LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(url), GitCommandLogProcessKind.OpenResource);
         return Task.CompletedTask;
     }
 

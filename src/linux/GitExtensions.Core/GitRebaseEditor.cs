@@ -105,18 +105,23 @@ public static partial class GitRebaseEditor
         return new Dictionary<string, string?>
         {
             [DirectoryVariable] = directory,
-            ["GIT_SEQUENCE_EDITOR"] = state.EditorExecutable + " --write-rebase-plan",
-            ["GIT_EDITOR"] = state.EditorExecutable + " --write-rebase-message",
+            ["GIT_SEQUENCE_EDITOR"] = QuoteExecutable(state.EditorExecutable) + " --write-rebase-plan",
+            ["GIT_EDITOR"] = QuoteExecutable(state.EditorExecutable) + " --write-rebase-message",
         };
     }
 
     internal static void ValidateExecutable(string path)
     {
-        // Git's editor configuration accepts a command string. Only a fixed absolute executable
-        // followed by our constant option is supplied; no user plan or message becomes command text.
-        if (!System.IO.Path.IsPathFullyQualified(path) || path.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not ('/' or '.' or '_' or '-')) || !File.Exists(path))
-        {
-            throw new ArgumentException("The rebase editor requires an existing absolute executable path containing only letters, digits, '/', '.', '_' or '-'.", nameof(path));
-        }
+        if (!System.IO.Path.IsPathFullyQualified(path) || path.Contains('\0') || !File.Exists(path))
+        { throw new ArgumentException("The rebase editor requires an existing absolute executable path.", nameof(path)); }
+    }
+
+    internal static string QuoteExecutable(string path)
+    {
+        ValidateExecutable(path);
+        // Git for Windows also executes editor commands through its POSIX shell.
+        // Quote the whole executable word; messages and plans remain separate files.
+        string executable = OperatingSystem.IsWindows() ? path.Replace('\\', '/') : path;
+        return "'" + executable.Replace("'", "'\"'\"'", StringComparison.Ordinal) + "'";
     }
 }

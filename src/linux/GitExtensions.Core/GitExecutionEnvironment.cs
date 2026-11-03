@@ -32,10 +32,11 @@ public sealed class GitExecutionEnvironment
         string executable = string.IsNullOrEmpty(options.Executable) ? "git" : options.Executable;
         foreach (string? value in new[] { executable, options.ToolsDirectory, options.HomeDirectory, options.SshExecutable })
         { if (value?.Contains('\0') == true) { throw new ArgumentException("Git environment paths cannot contain NUL.", nameof(options)); } }
+        StringComparer comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         Dictionary<string, string?> values = inheritedEnvironment is null
             ? Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>()
-                .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value, StringComparer.Ordinal)
-            : new(inheritedEnvironment, StringComparer.Ordinal);
+                .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value, comparer)
+            : new(inheritedEnvironment, comparer);
         if (!string.IsNullOrEmpty(options.ToolsDirectory))
         {
             string path = values.GetValueOrDefault("PATH") ?? "";

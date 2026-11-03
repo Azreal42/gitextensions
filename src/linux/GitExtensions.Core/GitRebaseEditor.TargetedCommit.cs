@@ -10,9 +10,9 @@ public static partial class GitRebaseEditor
     {
         ValidateExecutable(executable);
         ValidateTargetedAction(target, action);
-        // All command fragments are fixed words or validated executable/hash characters.
+        // Command fragments are fixed words, a quoted executable, or a validated hash.
         // Git supplies its editor filename separately, with its own shell quoting.
-        return executable + " " + TargetedCommitEditorArgument + " " + action.ToString().ToLowerInvariant() + " " + target;
+        return QuoteExecutable(executable) + " " + TargetedCommitEditorArgument + " " + action.ToString().ToLowerInvariant() + " " + target;
     }
 
     private static bool TryHandleTargetedCommit(string[] args, out int exitCode)

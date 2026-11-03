@@ -126,8 +126,8 @@ public static partial class GitRebaseEditor
         if (!string.IsNullOrEmpty(state.EditorExecutable))
         {
             ValidateExecutable(state.EditorExecutable);
-            environment["GIT_SEQUENCE_EDITOR"] = state.EditorExecutable + " --edit-rebase-todo";
-            environment["GIT_EDITOR"] = state.EditorExecutable + " --edit-rebase-message";
+            environment["GIT_SEQUENCE_EDITOR"] = QuoteExecutable(state.EditorExecutable) + " --edit-rebase-todo";
+            environment["GIT_EDITOR"] = QuoteExecutable(state.EditorExecutable) + " --edit-rebase-message";
         }
         return environment;
     }

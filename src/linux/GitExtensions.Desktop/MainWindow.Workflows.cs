@@ -462,7 +462,7 @@ public sealed partial class MainWindow
     {
         Uri? uri = SelectedRemote().BrowseUri;
         if (uri is null) { throw new InvalidOperationException("This remote has no recognized web URL."); }
-        LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { ArgumentList = { uri.AbsoluteUri }, UseShellExecute = false },
+        LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(uri.AbsoluteUri),
             GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token);
         return Task.CompletedTask;
     }

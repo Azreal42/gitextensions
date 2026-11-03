@@ -118,8 +118,7 @@ public sealed partial class CommitDialog
         AccessText text = new() { Text = _translations.TranslateAccessKeys("FormCommit", item, "Text", source), VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(text, 1); content.Children.Add(text); return content;
     }
-    internal Action<Uri> OpenConventionalDocumentation { get; set; } = uri => LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open")
-        { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource);
+    internal Action<Uri> OpenConventionalDocumentation { get; set; } = uri => LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(uri.AbsoluteUri), GitCommandLogProcessKind.OpenResource);
 
     private async Task OpenMessageSettingsAsync()
     {

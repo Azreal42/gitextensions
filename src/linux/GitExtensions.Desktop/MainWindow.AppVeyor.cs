@@ -20,7 +20,7 @@ public sealed partial class MainWindow
     {
         Uri? uri = BuildServerStatusFor((PrimaryHistoryItem as GitCommit)?.Hash)?.Runs.FirstOrDefault()?.PullRequestUri;
         if (!_gitHubActionsEnabled || _gitHubActionsClosing || uri is null) { return Task.CompletedTask; }
-        try { LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token); }
+        try { LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(uri.AbsoluteUri), GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token); }
         catch (Exception error) when (error is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
         { SetGitHubActionsError("The pull request page could not be opened in the browser."); }
         return Task.CompletedTask;

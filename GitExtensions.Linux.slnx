@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/linux/GitExtensions.Askpass.Host/GitExtensions.Askpass.Host.csproj" />
     <Project Path="src/linux/GitExtensions.Avalonia.Skia.Patched/GitExtensions.Avalonia.Skia.Patched.csproj" />
     <Project Path="src/linux/GitExtensions.Core/GitExtensions.Core.csproj" />
     <Project Path="src/linux/GitExtensions.SpellChecking/GitExtensions.SpellChecking.csproj" />

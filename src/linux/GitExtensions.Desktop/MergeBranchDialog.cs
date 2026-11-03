@@ -57,8 +57,7 @@ public sealed class MergeBranchDialog : RepositoryDialog
         Grid fields = ReferenceDialogControls.Fields(); ReferenceDialogControls.Field(fields, Text("label2", "Merge branch"), _revision); ReferenceDialogControls.Field(fields, Text("Currentbranch", "Into current branch"), _branch);
         _strategyHelp = Action("MergeStrategyHelp", "Help", () =>
         {
-            LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
-                { UseShellExecute = false, ArgumentList = { "https://git-extensions-documentation.readthedocs.io/en/latest/branches.html#advanced-merge-options" } }, GitCommandLogProcessKind.OpenResource);
+            LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo("https://git-extensions-documentation.readthedocs.io/en/latest/branches.html#advanced-merge-options"), GitCommandLogProcessKind.OpenResource);
             return Task.CompletedTask;
         });
         _strategyHelp.Height = 24;

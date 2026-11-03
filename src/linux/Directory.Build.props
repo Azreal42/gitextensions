@@ -7,6 +7,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Deterministic>true</Deterministic>
+    <!-- Core carries a native launcher. Preserve the consumer RID through
+         intermediary project references instead of publishing a host helper. -->
+    <IsRidAgnostic>false</IsRidAgnostic>
     <Version>7.2.1-linux-alpha</Version>
     <Authors>Git Extensions Team</Authors>
     <Company>Git Extensions</Company>

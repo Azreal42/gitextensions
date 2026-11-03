@@ -98,7 +98,7 @@ internal static class Program
             }
             RepositoryPath = StartupRequest.BrowseRequest?.RepositoryPath ?? RepositoryPath;
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
-            GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, "gitextensions-askpass");
+            GitRunner.AskpassFallbackPath = Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "gitextensions-askpass.exe" : "gitextensions-askpass");
             GitRunner.AskpassUiCulture = CultureInfo.CurrentUICulture.Name;
             AppBuilder builder = BuildAvaloniaApp();
             try { return builder.StartWithClassicDesktopLifetime(args); }

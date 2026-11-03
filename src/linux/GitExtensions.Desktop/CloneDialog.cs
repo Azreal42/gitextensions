@@ -73,8 +73,7 @@ public sealed class CloneDialog : StartupRepositoryDialog
     public CloneDialog(string destination = "", string source = "", GitRepository? repository = null, Action<Uri>? openHelp = null) : base("Clone repository")
     {
         _context = repository;
-        _openHelp = openHelp ?? (uri => LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
-            { UseShellExecute = false, ArgumentList = { uri.AbsoluteUri } }, GitCommandLogProcessKind.OpenResource));
+        _openHelp = openHelp ?? (uri => LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(uri.AbsoluteUri), GitCommandLogProcessKind.OpenResource));
         _explicitSource = !string.IsNullOrEmpty(source);
         // Retain the owner's request before a busy Process can veto child closure.
         // StartupRepositoryDialog cancels our token and closes only after drainage.

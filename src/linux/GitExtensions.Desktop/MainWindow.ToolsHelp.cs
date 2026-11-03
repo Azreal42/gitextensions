@@ -121,7 +121,7 @@ public sealed partial class MainWindow
 
     private Task OpenWebAsync(string url)
     {
-        LoggedExternalProcess.Start(new ProcessStartInfo("xdg-open") { UseShellExecute = false, ArgumentList = { url } },
+        LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo(url),
             GitCommandLogProcessKind.OpenResource, ExternalLauncher, cancellationToken: _lifetime.Token);
         return Task.CompletedTask;
     }

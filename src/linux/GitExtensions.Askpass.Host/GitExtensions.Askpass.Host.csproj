@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>gitextensions-askpass</AssemblyName>
+    <IsPublishable>true</IsPublishable>
+  </PropertyGroup>
+</Project>

@@ -23,11 +23,7 @@ public sealed partial class MainWindow
         { _revisionAdvancedActions[index].Name = names[index]; _revisionAdvancedActions[index].Tag = true; }
         MenuItem help = MenuAction("Get help on how to use these features", () =>
         {
-            LoggedExternalProcess.Start(new System.Diagnostics.ProcessStartInfo("xdg-open")
-            {
-                UseShellExecute = false,
-                ArgumentList = { "https://git-extensions-documentation.readthedocs.io/en/latest/modify_history.html#using-autosquash-rebase-feature" }
-            }, GitCommandLogProcessKind.OpenResource);
+            LoggedExternalProcess.Start(DesktopResourceLauncher.CreateStartInfo("https://git-extensions-documentation.readthedocs.io/en/latest/modify_history.html#using-autosquash-rebase-feature"), GitCommandLogProcessKind.OpenResource);
             return Task.CompletedTask;
         });
         help.Name = "HistoryAdvancedHelp";

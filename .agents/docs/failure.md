@@ -1,5 +1,9 @@
 # Failure
 
+## Portabilité Avalonia — premiers contrats
+
+Le SDK considérait les bibliothèques intermédiaires comme indépendantes du RID : une publication Windows depuis Linux recevait le helper ELF de Core. Le garde-fou de livraison a arrêté le premier essai ; `IsRidAgnostic=false` propage désormais le RID dans le graphe concerné. L’archive suivante contient des exécutables PE x64 et aucun helper Linux. Le premier test de règles attendait à tort InvalidOperationException : le contrat existant est IOException, préimage toujours préservée. Le build suivant a signalé une annotation nullable incorrecte dans le nouveau test de grille ; correction de type uniquement, puis 56/56 ciblés. Les preuves locales statiques restent distinctes des futurs contrôles natifs.
+
 Ne garder ici que les causes qui évitent de refaire une impasse. Logs, candidats refusés et mesures historiques restent dans `artifacts/linux/`, avec leur source ; état du dernier paquet dans [TODO](todo.md).
 
 <a id="ci-linux-bisect"></a>
