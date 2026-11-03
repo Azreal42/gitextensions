@@ -8,6 +8,7 @@ using NUnit.Framework;
 
 namespace GitExtensions.Desktop.Tests;
 
+[Category("CrossPlatform")]
 public sealed class AvatarServiceTests
 {
     [Test]
@@ -244,6 +245,26 @@ public sealed class AvatarServiceTests
         finally { provider.Release.TrySetResult(); }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task ASynchronouslyCompletedBorrowedReadStillObservesCancellationBeforePublishingBytes(bool closeOwner)
+    {
+        using OfflineAvatarFixture f = new(); await using AvatarService service = f.Create();
+        AvatarOwnerScope owner = service.CreateOwnerScope("gource"); using CancellationTokenSource caller = new();
+        SynchronousBorrowedProvider provider = new(() => { if (closeOwner) { owner.BeginClose(); } else { caller.Cancel(); } });
+        IGourceAvatarProvider binding = AvatarProviderBinding.ForBorrowed(owner, provider);
+        try
+        {
+            Task<byte[]?> read = binding.GetAvatarPngAsync("literal@example.invalid", "Literal", 90, caller.Token);
+            OperationCanceledException error = Assert.CatchAsync<OperationCanceledException>(async () => await read.WaitAsync(OfflineAvatars.Limit))!;
+            Assert.That(error.CancellationToken, Is.EqualTo(closeOwner ? owner.LifetimeToken : caller.Token));
+            await owner.ConsumerCompletion.WaitAsync(OfflineAvatars.Limit);
+            Assert.That(provider.Calls, Is.EqualTo(1)); Assert.That(provider.Disposed, Is.False);
+        }
+        finally { await owner.BeginClose().Completion.WaitAsync(OfflineAvatars.Limit); }
+        Assert.That(owner.IsClosed, Is.True); Assert.That(provider.Disposed, Is.False);
+    }
+
     [Test]
     public async Task ClosingTheLastOwnerDrainsAnIgnoringHttpResponseStreamBeforeReportingClosed()
     {
@@ -279,6 +300,14 @@ public sealed class AvatarServiceTests
             gate.Release.TrySetResult(); await shutdown.WaitAsync(OfflineAvatars.Limit); Assert.That(owner.IsClosed, Is.True);
         }
         finally { gate.Release.TrySetResult(); await service.ShutdownAsync().WaitAsync(OfflineAvatars.Limit); }
+    }
+
+    private sealed class SynchronousBorrowedProvider(Action beforeReturn) : IGourceAvatarProvider, IDisposable
+    {
+        internal int Calls { get; private set; } internal bool Disposed { get; private set; }
+        public Task<byte[]?> GetAvatarPngAsync(string email, string name, int size, CancellationToken token)
+        { Calls++; beforeReturn(); return Task.FromResult<byte[]?>(OfflineAvatars.Bytes); }
+        public void Dispose() => Disposed = true;
     }
 
     private sealed class BorrowedAvatarGate : IGourceAvatarProvider, IDisposable

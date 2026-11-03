@@ -84,6 +84,12 @@ internal sealed class AvatarService : IAsyncDisposable
         if (!scope.IsActive) { throw new OperationCanceledException(scope.LifetimeToken); }
         ObjectDisposedException.ThrowIf(_stopping, this);
     }
+    private void CheckConsumerLocked(AvatarOwnerScope scope, CancellationToken caller)
+    {
+        caller.ThrowIfCancellationRequested();
+        if (_stopping || !scope.IsActive) { throw new OperationCanceledException(scope.LifetimeToken); }
+        scope.LifetimeToken.ThrowIfCancellationRequested();
+    }
 
     internal AvatarOwnerScope CreateOwnerScope(string debugName, AvatarOwnerScope? parent = null)
     {
@@ -160,13 +166,15 @@ internal sealed class AvatarService : IAsyncDisposable
                 await generation.Ready.Task.WaitAsync(wait.Token).ConfigureAwait(false);
                 lock (_gate)
                 {
-                    wait.Token.ThrowIfCancellationRequested(); CheckScopeLocked(scope);
+                    CheckConsumerLocked(scope, caller);
                     if (generation.Retired || !ReferenceEquals(_generation, generation)) { return Retired(generation.Epoch); }
                     work = AttachReadLocked(scope, request, generation);
                 }
             }
             AvatarReadResult result = await work.WaitAsync(wait.Token).ConfigureAwait(false);
-            wait.Token.ThrowIfCancellationRequested(); return result;
+            // CancelAsync callbacks can reach the linked wait after the worker
+            // completes. Publication must still observe the owner's close edge.
+            lock (_gate) { CheckConsumerLocked(scope, caller); return result; }
         }
         catch (OperationCanceledException) when (caller.IsCancellationRequested) { throw new OperationCanceledException(caller); }
         catch (OperationCanceledException) when (scope.LifetimeToken.IsCancellationRequested) { throw new OperationCanceledException(scope.LifetimeToken); }
@@ -437,14 +445,18 @@ internal sealed class AvatarService : IAsyncDisposable
         Task<byte[]?> raw;
         try
         {
-            scope.LifetimeToken.ThrowIfCancellationRequested(); caller.ThrowIfCancellationRequested();
+            lock (_gate) { CheckConsumerLocked(scope, caller); }
             // The injected provider receives the original arguments/token, not a worker or scope token.
             raw = provider.GetAvatarPngAsync(email, name, pixels, caller);
         }
         catch { FinishBorrowed(scope, terminal); throw; }
         _ = ObserveBorrowedAsync(scope, raw, terminal);
         using CancellationTokenSource wait = CancellationTokenSource.CreateLinkedTokenSource(caller, scope.LifetimeToken);
-        try { return await raw.WaitAsync(wait.Token).ConfigureAwait(false); }
+        try
+        {
+            byte[]? result = await raw.WaitAsync(wait.Token).ConfigureAwait(false);
+            lock (_gate) { CheckConsumerLocked(scope, caller); return result; }
+        }
         catch (OperationCanceledException) when (caller.IsCancellationRequested) { throw new OperationCanceledException(caller); }
         catch (OperationCanceledException) when (scope.LifetimeToken.IsCancellationRequested) { throw new OperationCanceledException(scope.LifetimeToken); }
     }

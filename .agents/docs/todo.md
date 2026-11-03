@@ -17,7 +17,11 @@ Objectif actif : même application fonctionnelle sur les trois systèmes. [ADR01
 - [x] Repli typographique Mac revu sur la capture native : familles sans empattements et métriques fixes explicites ; 207 tests ciblés locaux passent, préférences enregistrées conservées.
 - [x] [Premier pipeline natif complet `e38053dd7`](https://github.com/Azreal42/gitextensions/actions/runs/41660089091) : 131/131 cas sur Windows et les deux Mac, les trois archives contrôlées et les trois backends démarrés ; capture Mac corrigée revue.
 - [x] Deux parcours de test qui pouvaient envoyer un key-up après destruction de fenêtre corrigés ; résolution des outils configurés via le PATH capturé. 167 tests combinés locaux passent.
-- [ ] Dernière source : 133 contrats natifs, suite Linux complète (4 622 Desktop), installation et nouveaux paquets.
+- [x] Annulation des avatars vérifiée sous le verrou de publication, y compris fournisseur emprunté déjà terminé. Deux régressions échouent sur l’ancien code ; 174 tests combinés passent avec le correctif. Les 17 contrats AvatarService rejoignent le sous-ensemble natif, désormais 150 cas.
+- [x] Fixtures : signaux PID publiés par renommage après fermeture, culture askpass isolée du profil hôte, contrôles Settings réellement disponibles et pilote de clic partagé. Les 240 scénarios concernés passent ; assertions métier et vrais clics conservés.
+
+Qualification de la dernière source et paquets : [Linux complet](https://github.com/Azreal42/gitextensions/actions/workflows/linux.yml?query=branch%3Amigration%2Flinux) (1 210 Core, 42 Plugins, 4 624 Desktop, cinq contrôles Debian), [trois plateformes natives](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amigration%2Flinux) (150 cas par système, archive et backend réel). Chaque résultat reste attaché à son commit ; les tests locaux ciblés ne remplacent pas ces pipelines.
+
 - [ ] Terminaison des descendants, console interactive/PTY, terminaux et environnement, qualification des verrous macOS ; suites métier complètes et parcours natifs sur Windows/macOS. Aucun état de parité globale n’est déclaré.
 
 <a id="ci-linux-bisect"></a>
