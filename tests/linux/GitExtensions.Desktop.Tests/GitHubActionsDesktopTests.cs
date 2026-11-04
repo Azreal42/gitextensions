@@ -2,7 +2,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
@@ -86,6 +89,63 @@ public sealed class GitHubActionsDesktopTests
         File.WriteAllText(f.Path(GitDistributedSettingsScope.Global), "not XML");
         GitHubActionsSettingsSession untouched = new(f.Repository); await untouched.InitializeAsync(default);
         Assert.That(untouched.Loaded, Is.False); Assert.That(untouched.HasChanges, Is.False); await untouched.SaveFilesAsync(default);
+    }
+
+    [AvaloniaTest]
+    public async Task BuildStatusColumnRemainsOutsideTheVerticalScrollbarAcrossThemesSizesAndScrollPositions()
+    {
+        using DetailedSettingsTestScope f = await DetailedSettingsTestScope.CreateAsync();
+        for (int index = 0; index < 40; index++)
+        { await f.Git.GitAsync("commit", "--allow-empty", "-m", "Scrollbar layout " + index); }
+        GitRepository repository = f.Repository ?? throw new InvalidOperationException("Missing test repository.");
+        IReadOnlyList<GitCommit> commits = await repository.GetLogAsync(60, all: false);
+        Enable(f);
+        string response = JsonSerializer.Serialize(new
+        {
+            workflow_runs = commits.Select((commit, index) => new
+            {
+                id = index + 1, workflow_id = 5, head_sha = commit.Hash, name = "Build", status = "completed",
+                conclusion = index % 2 == 0 ? "success" : "failure",
+                html_url = "https://github.com/octo/repo/actions/runs/" + (index + 1)
+            }).ToArray()
+        });
+        MainWindow window = Browser(f);
+        window.GitHubActionsClientFactory = settings => new(settings, new Handler((_, _) => Task.FromResult(
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(response) })));
+        window.Show();
+        try
+        {
+            await window.OpenRepositoryAsync(repository.Path);
+            await UntilCi(() => window.GitHubActionsStatusFor(commits[0].Hash) is not null, window, () => "Missing build status.");
+            ListBox history = History(window);
+            ScrollViewer scroll = history.GetVisualDescendants().OfType<ScrollViewer>().Single();
+            history.Focus();
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            foreach (double width in new[] { 1280d, 800d })
+            {
+                window.RequestedThemeVariant = theme; window.Width = width; window.Height = 580;
+                Pump(window);
+                foreach (double offset in new[] { 0d, 140d, 400d, 0d })
+                {
+                    scroll.Offset = new Vector(0, offset); window.MouseMove(new Point(5, 5)); Pump(window);
+                    ScrollBar bar = scroll.GetVisualDescendants().OfType<ScrollBar>().Single(control => control.Orientation == Avalonia.Layout.Orientation.Vertical);
+                    Rect scrollbar = Bounds(bar);
+                    Control[] cells = Rows(window).SelectMany(row => row.GetVisualDescendants().OfType<Control>())
+                        .Where(control => control.Name == "RevisionBuildStatusCell" && control.IsEffectivelyVisible).ToArray();
+                    Assert.That(bar.IsVisible && bar.Bounds.Width > 0 && scroll.Extent.Height > scroll.Viewport.Height, Is.True);
+                    Assert.That(cells, Is.Not.Empty, "The test must exercise actual CI cells beside a working scrollbar.");
+                    Assert.That(cells.Any(cell => cell.GetVisualDescendants().OfType<Image>().Any(icon => icon.IsEffectivelyVisible)), Is.True);
+                    foreach (Control cell in cells)
+                    { Assert.That(Bounds(cell).Right, Is.LessThanOrEqualTo(scrollbar.Left + .1), $"CI cell {Bounds(cell)} overlaps vertical scrollbar {scrollbar}."); }
+                }
+                Capture(window, "history-ci-scrollbar-" + theme + "-" + width + ".png");
+            }
+        }
+        finally { await CloseAsync(window); }
+        return;
+
+        Rect Bounds(Control control) => new(control.TranslatePoint(default, window)
+            ?? throw new InvalidOperationException("Detached history control."), control.Bounds.Size);
     }
 
     [AvaloniaTest]

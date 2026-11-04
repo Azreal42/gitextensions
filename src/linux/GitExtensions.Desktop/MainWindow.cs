@@ -118,6 +118,8 @@ public sealed partial class MainWindow : Window
         _historyQuery = new GitLogQuery { Count = Math.Clamp(_preferences.HistoryLimit, 1, 5000), Reflog = _historyView.ShowReflog };
         _appliedHistoryMaximum = _preferences.MaxRevisionGraphCommits; _appliedHistoryBatchSize = _historyQuery.Count;
         _historyWindow = HistoryPolicy.InitialWindow(_historyQuery.Count);
+        // Reserve a gutter so rightmost build-status cells cannot sit underneath the scrollbar.
+        ScrollViewer.SetAllowAutoHide(_commits, false);
         _commits.Styles.Add(new Style(selector => selector.OfType<ListBoxItem>())
         {
             Setters =
