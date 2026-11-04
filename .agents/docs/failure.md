@@ -4,7 +4,7 @@
 
 Le premier lancement Native.Tests sans build explicite ne découvre aucun cas ; le projet est compilé séparément de la solution. Après compilation, les 14 contrats passent. Desktop donne 188/189 : le faux pair Python au mauvais nonce envoyait directement du JSON avant le nouvel en-tête pidfd. Il transmet désormais sa vraie référence noyau ; les assertions de nonce et de confidentialité restent inchangées. Puis 189/189 passent, et 192/192 avec les trois parcours du vrai helper. Core 1 210/1 210, Plugins 42/42 et cinq contrôles Debian passent également. [ADR0165](adr/platform/0165-macos-interactive-console.md).
 
-Les derniers workflows candidats 4a/317 sont annulés ; le troisième push ne crée aucun run. Le dispatch explicite échoue HTTP422 « Actions has been disabled for this repository », alors que les permissions affichent enabled=true. Ce refus ne qualifie aucun parcours Mac et ne remplace pas la suite Desktop Linux complète. La branche migration/linux demeure sur le commit 36c8f7761 déjà qualifié.
+Les derniers workflows candidats 4a/317 sont annulés ; le troisième push ne crée aucun run. Le dispatch explicite échoue HTTP422 « Actions has been disabled for this repository », alors que les permissions affichent enabled=true. Ce refus ne qualifie aucun parcours Mac. La suite Desktop Linux complète est ensuite exécutée localement sur `1bdf47e27` : 4 631/4 631, zéro ignoré, six ajouts et 4 625 identités antérieures conservées ; TRX et paquet exact contrôlés. La branche migration/linux demeure sur le commit 36c8f7761 déjà qualifié.
 
 ## Mesure stty et mode Console .NET — 4 novembre 2026
 
