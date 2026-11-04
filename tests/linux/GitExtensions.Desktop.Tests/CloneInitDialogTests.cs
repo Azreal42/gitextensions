@@ -165,7 +165,7 @@ public class CloneInitDialogTests
         finally { clone.Close(); }
     }
 
-    [AvaloniaTest]
+    [AvaloniaTest, Platform("Linux")]
     public async Task ClosingCloneCancelsGitAndItsSshChildBeforeTheWindowCloses()
     {
         if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("This test exercises Linux process cancellation."); }

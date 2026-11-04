@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -20,6 +21,18 @@ namespace GitExtensions.Desktop.Tests;
 [NonParallelizable]
 public class DashboardTests
 {
+    private CultureInfo _previousCulture = CultureInfo.CurrentUICulture;
+
+    [SetUp]
+    public void UseEnglishDialogCulture()
+    {
+        _previousCulture = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
+    }
+
+    [TearDown]
+    public void RestoreDialogCulture() => CultureInfo.CurrentUICulture = _previousCulture;
+
     [AvaloniaTest]
     public async Task ClosingTheRepositoryReturnsToTheOriginalDashboardAndContextMenusPersistFavoritesAndCategories()
     {

@@ -131,7 +131,15 @@ internal static class ToolConfigurationScenarios
         await f.Git("config", "--file", xdg, "diff.guitool", "xdg");
         GitToolConfigurationSaveResult first = await f.Repository.SaveToolConfigurationAsync(await f.Repository.GetToolConfigurationAsync(),
             [new(GitConfigScope.Global, [new(GitToolRole.Diff, "xdg-updated", true)])]);
-        Check(!File.Exists(f.Global) && first.After!.GetScope(GitToolConfigurationView.Global).SelectedDiffGui.Occurrences.Single().ResolvedOriginPath == xdg,
+        string physicalXdg = xdg;
+        if (!OperatingSystem.IsWindows())
+        {
+            // macOS temporary directories can contain symlinked parents; compare the actual physical origin.
+            GitResult directory = await new GitRunner("/bin/pwd").RunAsync(Path.GetDirectoryName(xdg)!, ["-P"]);
+            Check(directory.Success, "The native working directory must be available for the origin assertion.");
+            physicalXdg = Path.Combine(directory.StandardOutput.TrimEnd('\r', '\n'), Path.GetFileName(xdg));
+        }
+        Check(!File.Exists(f.Global) && first.After!.GetScope(GitToolConfigurationView.Global).SelectedDiffGui.Occurrences.Single().ResolvedOriginPath == physicalXdg,
             "With HOME config absent and XDG present, native Git writes the existing XDG file.");
         await f.Git("config", "--file", f.Global, "diff.guitool", "home");
         GitToolConfigurationSnapshot both = await f.Repository.GetToolConfigurationAsync();

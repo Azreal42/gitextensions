@@ -326,7 +326,7 @@ public class MainWindowClassicTests
 
     internal sealed class RepositoryFixture : IDisposable
     {
-        private readonly string _temporary = Path.Combine(Path.GetTempPath(), "gitextensions-desktop-tests-" + Guid.NewGuid().ToString("N"));
+        private string _temporary = Path.Combine(Path.GetTempPath(), "gitextensions-desktop-tests-" + Guid.NewGuid().ToString("N"));
         private readonly string? _oldConfig = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
         private readonly CultureInfo _oldCulture = CultureInfo.CurrentUICulture;
         public GitRunner Git { get; } = new();
@@ -339,6 +339,14 @@ public class MainWindowClassicTests
             RepositoryFixture fixture = new();
             try
             {
+                Directory.CreateDirectory(fixture._temporary);
+                if (!OperatingSystem.IsWindows())
+                {
+                    // Git reports physical paths, including macOS's symlinked temporary directory parents.
+                    GitResult directory = await new GitRunner("/bin/pwd").RunAsync(fixture._temporary, ["-P"]);
+                    Assert.That(directory.Success, Is.True, directory.StandardError);
+                    fixture._temporary = directory.StandardOutput.TrimEnd('\r', '\n');
+                }
                 Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", Path.Combine(fixture._temporary, "configuration"));
                 CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
                 Directory.CreateDirectory(fixture.Repository);
