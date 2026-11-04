@@ -61,6 +61,7 @@ jobs:
       - name: Exercise actual native process ownership
         run: |
           $filter = "TestCategory=NativeProcessOwnership"
+          if ($IsWindows) { $filter += "|TestCategory=WindowsTerminal" }
           if ($IsMacOS) { $filter += "|TestCategory=MacProcessStartup|TestCategory=PosixTerminal|TestCategory=PosixPeerProcess" }
           dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter $filter --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/native-kernel"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

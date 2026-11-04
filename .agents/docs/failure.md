@@ -6,6 +6,10 @@ Le premier lancement Native.Tests sans build explicite ne découvre aucun cas ; 
 
 Les derniers workflows candidats 4a/317 sont annulés ; le troisième push ne crée aucun run. Le dispatch explicite échoue HTTP422 « Actions has been disabled for this repository », alors que les permissions affichent enabled=true. Ce refus ne qualifie aucun parcours Mac et ne remplace pas la suite Desktop Linux complète. La branche migration/linux demeure sur le commit 36c8f7761 déjà qualifié.
 
+## Dispatch console Windows/POSIX — 4 novembre 2026
+
+L’ajout du chemin Windows fait correctement échouer CA1416 sur les appels POSIX encore dans la méthode commune. Le chemin POSIX est extrait et annoté, le dispatch reste gardé par le système réel ; aucun analyseur n’est supprimé. Compilation finale des projets Core/probe/Native.Tests sans avertissement/erreur, dix contrats POSIX réussis. Les trois nouveaux contrats Windows sont seulement compilés ; aucune preuve Windows déclarée. [ADR0166](adr/platform/0166-windows-interactive-console.md).
+
 ## Mesure stty et mode Console .NET — 4 novembre 2026
 
 La reprise de saisie seule ne corrige pas le second Mac Intel (10/11). Le runtime peut configurer le terminal avant un enfant qui en hérite, puis revenir à son mode applicatif : le banc doit mesurer sans cette intervention. stty interroge désormais le périphérique ttyname_r avec ses trois flux redirigés ; read natif vérifie la saisie reprise. Tous les attributs et les snapshots immédiats sont conservés, sans masque. Dix contrats Linux passent ; troisième passage Mac requis. [ADR0164](adr/platform/0164-native-posix-terminal.md).

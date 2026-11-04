@@ -15,6 +15,7 @@ internal sealed class WindowsGitProcess : IDisposable
 {
     private const uint KillOnJobClose = 0x2000, Suspended = 4, UnicodeEnvironment = 0x400;
     private const uint ExtendedStartup = 0x80000, NoWindow = 0x08000000, UseStandardHandles = 0x100;
+    private const uint NewConsole = 0x10;
     private readonly KernelHandle _job;
     private SafeProcessHandle? _process;
     private Task? _exit;
@@ -32,21 +33,33 @@ internal sealed class WindowsGitProcess : IDisposable
         { Win32Exception error = Error("Cannot configure the private Git job."); _job.Dispose(); throw error; }
     }
 
-    internal static WindowsGitProcess Start(ProcessStartInfo start, CancellationToken token)
+    internal static WindowsGitProcess Start(ProcessStartInfo start, CancellationToken token,
+        bool inheritConsole = false, bool createConsole = false)
     {
+        if (inheritConsole && createConsole) { throw new ArgumentException("A process cannot inherit and create its console at the same time."); }
         token.ThrowIfCancellationRequested();
         WindowsGitProcess owner = new();
         bool assigned = false;
         try
         {
-            using ChildPipe input = new(PipeDirection.Out), output = new(PipeDirection.In), error = new(PipeDirection.In);
-            owner.StandardInput = input.TakeServer(); owner.StandardOutput = output.TakeServer(); owner.StandardError = error.TakeServer();
-            using StartupAttributes attributes = new([input.ChildHandle, output.ChildHandle, error.ChildHandle]);
+            bool streams = !inheritConsole && !createConsole;
+            using ChildPipe? input = streams ? new(PipeDirection.Out) : null,
+                output = streams ? new(PipeDirection.In) : null, error = streams ? new(PipeDirection.In) : null;
+            using KernelHandle? consoleInput = inheritConsole ? DuplicateConsoleHandle(-10) : null,
+                consoleOutput = inheritConsole ? DuplicateConsoleHandle(-11) : null,
+                consoleError = inheritConsole ? DuplicateConsoleHandle(-12) : null;
+            if (streams)
+            { owner.StandardInput = input!.TakeServer(); owner.StandardOutput = output!.TakeServer(); owner.StandardError = error!.TakeServer(); }
+            IntPtr childInput = consoleInput?.DangerousGetHandle() ?? input?.ChildHandle ?? IntPtr.Zero;
+            IntPtr childOutput = consoleOutput?.DangerousGetHandle() ?? output?.ChildHandle ?? IntPtr.Zero;
+            IntPtr childError = consoleError?.DangerousGetHandle() ?? error?.ChildHandle ?? IntPtr.Zero;
+            using StartupAttributes? attributes = createConsole ? null : new([childInput, childOutput, childError]);
             StartupInfoEx startup = new()
             {
-                Startup = new() { Size = (uint)Marshal.SizeOf<StartupInfoEx>(), Flags = UseStandardHandles,
-                    Input = input.ChildHandle, Output = output.ChildHandle, Error = error.ChildHandle },
-                Attributes = attributes.Pointer
+                Startup = new() { Size = (uint)(createConsole ? Marshal.SizeOf<StartupInfo>() : Marshal.SizeOf<StartupInfoEx>()),
+                    Flags = createConsole ? 0 : UseStandardHandles,
+                    Input = childInput, Output = childOutput, Error = childError },
+                Attributes = attributes?.Pointer ?? IntPtr.Zero
             };
             start.Environment.TryGetValue("PATH", out string? path);
             string executable = GitConfiguredExecutable.Resolve(start.FileName, path);
@@ -60,8 +73,9 @@ internal sealed class WindowsGitProcess : IDisposable
             try
             {
                 token.ThrowIfCancellationRequested();
-                if (!CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, true,
-                    Suspended | UnicodeEnvironment | ExtendedStartup | NoWindow, environmentBlock,
+                uint flags = Suspended | UnicodeEnvironment | (createConsole ? NewConsole : ExtendedStartup | (inheritConsole ? 0 : NoWindow));
+                if (!CreateProcess(executable, command, IntPtr.Zero, IntPtr.Zero, !createConsole,
+                    flags, environmentBlock,
                     string.IsNullOrEmpty(start.WorkingDirectory) ? Directory.GetCurrentDirectory() : start.WorkingDirectory,
                     ref startup, out ProcessInformation process))
                 { throw Error("Cannot start the private Git process."); }
@@ -85,6 +99,18 @@ internal sealed class WindowsGitProcess : IDisposable
             }
             owner.Dispose(); throw;
         }
+    }
+
+    private static KernelHandle DuplicateConsoleHandle(int identifier)
+    {
+        IntPtr source = GetStdHandle(identifier);
+        if (source == IntPtr.Zero || source == (IntPtr)(-1))
+        { throw new Win32Exception(6, "Interactive Git requires the caller's attached console."); }
+        if (!GetConsoleMode(source, out _)) { throw Error("Interactive Git requires console input and output handles."); }
+        IntPtr current = GetCurrentProcess();
+        if (!DuplicateHandle(current, source, current, out IntPtr copy, 0, true, 2))
+        { throw Error("Cannot reserve the interactive console handle."); }
+        return new(copy);
     }
 
     internal int ExitCode
@@ -287,4 +313,11 @@ internal sealed class WindowsGitProcess : IDisposable
     [DllImport("kernel32.dll")] private static extern void DeleteProcThreadAttributeList(IntPtr list);
     [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr GetStdHandle(int identifier);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetConsoleMode(IntPtr console, out uint mode);
+    [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DuplicateHandle(IntPtr sourceProcess, IntPtr source, IntPtr targetProcess, out IntPtr target,
+        uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint options);
 }

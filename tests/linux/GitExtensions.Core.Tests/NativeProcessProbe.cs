@@ -22,6 +22,8 @@ internal static class NativeProcessProbe
             await UntilFileAsync(Path.Combine(args[1], "release"));
             return 0;
         }
+        if (OperatingSystem.IsWindows() && args.Length > 0 && args[0].StartsWith("windows-console-", StringComparison.Ordinal))
+        { return await WindowsConsoleProbe.RunAsync(args); }
         if (args.Length >= 3 && args[0] == "terminal")
         {
             using FileStream controlling = new("/dev/tty", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);

@@ -3,9 +3,9 @@ using System.Runtime.Versioning;
 
 namespace GitExtensions.Linux;
 
-/// <summary>Runs Git with a genuine private controlling terminal while inheriting the caller's terminal I/O.</summary>
-[SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
-public static class GitInteractiveTerminalProcess
+/// <summary>Runs interactive Git under native process ownership using the caller's terminal I/O.</summary>
+[SupportedOSPlatform("linux"), SupportedOSPlatform("macos"), SupportedOSPlatform("windows")]
+public static partial class GitInteractiveTerminalProcess
 {
     public static async Task<GitResult> RunAsync(string repositoryPath, string gitExecutable, IReadOnlyList<string> arguments,
         CancellationToken cancellationToken = default)
@@ -22,7 +22,7 @@ public static class GitInteractiveTerminalProcess
         ArgumentException.ThrowIfNullOrWhiteSpace(gitExecutable);
         ArgumentNullException.ThrowIfNull(arguments);
         cancellationToken.ThrowIfCancellationRequested();
-        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
         { throw new PlatformNotSupportedException("Interactive Git requires a supported native terminal backend."); }
         if (!Directory.Exists(repositoryPath)) { throw new DirectoryNotFoundException(repositoryPath); }
         ProcessStartInfo start = new(gitExecutable) { WorkingDirectory = repositoryPath, UseShellExecute = false };
@@ -33,6 +33,15 @@ public static class GitInteractiveTerminalProcess
         start.Environment["GIT_PAGER"] = "cat";
         start.Environment["GIT_TERMINAL_PROMPT"] = "1";
         start.Environment["LC_ALL"] = "C.UTF-8";
+        if (OperatingSystem.IsWindows()) { return await RunWindowsAsync(start, cancellationToken).ConfigureAwait(false); }
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+        { return await RunPosixAsync(start, cancellationToken).ConfigureAwait(false); }
+        throw new PlatformNotSupportedException("Interactive Git requires a supported native terminal backend.");
+    }
+
+    [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
+    private static async Task<GitResult> RunPosixAsync(ProcessStartInfo start, CancellationToken cancellationToken)
+    {
         PosixGitProcess process = PosixGitProcess.Start(start, cancellationToken, terminal: true, inheritConsole: true);
         Task exited = process.WaitForExitAsync();
         TaskCompletionSource cancelled = new(TaskCreationOptions.RunContinuationsAsynchronously);
