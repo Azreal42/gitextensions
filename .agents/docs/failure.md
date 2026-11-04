@@ -1,5 +1,11 @@
 # Failure
 
+## Qualification complète Linux du correctif de locale — 4 novembre 2026
+
+Source e65fd4ad1 : 4 691/4 691 Desktop, 1 210 Core, 42 Plugins, 14 POSIX et cinq contrôles Debian passent, aucun ignoré. Les 4 675 identités Desktop du parent restent présentes avec seize nouveaux cas, dont le vrai helper rouge sur le produit parent. Paquet exact : ABI, reconstruction byte-identique, GUI extraite et installation/GUI isolées passent. Archive Windows : 394 fichiers et huit PE/runtime natifs x64 vérifiés statiquement, sans exécution Windows. Le publish sauvegarde les lockfiles, restaure seulement les ajouts RID et le range de version de projet attendu, et ne crée plus de cache Python dans le source.
+
+Ces contrôles ne sont pas une exécution native du terminal Mac ou des consoles Windows, ni leurs suites métier complètes. Les huit anciens parcours X11 appartiennent au source0a et gardent leur portée historique. Le service GitHub refuse encore les nouveaux runs HTTP422 malgré enabled=true ; annotations repository invocation blocked. Aucun résultat natif récent ou achèvement global déclaré. ADR0170 et preuves sous artifacts/cross-platform/20261104/terminal-locale.
+
 ## Shell utilisateur sans locale GUI : perte d'UTF-8 — 4 novembre 2026
 
 Sur le produit parent inchangé, le vrai helper perd LANG=C.UTF-8 fourni par le terminal et locale charmap renvoie ANSI_X3.4-1968. Le test rouge est conservé byte pour byte et passe après correction de ToolsShellApplication. Le contexte utilisateur ne reprend que TERM et les catégories POSIX lorsque toute locale capturée est absente ; une locale explicite protège sa capture entière et aucun broker PATH/HOME/pager/secret ne passe. Le chemin des commandes Git possédées reste inchangé. Quinze contrats portables et le nouveau vrai helper passent avec tous les 236 anciens cas du ciblé. ADR0170, preuves dans artifacts/cross-platform/20261104/terminal-locale. Les suites et paquets complets du parent gardent leur source ; nouveaux complets et Mac encore requis.

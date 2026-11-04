@@ -1,6 +1,6 @@
 # TODO
 
-- [x] [Locale du shell utilisateur](adr/platform/0170-user-terminal-locale.md) : perte UTF-8 reproduite sur le vrai helper ; locale du terminal reprise seulement si la capture n'en contient aucune, contexte capturé et secrets préservés. 252 Desktop ciblés (+16, anciens236 conservés), 14 POSIX, deux régressions, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux. Complet, paquet exact et exécution Mac du nouveau lot restent ouverts.
+- [x] [Locale du shell utilisateur](adr/platform/0170-user-terminal-locale.md) : perte UTF-8 reproduite sur le vrai helper ; locale du terminal reprise seulement si la capture n'en contient aucune, contexte capturé et secrets préservés. 252 Desktop ciblés (+16, anciens236 conservés), 14 POSIX, deux régressions, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux. Source e65fd4ad1 : 4 691 Desktop complets (anciens4 675 conservés) et .deb exact reproductible/ABI/démarrage/install isolés passent. Archive Windows contrôlée statiquement ; exécution native Mac/Windows et audits étendus toujours ouverts.
 
 - [x] [Garde des fenêtres modales](adr/platform/ui/0169-modal-window-visibility.md) intégrée aux trois points d'entrée ; onze contrats ciblés passent avec la chaîne de propriétaires, Hide/réouverture et minimisation globale. Source 0a48796d7 : 4 675 Desktop complets et huit parcours natifs X11/Openbox contre le paquet exact passent. Audit natif Windows/Mac et étendu reste ouvert.
 
