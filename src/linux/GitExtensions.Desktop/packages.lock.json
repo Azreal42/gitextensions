@@ -68,6 +68,25 @@
           "Avalonia": "11.3.22"
         }
       },
+      "AvaloniaTerminal": {
+        "type": "Direct",
+        "requested": "[1.0.0-alpha.13, )",
+        "resolved": "1.0.0-alpha.13",
+        "contentHash": "7Uq2ZLMaGmKLhNAp8z8gA5loc1AHI3hrqyJliqq6+b4yezDhNxRjtr9DlvJ1BO9DaqyubdN4qGgBDxm63txYzA==",
+        "dependencies": {
+          "Avalonia": "11.3.12",
+          "XTerm.NET": "1.0.12"
+        }
+      },
+      "Porta.Pty": {
+        "type": "Direct",
+        "requested": "[2.2.2, )",
+        "resolved": "2.2.2",
+        "contentHash": "wpKiHa3GOhgLpnu3bMAVJdAV+1Sek5bIgmuJrC04nl20T2VWBvoIq2+6aSOSora5pSRI9udo77F5IKLMcrk0rA==",
+        "dependencies": {
+          "Microsoft.Windows.Console.ConPTY": "1.24.260710001"
+        }
+      },
       "SmartFormat": {
         "type": "Direct",
         "requested": "[3.6.0, )",
@@ -162,6 +181,11 @@
         "resolved": "0.11.0",
         "contentHash": "MEnrZ3UIiH40hjzMDsxrTyi8dtqB5ziv3iBeeU4bXsL/7NLSal9F1lZKpK+tfBRnUoDSdtcW3KufE4yhATOMCA=="
       },
+      "Microsoft.Windows.Console.ConPTY": {
+        "type": "Transitive",
+        "resolved": "1.24.260710001",
+        "contentHash": "JR1xAkZbNnAALBjzFpqSwEx7YZfD1LI228jF9j9cgKknBPCiFy9mpphlgH+TpTN8vajTUpcgg9Miy5Y8eUAH9g=="
+      },
       "SkiaSharp": {
         "type": "Transitive",
         "resolved": "2.88.9",
@@ -198,6 +222,25 @@
         "type": "Transitive",
         "resolved": "0.21.3",
         "contentHash": "hDwB8WsQoyALQKqIbwzS68UKdlnafDm4T/DkO/JrA/YIneP/rKv96SxYPVXeh3FP4i/SXfShrYftKLtciJAIlw=="
+      },
+      "Unicode.net": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "fGf8GapJphDqeqGLp6uwSM/KQ2Sm2Y+KtMcFV0zh/C8eUWaBtIRFPH+FYAokBtgxGLpaCVCLsjQCymPMl4Z1EA=="
+      },
+      "Wcwidth": {
+        "type": "Transitive",
+        "resolved": "3.0.0",
+        "contentHash": "w9m/v7PuW8qhlpFKboa+otS5PdRpCxQ0cCT/qkD+gih0FKtqoZECkgwnRprX6+aA75hz3pXvpPGQByx0wszHyw=="
+      },
+      "XTerm.NET": {
+        "type": "Transitive",
+        "resolved": "1.0.12",
+        "contentHash": "C2PwTwUPTJb0J7/IVnmPrT1vNi5MR675RYEc5r7qUMtGsRybQ21N/I4fFNK70w883u5dQZkxgY+4SdDCiSYqpg==",
+        "dependencies": {
+          "Unicode.net": "2.0.0",
+          "Wcwidth": "3.0.0"
+        }
       },
       "ZString": {
         "type": "Transitive",

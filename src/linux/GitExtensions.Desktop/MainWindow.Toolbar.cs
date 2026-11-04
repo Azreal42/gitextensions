@@ -109,7 +109,7 @@ public sealed partial class MainWindow
         _stashOverflow = new MenuItem { Name = "StashOverflow", Header = T("Stash"), Icon = OriginalIconImage("stash.png"), ItemsSource = CreateStashMenu("StashOverflow") };
         toolbar.Add(BuildStashButton(), _stashOverflow);
         Command("BrowseFileExplorer", "Open repository in file manager", "BrowseFileExplorer.png", OpenRepositoryFolderAsync);
-        Command("BrowseConsole", "Console", "Console.png", OpenTerminalAsync);
+        Command("BrowseConsole", "Console", "Console.png", OpenEmbeddedConsoleAsync);
         Command("BrowseSettings", "Settings", "Settings.png", () => ShowWorkflowAsync("Configuration"));
         Command("BrowseAdvancedFilter", "Filter revisions", "FunnelPencil.png", FilterHistoryAsync);
         _scopeOverflow = new MenuItem { Header = T("All branches"), ItemsSource = HistoryScopeChoices("Overflow") };

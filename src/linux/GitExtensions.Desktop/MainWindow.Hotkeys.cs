@@ -27,7 +27,7 @@ public sealed partial class MainWindow
         "Open repository…" or "Open repository" => "OpenRepo", "Close" => "CloseRepository",
         "Commit…" or "Commit" => "Commit", "Create branch…" => "CreateBranch", "Checkout branch…" or "Checkout branch" => "CheckoutBranch",
         "Create tag…" => "CreateTag", "Merge…" => "MergeBranches", "Rebase…" => "Rebase", "Pull…" or "Pull" or "Pull/Fetch…" => "PullOrFetch",
-        "Push…" or "Push" => "Push", "Settings…" => "OpenSettings", "Terminal" or "Git bash" or "Console" => "GitBash", "Fetch" => "QuickFetch",
+        "Push…" or "Push" => "Push", "Settings…" => "OpenSettings", "Terminal" or "Git bash" => "GitBash", "Console" => "FocusGitConsole", "Fetch" => "QuickFetch",
         "Show left panel" or "Toggle left panel" => "ToggleLeftPanel", "Worktrees…" or "Manage worktrees..." => "ManageWorkTrees", _ => null
     };
 

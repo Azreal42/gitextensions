@@ -237,7 +237,7 @@ public sealed class BrowserHotkeysTests
         [
             ("Browse", "ManageWorkTrees", new(Key.F6, KeyModifiers.Control), [repositoryManage, worktreeManage, rootManage, overflowManage], [(worktrees, "Manage worktrees...")]),
             ("Browse", "CheckoutBranch", new(Key.F7, KeyModifiers.Control), [branchCheckout, overflowCheckout], []),
-            ("Browse", "GitBash", new(Key.F8, KeyModifiers.Control), [], [(console, "Console")]),
+            ("Browse", "FocusGitConsole", new(Key.F8, KeyModifiers.Control), [], [(console, "Console")]),
             ("Browse", "QuickFetch", new(Key.F9, KeyModifiers.Control), [fetch], []),
             ("RevisionGrid", "RevisionFilter", new(Key.F10, KeyModifiers.Control), [], [(filter, "Filter revisions")])
         ];

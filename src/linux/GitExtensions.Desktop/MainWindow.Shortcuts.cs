@@ -53,6 +53,7 @@ public sealed partial class MainWindow
             if (_quickSearch?.Notice.IsVisible == true) { HideQuickSearch(); } else { Close(); }
             return;
         }
+        if (_terminalPane?.Terminal.IsKeyboardFocusWithin == true) { return; }
         if (_busy || e.Handled || _lifetime.IsCancellationRequested) { return; }
         // Alt goes through the owner access-key preview before dispatch, otherwise
         // releasing Alt can unexpectedly select the main menu.
@@ -108,7 +109,7 @@ public sealed partial class MainWindow
         else if (content is DiffView diff) { diff.Editor.TextArea.Focus(); }
         else if (name == "FileTreeTab") { _tree.Focus(); }
         else if (name == "GpgTab") { _gpgInfo.Focus(); }
-        else if (name == "ConsoleTab") { _output.Focus(); }
+        else if (name == "ConsoleTab") { _terminalPane?.FocusTerminal(); }
         else { content?.GetVisualDescendants().OfType<Control>().FirstOrDefault(control => control.Focusable && control.IsEffectivelyVisible)?.Focus(); }
     }
 

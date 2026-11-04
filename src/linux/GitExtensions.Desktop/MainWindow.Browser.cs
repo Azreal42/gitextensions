@@ -127,11 +127,12 @@ public sealed partial class MainWindow
             new TabItem { Name = "DiffTab", Header = IconLabel("Diff", "Diff.png"), Content = BuildCommitFilesView() },
             new TabItem { Name = "FileTreeTab", Header = IconLabel("File tree", "FileTree.png"), Content = _workflowViews["Files"] },
             new TabItem { Name = "GpgTab", Header = IconLabel("GPG", "Key.png"), Content = _gpgInfo },
-            new TabItem { Name = "ConsoleTab", Header = IconLabel("Console", "Console.png"), Content = Panel(_output, Row(Button("Open terminal", OpenTerminalAsync))) },
+            new TabItem { Name = "ConsoleTab", Header = IconLabel("Console", "Console.png"), Content = BuildConsolePanel() },
             new TabItem { Name = "ChangesTab", Header = IconLabel("Working directory", "WorkingDirChanges.png"), Content = _workflowViews["Changes"] }
         };
         _tabs.SelectionChanged += async (_, args) =>
         {
+            if (!_layingOutCommitInfo && args.Source == _tabs) { await EnsureConsoleAsync(); }
             if (!_layingOutCommitInfo && args.Source == _tabs && !_busy)
             {
                 Task panel = LoadVisibleRevisionPanelAsync();

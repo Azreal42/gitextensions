@@ -168,6 +168,7 @@ public sealed partial class MainWindow
         if (load.Opening)
         {
             _repository = load.Repository;
+            _terminalPane?.SetRepository(_repository);
             if (load.ChangedRepository)
             {
                 ClearRevisionDiff(); ClearRevisionPreview(); _loadedDiffSelection = null;

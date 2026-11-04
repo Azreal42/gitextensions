@@ -259,6 +259,7 @@ public sealed partial class MainWindow : Window
         Closed += async (_, _) =>
         {
             _lifetime.Cancel(); _operation?.Cancel(); CancelBrowserReads();
+            if (_terminalPane is not null) { await _terminalPane.DisposeAsync(); }
             try { await _commitInfo.Completion; }
             catch (OperationCanceledException) { }
             catch (Exception exception) { AppendOutput("Commit information: " + exception.Message); }
@@ -446,6 +447,7 @@ public sealed partial class MainWindow : Window
             GitRepository candidate = discovered ?? await GitRepository.OpenAsync(path, Token);
             await candidate.GetStatusAsync(Token);
             await RefreshDataAsync(candidate, opening: true);
+            await EnsureConsoleAsync();
             // Bind the explicit modal bridge once; reopening the same path is
             // a new repository instance and must not reuse that subscription.
             if (IsStandaloneDiff && _repositoryChanges is not null) { _repositoryChangeSource ??= candidate; }
