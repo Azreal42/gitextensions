@@ -56,7 +56,7 @@ internal sealed class AdvancedSettingsPage : UserControl
         {
             AdvancedSetting setting = AdvancedSettingsCatalog.Fields.Single(setting => setting.Name == name);
             CheckBox choice = new() { Name = setting.Control, Tag = setting.OriginalControl, IsChecked = (bool)_baseline.Get(name), MinHeight = 24,
-                Padding = default, HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Content = new TextBlock { Text = Text(setting.OriginalControl, setting.Caption), TextWrapping = TextWrapping.Wrap } };
             if (name == nameof(AdvancedSettingsValues.CheckForReleaseCandidates))
             {

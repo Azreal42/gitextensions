@@ -12,7 +12,7 @@ internal sealed record SubmoduleCheckoutDecision(bool Update, bool Remember);
 
 internal sealed class CheckoutSubmodulePrompt : Window
 {
-    private readonly CheckBox _remember = new() { Name = "RememberSubmoduleCheckout", Height = 24, MinHeight = 24, Padding = new Thickness(0) };
+    private readonly CheckBox _remember = new() { Name = "RememberSubmoduleCheckout", Height = 24, MinHeight = 24 };
 
     internal CheckoutSubmodulePrompt()
     {

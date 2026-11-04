@@ -34,7 +34,7 @@ public sealed class SelectMultipleBranchesDialog : Window
         foreach (GitReference branch in branches)
         {
             CheckBox choice = new() { Content = branch.ShortName, Tag = branch.Name, IsChecked = _checked.Contains(branch.Name),
-                Height = 20, MinHeight = 20, Padding = new Thickness(0), Margin = new Thickness(2, 0) };
+                Height = 20, MinHeight = 20, Margin = new Thickness(2, 0) };
             choice.IsCheckedChanged += (_, _) => { if (choice.IsChecked == true) { _checked.Add(branch.Name); } else { _checked.Remove(branch.Name); } };
             choices.Children.Add(choice);
         }

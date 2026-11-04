@@ -11,7 +11,7 @@ public sealed class CheckoutRevisionDialog : RepositoryDialog
 {
     private readonly CheckoutRevisionExecutor _execute;
     private readonly TextBox _revision = ReferenceDialogControls.Text("CheckoutRevision");
-    private readonly CheckBox _force = new() { Name = "ForceCheckoutRevision", Height = 24, Padding = new Thickness(0) };
+    private readonly CheckBox _force = new() { Name = "ForceCheckoutRevision", Height = 24 };
     private readonly TextBlock _count = new() { Name = "CheckoutRevisionCommitCount", Foreground = Brushes.Gray, VerticalAlignment = VerticalAlignment.Center };
     private readonly Button _choose, _checkout;
     private bool _bare;

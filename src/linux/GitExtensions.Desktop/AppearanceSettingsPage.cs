@@ -353,7 +353,7 @@ internal sealed class AppearanceSettingsPage : UserControl
     private CheckBox Check(string name, string source) => new()
     {
         Name = name, Content = new TextBlock { Text = Text(name, source), TextWrapping = TextWrapping.Wrap },
-        MinHeight = 23, Padding = default, VerticalAlignment = VerticalAlignment.Center
+        MinHeight = 23, VerticalAlignment = VerticalAlignment.Center
     };
     private CheckBox UnavailableCheck(string name, string source, string explanation)
     {

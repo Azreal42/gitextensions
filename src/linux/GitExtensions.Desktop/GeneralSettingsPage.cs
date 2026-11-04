@@ -205,7 +205,7 @@ internal sealed class GeneralSettingsPage : UserControl
     }
 
     private CheckBox Check(string name, string source, bool contextual = true)
-        => new() { Name = name, MinHeight = 23, Padding = default, VerticalAlignment = VerticalAlignment.Center,
+        => new() { Name = name, MinHeight = 23, VerticalAlignment = VerticalAlignment.Center,
             Content = new TextBlock { Text = contextual ? Text(name, source) : _translations.Translate(source), TextWrapping = TextWrapping.Wrap } };
     private CheckBox Unavailable(string name, string source, string explanation)
     {

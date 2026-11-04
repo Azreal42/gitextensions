@@ -2,21 +2,83 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Avalonia.VisualTree;
+using GitExtensions.Linux.Desktop;
 using NUnit.Framework;
 
 namespace GitExtensions.Desktop.Tests;
 
 public class ClassicStylesTests
 {
+    [AvaloniaTest, NonParallelizable]
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ChoiceLabelsKeepTheirGapAndRemainClickableWithStandardAndCompactGlyphs(bool compact)
+    {
+        CheckBox plain = new() { Content = "Enable option", HorizontalAlignment = HorizontalAlignment.Left };
+        CheckBox wrapped = new() { Content = new TextBlock { Text = "A longer translated option that wraps over multiple lines", TextWrapping = TextWrapping.Wrap, MaxWidth = 180 } };
+        CheckBox threeState = new() { Content = "Inherit from global settings", IsThreeState = true, IsChecked = null };
+        CheckBox disabled = new() { Content = "Unavailable option", IsEnabled = false };
+        RadioButton radio = new() { Content = new AccessText { Text = "_Remote branch" }, GroupName = "ChoiceSpacing" };
+        CheckBox tableCell = new() { Padding = default, HorizontalAlignment = HorizontalAlignment.Left };
+        CheckBox compactTableCell = new() { HorizontalAlignment = HorizontalAlignment.Left };
+        ReferenceDialogControls.Compact(compactTableCell);
+        ToggleButton[] labelled = [plain, wrapped, threeState, disabled, radio];
+        ReferenceDialogControls.Compact(plain, threeState, radio);
+        Window window = new()
+        {
+            Width = 400, Height = 340,
+            Content = new StackPanel { Spacing = 8, Margin = new Thickness(8), Children = { plain, wrapped, threeState, disabled, radio, tableCell, compactTableCell } }
+        };
+        if (compact) { ClassicChoiceAppearance.Apply(window, "choice-spacing-preview"); }
+        window.Show();
+        try
+        {
+            foreach (ThemeVariant theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+            {
+                window.RequestedThemeVariant = theme;
+                foreach (bool? state in new bool?[] { false, true, null })
+                {
+                    threeState.IsChecked = state; window.UpdateLayout();
+                    foreach (ToggleButton choice in labelled)
+                    {
+                        Control glyph = choice.GetVisualDescendants().OfType<Control>().Single(control => control.Name == (choice is RadioButton ? "OuterEllipse" : "NormalRectangle"));
+                        ContentPresenter label = choice.GetVisualDescendants().OfType<ContentPresenter>().Single(control => control.Name == "PART_ContentPresenter");
+                        Assert.That(Bounds(label).Left - Bounds(glyph).Right, Is.GreaterThanOrEqualTo(5.9), choice.Content?.ToString());
+                        Assert.That(label.Bounds.Width, Is.GreaterThan(0));
+                    }
+                }
+                Assert.That(tableCell.Bounds.Width, Is.LessThanOrEqualTo(24), "Unlabelled table choices must retain their compact width.");
+                Assert.That(compactTableCell.Bounds.Width, Is.EqualTo(tableCell.Bounds.Width), "The shared compact helper must not widen an unlabelled table choice.");
+                plain.IsChecked = false;
+                ContentPresenter text = plain.GetVisualDescendants().OfType<ContentPresenter>().Single(control => control.Name == "PART_ContentPresenter");
+                Point point = Bounds(text).Center;
+                window.MouseMove(point); window.MouseDown(point, MouseButton.Left); window.MouseUp(point, MouseButton.Left);
+                Assert.That(plain.IsChecked, Is.True, "The label remains part of the checkbox hit target.");
+                using WriteableBitmap? frame = window.CaptureRenderedFrame(); Assert.That(frame, Is.Not.Null);
+                string folder = Environment.GetEnvironmentVariable("GITEXTENSIONS_SCREENSHOTS") ?? TestContext.CurrentContext.WorkDirectory;
+                Directory.CreateDirectory(folder);
+                string path = Path.Combine(folder, "choice-spacing-" + (compact ? "compact-" : "standard-") + theme + ".png");
+                frame!.Save(path); TestContext.AddTestAttachment(path);
+            }
+        }
+        finally { window.Close(); }
+        return;
+
+        Rect Bounds(Control control) => new(control.TranslatePoint(default, window)
+            ?? throw new InvalidOperationException("Detached choice control."), control.Bounds.Size);
+    }
+
     [AvaloniaTest, NonParallelizable]
     public void OrangePlatformAccentCannotReplaceRenderedHistoricalSelectionAndFocusColors()
     {

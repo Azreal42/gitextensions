@@ -7,8 +7,8 @@ namespace GitExtensions.Linux.Desktop;
 public sealed class InitDialog : StartupRepositoryDialog
 {
     private readonly TextBox _directory = new() { Name = "InitDirectory", Height = 24 };
-    private readonly RadioButton _personal = new() { Name = "InitPersonal", Content = "Personal repository", GroupName = "InitType", IsChecked = true, Height = 24, Padding = new Thickness(0) };
-    private readonly RadioButton _central = new() { Name = "InitCentral", Content = "Central repository, no working directory  (--bare --shared=all)", GroupName = "InitType", Height = 24, Padding = new Thickness(0) };
+    private readonly RadioButton _personal = new() { Name = "InitPersonal", Content = "Personal repository", GroupName = "InitType", IsChecked = true, Height = 24 };
+    private readonly RadioButton _central = new() { Name = "InitCentral", Content = "Central repository, no working directory  (--bare --shared=all)", GroupName = "InitType", Height = 24 };
 
     public InitDialog(string directory = "") : base("Create new repository")
     {

@@ -13,6 +13,7 @@ namespace GitExtensions.Linux.Desktop;
 
 internal static class ClassicStyles
 {
+    private static readonly Thickness ChoiceContentPadding = new(6, 0, 0, 0);
     public static Styles Create(DesktopFontSession? fonts = null)
     {
         ResolvedDesktopFont application = (fonts ?? DesktopFonts.Active).For(DesktopFontRole.Application);
@@ -196,6 +197,7 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
+                    new Setter(TemplatedControl.PaddingProperty, ChoiceContentPadding),
                     new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("ControlText"))
                 }
@@ -204,9 +206,19 @@ internal static class ClassicStyles
             {
                 Setters =
                 {
+                    new Setter(TemplatedControl.PaddingProperty, ChoiceContentPadding),
                     new Setter(Layoutable.MinHeightProperty, inputHeight),
                     new Setter(TemplatedControl.ForegroundProperty, Resource("ControlText"))
                 }
+            },
+            // Unlabelled table cells must not reserve space for content added to labelled choices.
+            new Style(selector => selector.OfType<CheckBox>().PropertyEquals(ContentControl.ContentProperty, null))
+            {
+                Setters = { new Setter(TemplatedControl.PaddingProperty, default(Thickness)) }
+            },
+            new Style(selector => selector.OfType<RadioButton>().PropertyEquals(ContentControl.ContentProperty, null))
+            {
+                Setters = { new Setter(TemplatedControl.PaddingProperty, default(Thickness)) }
             },
             new Style(selector => selector.OfType<Border>())
             {

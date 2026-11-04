@@ -65,7 +65,7 @@ public sealed class RecoverLostObjectsDialog : RepositoryDialog
         _noReflogs.Content = Caption("NoReflogs", "Do not consider commits that are referenced only by an entry in a \r\nreflog to be reachable.");
         _unreachable.Content = Caption("Unreachable", "Print out objects that exist but that aren't readable from any of the reference \r\nnodes.\r\n");
         _full.Content = Caption("FullCheck", "Check not just objects in GIT_OBJECT_DIRECTORY ($GIT_DIR/objects), \r\nbut also the ones found in alternate object pools.\r\n");
-        foreach (CheckBox box in new[] { _commits, _other, _noReflogs, _unreachable, _full }) { box.Padding = new Thickness(0); box.MinHeight = 24; }
+        foreach (CheckBox box in new[] { _commits, _other, _noReflogs, _unreachable, _full }) { box.MinHeight = 24; }
         ToolTip.SetTip(_commits, Text("ShowCommitsAndTags", "To recover unreachable commits or annotated tags", "toolTip"));
         ToolTip.SetTip(_other, Text("ShowOtherObjects", "To recover contents of files once staged but mistakenly deleted", "toolTip"));
         Grid instructions = new() { Name = "RecoveryInstructions", ColumnDefinitions = new("414,*"), Margin = new Thickness(8, 4) };

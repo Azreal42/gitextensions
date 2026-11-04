@@ -36,7 +36,7 @@ internal sealed class ConfirmationsSettingsPage : UserControl
                 CheckBox choice = new()
                 {
                     Name = field.Control, Content = new TextBlock { Text = Text(field.Control, field.Caption), TextWrapping = TextWrapping.Wrap },
-                    IsThreeState = field.ThreeState, MinHeight = 24, Padding = default,
+                    IsThreeState = field.ThreeState, MinHeight = 24,
                     HorizontalAlignment = HorizontalAlignment.Stretch
                 };
                 bool? value = _baseline.Get(field.Name); choice.IsChecked = field.ToCheckState(value);

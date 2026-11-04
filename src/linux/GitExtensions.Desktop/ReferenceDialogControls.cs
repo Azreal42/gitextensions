@@ -18,7 +18,7 @@ internal static class ReferenceDialogControls
     internal static ComboBox Choice(string name) => new() { Name = name, Height = 24, Padding = new Thickness(4, 2), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     internal static void Compact(params ToggleButton[] choices)
     {
-        foreach (ToggleButton choice in choices) { choice.Height = choice.MinHeight = 24; choice.Padding = new Thickness(0); }
+        foreach (ToggleButton choice in choices) { choice.Height = choice.MinHeight = 24; }
     }
     internal static void ReferenceTemplate(ComboBox choice)
         => choice.ItemTemplate = new FuncDataTemplate<GitReference>((reference, _) => new TextBlock { Text = reference?.ShortName ?? "", TextTrimming = TextTrimming.CharacterEllipsis });

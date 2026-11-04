@@ -20,7 +20,7 @@ internal sealed class ColorsSettingsPage : UserControl
         {
             CheckBox choice = new()
             {
-                Name = field.Control, IsChecked = initial.Get(field.Name), MinHeight = 24, Padding = default,
+                Name = field.Control, IsChecked = initial.Get(field.Name), MinHeight = 24,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Content = new TextBlock { Text = Text(field.Control, field.Caption), TextWrapping = TextWrapping.Wrap }
             };

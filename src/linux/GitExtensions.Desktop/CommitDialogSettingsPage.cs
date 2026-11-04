@@ -49,7 +49,7 @@ internal sealed class CommitDialogSettingsPage : UserControl
         {
             CommitDialogSetting choice = CommitDialogSettingsCatalog.Fields.Single(item => item.Name == name);
             CheckBox box = new() { Name = choice.Control, IsChecked = (bool)_baseline.Get(name), MinHeight = 24,
-                Padding = default, HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Content = new TextBlock { Text = Text(choice.Control, choice.Caption), TextWrapping = TextWrapping.Wrap } };
             _choices.Add(name, box); panel.Children.Add(box);
         }

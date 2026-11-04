@@ -13,7 +13,7 @@ public sealed partial class AddSubmoduleDialog : RepositoryDialog
     private readonly ComboBox _source = RepositorySourceControls.EditableChoice("AddSubmoduleSource");
     private readonly TextBox _local = ReferenceDialogControls.Text("AddSubmoduleLocalPath");
     private readonly ComboBox _branch = RepositorySourceControls.EditableChoice("AddSubmoduleBranch");
-    private readonly CheckBox _force = new() { Name = "AddSubmoduleForce", Height = 19, MinHeight = 19, Padding = new Thickness(0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly CheckBox _force = new() { Name = "AddSubmoduleForce", Height = 19, MinHeight = 19, VerticalAlignment = VerticalAlignment.Center };
     private readonly Button _browse, _add;
     private readonly IDisposable _historyCompletion;
     private bool _ready, _bare;

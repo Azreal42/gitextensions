@@ -47,7 +47,7 @@ public sealed class CleanupRepositoryDialog : RepositoryDialog
         _include.Content = Caption("checkBoxIncludePathFilter", "Affect the following directory path(s) only:");
         _exclude.Content = Caption("checkBoxExcludePathFilter", "Exclude the following file path(s):");
         _includeHint.Text = Text("labelPathHintInclude", "(one path per line)"); _excludeHint.Text = Text("labelPathHintExclude", "(one path per line)");
-        foreach (CheckBox box in new[] { _directories, _submodules, _include, _exclude }) { box.MinHeight = 24; box.Padding = new Thickness(0); }
+        foreach (CheckBox box in new[] { _directories, _submodules, _include, _exclude }) { box.MinHeight = 24; }
         _preview = Action("PreviewCleanup", "Preview", PreviewAsync); _preview.Content = IconCaption("Preview", "Preview", "Preview");
         _cleanup = Action("ExecuteCleanup", "Cleanup", CleanupAsync); _cleanup.Content = IconCaption("Cleanup", "Cleanup", "CleanupRepo");
         _addInclude = Action("AddCleanupInclude", "Add a path…", () => ChoosePathAsync(true)); _addInclude.Content = Caption("AddInclusivePath", "Add a path...");
@@ -80,7 +80,7 @@ public sealed class CleanupRepositoryDialog : RepositoryDialog
     private string Text(string item, string source) => Translations.Translate("FormCleanupRepository", item, "Text", source);
     private AccessText Caption(string item, string source) => new() { Text = Translations.TranslateAccessKeys("FormCleanupRepository", item, "Text", source), TextWrapping = TextWrapping.Wrap };
     private static RadioButton Mode(string name, string key, string source, bool selected = false)
-        => new() { Name = name, Tag = (key, source), GroupName = "CleanupMode", IsChecked = selected, MinHeight = 24, Padding = new Thickness(0) };
+        => new() { Name = name, Tag = (key, source), GroupName = "CleanupMode", IsChecked = selected, MinHeight = 24 };
     private static TextBox Paths(string name) => new() { Name = name, AcceptsReturn = true, Height = 62, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(30, 0, 0, 0) };
     private static TextBlock Hint(string name) => new() { Name = name, Margin = new Thickness(30, 0, 0, 3) };
     private static Grid Filter(string name, CheckBox enabled, Button browse, TextBox paths, TextBlock hint)

@@ -41,10 +41,10 @@ public sealed class CloneDialog : StartupRepositoryDialog
     private readonly TextBox _branch = new() { Name = "CloneBranch", Height = 24 };
     private readonly ComboBox _branches = new() { Name = "CloneBranches", MinWidth = 36, Width = 36, Height = 24 };
     private readonly TextBlock _location = new() { Name = "CloneLocation", TextWrapping = TextWrapping.Wrap };
-    private readonly RadioButton _personal = new() { Name = "ClonePersonal", GroupName = "CloneType", IsChecked = true, Height = 24, Padding = new Thickness(0) };
-    private readonly RadioButton _bare = new() { Name = "CloneBare", GroupName = "CloneType", Height = 24, Padding = new Thickness(0) };
-    private readonly CheckBox _recursive = new() { Name = "CloneSubmodules", IsChecked = true, Height = 24, Padding = new Thickness(0) };
-    private readonly CheckBox _fullHistory = new() { Name = "CloneFullHistory", IsChecked = true, Height = 24, Padding = new Thickness(0) };
+    private readonly RadioButton _personal = new() { Name = "ClonePersonal", GroupName = "CloneType", IsChecked = true, Height = 24 };
+    private readonly RadioButton _bare = new() { Name = "CloneBare", GroupName = "CloneType", Height = 24 };
+    private readonly CheckBox _recursive = new() { Name = "CloneSubmodules", IsChecked = true, Height = 24 };
+    private readonly CheckBox _fullHistory = new() { Name = "CloneFullHistory", IsChecked = true, Height = 24 };
     private readonly string _defaultBranch;
     private readonly string _noCheckout;
 
