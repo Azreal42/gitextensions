@@ -634,6 +634,7 @@ public sealed partial class MainWindow : Window
     {
         foreach (Button button in _actionButtons) { button.IsEnabled = enabled && !(_repository?.IsBare == true && button.Tag is true); }
         foreach (MenuItem menu in _actionMenus) { menu.IsEnabled = enabled && !(_repository?.IsBare == true && menu.Tag is true); }
+        if (_closeRepositoryMenu is not null) { _closeRepositoryMenu.IsEnabled = enabled && _repository is not null; }
         if (_navigationPanel is not null) { _navigationPanel.IsEnabled = enabled; }
         _repositoryPath.IsEnabled = enabled;
         _recent.IsEnabled = enabled;

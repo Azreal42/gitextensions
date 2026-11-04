@@ -38,6 +38,8 @@ public class DashboardTests
     {
         using Fixture fixture = await Fixture.CreateAsync("original\n", "original\n");
         MainWindow main = fixture.Window;
+        MenuItem close = Group(main, "Start").Items.OfType<MenuItem>().Single(item => item.Header as string == "Close");
+        Assert.That(close.IsEnabled, Is.True);
         main.KeyPressQwerty(PhysicalKey.W, RawInputModifiers.Control);
         main.KeyReleaseQwerty(PhysicalKey.W, RawInputModifiers.Control);
         DashboardControl dashboard = await DashboardAsync(main);
@@ -45,6 +47,7 @@ public class DashboardTests
         {
             Assert.That(main.IsVisible, Is.True, "Ctrl+W closes the repository rather than the application.");
             Assert.That(main.Title, Is.EqualTo("Git Extensions"));
+            Assert.That(close.IsEnabled, Is.False, "Close has no repository to close on the dashboard.");
             Assert.That(Field<ListBox>(main, "RevisionHistory").IsEffectivelyVisible, Is.False);
             Assert.That(Field<ListBox>(main, "RevisionHistory").Items, Is.Empty);
             Assert.That(Field<TextBox>(dashboard, "DashboardSearch").IsFocused, Is.True);
@@ -70,6 +73,7 @@ public class DashboardTests
         Assert.That(main.LastException, Is.Null, main.LastException?.ToString());
         Assert.That(Field<ListBox>(main, "RevisionHistory").Items.OfType<GitCommit>().Count(), Is.EqualTo(1));
         Assert.That((await GitRepository.OpenAsync(fixture.Repository)).Path, Is.EqualTo(saved.Favorites.Single().Path));
+        Assert.That(close.IsEnabled, Is.True, "Opening a repository enables Close again.");
     }
 
     [AvaloniaTest]

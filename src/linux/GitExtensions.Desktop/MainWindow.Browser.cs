@@ -22,6 +22,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<string, Control> _workflowViews = new(StringComparer.Ordinal);
     private readonly TranslationCatalog _translations = TranslationCatalog.LoadDefault();
     private readonly List<MenuItem> _actionMenus = [];
+    private MenuItem? _closeRepositoryMenu;
     private Grid? _browserBody;
     private Button? _historyMore;
     private readonly BrowserLayoutPreferencesStore _browserLayoutPreferences = new();
@@ -274,11 +275,18 @@ public sealed partial class MainWindow
         return panel;
     }
 
+    private MenuItem BuildCloseRepositoryMenu()
+    {
+        _closeRepositoryMenu = MenuAction("Close", CloseRepositoryAsync);
+        _closeRepositoryMenu.IsEnabled = _repository is not null;
+        return _closeRepositoryMenu;
+    }
+
     private Menu BuildMenu() => new()
     {
         ItemsSource = new[]
         {
-            MenuGroup("Start", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), _favoritesMenu, _recentMenu, MenuAction("Dashboard", CloseRepositoryAsync), MenuAction("Refresh dashboard", RefreshDashboardAsync), MenuAction("Recent repositories settings", RecentRepositorySettingsAsync), MenuAction("Close", CloseRepositoryAsync)),
+            MenuGroup("Start", MenuAction("Open repository…", ChooseRepositoryAsync), MenuAction("Clone repository…", CloneAsync), MenuAction("Create new repository…", InitializeAsync), _favoritesMenu, _recentMenu, MenuAction("Dashboard", CloseRepositoryAsync), MenuAction("Refresh dashboard", RefreshDashboardAsync), MenuAction("Recent repositories settings", RecentRepositorySettingsAsync), BuildCloseRepositoryMenu()),
             BuildRepositoryMenu(),
             BuildHistoryNavigateMenu(),
             BuildHistoryViewMenu(),

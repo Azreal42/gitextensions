@@ -57,7 +57,7 @@ public sealed partial class MainWindow
         _ => null
     } : command switch
     {
-        "OpenRepo" => ChooseRepositoryAsync, "CloseRepository" => CloseRepositoryAsync, "OpenSettings" => ShowSettingsAsync,
+        "OpenRepo" => ChooseRepositoryAsync, "CloseRepository" when _repository is not null => CloseRepositoryAsync, "OpenSettings" => ShowSettingsAsync,
         "GitBash" => OpenTerminalAsync, "GitGui" when _repository?.IsBare == false => () => LaunchGitToolAsync("gui"),
         "GitGitK" when _repository is not null => () => LaunchGitToolAsync("gitk"),
         "Commit" => () => ShowWorkflowAsync("Changes"), "CreateBranch" => CreateBranchAsync, "CreateTag" => CreateTagAsync,
