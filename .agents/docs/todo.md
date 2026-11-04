@@ -1,5 +1,7 @@
 # TODO
 
+- [x] [Garde des fenêtres modales](adr/platform/ui/0169-modal-window-visibility.md) intégrée aux trois points d'entrée ; onze contrats ciblés passent avec la chaîne de propriétaires, Hide/réouverture et minimisation globale. Audit natif étendu et suite Desktop complète de ce lot restent ouverts.
+
 - [x] [Shell Windows partagé](adr/platform/0168-shared-windows-script-shells.md) : outils du Git capturé pour les alias bash/sh, chemins explicites conservés, pas de repli WSL. Lot combiné : 14 POSIX, 236 Desktop ciblés, deux régressions de statut, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux ; nouveaux contrats Windows seulement compilés. Complet et paquet de ce lot encore requis.
 
 Mise à jour : 4 novembre 2026. Extension Windows/Linux/macOS de la même application Avalonia en cours ; contrats portables et CI native ajoutés. Les limites de parité et de qualification complète restent ouvertes.

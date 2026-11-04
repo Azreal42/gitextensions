@@ -26,6 +26,7 @@ public sealed class App : Application
 
     public override void Initialize()
     {
+        ModalWindowActivation.Initialize();
         DesktopFonts.Initialize();
         Styles.Add(new FluentTheme());
         Styles.Add(ClassicStyles.Create());

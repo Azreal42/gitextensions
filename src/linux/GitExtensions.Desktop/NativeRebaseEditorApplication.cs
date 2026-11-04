@@ -15,6 +15,7 @@ public sealed class NativeRebaseEditorApplication : Application
     private NativeRebaseEditorWindow? _window;
     public override void Initialize()
     {
+        ModalWindowActivation.Initialize();
         DesktopFonts.Initialize();
         Styles.Add(new FluentTheme()); Styles.Add(ClassicStyles.Create());
         RequestedThemeVariant = AskpassApplication.ReadPreferredTheme();

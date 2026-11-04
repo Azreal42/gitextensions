@@ -1,5 +1,9 @@
 # Failure
 
+## Modale minimisée laissant son propriétaire désactivé
+
+Le correctif préexistant est intégré à la branche candidate et observé globalement aux trois points d'entrée. La garde attend le vrai Owner, protège la chaîne visible et se détache sur Hide/Closed ; onze contrats passent, sans modifier les fichiers préexistants du checkout principal. Les résultats headless ne valent pas un audit des gestionnaires de fenêtres Windows/Mac. ADR0169.
+
 ## Alias Bash introuvable avec le PATH Windows limité à Git/cmd — 4 novembre 2026
 
 Le script VS Code par défaut lançait bash par son alias nu ; Git installé et fonctionnel ne rend pas forcément usr/bin accessible par PATH. Le résolveur partagé sélectionne le shell du Git capturé, sans changer les arguments, adopter WSL ou réécrire les chemins explicites. Douze contrats portables passent ; deux contrats du vrai Bash Windows sont encodés et compilés, mais restent à exécuter nativement. Validation Linux du lot combiné dans ADR0168. Le refus GitHub HTTP422 demeure une limite de service distincte des tests locaux.
