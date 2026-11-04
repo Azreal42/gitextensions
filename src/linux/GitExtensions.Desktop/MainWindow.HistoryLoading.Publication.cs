@@ -190,6 +190,9 @@ public sealed partial class MainWindow
         if (_fileHistoryTrackedFilter != load.Query.Path)
         { _explicitFileHistoryDiffPath = null; _explicitFileHistoryTreePath = null; _fileHistoryTrackedFilter = load.Query.Path; }
         _historyQuery = load.Query;
+        // Only publishing an accepted query replaces the quick-filter editor.
+        // Later inventory/settings status updates must retain an unsubmitted draft.
+        _quickHistoryFilter.Text = QuickFilterValue();
         UpdateBranchFilterReferences(load.References, load.Opening);
         _references.ItemsSource = load.References;
         _references.SelectedItem = load.References.FirstOrDefault(reference => reference.Name == load.ReferenceName);

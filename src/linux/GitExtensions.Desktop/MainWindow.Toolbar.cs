@@ -269,7 +269,6 @@ public sealed partial class MainWindow
             _commitToolbarButton.Content = IconLabel(T("Commit") + (_preferences.ShowGitStatusInBrowseToolbar ? " (" + count + ")" : ""), icon);
         }
         UpdateHistoryScopePresentation();
-        _quickHistoryFilter.Text = QuickFilterValue();
         RefreshWorktreeMenu();
         _browserToolbar?.Place();
         if (_repository is not null) { Title = IsStandaloneDiff ? T("Diff") : Path.GetFileName(_repository.Path.TrimEnd(Path.DirectorySeparatorChar)) + " (" + status.Branch + ") — Git Extensions"; }

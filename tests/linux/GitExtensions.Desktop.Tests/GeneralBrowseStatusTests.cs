@@ -135,8 +135,11 @@ public sealed class GeneralBrowseStatusTests
         Button push = Field<Button>(main, "BrowsePush");
         Assert.That(Text(push.Content), Is.EqualTo("1↓")); Assert.That(Icon(push.Content), Is.EqualTo("Unstage.png"));
         Assert.That(ToolTip.GetTip(push)?.ToString(), Does.Contain("refs/remotes/publish/main").And.Contain("1 commit(s) should be integrated"));
+        TextBox quickFilter = Field<TextBox>(main, "RevisionQuickFilter");
+        quickFilter.Text = "pending literal quick filter λ";
         string before = await f.MaterialAsync(); f.ClearLog();
         await f.ChangeSettingAsync("chkShowAheadBehindDataInBrowseWindow");
+        Assert.That(quickFilter.Text, Is.EqualTo("pending literal quick filter λ"), "A status-only publication must keep the user's unsubmitted filter draft.");
         Assert.That(Text(push.Content), Is.Empty); Assert.That(Icon(push.Content), Is.EqualTo("Push.png"));
         Assert.That(push.Width, Is.EqualTo(24)); Assert.That(f.Commands().Any(IsTrackingRead), Is.False);
         Assert.That(new PreferencesStore().Load().ShowAheadBehindData, Is.False);

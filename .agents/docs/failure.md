@@ -1,5 +1,9 @@
 # Failure
 
+## Filtre rapide effacé par une publication de statut — 4 novembre 2026
+
+Le complet f2ef138f3 échoue à 4 630/4 631 sur NarrowToolbar ; son replay isolé passe. Le vrai Settings Apply reproduit déterministement la même classe d’effacement : UpdateBrowserToolbar remplaçait le brouillon par null. La synchronisation du filtre est déplacée dans la publication de requête acceptée ; 60 parcours ciblés passent ensuite, aucun ignoré. Le résultat complet en échec est conservé et ne qualifie pas le correctif complet. [ADR0157](adr/workflows/history/0157-progressive-browse-host.md).
+
 ## Raccord console Windows compilé hors hôte — 4 novembre 2026
 
 Le source Windows/POSIX combiné compile avec les quatre contrats Desktop Windows explicitement inclus, zéro avertissement/erreur. Les 14 POSIX, 192 Desktop sélectionnés, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux. Cela ne constitue aucune exécution Windows des trois contrats Core ou quatre Desktop : ils restent à qualifier nativement. Le terminal Tools Ctrl+G et ses choix restent Linux et sont identifiés comme écart produit ; ils ne sont pas masqués par le succès du helper. [ADR0166](adr/platform/0166-windows-interactive-console.md).
