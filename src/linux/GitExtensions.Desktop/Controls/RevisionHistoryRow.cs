@@ -152,7 +152,8 @@ public static class RevisionHistoryRow
                 // Keep notes at column4, even if CI is activated before Notes. Existing rows remain the same objects.
                 while (ColumnDefinitions.Count < 6) { ColumnDefinitions.Add(new ColumnDefinition(0, GridUnitType.Pixel)); }
                 _build = Cell("RevisionBuildStatus", "");
-                _buildIcon = new() { Name = "RevisionBuildStatusIcon", Width = 16, Height = 16, Stretch = Stretch.None, VerticalAlignment = VerticalAlignment.Center };
+                // Badge assets are larger than the cell (43–46 px); fit the whole image instead of cropping its centre.
+                _buildIcon = new() { Name = "RevisionBuildStatusIcon", Width = 16, Height = 16, Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
                 _buildCell = new() { Name = "RevisionBuildStatusCell", Orientation = Orientation.Horizontal, Spacing = 2, Children = { _buildIcon, _build } };
                 Grid.SetColumn(_buildCell, 5); Children.Add(_buildCell);
             }
