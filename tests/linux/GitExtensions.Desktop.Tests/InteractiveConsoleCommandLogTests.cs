@@ -115,9 +115,12 @@ public sealed class InteractiveConsoleCommandLogTests
         try
         {
             File.WriteAllText(worker, """
-                import json,socket,sys,time
+                import array,json,os,socket,sys,time
                 request=json.load(open(sys.argv[1]))
                 s=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM); s.connect(request['SocketPath'])
+                reference=os.pidfd_open(os.getpid(),0)
+                s.sendmsg([b'P'],[(socket.SOL_SOCKET,socket.SCM_RIGHTS,array.array('i',[reference]))])
+                os.close(reference)
                 s.sendall((json.dumps({'Nonce':'wrong-private-nonce-secret'})+'\n').encode())
                 time.sleep(0.1); s.close()
                 """);

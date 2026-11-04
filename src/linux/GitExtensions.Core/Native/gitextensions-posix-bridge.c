@@ -7,7 +7,10 @@
 #include <signal.h>
 #include <spawn.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #ifdef __APPLE__
@@ -154,4 +157,141 @@ int ge_stop_process_reference(int descriptor)
     do { result = (int)syscall(SYS_pidfd_send_signal, descriptor, SIGKILL, NULL, 0); } while (result != 0 && errno == EINTR);
     return result == 0 || errno == ESRCH ? 0 : -1;
 #endif
+}
+
+/* Authenticate with native socket credentials, never a PID supplied in JSON. */
+__attribute__((visibility("default")))
+int ge_socket_peer_process(int descriptor)
+{
+#ifdef __APPLE__
+    uid_t user; gid_t group; pid_t process;
+    socklen_t size = sizeof(process);
+    if (getpeereid(descriptor, &user, &group) != 0
+        || getsockopt(descriptor, SOL_LOCAL, LOCAL_PEERPID, &process, &size) != 0) return -1;
+    if (size != sizeof(process) || user != geteuid() || process <= 1) { errno = EACCES; return -1; }
+    return process;
+#else
+    struct ucred peer;
+    socklen_t size = sizeof(peer);
+    if (getsockopt(descriptor, SOL_SOCKET, SO_PEERCRED, &peer, &size) != 0) return -1;
+    if (size != sizeof(peer) || peer.uid != geteuid() || peer.pid <= 1) { errno = EACCES; return -1; }
+    return peer.pid;
+#endif
+}
+
+/* Linux can transfer its pidfd directly. Darwin confines kqueues to their
+ * creator, so the receiver registers its own watch while this helper stays
+ * connected and awaits ACK, before any Git process can be created. */
+__attribute__((visibility("default")))
+int ge_send_current_process_reference(int socket_descriptor)
+{
+#ifdef __APPLE__
+    int no_sigpipe = 1;
+    if (setsockopt(socket_descriptor, SOL_SOCKET, SO_NOSIGPIPE, &no_sigpipe, sizeof(no_sigpipe)) != 0) return -1;
+    unsigned char marker = 'K';
+    struct iovec data = { .iov_base = &marker, .iov_len = 1 };
+    struct msghdr message = { .msg_iov = &data, .msg_iovlen = 1 };
+#else
+    int reference = ge_open_process_reference(getpid());
+    if (reference < 0) return -1;
+    unsigned char marker = 'P';
+    struct iovec data = { .iov_base = &marker, .iov_len = 1 };
+    union { struct cmsghdr alignment; unsigned char bytes[CMSG_SPACE(sizeof(int))]; } control;
+    memset(&control, 0, sizeof(control));
+    struct msghdr message = { .msg_iov = &data, .msg_iovlen = 1,
+        .msg_control = control.bytes, .msg_controllen = sizeof(control.bytes) };
+    struct cmsghdr *header = CMSG_FIRSTHDR(&message);
+    header->cmsg_level = SOL_SOCKET; header->cmsg_type = SCM_RIGHTS; header->cmsg_len = CMSG_LEN(sizeof(reference));
+    memcpy(CMSG_DATA(header), &reference, sizeof(reference));
+#endif
+    int flags = MSG_DONTWAIT;
+#ifdef MSG_NOSIGNAL
+    flags |= MSG_NOSIGNAL;
+#endif
+    ssize_t count;
+    do { count = sendmsg(socket_descriptor, &message, flags); } while (count < 0 && errno == EINTR);
+    int error = errno;
+#ifndef __APPLE__
+    close(reference);
+#endif
+    errno = count == 0 ? EPIPE : error;
+    return count == 1 ? 0 : -1;
+}
+
+__attribute__((visibility("default")))
+int ge_receive_process_reference(int socket_descriptor, int *process_id)
+{
+    int peer = ge_socket_peer_process(socket_descriptor);
+    if (peer < 0) return -1;
+    unsigned char marker = 0;
+    struct iovec data = { .iov_base = &marker, .iov_len = 1 };
+    union { struct cmsghdr alignment; unsigned char bytes[CMSG_SPACE(4 * sizeof(int))]; } control;
+    memset(&control, 0, sizeof(control));
+    struct msghdr message = { .msg_iov = &data, .msg_iovlen = 1,
+        .msg_control = control.bytes, .msg_controllen = sizeof(control.bytes) };
+    int flags = MSG_DONTWAIT;
+#ifdef MSG_CMSG_CLOEXEC
+    flags |= MSG_CMSG_CLOEXEC;
+#endif
+    ssize_t count;
+    do { count = recvmsg(socket_descriptor, &message, flags); } while (count < 0 && errno == EINTR);
+    if (count <= 0) { if (count == 0) errno = EPIPE; return -1; }
+    int reference = -1, descriptors = 0;
+    int invalid = count != 1 || (message.msg_flags & (MSG_CTRUNC | MSG_TRUNC));
+    for (struct cmsghdr *header = CMSG_FIRSTHDR(&message); header != NULL; header = CMSG_NXTHDR(&message, header)) {
+        if (header->cmsg_level != SOL_SOCKET || header->cmsg_type != SCM_RIGHTS || header->cmsg_len < CMSG_LEN(sizeof(int))) {
+            invalid = 1; continue;
+        }
+        size_t size = header->cmsg_len - CMSG_LEN(0);
+        if (size % sizeof(int) != 0) invalid = 1;
+        for (size_t offset = 0; offset + sizeof(int) <= size; offset += sizeof(int)) {
+            int descriptor;
+            memcpy(&descriptor, CMSG_DATA(header) + offset, sizeof(descriptor));
+            if (descriptors++ == 0) reference = descriptor;
+            else close(descriptor);
+        }
+    }
+#ifdef __APPLE__
+    if (invalid || descriptors != 0 || marker != 'K') {
+        if (reference >= 0) close(reference);
+        errno = EPROTO; return -1;
+    }
+    reference = ge_open_process_reference(peer);
+    if (reference < 0) return -1;
+    /* LOCAL_PEERPID requires a still-connected peer. Recheck after EV_ADD so
+     * an exit during registration cannot attach our lease to a recycled PID.
+     * The helper retains this CLOEXEC control socket until the final result. */
+    int live_peer = ge_socket_peer_process(socket_descriptor);
+    if (live_peer != peer) {
+        int error = live_peer < 0 ? errno : EPROTO; close(reference); errno = error; return -1;
+    }
+#else
+    if (invalid || descriptors != 1 || marker != 'P') {
+        if (reference >= 0) close(reference);
+        errno = EPROTO; return -1;
+    }
+#endif
+    if (fcntl(reference, F_SETFD, FD_CLOEXEC) != 0) {
+        int error = errno; close(reference); errno = error; return -1;
+    }
+    *process_id = peer;
+    return reference;
+}
+
+__attribute__((visibility("default")))
+int ge_wait_process_reference(int descriptor)
+{
+#ifdef __APPLE__
+    struct kevent event;
+    int result;
+    do { result = kevent(descriptor, NULL, 0, &event, 1, NULL); } while (result < 0 && errno == EINTR);
+    if (result == 1 && event.filter == EVFILT_PROC && (event.fflags & NOTE_EXIT)) return 0;
+#else
+    struct pollfd event = { .fd = descriptor, .events = POLLIN };
+    int result;
+    do { result = poll(&event, 1, -1); } while (result < 0 && errno == EINTR);
+    if (result == 1 && (event.revents & (POLLIN | POLLHUP))) return 0;
+#endif
+    if (result >= 0) errno = EIO;
+    return -1;
 }

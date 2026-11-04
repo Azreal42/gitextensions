@@ -5,11 +5,11 @@ using System.Text;
 
 namespace GitExtensions.Linux;
 
-/// <summary>Owns a private Linux directory whose control socket fits sockaddr_un.sun_path.</summary>
-[SupportedOSPlatform("linux")]
+/// <summary>Owns a private POSIX directory whose control socket fits the platform's sockaddr_un.sun_path.</summary>
+[SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
 public sealed class LinuxUnixSocketDirectory : IDisposable
 {
-    private const int MaximumSocketBytes = 107;
+    private static int MaximumSocketBytes => OperatingSystem.IsMacOS() ? 103 : 107;
     private const UnixFileMode PrivateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private int _disposed;
 

@@ -10,11 +10,12 @@ internal static class InteractiveFileConsoleApplication
 {
     internal static int Run(string[] args)
     {
-        if (!OperatingSystem.IsLinux()) { Console.Error.WriteLine("Interactive Git requires Linux."); return 2; }
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        { Console.Error.WriteLine("Interactive Git requires a supported native terminal."); return 2; }
         try { return RunAsync(args).GetAwaiter().GetResult(); }
         catch (Exception exception) { Console.Error.WriteLine("Unable to run interactive Git: " + exception.Message); return 1; }
     }
-    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
     private static async Task<int> RunAsync(string[] args)
     {
         if (args.Length != 1) { throw new ArgumentException("The interactive Git console requires one private request file."); }
@@ -27,7 +28,7 @@ internal static class InteractiveFileConsoleApplication
         GitExecutionEnvironment environment = request.RestoreExecutionEnvironment();
         using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         await socket.ConnectAsync(new UnixDomainSocketEndPoint(request.SocketPath));
-        _ = InteractiveFileConsoleProtocol.Peer(socket);
+        await PosixSocketPeerProcess.SendCurrentAsync(socket);
         using NetworkStream channel = new(socket, ownsSocket: false);
         using StreamReader reader = new(channel, Encoding.UTF8, false, leaveOpen: true);
         using StreamWriter writer = new(channel, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };

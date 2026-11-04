@@ -1,8 +1,6 @@
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Win32.SafeHandles;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -50,20 +48,6 @@ internal static class InteractiveFileConsoleProtocol
         if (line.Length > 1024 * 1024) { throw new InvalidDataException("The interactive Git console record is too large."); }
         return JsonSerializer.Deserialize<T>(line) ?? throw new InvalidDataException("The interactive Git console record is invalid.");
     }
-    internal static int Peer(Socket socket)
-    {
-        uint size = 12; Credentials credentials = default;
-        if (GetCredentials(socket.Handle.ToInt32(), 1, 17, ref credentials, ref size) != 0 || size != 12
-            || credentials.User != EffectiveUser() || credentials.Pid <= 1)
-        { throw new IOException("The interactive Git console peer could not be authenticated."); }
-        return credentials.Pid;
-    }
-    internal static SafeFileHandle PinProcess(int pid)
-    {
-        long descriptor = Syscall(434, pid, 0);
-        if (descriptor < 0) { throw new IOException("The interactive Git console process could not be pinned."); }
-        return new SafeFileHandle((IntPtr)descriptor, ownsHandle: true);
-    }
     internal static Task WaitForCloseInputAsync(CancellationToken token) => Task.Run(() =>
     {
         // Console.In is synchronized and its ReadLineAsync cannot interrupt an active TTY read.
@@ -83,19 +67,7 @@ internal static class InteractiveFileConsoleProtocol
             if (count < 0 && Marshal.GetLastPInvokeError() != 4) { throw new IOException("Cannot read the interactive Git terminal."); }
         }
     });
-    internal static Task WaitProcessAsync(SafeFileHandle handle) => Task.Run(() =>
-    {
-        PollDescriptor descriptor = new() { Descriptor = handle.DangerousGetHandle().ToInt32(), Events = 1 };
-        int result;
-        do { result = Poll(ref descriptor, 1, -1); } while (result < 0 && Marshal.GetLastPInvokeError() == 4);
-        if (result < 0) { throw new IOException("The interactive Git console process could not be awaited."); }
-        GC.KeepAlive(handle);
-    });
-    [StructLayout(LayoutKind.Sequential)] private struct Credentials { internal int Pid; internal uint User, Group; }
     [StructLayout(LayoutKind.Sequential)] private struct PollDescriptor { internal int Descriptor; internal short Events, Returned; }
-    [DllImport("libc", EntryPoint = "getsockopt", SetLastError = true)] private static extern int GetCredentials(int fd, int level, int option, ref Credentials value, ref uint length);
-    [DllImport("libc", EntryPoint = "geteuid")] private static extern uint EffectiveUser();
-    [DllImport("libc", EntryPoint = "syscall", SetLastError = true)] private static extern long Syscall(long number, int pid, int flags);
     [DllImport("libc", EntryPoint = "read", SetLastError = true)] private static extern long ReadInput(int descriptor, [Out] byte[] value, nuint count);
     [DllImport("libc", EntryPoint = "poll", SetLastError = true)] private static extern int Poll(ref PollDescriptor descriptors, uint count, int timeout);
 }

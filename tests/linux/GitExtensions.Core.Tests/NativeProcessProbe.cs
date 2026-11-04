@@ -2,11 +2,26 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Net.Sockets;
 
 internal static class NativeProcessProbe
 {
     internal static async Task<int> RunAsync(string[] args)
     {
+        if (args.Length == 3 && args[0] == "socket-peer")
+        {
+            if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) { return 2; }
+            using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            await socket.ConnectAsync(new UnixDomainSocketEndPoint(args[2]));
+            int owner = GitExtensions.Linux.PosixSocketPeerProcess.Authenticate(socket);
+            await GitExtensions.Linux.PosixSocketPeerProcess.SendCurrentAsync(socket);
+            await PublishAsync(Path.Combine(args[1], "peer-ready.json"), new { pid = Environment.ProcessId, owner });
+            await UntilFileAsync(Path.Combine(args[1], "close-socket"));
+            socket.Dispose();
+            await PublishAsync(Path.Combine(args[1], "peer-closed.json"), new { pid = Environment.ProcessId });
+            await UntilFileAsync(Path.Combine(args[1], "release"));
+            return 0;
+        }
         if (args.Length >= 3 && args[0] == "terminal")
         {
             using FileStream controlling = new("/dev/tty", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);

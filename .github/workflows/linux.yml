@@ -71,7 +71,7 @@ jobs:
 
       - name: Exercise native process ownership
         run: |
-          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter "TestCategory=NativeProcessOwnership|TestCategory=PosixTerminal" --logger "console;verbosity=normal" --logger trx --results-directory artifacts/linux/test-results/native-kernel
+          dotnet test tests/linux/GitExtensions.Native.Tests --configuration Release --filter "TestCategory=NativeProcessOwnership|TestCategory=PosixTerminal|TestCategory=PosixPeerProcess" --logger "console;verbosity=normal" --logger trx --results-directory artifacts/linux/test-results/native-kernel
 
       - name: Exercise Git workflows against real repositories
         run: |

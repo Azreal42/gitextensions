@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Microsoft.Win32.SafeHandles;
 
 namespace GitExtensions.Linux.Desktop;
 
@@ -29,7 +28,8 @@ public static class InteractiveFileConsoleLauncher
         IReadOnlyList<string> arguments, CancellationToken cancellationToken, Func<string, IReadOnlyList<string>, Process>? startTerminal, string? helperExecutable = null,
         GitExecutionEnvironment? executionEnvironment = null, GitCommandLogProcessContext? journalContext = null)
     {
-        if (!OperatingSystem.IsLinux()) { throw new PlatformNotSupportedException("Interactive file actions require a Linux terminal."); }
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        { throw new PlatformNotSupportedException("Interactive file actions require a supported native terminal."); }
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(owner);
         ValidateRequest(repositoryPath, gitExecutable, arguments);
@@ -39,7 +39,12 @@ public static class InteractiveFileConsoleLauncher
         void Closing(object? sender, WindowClosingEventArgs args)
         { closeRequested = true; args.Cancel = true; lifetime.Cancel(); }
         owner.Closing += Closing;
-        try { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable, executionEnvironment, journalContext); }
+        try
+        {
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable, executionEnvironment, journalContext); }
+            throw new PlatformNotSupportedException("Interactive file actions require a supported native terminal.");
+        }
         finally
         {
             owner.Closing -= Closing;
@@ -47,7 +52,7 @@ public static class InteractiveFileConsoleLauncher
         }
     }
 
-    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
     internal static async Task<GitResult> RunCoreAsync(string repositoryPath, string gitExecutable,
         IReadOnlyList<string> arguments, CancellationToken token, Func<string, IReadOnlyList<string>, Process>? startTerminal = null, string? helperExecutable = null,
         GitExecutionEnvironment? executionEnvironment = null, GitCommandLogProcessContext? journalContext = null)
@@ -64,7 +69,7 @@ public static class InteractiveFileConsoleLauncher
         using Socket listener = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         Process? terminal = null;
         Socket? connection = null;
-        SafeFileHandle? peer = null;
+        PosixSocketPeerProcess? peer = null;
         StreamWriter? writer = null;
         Task? peerExit = null;
         GitCommandLogProcessOperation? journal = null;
@@ -85,15 +90,18 @@ public static class InteractiveFileConsoleLauncher
             token.ThrowIfCancellationRequested();
             journal = GitCommandLog.StartProcess(GitCommandLogProcessKind.InteractiveConsole, repositoryPath, journalContext);
             terminal = startTerminal is not null ? startTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath])
-                : StartTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath], executionEnvironment);
+                : OperatingSystem.IsMacOS()
+                    ? MacInteractiveConsoleTerminal.Start(Path.Combine(directory, "interactive.command"), executable,
+                        [InteractiveFileConsoleProtocol.Mode, requestPath], repositoryPath, executionEnvironment)
+                    : StartTerminal(executable, [InteractiveFileConsoleProtocol.Mode, requestPath], executionEnvironment);
             using CancellationTokenSource opening = CancellationTokenSource.CreateLinkedTokenSource(token);
             opening.CancelAfter(TimeSpan.FromSeconds(30));
             try { connection = await listener.AcceptAsync(opening.Token); }
             catch (OperationCanceledException) when (!token.IsCancellationRequested)
             { throw new IOException("The terminal did not open the interactive Git console. Check that a terminal emulator is installed and can start."); }
-            int peerPid = InteractiveFileConsoleProtocol.Peer(connection);
-            peer = InteractiveFileConsoleProtocol.PinProcess(peerPid);
-            peerExit = InteractiveFileConsoleProtocol.WaitProcessAsync(peer);
+            peer = await PosixSocketPeerProcess.ReceiveAsync(connection, opening.Token);
+            int peerPid = peer.ProcessId;
+            peerExit = peer.WaitForExitAsync();
             using NetworkStream channel = new(connection, ownsSocket: false);
             using StreamReader reader = new(channel, Encoding.UTF8, false, leaveOpen: true);
             writer = new StreamWriter(channel, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
