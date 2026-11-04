@@ -11,17 +11,23 @@ internal static class MacInteractiveConsoleTerminal
     internal static Process Start(string commandPath, string executable, IReadOnlyList<string> arguments,
         string repositoryPath, GitExecutionEnvironment environment)
     {
-        WriteCommand(commandPath, executable, arguments, repositoryPath, environment);
+        ConsoleStyleTerminal.ValidateNativeSelection();
+        WriteCommand(commandPath, executable, arguments, repositoryPath, environment, preserveTerminalType: true);
+        return Process.Start(CreateStartInfo(commandPath, environment)) ?? throw new IOException("The interactive macOS terminal could not be opened.");
+    }
+
+    internal static ProcessStartInfo CreateStartInfo(string commandPath, GitExecutionEnvironment environment)
+    {
         ProcessStartInfo start = new("/usr/bin/open") { UseShellExecute = false };
         environment.ApplyTo(start);
         start.ArgumentList.Add("-b"); start.ArgumentList.Add("com.apple.Terminal");
         start.ArgumentList.Add(commandPath);
-        return Process.Start(start) ?? throw new IOException("The interactive macOS terminal could not be opened.");
+        return start;
     }
 
     [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
     internal static void WriteCommand(string commandPath, string executable, IReadOnlyList<string> arguments,
-        string repositoryPath, GitExecutionEnvironment environment)
+        string repositoryPath, GitExecutionEnvironment environment, bool preserveTerminalType = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(commandPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(executable);
@@ -34,6 +40,10 @@ internal static class MacInteractiveConsoleTerminal
             if (name.Length == 0 || name.Contains('=')) { throw new ArgumentException("A terminal environment name is invalid.", nameof(environment)); }
             command.Append(' ').Append(Quote(name + "=" + value));
         }
+        // A reused Terminal.app supplies the actual terminal type. Preserve an explicit captured value;
+        // otherwise transport only this terminal capability, never the broker's ambient environment.
+        if (preserveTerminalType && !environment.EnvironmentVariables.ContainsKey("TERM"))
+        { command.Append(" \"TERM=${TERM:-xterm-256color}\""); }
         command.Append(' ').Append(Quote(executable));
         foreach (string argument in arguments) { command.Append(' ').Append(Quote(argument)); }
         command.Append('\n');

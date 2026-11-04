@@ -1,0 +1,23 @@
+# ADR 0167 · Terminaux de Tools par plateforme
+
+Statut : implémenté et validé au périmètre Linux local ci-dessous ; exécution native Mac/Windows encore requise. [Console Git possédée](0166-windows-interactive-console.md), [transport macOS](0165-macos-interactive-console.md).
+
+Tools/Ctrl+G capture le dépôt et son environnement avant le lancement. Linux conserve ses émulateurs ; Windows cherche Git Bash dans les outils explicites puis dans l’installation du Git configuré. Le vrai usr/bin/bash précède son wrapper bin. Le choix explicite Windows console utilise bash/sh dans cette console ; un bash WSL ambiant n’est pas choisi à la place du Git sélectionné. Le répertoire passe comme argument littéral du lanceur Git Bash ou comme WorkingDirectory avec CHERE_INVOKING.
+
+Mac ouvre Terminal.app par LaunchServices et un .command privé. Le helper lit la requête mode0600 dans son répertoire mode0700, authentifie le parent par UID/PID et attend nonce/ACK. Après ACK, les fichiers et sockets de démarrage sont libérés ; le helper devient le shell par execve, avec le même PID et le terminal existant. Le shell conserve son contrôle des tâches et peut survivre à l’interface. Il ne conserve pas le verrou d’une mutation Git. Le point d’autorisation est ACK ; aucune commande ne démarre avant.
+
+Le pont natif reçoit argv/envp UTF-8 séparés. Il remet SIGPIPE/SIGXFSZ et le masque du thread à l’état de lancement par pthread_sigmask, puis execve ; en cas d’échec, il restaure le répertoire et les signaux et remonte errno. La construction du vecteur UTF-8 est partagée avec PosixGitProcess. La locale et le pager d’un shell utilisateur restent ceux capturés. TERM peut venir du vrai terminal seulement si absent de l’environnement capturé ; aucun autre environnement du broker n’est importé.
+
+Les listes Console style suivent l’hôte : émulateurs Linux, Terminal.app, Windows console. Les champs JSON inconnus et identités étrangères restent enregistrés lors d’un changement sans rapport. Un choix indisponible reste visible et exige une sélection explicite avant ouverture.
+
+Contrats ajoutés : douze portables dont la vraie page Settings ; deux transports TERM via le .command ; sept helpers réels, avec PID conservé, saisie Unicode, sortie73, annulation après ACK, tâche détachée, échec exec et refus parent/nonce avant commande. Les trois tests de hunks existants partagent le pilote de terminal sans changer leurs identités. La CI native les sélectionne par leurs catégories déjà présentes.
+
+Preuve native indépendante : pont C Linux compilé sans avertissement/erreur ; vrais terminaux de contrôle, argv/environnement/répertoire/saisie et codes0/73 ; restauration de cwd, dispositions natives et masque sur exec absent. ABI maximale déclarée glibc2.34 respectée. Cette preuve C seule ne qualifie pas un hôte Mac/Windows. Le source combiné a depuis compilé en C# avec les quatre contrats Desktop Windows explicitement inclus, sans avertissement/erreur ; 14 contrats POSIX, 213 Desktop ciblés, deux régressions de statut, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux, aucun ignoré. Les 192 anciennes identités du sous-ensemble Desktop sont présentes, avec 21 cas ajoutés. Cela ne constitue aucune exécution Windows/Mac des nouveaux parcours. Preuves : artifacts/cross-platform/20261104/platform-terminals/native-exec.
+
+Restent : suite Desktop complète et paquet exact de ce source, exécution native Windows/Mac des nouveaux parcours, suites métier complètes et autres limites de propriété Darwin. Aucune clôture du portage global.
+
+Le même exec est aussi exercé depuis un thread secondaire Linux : PID et sorties0/73 conservés. Le masque utilise l’API pthread pour le runtime multithread.
+
+Sources : [Git Bash, contrat de lancement](https://github.com/git-for-windows/MINGW-packages/blob/main/mingw-w64-git/git-bash.adoc), [analyse Windows des arguments](https://github.com/git-for-windows/MINGW-packages/blob/main/mingw-w64-git/git-wrapper.c), [masque pthread](https://man7.org/linux/man-pages/man3/pthread_sigmask.3.html), [execve Apple](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/execve.2.html).
+
+Le complet précédent f2ef138f3 reste en échec à 4 630/4 631. L’effacement du brouillon du filtre rapide est reproduit sur le vrai Settings Apply, corrigé dans ADR0157 et repassé sur le source combiné. Aucune réussite complète n’est transférée au présent lot. Preuves managées : artifacts/cross-platform/20261104/platform-terminals/validation-review.json.

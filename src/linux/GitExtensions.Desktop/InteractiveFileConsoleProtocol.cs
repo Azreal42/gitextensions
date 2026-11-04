@@ -33,6 +33,12 @@ internal sealed class InteractiveFileConsoleEnvironment
     internal static InteractiveFileConsoleEnvironment Capture(GitExecutionEnvironment environment)
         => new(environment.Options, environment.EnvironmentVariables);
     internal GitExecutionEnvironment Restore() => GitExecutionEnvironment.Capture(Options, EnvironmentVariables);
+    internal static GitExecutionEnvironment WithTerminalType(GitExecutionEnvironment environment, string? terminalType)
+    {
+        if (environment.EnvironmentVariables.ContainsKey("TERM") || string.IsNullOrEmpty(terminalType)) { return environment; }
+        Dictionary<string, string?> variables = new(environment.EnvironmentVariables, StringComparer.Ordinal) { ["TERM"] = terminalType };
+        return GitExecutionEnvironment.Capture(environment.Options, variables);
+    }
 }
 internal sealed record InteractiveFileConsoleHello(string Nonce);
 internal sealed record InteractiveFileConsoleResult(int ExitCode, bool Cancelled, string? Error);

@@ -58,8 +58,8 @@ internal sealed class PosixGitProcess : IDisposable
             string[] prefix = terminal ? [helper, "3", "4", "--terminal", "--", executable]
                 : childCreatesSession ? [helper, "3", "4", "--child-sets-session", "--", executable]
                 : [helper, "3", "4", "--", executable];
-            using Utf8Vector arguments = new(prefix.Concat(start.ArgumentList));
-            using Utf8Vector environment = new(start.Environment.Where(pair => pair.Value is not null).Select(pair => pair.Key + "=" + pair.Value));
+            using NativeUtf8Vector arguments = new(prefix.Concat(start.ArgumentList));
+            using NativeUtf8Vector environment = new(start.Environment.Where(pair => pair.Value is not null).Select(pair => pair.Key + "=" + pair.Value));
             string directory = string.IsNullOrEmpty(start.WorkingDirectory) ? Directory.GetCurrentDirectory() : start.WorkingDirectory;
             token.ThrowIfCancellationRequested();
             Check(Spawn(helper, directory, arguments.Pointer, environment.Pointer,
@@ -237,27 +237,6 @@ internal sealed class PosixGitProcess : IDisposable
             return new((IntPtr)descriptor, ownsHandle: true);
         }
         public void Dispose() { _server.DisposeLocalCopyOfClientHandle(); if (!_transferred) { _server.Dispose(); } }
-    }
-
-    private sealed class Utf8Vector : IDisposable
-    {
-        private readonly List<IntPtr> _strings = [];
-        internal IntPtr Pointer { get; private set; }
-        internal Utf8Vector(IEnumerable<string> values)
-        {
-            try
-            {
-                foreach (string value in values)
-                {
-                    if (value.Contains('\0')) { throw new ArgumentException("Native process values cannot contain NUL.", nameof(values)); }
-                    _strings.Add(Marshal.StringToCoTaskMemUTF8(value));
-                }
-                IntPtr[] vector = [.. _strings, IntPtr.Zero];
-                Pointer = Marshal.AllocHGlobal(vector.Length * IntPtr.Size); Marshal.Copy(vector, 0, Pointer, vector.Length);
-            }
-            catch { Dispose(); throw; }
-        }
-        public void Dispose() { foreach (IntPtr value in _strings) { Marshal.FreeCoTaskMem(value); } Marshal.FreeHGlobal(Pointer); }
     }
 
     // Native code owns platform structs and variadic calls on each ABI.

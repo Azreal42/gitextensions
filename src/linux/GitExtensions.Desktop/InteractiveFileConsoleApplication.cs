@@ -26,7 +26,7 @@ internal static class InteractiveFileConsoleApplication
         { throw new InvalidDataException("The interactive Git console request must be a private regular file."); }
         InteractiveFileConsoleRequest request = JsonSerializer.Deserialize<InteractiveFileConsoleRequest>(await File.ReadAllTextAsync(path))
             ?? throw new InvalidDataException("The interactive Git console request is invalid.");
-        GitExecutionEnvironment environment = request.RestoreExecutionEnvironment();
+        GitExecutionEnvironment environment = InteractiveFileConsoleEnvironment.WithTerminalType(request.RestoreExecutionEnvironment(), Environment.GetEnvironmentVariable("TERM"));
         using Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         await socket.ConnectAsync(new UnixDomainSocketEndPoint(request.SocketPath));
         await PosixSocketPeerProcess.SendCurrentAsync(socket);

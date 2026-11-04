@@ -642,14 +642,21 @@ public sealed partial class MainWindow
         }
     }
 
-    private Task OpenTerminalAsync()
+    private async Task OpenTerminalAsync()
     {
-        if (_busy || _repository is null) { return Task.CompletedTask; }
-        // Ctrl+G follows the selected Linux console and uses the captured Git environment.
-        ProcessStartInfo info = ConsoleStyleTerminal.CreateStartInfo("bash", [],
-            _repository.ExecutionEnvironment, waitForExit: false, workingDirectory: _repository.Path);
+        if (_busy || _repository is null) { return; }
+        GitRepository repository = _repository;
+        GitExecutionEnvironment environment = repository.ExecutionEnvironment;
+        if (OperatingSystem.IsMacOS())
+        { await MacToolsShellLauncher.StartAsync(repository.Path, environment, _lifetime.Token, ExternalLauncher); return; }
+        ProcessStartInfo info;
+        if (OperatingSystem.IsWindows())
+        {
+            ConsoleStylePreferences settings = new ConsoleStylePreferencesStore().Load(); ConsoleStyleTerminal.ValidateNativeSelection(settings);
+            info = WindowsGitShell.CreateStartInfo(repository.Path, environment, nativeConsole: settings.Terminal == "Windows console");
+        }
+        else { info = ConsoleStyleTerminal.CreateStartInfo("bash", [], environment, waitForExit: false, workingDirectory: repository.Path); }
         LoggedExternalProcess.Start(info, GitCommandLogProcessKind.TerminalLauncher, ExternalLauncher, cancellationToken: _lifetime.Token);
-        return Task.CompletedTask;
     }
 
     private Task ChangeThemeAsync()

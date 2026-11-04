@@ -13,6 +13,7 @@ internal static class WindowsInteractiveFileConsoleLauncher
         GitExecutionEnvironment? environment, GitCommandLogProcessContext? journalContext)
     {
         token.ThrowIfCancellationRequested();
+        ConsoleStyleTerminal.ValidateNativeSelection();
         environment ??= GitExecutionEnvironment.Capture(new() { Executable = gitExecutable });
         if (environment.Executable != gitExecutable) { throw new ArgumentException("Interactive Git must use its captured executable.", nameof(environment)); }
         string executable = helperExecutable ?? Path.Combine(AppContext.BaseDirectory, "GitExtensions.exe");

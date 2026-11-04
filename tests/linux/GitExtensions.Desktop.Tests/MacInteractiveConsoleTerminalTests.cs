@@ -11,6 +11,24 @@ namespace GitExtensions.Desktop.Tests;
 [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
 public sealed class MacInteractiveConsoleTerminalTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task ToolsCommandInheritsOnlyTheTerminalTypeWhenItWasNotExplicitlyCaptured(bool captured)
+    {
+        using LinuxUnixSocketDirectory directory = LinuxUnixSocketDirectory.Create("ge-term-type-");
+        string command = Path.Combine(directory.DirectoryPath, "terminal.command"), record = Path.Combine(directory.DirectoryPath, "term");
+        string injection = Path.Combine(directory.DirectoryPath, "injected");
+        string hostTerm = "terminal ' λ; $(touch " + injection + ")";
+        Dictionary<string, string?> values = new() { ["PATH"] = "/usr/bin:/bin" }; if (captured) { values["TERM"] = "captured terminal"; }
+        GitExecutionEnvironment environment = GitExecutionEnvironment.Capture(new(), values);
+        MacInteractiveConsoleTerminal.WriteCommand(command, "/bin/sh", ["-c", "printf '%s\\0%s' \"$TERM\" \"${UNRELATED_BROKER_SECRET-unset}\" > \"$1\"", "shell", record], directory.DirectoryPath, environment, preserveTerminalType: true);
+        ProcessStartInfo start = new("/bin/sh") { UseShellExecute = false }; start.ArgumentList.Add(command);
+        start.Environment["TERM"] = hostTerm; start.Environment["UNRELATED_BROKER_SECRET"] = "must not leak";
+        using Process child = Process.Start(start)!; await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20));
+        Assert.That(child.ExitCode, Is.Zero); Assert.That(await File.ReadAllTextAsync(record), Is.EqualTo((captured ? "captured terminal" : hostTerm) + "\0unset"));
+        Assert.That(File.Exists(injection), Is.False);
+    }
+
     [Test]
     public async Task PrivateCommandPreservesLiteralArgumentsCapturedEnvironmentWorkingDirectoryAndExit()
     {

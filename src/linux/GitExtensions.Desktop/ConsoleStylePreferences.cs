@@ -6,12 +6,19 @@ namespace GitExtensions.Linux.Desktop;
 
 internal sealed record ConsoleStylePreferences(string Terminal = "Automatic", string Style = "Default", FontSpec? Font = null)
 {
-    internal static readonly string[] Terminals = ["Automatic", "gnome-terminal", "konsole", "xterm", "x-terminal-emulator"];
+    internal static IReadOnlyList<string> Terminals => TerminalsFor(OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux");
+    internal static IReadOnlyList<string> TerminalsFor(string platform) => platform switch
+    {
+        "windows" => ["Automatic", "Windows console"],
+        "macos" => ["Automatic", "Terminal.app"],
+        "linux" => ["Automatic", "gnome-terminal", "konsole", "xterm", "x-terminal-emulator"],
+        _ => throw new PlatformNotSupportedException("No terminal provider is available for this platform.")
+    };
     internal static readonly string[] Styles = ["Default", "Light", "Dark"];
     internal void ValidateChanges(ConsoleStylePreferences baseline)
     {
         if (Terminal != baseline.Terminal && !Terminals.Contains(Terminal, StringComparer.Ordinal))
-        { throw new ArgumentException("Choose an available Linux terminal."); }
+        { throw new ArgumentException("Choose an available terminal for this platform."); }
         if (Style != baseline.Style && !Styles.Contains(Style, StringComparer.Ordinal))
         { throw new ArgumentException("Choose Default, Light or Dark console style."); }
         Font?.Validate();

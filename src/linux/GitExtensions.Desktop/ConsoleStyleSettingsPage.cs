@@ -73,9 +73,9 @@ internal sealed class ConsoleStyleSettingsPage : UserControl
             _terminal.Items.Clear();
             foreach (string name in ConsoleStylePreferences.Terminals)
             {
-                if (name != "Automatic" && ConsoleStyleTerminal.Find(name, path) is null && name != Draft.Terminal) { continue; }
+                if (name != "Automatic" && !ConsoleStyleTerminal.IsAvailable(name, path) && name != Draft.Terminal) { continue; }
                 Add(_terminal, name, name == "Automatic" ? _translations.Translate("Automatic") : name,
-                    name == "Automatic" || ConsoleStyleTerminal.Find(name, path) is not null);
+                    ConsoleStyleTerminal.IsAvailable(name, path));
             }
             if (!ConsoleStylePreferences.Terminals.Contains(Draft.Terminal, StringComparer.Ordinal)) { Add(_terminal, Draft.Terminal, Draft.Terminal, false); }
             _style.Items.Clear();
@@ -97,9 +97,11 @@ internal sealed class ConsoleStyleSettingsPage : UserControl
         ConsoleStylePresentation.Apply(_preview, Draft);
         List<string> notices = [];
         if (_session.LoadError is not null) { notices.Add(_translations.Translate("Unable to read console preferences.") + " " + _session.LoadError.Message); }
-        if (Draft.Terminal == "Automatic" && !ConsoleStylePreferences.Terminals.Skip(1).Any(name => ConsoleStyleTerminal.Find(name, Environment.GetEnvironmentVariable("PATH")) is not null))
-        { notices.Add(_translations.Translate("No supported terminal is installed. Install GNOME Terminal, Konsole or XTerm to use interactive Git.")); }
-        if (Draft.Terminal != "Automatic" && ConsoleStyleTerminal.Find(Draft.Terminal, Environment.GetEnvironmentVariable("PATH")) is null)
+        if (Draft.Terminal == "Automatic" && !ConsoleStylePreferences.Terminals.Skip(1).Any(name => ConsoleStyleTerminal.IsAvailable(name, Environment.GetEnvironmentVariable("PATH"))))
+        { notices.Add(_translations.Translate(OperatingSystem.IsLinux()
+            ? "No supported terminal is installed. Install GNOME Terminal, Konsole or XTerm to use interactive Git."
+            : "No supported terminal is available on this platform.")); }
+        if (Draft.Terminal != "Automatic" && !ConsoleStyleTerminal.IsAvailable(Draft.Terminal, Environment.GetEnvironmentVariable("PATH")))
         { notices.Add(_translations.Translate("The saved terminal is unavailable. Choose an installed terminal before opening an interactive console.")); }
         if (!ConsoleStylePreferences.Styles.Contains(Draft.Style, StringComparer.Ordinal))
         { notices.Add(_translations.Translate("The saved console style is unavailable. Default is displayed until an explicit choice.")); }

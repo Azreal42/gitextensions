@@ -4,6 +4,7 @@
 #endif
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <signal.h>
 #include <spawn.h>
 #include <stdint.h>
@@ -22,6 +23,39 @@
 #include <poll.h>
 #include <sys/syscall.h>
 #endif
+
+/* Only the standalone terminal helper calls this. A successful exec replaces
+ * that helper with the user's shell in the existing terminal/session; it does
+ * not create a Git supervisor, nest a PTY, or own future background jobs. */
+__attribute__((visibility("default")))
+int ge_exec_user_shell(const char *executable, const char *directory,
+                       char *const arguments[], char *const environment[])
+{
+    int old_directory = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (old_directory < 0) return -1;
+    if (chdir(directory) != 0) { int error = errno; close(old_directory); errno = error; return -1; }
+    const int signals[2] = { SIGPIPE, SIGXFSZ };
+    struct sigaction saved[2], standard = { 0 };
+    standard.sa_handler = SIG_DFL; sigemptyset(&standard.sa_mask);
+    sigset_t empty, old_mask; sigemptyset(&empty);
+    int changed = 0, mask_changed = 0;
+    for (; changed < 2; changed++)
+        if (sigaction(signals[changed], &standard, &saved[changed]) != 0) goto failure;
+    int mask_error = pthread_sigmask(SIG_SETMASK, &empty, &old_mask);
+    if (mask_error != 0) { errno = mask_error; goto failure; }
+    mask_changed = 1;
+    execve(executable, arguments, environment);
+failure:
+    {
+        int error = errno;
+        if (mask_changed) (void)pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+        while (changed > 0) { changed--; (void)sigaction(signals[changed], &saved[changed], NULL); }
+        int restored = fchdir(old_directory);
+        int restore_error = restored == 0 ? 0 : errno;
+        close(old_directory);
+        errno = restore_error != 0 ? restore_error : error; return -1;
+    }
+}
 
 /* Fixed ABI for managed callers; Darwin arm64 fcntl is variadic. */
 __attribute__((visibility("default")))

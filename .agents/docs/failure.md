@@ -1,5 +1,9 @@
 # Failure
 
+## Tools utilisait encore les terminaux Linux sur Windows/Mac — 4 novembre 2026
+
+Le lanceur Ctrl+G et les choix Console style sont adaptés aux trois systèmes. Le shell Mac remplace son helper après ACK pour garder sa durée de vie et ses tâches naturelles ; le masque de signaux utilise pthread_sigmask dans le runtime multithread. Source C et C# compilés ; 14 POSIX, 213 Desktop ciblés, deux régressions de statut, 1 210 Core, 42 Plugins et cinq contrôles Debian réussis sur Linux. Le complet précédent reste à 4 630/4 631 et les nouveaux parcours natifs Windows/Mac restent non exécutés. [ADR0167](adr/platform/0167-platform-terminal-tools.md).
+
 ## Filtre rapide effacé par une publication de statut — 4 novembre 2026
 
 Le complet f2ef138f3 échoue à 4 630/4 631 sur NarrowToolbar ; son replay isolé passe. Le vrai Settings Apply reproduit déterministement la même classe d’effacement : UpdateBrowserToolbar remplaçait le brouillon par null. La synchronisation du filtre est déplacée dans la publication de requête acceptée ; 60 parcours ciblés passent ensuite, aucun ignoré. Le résultat complet en échec est conservé et ne qualifie pas le correctif complet. [ADR0157](adr/workflows/history/0157-progressive-browse-host.md).

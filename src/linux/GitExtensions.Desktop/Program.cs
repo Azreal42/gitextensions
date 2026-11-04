@@ -28,6 +28,8 @@ internal static class Program
         ArgumentNullException.ThrowIfNull(args); ArgumentNullException.ThrowIfNull(showCommandlineHelp);
         if (args.FirstOrDefault() == InteractiveFileConsoleProtocol.Mode)
         { return InteractiveFileConsoleApplication.Run(args[1..]); }
+        if (args.FirstOrDefault() == ToolsShellApplication.Mode)
+        { return ToolsShellApplication.Run(args[1..]); }
         if (GitRebaseEditor.IsNativeEditorInvocation(args))
         {
             using LinuxClipboardProtocol? clipboardProtocol = LinuxClipboardProtocol.TryOpen();
