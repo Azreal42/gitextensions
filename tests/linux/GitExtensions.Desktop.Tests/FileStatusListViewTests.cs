@@ -27,6 +27,44 @@ namespace GitExtensions.Desktop.Tests;
 public class FileStatusListViewTests
 {
     [AvaloniaTest]
+    public void AutomaticallySelectedPathKeepsItsReadableColorAfterAttachmentAndCommitReload()
+    {
+        using Fixture fixture = new();
+        fixture.Window.RequestedThemeVariant = ThemeVariant.Light;
+        fixture.View.SortMode = FileStatusListSortMode.FilePathFlat;
+        object first = new(), second = new();
+        LoadCommit();
+        fixture.Window.Show();
+        AssertSelectionColors();
+        LoadCommit();
+        AssertSelectionColors();
+        fixture.View.SelectTags([second]);
+        fixture.View.SelectTags([first]);
+        AssertSelectionColors();
+        fixture.Window.RequestedThemeVariant = ThemeVariant.Dark;
+        AssertSelectionColors();
+        fixture.Window.RequestedThemeVariant = ThemeVariant.Light;
+        AssertSelectionColors();
+
+        void LoadCommit() => fixture.View.SetGroups([Group("commit", [new(first, "src/docfeed/bloomberg.py"), new(second, "src/models/source.py")])]);
+        void AssertSelectionColors()
+        {
+            fixture.Window.UpdateLayout(); Dispatcher.UIThread.RunJobs();
+            foreach (object tag in new[] { first, second })
+            {
+                TreeViewItem item = fixture.View.FindItemByTag(tag)!;
+                TextBlock label = ((Grid)item.Header!).Children.OfType<TextBlock>().Single();
+                Avalonia.Controls.Documents.Run directory = label.Inlines!.OfType<Avalonia.Controls.Documents.Run>().First();
+                Assert.That(directory.Text, Does.Contain("src/"));
+                fixture.View.TryFindResource("ClassicDisabledBrush", fixture.View.ActualThemeVariant, out object? neutral);
+                Color expected = tag == first && fixture.View.ActualThemeVariant == ThemeVariant.Light
+                    ? Color.Parse("#c0c0c0") : ((ISolidColorBrush)neutral!).Color;
+                Assert.That(((ISolidColorBrush)directory.Foreground!).Color, Is.EqualTo(expected));
+            }
+        }
+    }
+
+    [AvaloniaTest]
     public async Task RegexMatchesOldOrCurrentLiteralNamesAndInvalidInputRetainsLastGoodListAndSelection()
     {
         using Fixture fixture = new();

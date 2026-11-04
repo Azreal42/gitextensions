@@ -554,10 +554,11 @@ public sealed class FileStatusListView : UserControl, IDisposable
         string path = ExportDialogControls.DisplayPath(entry.DisplayPath ?? entry.Path);
         string? previous = entry.OriginalPath is null ? null : ExportDialogControls.DisplayPath(entry.OriginalPath);
         FilePathHeader header = new(Icon(icon ?? IconName(entry)), path, previous, _pathPresentation);
+        // UpdatePathSelectionColors owns these colors, including theme changes.
+        // A dynamic resource binding would reapply the neutral color on attachment.
         foreach (Run run in new[] { header.DirectoryRun, header.PreviousRun })
         {
             _mutedPathRuns.Add(run);
-            run.Bind(TextElement.ForegroundProperty, new DynamicResourceExtension("ClassicDisabledBrush"));
         }
         ToolTip.SetTip(header, path + (previous is null ? "" : " (" + previous + ")"));
         return header;
@@ -567,12 +568,15 @@ public sealed class FileStatusListView : UserControl, IDisposable
     private void UpdatePathSelectionColors()
     {
         IBrush neutral = this.TryFindResource("ClassicDisabledBrush", ActualThemeVariant, out object? value) && value is IBrush found ? found : Brushes.Gray;
+        // A freshly rebuilt row may not have a realized container yet. Its
+        // IsSelected flag catches up later, while the selection already exists.
+        HashSet<TreeViewItem> selected = [.. Tree.SelectedItems?.OfType<TreeViewItem>() ?? []];
         foreach (TreeViewItem item in _models.Keys)
         {
             if (item.Header is not Grid grid) { continue; }
             TextBlock? text = grid.Children.OfType<TextBlock>().FirstOrDefault();
             if (text?.Inlines is null) { continue; }
-            IBrush brush = item.IsSelected && ActualThemeVariant != ThemeVariant.Dark ? Brush.Parse("#c0c0c0")
+            IBrush brush = selected.Contains(item) && ActualThemeVariant != ThemeVariant.Dark ? Brush.Parse("#c0c0c0")
                 : neutral;
             foreach (Run run in text.Inlines.OfType<Run>().Where(_mutedPathRuns.Contains)) { run.Foreground = brush; }
         }
