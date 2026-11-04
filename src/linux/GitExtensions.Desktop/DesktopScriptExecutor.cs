@@ -64,6 +64,8 @@ internal static class DesktopScriptExecutor
         if (plan.Target == ScriptTargetKind.Plugin)
         { return browse is not null && await browse.ExecuteScriptPluginAsync(repository, plan.Command, owner, cancellation); }
         string executable = plan.Target == ScriptTargetKind.PowerShell ? "pwsh" : plan.Command;
+        if (OperatingSystem.IsWindows() && executable.Length > 0 && (plan.Target is ScriptTargetKind.External or ScriptTargetKind.NavigateTo))
+        { executable = WindowsGitShellResolver.ResolveScriptCommand(executable, captured.Context.ExecutionEnvironment ?? repository.ExecutionEnvironment); }
         IReadOnlyList<string> arguments = plan.Target == ScriptTargetKind.PowerShell
             ? new[] { "-NoProfile", "-Command", plan.Command + " " + plan.ArgumentPlan.Preview } : plan.ArgumentPlan.Arguments;
         if (plan.Target == ScriptTargetKind.OpenUrl && arguments.Count != 1)

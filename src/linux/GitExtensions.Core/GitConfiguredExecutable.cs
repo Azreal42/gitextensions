@@ -6,6 +6,9 @@ namespace GitExtensions.Linux;
 internal static class GitConfiguredExecutable
 {
     internal static string Resolve(string executable, string? searchPath)
+        => Resolve(executable, searchPath, OperatingSystem.IsWindows());
+
+    internal static string Resolve(string executable, string? searchPath, bool windows, bool includeProcessDirectories = true)
     {
         ArgumentException.ThrowIfNullOrEmpty(executable);
         if (executable.Contains('\0')) { throw new ArgumentException("Executable paths cannot contain NUL.", nameof(executable)); }
@@ -15,16 +18,16 @@ internal static class GitConfiguredExecutable
 
         // CreateProcess adds .exe for a bare program name. This is an executable
         // lookup, not a command-shell lookup through PATHEXT or command text.
-        string name = OperatingSystem.IsWindows() && !System.IO.Path.HasExtension(executable) && !executable.EndsWith('.')
+        string name = windows && !System.IO.Path.HasExtension(executable) && !executable.EndsWith('.')
             ? executable + ".exe" : executable;
-        IEnumerable<string> directories = new[]
+        IEnumerable<string> directories = (includeProcessDirectories ? new[]
         {
             Environment.ProcessPath is { } process ? System.IO.Path.GetDirectoryName(process)! : AppContext.BaseDirectory,
             Environment.CurrentDirectory,
-        }.Concat((searchPath ?? "").Split(System.IO.Path.PathSeparator));
+        } : []).Concat((searchPath ?? "").Split(System.IO.Path.PathSeparator).Where(entry => includeProcessDirectories || entry.Length != 0));
         foreach (string entry in directories)
         {
-            string directory = OperatingSystem.IsWindows() && entry.Length >= 2 && entry[0] == '"' && entry[^1] == '"'
+            string directory = windows && entry.Length >= 2 && entry[0] == '"' && entry[^1] == '"'
                 ? entry[1..^1] : entry;
             string candidate = System.IO.Path.GetFullPath(System.IO.Path.Combine(directory, name));
             if (File.Exists(candidate)) { return candidate; }

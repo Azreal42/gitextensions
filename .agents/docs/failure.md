@@ -1,5 +1,9 @@
 # Failure
 
+## Alias Bash introuvable avec le PATH Windows limité à Git/cmd — 4 novembre 2026
+
+Le script VS Code par défaut lançait bash par son alias nu ; Git installé et fonctionnel ne rend pas forcément usr/bin accessible par PATH. Le résolveur partagé sélectionne le shell du Git capturé, sans changer les arguments, adopter WSL ou réécrire les chemins explicites. Douze contrats portables passent ; deux contrats du vrai Bash Windows sont encodés et compilés, mais restent à exécuter nativement. Validation Linux du lot combiné dans ADR0168. Le refus GitHub HTTP422 demeure une limite de service distincte des tests locaux.
+
 ## Tools utilisait encore les terminaux Linux sur Windows/Mac — 4 novembre 2026
 
 Le lanceur Ctrl+G et les choix Console style sont adaptés aux trois systèmes. Le shell Mac remplace son helper après ACK pour garder sa durée de vie et ses tâches naturelles ; le masque de signaux utilise pthread_sigmask dans le runtime multithread. Source C et C# compilés ; 14 POSIX, 213 Desktop ciblés, deux régressions de statut, 1 210 Core, 42 Plugins et cinq contrôles Debian réussis sur Linux. Le complet précédent reste à 4 630/4 631 et les nouveaux parcours natifs Windows/Mac restent non exécutés. [ADR0167](adr/platform/0167-platform-terminal-tools.md).

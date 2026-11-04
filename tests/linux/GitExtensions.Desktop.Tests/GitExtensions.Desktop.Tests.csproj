@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup Condition="!$([MSBuild]::IsOSPlatform('Windows')) and '$(CompileWindowsConsoleTests)' != 'true'">
     <Compile Remove="WindowsInteractiveConsoleTests.cs" />
+    <Compile Remove="WindowsScriptShellIntegrationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj" />
