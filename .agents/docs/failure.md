@@ -1,5 +1,13 @@
 # Failure
 
+## Qualification Linux du lot partagé et blocage du service natif — 4 novembre 2026
+
+Source 0a48796d7 : 4 675/4 675 Desktop, 1 210 Core, 42 Plugins, 14 POSIX et cinq contrôles Debian passent, aucun ignoré. Les 4 652 identités Desktop du parent restent présentes ; les échecs historiques restent conservés dans leurs propres reçus. Paquet exact reproductible, ABI et démarrage/install isolés passent ; huit parcours X11/Openbox contre ses vrais assemblages passent aussi. L'archive Windows autonome est construite et vérifiée seulement statiquement. Les nouveaux contrats Windows/Mac, leurs suites métier complètes et les autres écarts natifs restent ouverts.
+
+Le premier driver Windows finit à1 après publication et contrôles statiques réussis : sa garde de nettoyage n'attendait pas le changement de range de version du projet ni le cache Python créé par son import. Ces seuls fichiers générés sont comparés puis restaurés, preuves conservées, sans reconstruire l'archive. Le premier pilote X11 compile mais échoue avant toute fenêtre car ses dépendances ne sont pas résolues. Le même binaire utilise ensuite explicitement les deps/runtimeconfig du paquet ; les huit scénarios initiaux passent sans retirer d'assertion. Reçus : windows-delivery-0a48796d7/publish-lockfile-review-corrected.json et native-modal-package/attempt-01-review.json.
+
+GitHub refuse encore les nouveaux runs HTTP422 malgré enabled=true ; les derniers jobs annulés portent repository invocation blocked. La cause compte/quota/policy précise n'est pas fournie par ces annotations. Aucun paramètre de service modifié, aucun résultat natif récent inventé. Preuves sous artifacts/cross-platform/20261104/shell-discovery ; ADR0168/0169.
+
 ## Modale minimisée laissant son propriétaire désactivé
 
 Le correctif préexistant est intégré à la branche candidate et observé globalement aux trois points d'entrée. La garde attend le vrai Owner, protège la chaîne visible et se détache sur Hide/Closed ; onze contrats passent, sans modifier les fichiers préexistants du checkout principal. Les résultats headless ne valent pas un audit des gestionnaires de fenêtres Windows/Mac. ADR0169.
