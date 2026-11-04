@@ -57,12 +57,20 @@ public sealed class PosixTerminalTests
         await File.WriteAllTextAsync(file, "one\nselected λ\nthree\n");
         await using Session session = new(repository, ["terminal-controller", repository, "git", "-c", "color.ui=false", "add", "--patch", "--", "file.txt"]);
         await session.UntilAsync("Stage this hunk"); await session.Input.WriteAsync("y\n"u8.ToArray());
+        await session.UntilAsync("controller-resume>");
+        const string resumed = "ordinary input after Git ' λ";
+        await session.Input.WriteAsync(Encoding.UTF8.GetBytes(resumed + "\n"));
         Assert.That(await session.CompleteAsync(), Is.EqualTo(0));
         Assert.That(session.Output, Does.Contain("controller-result=0"));
         string restore = session.Output.Split('\n').Select(line => line.TrimEnd('\r')).Single(line => line.StartsWith("terminal-restore:", StringComparison.Ordinal));
         using JsonDocument settings = JsonDocument.Parse(restore["terminal-restore:".Length..]);
+        Assert.That(settings.RootElement.GetProperty("line").GetString(), Is.EqualTo(resumed));
+        // Darwin sets PENDIN when returning to canonical mode; the next actual
+        // read reprocesses pending input and clears that kernel state. Compare
+        // every saved attribute after that read, and retain the immediate
+        // returned snapshot in the record for diagnostics.
         Assert.That(settings.RootElement.GetProperty("after").GetString(), Is.EqualTo(settings.RootElement.GetProperty("before").GetString()),
-            "The actual inherited terminal attributes must be restored before returning from the public API.");
+            "The caller's terminal must accept ordinary input with every saved attribute restored.");
         Assert.That((await Run("show", ":file.txt")).StandardOutput, Is.EqualTo("one\nselected λ\nthree\n"));
     }
 

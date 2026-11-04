@@ -29,8 +29,12 @@ internal static class NativeProcessProbe
             if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) { return 2; }
             string before = await TerminalSettingsAsync();
             GitExtensions.Linux.GitResult result = await GitExtensions.Linux.GitInteractiveTerminalProcess.RunAsync(args[1], args[2], args[3..]);
+            string returned = await TerminalSettingsAsync();
+            await Console.OpenStandardOutput().WriteAsync("\ncontroller-resume>"u8.ToArray());
+            using StreamReader resumed = new(Console.OpenStandardInput(), Encoding.UTF8, false);
+            string? line = await resumed.ReadLineAsync();
             string after = await TerminalSettingsAsync();
-            await Console.OpenStandardOutput().WriteAsync(Encoding.UTF8.GetBytes("\nterminal-restore:" + JsonSerializer.Serialize(new { before, after }) + "\n"));
+            await Console.OpenStandardOutput().WriteAsync(Encoding.UTF8.GetBytes("\nterminal-restore:" + JsonSerializer.Serialize(new { before, returned, after, line }) + "\n"));
             await Console.OpenStandardOutput().WriteAsync(Encoding.UTF8.GetBytes("controller-result=" + result.ExitCode + "\n"));
             return result.ExitCode;
         }

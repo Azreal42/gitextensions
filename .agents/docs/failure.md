@@ -1,5 +1,9 @@
 # Failure
 
+## Oracle de restauration du terminal Darwin — 4 novembre 2026
+
+Le nouveau PTY passe 10/11 contrats sur Mac Intel ; `stty -g` immédiatement après restauration contient le drapeau noyau transitoire PENDIN. Le noyau Apple le pose au retour à ICANON et le retire lors du traitement de l’entrée suivante. Le banc reprend désormais une vraie saisie UTF-8 après retour de l’API, en vérifie le contenu, puis compare tous les attributs sans retirer de bit ; le snapshot immédiat reste enregistré. Dix contrats Linux passent ; le nouveau passage Mac reste requis. [ADR0164](adr/platform/0164-native-posix-terminal.md).
+
 ## Suites complètes après supervision POSIX — 4 novembre 2026
 
 Le Linux `44ccea0c4` atteint la limite de 90 minutes : Core/Plugins passent, Desktop reste incomplet avec douze échecs conservés. Douze reprises inchangées passent localement, puis le [Linux complet `ed1161b8c`](https://github.com/Azreal42/gitextensions/actions/runs/41732665464) passe les 4 625 Desktop, Core et Plugins, et installe/démarre son paquet reproductible. Cela qualifie ce nouveau passage ; le run annulé reste un échec. La correction des attentes est décrite dans [ADR0163](adr/platform/0163-process-exit-notifications.md). Le [natif final `36c8f7761`](https://github.com/Azreal42/gitextensions/actions/runs/41734483458) passe les 42 Plugins Windows et Mac, sans affaiblir la preuve PID/données du test Trace2.
