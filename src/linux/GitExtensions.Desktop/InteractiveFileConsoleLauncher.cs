@@ -28,7 +28,7 @@ public static class InteractiveFileConsoleLauncher
         IReadOnlyList<string> arguments, CancellationToken cancellationToken, Func<string, IReadOnlyList<string>, Process>? startTerminal, string? helperExecutable = null,
         GitExecutionEnvironment? executionEnvironment = null, GitCommandLogProcessContext? journalContext = null)
     {
-        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
         { throw new PlatformNotSupportedException("Interactive file actions require a supported native terminal."); }
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(owner);
@@ -41,6 +41,9 @@ public static class InteractiveFileConsoleLauncher
         owner.Closing += Closing;
         try
         {
+            if (OperatingSystem.IsWindows())
+            { return await WindowsInteractiveFileConsoleLauncher.RunCoreAsync(repositoryPath, gitExecutable, arguments,
+                lifetime.Token, helperExecutable, executionEnvironment, journalContext); }
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             { return await RunCoreAsync(repositoryPath, gitExecutable, arguments, lifetime.Token, startTerminal, helperExecutable, executionEnvironment, journalContext); }
             throw new PlatformNotSupportedException("Interactive file actions require a supported native terminal.");

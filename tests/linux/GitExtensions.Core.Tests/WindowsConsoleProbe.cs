@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.Json;
+using System.Text;
 using GitExtensions.Linux;
 using Microsoft.Win32.SafeHandles;
 
@@ -12,6 +13,7 @@ internal static class WindowsConsoleProbe
     internal static async Task<int> RunAsync(string[] args)
     {
         string root = args[1];
+        if (args[0] == "windows-console-observer") { return await ObserveAsync(args); }
         if (args[0] == "windows-console-child")
         {
             uint[] modes = Modes();
@@ -70,8 +72,9 @@ internal static class WindowsConsoleProbe
         return modes;
     }
 
-    private static void SendInput(string value)
+    private static void SendInput(string value, IntPtr? input = null)
     {
+        if (value.Length == 0) { return; }
         if (Marshal.SizeOf<InputRecord>() != 20) { throw new InvalidOperationException("The native console input record ABI differs."); }
         List<InputRecord> records = [];
         foreach (char character in value)
@@ -79,8 +82,40 @@ internal static class WindowsConsoleProbe
             KeyEvent key = new() { Down = 1, Repeat = 1, VirtualKey = character == '\r' ? (ushort)13 : (ushort)0, Character = character };
             records.Add(new() { Type = 1, Key = key }); key.Down = 0; records.Add(new() { Type = 1, Key = key });
         }
-        if (!WriteConsoleInput(GetStdHandle(-10), records.ToArray(), (uint)records.Count, out uint count) || count != records.Count)
+        if (!WriteConsoleInput(input ?? GetStdHandle(-10), records.ToArray(), (uint)records.Count, out uint count) || count != records.Count)
         { throw Error(); }
+    }
+
+    private static async Task<int> ObserveAsync(string[] args)
+    {
+        if (args.Length != 6) { return 2; }
+        string result = Path.Combine(args[1], "observer-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            if (!AttachConsole(uint.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture))) { throw Error(); }
+            try
+            {
+                using SafeFileHandle output = PrivateConsole.OpenConsole("CONOUT$"), input = PrivateConsole.OpenConsole("CONIN$");
+                using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(20));
+                while (true)
+                {
+                    if (!GetConsoleScreenBufferInfo(output, out ScreenInfo info)) { throw Error(); }
+                    int rows = info.Window.Bottom - info.Window.Top + 1;
+                    uint length = checked((uint)Math.Min(32_000, (long)info.Size.X * rows));
+                    StringBuilder text = new(checked((int)length));
+                    if (!ReadConsoleOutputCharacter(output, text, length, new() { Y = info.Window.Top }, out _)) { throw Error(); }
+                    if (text.ToString().Contains(args[3], StringComparison.Ordinal)) { break; }
+                    await Task.Delay(10, timeout.Token);
+                }
+                await PublishAsync(result, new { observed = args[3], parent = args[2], action = args[5] });
+                if (args[5] == "close")
+                { if (!PostMessage(GetConsoleWindow(), 0x0010, IntPtr.Zero, IntPtr.Zero)) { throw Error(); } }
+                else { SendInput(args[4], input.DangerousGetHandle()); }
+                return 0;
+            }
+            finally { _ = FreeConsole(); }
+        }
+        catch (Exception error) { await PublishAsync(result + ".error", new { error = error.ToString() }); return 1; }
     }
 
     private static async Task PublishAsync<T>(string path, T value)
@@ -112,7 +147,7 @@ internal static class WindowsConsoleProbe
             for (int i = 0; i < _original.Length; i++) { _ = SetStdHandle(-10 - i, _original[i]); }
             _input?.Dispose(); _output?.Dispose(); if (_allocated) { _ = FreeConsole(); }
         }
-        private static SafeFileHandle OpenConsole(string name)
+        internal static SafeFileHandle OpenConsole(string name)
         {
             SafeFileHandle result = CreateFile(name, 0xC0000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero);
             if (!result.IsInvalid) { return result; }
@@ -124,6 +159,10 @@ internal static class WindowsConsoleProbe
     private struct InputRecord { [FieldOffset(0)] internal ushort Type; [FieldOffset(4)] internal KeyEvent Key; }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct KeyEvent { internal int Down; internal ushort Repeat, VirtualKey, Scan; internal char Character; internal uint Control; }
+    [StructLayout(LayoutKind.Sequential)] private struct Coord { internal short X, Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct Rectangle { internal short Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] private struct ScreenInfo
+    { internal Coord Size, Cursor; internal ushort Attributes; internal Rectangle Window; internal Coord Maximum; }
     private static Win32Exception Error() => new(Marshal.GetLastPInvokeError());
     [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr GetStdHandle(int identifier);
     [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetStdHandle(int identifier, IntPtr handle);
@@ -140,4 +179,12 @@ internal static class WindowsConsoleProbe
     private static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint mode, uint flags, IntPtr template);
     [DllImport("kernel32.dll", EntryPoint = "WriteConsoleInputW", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool WriteConsoleInput(IntPtr handle, [In] InputRecord[] records, uint count, out uint written);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool AttachConsole(uint processId);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetConsoleScreenBufferInfo(SafeFileHandle handle, out ScreenInfo info);
+    [DllImport("kernel32.dll", EntryPoint = "ReadConsoleOutputCharacterW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ReadConsoleOutputCharacter(SafeFileHandle handle, StringBuilder text, uint count, Coord position, out uint read);
+    [DllImport("user32.dll", EntryPoint = "PostMessageW", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
 }

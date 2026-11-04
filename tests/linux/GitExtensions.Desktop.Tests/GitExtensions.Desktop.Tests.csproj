@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup Condition="!$([MSBuild]::IsOSPlatform('Windows')) and '$(CompileWindowsConsoleTests)' != 'true'">
+    <Compile Remove="WindowsInteractiveConsoleTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../src/linux/GitExtensions.Desktop/GitExtensions.Desktop.csproj" />
     <ProjectReference Include="../../../src/linux/GitExtensions.Askpass.Host/GitExtensions.Askpass.Host.csproj" />

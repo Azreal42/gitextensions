@@ -1,5 +1,9 @@
 # Failure
 
+## Raccord console Windows compilé hors hôte — 4 novembre 2026
+
+Le source Windows/POSIX combiné compile avec les quatre contrats Desktop Windows explicitement inclus, zéro avertissement/erreur. Les 14 POSIX, 192 Desktop sélectionnés, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux. Cela ne constitue aucune exécution Windows des trois contrats Core ou quatre Desktop : ils restent à qualifier nativement. Le terminal Tools Ctrl+G et ses choix restent Linux et sont identifiés comme écart produit ; ils ne sont pas masqués par le succès du helper. [ADR0166](adr/platform/0166-windows-interactive-console.md).
+
 ## Raccord Desktop POSIX — 4 novembre 2026
 
 Le premier lancement Native.Tests sans build explicite ne découvre aucun cas ; le projet est compilé séparément de la solution. Après compilation, les 14 contrats passent. Desktop donne 188/189 : le faux pair Python au mauvais nonce envoyait directement du JSON avant le nouvel en-tête pidfd. Il transmet désormais sa vraie référence noyau ; les assertions de nonce et de confidentialité restent inchangées. Puis 189/189 passent, et 192/192 avec les trois parcours du vrai helper. Core 1 210/1 210, Plugins 42/42 et cinq contrôles Debian passent également. [ADR0165](adr/platform/0165-macos-interactive-console.md).

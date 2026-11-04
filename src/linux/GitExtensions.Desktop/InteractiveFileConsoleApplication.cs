@@ -10,6 +10,7 @@ internal static class InteractiveFileConsoleApplication
 {
     internal static int Run(string[] args)
     {
+        if (OperatingSystem.IsWindows()) { return WindowsInteractiveFileConsoleApplication.Run(args); }
         if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
         { Console.Error.WriteLine("Interactive Git requires a supported native terminal."); return 2; }
         try { return RunAsync(args).GetAwaiter().GetResult(); }
