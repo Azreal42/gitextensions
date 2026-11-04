@@ -6,6 +6,7 @@ internal static class ToolConfigurationScenarios
     public static IReadOnlyList<(string Name, Func<Task> Run)> All { get; } =
     [
         ("tool configuration snapshots retain actual scopes origins valueless entries and literal subsection case", SnapshotAsync),
+        ("tool configuration retains unknown vendor scopes without inventing writable origins", UnknownScopeAsync),
         ("tool configuration saves only final literal names and exact path command values", LiteralAsync),
         ("tool configuration keeps identical duplicate noops and refuses changed duplicates before any write", DuplicatesAsync),
         ("tool configuration refuses included-only unset and exposes real override origins", IncludesAsync),
@@ -44,6 +45,48 @@ internal static class ToolConfigurationScenarios
         GitToolConfigurationSaveResult cleared = await f.Repository.SaveToolConfigurationAsync(snapshot, [Local(new GitToolRoleEdit(GitToolRole.Diff, "Case.With.dot", true, Command: new(null)))]);
         Check(cleared.Success && cleared.After!.GetScope(GitToolConfigurationView.Local).GetTool(GitToolRole.Diff, "Case.With.dot").Command.Occurrences.Count == 0,
             "Clearing an existing valueless variable is a real unset, not a missing-key noop.");
+    }
+
+    private static async Task UnknownScopeAsync()
+    {
+        using Fixture f = await Fixture.Create();
+        string defaults = Path.Combine(f.Root, "vendor defaults.config");
+        await File.WriteAllTextAsync(defaults, "[credential]\nhelper = osxkeychain\n[diff]\nguitool = vendor-tool\n");
+        byte[] original = await File.ReadAllBytesAsync(defaults);
+        await f.Git("config", "--file", f.Global, "user.name", "Global name");
+        await f.Git("config", "--file", f.Global, "user.email", "global@example.invalid");
+        await f.Git("config", "diff.guitool", "local-tool");
+        GitRepository repository = await WithScope("unknown");
+        GitToolConfigurationSnapshot snapshot = await repository.GetToolConfigurationAsync();
+        GitToolConfigurationScopeSnapshot effective = snapshot.GetScope(GitToolConfigurationView.Effective);
+        Check(snapshot.Scopes.All(scope => scope.IsAvailable), "Apple Git's unknown vendor scope must not make the configuration unavailable.");
+        GitToolConfigurationOccurrence helper = effective.GetSetting(GitConfigurationField.CredentialHelper).Occurrences.Single();
+        byte[] resolvedBytes = await File.ReadAllBytesAsync(helper.ResolvedOriginPath ?? throw new InvalidOperationException("Missing vendor origin."));
+        Check(helper.Value == "osxkeychain" && helper.Scope == "unknown" && helper.Origin == "file:" + defaults
+            && original.SequenceEqual(resolvedBytes) && !helper.IsNativeWriteTarget
+            && !effective.CanWrite && !effective.GetSetting(GitConfigurationField.CredentialHelper).CanChange,
+            "Vendor defaults retain their literal scope, value and physical origin in the read-only effective view.");
+        Check(effective.SelectedDiffGui.Occurrences.Select(entry => entry.Value).SequenceEqual(["vendor-tool", "local-tool"])
+            && snapshot.Scopes.Where(scope => scope.View != GitToolConfigurationView.Effective)
+                .All(scope => scope.GetSetting(GitConfigurationField.CredentialHelper).Occurrences.Count == 0),
+            "Unknown defaults keep native precedence and are never reclassified as a writable or system scope.");
+        GitToolConfigurationSaveResult saved = await repository.SaveToolConfigurationAsync(snapshot,
+            [new(GitConfigScope.Global, [], [new(GitConfigurationField.Editor, "literal editor")])]);
+        byte[] after = await File.ReadAllBytesAsync(defaults);
+        Check(saved.Success && saved.After!.GetScope(GitToolConfigurationView.Global).GetSetting(GitConfigurationField.Editor).Occurrences.Single().Value == "literal editor"
+            && original.SequenceEqual(after), "Known global settings remain writable without changing vendor defaults.");
+        GitRepository malformed = await WithScope("invalid-scope");
+        GitToolConfigurationSnapshot unavailable = await malformed.GetToolConfigurationAsync();
+        Check(unavailable.Scopes.All(scope => !scope.IsAvailable && !scope.CanWrite), "Unrecognized framing still fails closed rather than inferring writable configuration.");
+        return;
+
+        Task<GitRepository> WithScope(string scope)
+        {
+            string records = scope + "\0file:" + defaults + "\0credential.helper\nosxkeychain\0"
+                + scope + "\0file:" + defaults + "\0diff.guitool\nvendor-tool\0";
+            return f.Wrapped("if '--show-scope' in a:\n sys.stdout.buffer.write(" + JsonSerializer.Serialize(records) + ".encode('utf-8'));sys.stdout.buffer.flush()\n",
+                Path.Combine(f.Root, scope + "-argv.jsonl"));
+        }
     }
 
     private static async Task LiteralAsync()

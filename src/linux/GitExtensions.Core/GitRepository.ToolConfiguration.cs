@@ -270,7 +270,8 @@ public sealed partial class GitRepository
         for (int index = 0; index < fields.Length - 1; index += 3)
         {
             string scope = fields[index], origin = fields[index + 1], pair = fields[index + 2];
-            if (scope is not ("system" or "global" or "local" or "worktree" or "command")) { throw new FormatException("Git returned an unknown configuration scope."); }
+            // Apple Git reports its bundled defaults as "unknown"; retain their actual scope without inferring a write target.
+            if (scope is not ("system" or "global" or "local" or "worktree" or "command" or "unknown")) { throw new FormatException("Git returned an unknown configuration scope."); }
             int newline = pair.IndexOf('\n');
             string key = newline < 0 ? pair : pair[..newline];
             if (key.Length == 0) { throw new FormatException("Git returned an empty configuration key."); }
