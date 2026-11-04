@@ -1,5 +1,11 @@
 # Failure
 
+## Raccord Desktop POSIX — 4 novembre 2026
+
+Le premier lancement Native.Tests sans build explicite ne découvre aucun cas ; le projet est compilé séparément de la solution. Après compilation, les 14 contrats passent. Desktop donne 188/189 : le faux pair Python au mauvais nonce envoyait directement du JSON avant le nouvel en-tête pidfd. Il transmet désormais sa vraie référence noyau ; les assertions de nonce et de confidentialité restent inchangées. Puis 189/189 passent, et 192/192 avec les trois parcours du vrai helper. Core 1 210/1 210, Plugins 42/42 et cinq contrôles Debian passent également. [ADR0165](adr/platform/0165-macos-interactive-console.md).
+
+Les derniers workflows candidats 4a/317 sont annulés ; le troisième push ne crée aucun run. Le dispatch explicite échoue HTTP422 « Actions has been disabled for this repository », alors que les permissions affichent enabled=true. Ce refus ne qualifie aucun parcours Mac et ne remplace pas la suite Desktop Linux complète. La branche migration/linux demeure sur le commit 36c8f7761 déjà qualifié.
+
 ## Mesure stty et mode Console .NET — 4 novembre 2026
 
 La reprise de saisie seule ne corrige pas le second Mac Intel (10/11). Le runtime peut configurer le terminal avant un enfant qui en hérite, puis revenir à son mode applicatif : le banc doit mesurer sans cette intervention. stty interroge désormais le périphérique ttyname_r avec ses trois flux redirigés ; read natif vérifie la saisie reprise. Tous les attributs et les snapshots immédiats sont conservés, sans masque. Dix contrats Linux passent ; troisième passage Mac requis. [ADR0164](adr/platform/0164-native-posix-terminal.md).
