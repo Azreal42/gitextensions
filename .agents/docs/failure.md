@@ -1,5 +1,9 @@
 # Failure
 
+## Mesure stty et mode Console .NET — 4 novembre 2026
+
+La reprise de saisie seule ne corrige pas le second Mac Intel (10/11). Le runtime peut configurer le terminal avant un enfant qui en hérite, puis revenir à son mode applicatif : le banc doit mesurer sans cette intervention. stty interroge désormais le périphérique ttyname_r avec ses trois flux redirigés ; read natif vérifie la saisie reprise. Tous les attributs et les snapshots immédiats sont conservés, sans masque. Dix contrats Linux passent ; troisième passage Mac requis. [ADR0164](adr/platform/0164-native-posix-terminal.md).
+
 ## Oracle de restauration du terminal Darwin — 4 novembre 2026
 
 Le nouveau PTY passe 10/11 contrats sur Mac Intel ; `stty -g` immédiatement après restauration contient le drapeau noyau transitoire PENDIN. Le noyau Apple le pose au retour à ICANON et le retire lors du traitement de l’entrée suivante. Le banc reprend désormais une vraie saisie UTF-8 après retour de l’API, en vérifie le contenu, puis compare tous les attributs sans retirer de bit ; le snapshot immédiat reste enregistré. Dix contrats Linux passent ; le nouveau passage Mac reste requis. [ADR0164](adr/platform/0164-native-posix-terminal.md).

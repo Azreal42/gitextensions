@@ -63,6 +63,7 @@ public sealed class PosixTerminalTests
         Assert.That(await session.CompleteAsync(), Is.EqualTo(0));
         Assert.That(session.Output, Does.Contain("controller-result=0"));
         string restore = session.Output.Split('\n').Select(line => line.TrimEnd('\r')).Single(line => line.StartsWith("terminal-restore:", StringComparison.Ordinal));
+        TestContext.WriteLine(restore);
         using JsonDocument settings = JsonDocument.Parse(restore["terminal-restore:".Length..]);
         Assert.That(settings.RootElement.GetProperty("line").GetString(), Is.EqualTo(resumed));
         // Darwin sets PENDIN when returning to canonical mode; the next actual

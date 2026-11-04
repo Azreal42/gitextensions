@@ -31,8 +31,7 @@ internal static class NativeProcessProbe
             GitExtensions.Linux.GitResult result = await GitExtensions.Linux.GitInteractiveTerminalProcess.RunAsync(args[1], args[2], args[3..]);
             string returned = await TerminalSettingsAsync();
             await Console.OpenStandardOutput().WriteAsync("\ncontroller-resume>"u8.ToArray());
-            using StreamReader resumed = new(Console.OpenStandardInput(), Encoding.UTF8, false);
-            string? line = await resumed.ReadLineAsync();
+            string? line = await ReadTerminalLineAsync();
             string after = await TerminalSettingsAsync();
             await Console.OpenStandardOutput().WriteAsync(Encoding.UTF8.GetBytes("\nterminal-restore:" + JsonSerializer.Serialize(new { before, returned, after, line }) + "\n"));
             await Console.OpenStandardOutput().WriteAsync(Encoding.UTF8.GetBytes("controller-result=" + result.ExitCode + "\n"));
@@ -108,14 +107,46 @@ internal static class NativeProcessProbe
     [DllImport("libc", EntryPoint = "isatty")] private static extern int IsTerminal(int descriptor);
     [DllImport("libc", EntryPoint = "getsid")] private static extern int GetSession(int pid);
     [DllImport("libc", EntryPoint = "getpgrp")] private static extern int GetGroup();
+    [DllImport("libc", EntryPoint = "ttyname_r")]
+    private static extern int TerminalName(int descriptor, [Out] byte[] buffer, nuint count);
+    [DllImport("libc", EntryPoint = "read", SetLastError = true)]
+    private static extern long ReadInput(int descriptor, [Out] byte[] buffer, nuint count);
+
+    private static Task<string?> ReadTerminalLineAsync() => Task.Run(() =>
+    {
+        // The caller's real canonical read must not ask Console to enter its
+        // own application mode while the oracle measures the restored state.
+        List<byte> line = []; byte[] value = new byte[1];
+        while (true)
+        {
+            long count = ReadInput(0, value, 1);
+            if (count < 0 && Marshal.GetLastPInvokeError() == 4) { continue; }
+            if (count < 0) { throw new IOException("The resumed terminal input could not be read."); }
+            if (count == 0) { return line.Count == 0 ? null : Encoding.UTF8.GetString(line.ToArray()); }
+            if (value[0] == (byte)'\n') { return Encoding.UTF8.GetString(line.ToArray()); }
+            line.Add(value[0]);
+        }
+    });
 
     private static async Task<string> TerminalSettingsAsync()
     {
-        ProcessStartInfo start = new("stty") { UseShellExecute = false, RedirectStandardOutput = true };
+        byte[] name = new byte[4096];
+        int error = TerminalName(0, name, (nuint)name.Length);
+        if (error != 0) { throw new IOException("The independent oracle cannot identify its terminal: " + error); }
+        string terminal = Encoding.UTF8.GetString(name, 0, Array.IndexOf(name, (byte)0));
+        // Process configures the console when any standard stream is inherited.
+        // Redirect all three and query the explicit device, so measuring the
+        // attributes does not itself change them before stty observes them.
+        ProcessStartInfo start = new("stty")
+        { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
         start.ArgumentList.Add("-g");
+        start.ArgumentList.Add(OperatingSystem.IsMacOS() ? "-f" : "-F"); start.ArgumentList.Add(terminal);
         using Process process = Process.Start(start)!;
-        string result = await process.StandardOutput.ReadToEndAsync(); await process.WaitForExitAsync();
-        if (process.ExitCode != 0) { throw new IOException("The independent terminal-state oracle failed."); }
+        process.StandardInput.Close();
+        Task<string> output = process.StandardOutput.ReadToEndAsync(), errors = process.StandardError.ReadToEndAsync();
+        await Task.WhenAll(output, errors, process.WaitForExitAsync()); string result = output.Result;
+        if (process.ExitCode != 0 || string.IsNullOrWhiteSpace(result))
+        { throw new IOException("The independent terminal-state oracle failed: " + errors.Result); }
         return result.Trim();
     }
 
