@@ -1,5 +1,7 @@
 # TODO
 
+- [x] [Locale du shell utilisateur](adr/platform/0170-user-terminal-locale.md) : perte UTF-8 reproduite sur le vrai helper ; locale du terminal reprise seulement si la capture n'en contient aucune, contexte capturé et secrets préservés. 252 Desktop ciblés (+16, anciens236 conservés), 14 POSIX, deux régressions, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux. Complet, paquet exact et exécution Mac du nouveau lot restent ouverts.
+
 - [x] [Garde des fenêtres modales](adr/platform/ui/0169-modal-window-visibility.md) intégrée aux trois points d'entrée ; onze contrats ciblés passent avec la chaîne de propriétaires, Hide/réouverture et minimisation globale. Source 0a48796d7 : 4 675 Desktop complets et huit parcours natifs X11/Openbox contre le paquet exact passent. Audit natif Windows/Mac et étendu reste ouvert.
 
 - [x] [Shell Windows partagé](adr/platform/0168-shared-windows-script-shells.md) : outils du Git capturé pour les alias bash/sh, chemins explicites conservés, pas de repli WSL. Lot combiné : 14 POSIX, 236 Desktop ciblés, deux régressions de statut, 1 210 Core, 42 Plugins et cinq contrôles Debian passent sur Linux ; nouveaux contrats Windows seulement compilés. Source 0a48796d7 : 4 675 Desktop complets et .deb exact reproductible/démarré en isolation passent. Archive Windows vérifiée statiquement ; exécution Windows/Mac encore requise.

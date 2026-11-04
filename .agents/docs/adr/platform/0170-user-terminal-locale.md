@@ -1,0 +1,13 @@
+# ADR 0170 · Locale du shell utilisateur ouvert par Terminal
+
+Statut : défaut reproduit sur le vrai helper puis corrigé et validé au périmètre Linux ciblé. Exécution native Mac encore requise.
+
+Terminal configure des variables de locale selon son encodage ([Apple](https://support.apple.com/en-mide/guide/terminal/trmladvn/mac)). Une capture GUI sans locale passait uniquement TERM au shell : sur le produit inchangé, le terminal fournit C.UTF-8, mais le vrai shell reçoit LANG vide et locale charmap renvoie ANSI_X3.4-1968. Le test rouge conserve son assertion et son fichier source dans le passage vert.
+
+ToolsShellApplication emploie WithUserTerminalContext avant le même protocole nonce/ACK. TERM garde sa règle existante. Si la capture ne contient aucune locale explicite, le shell utilisateur peut reprendre LANG et les catégories POSIX du terminal : LC_ALL, LC_COLLATE, LC_CTYPE, LC_MESSAGES, LC_MONETARY, LC_NUMERIC, LC_TIME. Aucun PATH, HOME, pager ou secret du broker n'est importé. Une locale capturée, même vide, partielle, LANGUAGE ou future LC_*, conserve tout son sens : aucune autre catégorie n'est ajoutée pour la supplanter.
+
+Le helper des commandes Git possédées continue d'utiliser WithTerminalType ; ses variables et son protocole ne changent pas. La durée de vie du shell utilisateur, son PID, son répertoire et le passage par exec restent ceux d'ADR0167.
+
+Preuves Linux : solution et contrats Windows explicitement inclus compilés sans avertissement/erreur ; 14 POSIX, 252 Desktop ciblés, deux régressions de statut, 1 210 Core, 42 Plugins et cinq contrôles Debian passent, aucun ignoré. Les 236 identités Desktop précédentes sont conservées, avec quinze contrats portables de capture et un nouveau vrai helper. Le même test rouge devient vert : LANG et UTF-8 conservés, pager capturé et secret étranger absent. Preuves : artifacts/cross-platform/20261104/terminal-locale/red-source.json, red-helper-01 et validation-review.json.
+
+La suite Desktop complète et le paquet exact du nouveau source restent à qualifier. Le parent avait 4 675 Desktop complets et huit parcours X11 du paquet ; ces résultats ne sont pas transférés au présent code. GitHub refuse les nouveaux runs natifs HTTP422 malgré enabled=true, avec repository invocation blocked dans les annotations. Aucune qualification Mac/Windows récente ou clôture globale déduite du passage Linux.

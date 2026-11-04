@@ -29,7 +29,7 @@ internal static class ToolsShellApplication
         { throw new InvalidDataException("The terminal startup request must be a private regular file."); }
         ToolsShellRequest request = JsonSerializer.Deserialize<ToolsShellRequest>(await File.ReadAllTextAsync(path))
             ?? throw new InvalidDataException("The terminal startup request is invalid.");
-        GitExecutionEnvironment environment = InteractiveFileConsoleEnvironment.WithTerminalType(request.Environment.Restore(), Environment.GetEnvironmentVariable("TERM"));
+        GitExecutionEnvironment environment = InteractiveFileConsoleEnvironment.WithUserTerminalContext(request.Environment.Restore(), Environment.GetEnvironmentVariable);
         using (CancellationTokenSource opening = new(TimeSpan.FromSeconds(30)))
         using (Socket socket = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
         {

@@ -11,6 +11,33 @@ namespace GitExtensions.Desktop.Tests;
 [SupportedOSPlatform("linux"), SupportedOSPlatform("macos")]
 public sealed class ToolsShellIntegrationTests
 {
+    [Test]
+    public async Task AUserShellWithoutCapturedLocaleKeepsTheTerminalsUtf8Encoding()
+    {
+        using Fixture fixture = new(); using PosixTestTerminal terminal = new() { ExitCodePath = fixture.ExitFile };
+        Dictionary<string, string?> variables = new(fixture.Environment.EnvironmentVariables, StringComparer.Ordinal);
+        foreach (string name in variables.Keys.Where(IsLocaleVariable).ToArray()) { variables.Remove(name); }
+        GitExecutionEnvironment environment = GitExecutionEnvironment.Capture(fixture.Environment.Options, variables);
+        string locale = OperatingSystem.IsMacOS() ? "en_US.UTF-8" : "C.UTF-8";
+        string script = "printf '%s\\0' \"$LANG\" \"$(/usr/bin/locale charmap)\" \"$GIT_PAGER\" \"${UNRELATED_BROKER_SECRET-unset}\" > \"$1\"; exit 0";
+        await MacToolsShellLauncher.RunCoreAsync(fixture.Repository, environment,
+            ["-c", script, "shell", fixture.Record], CancellationToken.None, start =>
+            {
+                foreach (string name in start.Environment.Keys.Where(IsLocaleVariable).ToArray()) { start.Environment.Remove(name); }
+                start.Environment["LANG"] = locale;
+                start.Environment["UNRELATED_BROKER_SECRET"] = "must not leak";
+                return terminal.Launch(start);
+            }, HelperExecutable(), terminal.CreateStartInfo).WaitAsync(TimeSpan.FromSeconds(20));
+        await terminal.StoppedAsync();
+        Assert.That(await File.ReadAllTextAsync(fixture.ExitFile), Is.EqualTo("0"));
+        Assert.That((await File.ReadAllTextAsync(fixture.Record)).Split('\0'),
+            Is.EqualTo(new[] { locale, "UTF-8", "user pager λ", "unset", "" }));
+        Assert.That(Directory.Exists(terminal.RequestDirectory), Is.False);
+    }
+
+    private static bool IsLocaleVariable(string name)
+        => name is "LANG" or "LANGUAGE" || name.StartsWith("LC_", StringComparison.Ordinal);
+
     [TestCase(false)]
     [TestCase(true)]
     public async Task AcknowledgedShellKeepsItsCapturedEnvironmentInputAndExitAfterTheCallerLeaves(bool inheritTerminalType)

@@ -39,6 +39,25 @@ internal sealed class InteractiveFileConsoleEnvironment
         Dictionary<string, string?> variables = new(environment.EnvironmentVariables, StringComparer.Ordinal) { ["TERM"] = terminalType };
         return GitExecutionEnvironment.Capture(environment.Options, variables);
     }
+
+    internal static GitExecutionEnvironment WithUserTerminalContext(GitExecutionEnvironment environment, Func<string, string?> readTerminalVariable)
+    {
+        ArgumentNullException.ThrowIfNull(environment); ArgumentNullException.ThrowIfNull(readTerminalVariable);
+        GitExecutionEnvironment context = WithTerminalType(environment, readTerminalVariable("TERM"));
+        // A locale is one captured choice: importing other categories could
+        // override its meaning. GUI launches without a locale use the encoding
+        // selected by the user's terminal, without importing its PATH or tools.
+        if (environment.EnvironmentVariables.Keys.Any(name => name is "LANG" or "LANGUAGE" || name.StartsWith("LC_", StringComparison.Ordinal)))
+        { return context; }
+        Dictionary<string, string?>? variables = null;
+        foreach (string name in new[] { "LANG", "LC_ALL", "LC_COLLATE", "LC_CTYPE", "LC_MESSAGES", "LC_MONETARY", "LC_NUMERIC", "LC_TIME" })
+        {
+            if (readTerminalVariable(name) is not { Length: > 0 } value) { continue; }
+            variables ??= new(context.EnvironmentVariables, StringComparer.Ordinal);
+            variables[name] = value;
+        }
+        return variables is null ? context : GitExecutionEnvironment.Capture(context.Options, variables);
+    }
 }
 internal sealed record InteractiveFileConsoleHello(string Nonce);
 internal sealed record InteractiveFileConsoleResult(int ExitCode, bool Cancelled, string? Error);

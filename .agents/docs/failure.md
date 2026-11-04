@@ -1,5 +1,9 @@
 # Failure
 
+## Shell utilisateur sans locale GUI : perte d'UTF-8 — 4 novembre 2026
+
+Sur le produit parent inchangé, le vrai helper perd LANG=C.UTF-8 fourni par le terminal et locale charmap renvoie ANSI_X3.4-1968. Le test rouge est conservé byte pour byte et passe après correction de ToolsShellApplication. Le contexte utilisateur ne reprend que TERM et les catégories POSIX lorsque toute locale capturée est absente ; une locale explicite protège sa capture entière et aucun broker PATH/HOME/pager/secret ne passe. Le chemin des commandes Git possédées reste inchangé. Quinze contrats portables et le nouveau vrai helper passent avec tous les 236 anciens cas du ciblé. ADR0170, preuves dans artifacts/cross-platform/20261104/terminal-locale. Les suites et paquets complets du parent gardent leur source ; nouveaux complets et Mac encore requis.
+
 ## Qualification Linux du lot partagé et blocage du service natif — 4 novembre 2026
 
 Source 0a48796d7 : 4 675/4 675 Desktop, 1 210 Core, 42 Plugins, 14 POSIX et cinq contrôles Debian passent, aucun ignoré. Les 4 652 identités Desktop du parent restent présentes ; les échecs historiques restent conservés dans leurs propres reçus. Paquet exact reproductible, ABI et démarrage/install isolés passent ; huit parcours X11/Openbox contre ses vrais assemblages passent aussi. L'archive Windows autonome est construite et vérifiée seulement statiquement. Les nouveaux contrats Windows/Mac, leurs suites métier complètes et les autres écarts natifs restent ouverts.
