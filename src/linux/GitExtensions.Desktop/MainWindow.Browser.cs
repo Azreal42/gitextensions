@@ -132,6 +132,7 @@ public sealed partial class MainWindow
         };
         _tabs.SelectionChanged += async (_, args) =>
         {
+            if (args.Source == _tabs) { _tabs.Classes.Set("console-active", (_tabs.SelectedItem as TabItem)?.Name == "ConsoleTab"); }
             if (!_layingOutCommitInfo && args.Source == _tabs) { await EnsureConsoleAsync(); }
             if (!_layingOutCommitInfo && args.Source == _tabs && !_busy)
             {

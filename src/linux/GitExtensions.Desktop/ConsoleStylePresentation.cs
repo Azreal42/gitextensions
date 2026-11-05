@@ -32,13 +32,18 @@ internal static class ConsoleStylePresentation
 
     internal static void Bind(TextBox output, ConsoleStylePreferencesStore? preferences = null, ResolvedDesktopFont? defaultFont = null)
     {
-        ConsoleStylePreferencesStore store = preferences ?? new(); string profile = Path.GetFullPath(store.FilePath);
         ResolvedDesktopFont fallback = defaultFont ?? DesktopFonts.For(DesktopFontRole.Monospace);
         DesktopFontResolver.Apply(output, fallback);
+        Bind(output, value => Apply(output, value, fallback), preferences);
+    }
+
+    internal static void Bind(Control output, Action<ConsoleStylePreferences> apply, ConsoleStylePreferencesStore? preferences = null)
+    {
+        ConsoleStylePreferencesStore store = preferences ?? new(); string profile = Path.GetFullPath(store.FilePath);
         bool attached = false; long attachment = 0;
         void Read()
         {
-            try { Apply(output, store.Load(), fallback); }
+            try { apply(store.Load()); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException)
             { /* Settings reports corrupt/unreadable profiles. A consumer never repairs them. */ }
         }
@@ -46,8 +51,8 @@ internal static class ConsoleStylePresentation
         {
             long version = Interlocked.Read(ref attachment);
             if (!Volatile.Read(ref attached) || path != profile) { return; }
-            if (Dispatcher.UIThread.CheckAccess()) { Apply(output, value, fallback); }
-            else { Dispatcher.UIThread.Post(() => { if (Volatile.Read(ref attached) && Interlocked.Read(ref attachment) == version) { Apply(output, value, fallback); } }); }
+            if (Dispatcher.UIThread.CheckAccess()) { apply(value); }
+            else { Dispatcher.UIThread.Post(() => { if (Volatile.Read(ref attached) && Interlocked.Read(ref attachment) == version) { apply(value); } }); }
         }
         Read();
         output.AttachedToVisualTree += (_, _) =>

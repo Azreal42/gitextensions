@@ -14,6 +14,7 @@ internal sealed class EmbeddedTerminalControl : TerminalControl
 {
     private bool _suppressTextInput;
     internal event Action<string>? InputError;
+    internal event Action? MenuRequested;
 
     protected override void OnTextInput(TextInputEventArgs args)
     {
@@ -33,6 +34,12 @@ internal sealed class EmbeddedTerminalControl : TerminalControl
         _suppressTextInput = false;
         if (Model is null) { return; }
         KeyModifiers modifiers = args.KeyModifiers;
+        if (args.Key == Key.Apps || args.Key == Key.F10 && modifiers == KeyModifiers.Shift)
+        {
+            args.Handled = _suppressTextInput = true;
+            MenuRequested?.Invoke();
+            return;
+        }
         bool clipboard = OperatingSystem.IsMacOS() ? modifiers == KeyModifiers.Meta
             : modifiers == (KeyModifiers.Control | KeyModifiers.Shift);
         if (clipboard && args.Key is Key.C or Key.V || args.Key == Key.Insert && modifiers == KeyModifiers.Shift)
@@ -41,13 +48,7 @@ internal sealed class EmbeddedTerminalControl : TerminalControl
             try
             {
                 if (args.Key == Key.C) { await CopySelectionAsync(); }
-                else if (TopLevel.GetTopLevel(this)?.Clipboard is { } source)
-                {
-#pragma warning disable CS0618 // Avalonia 11 clipboard text API.
-                    string? text = await source.GetTextAsync();
-#pragma warning restore CS0618
-                    if (text is not null) { PasteText(text); }
-                }
+                else { await PasteClipboardTextAsync(); }
             }
             catch (Exception error) { InputError?.Invoke(error.Message); }
             return;
@@ -96,6 +97,15 @@ internal sealed class EmbeddedTerminalControl : TerminalControl
             Send("\u001b" + symbol); args.Handled = _suppressTextInput = true;
         }
         // Printable text, including macOS Option combinations and IME commits, arrives in TextInput.
+    }
+
+    internal async Task PasteClipboardTextAsync()
+    {
+        if (TopLevel.GetTopLevel(this)?.Clipboard is not { } source) { return; }
+#pragma warning disable CS0618 // Avalonia 11 clipboard text API.
+        string? text = await source.GetTextAsync();
+#pragma warning restore CS0618
+        if (text is not null) { PasteText(text); }
     }
 
     internal void PasteText(string text)

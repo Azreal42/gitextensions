@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -105,6 +106,48 @@ public sealed class EmbeddedTerminalTests
         opening.SetResult(new(pty));
         await ready; await pane.DisposeAsync();
         Assert.That(pty.Disposed, Is.True); Assert.That(pane.ProcessId, Is.Null);
+    }
+
+    [AvaloniaTest]
+    public async Task ContextMenuPastesSafelyAndCommandLogReturnsToTheSameSession()
+    {
+        using ReferenceFixture fixture = await ReferenceFixture.CreateAsync();
+        FakePty pty = new(); int starts = 0;
+        TextBox output = new() { Text = "command log", IsReadOnly = true, AcceptsReturn = true };
+        await using EmbeddedTerminalPane pane = new(output, () => Task.CompletedTask, text => text)
+        { StartSessionAsync = (_, _) => { starts++; return Task.FromResult(new EmbeddedTerminalSession(pty)); } };
+        Window window = new() { Content = pane, Width = 800, Height = 500 };
+        try
+        {
+            window.Show(); pane.SetRepository(fixture.Repository); await pane.EnsureStartedAsync();
+            pane.Terminal.Model!.Feed("preserved output\r\n\u001b[?2004h");
+            pane.FocusTerminal();
+            window.KeyPressQwerty(PhysicalKey.F10, RawInputModifiers.Shift);
+            window.KeyReleaseQwerty(PhysicalKey.F10, RawInputModifiers.Shift);
+            Dispatcher.UIThread.RunJobs();
+            ContextMenu menu = pane.ContextMenu!;
+            Assert.That(menu.IsOpen, Is.True);
+            Assert.That(pty.Input.Length, Is.Zero, "The menu shortcut must not reach the shell.");
+            await window.Clipboard!.SetTextAsync("first\r\nsecond");
+            MenuItem paste = menu.Items.OfType<MenuItem>().Single(item => item.Name == "PasteIntoTerminal");
+            Assert.That(paste.IsEnabled, Is.True); paste.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            await UntilAsync(() => pty.Input.Length > 0);
+            Assert.That(Encoding.UTF8.GetString(pty.Input.ToArray()), Is.EqualTo("\u001b[200~first\nsecond\u001b[201~"));
+            MenuItem log = menu.Items.OfType<MenuItem>().Single(item => item.Name == "ShowCommandOutput");
+            log.IsChecked = true; log.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); menu.Close();
+            Assert.That(output.IsVisible, Is.True);
+            menu.Open(pane); Assert.That(paste.IsEnabled, Is.False); menu.Close();
+            pane.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "ConsoleNoticeAction")
+                .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.That(output.IsVisible, Is.False); Assert.That(pane.Terminal.IsFocused, Is.True);
+            var model = pane.Terminal.Model;
+            ConsoleStyleSettingsSession settings = new();
+            settings.Save(settings.Initial with { Style = "Dark" }); Dispatcher.UIThread.RunJobs();
+            Assert.That(pane.Terminal.Model, Is.SameAs(model));
+            Assert.That(starts, Is.EqualTo(1)); Assert.That(pty.Disposed, Is.False);
+            Assert.That(model.Terminal.Buffer.GetLine(0)![0].Content, Is.EqualTo("p"));
+        }
+        finally { window.Close(); }
     }
 
     [Test, Platform("Linux,MacOsX")]
@@ -208,9 +251,19 @@ public sealed class EmbeddedTerminalTests
             Assert.That(BufferText(), Does.Contain("Control-C OK"));
             if (Environment.GetEnvironmentVariable("GITEXTENSIONS_TERMINAL_SCREENSHOT") is { Length: > 0 } screenshot)
             {
-                window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs();
-                using RenderTargetBitmap bitmap = new(new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height));
-                bitmap.Render(window); bitmap.Save(screenshot);
+                ConsoleStyleSettingsSession settings = new();
+                foreach (string style in new[] { "Light", "Dark" })
+                {
+                    settings.Save(settings.Initial with { Style = style });
+                    window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs();
+                    Assert.That(pane.ProcessId, Is.EqualTo(pid));
+                    using RenderTargetBitmap bitmap = new(new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height));
+                    bitmap.Render(window);
+                    bitmap.Save(Path.Combine(Path.GetDirectoryName(screenshot)!, Path.GetFileNameWithoutExtension(screenshot) + "-" + style.ToLowerInvariant() + ".png"));
+                    using RenderTargetBitmap detail = new(new PixelSize((int)tabs.Bounds.Width, (int)tabs.Bounds.Height));
+                    detail.Render(tabs);
+                    detail.Save(Path.Combine(Path.GetDirectoryName(screenshot)!, Path.GetFileNameWithoutExtension(screenshot) + "-" + style.ToLowerInvariant() + "-detail.png"));
+                }
             }
         }
         finally

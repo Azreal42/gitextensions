@@ -14092,4 +14092,40 @@ Détails : Est {1} attendu {2}</target>
       </trans-unit>
     </body>
   </file>
+  <file datatype="plaintext" original="EmbeddedTerminalPane" source-language="en" target-language="fr">
+    <body>
+      <trans-unit id="NewTerminalSession.Text">
+        <source>New session</source>
+        <target>Nouvelle session</target>
+      </trans-unit>
+      <trans-unit id="OpenExternalTerminal.Text">
+        <source>Open terminal</source>
+        <target>Ouvrir un terminal externe</target>
+      </trans-unit>
+      <trans-unit id="ShowCommandOutput.Text">
+        <source>Command output</source>
+        <target>Sortie des commandes</target>
+      </trans-unit>
+      <trans-unit id="BackToTerminal.Text">
+        <source>Back to terminal</source>
+        <target>Revenir au terminal</target>
+      </trans-unit>
+      <trans-unit id="NoRepository.Text">
+        <source>Open a repository to begin</source>
+        <target>Ouvrez un dépôt pour démarrer le terminal.</target>
+      </trans-unit>
+      <trans-unit id="Starting.Text">
+        <source>Starting terminal…</source>
+        <target>Démarrage du terminal…</target>
+      </trans-unit>
+      <trans-unit id="Exited.Text">
+        <source>Session ended</source>
+        <target>Session terminée</target>
+      </trans-unit>
+      <trans-unit id="Error.Text">
+        <source>Unable to start or continue the terminal</source>
+        <target>Impossible de démarrer ou de poursuivre la session du terminal</target>
+      </trans-unit>
+    </body>
+  </file>
 </xliff>
