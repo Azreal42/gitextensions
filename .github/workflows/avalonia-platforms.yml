@@ -87,7 +87,7 @@ jobs:
       - name: Exercise actual Windows console workflows
         if: runner.os == 'Windows'
         run: |
-          dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --filter "TestCategory=WindowsConsoleIntegration" --logger "console;verbosity=normal" --logger trx --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/console-integration"
+          dotnet test tests/linux/GitExtensions.Desktop.Tests --configuration Release --no-build --no-restore --filter "TestCategory=WindowsConsoleIntegration" --logger "console;verbosity=normal" --logger trx --blame-hang-timeout 3m --blame-hang-dump-type mini --results-directory "artifacts/desktop/${{ matrix.runtime }}/results/console-integration"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Exercise actual Windows script shells without usr/bin on PATH

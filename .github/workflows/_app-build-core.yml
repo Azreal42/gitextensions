@@ -143,7 +143,7 @@ jobs:
 
     - name: Build .NET
       shell: pwsh
-      run: dotnet build -c Release --verbosity q --nologo /bl:artifacts\log\build.binlog $env:BUILD_ARGS.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
+      run: dotnet build GitExtensions.slnx -c Release --verbosity q --nologo /bl:artifacts\log\build.binlog $env:BUILD_ARGS.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
 
     - name: Verify localisation
       shell: pwsh
@@ -157,7 +157,7 @@ jobs:
 
     - name: Publish
       shell: pwsh
-      run: dotnet publish -c Release --no-build /bl:artifacts\log\publish.binlog $env:BUILD_ARGS.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
+      run: dotnet publish GitExtensions.slnx -c Release --no-build /bl:artifacts\log\publish.binlog $env:BUILD_ARGS.Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
 
     - name: Resolve portable archive name
       id: portable-name
@@ -202,7 +202,7 @@ jobs:
       # The slowest healthy test is ~25s on x64 / ~50s on the slower arm64 runner, so 3m leaves ample headroom.
       # --blame-hang-dump-type mini captures a minidump (all managed thread stacks) of the hung test host so the
       # actual deadlock is diagnosable from the artifact, instead of only knowing which test was running.
-      run: dotnet test -c Release -m:1 --no-restore --no-build --nologo --verbosity q --test-adapter-path:. --logger:trx --blame-hang-timeout 3m --blame-hang-dump-type mini /bl:artifacts\log\tests.binlog
+      run: dotnet test GitExtensions.slnx -c Release -m:1 --no-restore --no-build --nologo --verbosity q --test-adapter-path:. --logger:trx --blame-hang-timeout 3m --blame-hang-dump-type mini /bl:artifacts\log\tests.binlog
 
     - name: Upload test results
       id: upload-test-results
