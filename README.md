@@ -10,9 +10,10 @@ feature parity remain in progress.
 ## Download Linux and macOS builds
 
 GitHub Actions builds and tests every push, including merges into `master`, and
-publishes the packages after their platform checks pass. Open a successful run
-for `master` below, then follow its download link or choose an entry under
-**Artifacts** (a GitHub sign-in is required):
+publishes the packages after their platform checks pass. Open a run for `master`
+below and select the successful job for your platform. Follow its download link
+in the build summary, or choose an entry under **Artifacts** (a GitHub sign-in
+is required):
 
 | Platform | Workflow | Artifact |
 | --- | --- | --- |
