@@ -92,6 +92,8 @@ internal static class WindowsConsoleProbe
         string result = Path.Combine(args[1], "observer-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
+            // An observer can attach to the host only after releasing its startup console.
+            if (!FreeConsole()) { throw Error(); }
             if (!AttachConsole(uint.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture))) { throw Error(); }
             try
             {
