@@ -1,10 +1,29 @@
 ![Git Extensions logo](setup/assets/Logo/git-extensions-logo.svg)
 
-# Git Extensions — Linux fork
+# Git Extensions — Linux and macOS fork
 
 This is a fork of [Git Extensions](https://github.com/gitextensions/gitextensions)
-bringing its familiar Windows interface and Git workflows to Linux using
-**Avalonia and .NET 10**. **macOS support is planned for later**.
+bringing its familiar Windows interface and Git workflows to Linux and macOS using
+**Avalonia and .NET 10**. These ports are alpha versions; platform qualification and
+feature parity remain in progress.
+
+## Download Linux and macOS builds
+
+GitHub Actions builds and tests every push, including merges into `master`, and
+publishes the packages after their platform checks pass. Open a successful run
+for `master` below, then follow its download link or choose an entry under
+**Artifacts** (a GitHub sign-in is required):
+
+| Platform | Workflow | Artifact |
+| --- | --- | --- |
+| Linux amd64 (Debian/Ubuntu) | [Linux](https://github.com/Azreal42/gitextensions/actions/workflows/linux.yml?query=branch%3Amaster) | `gitextensions-linux-amd64` (`.deb`) |
+| macOS 15+ Apple Silicon | [Avalonia native platforms](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amaster) | `avalonia-osx-arm64` (`.zip`) |
+| macOS 15+ Intel | [Avalonia native platforms](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amaster) | `avalonia-osx-x64` (`.zip`) |
+
+The packages include .NET. On macOS, extract the artifact and its delivery ZIP,
+then move `Git Extensions.app` into Applications. Install Git separately. The Mac
+bundle is ad-hoc signed and is not notarized; macOS may require approval through
+**System Settings > Privacy & Security** on first launch.
 
 ## Linux alpha
 

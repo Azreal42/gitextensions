@@ -90,8 +90,9 @@ public sealed class ToolsShellIntegrationTests
         string ready = Path.Combine(fixture.Root, "background-ready"), release = Path.Combine(fixture.Root, "release"), done = Path.Combine(fixture.Root, "background-done");
         string child = "set -e; trap '' HUP; printf ready > \"$1\"; while [ ! -f \"$2\" ]; do sleep 0.02; done; printf done > \"$3\"";
         GitExecutionEnvironment shell = GitExecutionEnvironment.Capture(fixture.Environment.Options with { Executable = "/bin/bash" }, fixture.Environment.EnvironmentVariables);
+        // The child must install its HUP handler before the parent exits and closes the terminal.
         Task<int> opening = MacToolsShellLauncher.RunCoreAsync(fixture.Repository, shell,
-            ["--noprofile", "--norc", "-m", "-c", "/bin/sh -c \"$1\" child \"$2\" \"$3\" \"$4\" </dev/null >/dev/null 2>&1 & disown; exit 0", "shell", child, ready, release, done],
+            ["--noprofile", "--norc", "-m", "-c", "/bin/sh -c \"$1\" child \"$2\" \"$3\" \"$4\" </dev/null >/dev/null 2>&1 & child=$!; while [ ! -f \"$2\" ]; do kill -0 \"$child\" || exit 1; sleep 0.02; done; disown; exit 0", "shell", child, ready, release, done],
             CancellationToken.None, terminal.Launch, HelperExecutable(), terminal.CreateStartInfo);
         try
         {

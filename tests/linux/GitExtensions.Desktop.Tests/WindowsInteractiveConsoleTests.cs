@@ -117,7 +117,9 @@ public sealed class WindowsInteractiveConsoleTests
         Task<string> output = process.StandardOutput.ReadToEndAsync(), error = process.StandardError.ReadToEndAsync();
         await Task.WhenAll(process.WaitForExitAsync(), output, error).WaitAsync(TimeSpan.FromSeconds(30));
         string[] records = Directory.EnumerateFiles(fixture.Root, "observer-*.json").Where(x => !before.Contains(x)).ToArray();
-        Assert.That(records, Has.Length.EqualTo(1), error.Result + output.Result);
+        string diagnostics = string.Join(Environment.NewLine,
+            Directory.EnumerateFiles(fixture.Root, "observer-*.json.error").Select(System.IO.File.ReadAllText));
+        Assert.That(records, Has.Length.EqualTo(1), $"Observer exit code: {process.ExitCode}\n{error.Result}{output.Result}{diagnostics}");
         using JsonDocument observed = JsonDocument.Parse(await File.ReadAllTextAsync(records[0]));
         Assert.That(observed.RootElement.GetProperty("observed").GetString(), Is.EqualTo(marker));
         if (action != "close") { Assert.That(process.ExitCode, Is.Zero, error.Result + output.Result); }

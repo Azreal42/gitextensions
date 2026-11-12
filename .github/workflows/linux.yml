@@ -91,11 +91,18 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a gitextensions --smoke-test "$GITHUB_WORKSPACE"
 
       - name: Upload Debian package
+        id: delivery
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: gitextensions-linux-amd64
           path: artifacts/linux/deb/*.deb
           if-no-files-found: error
+
+      - name: Link the Debian package in the build summary
+        env:
+          DELIVERY_URL: ${{ steps.delivery.outputs.artifact-url }}
+        run: |
+          printf '[Download Git Extensions (Linux amd64)](%s)\n' "$DELIVERY_URL" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload failed package diagnostics
         if: failure()

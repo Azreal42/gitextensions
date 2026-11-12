@@ -24,7 +24,9 @@ root using `fakeroot` and the host's dependency status.
 
 The current alpha is `7.2.1-linux-alpha`, following the original Git Extensions
 release number. Debian encodes the prerelease as `7.2.1~linux-alpha` so it sorts
-before `7.2.1`. Linux is the current target; macOS support is planned later.
+before `7.2.1`. macOS alpha bundles are also available through the
+[native platform workflow](../../.github/workflows/avalonia-platforms.yml); see the
+[download instructions](../../README.md#download-linux-and-macos-builds).
 
 Targets: Debian 12+ and Ubuntu 24.04+, amd64 or arm64, with Git 2.38+. The package includes .NET;
 APT installs Git and native dependencies. The GUI needs X11 or XWayland. Install

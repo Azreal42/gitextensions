@@ -107,11 +107,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload native delivery
+        id: delivery
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: avalonia-${{ matrix.runtime }}
           path: artifacts/desktop/${{ matrix.runtime }}/delivery/*.zip
           if-no-files-found: error
+
+      - name: Link the native delivery in the build summary
+        env:
+          DELIVERY_URL: ${{ steps.delivery.outputs.artifact-url }}
+        run: |
+          "[Download Git Extensions (${{ matrix.runtime }})]($env:DELIVERY_URL)" >> $env:GITHUB_STEP_SUMMARY
 
       - name: Upload native test evidence
         if: always()
