@@ -61,7 +61,7 @@ internal sealed class AdvancedSettingsPage : UserControl
             if (name == nameof(AdvancedSettingsValues.CheckForReleaseCandidates))
             {
                 ToolTip.SetTip(choice, translations.Translate("AdvancedSettingsPage", "chkCheckForRCVersions", "LinuxToolTipText",
-                    "Linux alpha and beta packages are also pre-releases."));
+                    AvaloniaTranslationItems.ReleaseCandidateToolTip));
             }
             _choices.Add(name, choice); group.Children.Add(choice);
         }

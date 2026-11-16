@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../src/linux/GitExtensions.Desktop/Localization/AvaloniaTranslationItems.cs" Link="AvaloniaTranslationItems.cs" />
     <ProjectReference Include="..\..\externals\NetSpell.SpellChecker\SpellChecker.csproj" />
     <ProjectReference Include="..\..\src\app\BugReporter\BugReporter.csproj" />
     <ProjectReference Include="..\..\src\app\GitCommands\GitCommands.csproj" />

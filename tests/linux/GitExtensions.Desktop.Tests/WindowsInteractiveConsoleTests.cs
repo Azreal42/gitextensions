@@ -14,8 +14,10 @@ namespace GitExtensions.Desktop.Tests;
 public sealed class WindowsInteractiveConsoleTests
 {
     [TestCase("complete")]
+    [TestCase("complete-close")]
     [TestCase("cancel")]
     [TestCase("close")]
+    [TestCase("crash")]
     public async Task ActualConsoleHunkInputCancellationAndWindowCloseRespectGitAndTheOwnedJob(string action)
     {
         using Fixture fixture = await Fixture.CreateAsync(); using CancellationTokenSource cancel = new();
@@ -28,12 +30,13 @@ public sealed class WindowsInteractiveConsoleTests
         try
         {
             int host = await UntilHostAsync(operation);
-            await ObserveAsync(fixture, host, "Stage this hunk", action == "complete" ? "y\r" : "", action == "close" ? "close" : "input");
-            if (action == "complete")
+            bool complete = action is "complete" or "complete-close";
+            await ObserveAsync(fixture, host, "Stage this hunk", complete ? "y\r" : "", action == "close" ? "close" : "input");
+            if (complete)
             {
                 await ObserveAsync(fixture, host, "Press Enter to close.", "", "input");
                 Assert.That(operation.IsCompleted, Is.False, "The helper must retain its operation until the real acknowledgement.");
-                await ObserveAsync(fixture, host, "Press Enter to close.", "\r", "input");
+                await ObserveAsync(fixture, host, "Press Enter to close.", "\r", action == "complete-close" ? "close" : "input");
                 Assert.That((await operation.WaitAsync(TimeSpan.FromSeconds(30))).ExitCode, Is.Zero);
                 Assert.That((await fixture.GitAsync("show", ":file.txt")).StandardOutput, Is.EqualTo("selected Windows hunk λ\n"));
                 Assert.That((await fixture.GitAsync("show", "HEAD:file.txt")).StandardOutput, Is.EqualTo("base\n"));
@@ -41,18 +44,28 @@ public sealed class WindowsInteractiveConsoleTests
             else
             {
                 if (action == "cancel") { cancel.Cancel(); }
-                Assert.CatchAsync<OperationCanceledException>(async () => await operation.WaitAsync(TimeSpan.FromSeconds(30)));
+                if (action == "crash")
+                {
+                    using Process process = Process.GetProcessById(host);
+                    process.Kill();
+                    await Assert.ThatAsync(async () => await operation.WaitAsync(TimeSpan.FromSeconds(30)), Throws.InstanceOf<IOException>());
+                }
+                else
+                {
+                    await Assert.ThatAsync(async () => await operation.WaitAsync(TimeSpan.FromSeconds(30)), Throws.InstanceOf<OperationCanceledException>());
+                }
                 Assert.That((await fixture.GitAsync("ls-files", "--stage", "-z")).StandardOutput, Is.EqualTo(original));
             }
             GitCommandLogEntry entry = GitCommandLog.Snapshot().Single(x => x.Command == "interactive console host");
-            Assert.That(entry.ProcessId, Is.EqualTo(host)); Assert.That(entry.IsRunning, Is.False); Assert.That(entry.IsUnobserved, Is.False);
-            Assert.That(entry.Cancelled, Is.EqualTo(action != "complete"));
+            Assert.That(entry.ProcessId, Is.EqualTo(host)); Assert.That(entry.IsRunning, Is.False); Assert.That(entry.IsUnobserved, Is.EqualTo(action == "crash"));
+            Assert.That(entry.Cancelled, Is.EqualTo(!complete && action != "crash"));
             Assert.That(JsonSerializer.Serialize(entry), Does.Not.Contain("gitextensions-console-"));
         }
         finally
         {
             cancel.Cancel();
             try { await operation.WaitAsync(TimeSpan.FromSeconds(30)); } catch (OperationCanceledException) { }
+            catch (IOException) when (action == "crash") { }
             GitCommandLog.Clear();
         }
     }
@@ -75,7 +88,7 @@ public sealed class WindowsInteractiveConsoleTests
             other = fixture.Repository.StageAsync(["other.txt"]);
             Assert.That(await Task.WhenAny(other, Task.Delay(120)), Is.Not.SameAs(other));
             owner.Close(); Assert.That(owner.IsVisible, Is.True);
-            Assert.CatchAsync<OperationCanceledException>(async () => await operation.WaitAsync(TimeSpan.FromSeconds(30)));
+            await Assert.ThatAsync(async () => await operation.WaitAsync(TimeSpan.FromSeconds(30)), Throws.InstanceOf<OperationCanceledException>());
             await other.WaitAsync(TimeSpan.FromSeconds(30));
             using CancellationTokenSource closing = new(TimeSpan.FromSeconds(10));
             while (owner.IsVisible) { await Task.Delay(10, closing.Token); }

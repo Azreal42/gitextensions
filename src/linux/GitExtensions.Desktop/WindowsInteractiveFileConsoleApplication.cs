@@ -35,7 +35,8 @@ internal static class WindowsInteractiveFileConsoleApplication
         if (await reader.ReadLineAsync(opening.Token) != "ACK")
         { throw new IOException("Interactive Git was not acknowledged; no Git command was started."); }
         using CancellationTokenSource job = new(), controlLifetime = new();
-        using WindowsConsoleCloseRegistration close = new(job);
+        WindowsInteractiveFileConsoleReporter reporter = new(writer);
+        using WindowsConsoleCloseRegistration close = new(job, reporter.ConsoleClosing);
         void Interrupt(object? sender, ConsoleCancelEventArgs context) { context.Cancel = true; job.Cancel(); }
         Console.CancelKeyPress += Interrupt;
         Task control = WatchParentAsync(reader, job, controlLifetime.Token);
@@ -46,6 +47,7 @@ internal static class WindowsInteractiveFileConsoleApplication
             Console.WriteLine("Git Extensions — interactive Git"); Console.WriteLine(request.RepositoryPath);
             Console.WriteLine("Use Git's displayed choices. Closing this console cancels this Git operation.");
             completed = await GitInteractiveTerminalProcess.RunAsync(request.RepositoryPath, environment, request.Arguments, job.Token);
+            reporter.GitCompleted(completed);
             Console.WriteLine(); Console.WriteLine("Git exited with code " + completed.ExitCode + ". Press Enter to close.");
             await console.WaitForCloseInputAsync(job.Token);
             result = new(completed.ExitCode, false, null);
@@ -64,7 +66,7 @@ internal static class WindowsInteractiveFileConsoleApplication
             Console.CancelKeyPress -= Interrupt; controlLifetime.Cancel();
             try { await control; } catch (OperationCanceledException) when (controlLifetime.IsCancellationRequested) { }
         }
-        try { await WindowsInteractiveFileConsoleProtocol.WriteAsync(writer, result); }
+        try { reporter.Report(result); }
         catch (IOException) { /* The parent is gone; the inner Git job has already drained. */ }
         finally { close.Complete(); }
         return result.ExitCode;

@@ -1,5 +1,6 @@
 ﻿using GitExtensions.Extensibility.Translations;
 using GitExtensions.Extensibility.Translations.Xliff;
+using GitExtensions.Linux.Desktop.Localization;
 
 namespace TranslationApp;
 
@@ -51,6 +52,10 @@ internal static class TranslationHelpers
             // Restore translation
             GitCommands.AppSettings.CurrentTranslation = null;
         }
+
+        TranslationFile desktopTranslation = neutralTranslation[""];
+        AvaloniaTranslationItems.AddTranslationItems(desktopTranslation);
+        desktopTranslation.Sort();
 
         return GetItemsDictionary(neutralTranslation);
     }

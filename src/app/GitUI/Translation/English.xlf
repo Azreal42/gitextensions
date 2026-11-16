@@ -31,12 +31,12 @@
 If enabled, any illegal symbols will be replaced with the replacement symbol of your choice.</source>
         <target />
       </trans-unit>
-      <trans-unit id="chkCheckForRCVersions.Text">
-        <source>Check for release candidate versions</source>
-        <target />
-      </trans-unit>
       <trans-unit id="chkCheckForRCVersions.LinuxToolTipText">
         <source>Linux alpha and beta packages are also pre-releases.</source>
+        <target />
+      </trans-unit>
+      <trans-unit id="chkCheckForRCVersions.Text">
+        <source>Check for release candidate versions</source>
         <target />
       </trans-unit>
       <trans-unit id="chkCheckForUpdates.Text">

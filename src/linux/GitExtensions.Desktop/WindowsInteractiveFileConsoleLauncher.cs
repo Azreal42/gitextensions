@@ -64,6 +64,9 @@ internal static class WindowsInteractiveFileConsoleLauncher
             if (await Task.WhenAny(resultRead, cancelled.Task) == cancelled.Task)
             { await writer.WriteLineAsync("CANCEL"); }
             InteractiveFileConsoleResult result = await resultRead;
+            // A native console-close notification precedes helper cleanup. Keep
+            // the repository lease until the entire outer job has been stopped.
+            if (result.Cancelled) { await host.StopAsync(); }
             await rootExit; await host.WaitForEmptyAsync(); drained = true;
             reported = true;
             journal.Complete(result.Cancelled || result.Error is not null ? null : result.ExitCode, result.Cancelled);
