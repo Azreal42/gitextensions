@@ -9,6 +9,12 @@ feature parity remain in progress.
 
 ## Download Linux and macOS builds
 
+Download the packages from [GitHub Releases](https://github.com/Azreal42/gitextensions/releases).
+A new alpha prerelease is published automatically after the Linux, native platform,
+and Windows CI workflows all pass for the same `master` commit. Each release includes
+the verified macOS Apple Silicon / Intel ZIPs, the Linux amd64 Debian package, and
+`SHA256SUMS`. These files are copied from the successful CI runs without rebuilding.
+
 GitHub Actions builds and tests every push, including merges into `master`, and
 publishes the packages after their platform checks pass. Open a run for `master`
 below and select the successful job for your platform. Follow its download link

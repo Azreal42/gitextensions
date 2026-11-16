@@ -1,0 +1,65 @@
+name: Publish portable prerelease
+
+on:
+  push:
+    paths:
+      - '.github/workflows/portable-release.yml'
+      - 'eng/desktop/release.py'
+      - 'eng/desktop/tests/**'
+  pull_request:
+    paths:
+      - '.github/workflows/portable-release.yml'
+      - 'eng/desktop/release.py'
+      - 'eng/desktop/tests/**'
+  workflow_run:
+    workflows: ['Linux', 'Avalonia native platforms', 'App build and test']
+    branches: [master]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: 'Full commit SHA already validated on master (empty means current master)'
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-release-${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Test publication gates and archive validation
+        run: python3 -B -m unittest discover -s eng/desktop/tests -v
+
+  publish:
+    needs: validate
+    if: >-
+      github.repository == 'Azreal42/gitextensions' &&
+      ((github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.conclusion == 'success') ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      # Publication code is always trusted master code, never code from a triggering PR or artifact.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: master
+          persist-credentials: false
+      - name: Publish the exact verified macOS and Linux packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
+        run: python3 -B eng/desktop/release.py --repository "$GITHUB_REPOSITORY" --sha "$SOURCE_SHA"
