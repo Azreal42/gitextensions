@@ -81,6 +81,12 @@ def publish(repository, sha, assets, notes):
     release = release_by_tag(repository, tag)
     if release is not None and release["target_commitish"] != sha:
         raise ValueError("Refusing to replace a tag assigned to another commit.")
+    if release is not None and not release["draft"]:
+        # A rerun can produce a different ZIP timestamp for the same source.
+        # Keep the already verified, published delivery instead of replacing it.
+        if {asset["name"] for asset in release["assets"]} != {path.name for path in assets}:
+            raise ValueError("The published release is missing expected delivery assets.")
+        return release["html_url"]
     if release is None:
         gh("release", "create", tag, "--repo", repository, "--target", sha, "--draft", "--prerelease",
            "--latest=false", "--title", f"Git Extensions macOS / Linux alpha ({sha[:8]})", "--notes-file", notes)

@@ -78,15 +78,21 @@ class ReleaseTests(unittest.TestCase):
                     release.publish(REPOSITORY, SHA, [asset], Path(temporary) / "notes.md")
                 self.assertFalse(any(call.args[0:2] == ("release", "edit") for call in gh.call_args_list))
 
-    def test_a_published_release_is_verified_without_modifying_it(self):
+    def test_a_published_release_survives_a_rerun_with_different_archive_metadata(self):
         with tempfile.TemporaryDirectory() as temporary:
             asset = Path(temporary) / "package.deb"
-            asset.write_bytes(b"verified package")
+            asset.write_bytes(b"newly verified package from a later CI rerun")
             existing = {"target_commitish": SHA, "draft": False, "prerelease": True, "html_url": "https://example.invalid/release",
-                        "assets": [{"name": asset.name, "digest": "sha256:" + hashlib.sha256(asset.read_bytes()).hexdigest()}]}
+                        "assets": [{"name": asset.name, "digest": "sha256:" + hashlib.sha256(b"originally verified package").hexdigest()}]}
             with patch.object(release, "release_by_tag", return_value=existing), patch.object(release, "gh") as gh:
                 self.assertEqual(release.publish(REPOSITORY, SHA, [asset], Path(temporary) / "notes.md"), existing["html_url"])
                 gh.assert_not_called()
+
+    def test_a_release_for_another_commit_is_never_replaced(self):
+        with patch.object(release, "release_by_tag", return_value={"target_commitish": "b" * 40}), patch.object(release, "gh") as gh:
+            with self.assertRaises(ValueError):
+                release.publish(REPOSITORY, SHA, [], Path("notes.md"))
+            gh.assert_not_called()
 
     def test_a_draft_is_published_only_after_all_assets_are_verified(self):
         with tempfile.TemporaryDirectory() as temporary:
