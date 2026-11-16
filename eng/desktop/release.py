@@ -47,7 +47,9 @@ def extract_delivery(archive, artifact, destination, pattern, runtime, sha):
         files = [entry for entry in outer.infolist() if not entry.is_dir()]
         if len(files) != 1 or not re.fullmatch(pattern, files[0].filename):
             raise ValueError("Expected exactly one delivery with its original platform filename.")
-        target = destination / files[0].filename
+        # GitHub rewrites characters such as Debian's '~' during upload. Choose
+        # the final download name before generating checksums, preserving bytes.
+        target = destination / re.sub(r"[^0-9A-Za-z._-]", ".", files[0].filename)
         with outer.open(files[0]) as source, target.open("wb") as output:
             shutil.copyfileobj(source, output)
     if runtime.startswith("osx-"):
@@ -62,9 +64,13 @@ def release_by_tag(repository, tag):
     result = subprocess.run(["gh", "api", f"repos/{repository}/releases/tags/{tag}"], capture_output=True, text=True)
     if result.returncode == 0:
         return json.loads(result.stdout)
-    if "HTTP 404" in result.stderr:
-        return None
-    result.check_returncode()
+    if "HTTP 404" not in result.stderr:
+        result.check_returncode()
+    # The tag endpoint cannot find a draft whose Git tag has not been created.
+    # Listing releases includes drafts when authenticated with push permission.
+    pages = json.loads(gh("api", "--paginate", "--slurp", f"repos/{repository}/releases?per_page=100",
+                          capture_output=True, text=True).stdout)
+    return next((release for page in pages for release in page if release["tag_name"] == tag), None)
 
 
 def verify_release(release, sha, assets):

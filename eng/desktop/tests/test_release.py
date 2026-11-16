@@ -3,6 +3,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -40,19 +41,48 @@ class ReleaseTests(unittest.TestCase):
             archive.writestr("delivery-manifest.json", json.dumps({"source_commit": sha, "runtime": "osx-arm64"}))
         return output.getvalue()
 
-    def extract(self, directory, entries, digest=None, sha=SHA):
+    def extract(self, directory, entries, digest=None, sha=SHA, delivery=1):
         archive = directory / "artifact.zip"
         with zipfile.ZipFile(archive, "w") as outer:
             for name, value in entries:
                 outer.writestr(name, value)
         artifact = {"digest": digest or "sha256:" + hashlib.sha256(archive.read_bytes()).hexdigest()}
-        return release.extract_delivery(archive, artifact, directory, release.DELIVERIES[1][3], "osx-arm64", sha)
+        return release.extract_delivery(archive, artifact, directory, release.DELIVERIES[delivery][3],
+                                        release.DELIVERIES[delivery][2], sha)
 
     def test_the_original_delivery_bytes_are_preserved(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = self.native_delivery()
             result = self.extract(Path(temporary), [("gitextensions_7.2.1-alpha_osx-arm64.zip", data)])
             self.assertEqual(result.read_bytes(), data)
+
+    def test_debian_versions_have_stable_download_names_without_changing_package_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = b"original Debian package"
+            result = self.extract(Path(temporary), [("gitextensions_7.2.1~linux-alpha+test_amd64.deb", data)], delivery=0)
+            self.assertEqual(result.name, "gitextensions_7.2.1.linux-alpha.test_amd64.deb")
+            self.assertEqual(result.read_bytes(), data)
+
+    def test_drafts_are_found_before_their_tag_exists(self):
+        draft = {"id": 42, "tag_name": "alpha", "draft": True}
+        missing_tag = subprocess.CompletedProcess([], 1, stdout="", stderr="gh: Not Found (HTTP 404)")
+        pages = subprocess.CompletedProcess([], 0, stdout=json.dumps([[{"tag_name": "other"}], [draft]]))
+        with patch.object(release.subprocess, "run", return_value=missing_tag), patch.object(release, "gh", return_value=pages):
+            self.assertEqual(release.release_by_tag(REPOSITORY, "alpha"), draft)
+
+    def test_an_unknown_tag_and_draft_are_absent(self):
+        missing_tag = subprocess.CompletedProcess([], 1, stdout="", stderr="gh: Not Found (HTTP 404)")
+        pages = subprocess.CompletedProcess([], 0, stdout=json.dumps([[]]))
+        with patch.object(release.subprocess, "run", return_value=missing_tag), patch.object(release, "gh", return_value=pages):
+            self.assertIsNone(release.release_by_tag(REPOSITORY, "alpha"))
+
+    def test_release_lookup_does_not_hide_permission_or_server_errors(self):
+        for status in (403, 500):
+            response = subprocess.CompletedProcess([], 1, stdout="", stderr=f"gh: API error (HTTP {status})")
+            with self.subTest(status=status), patch.object(release.subprocess, "run", return_value=response), patch.object(release, "gh") as gh:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    release.release_by_tag(REPOSITORY, "alpha")
+                gh.assert_not_called()
 
     def test_archive_paths_extra_files_and_corrupt_downloads_are_rejected(self):
         name = "gitextensions_7.2.1-alpha_osx-arm64.zip"
