@@ -29,6 +29,7 @@ Environment.SetEnvironmentVariable("GIT_CONFIG_VALUE_0", "always");
     ("invalid ranges and cancelled execution leave the repository untouched", InvalidAndCancelledAsync),
 ];
 tests = [.. tests, .. StatisticsScenarios.All, .. LocalAutomationScenarios.All, .. ExternalBuildCommandLogScenarios.All, .. ReleaseNotesArgumentsScenarios.All];
+if (args.Contains("--tracking-branches-only", StringComparer.Ordinal)) { tests = tests.Take(1).ToArray(); }
 if (args.Contains("--external-build-command-log-only", StringComparer.Ordinal)) { tests = ExternalBuildCommandLogScenarios.All.ToArray(); }
 if (args.Contains("--release-notes-arguments-only", StringComparer.Ordinal)) { tests = ReleaseNotesArgumentsScenarios.All.ToArray(); }
 int failures = 0;
@@ -320,7 +321,7 @@ sealed class Fixture : IDisposable
         GitResult result = await Runner.RunAsync(repository.Path,
             ["commit", "--allow-empty", "--cleanup=verbatim", "-m", message], environment:
             new Dictionary<string, string?> { ["GIT_AUTHOR_DATE"] = timestamp, ["GIT_COMMITTER_DATE"] = timestamp });
-        if (!result.Success) throw new InvalidOperationException(result.StandardError);
+        if (!result.Success) throw new InvalidOperationException($"git commit exited with {result.ExitCode}.\nstdout: {result.StandardOutput}\nstderr: {result.StandardError}");
         return await repository.ResolveRevisionAsync("HEAD");
     }
 

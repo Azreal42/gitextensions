@@ -78,6 +78,16 @@ jobs:
           dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build --no-restore 2>&1 | Tee-Object -FilePath "$results/plugins.log"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Diagnose the intermittent tracking fixture on Apple Silicon
+        if: matrix.runtime == 'osx-arm64' && github.ref == 'refs/heads/codex/diagnose-macos-git-exit'
+        run: |
+          $log = "artifacts/desktop/osx-arm64/results/plugins/tracking-stress.log"
+          for ($attempt = 1; $attempt -le 200; $attempt++) {
+            "Tracking attempt $attempt" | Tee-Object -FilePath $log -Append
+            dotnet run --project tests/linux/GitExtensions.Plugins.Tests --configuration Release --no-build --no-restore -- --tracking-branches-only 2>&1 | Tee-Object -FilePath $log -Append
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       - name: Exercise POSIX console command transport
         if: runner.os == 'macOS'
         run: |
