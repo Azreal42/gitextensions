@@ -9,6 +9,8 @@ namespace GitExtensions.Plugins.Tests;
 
 public static class LocalAutomationScenarios
 {
+    private static readonly TimeSpan NativeStartupLimit = TimeSpan.FromSeconds(20);
+
     public static IReadOnlyList<(string Name, Func<Task> Run)> All { get; } =
     [
         ("proxy preserves literal credentials and local/global precedence, redacts display, and unsets idempotently", ProxyScopesAsync),
@@ -71,7 +73,9 @@ public static class LocalAutomationScenarios
         const string literal = "$(touch SENTINEL);`echo x`|cat";
         GourceLaunch launch = await new GourcePlugin().LaunchAsync(fixture.Repository,
             new(executable.Path, "--title \"Repository été\" --literal " + Quote(literal) + " --empty \"\" --escaped a\\ b", directory));
-        await WaitForAsync(() => executable.Calls.Count == 1);
+        // A fresh native apphost can still be in the platform loader after the
+        // short scheduling deadline. Keep its files until native startup finishes.
+        await WaitForAsync(() => executable.Calls.Count == 1, NativeStartupLimit);
         Invocation call = executable.Calls.Single();
         Check(call.Arguments.SequenceEqual(new[] { "--title", "Repository été", "--literal", literal, "--empty", "", "--escaped", "a b" }),
             "Arguments changed at the executable boundary.");
@@ -91,7 +95,7 @@ public static class LocalAutomationScenarios
         string avatarRoot = Path.Combine(fixture.Root, "avatars ' quoted été");
         GourceLaunch launch = await new GourcePlugin(provider, avatarRoot).LaunchAsync(fixture.Repository,
             new(executable.Path, "--hide filenames --user-image-dir \"$(AVATARS)\""));
-        await WaitForAsync(() => executable.Calls.Count == 1);
+        await WaitForAsync(() => executable.Calls.Count == 1, NativeStartupLimit);
         Invocation call = executable.Calls.Single();
         string directory = launch.AvatarDirectory ?? throw new InvalidOperationException("Avatar directory was not returned.");
         Check(call.Arguments.SequenceEqual(new[] { "--hide", "filenames", "--user-image-dir", directory }), "Avatar path was split or re-parsed after replacement.");
@@ -334,9 +338,9 @@ public static class LocalAutomationScenarios
     private static void Check(bool condition, string message) { if (!condition) { throw new InvalidOperationException(message); } }
     private static async Task ThrowsAsync<T>(Func<Task> action) where T : Exception
     { try { await action(); } catch (T) { return; } throw new InvalidOperationException("Expected " + typeof(T).Name); }
-    private static async Task WaitForAsync(Func<bool> condition)
+    private static async Task WaitForAsync(Func<bool> condition, TimeSpan? timeout = null)
     {
-        using CancellationTokenSource deadline = new(TimeSpan.FromSeconds(5));
+        using CancellationTokenSource deadline = new(timeout ?? TimeSpan.FromSeconds(5));
         while (!condition()) { await Task.Delay(5, deadline.Token); }
     }
 
