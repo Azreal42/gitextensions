@@ -21,6 +21,8 @@ jobs:
     name: Native Avalonia ${{ matrix.runtime }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    env:
+      GITEXTENSIONS_NATIVE_DIAGNOSTICS: ${{ github.workspace }}/artifacts/desktop/${{ matrix.runtime }}/results/native-diagnostics.log
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +42,9 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+
+      - name: Prepare temporary native syscall diagnostics
+        run: New-Item -ItemType Directory -Force -Path "artifacts/desktop/${{ matrix.runtime }}/results" | Out-Null
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
