@@ -52,9 +52,12 @@ static int fixture_setpgid(pid_t process, pid_t group)
         if (fclose(output) != 0 || rename(temporary, ready) != 0) _exit(125);
         const char *release = getenv("GITEXTENSIONS_GROUP_FIXTURE_RELEASE");
         if (release != NULL) while (access(release, F_OK) != 0) usleep(1000);
-        /* Model Darwin's observed EPERM when the parent has already placed
-         * this child in its group. Never reject the initial group creation. */
+        /* Inject the observed EPERM on a redundant child group call, making
+         * the competing-creator path deterministic. Initial creation succeeds. */
         if (getpgrp() == getpid()) { errno = EPERM; return -1; }
+        /* The fixture instruments the supervisor, not the payload. In
+         * particular, platform executables may reject injected libraries. */
+        unsetenv("DYLD_INSERT_LIBRARIES");
     }
     return setpgid(process, group);
 }

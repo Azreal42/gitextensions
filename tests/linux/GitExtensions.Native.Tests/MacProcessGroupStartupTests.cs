@@ -11,13 +11,13 @@ public sealed class MacProcessGroupStartupTests
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(20);
 
     [Test]
-    public async Task RunBinaryAsync_should_start_when_Darwin_rejects_duplicate_group_creation()
+    public async Task RunBinaryAsync_should_start_without_competing_group_creators()
     {
         using Fixture fixture = new();
         using CancellationTokenSource cancellation = new(Limit);
         GitBinaryResult result = await fixture.RunAsync(cancellation.Token, hold: false).WaitAsync(Limit);
         Assert.That(File.Exists(fixture.Ready), Is.True, "The actual child's group call must pass through the native fixture.");
-        Assert.That(result.ExitCode, Is.Zero);
+        Assert.That(result.ExitCode, Is.Zero, result.StandardError);
         Assert.That(result.StandardError, Is.Empty);
     }
 
