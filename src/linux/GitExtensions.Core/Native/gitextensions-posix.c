@@ -33,6 +33,19 @@
 static volatile sig_atomic_t stop_requested;
 static int events_fd;
 static int child_events[2];
+static void diagnose(const char *stage, int error, pid_t actor)
+{
+    int saved = errno;
+    const char *path = getenv("GITEXTENSIONS_NATIVE_DIAGNOSTICS");
+    if (path != NULL && *path != '\0') {
+        FILE *output = fopen(path, "a");
+        if (output != NULL) {
+            fprintf(output, "supervisor=%ld stage=%s actor=%ld errno=%d\n", (long)getpid(), stage, (long)actor, error);
+            fclose(output);
+        }
+    }
+    errno = saved;
+}
 static void request_stop(int signal_number) { (void)signal_number; stop_requested = 1; }
 static void child_changed(int signal_number)
 {
@@ -46,6 +59,7 @@ static void child_changed(int signal_number)
 }
 static int record(uint32_t kind, pid_t actor, uint32_t value)
 {
+    if (kind == 4) diagnose("error-record", (int)value, actor);
     uint32_t message[4] = { htonl(0x47455031), htonl(kind), htonl((uint32_t)actor), htonl(value) };
     size_t position = 0;
     while (position < sizeof(message)) {
@@ -192,7 +206,7 @@ static int live_members(pid_t group, int stopping, int force)
         struct proc_bsdinfo info;
         int count = proc_pidinfo(members[index], PROC_PIDTBSDINFO, 0, &info, sizeof(info));
         if (count == 0 && (errno == ESRCH || errno == ENOENT)) continue;
-        if (count != (int)sizeof(info)) { free(members); if (errno == 0) errno = EIO; return -1; }
+        if (count != (int)sizeof(info)) { diagnose("proc-pidinfo", errno, members[index]); free(members); if (errno == 0) errno = EIO; return -1; }
         if (info.pbi_pgid == (uint32_t)group && info.pbi_status != SZOMB) live++;
     }
     (void)stopping; (void)force; free(members);
@@ -305,18 +319,25 @@ int main(int argc, char **argv)
             if (terminal_io.input.owned) close(terminal_io.input.descriptor);
             if (terminal_io.output.owned) close(terminal_io.output.descriptor);
             if (login_tty(terminal_io.slave) == 0) terminal_exec(&argv[executable]);
-        } else if (child_session || setpgid(0, 0) == 0) execv(argv[executable], &argv[executable]);
+        } else if (child_session || setpgid(0, 0) == 0) {
+            execv(argv[executable], &argv[executable]);
+            diagnose("execv", errno, getpid());
+        } else diagnose("child-setpgid", errno, getpid());
         int error = errno; ssize_t sent;
         do { sent = write(exec_error[1], &error, sizeof(error)); } while (sent < 0 && errno == EINTR);
         _exit(127);
     }
     close(exec_error[1]);
-    if (!child_session && !terminal && setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) stop_requested = 1;
+    if (!child_session && !terminal && setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) {
+        diagnose("parent-setpgid", errno, child); stop_requested = 1;
+    }
     /* Only Git and its descendants retain the actual standard streams. EOF is
      * observable independently of the supervisor's mandatory process drain. */
     if (terminal) { close(terminal_io.slave); terminal_io.slave = -1; }
     else { close(STDIN_FILENO); close(STDOUT_FILENO); close(STDERR_FILENO); }
-    if (fcntl(exec_error[0], F_SETFL, O_NONBLOCK) != 0) stop_requested = 1;
+    if (fcntl(exec_error[0], F_SETFL, O_NONBLOCK) != 0) {
+        diagnose("exec-pipe-fcntl", errno, child); stop_requested = 1;
+    }
     int native_error = 0, exec_done = 0; size_t exec_bytes = 0;
     int exited = 0, failure = 0; int64_t stopping_at = -1;
 #ifdef __APPLE__
@@ -380,6 +401,7 @@ int main(int argc, char **argv)
         siginfo_t state; memset(&state, 0, sizeof(state));
         if (waitid(P_PID, (id_t)child, &state, WEXITED | WNOHANG | WNOWAIT) != 0) {
             if (errno == EINTR) continue;
+            diagnose("primary-waitid", errno, child);
             failure = errno; stop_requested = 1; break;
         }
         if (!exited && state.si_pid == child) {
@@ -388,7 +410,7 @@ int main(int argc, char **argv)
             if (record(5, child, (uint32_t)primary_code) != 0) stop_requested = 1;
         }
         int members = live_members(child, stop_requested, force);
-        if (members < 0) { if (errno == EAGAIN) continue; failure = errno; stop_requested = 1; continue; }
+        if (members < 0) { if (errno == EAGAIN) continue; diagnose("live-members", errno, child); failure = errno; stop_requested = 1; continue; }
         if (exited && members == 0 && (!terminal || stop_requested || (terminal_io.master_eof && terminal_io.outgoing.count == 0))) break;
     }
     close(exec_error[0]);

@@ -72,6 +72,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Exercise the complete plugin suite against real repositories
+        env:
+          GITEXTENSIONS_NATIVE_DIAGNOSTICS: ${{ github.workspace }}/artifacts/desktop/${{ matrix.runtime }}/results/plugins/native-diagnostics.log
         run: |
           $results = "artifacts/desktop/${{ matrix.runtime }}/results/plugins"
           New-Item -ItemType Directory -Force -Path $results | Out-Null
@@ -80,6 +82,8 @@ jobs:
 
       - name: Diagnose the intermittent tracking fixture on Apple Silicon
         if: matrix.runtime == 'osx-arm64' && github.ref == 'refs/heads/codex/diagnose-macos-git-exit'
+        env:
+          GITEXTENSIONS_NATIVE_DIAGNOSTICS: ${{ github.workspace }}/artifacts/desktop/osx-arm64/results/plugins/native-diagnostics.log
         run: |
           $log = "artifacts/desktop/osx-arm64/results/plugins/tracking-stress.log"
           for ($attempt = 1; $attempt -le 200; $attempt++) {
