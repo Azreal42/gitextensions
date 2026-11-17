@@ -320,7 +320,7 @@ sealed class Fixture : IDisposable
         GitResult result = await Runner.RunAsync(repository.Path,
             ["commit", "--allow-empty", "--cleanup=verbatim", "-m", message], environment:
             new Dictionary<string, string?> { ["GIT_AUTHOR_DATE"] = timestamp, ["GIT_COMMITTER_DATE"] = timestamp });
-        if (!result.Success) throw new InvalidOperationException(result.StandardError);
+        if (!result.Success) throw new InvalidOperationException($"git commit exited with {result.ExitCode}.\nstdout: {result.StandardOutput}\nstderr: {result.StandardError}");
         return await repository.ResolveRevisionAsync("HEAD");
     }
 

@@ -311,7 +311,9 @@ int main(int argc, char **argv)
         _exit(127);
     }
     close(exec_error[1]);
-    if (!child_session && !terminal && setpgid(child, child) != 0 && errno != EACCES && errno != ESRCH) stop_requested = 1;
+    /* Only the child creates its private group, before exec. Concurrent
+     * parent/child setpgid calls can fail on Darwin. Cancellation before that
+     * point targets the pinned child PID until its group becomes available. */
     /* Only Git and its descendants retain the actual standard streams. EOF is
      * observable independently of the supervisor's mandatory process drain. */
     if (terminal) { close(terminal_io.slave); terminal_io.slave = -1; }

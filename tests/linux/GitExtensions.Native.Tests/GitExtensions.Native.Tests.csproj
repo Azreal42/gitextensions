@@ -2,15 +2,18 @@
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
     <_MacStartupDirectory>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'native-startup'))</_MacStartupDirectory>
     <_MacStartupLibrary>$(_MacStartupDirectory)/native-startup-blocker.dylib</_MacStartupLibrary>
+    <_MacProcessGroupLibrary>$(_MacStartupDirectory)/native-process-group-fixture.dylib</_MacProcessGroupLibrary>
   </PropertyGroup>
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
     <Content Include="$(_MacStartupLibrary)" Link="native-startup-blocker.dylib" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(_MacProcessGroupLibrary)" Link="native-process-group-fixture.dylib" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="BuildMacStartupBlocker" BeforeTargets="PrepareForBuild;AssignTargetPaths"
           Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(DesignTimeBuild)' != 'true'">
     <MakeDir Directories="$(_MacStartupDirectory)" />
     <Exec Command="cc -std=c11 -O2 -Wall -Wextra -Werror -dynamiclib -mmacosx-version-min=15.0 &quot;$(MSBuildProjectDirectory)/NativeStartupBlocker.c&quot; -o &quot;$(_MacStartupLibrary)&quot;" />
-    <ItemGroup><FileWrites Include="$(_MacStartupLibrary)" /></ItemGroup>
+    <Exec Command="cc -std=c11 -O2 -Wall -Wextra -Werror -dynamiclib -mmacosx-version-min=15.0 &quot;$(MSBuildProjectDirectory)/NativeProcessGroupFixture.c&quot; -o &quot;$(_MacProcessGroupLibrary)&quot;" />
+    <ItemGroup><FileWrites Include="$(_MacStartupLibrary);$(_MacProcessGroupLibrary)" /></ItemGroup>
   </Target>
   <ItemGroup>
     <ProjectReference Include="../../../src/linux/GitExtensions.Core/GitExtensions.Core.csproj" />
