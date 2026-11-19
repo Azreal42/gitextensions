@@ -2,6 +2,7 @@
 """Verify the extracted delivery and execute its real native desktop backend."""
 
 import argparse
+from contextlib import ExitStack, contextmanager
 import hashlib
 import json
 import os
@@ -13,6 +14,26 @@ import tempfile
 import zipfile
 
 from package import machine, run
+
+
+def verify_files(directory, files):
+    for name, digest in files.items():
+        path = directory / name
+        if not path.resolve().is_relative_to(directory.resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise ValueError("Payload differs: " + name)
+
+
+@contextmanager
+def installed_windows_app(installer, directory, results):
+    app = directory / "GitExtensions"
+    flags = ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"]
+    run([installer, *flags, "/SP-", f"/DIR={app}", f"/LOG={results / 'setup.log'}"], timeout=180)
+    try:
+        yield app
+    finally:
+        run([app / "unins000.exe", *flags, f"/LOG={results / 'uninstall.log'}"], timeout=120)
+        if (app / "GitExtensions.exe").exists():
+            raise RuntimeError("The uninstaller left the application installed")
 
 
 def desktop_smoke(arguments, environment, results, mac):
@@ -61,7 +82,7 @@ def verify(args):
     mac = args.runtime.startswith("osx-")
     if mac != (platform.system() == "Darwin") or (args.runtime.startswith("win-") and platform.system() != "Windows"):
         raise RuntimeError("The delivery must be exercised on its actual native operating system")
-    with tempfile.TemporaryDirectory(prefix="gitextensions native delivery ") as temporary:
+    with tempfile.TemporaryDirectory(prefix="gitextensions native delivery ") as temporary, ExitStack() as cleanup:
         root = Path(temporary)
         extracted = root / "extracted"
         extracted.mkdir()
@@ -73,11 +94,14 @@ def verify(args):
         manifest = json.loads((extracted / "delivery-manifest.json").read_text(encoding="utf-8"))
         if manifest["runtime"] != args.runtime:
             raise ValueError("Wrong delivery runtime")
-        for name, digest in manifest["files"].items():
-            path = extracted / name
-            if not path.resolve().is_relative_to(extracted.resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
-                raise ValueError("Extracted payload differs: " + name)
+        verify_files(extracted, manifest["files"])
         bundle = extracted / ("Git Extensions.app" if mac else "GitExtensions")
+        if args.windows_installer:
+            if args.runtime != "win-x64":
+                raise ValueError("The installer requires win-x64")
+            installer = archives[0].with_name(archives[0].stem + "-setup.exe").resolve()
+            bundle = cleanup.enter_context(installed_windows_app(installer, root / "installed", results))
+            verify_files(bundle.parent, manifest["files"])
         payload = bundle / "Contents/MacOS" if mac else bundle
         executable = payload / ("GitExtensions" if mac else "GitExtensions.exe")
         if machine(executable) != args.runtime:
@@ -116,7 +140,13 @@ def verify(args):
                    "native_backend_started": True, "repository_loaded": True, "desktop_exit": smoke_exit,
                    "archive_sha256": hashlib.sha256(archives[0].read_bytes()).hexdigest(), "signing": manifest["signing"],
                    "notarized": manifest["notarized"]}
-        (results / "native-delivery-review.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+        if args.windows_installer:
+            cleanup.close()
+            receipt["installer_sha256"] = hashlib.sha256(installer.read_bytes()).hexdigest()
+        review = json.dumps(receipt, indent=2) + "\n"
+        (results / "native-delivery-review.json").write_text(review, encoding="utf-8")
+        if args.windows_installer:
+            (args.directory / "windows-installer-review.json").write_text(review, encoding="utf-8")
         print(json.dumps(receipt, indent=2), flush=True)
 
 
@@ -125,4 +155,5 @@ if __name__ == "__main__":
     parser.add_argument("--runtime", choices=["win-x64", "win-arm64", "osx-x64", "osx-arm64"], required=True)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--results", type=Path, required=True)
+    parser.add_argument("--windows-installer", action="store_true", help="Exercise the installed app and its uninstaller")
     verify(parser.parse_args())

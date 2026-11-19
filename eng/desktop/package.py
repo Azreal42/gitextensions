@@ -73,6 +73,8 @@ def sign_bundle(bundle, identity, repository):
 
 def build(args):
     repository = Path(__file__).resolve().parents[2]
+    if args.windows_installer and (os.name != "nt" or args.runtime != "win-x64"):
+        raise ValueError("Build the x64 installer on a native Windows x64 runner")
     output = args.output.resolve()
     stage = output / "stage"
     if stage.exists():
@@ -159,6 +161,10 @@ def build(args):
                 if path.is_file():
                     result.write(path, path.relative_to(stage))
     print("Delivery: " + str(archive), flush=True)
+    if args.windows_installer:
+        compiler = shutil.which("ISCC.exe") or Path(os.environ["ProgramFiles(x86)"]) / "Inno Setup 6/ISCC.exe"
+        run([compiler, "/Qp", f"/DAppVersion={version}", f"/DPayloadDir={payload}", f"/O{output}",
+             f"/F{archive.stem}-setup", repository / "setup/windows/avalonia.iss"])
 
 
 if __name__ == "__main__":
@@ -167,5 +173,6 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--version")
     parser.add_argument("--dotnet", default=os.environ.get("DOTNET", "dotnet"))
+    parser.add_argument("--windows-installer", action="store_true", help="Also build a per-user x64 installer with Inno Setup 6")
     parser.add_argument("--signing-identity", default="-")
     build(parser.parse_args())

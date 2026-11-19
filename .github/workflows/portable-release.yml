@@ -1,4 +1,4 @@
-name: Publish portable prerelease
+name: Publish desktop release
 
 on:
   push:
@@ -19,6 +19,10 @@ on:
     inputs:
       source_sha:
         description: 'Full commit SHA already validated on master (empty means current master)'
+        type: string
+        required: false
+      release_tag:
+        description: 'Numbered Latest release (for example desktop-7.2.1). Leave empty for an alpha prerelease.'
         type: string
         required: false
 
@@ -58,8 +62,9 @@ jobs:
         with:
           ref: master
           persist-credentials: false
-      - name: Publish the exact verified macOS and Linux packages
+      - name: Publish the verified Windows, macOS and Linux packages
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
-        run: python3 -B eng/desktop/release.py --repository "$GITHUB_REPOSITORY" --sha "$SOURCE_SHA"
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: python3 -B eng/desktop/release.py --repository "$GITHUB_REPOSITORY" --sha "$SOURCE_SHA" --release-tag "$RELEASE_TAG"

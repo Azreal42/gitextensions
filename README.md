@@ -7,13 +7,17 @@ bringing its familiar Windows interface and Git workflows to Linux and macOS usi
 **Avalonia and .NET 10**. These ports are alpha versions; platform qualification and
 feature parity remain in progress.
 
-## Download Linux and macOS builds
+## Download Git Extensions Desktop
 
-Download the packages from [GitHub Releases](https://github.com/Azreal42/gitextensions/releases).
-A new alpha prerelease is published automatically after the Linux, native platform,
-and Windows CI workflows all pass for the same `master` commit. Each release includes
-the verified macOS Apple Silicon / Intel ZIPs, the Linux amd64 Debian package, and
-`SHA256SUMS`. These files are copied from the successful CI runs without rebuilding.
+Download the [latest numbered release](https://github.com/Azreal42/gitextensions/releases/latest)
+for Windows x64 (`-setup.exe`), macOS Apple Silicon or Intel (`.zip`), or Debian/Ubuntu
+amd64 (`.deb`). On Windows, run the installer, then open **Git Extensions (Avalonia)**
+from the Start menu. The installer is unsigned and installs for the current user.
+
+[GitHub Releases](https://github.com/Azreal42/gitextensions/releases) also lists the
+automatic alpha prereleases. Each validated `master` commit gets a prerelease
+after the Linux, native platform and Windows CI workflows pass. The packages are
+copied from those runs, with their download checksums in `SHA256SUMS`.
 
 GitHub Actions builds and tests every push, including merges into `master`, and
 publishes the packages after their platform checks pass. Open a run for `master`
@@ -23,11 +27,12 @@ is required):
 
 | Platform | Workflow | Artifact |
 | --- | --- | --- |
+| Windows x64 | [Avalonia native platforms](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amaster) | `avalonia-win-x64-installer` (`.exe`) |
 | Linux amd64 (Debian/Ubuntu) | [Linux](https://github.com/Azreal42/gitextensions/actions/workflows/linux.yml?query=branch%3Amaster) | `gitextensions-linux-amd64` (`.deb`) |
 | macOS 15+ Apple Silicon | [Avalonia native platforms](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amaster) | `avalonia-osx-arm64` (`.zip`) |
 | macOS 15+ Intel | [Avalonia native platforms](https://github.com/Azreal42/gitextensions/actions/workflows/avalonia-platforms.yml?query=branch%3Amaster) | `avalonia-osx-x64` (`.zip`) |
 
-The packages include .NET. On macOS, extract the artifact and its delivery ZIP,
+The packages include .NET. On macOS, extract the delivery ZIP,
 then move `Git Extensions.app` into Applications. Install Git separately. The Mac
 bundle is ad-hoc signed and is not notarized; macOS may require approval through
 **System Settings > Privacy & Security** on first launch.

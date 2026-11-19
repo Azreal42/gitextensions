@@ -98,6 +98,21 @@ class ReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
             self.extract(Path(temporary), [("gitextensions_7.2.1-alpha_osx-arm64.zip", self.native_delivery("b" * 40))])
 
+    def test_only_the_installer_exercised_on_windows_is_published(self):
+        name = "gitextensions_7.2.1-avalonia-alpha_win-x64-setup.exe"
+        data = b"installer exercised by the native runner"
+        receipt = {"source_commit": SHA, "runtime": "win-x64", "installer_sha256": hashlib.sha256(data).hexdigest()}
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            witness = ("windows-installer-review.json", json.dumps(receipt))
+            self.assertEqual(self.extract(folder, [(name, data), witness], delivery=3).read_bytes(), data)
+            for package, proof in [((name, b"different exe"), witness), ((name, data), None),
+                                   (("GitExtensions.exe", data), witness),
+                                   ((name, data), (witness[0], json.dumps(receipt | {"source_commit": "b" * 40}))),
+                                   ((name, data), (witness[0], json.dumps(receipt | {"runtime": "win-arm64"})))]:
+                with self.subTest(package=package[0], proof=proof), self.assertRaises(ValueError):
+                    self.extract(folder, [package, proof] if proof else [package], delivery=3)
+
     def test_an_incomplete_upload_stays_a_draft(self):
         with tempfile.TemporaryDirectory() as temporary:
             asset = Path(temporary) / "package.deb"
@@ -136,6 +151,30 @@ class ReleaseTests(unittest.TestCase):
                                  [("release", "create"), ("release", "upload"), ("release", "edit")])
                 self.assertIn("--draft", gh.call_args_list[0].args)
                 self.assertIn("--draft=false", gh.call_args_list[2].args)
+                self.assertIn("--prerelease", gh.call_args_list[2].args)
+                self.assertIn("--latest=false", gh.call_args_list[2].args)
+
+    def test_numbered_release_is_published_as_latest_after_asset_verification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            exe = Path(temporary) / "setup.exe"
+            exe.write_bytes(b"tested installer")
+            draft = {"target_commitish": SHA, "draft": True, "prerelease": False, "html_url": "https://example.invalid/release",
+                     "assets": [{"name": exe.name, "digest": "sha256:" + hashlib.sha256(exe.read_bytes()).hexdigest()}]}
+            with patch.object(release, "release_by_tag", side_effect=[None, draft, draft | {"draft": False}]), \
+                    patch.object(release, "optional_api", return_value=None), patch.object(release, "gh") as gh:
+                release.publish(REPOSITORY, SHA, [exe], Path(temporary) / "notes.md", "desktop-7.2.1")
+                self.assertEqual([c.args[:3] for c in gh.call_args_list],
+                                 [("release", operation, "desktop-7.2.1") for operation in ("create", "upload", "edit")])
+                self.assertIn("--prerelease=false", gh.call_args_list[-1].args)
+                self.assertIn("--latest", gh.call_args_list[-1].args)
+
+    def test_an_existing_version_tag_for_another_commit_is_preserved(self):
+        with patch.object(release, "release_by_tag", return_value=None), \
+                patch.object(release, "optional_api", return_value={"object": {"type": "tag", "sha": "c" * 40}}), \
+                patch.object(release, "api", return_value={"object": {"type": "commit", "sha": "b" * 40}}), \
+                patch.object(release, "gh") as gh, self.assertRaisesRegex(ValueError, "another source"):
+            release.publish(REPOSITORY, SHA, [], Path("notes.md"), "desktop-7.2.1")
+        gh.assert_not_called()
 
 
 if __name__ == "__main__":

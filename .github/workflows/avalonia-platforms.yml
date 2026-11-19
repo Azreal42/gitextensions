@@ -27,6 +27,7 @@ jobs:
         include:
           - os: windows-2025
             runtime: win-x64
+            installer: --windows-installer
           # Exercise the declared macOS 15 minimum on each Mac architecture.
           - os: macos-15
             runtime: osx-arm64
@@ -98,13 +99,23 @@ jobs:
 
       - name: Publish a self-contained native delivery
         run: |
-          python -B eng/desktop/package.py --runtime "${{ matrix.runtime }}" --output "artifacts/desktop/${{ matrix.runtime }}/delivery"
+          python -B eng/desktop/package.py --runtime "${{ matrix.runtime }}" --output "artifacts/desktop/${{ matrix.runtime }}/delivery" ${{ matrix.installer }}
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify the extracted delivery and actual desktop backend
         run: |
-          python -B eng/desktop/verify.py --runtime "${{ matrix.runtime }}" --directory "artifacts/desktop/${{ matrix.runtime }}/delivery" --results "artifacts/desktop/${{ matrix.runtime }}/results"
+          python -B eng/desktop/verify.py --runtime "${{ matrix.runtime }}" --directory "artifacts/desktop/${{ matrix.runtime }}/delivery" --results "artifacts/desktop/${{ matrix.runtime }}/results" ${{ matrix.installer }}
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload the tested Windows installer
+        if: matrix.runtime == 'win-x64'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: avalonia-win-x64-installer
+          path: |
+            artifacts/desktop/win-x64/delivery/*-setup.exe
+            artifacts/desktop/win-x64/delivery/windows-installer-review.json
+          if-no-files-found: error
 
       - name: Upload native delivery
         id: delivery
