@@ -51,9 +51,7 @@
   </PropertyGroup>
 
   <Target Name="_DownloadPluginManager">
-    <Exec 
-      Condition="!Exists('$(_PluginManagerPath)')"
-      Command="powershell.exe $(RepoRoot)\eng\Download-PluginManager.ps1 -ExtractRootPath '$(_PluginManagerPath)'" />
+    <Exec Command="powershell.exe -NoProfile -File &quot;$(RepoRoot)\eng\Download-PluginManager.ps1&quot; -ExtractRootPath &quot;$(_PluginManagerPath)&quot;" />
   </Target>
 
   <!--

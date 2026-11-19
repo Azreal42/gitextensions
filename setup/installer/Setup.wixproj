@@ -83,8 +83,6 @@
     <Error Condition="!Exists('$(NuGetPackageRoot)\WiX\$(WiXVersion)\build\wix.props')" Text="$([System.String]::Format('$(ErrorText)', '$(NuGetPackageRoot)\WiX\$(WiXVersion)\build\wix.props'))" />
   </Target>
   <Target Name="DownloadPluginManager" BeforeTargets="BeforeBuild">
-    <Exec
-      Condition="!Exists('$(PluginManagerSourceDir)\GitExtensions.PluginManager')"
-      Command="powershell.exe $(MSBuildProjectDirectory)\..\eng\Download-PluginManager.ps1 -ExtractRootPath '$(PluginManagerSourceDir)\GitExtensions.PluginManager'" />
+    <Exec Command="powershell.exe -NoProfile -File &quot;$(MSBuildProjectDirectory)\..\..\eng\Download-PluginManager.ps1&quot; -ExtractRootPath &quot;$(PluginManagerSourceDir)\GitExtensions.PluginManager&quot;" />
   </Target>
 </Project>

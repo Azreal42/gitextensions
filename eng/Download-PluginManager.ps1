@@ -4,53 +4,66 @@ Param(
     [string] $ExtractRootPath
 )
 
-Push-Location $PSScriptRoot
+$ErrorActionPreference = 'Stop'
+$requiredFiles = @(
+    'GitExtensions.PluginManager.dll'
+    'PackageManager/PackageManager.UI.exe'
+    'PackageManager/PackageManager.UI.runtimeconfig.json'
+)
+
+function Test-PluginManagerOutput([string] $Path)
+{
+    foreach ($file in $requiredFiles)
+    {
+        if (!(Test-Path -LiteralPath (Join-Path $Path $file) -PathType Leaf))
+        {
+            return $false
+        }
+    }
+
+    return $true
+}
+
+$output = Join-Path $ExtractRootPath 'Output'
+if (Test-PluginManagerOutput $output)
+{
+    return
+}
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$Releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/gitextensions/gitextensions.pluginmanager/releases'
-
-$Assets = $Releases[0].assets;
-foreach ($Asset in $Assets)
+$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/gitextensions/gitextensions.pluginmanager/releases'
+$asset = $releases[0].assets | Where-Object { $_.name -like 'GitExtensions.PluginManager*.zip' } | Select-Object -First 1
+if (!$asset)
 {
-    if ($Asset.name.StartsWith('GitExtensions.PluginManager') -and $Asset.name.EndsWith('.zip'))
-    {
-        $AssetToDownload = $Asset;
-        break;
-    }
+    throw 'PluginManager release not found.'
 }
 
-if (!($null -eq $AssetToDownload))
+$stage = Join-Path $ExtractRootPath ([Guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Path $stage -Force | Out-Null
+try
 {
-    $AssetUrl = $AssetToDownload.browser_download_url;
+    $archive = Join-Path $stage 'plugin-manager.zip'
+    $extracted = Join-Path $stage 'Output'
+    Write-Host "Downloading '$($asset.name)'."
+    Invoke-WebRequest -UseBasicParsing -Uri $asset.browser_download_url -OutFile $archive
 
-    $DownloadName = [System.IO.Path]::GetFileName($AssetToDownload.name);
-    $DownloadFilePath = [System.IO.Path]::Combine($ExtractRootPath, $DownloadName);
-    $ExtractPath = [System.IO.Path]::Combine($ExtractRootPath, 'Output');
-
-    if (!(Test-Path $DownloadFilePath))
+    # Windows PowerShell 5.1 uses the .NET Framework two-argument overload.
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($archive, $extracted)
+    if (!(Test-PluginManagerOutput $extracted))
     {
-        if (!(Test-Path $ExtractRootPath))
-        {
-            New-Item -ItemType directory -Path $ExtractRootPath | Out-Null;
-        }
-
-        if (!(Test-Path $ExtractPath))
-        {
-            New-Item -ItemType directory -Path $ExtractPath | Out-Null;
-        }
-
-        Write-Host "Downloading '$DownloadName'.";
-
-        Invoke-WebRequest -Uri $AssetUrl -OutFile $DownloadFilePath;
-        Expand-Archive $DownloadFilePath -DestinationPath $ExtractPath -Force
+        throw "The archive '$($asset.name)' is missing a required plugin manager file."
     }
-    else 
+
+    if (Test-Path -LiteralPath $output)
     {
-        Write-Host "Download '$DownloadName' already exists.";
+        if (Test-PluginManagerOutput $output) { return }
+        Remove-Item -LiteralPath $output -Recurse -Force
     }
-}
-else {
-    throw "PluginManager release not found.";
-}
 
-Pop-Location
+    [System.IO.Directory]::Move($extracted, $output)
+}
+finally
+{
+    Remove-Item -LiteralPath $stage -Recurse -Force
+}
